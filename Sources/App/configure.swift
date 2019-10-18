@@ -1,8 +1,16 @@
 import FluentSQLite
+import FluentPostgreSQL
 import Vapor
 
 /// Called before your application initializes.
 public func configure(_ config: inout Config, _ env: inout Environment, _ services: inout Services) throws {
+
+    /// run API on port 8081 by default and set a 10MB hard limit on file size
+    services.register {
+        container -> NIOServerConfig in
+        .default(port: 8081, maxBodySize: 10_000_000)
+    }
+
     // Register providers first
     try services.register(FluentSQLiteProvider())
 
