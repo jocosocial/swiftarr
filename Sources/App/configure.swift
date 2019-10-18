@@ -28,16 +28,15 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     middlewares.use(ErrorMiddleware.self) // catches errors and converts to HTTP response
     services.register(middlewares)
 
-    // Configure a SQLite database
-    let sqlite = try SQLiteDatabase(storage: .memory)
+    /// configure PostgreSQL connection
 
-    // Register the configured SQLite database to the database config.
+    /// configure Redis connection
+    
+    /// register databases
     var databases = DatabasesConfig()
-    databases.add(database: sqlite, as: .sqlite)
     services.register(databases)
 
-    // Configure migrations
+    /// configure migrations
     var migrations = MigrationConfig()
-    migrations.add(model: Todo.self, database: .sqlite)
     services.register(migrations)
 }
