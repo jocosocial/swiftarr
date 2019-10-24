@@ -30,41 +30,55 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     services.register(middlewares)
 
     // configure PostgreSQL connection
-    let postgresHostname = Environment.get("DATABASE_HOSTNAME") ?? "localhost"
-    let postgresUser = Environment.get("DATABASE_USER") ?? "swiftarr"
-    let postgresPassword = Environment.get("DATABASE_PASSWORD") ?? "password"
-    let postgresDB: String
-    let postgresPort: Int
-    if (env == .testing) {
-        postgresDB = "swiftarr-test"
-        postgresPort = Int(Environment.get("DATABASE_PORT") ?? "5433")!
+    // note: environment variable nomenclature is vapor.cloud compatible
+    let postgresConfig: PostgreSQLDatabaseConfig
+    // support for Heroku environment
+    if let postgresURL = Environment.get("DATABASE_URL") {
+        postgresConfig = PostgreSQLDatabaseConfig(url: postgresURL)!
     } else {
-        postgresDB = Environment.get("DATABASE_DB") ?? "swiftarr"
-        postgresPort = 5432
+        // otherwise
+        let postgresHostname = Environment.get("DATABASE_HOSTNAME") ?? "localhost"
+        let postgresUser = Environment.get("DATABASE_USER") ?? "swiftarr"
+        let postgresPassword = Environment.get("DATABASE_PASSWORD") ?? "password"
+        let postgresDB: String
+        let postgresPort: Int
+        if (env == .testing) {
+            postgresDB = "swiftarr-test"
+            postgresPort = Int(Environment.get("DATABASE_PORT") ?? "5433")!
+        } else {
+            postgresDB = Environment.get("DATABASE_DB") ?? "swiftarr"
+            postgresPort = 5432
+        }
+        postgresConfig = PostgreSQLDatabaseConfig(
+            hostname: postgresHostname,
+            port: postgresPort,
+            username: postgresUser,
+            database: postgresDB,
+            password: postgresPassword,
+            transport: .cleartext
+        )
     }
-    let postgresConfig = PostgreSQLDatabaseConfig(
-        hostname: postgresHostname,
-        port: postgresPort,
-        username: postgresUser,
-        database: postgresDB,
-        password: postgresPassword,
-        transport: .cleartext
-    )
     let postgres = PostgreSQLDatabase(config: postgresConfig)
     
     // configure Redis connection
     var redisConfig = RedisClientConfig()
-    let redisHostname: String
-    let redisPort: Int
-    if (env == .testing) {
-        redisHostname = Environment.get("REDIS_HOSTNAME") ?? "localhost"
-        redisPort = Int(Environment.get("REDIS_PORT") ?? "6380")!
+    // support for Heroku environment
+    if let redisString = Environment.get("REDIS_URL"), let redisURL = URL(string: redisString) {
+        redisConfig = RedisClientConfig(url: redisURL)
     } else {
-        redisHostname = Environment.get("REDIS_HOSTNAME") ?? "localhost"
-        redisPort = 6379
+        // otherwise
+        let redisHostname: String
+        let redisPort: Int
+        if (env == .testing) {
+            redisHostname = Environment.get("REDIS_HOSTNAME") ?? "localhost"
+            redisPort = Int(Environment.get("REDIS_PORT") ?? "6380")!
+        } else {
+            redisHostname = Environment.get("REDIS_HOSTNAME") ?? "localhost"
+            redisPort = 6379
+        }
+        redisConfig.hostname = redisHostname
+        redisConfig.port = redisPort
     }
-    redisConfig.hostname = redisHostname
-    redisConfig.port = redisPort
     let redis = try RedisDatabase(config: redisConfig)
     
     // register databases
