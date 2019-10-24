@@ -6,29 +6,29 @@ import Redis
 /// Called before your application initializes.
 public func configure(_ config: inout Config, _ env: inout Environment, _ services: inout Services) throws {
 
-    /// run API on port 8081 by default and set a 10MB hard limit on file size
+    // run API on port 8081 by default and set a 10MB hard limit on file size
     services.register {
         container -> NIOServerConfig in
         .default(port: 8081, maxBodySize: 10_000_000)
     }
 
-    /// register providers first
+    // register providers first
     try services.register(FluentPostgreSQLProvider())
     try services.register(AuthenticationProvider())
     try services.register(RedisProvider())
 
-    /// register routes to the router
+    // register routes to the router
     let router = EngineRouter.default()
     try routes(router)
     services.register(router, as: Router.self)
 
-    /// register middleware
+    // register middleware
     var middlewares = MiddlewareConfig()
-    // middlewares.use(FileMiddleware.self) // serves files from `Public/` directory
+    //middlewares.use(FileMiddleware.self) // serves files from `Public/` directory
     middlewares.use(ErrorMiddleware.self) // catches errors and converts to HTTP response
     services.register(middlewares)
 
-    /// configure PostgreSQL connection
+    // configure PostgreSQL connection
     let postgresHost = Environment.get("DATABASE_HOST") ?? "localhost"
     let postgresUser = Environment.get("DATABASE_USER") ?? "swiftarr"
     let postgresPassword = Environment.get("DATABASE_PASSWORD") ?? "password"
@@ -51,7 +51,7 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     )
     let postgres = PostgreSQLDatabase(config: postgresConfig)
     
-    /// configure Redis connection
+    // configure Redis connection
     var redisConfig = RedisClientConfig()
     let redisHost: String
     let redisPort: Int
@@ -66,11 +66,18 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     redisConfig.port = redisPort
     let redis = try RedisDatabase(config: redisConfig)
     
-    /// register databases
+    // register databases
     var databases = DatabasesConfig()
+    databases.add(database: postgres, as: .psql)
+    databases.add(database: redis, as: .redis)
     services.register(databases)
 
-    /// configure migrations
+    // configure migrations
     var migrations = MigrationConfig()
     services.register(migrations)
+    
+    // add Fluent commands for manual migration reverts
+    var commandConfig = CommandConfig()
+    commandConfig.useFluentCommands()
+    services.register(commandConfig)
 }
