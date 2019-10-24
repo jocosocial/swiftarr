@@ -29,7 +29,7 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     services.register(middlewares)
 
     // configure PostgreSQL connection
-    let postgresHost = Environment.get("DATABASE_HOST") ?? "localhost"
+    let postgresHostname = Environment.get("DATABASE_HOSTNAME") ?? "localhost"
     let postgresUser = Environment.get("DATABASE_USER") ?? "swiftarr"
     let postgresPassword = Environment.get("DATABASE_PASSWORD") ?? "password"
     let postgresDB: String
@@ -42,7 +42,7 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
         postgresPort = 5432
     }
     let postgresConfig = PostgreSQLDatabaseConfig(
-        hostname: postgresHost,
+        hostname: postgresHostname,
         port: postgresPort,
         username: postgresUser,
         database: postgresDB,
@@ -53,16 +53,16 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     
     // configure Redis connection
     var redisConfig = RedisClientConfig()
-    let redisHost: String
+    let redisHostname: String
     let redisPort: Int
     if (env == .testing) {
-        redisHost = Environment.get("REDIS_HOST") ?? "localhost"
+        redisHostname = Environment.get("REDIS_HOSTNAME") ?? "localhost"
         redisPort = Int(Environment.get("REDIS_PORT") ?? "6380")!
     } else {
-        redisHost = Environment.get("REDIS_HOST") ?? "localhost"
+        redisHostname = Environment.get("REDIS_HOSTNAME") ?? "localhost"
         redisPort = 6379
     }
-    redisConfig.hostname = redisHost
+    redisConfig.hostname = redisHostname
     redisConfig.port = redisPort
     let redis = try RedisDatabase(config: redisConfig)
     
