@@ -7,9 +7,10 @@ import Redis
 public func configure(_ config: inout Config, _ env: inout Environment, _ services: inout Services) throws {
 
     // run API on port 8081 by default and set a 10MB hard limit on file size
+    let port = Int(Environment.get("PORT") ?? "8081")!
     services.register {
         container -> NIOServerConfig in
-        .default(port: 8081, maxBodySize: 10_000_000)
+        .default(port: port, maxBodySize: 10_000_000)
     }
 
     // register providers first
