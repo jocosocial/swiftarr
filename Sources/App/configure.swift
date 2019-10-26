@@ -5,30 +5,30 @@ import Redis
 
 /// Called before your application initializes.
 public func configure(_ config: inout Config, _ env: inout Environment, _ services: inout Services) throws {
-
+    
     // run API on port 8081 by default and set a 10MB hard limit on file size
     let port = Int(Environment.get("PORT") ?? "8081")!
     services.register {
         container -> NIOServerConfig in
         .default(port: port, maxBodySize: 10_000_000)
     }
-
+    
     // register providers first
     try services.register(FluentPostgreSQLProvider())
     try services.register(AuthenticationProvider())
     try services.register(RedisProvider())
-
+    
     // register routes to the router
     let router = EngineRouter.default()
     try routes(router)
     services.register(router, as: Router.self)
-
+    
     // register middleware
     var middlewares = MiddlewareConfig()
     //middlewares.use(FileMiddleware.self) // serves files from `Public/` directory
     middlewares.use(ErrorMiddleware.self) // catches errors and converts to HTTP response
     services.register(middlewares)
-
+    
     // configure PostgreSQL connection
     // note: environment variable nomenclature is vapor.cloud compatible
     let postgresConfig: PostgreSQLDatabaseConfig
@@ -63,7 +63,8 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     // configure Redis connection
     var redisConfig = RedisClientConfig()
     // support for Heroku environment
-    if let redisString = Environment.get("REDIS_URL"), let redisURL = URL(string: redisString) {
+    if let redisString = Environment.get("REDIS_URL"),
+        let redisURL = URL(string: redisString) {
         redisConfig = RedisClientConfig(url: redisURL)
     } else {
         // otherwise
@@ -92,7 +93,7 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
         container in
         try container.keyedCache(for: .redis)
     }
-
+    
     // configure migrations
     var migrations = MigrationConfig()
     services.register(migrations)
