@@ -86,12 +86,18 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     databases.add(database: postgres, as: .psql)
     databases.add(database: redis, as: .redis)
     services.register(databases)
+    
+    // use Redis for KeyedCache
+    services.register(KeyedCache.self) {
+        container in
+        try container.keyedCache(for: .redis)
+    }
 
     // configure migrations
     var migrations = MigrationConfig()
     services.register(migrations)
     
-    // add Fluent commands for manual migration reverts
+    // add Fluent commands for CLI migration and revert
     var commandConfig = CommandConfig()
     commandConfig.useFluentCommands()
     services.register(commandConfig)
