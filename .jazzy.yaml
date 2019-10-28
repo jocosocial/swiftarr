@@ -1,0 +1,28 @@
+module: App
+module_version: 0.1
+title: swiftarr 0.1.0
+author: grundoon
+# author_url:
+github_url: https://github.com/grundoon/swiftarr
+# copyright:
+
+swift_version: 5.1
+
+theme: fullwidth
+skip_undocumented: no
+hide_documentation_coverage: no
+# head:
+
+min_acl: fileprivate
+
+# custom_categories:
+#   - name: Models
+#     children:
+# 
+#   - name: Pivots
+#     children:
+#     
+#   - name: Controllers
+#     children:
+#     
+#   - 
