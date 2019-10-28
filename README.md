@@ -18,3 +18,31 @@
         <img src="http://img.shields.io/badge/swift-5.1-brightgreen.svg" alt="Swift 5.1">
     </a>
 </p>
+
+## Documentation
+
+- **API_cheatsheet.md**: A quick endpoint reference for client development, including payload requirements and
+return types.
+
+- **docs/**: A complete API reference generated directly from the documentation markup within the source code,
+in navigable HTML format.
+
+- **source code**: The source code itself is, in every sense, the definitive documentation. In striving for a primary
+goal of maintainability, the code is intended to be straightforward in nature, readable, and consistent in style. It is
+thoroughly documented, incorporating both the formatted Swift Documentation Markup blocks (`///`) used to
+generate the HTML `docs/` pages and additional in-line comments (`//`). Maintainers and contributors are
+requested to adhere to the exiting standards, or outright improve upon them!
+
+The `docs/` are generated using [`jazzy`](https://github.com/realm/jazzy), with the `.jazzy.yaml` configuration file
+included in this repository. They are updated at minimum upon every tagged point release. To update more
+frequently, such as for inclusion in a pull request, an appropriate command might be: 
+
+```shell
+cd <swiftarr-directory>
+jazzy --noclean -o ./docs
+```
+Note: The GitHub links within the generated documentation are hard-coded via the `github_file_prefix`
+configuration setting to point to the `master` branch tree. This is fine for `master` merges *only*, and care needs
+to be taken for tagged releases.
+
+
