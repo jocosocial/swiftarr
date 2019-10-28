@@ -4,6 +4,7 @@ title: swiftarr 0.1.0
 author: grundoon
 # author_url:
 github_url: https://github.com/grundoon/swiftarr
+github_file_prefix: https://github.com/grundoon/swiftarr/tree/master
 # copyright:
 
 swift_version: 5.1
