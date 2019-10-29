@@ -25,7 +25,8 @@ extension User: Migration {
         return Database.create(self, on: connection) {
             builder in
             try addProperties(to: builder)
-            builder.unique(on: \.username)  // username must be unique
+            // username must be unique
+            builder.unique(on: \.username)
         }
     }
 }
@@ -52,7 +53,7 @@ extension User: BasicAuthenticatable {
 
 // MARK: TokenAuthenticatable Conformance
 
-//extension User: TokenAuthenticatable {
-//    /// Required typealias, using `Token` class for HTTP Bearer Authorization.
-//    typealias TokenType = Token
-//}
+extension User: TokenAuthenticatable {
+    /// Required typealias, using `Token` class for HTTP Bearer Authorization.
+    typealias TokenType = Token
+}
