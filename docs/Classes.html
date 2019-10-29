@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>App  Reference</title>
+    <title>Classes  Reference</title>
     <link rel="stylesheet" type="text/css" href="css/jazzy.css" />
     <link rel="stylesheet" type="text/css" href="css/highlight.css" />
     <meta charset="utf-8">
@@ -14,8 +14,9 @@
   </head>
   <body>
 
+    <a name="//apple_ref/swift/Section/Classes" class="dashAnchor"></a>
 
-    <a title="App  Reference"></a>
+    <a title="Classes  Reference"></a>
 
     <header class="header">
       <p class="header-col header-col--primary">
@@ -43,7 +44,7 @@
     <p class="breadcrumbs">
       <a class="breadcrumb" href="index.html">App Reference</a>
       <img class="carat" src="img/carat.png" />
-      App  Reference
+      Classes  Reference
     </p>
 
     <div class="content-wrapper">
@@ -97,58 +98,63 @@
 
         <section class="section">
           <div class="section-content">
-            
-            <p align="center">
-    <img src="https://user-images.githubusercontent.com/1342803/36623515-7293b4ec-18d3-11e8-85ab-4e2f8fb38fbd.png" width="320" alt="API Template">
-    <br>
-    <br>
-    <a href="http://docs.vapor.codes/3.0/">
-        <img src="http://img.shields.io/badge/read_the-docs-2196f3.svg" alt="Documentation">
-    </a>
-    <a href="https://discord.gg/vapor">
-        <img src="https://img.shields.io/discord/431917998102675485.svg" alt="Team Chat">
-    </a>
-    <a href="LICENSE">
-        <img src="http://img.shields.io/badge/license-MIT-brightgreen.svg" alt="MIT License">
-    </a>
-    <a href="https://circleci.com/gh/vapor/api-template">
-        <img src="https://circleci.com/gh/vapor/api-template.svg?style=shield" alt="Continuous Integration">
-    </a>
-    <a href="https://swift.org">
-        <img src="http://img.shields.io/badge/swift-5.1-brightgreen.svg" alt="Swift 5.1">
-    </a>
-</p>
-<h2 id='documentation' class='heading'>Documentation</h2>
-
-<ul>
-<li><p><strong>API_cheatsheet.md</strong>: A quick endpoint reference for client development, including payload requirements and
-return types.</p></li>
-<li><p><strong>docs/</strong>: A complete API reference generated directly from the documentation markup within the source code,
-in navigable HTML format.</p></li>
-<li><p><strong>source code</strong>: The source code itself is, in every sense, the definitive documentation. In striving for a primary
-goal of maintainability, the code is intended to be straightforward in nature, readable, and consistent in style. It is
-thoroughly documented, incorporating both formatted Swift Documentation Markup blocks (<code>///</code>) and
-organizational <code>MARK</code>s used to generate the HTML <code>docs/</code> pages, as well as in-line comments (<code>//</code>) to help
-clarify flow, function, and thought process. Maintainers and contributors are requested to adhere to the existing
-standards, or outright improve upon them!</p></li>
-</ul>
-
-<p>The <code>docs/</code> are generated using <a href="https://github.com/realm/jazzy"><code>jazzy</code></a>, with the <code>.jazzy.yaml</code> configuration file
-included in this repository. They are updated at minimum upon every tagged point release. To update more
-frequently, such as for inclusion in a pull request, an appropriate command might be: </p>
-<pre class="highlight shell"><code><span class="nb">cd</span> &lt;swiftarr-directory&gt;
-jazzy <span class="nt">--noclean</span> <span class="nt">-o</span> ./docs
-</code></pre>
-
-<p>Note: The GitHub links within the generated documentation are hard-coded via the <code>github_file_prefix</code>
-configuration setting to point to the <code>master</code> branch tree. This is fine for <code>master</code> merges <em>only</em>, and care needs
-to be taken for tagged releases.</p>
-
-<p>The <a href="https://vapor.codes">Vapor</a> framework has its own <a href="https://api.vapor.codes">API documentation</a>.</p>
+            <h1>Classes</h1>
+            <p>The following classes are available globally.</p>
 
           </div>
         </section>
 
+        <section class="section">
+          <div class="section-content">
+            <div class="task-group">
+              <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App4UserC"></a>
+                    <a name="//apple_ref/swift/Class/User" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App4UserC">User</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>All accounts are of class User.</p>
+
+<p>The terms <q>account</q> and <q>sub-account</q> used throughout this documentatiion are all
+instances of User. The terms <q>primary account</q>, <q>parent account</q> and <q>master account</q>
+are used interchangeably to refer to any account that is not a sub-account.</p>
+
+<p>A primary account holds the verification token and access level, and all
+sub-accounts (if any) inherit these two credentials.</p>
+
+<p><code><a href="Classes/User.html#/s:3App4UserC2id10Foundation4UUIDVSgvp">User.id</a></code> and <code><a href="Classes/User.html#/s:3App4UserC8parentID10Foundation4UUIDVSgvp">User.parentID</a></code> are provisioned automatically, by the model protocols
+and <code>UsersController</code> account creation handlers respectively. <code><a href="Classes/User.html#/s:3App4UserC9createdAt10Foundation4DateVSgvp">User.createdAt</a></code>,
+<code><a href="Classes/User.html#/s:3App4UserC9updatedAt10Foundation4DateVSgvp">User.updatedAt</a></code> and <code><a href="Classes/User.html#/s:3App4UserC9deletedAt10Foundation4DateVSgvp">User.deletedAt</a></code> are all maintained automatically by the model
+protocols and should never be otherwise programmatically modified.</p>
+
+                        <a href="Classes/User.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">User</span> <span class="p">:</span> <span class="kt">Codable</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User.swift#L19-L209">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
 
       </article>
     </div>

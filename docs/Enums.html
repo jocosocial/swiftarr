@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>App  Reference</title>
+    <title>Enumerations  Reference</title>
     <link rel="stylesheet" type="text/css" href="css/jazzy.css" />
     <link rel="stylesheet" type="text/css" href="css/highlight.css" />
     <meta charset="utf-8">
@@ -14,8 +14,9 @@
   </head>
   <body>
 
+    <a name="//apple_ref/swift/Section/Enumerations" class="dashAnchor"></a>
 
-    <a title="App  Reference"></a>
+    <a title="Enumerations  Reference"></a>
 
     <header class="header">
       <p class="header-col header-col--primary">
@@ -43,7 +44,7 @@
     <p class="breadcrumbs">
       <a class="breadcrumb" href="index.html">App Reference</a>
       <img class="carat" src="img/carat.png" />
-      App  Reference
+      Enumerations  Reference
     </p>
 
     <div class="content-wrapper">
@@ -97,58 +98,53 @@
 
         <section class="section">
           <div class="section-content">
-            
-            <p align="center">
-    <img src="https://user-images.githubusercontent.com/1342803/36623515-7293b4ec-18d3-11e8-85ab-4e2f8fb38fbd.png" width="320" alt="API Template">
-    <br>
-    <br>
-    <a href="http://docs.vapor.codes/3.0/">
-        <img src="http://img.shields.io/badge/read_the-docs-2196f3.svg" alt="Documentation">
-    </a>
-    <a href="https://discord.gg/vapor">
-        <img src="https://img.shields.io/discord/431917998102675485.svg" alt="Team Chat">
-    </a>
-    <a href="LICENSE">
-        <img src="http://img.shields.io/badge/license-MIT-brightgreen.svg" alt="MIT License">
-    </a>
-    <a href="https://circleci.com/gh/vapor/api-template">
-        <img src="https://circleci.com/gh/vapor/api-template.svg?style=shield" alt="Continuous Integration">
-    </a>
-    <a href="https://swift.org">
-        <img src="http://img.shields.io/badge/swift-5.1-brightgreen.svg" alt="Swift 5.1">
-    </a>
-</p>
-<h2 id='documentation' class='heading'>Documentation</h2>
-
-<ul>
-<li><p><strong>API_cheatsheet.md</strong>: A quick endpoint reference for client development, including payload requirements and
-return types.</p></li>
-<li><p><strong>docs/</strong>: A complete API reference generated directly from the documentation markup within the source code,
-in navigable HTML format.</p></li>
-<li><p><strong>source code</strong>: The source code itself is, in every sense, the definitive documentation. In striving for a primary
-goal of maintainability, the code is intended to be straightforward in nature, readable, and consistent in style. It is
-thoroughly documented, incorporating both formatted Swift Documentation Markup blocks (<code>///</code>) and
-organizational <code>MARK</code>s used to generate the HTML <code>docs/</code> pages, as well as in-line comments (<code>//</code>) to help
-clarify flow, function, and thought process. Maintainers and contributors are requested to adhere to the existing
-standards, or outright improve upon them!</p></li>
-</ul>
-
-<p>The <code>docs/</code> are generated using <a href="https://github.com/realm/jazzy"><code>jazzy</code></a>, with the <code>.jazzy.yaml</code> configuration file
-included in this repository. They are updated at minimum upon every tagged point release. To update more
-frequently, such as for inclusion in a pull request, an appropriate command might be: </p>
-<pre class="highlight shell"><code><span class="nb">cd</span> &lt;swiftarr-directory&gt;
-jazzy <span class="nt">--noclean</span> <span class="nt">-o</span> ./docs
-</code></pre>
-
-<p>Note: The GitHub links within the generated documentation are hard-coded via the <code>github_file_prefix</code>
-configuration setting to point to the <code>master</code> branch tree. This is fine for <code>master</code> merges <em>only</em>, and care needs
-to be taken for tagged releases.</p>
-
-<p>The <a href="https://vapor.codes">Vapor</a> framework has its own <a href="https://api.vapor.codes">API documentation</a>.</p>
+            <h1>Enumerations</h1>
+            <p>The following enumerations are available globally.</p>
 
           </div>
         </section>
 
+        <section class="section">
+          <div class="section-content">
+            <div class="task-group">
+              <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App15UserAccessLevelO"></a>
+                    <a name="//apple_ref/swift/Enum/UserAccessLevel" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15UserAccessLevelO">UserAccessLevel</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>All API endpoints are protected by a mimimum user access level.
+This <code>enum</code> structure is ordered and should <em>never</em> be modified when
+working with stored production <code><a href="Classes/User.html">User</a></code> data – bad things will happen.</p>
+
+                        <a href="Enums/UserAccessLevel.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">enum</span> <span class="kt">UserAccessLevel</span> <span class="p">:</span> <span class="kt">UInt8</span><span class="p">,</span> <span class="kt">PostgreSQLRawEnum</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserAccessLevel.swift#L7-L23">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
 
       </article>
     </div>

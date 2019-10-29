@@ -50,6 +50,31 @@
       <nav class="navigation">
         <ul class="nav-groups">
           <li class="nav-group-name">
+            <a class="nav-group-name-link" href="Classes.html">Classes</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/User.html">User</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/User/Admin.html">– Admin</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/User/Header.html">– Header</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/User/Public.html">– Public</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="Enums.html">Enumerations</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Enums/UserAccessLevel.html">UserAccessLevel</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
             <a class="nav-group-name-link" href="Functions.html">Functions</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
@@ -101,15 +126,16 @@ return types.</p></li>
 <li><p><strong>docs/</strong>: A complete API reference generated directly from the documentation markup within the source code,
 in navigable HTML format.</p></li>
 <li><p><strong>source code</strong>: The source code itself is, in every sense, the definitive documentation. In striving for a primary
-goal of maintainability, the code is intended to be straightforward in nature, readable and consistent in style. It is
-thoroughly documented, incorporating both the formatted Swift Documentation Markup blocks (<code>///</code>) used to
-generate the HTML <code>docs/</code> pages and additional in-line comments (<code>//</code>). Maintainers and contributors are
-requested to adhere to the exiting standards, or outright improve upon them!</p></li>
+goal of maintainability, the code is intended to be straightforward in nature, readable, and consistent in style. It is
+thoroughly documented, incorporating both formatted Swift Documentation Markup blocks (<code>///</code>) and
+organizational <code>MARK</code>s used to generate the HTML <code>docs/</code> pages, as well as in-line comments (<code>//</code>) to help
+clarify flow, function, and thought process. Maintainers and contributors are requested to adhere to the existing
+standards, or outright improve upon them!</p></li>
 </ul>
 
 <p>The <code>docs/</code> are generated using <a href="https://github.com/realm/jazzy"><code>jazzy</code></a>, with the <code>.jazzy.yaml</code> configuration file
 included in this repository. They are updated at minimum upon every tagged point release. To update more
-frequently, such as for inclusion in a pull request, an appropriate command would be: </p>
+frequently, such as for inclusion in a pull request, an appropriate command might be: </p>
 <pre class="highlight shell"><code><span class="nb">cd</span> &lt;swiftarr-directory&gt;
 jazzy <span class="nt">--noclean</span> <span class="nt">-o</span> ./docs
 </code></pre>
@@ -117,6 +143,8 @@ jazzy <span class="nt">--noclean</span> <span class="nt">-o</span> ./docs
 <p>Note: The GitHub links within the generated documentation are hard-coded via the <code>github_file_prefix</code>
 configuration setting to point to the <code>master</code> branch tree. This is fine for <code>master</code> merges <em>only</em>, and care needs
 to be taken for tagged releases.</p>
+
+<p>The <a href="https://vapor.codes">Vapor</a> framework has its own <a href="https://api.vapor.codes">API documentation</a>.</p>
 
           </div>
         </section>
