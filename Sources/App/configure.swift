@@ -97,6 +97,7 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     // configure migrations
     var migrations = MigrationConfig()
     migrations.add(model: User.self, database: .psql)
+    migrations.add(model: Token.self, database: .psql)
     services.register(migrations)
     
     // add Fluent commands for CLI migration and revert
