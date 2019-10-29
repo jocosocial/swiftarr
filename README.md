@@ -29,9 +29,10 @@ in navigable HTML format.
 
 - **source code**: The source code itself is, in every sense, the definitive documentation. In striving for a primary
 goal of maintainability, the code is intended to be straightforward in nature, readable, and consistent in style. It is
-thoroughly documented, incorporating both the formatted Swift Documentation Markup blocks (`///`) used to
-generate the HTML `docs/` pages and additional in-line comments (`//`). Maintainers and contributors are
-requested to adhere to the exiting standards, or outright improve upon them!
+thoroughly documented, incorporating both formatted Swift Documentation Markup blocks (`///`) and
+organizational `MARK`s used to generate the HTML `docs/` pages, as well as in-line comments (`//`) to help
+clarify flow, function, and thought process. Maintainers and contributors are requested to adhere to the existing
+standards, or outright improve upon them!
 
 The `docs/` are generated using [`jazzy`](https://github.com/realm/jazzy), with the `.jazzy.yaml` configuration file
 included in this repository. They are updated at minimum upon every tagged point release. To update more
@@ -44,5 +45,7 @@ jazzy --noclean -o ./docs
 Note: The GitHub links within the generated documentation are hard-coded via the `github_file_prefix`
 configuration setting to point to the `master` branch tree. This is fine for `master` merges *only*, and care needs
 to be taken for tagged releases.
+
+The [Vapor](https://vapor.codes) framework has its own [API documentation](https://api.vapor.codes).
 
 
