@@ -5,14 +5,16 @@ import FluentPostgreSQL
 /// All accounts are of class User.
 ///
 /// The terms "account" and "sub-account" used throughout this documentatiion are all
-/// instances of User. The terms "primary account" and "parent account" are used
-/// interchangeably to refer to any account that is not a sub-account.
+/// instances of User. The terms "primary account", "parent account" and "master account"
+/// are used interchangeably to refer to any account that is not a sub-account.
 ///
 /// A primary account holds the verification token and access level, and all
 /// sub-accounts (if any) inherit these two credentials.
 ///
 /// `User.id` and `User.parentID` are provisioned automatically, by the model protocols
-/// and `UsersController` account creation handlers respectively.
+/// and `UsersController` account creation handlers respectively. `User.createdAt`,
+/// `User.updatedAt` and `User.deletedAt` are all maintained automatically by the model
+/// protocols and should never be otherwise programmatically modified.
 
 final class User: Codable {
     // MARK: Properties
@@ -46,8 +48,6 @@ final class User: Codable {
     
     /// Cumulative number of reports submitted on user's posts.
     var reports: Int
-    
-    // MARK: Timestampable/SoftDeletable
     
     /// Timestamp of the model's creation, set automatically.
     var createdAt: Date?
@@ -208,32 +208,11 @@ final class User: Codable {
     }
 }
 
-/// All API endpoints are protected by a mimimum user access level.
-/// This `enum` structure is ordered and should *never* be modified when
-/// working with stored production `User` data – bad things will happen.
-enum UserAccessLevel: UInt8, PostgreSQLRawEnum {
-    /// A user account that has not yet been activated. (read-only, limited)
-    case unverified
-    /// A user account that has been banned. (read-only, limited)
-    case banned
-    /// A `.verified` user account that has triggered Moderator review. (read-only)
-    case quarantined
-    /// A user account that has been activated for full read-write access.
-    case verified
-    /// An account whose owner is part of the Moderator Team.
-    case moderator
-    /// An account officially associated with Management, has access to all `.moderator`
-    /// and a subset of `.admin` functions (the non-destructive ones).
-    case tho
-    /// An Administrator account, unrestricted access.
-    case admin
-}
-
 // model uses UUID as primary key
-extension User: PostgreSQLUUIDModel {}      // model uses UUID as primary key
+extension User: PostgreSQLUUIDModel {}
 
 // MARK: Custom Migration
-extension User: Migration {                 // model uses custom migreation
+extension User: Migration {
     /// Creates the table, with unique constraint on `.username`.
     ///
     /// - Parameter connection: The connection to the database, usually the Request.
@@ -253,7 +232,8 @@ extension User: Content {}
 // model can used as endpoint parameter
 extension User: Parameter {}
 
-// model uses timestamps and soft deletes
+
+// MARK: Timestamping Conformance
 extension User {
     /// Required key for `\.createdAt` functionality.
     static var createdAtKey: TimestampKey? { return \.createdAt }
@@ -261,7 +241,7 @@ extension User {
     /// Required key for `\.updatedAt` functionality.
     static var updatedAtKey: TimestampKey? { return \.updatedAt }
     
-    /// Required key for `\.deletedAt` functionalilty.
+    /// Required key for `\.deletedAt` soft delete functionalilty.
     static var deletedAtKey: TimestampKey? { return \.deletedAt }
 }
 
