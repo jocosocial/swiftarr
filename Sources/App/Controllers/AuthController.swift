@@ -8,8 +8,8 @@ import FluentSQL
 /// API v3 requires the use of either `HTTP Basic Authentication`
 /// ([RFC7617](https://tools.ietf.org/html/rfc7617)) or `HTTP Bearer Authentication` (based on
 /// [RFC6750](https://tools.ietf.org/html/rfc6750#section-2.1)) for virtually all endpoint
-/// access, with very few exceptions for fully public data (such as the Event Schedule). The
-/// query-based `&key=` scheme used in v2 is not supported at all.
+/// access, with very few exceptions carved out for fully public data (such as the Event
+/// Schedule). The query-based `&key=` scheme used in v2 is not supported at all.
 ///
 /// This means that essentially all HTTP requests ***must*** contain an `Authorization` header.
 ///
@@ -26,7 +26,7 @@ import FluentSQL
 ///     request.addValue("Basic \(credentials)", forHTTPHeaderField: "Authorization")
 ///     ...
 ///
-/// Successfully execution of sending this request to the login endpoint returns a JSON-encoded
+/// Successful execution of sending this request to the login endpoint returns a JSON-encoded
 /// token string:
 ///
 ///     {
@@ -63,6 +63,9 @@ struct AuthController: RouteCollection {
         
         // endpoints available only when not logged in
         basicAuthGroup.post("login", use: loginHandler)
+        
+        // endpoints available only when logged in
+        tokenAuthGroup.post("logout", use: logoutHandler)
     }
     
     // MARK: - basicAuthGroup Handlers (not logged in)
@@ -85,7 +88,8 @@ struct AuthController: RouteCollection {
     ///
     ///     Authorization: Basic YWRtaW46cGFzc3dvcmQ=
     ///
-    /// The token string returned by successful execution of this login handler
+    /// There is no payload in the HTTP body; this header field carries all the necessary
+    /// data. The token string returned by successful execution of this login handler
     ///
     ///     {
     ///         "token": "y+jiK8w/7Ta21m/O8F2edw=="
@@ -105,18 +109,18 @@ struct AuthController: RouteCollection {
     /// **not** supported in API v3.
     ///
     /// - Requires: `User.accessLevel` other than `.banned`.
-    ///
     /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Throws: 401 error if the Basic authentication fails. 403 error if the user is
+    /// banned. A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: An authentication token (string) that should be used for all subsequent
     /// HTTP requests, until expiry or revocation.
-    /// - Throws: A 401 error if the Basic authentication fails or the user is banned.
     func loginHandler(_ req: Request) throws -> Future<TokenStringData> {
         let user = try req.requireAuthenticated(User.self)
         // no login for punks
         guard user.accessLevel != .banned else {
-            throw Abort(.unauthorized)
+            throw Abort(.forbidden)
         }
-        // return existing Token if one exists
+        // return existing token if one exists
         return try Token.query(on: req)
             .filter(\.userID == user.requireID())
             .first()
@@ -125,12 +129,53 @@ struct AuthController: RouteCollection {
                 if let existing = existingToken {
                     return req.future(TokenStringData(token: existing))
                 } else {
-                    // otherwise generate and return new Token
+                    // otherwise generate and return new token
                     let token = try Token.generate(for: user)
                     return token.save(on: req).map {
                         (savedToken) in
                         return TokenStringData(token: savedToken)
                     }
+                }
+        }
+    }
+    
+    // MARK: - tokenAuthGroup Handlers (logged in)
+    // All handlers in this route group require a valid HTTP Bearer Authorization
+    // header in the post request.
+
+    /// `POST /api/v3/auth/logout`
+    ///
+    /// Unauthenticates the user and deletes the user's authentication token. It is
+    /// the responsibility of the client to respond appropriately to the returned
+    /// `HTTPStatus`, which should be one of:
+    ///
+    /// * 204 No Content
+    /// * 401 Unauthorized {"error": "true", "reason": "User not authenticated."}
+    /// * 409 Conflict { "error": "true", "reason": "user is not logged in" }
+    ///
+    /// A 409 response most likely indicates a theoretically possible race condition.
+    /// There is no side effect and it is likely harmless. But please do report a 409
+    /// error if you encounter one, so that the specifics can be looked into.
+    ///
+    /// - Requires: Currently logged in.
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Throws: 401 error if the authentication failed. 409 error if the user somehow
+    /// wasn't logged in. A 5xx response should be reported as a likely bug, please and
+    /// thank you.
+    /// - Returns: HTTPStatus response. 204 if the token was successfully deleted.
+    func logoutHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        let user = try req.requireAuthenticated(User.self)
+        try req.unauthenticate(User.self)
+        return try Token.query(on: req)
+            .filter(\.userID == user.requireID())
+            .first()
+            .flatMap {
+                (existingToken) in
+                if let existing = existingToken {
+                    return existing.delete(on: req).transform(to: HTTPStatus.noContent)
+                } else {
+                    let status = HTTPStatus(statusCode: 409, reasonPhrase: "user is not logged in")
+                    return req.future(status)
                 }
         }
     }
