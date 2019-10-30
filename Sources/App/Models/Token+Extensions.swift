@@ -54,9 +54,10 @@ extension Token {
     /// Creates a new random Token.
     ///
     /// - Parameter user: The `User` to be associated with this `Token`.
+    /// - Parameter length: Desired length of token data, defaults to 16.
     /// - Returns: A `Token` object.
-    static func generate(for user: User) throws -> Token {
-        let random = try CryptoRandom().generateData(count: 16)
+    static func generate(for user: User, length: Int = 16) throws -> Token {
+        let random = try CryptoRandom().generateData(count: length)
         return try Token(
             token: random.base64EncodedString(),
             userID: user.requireID()
