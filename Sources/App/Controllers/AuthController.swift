@@ -62,13 +62,122 @@ struct AuthController: RouteCollection {
         let tokenAuthGroup = authRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
         
         // open access endpoints
-        
+        authRoutes.post(RecoveryData.self, at: "recovery", use: recoveryHandler)
         
         // endpoints available only when not logged in
         basicAuthGroup.post("login", use: loginHandler)
         
         // endpoints available only when logged in
         tokenAuthGroup.post("logout", use: logoutHandler)
+    }
+    
+    // MARK: - Open Access Handlers
+    
+    /// `POST /api/v3/auth/recovery`
+    ///
+    /// Attempts to authorize the user using a combination of `User.username` and *any one* of
+    /// the `User.verification` (registration code), `User.password` or `User.recoveryKey`
+    /// (returned by `UserController.createHandler(_:)`) values.
+    ///
+    /// The use case is a forgotten password. While an API client has probably stored the
+    /// information internally, that doesn't necessarily help if the user is setting up another
+    /// client or on another device, and is even less likely to be of use for logging into the
+    /// web front end.
+    ///
+    /// The intended API client flow here is (a) use this endpoint to obtain an `HTTP Bearer
+    /// Authentication` token upon success, then (b) use the returned token to immediately
+    /// `POST` to the `/api/v3/user/password` endpoint for password change/reset.
+    ///
+    /// - Note: To prevent brute force malicious attempts, there is a limit on successive
+    /// failed recovery attempts, currently hard-coded to 10.
+    ///
+    /// - Requires: `RecoveryData` payload in the HTTP body.
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter data: `RecoveryData` struct containing the username and recoveryKey
+    /// pair to attempt.
+    /// - Throws: 400 error if the recovery fails. 403 error if the maximum number of successive
+    /// failed recovery attempts has been reached. A 5xx response should be reported as a
+    /// likely bug, please and thank you.
+    /// - Returns: An authentication token (string) that should be used for all subsequent
+    /// HTTP requests, until expiry or revocation.
+    
+    func recoveryHandler(_ req: Request, data: RecoveryData) throws -> Future<TokenStringData> {
+        // find data.username user
+        return User.query(on: req)
+            .filter(\.username == data.username)
+            .first()
+            .flatMap {
+                (existingUser) in
+                // abort if user not found
+                guard let user = existingUser else {
+                    let responseStatus = HTTPResponseStatus(
+                        statusCode: 400,
+                        reasonPhrase: "username \"\(data.username)\" not found"
+                    )
+                    throw Abort(responseStatus)
+                }
+                // abort if account is seeing potential malicious activity
+                guard user.recoveryAttempts < 10 else {
+                    let responseStatus = HTTPResponseStatus(
+                        statusCode: 403,
+                        reasonPhrase: "please see a Twit-arr Team member for password recovery"
+                    )
+                    throw Abort(responseStatus)
+                }
+                
+                // attempt data.recoveryKey match
+                var foundMatch = false
+                // registration codes are normalized prior to storage
+                let normalizedKey = data.recoveryKey.lowercased().replacingOccurrences(of: " ", with: "")
+                if normalizedKey == user.verification {
+                    foundMatch = true
+                } else {
+                    // password and recoveryKey require hash verification
+                    let verifier = BCryptDigest()
+                    if try verifier.verify(data.recoveryKey, created: user.password) {
+                        foundMatch = true
+                    } else {
+                        // user.recoveryKey is normalized prior to hashing
+                        if try verifier.verify(normalizedKey, created: user.recoveryKey) {
+                            foundMatch = true
+                        }
+                    }
+                }
+                // abort if no match
+                guard foundMatch else {
+                    // track the attempt count
+                    user.recoveryAttempts += 1
+                    _ = user.save(on: req)
+                    
+                    let responseStatus = HTTPResponseStatus(
+                        statusCode: 400,
+                        reasonPhrase: "no match for supplied recovery key"
+                    )
+                    throw Abort(responseStatus)
+                }
+                
+                // user appears valid, zero out attempt tracking
+                user.recoveryAttempts = 0
+                _ = user.save(on: req)
+                
+                // return existing token if any
+                return try Token.query(on: req)
+                    .filter(\.userID == user.requireID())
+                    .first()
+                    .flatMap {
+                        (existingToken) in
+                        if let existing = existingToken {
+                            return req.future(TokenStringData(token: existing))
+                        } else {
+                            // otherwise generate and return new token
+                            let token = try Token.generate(for: user)
+                            return token.save(on: req).map {
+                                (savedToken) in
+                                return TokenStringData(token: savedToken)
+                            }
+                        }
+                }
+        }
     }
     
     // MARK: - basicAuthGroup Handlers (not logged in)
@@ -145,7 +254,7 @@ struct AuthController: RouteCollection {
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authorization
     // header in the post request.
-
+    
     /// `POST /api/v3/auth/logout`
     ///
     /// Unauthenticates the user and deletes the user's authentication token. It is
