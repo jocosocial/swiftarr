@@ -61,6 +61,9 @@ struct AuthController: RouteCollection {
         let basicAuthGroup = authRoutes.grouped(basicAuthMiddleware)
         let tokenAuthGroup = authRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
         
+        // open access endpoints
+        
+        
         // endpoints available only when not logged in
         basicAuthGroup.post("login", use: loginHandler)
         
@@ -181,11 +184,19 @@ struct AuthController: RouteCollection {
     }
 }
 
-/// Used by `AuthController.loginHandler(_:)` to return a token string upon
-/// successful execution.
+/// Used by `AuthController.recoveryHandler(_:data:)` for the incoming recovery attempt.
+struct RecoveryData: Content {
+    /// The user's username.
+    let username: String
+    /// The string to use – any one of: password / registration key / recovery key.
+    let recoveryKey: String
+}
+
+/// Used by `AuthController.loginHandler(_:)` and `AuthController.recoveryHandler(_:date:)`
+/// to return a token string upon successful execution.
 struct TokenStringData: Content {
     /// The token string.
-    var token: String
+    let token: String
     /// Creates a `TokenStringData` from a `Token`.
     /// - Parameter token: The `Token` associated with the logged in user.
     init(token: Token) {
