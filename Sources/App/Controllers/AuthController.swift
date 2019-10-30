@@ -301,7 +301,7 @@ struct RecoveryData: Content {
     let recoveryKey: String
 }
 
-/// Used by `AuthController.loginHandler(_:)` and `AuthController.recoveryHandler(_:date:)`
+/// Used by `AuthController.loginHandler(_:)` and `AuthController.recoveryHandler(_:data:)`
 /// to return a token string upon successful execution.
 struct TokenStringData: Content {
     /// The token string.

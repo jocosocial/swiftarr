@@ -102,6 +102,9 @@
                 <a class="nav-group-task-link" href="../Structs/AuthController.html">AuthController</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/RecoveryData.html">RecoveryData</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/TokenStringData.html">TokenStringData</a>
               </li>
             </ul>
@@ -198,7 +201,116 @@ explicitly logs out on <em>any</em> client on <em>any</em> device, the token is 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L50-L69">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L50-L72">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/Open%20Access%20Handlers"></a>
+                <a name="//apple_ref/swift/Section/Open Access Handlers" class="dashAnchor"></a>
+                <a href="#/Open%20Access%20Handlers">
+                  <h3 class="section-name">Open Access Handlers</h3>
+                </a>
+              </div>
+              <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App14AuthControllerV15recoveryHandler_4data3NIO15EventLoopFutureCyAA15TokenStringDataVG5Vapor7RequestC_AA08RecoveryM0VtKF"></a>
+                    <a name="//apple_ref/swift/Method/recoveryHandler(_:data:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App14AuthControllerV15recoveryHandler_4data3NIO15EventLoopFutureCyAA15TokenStringDataVG5Vapor7RequestC_AA08RecoveryM0VtKF">recoveryHandler(_:data:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>POST /api/v3/auth/recovery</code></p>
+
+<p>Attempts to authorize the user using a combination of <code><a href="../Classes/User.html#/s:3App4UserC8usernameSSvp">User.username</a></code> and <em>any one</em> of
+the <code><a href="../Classes/User.html#/s:3App4UserC12verificationSSSgvp">User.verification</a></code> (registration code), <code><a href="../Classes/User.html#/s:3App4UserC8passwordSSvp">User.password</a></code> or <code><a href="../Classes/User.html#/s:3App4UserC11recoveryKeySSvp">User.recoveryKey</a></code>
+(returned by <code>UserController.createHandler(_:)</code>) values.</p>
+
+<p>The use case is a forgotten password. While an API client has probably stored the
+information internally, that doesn&rsquo;t necessarily help if the user is setting up another
+client or on another device, and is even less likely to be of use for logging into the
+web front end.</p>
+
+<p>The intended API client flow here is (a) use this endpoint to obtain an <code>HTTP Bearer
+Authentication</code> token upon success, then (b) use the returned token to immediately
+<code>POST</code> to the <code>/api/v3/user/password</code> endpoint for password change/reset.</p>
+<div class="aside aside-note">
+    <p class="aside-title">Note</p>
+    <p>To prevent brute force malicious attempts, there is a limit on successive
+failed recovery attempts, currently hard-coded to 10.</p>
+
+</div>
+<div class="aside aside-requires">
+    <p class="aside-title">Requires</p>
+    <p><code><a href="../Structs/RecoveryData.html">RecoveryData</a></code> payload in the HTTP body.</p>
+
+</div>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>400 error if the recovery fails. 403 error if the maximum number of successive
+failed recovery attempts has been reached. A 5xx response should be reported as a
+likely bug, please and thank you.</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">recoveryHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">data</span><span class="p">:</span> <span class="kt"><a href="../Structs/RecoveryData.html">RecoveryData</a></span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Structs/TokenStringData.html">TokenStringData</a></span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>data</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p><code><a href="../Structs/RecoveryData.html">RecoveryData</a></code> struct containing the username and recoveryKey
+pair to attempt.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>An authentication token (string) that should be used for all subsequent
+HTTP requests, until expiry or revocation.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L104-L181">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -311,7 +423,7 @@ banned. A 5xx response should be reported as a likely bug, please and thank you.
 HTTP requests, until expiry or revocation.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L117-L140">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L229-L252">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -401,7 +513,7 @@ thank you.
                         <p>HTTPStatus response. 204 if the token was successfully deleted.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L166-L181">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L278-L293">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -414,7 +526,7 @@ thank you.
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-10-29)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-10-30)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.11.2</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>
