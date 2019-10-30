@@ -54,6 +54,9 @@
             <a class="nav-group-name-link" href="../Classes.html">Classes</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/Token.html">Token</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/User.html">User</a>
               </li>
               <li class="nav-group-task">
@@ -89,6 +92,17 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Functions.html#/s:3App6routesyy5Vapor6Router_pKF">routes(_:)</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Structs.html">Structures</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/AuthController.html">AuthController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TokenStringData.html">TokenStringData</a>
               </li>
             </ul>
           </li>
@@ -815,7 +829,7 @@ address. <code>nil</code> if not yet verified.</p>
                         <p>A Void promise.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User+Extensions.swift#L13-L19">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User+Extensions.swift#L24-L31">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -856,7 +870,7 @@ address. <code>nil</code> if not yet verified.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User+Extensions.swift#L32">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User+Extensions.swift#L38">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -886,7 +900,7 @@ address. <code>nil</code> if not yet verified.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User+Extensions.swift#L35">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User+Extensions.swift#L40">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -904,7 +918,7 @@ address. <code>nil</code> if not yet verified.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Required key for <code>\.deletedAt</code> soft delete functionalilty.</p>
+                        <p>Required key for <code>\.deletedAt</code> soft delete functionality.</p>
 
                       </div>
                       <div class="declaration">
@@ -916,7 +930,119 @@ address. <code>nil</code> if not yet verified.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User+Extensions.swift#L38">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User+Extensions.swift#L42">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/BasicAuthenticatable%20Conformance"></a>
+                <a name="//apple_ref/swift/Section/BasicAuthenticatable Conformance" class="dashAnchor"></a>
+                <a href="#/BasicAuthenticatable%20Conformance">
+                  <h3 class="section-name">BasicAuthenticatable Conformance</h3>
+                </a>
+              </div>
+              <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App4UserC11usernameKeys08WritableD4PathCyACSSGvpZ"></a>
+                    <a name="//apple_ref/swift/Variable/usernameKey" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App4UserC11usernameKeys08WritableD4PathCyACSSGvpZ">usernameKey</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Required username key for HTTP Basic Authorization.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">static</span> <span class="k">let</span> <span class="nv">usernameKey</span><span class="p">:</span> <span class="kt">User</span><span class="o">.</span><span class="kt">UsernameKey</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User+Extensions.swift#L49">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App4UserC11passwordKeys08WritableD4PathCyACSSGvpZ"></a>
+                    <a name="//apple_ref/swift/Variable/passwordKey" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App4UserC11passwordKeys08WritableD4PathCyACSSGvpZ">passwordKey</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Required password key for HTTP Basic Authorization.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">static</span> <span class="k">let</span> <span class="nv">passwordKey</span><span class="p">:</span> <span class="kt">User</span><span class="o">.</span><span class="kt">PasswordKey</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User+Extensions.swift#L51">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/TokenAuthenticatable%20Conformance"></a>
+                <a name="//apple_ref/swift/Section/TokenAuthenticatable Conformance" class="dashAnchor"></a>
+                <a href="#/TokenAuthenticatable%20Conformance">
+                  <h3 class="section-name">TokenAuthenticatable Conformance</h3>
+                </a>
+              </div>
+              <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App4UserC9TokenTypea"></a>
+                    <a name="//apple_ref/swift/Alias/TokenType" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App4UserC9TokenTypea">TokenType</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Required typealias, using <code><a href="../Classes/Token.html">Token</a></code> class for HTTP Bearer Authorization.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">typealias</span> <span class="kt">TokenType</span> <span class="o">=</span> <span class="kt"><a href="../Classes/Token.html">Token</a></span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User+Extensions.swift#L58">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -929,7 +1055,7 @@ address. <code>nil</code> if not yet verified.</p>
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-10-28)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-10-29)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.11.2</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>

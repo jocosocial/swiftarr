@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>Functions  Reference</title>
+    <title>Structures  Reference</title>
     <link rel="stylesheet" type="text/css" href="css/jazzy.css" />
     <link rel="stylesheet" type="text/css" href="css/highlight.css" />
     <meta charset="utf-8">
@@ -14,9 +14,9 @@
   </head>
   <body>
 
-    <a name="//apple_ref/swift/Section/Functions" class="dashAnchor"></a>
+    <a name="//apple_ref/swift/Section/Structures" class="dashAnchor"></a>
 
-    <a title="Functions  Reference"></a>
+    <a title="Structures  Reference"></a>
 
     <header class="header">
       <p class="header-col header-col--primary">
@@ -44,7 +44,7 @@
     <p class="breadcrumbs">
       <a class="breadcrumb" href="index.html">App Reference</a>
       <img class="carat" src="img/carat.png" />
-      Functions  Reference
+      Structures  Reference
     </p>
 
     <div class="content-wrapper">
@@ -112,8 +112,8 @@
 
         <section class="section">
           <div class="section-content">
-            <h1>Functions</h1>
-            <p>The following functions are available globally.</p>
+            <h1>Structures</h1>
+            <p>The following structures are available globally.</p>
 
           </div>
         </section>
@@ -125,9 +125,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App3appy5Vapor11ApplicationC7Service11EnvironmentVKF"></a>
-                    <a name="//apple_ref/swift/Function/app(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App3appy5Vapor11ApplicationC7Service11EnvironmentVKF">app(_:)</a>
+                    <a name="/s:3App14AuthControllerV"></a>
+                    <a name="//apple_ref/swift/Struct/AuthController" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App14AuthControllerV">AuthController</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -135,33 +135,68 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Creates an instance of <code>Application</code>. This is called from <code>main.swift</code> in the run target.</p>
+                        <p>The collection of <code>/api/v3/auth/*</code> route endpoints and handler functions related
+to authentication.</p>
 
+<p>API v3 requires the use of either <code>HTTP Basic Authentication</code>
+(<a href="https://tools.ietf.org/html/rfc7617">RFC7617</a>) or <code>HTTP Bearer Authentication</code> (based on
+<a href="https://tools.ietf.org/html/rfc6750#section-2.1">RFC6750</a>) for virtually all endpoint
+access, with very few exceptions carved out for fully public data (such as the Event
+Schedule). The query-based <code>&amp;key=</code> scheme used in v2 is not supported at all.</p>
+
+<p>This means that essentially all HTTP requests <strong><em>must</em></strong> contain an <code>Authorization</code> header.</p>
+
+<p>A valid <code>HTTP Basic Authentication</code> header resembles:</p>
+<pre class="highlight swift"><code><span class="kt">Authorization</span><span class="p">:</span> <span class="kt">Basic</span> <span class="kt">YWRtaW46cGFzc3dvcmQ</span><span class="o">=</span>
+</code></pre>
+
+<p>The data value in a Basic header is the base64-encoded utf-8 string representation of the
+user&rsquo;s username and password, separated by a colon. In Swift, a one-off version might resemble
+something along the lines of:</p>
+<pre class="highlight swift"><code><span class="k">var</span> <span class="nv">request</span> <span class="o">=</span> <span class="kt">URLRequest</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">credentials</span> <span class="o">=</span> <span class="s">"username:password"</span><span class="o">.</span><span class="nf">data</span><span class="p">(</span><span class="nv">using</span><span class="p">:</span> <span class="o">.</span><span class="n">utf8</span><span class="p">)</span><span class="o">.</span><span class="nf">base64encodedString</span><span class="p">()</span>
+<span class="n">request</span><span class="o">.</span><span class="nf">addValue</span><span class="p">(</span><span class="s">"Basic </span><span class="se">\(</span><span class="n">credentials</span><span class="se">)</span><span class="s">"</span><span class="p">,</span> <span class="nv">forHTTPHeaderField</span><span class="p">:</span> <span class="s">"Authorization"</span><span class="p">)</span>
+<span class="o">...</span>
+</code></pre>
+
+<p>Successful execution of sending this request to the login endpoint returns a JSON-encoded
+token string:</p>
+<pre class="highlight swift"><code><span class="p">{</span>
+    <span class="s">"token"</span><span class="p">:</span> <span class="s">"y+jiK8w/7Ta21m/O8F2edw=="</span>
+<span class="p">}</span>
+</code></pre>
+
+<p>which is then used in <code>HTTP Bearer Authentication</code> for all subsequent requests:</p>
+<pre class="highlight swift"><code><span class="kt">Authorization</span><span class="p">:</span> <span class="kt">Bearer</span> <span class="n">y</span><span class="o">+</span><span class="n">jiK8w</span><span class="o">/</span><span class="mi">7</span><span class="kt">Ta21m</span><span class="o">/</span><span class="kt">O8F2edw</span><span class="o">==</span>
+</code></pre>
+
+<p>A generated token string remains valid across all clients on all devices until the user
+explicitly logs out, or it otherwise expires or is administratively deleted. If the user
+explicitly logs out on <em>any</em> client on <em>any</em> device, the token is deleted and the
+<code>/api/v3/auth/login</code> endpoint will need to be hit again to generate a new one.</p>
+
+                        <a href="Structs/AuthController.html" class="slightly-smaller">See more</a>
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">app</span><span class="p">(</span><span class="n">_</span> <span class="nv">env</span><span class="p">:</span> <span class="kt">Environment</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Application</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">AuthController</span> <span class="p">:</span> <span class="kt">RouteCollection</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/app.swift#L4-L12">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L45-L182">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
                 </li>
-              </ul>
-            </div>
-            <div class="task-group">
-              <ul class="item-container">
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App4bootyy5Vapor11ApplicationCKF"></a>
-                    <a name="//apple_ref/swift/Function/boot(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App4bootyy5Vapor11ApplicationCKF">boot(_:)</a>
+                    <a name="/s:3App15TokenStringDataV"></a>
+                    <a name="//apple_ref/swift/Struct/TokenStringData" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15TokenStringDataV">TokenStringData</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -169,87 +204,21 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Called after your application has initialized.</p>
+                        <p>Used by <code><a href="Structs/AuthController.html#/s:3App14AuthControllerV12loginHandlery3NIO15EventLoopFutureCyAA15TokenStringDataVG5Vapor7RequestCKF">AuthController.loginHandler(_:)</a></code> to return a token string upon
+successful execution.</p>
 
+                        <a href="Structs/TokenStringData.html" class="slightly-smaller">See more</a>
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">boot</span><span class="p">(</span><span class="n">_</span> <span class="nv">app</span><span class="p">:</span> <span class="kt">Application</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">TokenStringData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/boot.swift#L4-L6">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-              </ul>
-            </div>
-            <div class="task-group">
-              <ul class="item-container">
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App9configureyy7Service6ConfigVz_AC11EnvironmentVzAC8ServicesVztKF"></a>
-                    <a name="//apple_ref/swift/Function/configure(_:_:_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App9configureyy7Service6ConfigVz_AC11EnvironmentVzAC8ServicesVztKF">configure(_:_:_:)</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Called before your application initializes.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">configure</span><span class="p">(</span><span class="n">_</span> <span class="nv">config</span><span class="p">:</span> <span class="k">inout</span> <span class="kt">Config</span><span class="p">,</span> <span class="n">_</span> <span class="nv">env</span><span class="p">:</span> <span class="k">inout</span> <span class="kt">Environment</span><span class="p">,</span> <span class="n">_</span> <span class="nv">services</span><span class="p">:</span> <span class="k">inout</span> <span class="kt">Services</span><span class="p">)</span> <span class="k">throws</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/configure.swift#L7-L107">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-              </ul>
-            </div>
-            <div class="task-group">
-              <ul class="item-container">
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App6routesyy5Vapor6Router_pKF"></a>
-                    <a name="//apple_ref/swift/Function/routes(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App6routesyy5Vapor6Router_pKF">routes(_:)</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Register your application&rsquo;s routes here.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">routes</span><span class="p">(</span><span class="n">_</span> <span class="nv">router</span><span class="p">:</span> <span class="kt">Router</span><span class="p">)</span> <span class="k">throws</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/routes.swift#L4-L12">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L186-L194">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
