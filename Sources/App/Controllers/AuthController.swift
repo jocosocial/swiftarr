@@ -191,7 +191,7 @@ struct AuthController: RouteCollection {
     /// The login credentials are expected to be provided using `HTTP Basic Authentication`.
     /// That is, a base64-encoded utf-8 string representation of the user's username and
     /// password, separated by a colon ("username:password"), in the `Authorization` header
-    /// of the `POST`request. For example:
+    /// of the `POST` request. For example:
     ///
     ///     let credentials = "username:password".data(using: .utf8).base64encodedString()
     ///     request.addValue("Basic \(credentials)", forHTTPHeaderField: "Authorization")
@@ -266,8 +266,8 @@ struct AuthController: RouteCollection {
     /// * 409 Conflict { "error": "true", "reason": "user is not logged in" }
     ///
     /// A 409 response most likely indicates a theoretically possible race condition.
-    /// There is no side effect and it is likely harmless. But please do report a 409
-    /// error if you encounter one, so that the specifics can be looked into.
+    /// There should be no side effect and it is likely harmless, but please do report
+    /// a 409 error if you encounter one so that the specifics can be looked into.
     ///
     /// - Requires: Currently logged in.
     /// - Parameter req: The incoming request `Container`, provided automatically.
@@ -292,6 +292,8 @@ struct AuthController: RouteCollection {
         }
     }
 }
+
+// MARK: - Helper Structs
 
 /// Used by `AuthController.recoveryHandler(_:data:)` for the incoming recovery attempt.
 struct RecoveryData: Content {
