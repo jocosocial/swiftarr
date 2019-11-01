@@ -68,6 +68,15 @@
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/User/Public.html">– Public</a>
               </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/UserProfile.html">UserProfile</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/UserProfile/Private.html">– Private</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/UserProfile/Public.html">– Public</a>
+              </li>
             </ul>
           </li>
           <li class="nav-group-name">
@@ -98,6 +107,9 @@
           <li class="nav-group-name">
             <a class="nav-group-name-link" href="../Structs.html">Structures</a>
             <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/AdminUser.html">AdminUser</a>
+              </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/AuthController.html">AuthController</a>
               </li>
@@ -841,7 +853,7 @@ initially 0.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Creates the table, with unique constraint on <code><a href="../Classes/User.html#/s:3App4UserC8usernameSSvp">.username</a></code>.</p>
+                        <p>Required by <code>Migration</code> protocol. Creates the table, with unique constraint on <code><a href="../Classes/User.html#/s:3App4UserC8usernameSSvp">.username</a></code>.</p>
 
                       </div>
                       <div class="declaration">
@@ -864,19 +876,15 @@ initially 0.</p>
                               </td>
                               <td>
                                 <div>
-                                  <p>The connection to the database, usually the Request.</p>
+                                  <p>A connection to the database, provided automatically.</p>
                                 </div>
                               </td>
                             </tr>
                           </tbody>
                         </table>
                       </div>
-                      <div>
-                        <h4>Return Value</h4>
-                        <p>A Void promise.</p>
-                      </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User+Extensions.swift#L24-L31">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User+Extensions.swift#L23-L30">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -917,7 +925,7 @@ initially 0.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User+Extensions.swift#L38">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User+Extensions.swift#L37">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -947,7 +955,7 @@ initially 0.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User+Extensions.swift#L40">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User+Extensions.swift#L39">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -977,7 +985,7 @@ initially 0.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User+Extensions.swift#L42">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User+Extensions.swift#L41">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1018,7 +1026,7 @@ initially 0.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User+Extensions.swift#L49">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User+Extensions.swift#L48">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1048,7 +1056,7 @@ initially 0.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User+Extensions.swift#L51">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User+Extensions.swift#L50">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1089,7 +1097,48 @@ initially 0.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User+Extensions.swift#L58">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User+Extensions.swift#L57">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/Children"></a>
+                <a name="//apple_ref/swift/Section/Children" class="dashAnchor"></a>
+                <a href="#/Children">
+                  <h3 class="section-name">Children</h3>
+                </a>
+              </div>
+              <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App4UserC7profile6Fluent8ChildrenVyAcA0B7ProfileCGvp"></a>
+                    <a name="//apple_ref/swift/Property/profile" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App4UserC7profile6Fluent8ChildrenVyAcA0B7ProfileCGvp">profile</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The child <code><a href="../Classes/UserProfile.html">UserProfile</a></code> of the user.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">profile</span><span class="p">:</span> <span class="kt">Children</span><span class="o">&lt;</span><span class="kt">User</span><span class="p">,</span> <span class="kt"><a href="../Classes/UserProfile.html">UserProfile</a></span><span class="o">&gt;</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User.swift#L227-L229">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1102,7 +1151,7 @@ initially 0.</p>
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-10-30)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-10-31)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.11.2</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>
