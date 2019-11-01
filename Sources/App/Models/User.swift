@@ -219,3 +219,12 @@ final class User: Codable {
         }
     }
 }
+
+// MARK: - Children
+
+extension User {
+    /// The child `UserProfile` of the user.
+    var profile: Children<User, UserProfile> {
+        return children(\.userID)
+    }
+}
