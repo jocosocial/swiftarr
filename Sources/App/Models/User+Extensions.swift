@@ -17,10 +17,9 @@ extension User: Parameter {}
 // MARK: Custom Migration
 
 extension User: Migration {
-    /// Creates the table, with unique constraint on `.username`.
+    /// Required by `Migration` protocol. Creates the table, with unique constraint on `.username`.
     ///
-    /// - Parameter connection: The connection to the database, usually the Request.
-    /// - Returns: A Void promise.
+    /// - Parameter connection: A connection to the database, provided automatically.
     static func prepare(on connection: PostgreSQLConnection) -> Future<Void> {
         return Database.create(self, on: connection) {
             builder in
