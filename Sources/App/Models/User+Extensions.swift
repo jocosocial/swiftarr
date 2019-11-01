@@ -14,7 +14,7 @@ extension User.Public: Content {}
 // model can be used as endpoint parameter
 extension User: Parameter {}
 
-// MARK: Custom Migration
+// MARK: - Custom Migration
 
 extension User: Migration {
     /// Required by `Migration` protocol. Creates the table, with unique constraint on `.username`.
@@ -30,7 +30,7 @@ extension User: Migration {
     }
 }
 
-// MARK: Timestamping Conformance
+// MARK: - Timestamping Conformance
 
 extension User {
     /// Required key for `\.createdAt` functionality.
@@ -41,7 +41,7 @@ extension User {
     static var deletedAtKey: TimestampKey? { return \.deletedAt }
 }
 
-// MARK: BasicAuthenticatable Conformance
+// MARK: - BasicAuthenticatable Conformance
 
 extension User: BasicAuthenticatable {
     /// Required username key for HTTP Basic Authorization.
@@ -50,7 +50,7 @@ extension User: BasicAuthenticatable {
     static let passwordKey: PasswordKey = \User.password
 }
 
-// MARK: TokenAuthenticatable Conformance
+// MARK: - TokenAuthenticatable Conformance
 
 extension User: TokenAuthenticatable {
     /// Required typealias, using `Token` class for HTTP Bearer Authorization.

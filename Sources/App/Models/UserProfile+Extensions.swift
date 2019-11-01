@@ -12,7 +12,7 @@ extension UserProfile.Public: Content {}
 // model can be used as endpoint parameter
 extension UserProfile: Parameter {}
 
-// MARK: Custom Migration
+// MARK: - Custom Migration
 
 extension UserProfile: Migration {
     /// Required by `Migration` protocol. Creates the table, with unique contraint on
@@ -31,7 +31,7 @@ extension UserProfile: Migration {
     }
 }
 
-// MARK: Timestamping Conformance
+// MARK: - Timestamping Conformance
 
 extension UserProfile {
     /// Required key for `\.createdAt` functionality.

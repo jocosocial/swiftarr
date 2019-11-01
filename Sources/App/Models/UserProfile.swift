@@ -109,7 +109,7 @@ final class UserProfile: Codable {
         self.limitAccess = limitAccess
     }
     
-    // MARK: Codable Representations
+    // MARK: - Codable Representations
     
     /// Used for editing by the owner of the profile.
     final class Private: Codable {
@@ -186,9 +186,11 @@ final class UserProfile: Codable {
 
     /// Used for public viewing of the profile.
     ///
-    /// A fully populated `.displayedName` property is of the format
-    /// "Display Name (@username)", to match how they're seen when posting.
-    /// If there is no `.displayName` content, it is simply "@username".
+    /// The `.displayName` and `.username` properties of the underlying profile are used
+    ///  to generate `.displayedName` instead of being returned individually. A fully
+    ///  populated `.displayedName` property is of the format "Display Name (@username)",
+    ///  to match how the user appears in a header when posting. If there is no
+    ///  `.displayName` content, it is simply "@username".
     final class Public: Codable {
         /// The profile's ID.
         var id: UUID

@@ -8,7 +8,7 @@ extension Token: PostgreSQLUUIDModel {}
 // model can be passed as HTTP body data
 extension Token: Content {}
 
-// MARK: Custom Migration
+// MARK: - Custom Migration
 
 extension Token: Migration {
     /// Creates the table, with foreign key constrain to associated `User`.
@@ -25,14 +25,14 @@ extension Token: Migration {
     }
 }
 
-// MARK: Timestamping Conformance
+// MARK: - Timestamping Conformance
 
 extension Token {
     /// Required key for `\.createdAt` functionality.
     static var createdAtKey: TimestampKey? { return \.createdAt }
 }
 
-// MARK: Authentication.Token Conformance
+// MARK: - Authentication.Token Conformance
 
 extension Token: Authentication.Token {
     /// Required typealias, using `User` class for Authentication.
@@ -41,14 +41,14 @@ extension Token: Authentication.Token {
     static let userIDKey: UserIDKey = \Token.userID
 }
 
-// MARK: BearerAuthenticatable Conformance
+// MARK: - BearerAuthenticatable Conformance
 
 extension Token: BearerAuthenticatable {
     /// Required key for HTTP Bearer Authorization token.
     static let tokenKey: TokenKey = \Token.token
 }
 
-// MARK: Methods
+// MARK: - Methods
 
 extension Token {
     /// Creates a new random Token.

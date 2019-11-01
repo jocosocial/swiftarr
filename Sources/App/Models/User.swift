@@ -101,7 +101,7 @@ final class User: Codable {
         self.reports = reports
     }
     
-    // MARK: Codable Representations
+    // MARK: - Codable Representations
     
     /// Used for administrative functions.
     final class Admin: Codable {
