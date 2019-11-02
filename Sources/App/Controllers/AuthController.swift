@@ -310,7 +310,7 @@ struct TokenStringData: Content {
     /// The token string.
     let token: String
     /// Creates a `TokenStringData` from a `Token`.
-    /// - Parameter token: The `Token` associated with the logged in user.
+    /// - Parameter token: The `Token` associated with the authenticated user.
     init(token: Token) {
         self.token = token.token
     }
