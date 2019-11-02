@@ -118,7 +118,7 @@ struct AuthController: RouteCollection {
                 }
                 // abort if account is seeing potential malicious activity
                 guard user.recoveryAttempts < 10 else {
-                    let status = HTTPResponseStatus(
+                    let responseStatus = HTTPResponseStatus(
                         statusCode: 403,
                         reasonPhrase: "please see a Twit-arr Team member for password recovery"
                     )

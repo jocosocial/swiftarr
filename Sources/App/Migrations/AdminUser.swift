@@ -17,7 +17,7 @@ struct AdminUser: Migration {
     /// check caution.
     /// - Parameter connection: A connection to the database, provided automatically.
     static func prepare(on connection: PostgreSQLConnection) -> Future<Void> {
-        // retrieve password and recovery key from environment, else set defaults
+        // retrieve password and recovery key from environment, else use defaults
         let password = Environment.get("ADMIN_PASSWORD") ?? "password"
         let recoveryKey = Environment.get("RECOVERY_KEY") ?? "recovery key"
         
@@ -67,7 +67,7 @@ struct AdminUser: Migration {
     /// Required by`Migration` protocol, but removing the admin would be an exceptionally poor
     /// idea, so override the default implementation to just return a pre-completed `Future`.
     static func revert(on connection: PostgreSQLConnection) -> Future<Void> {
-        return .done(on: connection)
+        return Future.done(on: connection)
     }
     
 }

@@ -28,8 +28,9 @@ return types.
 in navigable HTML format.
 
 - **source code**: The source code itself is, in every sense, the definitive documentation. In striving for a primary
-goal of maintainability, the code is intended to be straightforward in nature, readable, and consistent in style. It is
-thoroughly documented, incorporating both formatted Swift Documentation Markup blocks (`///`) and
+goal of maintainability, the code is intended to be straightforward in nature, readable, and consistent in style. 
+Syntax shortcuts are generally avoided in deference to understandability for language and framework newcomers.
+It is thoroughly documented, incorporating both formatted Swift Documentation Markup blocks (`///`) and
 organizational `MARK`s used to generate the HTML `docs/` pages, as well as in-line comments (`//`) to help
 clarify flow, function, and thought process. Maintainers and contributors are requested to adhere to the existing
 standards, or outright improve upon them!
