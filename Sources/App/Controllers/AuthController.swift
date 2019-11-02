@@ -118,7 +118,7 @@ struct AuthController: RouteCollection {
                 }
                 // abort if account is seeing potential malicious activity
                 guard user.recoveryAttempts < 10 else {
-                    let responseStatus = HTTPResponseStatus(
+                    let status = HTTPResponseStatus(
                         statusCode: 403,
                         reasonPhrase: "please see a Twit-arr Team member for password recovery"
                     )
@@ -148,7 +148,6 @@ struct AuthController: RouteCollection {
                     // track the attempt count
                     user.recoveryAttempts += 1
                     _ = user.save(on: req)
-                    
                     let responseStatus = HTTPResponseStatus(
                         statusCode: 400,
                         reasonPhrase: "no match for supplied recovery key"
@@ -286,8 +285,10 @@ struct AuthController: RouteCollection {
                 if let existing = existingToken {
                     return existing.delete(on: req).transform(to: HTTPStatus.noContent)
                 } else {
-                    let status = HTTPStatus(statusCode: 409, reasonPhrase: "user is not logged in")
-                    return req.future(status)
+                    let responseStatus = HTTPResponseStatus(
+                        statusCode: 409,
+                        reasonPhrase: "user is not logged in")
+                    return req.future(responseStatus)
                 }
         }
     }
