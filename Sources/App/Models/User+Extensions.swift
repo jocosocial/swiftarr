@@ -56,3 +56,12 @@ extension User: TokenAuthenticatable {
     /// Required typealias, using `Token` class for HTTP Bearer Authorization.
     typealias TokenType = Token
 }
+
+// MARK: - Children
+
+extension User {
+    /// The child `UserProfile` of the user.
+    var profile: Children<User, UserProfile> {
+        return children(\.userID)
+    }
+}

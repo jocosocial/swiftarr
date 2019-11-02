@@ -265,13 +265,3 @@ final class UserProfile: Codable {
         }
     }
 }
-
-// MARK: - Parent
-
-extension UserProfile {
-    /// The parent `User` of the profile.
-    var user: Parent<UserProfile, User> {
-        return parent(\.userID)
-    }
-}
-
