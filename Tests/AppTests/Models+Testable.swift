@@ -38,7 +38,7 @@ extension User {
         // save user and create associated profile
         return try user.save(on: connection).flatMap {
             (savedUser) in
-            // create placeholder image file named "userID".jpg
+            // create placeholder image file named ID.jpg
             let imageName = try "\(savedUser.requireID()).jpg"
             let filePath = "images/profile/full/" + imageName
             FileManager().createFile(atPath: filePath, contents: Data(count: 1), attributes: nil)
