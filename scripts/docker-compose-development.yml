@@ -1,0 +1,15 @@
+version: '3.7'
+services:
+  postgres:
+    image: postgres
+    container_name: postgres
+    environment:
+      DATABASE_DB: swiftarr
+      DATABASE_USER: swiftarr
+      DATABASE_PASSWORD: DATABASE_PASSWORD
+      DATABASE_PORT: 5432
+  redis:
+    image: redis:alpine
+    container_name: redis
+    environment:
+      REDIS_PORT: 6379
