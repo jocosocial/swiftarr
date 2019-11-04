@@ -1,4 +1,4 @@
-version: '3.7'
+version: '3'
 services:
   postgres:
     image: postgres
@@ -6,7 +6,7 @@ services:
     environment:
       DATABASE_DB: swiftarr
       DATABASE_USER: swiftarr
-      DATABASE_PASSWORD: DATABASE_PASSWORD
+      DATABASE_PASSWORD: password
       DATABASE_PORT: 5432
   redis:
     image: redis:alpine
