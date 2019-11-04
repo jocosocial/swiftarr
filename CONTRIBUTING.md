@@ -1,6 +1,6 @@
-## Contributing to swiftarr
+## Contributing to `swiftarr`
 
-#### General
+### General
 
 Anybody should feel free to open or comment on an [issue](https://github.com/grundoon/swiftarr/issues). This is
 the preferred place to consolidate all discussion related specifically to the `swiftarr` API backend. Questions,
@@ -11,7 +11,7 @@ strictly necessary. The Twit-arr developers collectively participate in (or at l
 of attention) related Slack channels, the various FaceBook groups, and the feedback Forums within Twit-arr itself
 when it is active, so any of those would probably also be fine.
 
-#### Contributing Code
+### Contributing Code
 
 Contributions to `swiftarr` are absolutely welcome! Some general guidelines:
 
@@ -27,7 +27,7 @@ oneself, but we'd dfinitely prefer that you ultimately get full credit for the c
 * Related, please do not attempt to modify the included `.jazzy.yaml` configuration file. That's' a great
 example of something that should first be discussed by opening an issue.
 
-#### Coding Style
+### Coding Style
 
 
 When possible, incoming data should be validated using Vapor's
