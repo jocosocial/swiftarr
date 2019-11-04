@@ -62,7 +62,7 @@ struct AuthController: RouteCollection {
         let tokenAuthGroup = authRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
         
         // open access endpoints
-        authRoutes.post(RecoveryData.self, at: "recovery", use: recoveryHandler)
+        authRoutes.post(UserRecoveryData.self, at: "recovery", use: recoveryHandler)
         
         // endpoints available only when not logged in
         basicAuthGroup.post("login", use: loginHandler)
@@ -101,7 +101,7 @@ struct AuthController: RouteCollection {
     /// - Returns: An authentication token (string) that should be used for all subsequent
     /// HTTP requests, until expiry or revocation.
     
-    func recoveryHandler(_ req: Request, data: RecoveryData) throws -> Future<TokenStringData> {
+    func recoveryHandler(_ req: Request, data: UserRecoveryData) throws -> Future<TokenStringData> {
         // find data.username user
         return User.query(on: req)
             .filter(\.username == data.username)
@@ -297,7 +297,7 @@ struct AuthController: RouteCollection {
 // MARK: - Helper Structs
 
 /// Used by `AuthController.recoveryHandler(_:data:)` for the incoming recovery attempt.
-struct RecoveryData: Content {
+struct UserRecoveryData: Content {
     /// The user's username.
     let username: String
     /// The string to use – any one of: password / registration key / recovery key.
