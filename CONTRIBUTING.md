@@ -35,7 +35,7 @@ And possibly the two most important things:
 there is abundant example already in there.
 
 * `swiftarr` strives for 100% test coverage. For any new functionality, please provide a test if possible, and try
-to include all branch cases (i.e. test the failure cases). Since we're not (currently anyway) running any continous
+to include all branch cases (i.e. test the failure cases). Since we're not (currently anyway) running any continuous
 integration, it'd also be helpful (though not required) to run the full test suite to catch any possible breaking
 changes before submitting a PR. Don't worry – testing, and the Xcode test framework in particular, can be new
 territory for many and we're happy to help.
