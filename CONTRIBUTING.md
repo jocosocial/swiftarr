@@ -7,9 +7,9 @@ the preferred place to consolidate all discussion related specifically to the `s
 general feedback, suggestions, feature requests, bug reports and proposed changes are all fair game.
 
 While it *is* the preferred location, a (free) GitHub account is required to participate there directly, so it is not
-strictly necessary. The Twit-arr developers collectively participate in (or at least monitor with a reasonable amount
-of attention) related Slack channels, the various FaceBook groups, and the feedback Forums within Twit-arr itself
-when it is active, so any of those places would probably also be fine.
+strictly necessary. The Twit-arr developers collectively participate in (or at least monitor to some extent) related
+Slack channels, the various Facebook groups, and the feedback forums within Twit-arr itself when it is active,
+so any of those places are also fine.
 
 ### Contributing Code
 
@@ -48,7 +48,8 @@ current – but it didn't exactly help make the code maintainable. So here we ar
 
 The code is intended to be straightforward in nature, readable, and consistent in style. Syntax shortcuts are
 generally avoided in deference to understandability for language and framework newcomers. There is no single
-reference style guide followed; it pulls from a number of respected ones and personal preferences.
+reference style guide followed; conventions informally pull from a number of respected ones and personal
+preferences.
 
 * Indentation is 4 spaces. Not tabs, spaces.
 
