@@ -138,7 +138,7 @@ together, these last three conventions tend to result in less cluttered, more ea
 
 ```swift
 // future chaining can help with reasoning about complex nesting
-return user.save(on: req.flatMap(to: UserProfile.self) { savedUser in
+return user.save(on: req).flatMap(to: UserProfile.self) { savedUser in
     let profile = UserProfile(...)
     return profile.save(on: req)
 }.map(to: CreatedUserData.self) { savedProfile in
