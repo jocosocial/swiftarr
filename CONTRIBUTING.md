@@ -71,15 +71,15 @@ But don't use Xcode's pretty indentation style, because it can make things look 
 let user = User(username: data.username, password: data.password, verification: data.registrationCode, ...) // NO
 
 let user = User(username: data.username, // also NO
-password: data.password,
-verification: data.registratonCode,
-...)
+                password: data.password,
+                verification: data.registratonCode,
+                ...)
 
 let user = User( // YES
-username: data.username,
-password: data.password,
-verification: data.registratonCode,
-...
+    username: data.username,
+    password: data.password,
+    verification: data.registratonCode,
+    ...
 )
 ```
 
