@@ -2,7 +2,7 @@
 
 ### General
 
-Anybody should feel free to open or comment on an [issue](https://github.com/grundoon/swiftarr/issues). This is
+Anybody should feel free to open or comment on an [issue](https://github.com/grundoon/swiftarr/issues)! This is
 the preferred place to consolidate all discussion related specifically to the `swiftarr` API backend. Questions,
 general feedback, suggestions, feature requests, bug reports and proposed changes are all fair game.
 
@@ -33,6 +33,7 @@ And possibly the two most important things:
 (shows in the option-click popups and in the Quick Help Inspector side panel) and used by
 [`jazzy`](https://github.com/realm/jazzy) to generate the HTML `docs/` directory. Please help uphold this standard;
 there is abundant example already in there.
+
 * `swiftarr` strives for 100% test coverage. For any new functionality, please provide a test if possible, and try
 to include all branch cases (i.e. test the failure cases). Since we're not (currently anyway) running any continous
 integration, it'd also be helpful (though not required) to run the full test suite to catch any possible breaking
@@ -47,7 +48,7 @@ current – but it didn't exactly help make the code maintainable. So here we ar
 
 The code is intended to be straightforward in nature, readable, and consistent in style. Syntax shortcuts are
 generally avoided in deference to understandability for language and framework newcomers. There is no single
-reference stye guide followed; it pulls from a number of respected ones and personal preferences.
+reference style guide followed; it pulls from a number of respected ones and personal preferences.
 
 * Indentation is 4 spaces. Not tabs, spaces.
 
@@ -85,13 +86,13 @@ let user = User(username: data.username, password: data.password, verification: 
 
 let user = User(username: data.username, // also NO
                 password: data.password,
-                verification: data.registratonCode,
+                verification: data.registrationCode,
                 ...)
 
 let user = User( // YES
     username: data.username,
     password: data.password,
-    verification: data.registratonCode,
+    verification: data.registrationCode,
     ...
 )
 ```
