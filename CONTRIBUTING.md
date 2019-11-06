@@ -175,11 +175,14 @@ to be taken for tagged releases.
 
 ---
 
-Testing under Linux depends on an up-to-date `Tests/LinuxMain.swift` file. It fortunately no longer needs
-to be manually maintained, but does need to be manually regenerated whenever a new test has been added.
+Testing under Linux depends on up-to-date `Tests/LinuxMain.swift`  and
+`Tests/AppTests/XCTestManifests.swift` files. We fortunately no longer need to manually maintain an
+`allTests` array in each of our `XCTestCase` classes, but these files do need to be manually regenerated
+whenever a new test has been added.
 
 ```shell
 cd <swiftarr-directory>
 swift test --generate-linuxmain
 ```
-The updated `LinuxMain.swift` should be included in any pull request that adds a test.
+The updated `LinuxMain.swift` and `XCTestManifests.swift` files should be included in any pull
+request that adds a test.
