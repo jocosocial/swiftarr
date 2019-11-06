@@ -3,4 +3,7 @@
 DerivedData
 Package.resolved
 *.xcodeproj
+build
+docs
+scripts
 
