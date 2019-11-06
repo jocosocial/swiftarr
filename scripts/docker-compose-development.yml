@@ -5,9 +5,9 @@ services:
     image: postgres
     container_name: postgres
     environment:
-      DATABASE_DB: swiftarr
-      DATABASE_USER: swiftarr
-      DATABASE_PASSWORD: password
+      POSTGRES_DB: swiftarr
+      POSTGRES_USER: swiftarr
+      POSTGRES_PASSWORD: password
       DATABASE_PORT: 5432
   redis:
     image: redis:alpine
@@ -19,10 +19,10 @@ services:
     image: postgres
     container_name: postgres-test
     environment:
-      DATABASE_DB: swiftarr-test
-      DATABASE_USER: swiftarr
-      DATABASE_PASSWORD: password
-      DATABASE_PORT: 5433
+      POSTGRES_DB: swiftarr-test
+      POSTGRES_USER: swiftarr
+      POSTGRES_PASSWORD: password
+      POSTGRES_PORT: 5433
   redis-test:
     image: redis:alpine
     container_name: redis-test
