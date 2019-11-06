@@ -1,5 +1,6 @@
 version: '3'
 services:
+
   postgres:
     image: postgres
     container_name: postgres
@@ -13,3 +14,17 @@ services:
     container_name: redis
     environment:
       REDIS_PORT: 6379
+
+  postgres-test:
+    image: postgres
+    container_name: postgres-test
+    environment:
+      DATABASE_DB: swiftarr-test
+      DATABASE_USER: swiftarr
+      DATABASE_PASSWORD: password
+      DATABASE_PORT: 5433
+  redis-test:
+    image: redis:alpine
+    container_name: redis-test
+    environment:
+      REDIS_PORT: 6380

@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # simple control for development environment databases
-# (just postgres and redis docker containers running on standard ports)
+# (just postgres and redis docker containers running on standard ports
+# and their *-test counterparts running on +1 ports for testing)
 #
 # up: create postgres and redis containers if necessary, then start
 # start: start any stopped database container services
