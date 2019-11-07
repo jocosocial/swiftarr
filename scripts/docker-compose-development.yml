@@ -8,12 +8,14 @@ services:
       POSTGRES_DB: swiftarr
       POSTGRES_USER: swiftarr
       POSTGRES_PASSWORD: password
-      DATABASE_PORT: 5432
+    ports:
+      - 5432:5432
+
   redis:
     image: redis:alpine
     container_name: redis
-    environment:
-      REDIS_PORT: 6379
+    ports:
+      - 6379:6379
 
   postgres-test:
     image: postgres
@@ -22,9 +24,11 @@ services:
       POSTGRES_DB: swiftarr-test
       POSTGRES_USER: swiftarr
       POSTGRES_PASSWORD: password
-      POSTGRES_PORT: 5433
+    ports:
+      - 5433:5432
+
   redis-test:
     image: redis:alpine
     container_name: redis-test
-    environment:
-      REDIS_PORT: 6380
+    ports:
+      - 6380:6379
