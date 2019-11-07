@@ -28,7 +28,7 @@ If you're here for something other than curiosity or to provide
 maybe even thinking about [getting involved](https://github.com/grundoon/swiftarr/blob/master/CONTRIBUTING.md)
 with `swiftarr` development itself.
 
-And if you're developing a client there's a fair chance you're looking to run an instance of `swiftarr` to test
+And if you're working on an API client there's a fair chance you're looking to run an instance of `swiftarr` to test
 against. Let's discuss the development requirements first, since it is also a valid approach to running a functional
 test instance.
 
@@ -36,14 +36,14 @@ test instance.
 
 The base assumption is that you're working on a reasonably modern macOS computer. (This is not strictly
 necessary, but if you walk your own Swift development path, add "self-sufficiency" to the list of requirements.)
-Strictly speaking, you need 5 things.
+A full development environment needs 5 things.
 
 * a recent [Swift](https://swift.org) toolchain (recommend 5.1.x or later)
 * a recent version of [Xcode](https://apps.apple.com/us/app/xcode/id497799835?mt=12)
 (which will already include the Swift toolchain)
 * the [Vapor](http://docs.vapor.codes/3.0/install/macos/) framework installed
-* an instance of [PostgreSQL](https://www.postgresql.org) running on its standard port
-* an instance of [Redis](https://redis.io) running on its standard port
+* instances of [PostgreSQL](https://www.postgresql.org) running on both standard and test ports
+* instances of [Redis](https://redis.io) running on both standard and test ports
 
 #### Quickstart
 
