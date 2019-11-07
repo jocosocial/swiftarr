@@ -54,7 +54,7 @@ and `git pull` that to your local machine. Generate the `swiftarr.xcodeproj` and
 ```shell
 cd <swiftarr-directory>
 swift package generate-xcodeproj
-open ./swiftarr-xcodeproj
+open ./swiftarr.xcodeproj
 ```
 In fact, using the installed Vapor Toolbox shortcut, the last two commands can be replaced by
 
@@ -84,8 +84,8 @@ The script also accepts 'stop', 'start' and 'remove' as shortcut commands.
 
 So not only does this result in a full `swiftarr` development environment, simply `Run` and you have a perfectly
 functional instance of `swiftarr` for API client development (with the bonus ability to "see inside" the backend
-as it runs). Or, if you prefer to just spin up an instance without all the rest, skip down a few inches to the
-Deployment section.
+as it runs). Or, if you prefer to just spin up an instance without all the rest **or aren't working in a macOS
+environment at all**, skip down a few inches to the Deployment section.
 
 #### Linux Testing
 
