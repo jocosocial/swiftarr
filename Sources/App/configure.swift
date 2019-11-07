@@ -103,7 +103,7 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     services.register(migrations)
     
     // add Fluent commands for CLI migration and revert
-    var commandConfig = CommandConfig()
+    var commandConfig = CommandConfig.default()
     commandConfig.useFluentCommands()
     services.register(commandConfig)
 }
