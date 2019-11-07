@@ -19,8 +19,96 @@
     </a>
 </p>
 
-Testing during development within Xcode is pretty straightforward, but it is critical that the tests also be run under
-the Linux environment in which it will run during production.
+About ...
+
+## Getting Started
+
+If you're here for something other than curiosity or to provide
+[feedback](https://github.com/grundoon/swiftarr/issues), you're probably either developing an API client or
+maybe even thinking about [getting involved](https://github.com/grundoon/swiftarr/CONTRIBUTING.md) with
+`swiftarr` development itself.
+
+And if you're developing a client there's a fair chance you're looking to run an instance of `swiftarr` to test
+against. Let's discuss the development requirements first, since it is also a valid approach to running a functional
+test instance.
+
+### Development
+
+The base assumption is that you're working on a reasonably modern macOS computer. (This is not strictly
+necessary, but if you walk your own Swift development path, add "self-sufficiency" to the list of requirements.)
+Strictly speaking, you need 5 things.
+
+* a recent [Swift](https://swift.org) toolchain (recommend 5.1.x or later)
+* a recent version of [Xcode](https://apps.apple.com/us/app/xcode/id497799835?mt=12)
+(which will already include the Swift toolchain)
+* the [Vapor](http://docs.vapor.codes/3.0/install/macos/) framework installed
+* an instance of [PostgreSQL](https://www.postgresql.org) running on its standard port
+* an instance of [Redis](https://redis.io) running on its standard port
+
+#### Quickstart
+
+Not to worry, it can all be much easier than that list makes it sound. Simply follow the instructions for installing
+Vapor (use a current version of Xcode though, not the minimum requirement). Then fork a copy of this repository
+and `git pull` that to your local machine. Generate the `swiftarr.xcodeproj` and open it.
+
+```shell
+cd <swiftarr-directory>
+swift package generate-xcodeproj
+open ./swiftarr-xcodeproj
+```
+In fact, using the installed Vapor Toolbox shortcut, the last two commands can be replaced by
+
+```shell
+vapor xcode -y
+```
+which you might prefer because the the .xcodeproj file needs to be regenerated *any time the underlying file
+structure changes*. This is currently just part of life when working with Swift Package Manager projects.
+
+`swiftarr` needs to be able to connect to the database engines, so before you hit the `Run` command you'll
+need to have them available. You can certainly run them natively directly on your Mac (PostgreSQL is already
+included with macOS and Redis will need to be installed), but using
+[Docker](https://www.docker.com/products/docker-desktop) is a highly recommended approach and there's
+a simple script provided to (hopefully) painlessly spin the databases up in Docker containers.
+
+```shell
+cd <swiftarr-directory>
+./scripts/development.sh up
+```
+This will create and start containers for both PostgreSQL and Redis on their standard ports, as well as
+containers on alternate ports for running the tests (`Test`) without destroying any data you'd like to keep.
+
+```shell
+docker ps    // should show all 4 containers "Up"
+```
+The script also accepts 'stop', 'start' and 'remove' as shortcut commands.
+
+So not only does this result in a full `swiftarr` development environment, simply `Run` and you have a perfectly
+functional instance of `swiftarr` for API client development (with the bonus ability to "see inside" the backend
+as it runs). Or, if you prefer to just spin up an instance without all the rest, skip down a few inches to the
+Deployment section.
+
+#### Linux Testing
+
+Testing during development within Xcode is pretty straightforward, but it is critical that the tests also be run
+under the Linux environment in which it will run during production. See `CONTRIBUTING.md` way at the bottom
+for necessary precursor info if you've added any tests. Then build and spin up a Swift container alongside the
+test database ones, for which another script has been provided:
+
+```shell
+cd <swiftarr-directory>
+./scripts/linux-testing.sh up
+```
+
+### Deployment
+
+Docker
+
+Bare Metal
+
+Heroku
+
+AWS
+
 
 ## Documentation
 
