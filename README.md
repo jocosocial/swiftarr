@@ -25,8 +25,8 @@ About ...
 
 If you're here for something other than curiosity or to provide
 [feedback](https://github.com/grundoon/swiftarr/issues), you're probably either developing an API client or
-maybe even thinking about [getting involved](https://github.com/grundoon/swiftarr/CONTRIBUTING.md) with
-`swiftarr` development itself.
+maybe even thinking about [getting involved](https://github.com/grundoon/swiftarr/blob/master/CONTRIBUTING.md)
+with `swiftarr` development itself.
 
 And if you're developing a client there's a fair chance you're looking to run an instance of `swiftarr` to test
 against. Let's discuss the development requirements first, since it is also a valid approach to running a functional
