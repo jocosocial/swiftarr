@@ -29,14 +29,14 @@ maybe even thinking about [getting involved](https://github.com/grundoon/swiftar
 with `swiftarr` development itself.
 
 And if you're working on an API client there's a fair chance you're looking to run an instance of `swiftarr` to test
-against. Let's discuss the development requirements first, since it is also a valid approach to running a functional
-test instance.
+against (for documentation info, see further down this page). Let's discuss the development requirements first,
+since it is also a valid approach to running a functional test instance.
 
 ### Development
 
 The base assumption is that you're working on a reasonably modern macOS computer. (This is not strictly
 necessary, but if you walk your own Swift development path, add "self-sufficiency" to the list of requirements.)
-A full development environment needs 5 things.
+A complete development environment requires 5 things.
 
 * a recent [Swift](https://swift.org) toolchain (recommend 5.1.x or later)
 * a recent version of [Xcode](https://apps.apple.com/us/app/xcode/id497799835?mt=12)
