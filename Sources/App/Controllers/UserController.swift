@@ -65,22 +65,26 @@ struct UserController: RouteCollection {
                     parentID: nil,
                     accessLevel: .unverified
                 )
-                // save user
-                return user.save(on: req).flatMap {
-                    (savedUser) in
-                    guard let id = savedUser.id else {
-                        throw Abort(.internalServerError)
-                    }
-                    // create profile
-                    let profile = UserProfile(userID: id, username: savedUser.username)
-                    return profile.save(on: req).map {
-                        (savedProfile) in
-                        let createdUserData = CreatedUserData(
-                            userID: id,
-                            username: savedUser.username,
-                            recoveryKey: recoveryKey
-                        )
-                        return createdUserData
+                // wrap in a transaction to ensure each user has an associated profile
+                // (creates both, or neither)
+                return req.transaction(on: .psql) {
+                    (connection) in
+                    return user.save(on: connection).flatMap {
+                        (savedUser) in
+                        // create profile
+                        guard let id = savedUser.id else {
+                            throw Abort(.internalServerError)
+                        }
+                        let profile = UserProfile(userID: id, username: savedUser.username)
+                        return profile.save(on: connection).map {
+                            (savedProfile) in
+                            let createdUserData = CreatedUserData(
+                                userID: id,
+                                username: savedUser.username,
+                                recoveryKey: recoveryKey
+                            )
+                            return createdUserData
+                        }
                     }
                 }
         }
