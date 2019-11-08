@@ -180,8 +180,8 @@ struct AuthController: RouteCollection {
     }
     
     // MARK: - basicAuthGroup Handlers (not logged in)
-    // All handlers in this route group require a valid HTTP Basic Authorization
-    // header in the post request.
+    // All handlers in this route group require a valid HTTP Basic Authentication
+    // header in the request.
     
     /// `POST /api/v3/auth/login`
     ///
@@ -251,8 +251,8 @@ struct AuthController: RouteCollection {
     }
     
     // MARK: - tokenAuthGroup Handlers (logged in)
-    // All handlers in this route group require a valid HTTP Bearer Authorization
-    // header in the post request.
+    // All handlers in this route group require a valid HTTP Bearer Authentication
+    // header in the request.
     
     /// `POST /api/v3/auth/logout`
     ///
