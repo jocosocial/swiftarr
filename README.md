@@ -29,8 +29,8 @@ maybe even thinking about [getting involved](https://github.com/grundoon/swiftar
 with `swiftarr` development itself.
 
 And if you're working on an API client there's a fair chance you're looking to run an instance of `swiftarr` to test
-against (for documentation info, see further down this page). Let's discuss the development requirements first,
-since it is also a valid approach to running a functional test instance.
+against (for just the documentation info, see further down this page). Let's discuss the development requirements
+first, since it is also a valid approach to running a functional test instance.
 
 ### Development
 
@@ -64,8 +64,8 @@ vapor xcode -y
 which you might prefer because the the .xcodeproj file needs to be regenerated *any time the underlying file
 structure changes*. This is currently just part of life when working with Swift Package Manager projects.
 
-`swiftarr` needs to be able to connect to the database engines, so before you hit the `Run` command you'll
-need to have them available. You can certainly run them natively directly on your Mac (PostgreSQL is already
+`swiftarr` needs to be able to connect to the database engines, so before you hit the `Run` command they
+need to be available. You can certainly run them natively directly on your Mac (PostgreSQL is already
 included with macOS and Redis will need to be installed), but using
 [Docker](https://www.docker.com/products/docker-desktop) is a highly recommended approach and there's
 a simple script provided to (hopefully) painlessly spin the databases up in Docker containers.
@@ -75,7 +75,8 @@ cd <swiftarr-directory>
 ./scripts/development.sh up
 ```
 This will create and start containers for both PostgreSQL and Redis on their standard ports, as well as
-containers on alternate ports for running the tests (`Test`) without destroying any data you'd like to keep.
+containers on alternate ports for running the tests (`Test` command) without destroying any data you'd like to
+keep.
 
 ```shell
 docker ps    // should show all 4 containers "Up"
