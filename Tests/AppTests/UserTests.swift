@@ -11,6 +11,7 @@ final class UserTests: XCTestCase {
     let testUsername = "grundoon"
     let testPassword = "pasword"
     let authURI = "/api/v3/auth"
+    let testURI = "/api/v3/test"
     let userURI = "/api/v3/user"
     var app: Application!
     var conn: PostgreSQLConnection!
@@ -50,6 +51,7 @@ final class UserTests: XCTestCase {
         XCTAssert(accessLevel5.rawValue > accessLevel4.rawValue && accessLevel5.rawValue < accessLevel6.rawValue)
         XCTAssert(accessLevel6.rawValue > accessLevel5.rawValue)
     }
+    
 //    func testCanRetrieveUserViaAPI() throws {
 //        // a specified user
 //        let user = try User.create(username: testUsername, accessLevel: .unverified, on: conn)
