@@ -91,16 +91,15 @@ struct UserController: RouteCollection {
     }
     
     // MARK: - basicAuthGroup Handlers (not logged in)
-    // All handlers in this route group require a valid HTTP Basic Authorization
-    // header in the post request.
+    // All handlers in this route group require a valid HTTP Basic Authentication
+    // header in the request.
     
     
     // MARK: - tokenAuthGroup Handlers (logged in)
-    // All handlers in this route group require a valid HTTP Bearer Authorization
-    // header in the post request.
+    // All handlers in this route group require a valid HTTP Bearer Authentication
+    // header in the request.
     
 }
-
 
 // MARK: - Helper Functions
 
@@ -144,6 +143,4 @@ extension UserCreateData: Validatable, Reflectable {
         try validations.add(\.verification, .count(6...7) || .nil)
         return validations
     }
-    
-    
 }
