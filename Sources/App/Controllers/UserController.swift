@@ -61,7 +61,7 @@ struct UserController: RouteCollection {
                     password: passwordHash,
                     recoveryKey: recoveryHash,
                     // store normalized registration code if supplied, else `nil`
-                    verification: data.verification?.lowercased().replacingOccurrences(of: " ", with: "") ?? nil,
+                    verification: data.verification?.lowercased().replacingOccurrences(of: " ", with: ""),
                     parentID: nil,
                     accessLevel: .unverified
                 )
