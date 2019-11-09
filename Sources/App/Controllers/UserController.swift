@@ -31,6 +31,9 @@ struct UserController: RouteCollection {
         // open access endpoints
         userRoutes.post(UserCreateData.self, at: "create", use: createHandler)
         
+        // endpoints available only when not logged in
+        basicAuthGroup.post(UserVerificationData.self, at: "register", use: verificationHandler)
+        
         // endpoints available only when logged in
         
     }
@@ -187,4 +190,16 @@ extension UserCreateData: Validatable, Reflectable {
         try validations.add(\.verification, .count(6...7) || .nil)
         return validations
     }
+}
+
+extension UserVerificationData: Validatable, Reflectable {
+    /// Validates that a .verification registration code is either 6 or 7 alphanumeric
+    /// characters in length (allows for inclusion or exclusion of the space).
+    static func validations() throws -> Validations<UserVerificationData> {
+        var validations = Validations(UserVerificationData.self)
+        try validations.add(\.verification, .count(6...7) && .characterSet(.alphanumerics))
+        return validations
+    }
+    
+    
 }
