@@ -89,18 +89,18 @@ struct AuthController: RouteCollection {
     /// `POST` to the `/api/v3/user/password` endpoint for password change/reset.
     ///
     /// - Note: To prevent brute force malicious attempts, there is a limit on successive
-    /// failed recovery attempts, currently hard-coded to 10.
+    ///   failed recovery attempts, currently hard-coded to 10.
     ///
     /// - Requires: `RecoveryData` payload in the HTTP body.
-    /// - Parameter req: The incoming request `Container`, provided automatically.
-    /// - Parameter data: `RecoveryData` struct containing the username and recoveryKey
-    /// pair to attempt.
+    /// - Parameters:
+    ///   - req: The incoming request `Container`, provided automatically.
+    ///   - data: `RecoveryData` struct containing the username and recoveryKey
+    ///   pair to attempt.
     /// - Throws: 400 error if the recovery fails. 403 error if the maximum number of successive
-    /// failed recovery attempts has been reached. A 5xx response should be reported as a
-    /// likely bug, please and thank you.
+    ///   failed recovery attempts has been reached. A 5xx response should be reported as a
+    ///   likely bug, please and thank you.
     /// - Returns: An authentication token (string) that should be used for all subsequent
-    /// HTTP requests, until expiry or revocation.
-    
+    ///   HTTP requests, until expiry or revocation.
     func recoveryHandler(_ req: Request, data: UserRecoveryData) throws -> Future<TokenStringData> {
         // find data.username user
         return User.query(on: req)
@@ -217,14 +217,14 @@ struct AuthController: RouteCollection {
     /// be hit again to generate a new token.
     ///
     /// - Note: API v2 query parameter style logins and subsequent key submissions are
-    /// **not** supported in API v3.
+    ///   **not** supported in API v3.
     ///
     /// - Requires: `User.accessLevel` other than `.banned`.
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: 401 error if the Basic authentication fails. 403 error if the user is
-    /// banned. A 5xx response should be reported as a likely bug, please and thank you.
+    ///   banned. A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: An authentication token (string) that should be used for all subsequent
-    /// HTTP requests, until expiry or revocation.
+    ///   HTTP requests, until expiry or revocation.
     func loginHandler(_ req: Request) throws -> Future<TokenStringData> {
         let user = try req.requireAuthenticated(User.self)
         // no login for punks
@@ -271,8 +271,8 @@ struct AuthController: RouteCollection {
     /// - Requires: Currently logged in.
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: 401 error if the authentication failed. 409 error if the user somehow
-    /// wasn't logged in. A 5xx response should be reported as a likely bug, please and
-    /// thank you.
+    ///   wasn't logged in. A 5xx response should be reported as a likely bug, please and
+    ///   thank you.
     /// - Returns: HTTPStatus response. 204 if the token was successfully deleted.
     func logoutHandler(_ req: Request) throws -> Future<HTTPStatus> {
         let user = try req.requireAuthenticated(User.self)
