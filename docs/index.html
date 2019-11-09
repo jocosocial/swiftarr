@@ -22,7 +22,7 @@
         <a class="header-link" href="index.html">
           swiftarr 0.1.0
         </a>
-         (100% documented)
+         (99% documented)
       </p>
     
       <p class="header-col--secondary">
@@ -113,10 +113,25 @@
                 <a class="nav-group-task-link" href="Structs/AuthController.html">AuthController</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/RecoveryData.html">RecoveryData</a>
+                <a class="nav-group-task-link" href="Structs/CreatedUserData.html">CreatedUserData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/TestController.html">TestController</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/TokenStringData.html">TokenStringData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/UserController.html">UserController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/UserCreateData.html">UserCreateData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/UserRecoveryData.html">UserRecoveryData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/UserVerificationData.html">UserVerificationData</a>
               </li>
             </ul>
           </li>
@@ -147,6 +162,88 @@
         <img src="http://img.shields.io/badge/swift-5.1-brightgreen.svg" alt="Swift 5.1">
     </a>
 </p>
+
+<p>About &hellip;</p>
+<h2 id='getting-started' class='heading'>Getting Started</h2>
+
+<p>If you&rsquo;re here for something other than curiosity or to provide
+<a href="https://github.com/grundoon/swiftarr/issues">feedback</a>, you&rsquo;re probably either developing an API client or
+maybe even thinking about <a href="https://github.com/grundoon/swiftarr/blob/master/CONTRIBUTING.md">getting involved</a>
+with <code>swiftarr</code> development itself.</p>
+
+<p>And if you&rsquo;re working on an API client there&rsquo;s a fair chance you&rsquo;re looking to run an instance of <code>swiftarr</code> to test
+against (for just the documentation info, see further down this page). Let&rsquo;s discuss the development requirements
+first, since it is also a valid approach to running a functional test instance.</p>
+<h3 id='development' class='heading'>Development</h3>
+
+<p>The base assumption is that you&rsquo;re working on a reasonably modern macOS computer. (This is not strictly
+necessary, but if you walk your own Swift development path, add <q>self-sufficiency</q> to the list of requirements.)
+A complete development environment requires 5 things.</p>
+
+<ul>
+<li>a recent <a href="https://swift.org">Swift</a> toolchain (recommend 5.1.x or later)</li>
+<li>a recent version of <a href="https://apps.apple.com/us/app/xcode/id497799835?mt=12">Xcode</a>
+(which will already include the Swift toolchain)</li>
+<li>the <a href="http://docs.vapor.codes/3.0/install/macos/">Vapor</a> framework installed</li>
+<li>instances of <a href="https://www.postgresql.org">PostgreSQL</a> running on both standard and test ports</li>
+<li>instances of <a href="https://redis.io">Redis</a> running on both standard and test ports</li>
+</ul>
+<h4 id='quickstart' class='heading'>Quickstart</h4>
+
+<p>Not to worry, it can all be much easier than that list makes it sound. Simply follow the instructions for installing
+Vapor (use a current version of Xcode though, not the minimum requirement). Then fork a copy of this repository
+and <code>git pull</code> that to your local machine. Generate the <code>swiftarr.xcodeproj</code> and open it.</p>
+<pre class="highlight shell"><code><span class="nb">cd</span> &lt;swiftarr-directory&gt;
+swift package generate-xcodeproj
+open ./swiftarr.xcodeproj
+</code></pre>
+
+<p>In fact, using the installed Vapor Toolbox shortcut, the last two commands can be replaced by</p>
+<pre class="highlight shell"><code>vapor xcode <span class="nt">-y</span>
+</code></pre>
+
+<p>which you might prefer because the the .xcodeproj file needs to be regenerated <em>any time the underlying file
+structure changes</em>. This is currently just part of life when working with Swift Package Manager projects.</p>
+
+<p><code>swiftarr</code> needs to be able to connect to the database engines, so before you hit the <code>Run</code> command they
+need to be available. You can certainly run them natively directly on your Mac (PostgreSQL is already
+included with macOS and Redis will need to be installed), but using
+<a href="https://www.docker.com/products/docker-desktop">Docker</a> is a highly recommended approach and there&rsquo;s
+a simple script provided to (hopefully) painlessly spin the databases up in Docker containers.</p>
+<pre class="highlight shell"><code><span class="nb">cd</span> &lt;swiftarr-directory&gt;
+./scripts/development.sh up
+</code></pre>
+
+<p>This will create and start containers for both PostgreSQL and Redis on their standard ports, as well as
+containers on alternate ports for running the tests (<code>Test</code> command) without destroying any data you&rsquo;d like to
+keep.</p>
+<pre class="highlight shell"><code>docker ps    // should show all 4 containers <span class="s2">"Up"</span>
+</code></pre>
+
+<p>The script also accepts &lsquo;stop&rsquo;, &lsquo;start&rsquo; and &lsquo;remove&rsquo; as shortcut commands.</p>
+
+<p>So not only does this result in a full <code>swiftarr</code> development environment, simply <code>Run</code> and you have a perfectly
+functional instance of <code>swiftarr</code> for API client development (with the bonus ability to <q>see inside</q> the backend
+as it runs). Or, if you prefer to just spin up an instance without all the rest <strong>or aren&rsquo;t working in a macOS
+environment at all</strong>, skip down a few inches to the Deployment section.</p>
+<h4 id='linux-testing' class='heading'>Linux Testing</h4>
+
+<p>Testing during development within Xcode is pretty straightforward, but it is critical that the tests also be run
+under the Linux environment in which it will run during production. See <code>CONTRIBUTING.md</code> way at the bottom
+for necessary precursor info if you&rsquo;ve added any tests. Then build and spin up a Swift container alongside the
+test database ones, for which another script has been provided:</p>
+<pre class="highlight shell"><code><span class="nb">cd</span> &lt;swiftarr-directory&gt;
+./scripts/linux-testing.sh up
+</code></pre>
+<h3 id='deployment' class='heading'>Deployment</h3>
+
+<p>Docker</p>
+
+<p>Bare Metal</p>
+
+<p>Heroku</p>
+
+<p>AWS</p>
 <h2 id='documentation' class='heading'>Documentation</h2>
 
 <ul>
@@ -154,24 +251,14 @@
 return types.</p></li>
 <li><p><strong>docs/</strong>: A complete API reference generated directly from the documentation markup within the source code,
 in navigable HTML format.</p></li>
-<li><p><strong>source code</strong>: The source code itself is, in every sense, the definitive documentation. In striving for a primary
-goal of maintainability, the code is intended to be straightforward in nature, readable, and consistent in style. It is
-thoroughly documented, incorporating both formatted Swift Documentation Markup blocks (<code>///</code>) and
-organizational <code>MARK</code>s used to generate the HTML <code>docs/</code> pages, as well as in-line comments (<code>//</code>) to help
-clarify flow, function, and thought process. Maintainers and contributors are requested to adhere to the existing
-standards, or outright improve upon them!</p></li>
+<li><p><strong>source code</strong>: The source code itself is, in every sense, the definitive documentation. It is thoroughly
+documented, incorporating both formatted Swift Documentation Markup blocks (<code>///</code>) and organizational
+<code>MARK</code>s used to generate the HTML <code>docs/</code> pages, as well as in-line comments (<code>//</code>) to help clarify flow, function,
+and thought process. Maintainers and contributors are requested to adhere to the existing standards, or outright
+improve upon them!</p></li>
 </ul>
 
-<p>The <code>docs/</code> are generated using <a href="https://github.com/realm/jazzy"><code>jazzy</code></a>, with the <code>.jazzy.yaml</code> configuration file
-included in this repository. They are updated at minimum upon every tagged point release. To update more
-frequently, such as for inclusion in a pull request, an appropriate command might be: </p>
-<pre class="highlight shell"><code><span class="nb">cd</span> &lt;swiftarr-directory&gt;
-jazzy <span class="nt">--noclean</span> <span class="nt">-o</span> ./docs
-</code></pre>
-
-<p>Note: The GitHub links within the generated documentation are hard-coded via the <code>github_file_prefix</code>
-configuration setting to point to the <code>master</code> branch tree. This is fine for <code>master</code> merges <em>only</em>, and care needs
-to be taken for tagged releases.</p>
+<p>The <code>docs/</code> are generated using the awesome <a href="https://github.com/realm/jazzy"><code>jazzy</code></a>.</p>
 
 <p>The <a href="https://vapor.codes">Vapor</a> framework has its own <a href="https://api.vapor.codes">API documentation</a>.</p>
 
@@ -182,7 +269,7 @@ to be taken for tagged releases.</p>
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-01)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-08)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.11.2</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>

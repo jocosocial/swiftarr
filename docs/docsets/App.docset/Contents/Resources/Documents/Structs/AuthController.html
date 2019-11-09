@@ -23,7 +23,7 @@
         <a class="header-link" href="../index.html">
           swiftarr 0.1.0
         </a>
-         (100% documented)
+         (99% documented)
       </p>
     
       <p class="header-col--secondary">
@@ -114,10 +114,25 @@
                 <a class="nav-group-task-link" href="../Structs/AuthController.html">AuthController</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/RecoveryData.html">RecoveryData</a>
+                <a class="nav-group-task-link" href="../Structs/CreatedUserData.html">CreatedUserData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TestController.html">TestController</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/TokenStringData.html">TokenStringData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserController.html">UserController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserCreateData.html">UserCreateData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserRecoveryData.html">UserRecoveryData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserVerificationData.html">UserVerificationData</a>
               </li>
             </ul>
           </li>
@@ -232,9 +247,9 @@ explicitly logs out on <em>any</em> client on <em>any</em> device, the token is 
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App14AuthControllerV15recoveryHandler_4data3NIO15EventLoopFutureCyAA15TokenStringDataVG5Vapor7RequestC_AA08RecoveryM0VtKF"></a>
+                    <a name="/s:3App14AuthControllerV15recoveryHandler_4data3NIO15EventLoopFutureCyAA15TokenStringDataVG5Vapor7RequestC_AA012UserRecoveryM0VtKF"></a>
                     <a name="//apple_ref/swift/Method/recoveryHandler(_:data:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App14AuthControllerV15recoveryHandler_4data3NIO15EventLoopFutureCyAA15TokenStringDataVG5Vapor7RequestC_AA08RecoveryM0VtKF">recoveryHandler(_:data:)</a>
+                    <a class="token" href="#/s:3App14AuthControllerV15recoveryHandler_4data3NIO15EventLoopFutureCyAA15TokenStringDataVG5Vapor7RequestC_AA012UserRecoveryM0VtKF">recoveryHandler(_:data:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -264,7 +279,7 @@ failed recovery attempts, currently hard-coded to 10.</p>
 </div>
 <div class="aside aside-requires">
     <p class="aside-title">Requires</p>
-    <p><code><a href="../Structs/RecoveryData.html">RecoveryData</a></code> payload in the HTTP body.</p>
+    <p><code>RecoveryData</code> payload in the HTTP body.</p>
 
 </div>
 <div class="aside aside-throws">
@@ -280,7 +295,7 @@ likely bug, please and thank you.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">recoveryHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">data</span><span class="p">:</span> <span class="kt"><a href="../Structs/RecoveryData.html">RecoveryData</a></span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Structs/TokenStringData.html">TokenStringData</a></span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">recoveryHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">data</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserRecoveryData.html">UserRecoveryData</a></span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Structs/TokenStringData.html">TokenStringData</a></span><span class="o">&gt;</span></code></pre>
 
                         </div>
                       </div>
@@ -308,7 +323,7 @@ likely bug, please and thank you.</p>
                               </td>
                               <td>
                                 <div>
-                                  <p><code><a href="../Structs/RecoveryData.html">RecoveryData</a></code> struct containing the username and recoveryKey
+                                  <p><code>RecoveryData</code> struct containing the username and recoveryKey
 pair to attempt.</p>
                                 </div>
                               </td>
@@ -322,7 +337,7 @@ pair to attempt.</p>
 HTTP requests, until expiry or revocation.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L104-L181">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L104-L180">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -435,7 +450,7 @@ banned. A 5xx response should be reported as a likely bug, please and thank you.
 HTTP requests, until expiry or revocation.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L229-L252">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L228-L251">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -525,7 +540,7 @@ thank you.
                         <p>HTTPStatus response. 204 if the token was successfully deleted.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L278-L293">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L277-L294">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -538,7 +553,7 @@ thank you.
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-01)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-08)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.11.2</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>

@@ -1,6 +1,12 @@
 {
   "warnings": [
-
+    {
+      "file": "/Users/grundev/Developer/swiftarr/Sources/App/Controllers/UserController.swift",
+      "line": 130,
+      "symbol": "UserController.verificationHandler(_:data:)",
+      "symbol_kind": "source.lang.swift.decl.function.method.instance",
+      "warning": "undocumented"
+    }
   ],
   "source_directory": "/Users/grundev/Developer/swiftarr"
 }

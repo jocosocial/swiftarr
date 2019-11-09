@@ -23,7 +23,7 @@
         <a class="header-link" href="index.html">
           swiftarr 0.1.0
         </a>
-         (100% documented)
+         (99% documented)
       </p>
     
       <p class="header-col--secondary">
@@ -114,10 +114,25 @@
                 <a class="nav-group-task-link" href="Structs/AuthController.html">AuthController</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/RecoveryData.html">RecoveryData</a>
+                <a class="nav-group-task-link" href="Structs/CreatedUserData.html">CreatedUserData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/TestController.html">TestController</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/TokenStringData.html">TokenStringData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/UserController.html">UserController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/UserCreateData.html">UserCreateData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/UserRecoveryData.html">UserRecoveryData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/UserVerificationData.html">UserVerificationData</a>
               </li>
             </ul>
           </li>
@@ -201,7 +216,7 @@ explicitly logs out on <em>any</em> client on <em>any</em> device, the token is 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L45-L294">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L45-L295">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -220,9 +235,9 @@ explicitly logs out on <em>any</em> client on <em>any</em> device, the token is 
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App12RecoveryDataV"></a>
-                    <a name="//apple_ref/swift/Struct/RecoveryData" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App12RecoveryDataV">RecoveryData</a>
+                    <a name="/s:3App16UserRecoveryDataV"></a>
+                    <a name="//apple_ref/swift/Struct/UserRecoveryData" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App16UserRecoveryDataV">UserRecoveryData</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -230,20 +245,20 @@ explicitly logs out on <em>any</em> client on <em>any</em> device, the token is 
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Used by <code><a href="Structs/AuthController.html#/s:3App14AuthControllerV15recoveryHandler_4data3NIO15EventLoopFutureCyAA15TokenStringDataVG5Vapor7RequestC_AA08RecoveryM0VtKF">AuthController.recoveryHandler(_:data:)</a></code> for the incoming recovery attempt.</p>
+                        <p>Used by <code><a href="Structs/AuthController.html#/s:3App14AuthControllerV15recoveryHandler_4data3NIO15EventLoopFutureCyAA15TokenStringDataVG5Vapor7RequestC_AA012UserRecoveryM0VtKF">AuthController.recoveryHandler(_:data:)</a></code> for the incoming recovery attempt.</p>
 
-                        <a href="Structs/RecoveryData.html" class="slightly-smaller">See more</a>
+                        <a href="Structs/UserRecoveryData.html" class="slightly-smaller">See more</a>
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">RecoveryData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">UserRecoveryData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L299-L304">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L300-L305">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -261,7 +276,7 @@ explicitly logs out on <em>any</em> client on <em>any</em> device, the token is 
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Used by <code><a href="Structs/AuthController.html#/s:3App14AuthControllerV12loginHandlery3NIO15EventLoopFutureCyAA15TokenStringDataVG5Vapor7RequestCKF">AuthController.loginHandler(_:)</a></code> and <code><a href="Structs/AuthController.html#/s:3App14AuthControllerV15recoveryHandler_4data3NIO15EventLoopFutureCyAA15TokenStringDataVG5Vapor7RequestC_AA08RecoveryM0VtKF">AuthController.recoveryHandler(_:data:)</a></code>
+                        <p>Used by <code><a href="Structs/AuthController.html#/s:3App14AuthControllerV12loginHandlery3NIO15EventLoopFutureCyAA15TokenStringDataVG5Vapor7RequestCKF">AuthController.loginHandler(_:)</a></code> and <code><a href="Structs/AuthController.html#/s:3App14AuthControllerV15recoveryHandler_4data3NIO15EventLoopFutureCyAA15TokenStringDataVG5Vapor7RequestC_AA012UserRecoveryM0VtKF">AuthController.recoveryHandler(_:data:)</a></code>
 to return a token string upon successful execution.</p>
 
                         <a href="Structs/TokenStringData.html" class="slightly-smaller">See more</a>
@@ -275,7 +290,193 @@ to return a token string upon successful execution.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L308-L316">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L309-L317">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App14TestControllerV"></a>
+                    <a name="//apple_ref/swift/Struct/TestController" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App14TestControllerV">TestController</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The collection of <code>/api/v3/test/*</code> route endpoints and handler functions for unit
+testing and benchmarking purposes.</p>
+<div class="aside aside-note">
+    <p class="aside-title">Note</p>
+    These endpoints are <strong>NOT</strong> intended as API for client development.
+
+</div>
+
+                        <a href="Structs/TestController.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">TestController</span> <span class="p">:</span> <span class="kt">RouteCollection</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/TestController.swift#L10-L64">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App14UserControllerV"></a>
+                    <a name="//apple_ref/swift/Struct/UserController" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App14UserControllerV">UserController</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The collection of <code>/api/v3/user/*</code> route endpoints and handler functions related
+to a user&rsquo;s own data.</p>
+
+<p>Separating these from the endpoints related to users in general helps make for a
+cleaner collection, since use of <code>User.parameter</code> in the paths here can be avoided
+entirely.</p>
+
+                        <a href="Structs/UserController.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">UserController</span> <span class="p">:</span> <span class="kt">RouteCollection</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L12-L141">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/Helper%20Structs2"></a>
+                <a name="//apple_ref/swift/Section/Helper Structs" class="dashAnchor"></a>
+                <a href="#/Helper%20Structs2">
+                  <h3 class="section-name">Helper Structs</h3>
+                </a>
+              </div>
+              <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App15CreatedUserDataV"></a>
+                    <a name="//apple_ref/swift/Struct/CreatedUserData" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15CreatedUserDataV">CreatedUserData</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Returned by <code><a href="Structs/UserController.html#/s:3App14UserControllerV13createHandler_4data3NIO15EventLoopFutureCyAA07CreatedB4DataVG5Vapor7RequestC_AA0b6CreateL0VtKF">UserController.createHandler(_:data:).</a></code></p>
+
+                        <a href="Structs/CreatedUserData.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">CreatedUserData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L153-L162">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App14UserCreateDataV"></a>
+                    <a name="//apple_ref/swift/Struct/UserCreateData" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App14UserCreateDataV">UserCreateData</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Used by `UserController.createHandler(_:data:) for initial creation of an account.</p>
+
+                        <a href="Structs/UserCreateData.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">UserCreateData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L165-L172">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App20UserVerificationDataV"></a>
+                    <a name="//apple_ref/swift/Struct/UserVerificationData" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App20UserVerificationDataV">UserVerificationData</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Used by <code>UserController.verificationHandler(_:)</code> to verify a created but unverified
+account.</p>
+
+                        <a href="Structs/UserVerificationData.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">UserVerificationData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L176-L179">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -329,7 +530,7 @@ other environment of your choice), reminders are printed to console during start
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-01)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-08)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.11.2</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>
