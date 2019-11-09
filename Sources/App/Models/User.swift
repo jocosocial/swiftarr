@@ -2,7 +2,7 @@ import Foundation
 import Vapor
 import FluentPostgreSQL
 
-/// All accounts are of class User.
+/// All accounts are of class `User`.
 ///
 /// The terms "account" and "sub-account" used throughout this documentatiion are all
 /// instances of User. The terms "primary account", "parent account" and "master account"
