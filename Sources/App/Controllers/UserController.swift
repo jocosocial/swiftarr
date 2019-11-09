@@ -2,6 +2,13 @@ import Vapor
 import Crypto
 import FluentSQL
 
+/// The collection of `/api/v3/user/*` route endpoints and handler functions related
+/// to a user's own data.
+///
+/// Separating these from the endpoints related to users in general helps make for a
+/// cleaner collection, since use of `User.parameter` in the paths here can be avoided
+/// entirely.
+
 struct UserController: RouteCollection {
     
     // MARK: RouteCollection Conformance
@@ -30,6 +37,29 @@ struct UserController: RouteCollection {
     
     // MARK: - Open Access Handlers
     
+    /// `POST /api/v3/user/create`
+    ///
+    /// Creates a new `User` account and its associated `UserProfile`. If either fail, neither
+    /// is created, since we want to ensure that all accounts have profiles.
+    ///
+    /// A `CreatedUserData` structure is returned on success, containing the new user's ID,
+    /// username and a generated recovery key.
+    ///
+    /// - Note: The `CreatedUserData.recoveryKey` is a random phrase used to recover an account
+    ///   in the case of a forgotten password. While it can be stored by a client, that
+    ///   essentially defeats its purpose (presumably the password would also already be
+    ///   stored). The *intended client use* is that it is displayed to the user upon successful
+    ///   creation, and the user is *encouraged to take a screenshot or write it down before
+    ///   proceeding*.
+    ///
+    /// - Requires: `UserCreateData` payload in the HTTP body.
+    /// - Parameters:
+    ///   - req: The incoming request `Container`, provided automatically.
+    ///   - data: `UserCreateData` struct containing the desired username, password and
+    ///   (optionally) the registration code.
+    /// - Throws: 409 if the username is not available. A 5xx response should be reported as a
+    ///   likely bug, please and thank you.
+    /// - Returns: The newly created user's ID, username, and a recovery key string
     func createHandler(_ req: Request, data: UserCreateData) throws -> Future<CreatedUserData> {
         // see `UserCreateData.validations()`
         try data.validate()
@@ -94,7 +124,13 @@ struct UserController: RouteCollection {
     // All handlers in this route group require a valid HTTP Basic Authentication
     // header in the request.
     
-    
+    func verificationHandler(_ req: Request, data: UserVerificationData) throws -> Future<HTTPResponseStatus> {
+        let user = try req.requireAuthenticated(User.self)
+        // see `userVerificationData.validations()`
+        try data.validate()
+        return req.future(.ok)
+    }
+
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
@@ -112,12 +148,13 @@ private func generateRecoveryKey() -> String {
 
 /// Returned by `UserController.createHandler(_:data:).`
 struct CreatedUserData: Content {
-    // The newly created user's ID.
+    /// The newly created user's ID.
     let userID: UUID
-    // The newly created user's username
+    /// The newly created user's username
     let username: String
-    // If an optional `UserCreateData.verification` registration code was supplied in the
-    // request and this is a primary account, the generated recovery key, otherwise `nil`.
+    /// If an optional `UserCreateData.verification` registration code was supplied in the
+    /// request and this is a primary account, the generated recovery key, otherwise `nil`.
+    /// A recoveryKey is generated only upon receipt of a successful registration.
     let recoveryKey: String?
 }
 
@@ -131,10 +168,17 @@ struct UserCreateData: Content {
     let verification: String?
 }
 
+/// Used by `UserController.verificationHandler(_:)` to verify a created but unverified
+/// account.
+struct UserVerificationData: Content {
+    /// The registration code provided to the user.
+    let verification: String
+}
+
 extension UserCreateData: Validatable, Reflectable {
     /// Validates that a .username is 1 or more alphanumeric characters,
     /// .password is least 6 characters in length,
-    /// and that an optional .verification code is either 6 or 7 characters
+    /// and that an optional .verification code is either 6 or 7 characters.
     /// (depending on if it includes a space) in length if present.
     static func validations() throws -> Validations<UserCreateData> {
         var validations = Validations(UserCreateData.self)
