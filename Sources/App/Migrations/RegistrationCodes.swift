@@ -38,6 +38,10 @@ struct RegistrationCodes: Migration {
             // populate the RegistrationCodes database
             var savedCodes = [Future<RegistrationCode>]()
             for code in codesArray {
+                // stray newlines make empty elements
+                guard !code.isEmpty else {
+                    continue
+                }
                 let registrationCode = RegistrationCode(code: code)
                 savedCodes.append(registrationCode.save(on: conn))
             }
