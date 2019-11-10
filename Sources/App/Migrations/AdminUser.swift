@@ -15,6 +15,7 @@ struct AdminUser: Migration {
     
     /// Required by `Migration` protocol. Creates the admin user after a bit of sanity
     /// check caution.
+    ///
     /// - Parameter connection: A connection to the database, provided automatically.
     static func prepare(on connection: PostgreSQLConnection) -> Future<Void> {
         // retrieve password and recovery key from environment, else use defaults
