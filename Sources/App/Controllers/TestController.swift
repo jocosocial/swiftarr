@@ -30,6 +30,7 @@ struct TestController: RouteCollection {
         // open access endpoints
         testRoutes.get("getusers", use: getUsersHandler)
         testRoutes.get("getprofiles", use: getProfilesHandler)
+        testRoutes.get("getregistrationcodes", use: getRegistrationCodesHandler)
         
         // endpoints available only when not logged in
         
@@ -61,6 +62,17 @@ struct TestController: RouteCollection {
         return UserProfile.query(on: req).range(...10).all()
     }
     
+    /// `GET /api/v3/test/getregistrationcodes`
+    ///
+    /// Returns an array of all stored `RegistrationCode` models.
+    ///
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Returns: An array of at most the first 10 `UserProfile` models in the databases.
+    func getRegistrationCodesHandler(_ req: Request) throws -> Future<[RegistrationCode]> {
+        return RegistrationCode.query(on: req).all()
+    }
+
+
     // MARK: - basicAuthGroup Handlers (not logged in)
     // All handlers in this route group require a valid HTTP Basic Authentication
     // header in the request.
