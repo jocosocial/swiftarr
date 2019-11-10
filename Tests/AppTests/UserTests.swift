@@ -52,6 +52,19 @@ final class UserTests: XCTestCase {
         XCTAssert(accessLevel6.rawValue > accessLevel5.rawValue)
     }
     
+    /// `GET /api/v3/test/getregistrationcodes`
+    func testRegistrationCodesWereMigrated() throws {
+        let codes = try app.getResult(
+            from: testURI + "getregistrationcodes",
+            decodeTo: [RegistrationCode].self
+        )
+        XCTAssertTrue(codes.count == 10, "there are 10 codes in the test seed file")
+    }
+    
+    /// `POST /api/v3/user/create`
+    /// `User.create()` testing convenience helper
+    /// `GET /api/v3/test/getusers`
+    /// `GET /api/v3/test/getprofiles``
     func testUsersCanBeCreated() throws {
         // a specified user via helper
         let user = try User.create(username: testUsername, accessLevel: .unverified, on: conn)
