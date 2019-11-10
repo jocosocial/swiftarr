@@ -10,9 +10,9 @@ final class UserTests: XCTestCase {
     // set properties
     let testUsername = "grundoon"
     let testPassword = "pasword"
-    let authURI = "/api/v3/auth"
-    let testURI = "/api/v3/test"
-    let userURI = "/api/v3/user"
+    let authURI = "/api/v3/auth/"
+    let testURI = "/api/v3/test/"
+    let userURI = "/api/v3/user/"
     var app: Application!
     var conn: PostgreSQLConnection!
     
@@ -52,12 +52,44 @@ final class UserTests: XCTestCase {
         XCTAssert(accessLevel6.rawValue > accessLevel5.rawValue)
     }
     
-//    func testCanRetrieveUserViaAPI() throws {
-//        // a specified user
-//        let user = try User.create(username: testUsername, accessLevel: .unverified, on: conn)
-//        // a random user
-//        _ = try User.create(accessLevel: .unverified, on: conn)
-//
-//        let users = try app.getResult(from: userU, decodeTo: <#T##Content.Protocol#>)
-//    }
+    func testUsersCanBeCreated() throws {
+        // a specified user via helper
+        let user = try User.create(username: testUsername, accessLevel: .unverified, on: conn)
+        // a random user via helper
+        _ = try User.create(accessLevel: .unverified, on: conn)
+        // a user via API
+        let apiUsername = "apiuser"
+        let userCreateData = UserCreateData(username: apiUsername, password: "password", verification: nil)
+        let result = try app.getResult(
+            from: userURI + "create",
+            method: .POST,
+            body: userCreateData,
+            decodeTo: CreatedUserData.self
+        )
+        
+        // check user creations
+        let users = try app.getResult(from: testURI + "/getusers", decodeTo: [User].self)
+        XCTAssertTrue(users.count == 4, "should be 4 users")
+        XCTAssertTrue(users[0].username == "admin", "'admin' should be first user")
+        XCTAssertTrue(users[1].username == user.username, "should be `\(testUsername)`")
+        XCTAssertNotNil(UUID(uuidString: users[2].username), "should be a valid UUID")
+        XCTAssertTrue(users.last?.username == result.username, "last user should be '\(apiUsername)'")
+        
+        // check profile creations
+        let profiles = try app.getResult(
+            from: testURI + "/getprofiles",
+            method: .GET,
+            decodeTo: [UserProfile].self
+        )
+        XCTAssert(profiles.count == 4, "should be 4 profiles")
+        XCTAssertEqual(profiles.last?.userID, users.last?.id, "profile.userID should be user.id")
+        
+        // test duplicate user
+        let response = try app.getResponse(
+            from: userURI + "create",
+            method: .POST,
+            body: userCreateData
+        )
+        XCTAssertTrue(response.http.status.code == 409, "should be 409 conflict")
+    }
 }
