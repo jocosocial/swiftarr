@@ -29,6 +29,7 @@ struct TestController: RouteCollection {
         
         // open access endpoints
         testRoutes.get("getusers", use: getUsersHandler)
+        testRoutes.get("getprofiles", use: getProfilesHandler)
         
         // endpoints available only when not logged in
         
@@ -43,10 +44,21 @@ struct TestController: RouteCollection {
     /// `GET /api/v3/test/getusers`
     ///
     /// Returns the first 10 users in the database.
+    ///
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Returns: An array of at most the first 10 `User` models in the database.
     func getUsersHandler(_ req: Request) throws -> Future<[User]> {
-        return User.query(on: req).range(..<10).all()
+        return User.query(on: req).range(...10).all()
+    }
+    
+    /// `GET /api/v3/test/getprofiles`
+    ///
+    /// Returns the first 10 profiles in the database.
+    ///
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Returns: An array of at most the first 10 `UserProfile` models in the databases.
+    func getProfilesHandler(_ req: Request) throws -> Future<[UserProfile]> {
+        return UserProfile.query(on: req).range(...10).all()
     }
     
     // MARK: - basicAuthGroup Handlers (not logged in)
