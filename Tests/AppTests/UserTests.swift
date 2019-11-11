@@ -72,7 +72,7 @@ final class UserTests: XCTestCase {
         _ = try User.create(accessLevel: .unverified, on: conn)
         // a user via API
         let apiUsername = "apiuser"
-        let userCreateData = UserCreateData(username: apiUsername, password: "password", verification: nil)
+        let userCreateData = UserCreateData(username: apiUsername, password: "password")
         let result = try app.getResult(
             from: userURI + "create",
             method: .POST,
