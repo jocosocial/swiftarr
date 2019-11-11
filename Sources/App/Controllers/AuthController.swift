@@ -88,6 +88,12 @@ struct AuthController: RouteCollection {
     /// Authentication` token upon success, then (b) use the returned token to immediately
     /// `POST` to the `/api/v3/user/password` endpoint for password change/reset.
     ///
+    /// - Note: The `User.verification` registration code can only be used to recover *once*.
+    ///   This limitation is to prevent a possible race condition in which a malicious
+    ///   user has obtained another's registration code. After one successful recovery has
+    ///   been executed via the code, subsequent recovery can only be done via the recoveryKey
+    ///   provided upon initial account creation.
+    ///
     /// - Note: To prevent brute force malicious attempts, there is a limit on successive
     ///   failed recovery attempts, currently hard-coded to 10.
     ///
@@ -116,7 +122,7 @@ struct AuthController: RouteCollection {
                     )
                     throw Abort(responseStatus)
                 }
-                // abort if account is seeing potential malicious activity
+                // abort if account is seeing potential brute-force attack
                 guard user.recoveryAttempts < 10 else {
                     let responseStatus = HTTPResponseStatus(
                         statusCode: 403,
@@ -125,12 +131,30 @@ struct AuthController: RouteCollection {
                     throw Abort(responseStatus)
                 }
                 
+                // registration codes and recovery keys are normalized prior to storage
+                let normalizedKey = data.recoveryKey.lowercased().replacingOccurrences(of: " ", with: "")
+
+                // if the code being sent normalizes to 6 characters, it is most likely a
+                // registration code (it *could* be a password, but presumably they've already
+                // tried that prior to resorting to recovery), so ensure the code hasn't been
+                // marked as already used for recovery
+                guard normalizedKey.count != 6,
+                    user.verification?.first != "*" else {
+                        let responseStatus = HTTPResponseStatus(
+                            statusCode: 400,
+                            reasonPhrase: "account must be recovered using the recovery key"
+                        )
+                        throw Abort(responseStatus)
+                }
+                
                 // attempt data.recoveryKey match
                 var foundMatch = false
-                // registration codes are normalized prior to storage
-                let normalizedKey = data.recoveryKey.lowercased().replacingOccurrences(of: " ", with: "")
                 if normalizedKey == user.verification {
                     foundMatch = true
+                    // prevent .verification from being used again
+                    if let newVerification = user.verification {
+                        user.verification = "*" + newVerification
+                    }
                 } else {
                     // password and recoveryKey require hash verification
                     let verifier = BCryptDigest()
