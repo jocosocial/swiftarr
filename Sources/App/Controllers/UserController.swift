@@ -179,12 +179,12 @@ struct UserController: RouteCollection {
                     (connection) in
                     // update registrationCode
                     registrationCode.userID = try user.requireID()
-                    return registrationCode.save(on: req).flatMap {
+                    return registrationCode.save(on: connection).flatMap {
                         (savedCode) in
                         // update user
                         user.accessLevel = .verified
                         user.verification = registrationCode.code
-                        return user.save(on: req).transform(to: .ok)
+                        return user.save(on: connection).transform(to: .ok)
                     }
                 }
         }
