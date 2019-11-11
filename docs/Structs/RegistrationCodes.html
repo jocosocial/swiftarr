@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>TokenStringData Structure Reference</title>
+    <title>RegistrationCodes Structure Reference</title>
     <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
     <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
     <meta charset="utf-8">
@@ -14,9 +14,9 @@
   </head>
   <body>
 
-    <a name="//apple_ref/swift/Struct/TokenStringData" class="dashAnchor"></a>
+    <a name="//apple_ref/swift/Struct/RegistrationCodes" class="dashAnchor"></a>
 
-    <a title="TokenStringData Structure Reference"></a>
+    <a title="RegistrationCodes Structure Reference"></a>
 
     <header class="header">
       <p class="header-col header-col--primary">
@@ -44,7 +44,7 @@
     <p class="breadcrumbs">
       <a class="breadcrumb" href="../index.html">App Reference</a>
       <img class="carat" src="../img/carat.png" />
-      TokenStringData Structure Reference
+      RegistrationCodes Structure Reference
     </p>
 
     <div class="content-wrapper">
@@ -148,15 +148,15 @@
 
         <section class="section">
           <div class="section-content">
-            <h1>TokenStringData</h1>
+            <h1>RegistrationCodes</h1>
               <div class="declaration">
                 <div class="language">
-                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">TokenStringData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">RegistrationCodes</span> <span class="p">:</span> <span class="kt">Migration</span></code></pre>
 
                 </div>
               </div>
-            <p>Used by <code><a href="../Structs/AuthController.html#/s:3App14AuthControllerV12loginHandlery3NIO15EventLoopFutureCyAA15TokenStringDataVG5Vapor7RequestCKF">AuthController.loginHandler(_:)</a></code> and <code><a href="../Structs/AuthController.html#/s:3App14AuthControllerV15recoveryHandler_4data3NIO15EventLoopFutureCyAA15TokenStringDataVG5Vapor7RequestC_AA012UserRecoveryM0VtKF">AuthController.recoveryHandler(_:data:)</a></code>
-to return a token string upon successful execution.</p>
+            <p>A <code>Migration</code> that populates the <code><a href="../Classes/RegistrationCode.html">RegistrationCode</a></code> database from a <code>registration-codes.txt</code>
+file located at the root level of the project.</p>
 
           </div>
         </section>
@@ -168,9 +168,9 @@ to return a token string upon successful execution.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App15TokenStringDataV5tokenSSvp"></a>
-                    <a name="//apple_ref/swift/Property/token" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App15TokenStringDataV5tokenSSvp">token</a>
+                    <a name="/s:6Fluent9MigrationP8DatabaseQa"></a>
+                    <a name="//apple_ref/swift/Alias/Database" class="dashAnchor"></a>
+                    <a class="token" href="#/s:6Fluent9MigrationP8DatabaseQa">Database</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -178,19 +178,18 @@ to return a token string upon successful execution.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>The token string.</p>
-
+                        
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">let</span> <span class="nv">token</span><span class="p">:</span> <span class="kt">String</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">typealias</span> <span class="kt">Database</span> <span class="o">=</span> <span class="kt">PostgreSQLDatabase</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L311">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Migrations/RegistrationCodes.swift#L">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -198,9 +197,9 @@ to return a token string upon successful execution.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App15TokenStringDataV5tokenAcA0B0C_tcfc"></a>
-                    <a name="//apple_ref/swift/Method/init(token:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App15TokenStringDataV5tokenAcA0B0C_tcfc">init(token:)</a>
+                    <a name="/s:3App17RegistrationCodesV7prepare2on3NIO15EventLoopFutureCyytG10PostgreSQL0J13SQLConnectionC_tFZ"></a>
+                    <a name="//apple_ref/swift/Method/prepare(on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App17RegistrationCodesV7prepare2on3NIO15EventLoopFutureCyytG10PostgreSQL0J13SQLConnectionC_tFZ">prepare(on:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -208,14 +207,16 @@ to return a token string upon successful execution.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Creates a <code>TokenStringData</code> from a <code><a href="../Classes/Token.html">Token</a></code>.</p>
+                        <p>Required by <code>Migration</code> protocol. Reads either a test or production text file at the
+root project level, converts the lines into elements of an array, then iterates over
+them to create new <code><a href="../Classes/RegistrationCode.html">RegistrationCode</a></code> models.</p>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="nf">init</span><span class="p">(</span><span class="nv">token</span><span class="p">:</span> <span class="kt"><a href="../Classes/Token.html">Token</a></span><span class="p">)</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">prepare</span><span class="p">(</span><span class="n">on</span> <span class="nv">conn</span><span class="p">:</span> <span class="kt">PostgreSQLConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">EventLoopFuture</span><span class="o">&lt;</span><span class="kt">Void</span><span class="o">&gt;</span></code></pre>
 
                         </div>
                       </div>
@@ -226,12 +227,12 @@ to return a token string upon successful execution.</p>
                             <tr>
                               <td>
                                 <code>
-                                <em>token</em>
+                                <em>conn</em>
                                 </code>
                               </td>
                               <td>
                                 <div>
-                                  <p>The <code><a href="../Classes/Token.html">Token</a></code> associated with the authenticated user.</p>
+                                  <p>A connection to the database, provided automatically.</p>
                                 </div>
                               </td>
                             </tr>
@@ -239,7 +240,38 @@ to return a token string upon successful execution.</p>
                         </table>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L314-L316">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Migrations/RegistrationCodes.swift#L15-L54">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App17RegistrationCodesV6revert2on3NIO15EventLoopFutureCyytG10PostgreSQL0J13SQLConnectionC_tFZ"></a>
+                    <a name="//apple_ref/swift/Method/revert(on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App17RegistrationCodesV6revert2on3NIO15EventLoopFutureCyytG10PostgreSQL0J13SQLConnectionC_tFZ">revert(on:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Required by<code>Migration</code> protocol, but these are static so no point removing them,
+just return a pre-completed <code>Future</code>.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">revert</span><span class="p">(</span><span class="n">on</span> <span class="nv">connection</span><span class="p">:</span> <span class="kt">PostgreSQLConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">Void</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Migrations/RegistrationCodes.swift#L58-L60">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

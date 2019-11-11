@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>AdminUser Structure Reference</title>
+    <title>UserController Structure Reference</title>
     <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
     <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
     <meta charset="utf-8">
@@ -14,9 +14,9 @@
   </head>
   <body>
 
-    <a name="//apple_ref/swift/Struct/AdminUser" class="dashAnchor"></a>
+    <a name="//apple_ref/swift/Struct/UserController" class="dashAnchor"></a>
 
-    <a title="AdminUser Structure Reference"></a>
+    <a title="UserController Structure Reference"></a>
 
     <header class="header">
       <p class="header-col header-col--primary">
@@ -44,7 +44,7 @@
     <p class="breadcrumbs">
       <a class="breadcrumb" href="../index.html">App Reference</a>
       <img class="carat" src="../img/carat.png" />
-      AdminUser Structure Reference
+      UserController Structure Reference
     </p>
 
     <div class="content-wrapper">
@@ -148,20 +148,19 @@
 
         <section class="section">
           <div class="section-content">
-            <h1>AdminUser</h1>
+            <h1>UserController</h1>
               <div class="declaration">
                 <div class="language">
-                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">AdminUser</span> <span class="p">:</span> <span class="kt">Migration</span></code></pre>
+                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">UserController</span> <span class="p">:</span> <span class="kt">RouteCollection</span></code></pre>
 
                 </div>
               </div>
-            <p>A <code>Migration</code> that creates the admin user upon startup. The password and recovery key are
-read from environment variables <code>ADMIN_PASSWORD</code> and <code>RECOVERY_KEY</code> if present, otherwise
-defaults are used.</p>
+            <p>The collection of <code>/api/v3/user/*</code> route endpoints and handler functions related
+to a user&rsquo;s own data.</p>
 
-<p>The defaults are intended and fine for development and testing, but should <strong>never</strong> be
-used in production. If not set to proper values in <code>docker-compose.yml</code> (or whatever
-other environment of your choice), reminders are printed to console during startup.</p>
+<p>Separating these from the endpoints related to users in general helps make for a
+cleaner collection, since use of <code>User.parameter</code> in the paths here can be avoided
+entirely.</p>
 
           </div>
         </section>
@@ -169,13 +168,20 @@ other environment of your choice), reminders are printed to console during start
         <section class="section">
           <div class="section-content">
             <div class="task-group">
+              <div class="task-name-container">
+                <a name="/RouteCollection%20Conformance"></a>
+                <a name="//apple_ref/swift/Section/RouteCollection Conformance" class="dashAnchor"></a>
+                <a href="#/RouteCollection%20Conformance">
+                  <h3 class="section-name">RouteCollection Conformance</h3>
+                </a>
+              </div>
               <ul class="item-container">
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:6Fluent9MigrationP8DatabaseQa"></a>
-                    <a name="//apple_ref/swift/Alias/Database" class="dashAnchor"></a>
-                    <a class="token" href="#/s:6Fluent9MigrationP8DatabaseQa">Database</a>
+                    <a name="/s:3App14UserControllerV4boot6routery5Vapor6Router_p_tKF"></a>
+                    <a name="//apple_ref/swift/Method/boot(router:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App14UserControllerV4boot6routery5Vapor6Router_p_tKF">boot(router:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -183,28 +189,40 @@ other environment of your choice), reminders are printed to console during start
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        
+                        <p>Required. Registers routes to the incoming router.</p>
+
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">typealias</span> <span class="kt">Database</span> <span class="o">=</span> <span class="kt">PostgreSQLDatabase</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">boot</span><span class="p">(</span><span class="nv">router</span><span class="p">:</span> <span class="kt">Router</span><span class="p">)</span> <span class="k">throws</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Migrations/AdminUser.swift#L">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L17-L39">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
                 </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/Open%20Access%20Handlers"></a>
+                <a name="//apple_ref/swift/Section/Open Access Handlers" class="dashAnchor"></a>
+                <a href="#/Open%20Access%20Handlers">
+                  <h3 class="section-name">Open Access Handlers</h3>
+                </a>
+              </div>
+              <ul class="item-container">
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App9AdminUserV7prepare2on3NIO15EventLoopFutureCyytG10PostgreSQL0J13SQLConnectionC_tFZ"></a>
-                    <a name="//apple_ref/swift/Method/prepare(on:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App9AdminUserV7prepare2on3NIO15EventLoopFutureCyytG10PostgreSQL0J13SQLConnectionC_tFZ">prepare(on:)</a>
+                    <a name="/s:3App14UserControllerV13createHandler_4data3NIO15EventLoopFutureCyAA07CreatedB4DataVG5Vapor7RequestC_AA0b6CreateL0VtKF"></a>
+                    <a name="//apple_ref/swift/Method/createHandler(_:data:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App14UserControllerV13createHandler_4data3NIO15EventLoopFutureCyAA07CreatedB4DataVG5Vapor7RequestC_AA0b6CreateL0VtKF">createHandler(_:data:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -212,15 +230,41 @@ other environment of your choice), reminders are printed to console during start
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Required by <code>Migration</code> protocol. Creates the admin user after a bit of sanity
-check caution.</p>
+                        <p><code>POST /api/v3/user/create</code></p>
+
+<p>Creates a new <code><a href="../Classes/User.html">User</a></code> account and its associated <code><a href="../Classes/UserProfile.html">UserProfile</a></code>. If either fail, neither
+is created, since we want to ensure that all accounts have profiles.</p>
+
+<p>A <code><a href="../Structs/CreatedUserData.html">CreatedUserData</a></code> structure is returned on success, containing the new user&rsquo;s ID,
+username and a generated recovery key.</p>
+<div class="aside aside-note">
+    <p class="aside-title">Note</p>
+    <p>The <code><a href="../Structs/CreatedUserData.html#/s:3App15CreatedUserDataV11recoveryKeySSSgvp">CreatedUserData.recoveryKey</a></code> is a random phrase used to recover an account
+in the case of a forgotten password. While it can be stored by a client, that
+essentially defeats its purpose (presumably the password would also already be
+stored). The <em>intended client use</em> is that it is displayed to the user upon successful
+creation, and the user is <em>encouraged to take a screenshot or write it down before
+proceeding</em>.</p>
+
+</div>
+<div class="aside aside-requires">
+    <p class="aside-title">Requires</p>
+    <p><code><a href="../Structs/UserCreateData.html">UserCreateData</a></code> payload in the HTTP body.</p>
+
+</div>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>409 if the username is not available. A 5xx response should be reported as a
+likely bug, please and thank you.</p>
+
+</div>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">prepare</span><span class="p">(</span><span class="n">on</span> <span class="nv">connection</span><span class="p">:</span> <span class="kt">PostgreSQLConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">Void</span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">createHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">data</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserCreateData.html">UserCreateData</a></span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Structs/CreatedUserData.html">CreatedUserData</a></span><span class="o">&gt;</span></code></pre>
 
                         </div>
                       </div>
@@ -231,30 +275,57 @@ check caution.</p>
                             <tr>
                               <td>
                                 <code>
-                                <em>connection</em>
+                                <em>req</em>
                                 </code>
                               </td>
                               <td>
                                 <div>
-                                  <p>A connection to the database, provided automatically.</p>
+                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>data</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p><code><a href="../Structs/UserCreateData.html">UserCreateData</a></code> struct containing the user&rsquo;s desired username and password.</p>
                                 </div>
                               </td>
                             </tr>
                           </tbody>
                         </table>
                       </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>The newly created user&rsquo;s ID, username, and a recovery key string</p>
+                      </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Migrations/AdminUser.swift#L20-L66">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L65-L124">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
                 </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/basicAuthGroup%20Handlers%20(not%20logged%20in)"></a>
+                <a name="//apple_ref/swift/Section/basicAuthGroup Handlers (not logged in)" class="dashAnchor"></a>
+                <a href="#/basicAuthGroup%20Handlers%20(not%20logged%20in)">
+                  <h3 class="section-name">basicAuthGroup Handlers (not logged in)</h3>
+                </a>
+              </div>
+              <ul class="item-container">
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App9AdminUserV6revert2on3NIO15EventLoopFutureCyytG10PostgreSQL0J13SQLConnectionC_tFZ"></a>
-                    <a name="//apple_ref/swift/Method/revert(on:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App9AdminUserV6revert2on3NIO15EventLoopFutureCyytG10PostgreSQL0J13SQLConnectionC_tFZ">revert(on:)</a>
+                    <a name="/s:3App14UserControllerV13verifyHandler_4data3NIO15EventLoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestC_AA0B10VerifyDataVtKF"></a>
+                    <a name="//apple_ref/swift/Method/verifyHandler(_:data:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App14UserControllerV13verifyHandler_4data3NIO15EventLoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestC_AA0B10VerifyDataVtKF">verifyHandler(_:data:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -262,20 +333,69 @@ check caution.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Required by<code>Migration</code> protocol, but removing the admin would be an exceptionally poor
-idea, so override the default implementation to just return a pre-completed <code>Future</code>.</p>
+                        <p><code>POST /api/v3/user/verify</code></p>
+
+<p>Changes a <code><a href="../Classes/User.html#/s:3App4UserC11accessLevelAA0b6AccessD0Ovp">User.accessLevel</a></code> from <code>.unverified</code> to <code>.verified</code> on successful submission
+of a registration code.</p>
+<div class="aside aside-requires">
+    <p class="aside-title">Requires</p>
+    <code><a href="../Structs/UserVerifyData.html">UserVerifyData</a></code> payload in the HTTP body.
+
+</div>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    400 error if the user is already verified or the registration code is not
+a valid one. 409 error if the registration code has already been allocated to
+another user.
+
+</div>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">revert</span><span class="p">(</span><span class="n">on</span> <span class="nv">connection</span><span class="p">:</span> <span class="kt">PostgreSQLConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">Void</span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">verifyHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">data</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserVerifyData.html">UserVerifyData</a></span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">HTTPResponseStatus</span><span class="o">&gt;</span></code></pre>
 
                         </div>
                       </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>data</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p><code><a href="../Structs/UserVerifyData.html">UserVerifyData</a></code> struct containing a registration code.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>HTTP status 200 on success.</p>
+                      </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Migrations/AdminUser.swift#L70-L72">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L143-L191">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

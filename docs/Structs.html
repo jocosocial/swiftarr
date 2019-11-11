@@ -23,7 +23,7 @@
         <a class="header-link" href="index.html">
           swiftarr 0.1.0
         </a>
-         (99% documented)
+         (100% documented)
       </p>
     
       <p class="header-col--secondary">
@@ -53,6 +53,9 @@
           <li class="nav-group-name">
             <a class="nav-group-name-link" href="Classes.html">Classes</a>
             <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/RegistrationCode.html">RegistrationCode</a>
+              </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Classes/Token.html">Token</a>
               </li>
@@ -117,6 +120,9 @@
                 <a class="nav-group-task-link" href="Structs/CreatedUserData.html">CreatedUserData</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/RegistrationCodes.html">RegistrationCodes</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/TestController.html">TestController</a>
               </li>
               <li class="nav-group-task">
@@ -132,7 +138,7 @@
                 <a class="nav-group-task-link" href="Structs/UserRecoveryData.html">UserRecoveryData</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/UserVerificationData.html">UserVerificationData</a>
+                <a class="nav-group-task-link" href="Structs/UserVerifyData.html">UserVerifyData</a>
               </li>
             </ul>
           </li>
@@ -331,7 +337,7 @@ testing and benchmarking purposes.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/TestController.swift#L10-L64">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/TestController.swift#L10-L98">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -371,7 +377,7 @@ entirely.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L12-L141">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L12-L197">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -413,7 +419,7 @@ entirely.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L153-L162">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L209-L218">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -444,7 +450,7 @@ entirely.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L165-L172">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L221-L226">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -452,9 +458,9 @@ entirely.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App20UserVerificationDataV"></a>
-                    <a name="//apple_ref/swift/Struct/UserVerificationData" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App20UserVerificationDataV">UserVerificationData</a>
+                    <a name="/s:3App14UserVerifyDataV"></a>
+                    <a name="//apple_ref/swift/Struct/UserVerifyData" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App14UserVerifyDataV">UserVerifyData</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -462,21 +468,21 @@ entirely.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Used by <code>UserController.verificationHandler(_:)</code> to verify a created but unverified
+                        <p>Used by <code>UserController.verifyHandler(_:)</code> to verify a created but unverified
 account.</p>
 
-                        <a href="Structs/UserVerificationData.html" class="slightly-smaller">See more</a>
+                        <a href="Structs/UserVerifyData.html" class="slightly-smaller">See more</a>
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">UserVerificationData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">UserVerifyData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L176-L179">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L230-L233">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -517,7 +523,43 @@ other environment of your choice), reminders are printed to console during start
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Migrations/AdminUser.swift#L13-L73">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Migrations/AdminUser.swift#L13-L74">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App17RegistrationCodesV"></a>
+                    <a name="//apple_ref/swift/Struct/RegistrationCodes" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App17RegistrationCodesV">RegistrationCodes</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>A <code>Migration</code> that populates the <code><a href="Classes/RegistrationCode.html">RegistrationCode</a></code> database from a <code>registration-codes.txt</code>
+file located at the root level of the project.</p>
+
+                        <a href="Structs/RegistrationCodes.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">RegistrationCodes</span> <span class="p">:</span> <span class="kt">Migration</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Migrations/RegistrationCodes.swift#L7-L61">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -530,7 +572,7 @@ other environment of your choice), reminders are printed to console during start
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-08)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-10)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.11.2</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>
