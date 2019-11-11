@@ -339,3 +339,16 @@ struct TokenStringData: Content {
         self.token = token.token
     }
 }
+
+extension UserRecoveryData: Validatable, Reflectable {
+    /// Validates that `.username` is 1 or more alphanumeric characters,
+    /// and `.recoveryCode` is at least 6 character in length (minimum for
+    /// both registration codes and passwords).
+    static func validations() throws -> Validations<UserRecoveryData> {
+        var validations = Validations(UserRecoveryData.self)
+        try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics))
+        try validations.add(\.recoveryKey, .count(6...))
+        return validations
+    }
+
+}
