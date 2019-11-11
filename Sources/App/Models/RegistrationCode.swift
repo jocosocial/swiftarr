@@ -22,7 +22,7 @@ final class RegistrationCode: Codable {
     var userID: UUID?
     
     /// The registration code, normalized to lowercase without spaces.
-    let code: String
+    var code: String
     
     /// Timestamp of the model's last update, set automatically.
     /// Used to track when the code was assigned.
