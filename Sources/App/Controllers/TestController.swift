@@ -64,12 +64,22 @@ struct TestController: RouteCollection {
     
     /// `GET /api/v3/test/getregistrationcodes`
     ///
-    /// Returns an array of all stored `RegistrationCode` models.
+    /// Returns an array of all stored `RegistrationCode` models. If called in a production
+    /// environment, the actual codes are sanitized before return.
     ///
     /// - Parameter req: The incoming request `Container`, provided automatically.
-    /// - Returns: An array of at most the first 10 `UserProfile` models in the databases.
+    /// - Returns: An array of the `RegistrationCoe` models in the databases.
     func getRegistrationCodesHandler(_ req: Request) throws -> Future<[RegistrationCode]> {
-        return RegistrationCode.query(on: req).all()
+        return RegistrationCode.query(on: req).all().flatMap {
+            (registrationCodes) in
+            // do not return real codes in production
+            if (try Environment.detect().isRelease) {
+                for code in registrationCodes {
+                    code.code = "NOPE"
+                }
+            }
+            return req.future(registrationCodes)
+        }
     }
 
 
