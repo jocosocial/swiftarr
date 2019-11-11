@@ -32,7 +32,7 @@ struct UserController: RouteCollection {
         userRoutes.post(UserCreateData.self, at: "create", use: createHandler)
         
         // endpoints available only when not logged in
-        basicAuthGroup.post(UserVerificationData.self, at: "register", use: verificationHandler)
+        basicAuthGroup.post(UserVerifyData.self, at: "register", use: verifyHandler)
         
         // endpoints available only when logged in
         
@@ -58,8 +58,7 @@ struct UserController: RouteCollection {
     /// - Requires: `UserCreateData` payload in the HTTP body.
     /// - Parameters:
     ///   - req: The incoming request `Container`, provided automatically.
-    ///   - data: `UserCreateData` struct containing the desired username, password and
-    ///   (optionally) the registration code.
+    ///   - data: `UserCreateData` struct containing the user's desired username and password.
     /// - Throws: 409 if the username is not available. A 5xx response should be reported as a
     ///   likely bug, please and thank you.
     /// - Returns: The newly created user's ID, username, and a recovery key string
@@ -94,10 +93,11 @@ struct UserController: RouteCollection {
                     password: passwordHash,
                     recoveryKey: recoveryHash,
                     // store normalized registration code if supplied, else `nil`
-                    verification: data.verification?.lowercased().replacingOccurrences(of: " ", with: ""),
+                    verification: nil,
                     parentID: nil,
                     accessLevel: .unverified
                 )
+
                 // wrap in a transaction to ensure each user has an associated profile
                 // (creates both, or neither)
                 return req.transaction(on: .psql) {
@@ -127,11 +127,67 @@ struct UserController: RouteCollection {
     // All handlers in this route group require a valid HTTP Basic Authentication
     // header in the request.
     
-    func verificationHandler(_ req: Request, data: UserVerificationData) throws -> Future<HTTPResponseStatus> {
+    /// `POST /api/v3/user/verify`
+    ///
+    /// Changes a `User.accessLevel` from `.unverified` to `.verified` on successful submission
+    /// of a registration code.
+    ///
+    /// - Requires: `UserVerifyData` payload in the HTTP body.
+    /// - Parameters:
+    ///   - req: The incoming request `Container`, provided automatically.
+    ///   - data: `UserVerifyData` struct containing a registration code.
+    /// - Throws: 400 error if the user is already verified or the registration code is not
+    ///   a valid one. 409 error if the registration code has already been allocated to
+    ///   another user.
+    /// - Returns: HTTP status 200 on success.
+    func verifyHandler(_ req: Request, data: UserVerifyData) throws -> Future<HTTPResponseStatus> {
         let user = try req.requireAuthenticated(User.self)
-        // see `userVerificationData.validations()`
+        // return if user is already verified
+        guard user.verification == nil else {
+            let responsStatus = HTTPResponseStatus(
+                statusCode: 400,
+                reasonPhrase: "user is already verified"
+            )
+            throw Abort(responsStatus)
+        }
+        // see `UserVerifyData.validations()`
         try data.validate()
-        return req.future(.ok)
+        // check that it's a valid code
+        return RegistrationCode.query(on: req)
+            .filter(\.code == data.verification)
+            .first()
+            .flatMap {
+                (existingCode) in
+                // does code exist?
+                guard let registrationCode = existingCode else {
+                    let responseStatus = HTTPResponseStatus(
+                        statusCode: 400,
+                        reasonPhrase: "registration code not found"
+                    )
+                    throw Abort(responseStatus)
+                }
+                // is code already used?
+                guard registrationCode.userID == nil else {
+                    let responseStatus = HTTPResponseStatus(
+                        statusCode: 409,
+                        reasonPhrase: "registration code has already been used"
+                    )
+                    throw Abort(responseStatus)
+                }
+                // update models and return 200
+                return req.transaction(on: .psql) {
+                    (connection) in
+                    // update registrationCode
+                    registrationCode.userID = try user.requireID()
+                    return registrationCode.save(on: req).flatMap {
+                        (savedCode) in
+                        // update user
+                        user.accessLevel = .verified
+                        user.verification = registrationCode.code
+                        return user.save(on: req).transform(to: .ok)
+                    }
+                }
+        }
     }
 
     // MARK: - tokenAuthGroup Handlers (logged in)
@@ -167,39 +223,32 @@ struct UserCreateData: Content {
     let username: String
     /// The user's password.
     let password: String
-    /// The registration code provided to the user. Optional during creation.
-    let verification: String?
 }
 
-/// Used by `UserController.verificationHandler(_:)` to verify a created but unverified
+/// Used by `UserController.verifyHandler(_:)` to verify a created but unverified
 /// account.
-struct UserVerificationData: Content {
+struct UserVerifyData: Content {
     /// The registration code provided to the user.
     let verification: String
 }
 
 extension UserCreateData: Validatable, Reflectable {
-    /// Validates that a .username is 1 or more alphanumeric characters,
-    /// .password is least 6 characters in length,
-    /// and that an optional .verification code is either 6 or 7 characters.
-    /// (depending on if it includes a space) in length if present.
+    /// Validates that `.username` is 1 or more alphanumeric characters,
+    /// and `.password` is least 6 characters in length.
     static func validations() throws -> Validations<UserCreateData> {
         var validations = Validations(UserCreateData.self)
         try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics))
         try validations.add(\.password, .count(6...))
-        try validations.add(\.verification, .count(6...7) || .nil)
         return validations
     }
 }
 
-extension UserVerificationData: Validatable, Reflectable {
-    /// Validates that a .verification registration code is either 6 or 7 alphanumeric
+extension UserVerifyData: Validatable, Reflectable {
+    /// Validates that a `.verification` registration code is either 6 or 7 alphanumeric
     /// characters in length (allows for inclusion or exclusion of the space).
-    static func validations() throws -> Validations<UserVerificationData> {
-        var validations = Validations(UserVerificationData.self)
+    static func validations() throws -> Validations<UserVerifyData> {
+        var validations = Validations(UserVerifyData.self)
         try validations.add(\.verification, .count(6...7) && .characterSet(.alphanumerics))
         return validations
     }
-    
-    
 }
