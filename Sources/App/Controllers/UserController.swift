@@ -82,7 +82,12 @@ struct UserController: RouteCollection {
                 }
                 
                 // create recovery key
-                let recoveryKey = generateRecoveryKey()
+                var recoveryKey = ""
+                _ = try self.generateRecoveryKey(on: req).map {
+                    (resolvedKey) in
+                    recoveryKey = resolvedKey
+                    
+                }
                 let normalizedKey = recoveryKey.lowercased().replacingOccurrences(of: " ", with: "")
                 
                 // create user
@@ -92,7 +97,6 @@ struct UserController: RouteCollection {
                     username: data.username,
                     password: passwordHash,
                     recoveryKey: recoveryHash,
-                    // store normalized registration code if supplied, else `nil`
                     verification: nil,
                     parentID: nil,
                     accessLevel: .unverified
@@ -193,14 +197,87 @@ struct UserController: RouteCollection {
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
+
+    // MARK: - Helper Functions
+
+    private let words: [String] = [
+        "aboriginal", "accept", "account", "acoustic", "adaptable", "adorable",
+        "afternoon", "agreeable", "airport", "alive", "alluring", "amazing",
+        "amused", "announce", "applause", "appreciate", "approve", "aquatic",
+        "arithmetic", "aromatic", "arrive", "aspiring", "attractive", "aunt",
+        "auspicious", "awake", "balance", "basin", "bat", "bath", "bed", "bee",
+        "befitting", "believe", "beneficial", "best", "bikes", "birds", "black",
+        "blue", "blush", "boat", "book", "bottle", "bouncy", "brains", "brass",
+        "brave", "bravo", "breezy", "brown", "brunch", "bubble", "business",
+        "cabbage", "cactus", "cake", "calm", "camera", "capable", "card",
+        "caring", "cats", "cause", "celery", "cheerful", "cheese", "cherry",
+        "chess", "chicken", "circle", "clean", "clover", "club", "coach",
+        "collect", "colorful", "comfortable", "complete", "connect",
+        "conscious", "cooperative", "cows", "crayon", "cuddly", "cute", "daily",
+        "dance", "dapper", "dashing", "dazzling", "debonair", "decisive",
+        "delicate", "delicious", "delight", "delightful", "design", "dinner",
+        "dinosaurs", "discovery", "dock", "doggo", "donkey", "drawer", "dress",
+        "drink", "drum", "dry", "duck", "dynamic", "earth", "eggs", "eight",
+        "elated", "elegant", "enchanted", "enchanting", "encourage", "enjoy",
+        "enormous", "entertain", "enthusiastic", "equal", "escape", "excellent",
+        "excite", "exciting", "exist", "expect", "expert", "exuberant", "fairy",
+        "familiar", "fancy", "fantastic", "farm", "fascinating", "feeling",
+        "fez", "first", "five", "fixed", "float", "flood", "flower", "fluffy",
+        "food", "fork", "frequent", "friend", "friendly", "frog", "fruit",
+        "future", "futuristic", "garrulous", "geese", "ghost", "giants",
+        "gifted", "gigantic", "giraffe", "glib", "glorious", "gorgeous",
+        "grape", "grass", "grateful", "gratuity", "gray", "green", "grin",
+        "groovy", "guide", "guitar", "hair", "haircut", "hand", "handsomely",
+        "happy", "harbor", "harmonious", "hat", "heal", "heat", "heavenly",
+        "hilarious", "hobbies", "honey", "horse", "hospitable", "hottub", "hug",
+        "humor", "humorous", "hungry", "illustrious", "impartial", "imported",
+        "improve", "impulse", "incredible", "inform", "instruct", "instrument",
+        "interesting", "internal", "introduce", "invincible", "island", "jazzy",
+        "jellyfish", "joke", "jolly", "joyous", "kind", "kindhearted", "kiss",
+        "kitteh", "knit", "knowledge", "ladybug", "lamp", "language", "laugh",
+        "learn", "lettuce", "library", "light", "like", "liquid", "listen",
+        "lively", "lizard", "love", "love", "loving", "lunch", "magenta",
+        "magical", "magnificent", "mailbox", "majestic", "marvelous", "melodic",
+        "milk", "mint", "mitten", "monkey", "morning", "moustache", "mouth",
+        "mysterious", "neighborly", "nest", "nifty", "oatmeal", "obtainable",
+        "ocean", "orange", "pancake", "panoramic", "pants", "partner", "party",
+        "pastoral", "peaceful", "pencil", "perfect", "person", "pet", "pets",
+        "pickle", "pie", "piquant", "pizza", "placid", "plants", "play",
+        "playground", "pleasant", "pleasure", "port", "porter", "position",
+        "possible", "potato", "precious", "print", "profuse", "public",
+        "pupper", "purple", "puzzle", "quaint", "quartz", "queen", "quiet",
+        "rabbit", "radiate", "rainstorm", "rainy", "reading", "real", "red",
+        "reflective", "rejoice", "respect", "responsible", "rest", "rhyme",
+        "ritzy", "robin", "romantic", "rose", "round", "route", "safe", "sail",
+        "sand", "savory", "science", "scientific", "scintillating", "scrabble",
+        "sea", "seal", "seashore", "serious", "share", "shiny", "ship",
+        "silent", "silk", "silly", "sincere", "skillful", "sleep", "sleepy",
+        "smile", "snail", "soak", "soft", "solid", "song", "songs", "soothe",
+        "sophisticated", "soup", "sparkling", "special", "spectacular",
+        "spiffy", "splendid", "spooky", "spoon", "square", "squeal", "squirrel",
+        "starboard", "stimulating", "stitch", "story", "succeed", "sun",
+        "superb", "supreme", "surprise", "swanky", "sweater", "sweet", "swim",
+        "table", "talented", "tasty", "team", "teeth", "terrific", "thankful",
+        "thirsty", "thoughtful", "three", "throne", "thumb", "tiara", "ticket",
+        "tiger", "tomato", "toothbrush", "toothpaste", "trail", "train",
+        "tranquil", "tree", "two", "ubiquitous", "umbrella", "underwear",
+        "unite", "unpack", "upbeat", "vacation", "verdant", "verse",
+        "victorious", "view", "violet", "volcano", "walk", "warm", "water",
+        "weather", "week", "welcome", "whimsical", "whirl", "whispering",
+        "white", "witty", "wolves", "wonder", "wonderful", "word", "writing",
+        "yarn", "year", "yellow", "yummy", "zealous", "zebra", "zesty", "zippy",
+        "zombie"
+    ]
     
-}
-
-// MARK: - Helper Functions
-
-private func generateRecoveryKey() -> String {
-    // FIXME: implement actual recovery key generation
-    return "recovery key"
+    private func generateRecoveryKey(on req: Request) throws -> Future<String> {
+        guard let word1 = words.randomElement(),
+            let word2 = words.randomElement(),
+            let word3 = words.randomElement() else {
+                throw Abort(.internalServerError, reason: "could not generate recovery key")
+        }
+        let recoveryKey = word1 + " " + word2 + " " + word3
+        return req.future(recoveryKey)
+    }
 }
 
 // MARK: - Helper Structs
