@@ -323,9 +323,9 @@ struct AuthController: RouteCollection {
 /// Used by `AuthController.recoveryHandler(_:data:)` for the incoming recovery attempt.
 struct UserRecoveryData: Content {
     /// The user's username.
-    let username: String
+    var username: String
     /// The string to use – any one of: password / registration key / recovery key.
-    let recoveryKey: String
+    var recoveryKey: String
 }
 
 /// Used by `AuthController.loginHandler(_:)` and `AuthController.recoveryHandler(_:data:)`
