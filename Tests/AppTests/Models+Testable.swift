@@ -8,12 +8,16 @@ extension User {
     ///
     /// - Parameters:
     ///   - username: An optional username (or randomly generated if `nil`).
+    ///   - password: Password for this user.
+    ///   - recoveryKey: Recovery key for this user.
     ///   - accessLevel: The desired `UserAccessLevel` for this user.
     ///   - connection: The database connection.
     /// - Returns: An initialized `User` object.
     static func create(
         username: String? = nil,
-        accessLevel: UserAccessLevel,
+        password: String,
+        recoveryKey: String = "recovery key",
+        accessLevel: UserAccessLevel = .unverified,
         on connection: PostgreSQLConnection
     ) throws -> User {
         // generate random username if none specified
@@ -24,8 +28,8 @@ extension User {
             createUsername = UUID().uuidString
         }
         // test users all have default password and recovery key
-        let passwordHash = try BCrypt.hash("password")
-        let recoveryHash = try BCrypt.hash("recovery key")
+        let passwordHash = try BCrypt.hash(password)
+        let recoveryHash = try BCrypt.hash(recoveryKey)
         // create user directly
         let user = User(
             username: createUsername,
