@@ -95,7 +95,7 @@ struct AuthController: RouteCollection {
     ///   provided upon initial account creation.
     ///
     /// - Note: To prevent brute force malicious attempts, there is a limit on successive
-    ///   failed recovery attempts, currently hard-coded to 10.
+    ///   failed recovery attempts, currently hard-coded to 5.
     ///
     /// - Requires: `RecoveryData` payload in the HTTP body.
     /// - Parameters:
@@ -123,7 +123,7 @@ struct AuthController: RouteCollection {
                     throw Abort(responseStatus)
                 }
                 // abort if account is seeing potential brute-force attack
-                guard user.recoveryAttempts < 10 else {
+                guard user.recoveryAttempts < 5 else {
                     let responseStatus = HTTPResponseStatus(
                         statusCode: 403,
                         reasonPhrase: "please see a Twit-arr Team member for password recovery"
