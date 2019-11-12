@@ -116,19 +116,12 @@ struct AuthController: RouteCollection {
                 (existingUser) in
                 // abort if user not found
                 guard let user = existingUser else {
-                    let responseStatus = HTTPResponseStatus(
-                        statusCode: 400,
-                        reasonPhrase: "username \"\(data.username)\" not found"
-                    )
-                    throw Abort(responseStatus)
+                    throw Abort(.badRequest, reason: "username \"\(data.username)\" not found")
                 }
+
                 // abort if account is seeing potential brute-force attack
                 guard user.recoveryAttempts < 5 else {
-                    let responseStatus = HTTPResponseStatus(
-                        statusCode: 403,
-                        reasonPhrase: "please see a Twit-arr Team member for password recovery"
-                    )
-                    throw Abort(responseStatus)
+                    throw Abort(.forbidden, reason: "please see a Twit-arr Team member for password recovery")
                 }
                 
                 // registration codes and recovery keys are normalized prior to storage
@@ -140,11 +133,7 @@ struct AuthController: RouteCollection {
                 // marked as already used for recovery
                 guard normalizedKey.count != 6,
                     user.verification?.first != "*" else {
-                        let responseStatus = HTTPResponseStatus(
-                            statusCode: 400,
-                            reasonPhrase: "account must be recovered using the recovery key"
-                        )
-                        throw Abort(responseStatus)
+                        throw Abort(.badRequest, reason: "account must be recovered using the recovery key")
                 }
                 
                 // attempt data.recoveryKey match
@@ -172,11 +161,7 @@ struct AuthController: RouteCollection {
                     // track the attempt count
                     user.recoveryAttempts += 1
                     _ = user.save(on: req)
-                    let responseStatus = HTTPResponseStatus(
-                        statusCode: 400,
-                        reasonPhrase: "no match for supplied recovery key"
-                    )
-                    throw Abort(responseStatus)
+                    throw Abort(.badRequest, reason: "no match for supplied recovery key")
                 }
                 
                 // user appears valid, zero out attempt tracking
@@ -253,7 +238,7 @@ struct AuthController: RouteCollection {
         let user = try req.requireAuthenticated(User.self)
         // no login for punks
         guard user.accessLevel != .banned else {
-            throw Abort(.forbidden)
+            throw Abort(.forbidden, reason: "nope")
         }
         // return existing token if one exists
         return try Token.query(on: req)
@@ -309,10 +294,7 @@ struct AuthController: RouteCollection {
                 if let existing = existingToken {
                     return existing.delete(on: req).transform(to: HTTPStatus.noContent)
                 } else {
-                    let responseStatus = HTTPResponseStatus(
-                        statusCode: 409,
-                        reasonPhrase: "user is not logged in")
-                    return req.future(responseStatus)
+                    throw Abort(.conflict, reason: "user is not logged in")
                 }
         }
     }

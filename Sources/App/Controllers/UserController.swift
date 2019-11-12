@@ -62,7 +62,7 @@ struct UserController: RouteCollection {
     /// - Throws: 409 if the username is not available. A 5xx response should be reported as a
     ///   likely bug, please and thank you.
     /// - Returns: The newly created user's ID, username, and a recovery key string
-    func createHandler(_ req: Request, data: UserCreateData) throws -> Future<CreatedUserData> {
+    func createHandler(_ req: Request, data: UserCreateData) throws -> Future<Response> {
         // see `UserCreateData.validations()`
         try data.validate()
         // check for existing username so we can return 409 Conflict status instead
@@ -72,13 +72,9 @@ struct UserController: RouteCollection {
             .first()
             .flatMap {
                 (existingUser) in
-                // abort if name is already taken
-                if existingUser != nil {
-                    let responseStatus = HTTPResponseStatus(
-                        statusCode: 409,
-                        reasonPhrase: "username '\(data.username)' is not available"
-                    )
-                    throw Abort(responseStatus)
+                // is name already taken?
+                guard existingUser == nil else {
+                    throw Abort(.conflict, reason: "username '\(data.username)' is not available")
                 }
                 
                 // create recovery key
@@ -86,7 +82,6 @@ struct UserController: RouteCollection {
                 _ = try self.generateRecoveryKey(on: req).map {
                     (resolvedKey) in
                     recoveryKey = resolvedKey
-                    
                 }
                 let normalizedKey = recoveryKey.lowercased().replacingOccurrences(of: " ", with: "")
                 
@@ -110,7 +105,7 @@ struct UserController: RouteCollection {
                         (savedUser) in
                         // create profile
                         guard let id = savedUser.id else {
-                            throw Abort(.internalServerError)
+                            throw Abort(.internalServerError, reason: "new user not saved")
                         }
                         let profile = UserProfile(userID: id, username: savedUser.username)
                         return profile.save(on: connection).map {
@@ -120,7 +115,9 @@ struct UserController: RouteCollection {
                                 username: savedUser.username,
                                 recoveryKey: recoveryKey
                             )
-                            return createdUserData
+                            let response = Response(http: HTTPResponse(status: .created), using: req)
+                            try response.content.encode(createdUserData)
+                            return response
                         }
                     }
                 }
@@ -146,13 +143,9 @@ struct UserController: RouteCollection {
     /// - Returns: HTTP status 200 on success.
     func verifyHandler(_ req: Request, data: UserVerifyData) throws -> Future<HTTPResponseStatus> {
         let user = try req.requireAuthenticated(User.self)
-        // return if user is already verified
+        // is user already verified?
         guard user.verification == nil else {
-            let responsStatus = HTTPResponseStatus(
-                statusCode: 400,
-                reasonPhrase: "user is already verified"
-            )
-            throw Abort(responsStatus)
+            throw Abort(.badRequest, reason: "user is already verified")
         }
         // see `UserVerifyData.validations()`
         try data.validate()
@@ -164,19 +157,11 @@ struct UserController: RouteCollection {
                 (existingCode) in
                 // does code exist?
                 guard let registrationCode = existingCode else {
-                    let responseStatus = HTTPResponseStatus(
-                        statusCode: 400,
-                        reasonPhrase: "registration code not found"
-                    )
-                    throw Abort(responseStatus)
+                    throw Abort(.badRequest, reason: "registration code not found")
                 }
                 // is code already used?
                 guard registrationCode.userID == nil else {
-                    let responseStatus = HTTPResponseStatus(
-                        statusCode: 409,
-                        reasonPhrase: "registration code has already been used"
-                    )
-                    throw Abort(responseStatus)
+                    throw Abort(.conflict, reason: "registration code has already been used")
                 }
                 // update models and return 200
                 return req.transaction(on: .psql) {
