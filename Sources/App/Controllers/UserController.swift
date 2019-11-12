@@ -32,7 +32,7 @@ struct UserController: RouteCollection {
         userRoutes.post(UserCreateData.self, at: "create", use: createHandler)
         
         // endpoints available only when not logged in
-        basicAuthGroup.post(UserVerifyData.self, at: "register", use: verifyHandler)
+        basicAuthGroup.post(UserVerifyData.self, at: "verify", use: verifyHandler)
         
         // endpoints available only when logged in
         
@@ -143,23 +143,23 @@ struct UserController: RouteCollection {
     /// - Returns: HTTP status 200 on success.
     func verifyHandler(_ req: Request, data: UserVerifyData) throws -> Future<HTTPResponseStatus> {
         let user = try req.requireAuthenticated(User.self)
-        // is user already verified?
+        // abort if user is already verified
         guard user.verification == nil else {
             throw Abort(.badRequest, reason: "user is already verified")
         }
         // see `UserVerifyData.validations()`
         try data.validate()
-        // check that it's a valid code
+        let normalizedCode = data.verification.lowercased().replacingOccurrences(of: " ", with: "")
         return RegistrationCode.query(on: req)
-            .filter(\.code == data.verification)
+            .filter(\.code == normalizedCode)
             .first()
             .flatMap {
                 (existingCode) in
-                // does code exist?
+                // abort if code not found
                 guard let registrationCode = existingCode else {
                     throw Abort(.badRequest, reason: "registration code not found")
                 }
-                // is code already used?
+                // abort if code is already used
                 guard registrationCode.userID == nil else {
                     throw Abort(.conflict, reason: "registration code has already been used")
                 }
@@ -315,7 +315,7 @@ extension UserVerifyData: Validatable, Reflectable {
     /// characters in length (allows for inclusion or exclusion of the space).
     static func validations() throws -> Validations<UserVerifyData> {
         var validations = Validations(UserVerifyData.self)
-        try validations.add(\.verification, .count(6...7) && .characterSet(.alphanumerics))
+        try validations.add(\.verification, .count(6...7) && .characterSet(.alphanumerics + .whitespaces))
         return validations
     }
 }

@@ -1,6 +1,7 @@
 import Foundation
 import Vapor
 import FluentPostgreSQL
+import Authentication
 
 /// All accounts are of class `User`.
 ///
