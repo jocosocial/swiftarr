@@ -10,6 +10,7 @@ final class UserTests: XCTestCase {
     // set properties
     let testUsername = "grundoon"
     let testPassword = "pasword"
+    let testVerification = "ABC ABC"
     let authURI = "/api/v3/auth/"
     let testURI = "/api/v3/test/"
     let userURI = "/api/v3/user/"
@@ -103,6 +104,148 @@ final class UserTests: XCTestCase {
             method: .POST,
             body: userCreateData
         )
-        XCTAssertTrue(response.http.status.code == 409, "should be 409 conflict")
+        XCTAssertTrue(response.http.status.code == 409, "should be 409 Conflict")
+        XCTAssertTrue(response.http.body.description.contains("not available"), "not available")
+    }
+    
+    /// `POST /api/v3/user/verify`
+    func testUserValidaton() throws {
+        // create user
+        var userCreateData = UserCreateData(username: testUsername, password: testPassword)
+        _ = try app.getResponse(from: userURI + "create", method: .POST, body: userCreateData)
+        var credentials = BasicAuthorization(username: testUsername, password: testPassword)
+        var headers = HTTPHeaders()
+        headers.basicAuthorization = credentials
+        
+        // test bad code
+        var userVerifyData = UserVerifyData(verification: "CBA CBA")
+        var response = try app.getResponse(
+            from: userURI + "verify",
+            method: .POST,
+            headers: headers,
+            body: userVerifyData
+        )
+        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
+        XCTAssertTrue(response.http.body.description.contains("not found"), "not found")
+
+        // test good code
+        userVerifyData = UserVerifyData(verification: testVerification)
+        response = try app.getResponse(
+            from: userURI + "verify",
+            method: .POST,
+            headers: headers,
+            body: userVerifyData
+        )
+        XCTAssertTrue(response.http.status.code == 200, "should be 200 OK")
+        // FIXME: check accessLevel, then verify user, then check accessLevel
+        
+        // test already verified
+        response = try app.getResponse(
+            from: userURI + "verify",
+            method: .POST,
+            headers: headers,
+            body: userVerifyData
+        )
+        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
+        XCTAssertTrue(response.http.body.description.contains("already verified"), "already verified")
+        
+        // test duplicate code
+        userCreateData.username = "testUser2"
+        _ = try app.getResponse(from: userURI + "create", method: .POST, body: userCreateData)
+        credentials = BasicAuthorization(username: "testUser2", password: testPassword)
+        headers = HTTPHeaders()
+        headers.basicAuthorization = credentials
+
+        userVerifyData.verification = testVerification
+        response = try app.getResponse(
+            from: userURI + "verify",
+            method: .POST,
+            headers: headers,
+            body: userVerifyData
+        )
+        XCTAssertTrue(response.http.status.code == 409, "should be 409 Conflict")
+        XCTAssertTrue(response.http.body.description.contains("been used"), "been used")
+    }
+    
+    /// `POST /api/v3/auth/recovery`
+    func testAccountRecovery() throws {
+        // create user
+        let userCreateData = UserCreateData(username: testUsername, password: testPassword)
+        let createdData = try app.getResult(
+            from: userURI + "create",
+            method: .POST,
+            body: userCreateData,
+            decodeTo: CreatedUserData.self
+        )
+        let userVerifyData = UserVerifyData(verification: testVerification)
+        let credentials = BasicAuthorization(username: testUsername, password: testPassword)
+        var headers = HTTPHeaders()
+        headers.basicAuthorization = credentials
+        _ = try app.getResponse(from: userURI + "verify", method: .POST, headers: headers, body: userVerifyData)
+        
+        // test recovery with key
+        var userRecoveryData = UserRecoveryData(username: testUsername, recoveryKey: createdData.recoveryKey!)
+        var result = try app.getResult(
+            from: authURI + "recovery",
+            method: .POST,
+            body: userRecoveryData,
+            decodeTo: TokenStringData.self
+        )
+        XCTAssertFalse(result.token.isEmpty, "should receive valid token string")
+        
+        // test recovery with password
+        userRecoveryData.recoveryKey = testPassword
+        result = try app.getResult(
+            from: authURI + "recovery",
+            method: .POST,
+            body: userRecoveryData,
+            decodeTo: TokenStringData.self
+        )
+        XCTAssertFalse(result.token.isEmpty, "should receive valid token string")
+
+        // test recovery with registration code
+        userRecoveryData.recoveryKey = testVerification
+        result = try app.getResult(
+            from: authURI + "recovery",
+            method: .POST,
+            body: userRecoveryData,
+            decodeTo: TokenStringData.self
+        )
+        XCTAssertFalse(result.token.isEmpty, "should receive valid token string")
+        
+        // test registration code already used fails
+        var response = try app.getResponse(
+            from: authURI + "recovery",
+            method: .POST,
+            body: userRecoveryData
+        )
+        XCTAssertTrue(response.http.status.code == 400, "should be 400 bad request")
+        XCTAssertTrue(response.http.body.description.contains("recovery key"), "recovery key")
+        
+        // test bad user
+        userRecoveryData.username = "nonsense"
+        response = try app.getResponse(
+            from: authURI + "recovery",
+            method: .POST,
+            body: userRecoveryData
+        )
+        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
+        XCTAssertTrue(response.http.body.description.contains("username"), "username")
+        
+        // test bad key fails
+        userRecoveryData.username = testUsername
+        userRecoveryData.recoveryKey = "nonsense"
+        response = try app.getResponse(from: authURI + "recovery", method: .POST, body: userRecoveryData)
+        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
+        XCTAssertTrue(response.http.body.description.contains("no match"), "no match")
+        
+        // test too many attempts
+        response = try app.getResponse(from: authURI + "recovery", method: .POST, body: userRecoveryData)
+        response = try app.getResponse(from: authURI + "recovery", method: .POST, body: userRecoveryData)
+        response = try app.getResponse(from: authURI + "recovery", method: .POST, body: userRecoveryData)
+        response = try app.getResponse(from: authURI + "recovery", method: .POST, body: userRecoveryData)
+        response = try app.getResponse(from: authURI + "recovery", method: .POST, body: userRecoveryData)
+        XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
+        XCTAssertTrue(response.http.body.description.contains("Team member"), "Team member")
     }
 }
