@@ -1,6 +1,7 @@
 import Vapor
 import Crypto
 import FluentSQL
+import Redis
 
 /// The collection of `/api/v3/user/*` route endpoints and handler functions related
 /// to a user's own data.
@@ -141,7 +142,7 @@ struct UserController: RouteCollection {
     ///   a valid one. 409 error if the registration code has already been allocated to
     ///   another user.
     /// - Returns: HTTP status 200 on success.
-    func verifyHandler(_ req: Request, data: UserVerifyData) throws -> Future<HTTPResponseStatus> {
+    func verifyHandler(_ req: Request, data: UserVerifyData) throws -> Future<HTTPStatus> {
         let user = try req.requireAuthenticated(User.self)
         // abort if user is already verified
         guard user.verification == nil else {
