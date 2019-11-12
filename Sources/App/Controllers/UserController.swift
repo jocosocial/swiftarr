@@ -72,7 +72,7 @@ struct UserController: RouteCollection {
             .first()
             .flatMap {
                 (existingUser) in
-                // is name already taken?
+                // abort if name is already taken
                 guard existingUser == nil else {
                     throw Abort(.conflict, reason: "username '\(data.username)' is not available")
                 }
@@ -287,16 +287,16 @@ struct CreatedUserData: Content {
 /// Used by `UserController.createHandler(_:data:) for initial creation of an account.
 struct UserCreateData: Content {
     /// The user's username.
-    let username: String
+    var username: String
     /// The user's password.
-    let password: String
+    var password: String
 }
 
 /// Used by `UserController.verifyHandler(_:)` to verify a created but unverified
 /// account.
 struct UserVerifyData: Content {
     /// The registration code provided to the user.
-    let verification: String
+    var verification: String
 }
 
 extension UserCreateData: Validatable, Reflectable {
