@@ -254,6 +254,11 @@ struct UserController: RouteCollection {
         "zombie"
     ]
     
+    /// Generates a recovery key of 3 words randomly chosen from `words` array.
+    ///
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Throws: 500 error if the randomizer fails.
+    /// - Returns: A recoveryKey String.
     private func generateRecoveryKey(on req: Request) throws -> Future<String> {
         guard let word1 = words.randomElement(),
             let word2 = words.randomElement(),
