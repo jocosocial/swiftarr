@@ -77,7 +77,7 @@ struct AuthController: RouteCollection {
     ///
     /// Attempts to authorize the user using a combination of `User.username` and *any one* of
     /// the `User.verification` (registration code), `User.password` or `User.recoveryKey`
-    /// (returned by `UserController.createHandler(_:)`) values.
+    /// (returned by `UserController.createHandler(_:data:)`) values.
     ///
     /// The use case is a forgotten password. While an API client has probably stored the
     /// information internally, that doesn't necessarily help if the user is setting up another
@@ -92,15 +92,15 @@ struct AuthController: RouteCollection {
     ///   This limitation is to prevent a possible race condition in which a malicious
     ///   user has obtained another's registration code. After one successful recovery has
     ///   been executed via the code, subsequent recovery can only be done via the recoveryKey
-    ///   provided upon initial account creation.
+    ///   provided during initial account creation.
     ///
-    /// - Note: To prevent brute force malicious attempts, there is a limit on successive
+    /// - Note: To prevent brute-force malicious attempts, there is a limit on successive
     ///   failed recovery attempts, currently hard-coded to 5.
     ///
-    /// - Requires: `RecoveryData` payload in the HTTP body.
+    /// - Requires: `UserRecoveryData` payload in the HTTP body.
     /// - Parameters:
     ///   - req: The incoming request `Container`, provided automatically.
-    ///   - data: `RecoveryData` struct containing the username and recoveryKey
+    ///   - data: `UserRecoveryData` struct containing the username and recoveryKey
     ///   pair to attempt.
     /// - Throws: 400 error if the recovery fails. 403 error if the maximum number of successive
     ///   failed recovery attempts has been reached. A 5xx response should be reported as a
@@ -129,13 +129,13 @@ struct AuthController: RouteCollection {
                 // registration codes and recovery keys are normalized prior to storage
                 let normalizedKey = data.recoveryKey.lowercased().replacingOccurrences(of: " ", with: "")
 
+                // protect against ping-pong attack from compromised registration code...
                 // if the code being sent normalizes to 6 characters, it is most likely a
-                // registration code (it *could* be a password, but presumably they've already
-                // tried that prior to resorting to recovery), so ensure the code hasn't been
-                // marked as already used for recovery
-                guard normalizedKey.count != 6,
-                    user.verification?.first != "*" else {
+                // registration code, so abort it's already been used
+                if normalizedKey.count == 6 {
+                    guard user.verification?.first != "*" else {
                         throw Abort(.badRequest, reason: "account must be recovered using the recovery key")
+                    }
                 }
                 
                 // attempt data.recoveryKey match
