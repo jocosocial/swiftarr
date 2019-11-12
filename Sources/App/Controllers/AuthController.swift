@@ -108,6 +108,8 @@ struct AuthController: RouteCollection {
     /// - Returns: An authentication token (string) that should be used for all subsequent
     ///   HTTP requests, until expiry or revocation.
     func recoveryHandler(_ req: Request, data: UserRecoveryData) throws -> Future<TokenStringData> {
+        // see `UserRecoveryData.validations()`
+        try data.validate()
         // find data.username user
         return User.query(on: req)
             .filter(\.username == data.username)
