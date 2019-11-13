@@ -34,27 +34,71 @@ extension Application {
         try Application.testable(envArgs: migrateEnvironment).asyncRun().wait()
     }
     
+    /// Convenience utility to create a test User and its associated profile.
+    ///
+    /// - Parameters:
+    ///   - username: An optional username (or randomly generated if `nil`).
+    ///   - password: Password for this user.
+    ///   - recoveryKey: Recovery key for this user.
+    ///   - accessLevel: The desired `UserAccessLevel` for this user.
+    ///   - connection: The database connection.
+    /// - Returns: `CreatedUserData`
+    func createUser(
+        username: String? = nil,
+        password: String,
+        accessLevel: UserAccessLevel,
+        on connection: PostgreSQLConnection
+    ) throws -> CreatedUserData {
+        // generate random username if none specified
+        var createUsername: String
+        if let suppliedUsername = username {
+            createUsername = suppliedUsername
+        } else {
+            createUsername = UUID().uuidString
+        }
+        let userCreateData = UserCreateData(username: createUsername, password: password)
+        // need a responder to reply to the request
+        let responder = try self.make(Responder.self)
+        // create HTTP request
+        let request = HTTPRequest(
+            method: .POST,
+            url: "/api/v3/user/create",
+            headers: HTTPHeaders()
+        )
+        // wrap it in Request container
+        let wrappedRequest = Request(http: request, using: self)
+        // encode body
+        try wrappedRequest.content.encode(userCreateData)
+        // send and await result
+        let returned = try responder.respond(to: wrappedRequest).wait()
+        return try returned.content.syncDecode(CreatedUserData.self)
+    }
+
     /// Logs in the supplied user and returns the Bearer Authentication token.
     ///
     /// - Parameters:
     ///   - username: The test User's username.
-    ///   - connection: The database connection being user in the calling test.
+    ///   - password: The tese User's password.
+    ///   - connection: The database connection being used in the calling test.
     /// - Returns: A generated `TokenStringData` object.
-    func login(username: String, on connection: PostgreSQLConnection) throws -> TokenStringData {
+    func login(
+        username: String,
+        password: String = "password",
+        on connection: PostgreSQLConnection
+    ) throws -> TokenStringData {
         // create Basic auth header
-        // all test users have a password of "password"
-        let credentials = BasicAuthorization(username: username, password: "password")
+        let credentials = BasicAuthorization(username: username, password: password)
         var headers = HTTPHeaders()
         headers.basicAuthorization = credentials
         // need a responder to reply to the request
         let responder = try self.make(Responder.self)
-        // first create HTTP request
+        // create HTTP request
         let request = HTTPRequest(
             method: .POST,
             url: "/api/v3/auth/login",
             headers: headers
         )
-        // then wrap it in a Vapor Request container
+        // wrap it in Request container
         let wrappedRequest = Request(http: request, using: self)
         // send and await result
         let returned = try responder.respond(to: wrappedRequest).wait()
