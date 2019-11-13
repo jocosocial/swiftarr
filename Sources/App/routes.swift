@@ -7,6 +7,9 @@ public func routes(_ router: Router) throws {
         return "It works!"
     }
     
+    let adminController = AdminController()
+    try router.register(collection: adminController)
+    
     let authController = AuthController()
     try router.register(collection: authController)
     
