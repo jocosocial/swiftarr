@@ -68,9 +68,9 @@ final class UserTests: XCTestCase {
     /// `GET /api/v3/test/getprofiles``
     func testUserCreation() throws {
         // a specified user via helper
-        let user = try User.create(username: testUsername, accessLevel: .unverified, on: conn)
+        let user = try app.createUser(username: testUsername, password: testPassword, accessLevel: .unverified, on: conn)
         // a random user via helper
-        _ = try User.create(accessLevel: .unverified, on: conn)
+        _ = try app.createUser(password: testPassword, accessLevel: .unverified, on: conn)
         // a user via API
         let apiUsername = "apiuser"
         let userCreateData = UserCreateData(username: apiUsername, password: "password")
@@ -109,10 +109,14 @@ final class UserTests: XCTestCase {
     }
     
     /// `POST /api/v3/user/verify`
-    func testUserValidaton() throws {
+    func testUserVerify() throws {
         // create user
-        var userCreateData = UserCreateData(username: testUsername, password: testPassword)
-        _ = try app.getResponse(from: userURI + "create", method: .POST, body: userCreateData)
+        let createdUserData = try app.createUser(
+            username: testUsername,
+            password: testPassword,
+            accessLevel: .unverified,
+            on: conn
+        )
         var credentials = BasicAuthorization(username: testUsername, password: testPassword)
         var headers = HTTPHeaders()
         headers.basicAuthorization = credentials
@@ -129,6 +133,20 @@ final class UserTests: XCTestCase {
         XCTAssertTrue(response.http.body.description.contains("not found"), "not found")
 
         // test good code
+        // check accessLevel is .unverified
+        let idString = "\(createdUserData.userID)"
+        let adminToken = try app.login(username: "admin", on: conn)
+        let adminCredentials = BearerAuthorization(token: adminToken.token)
+        var adminHeaders = HTTPHeaders()
+        adminHeaders.bearerAuthorization = adminCredentials
+        var user = try app.getResult(
+            from: "/api/v3/admin/users/" + idString,
+            method: .GET,
+            headers: adminHeaders,
+            decodeTo: User.self
+        )
+        XCTAssertTrue(user.accessLevel == .unverified, "should be .unverified")
+        // verify with good code
         userVerifyData = UserVerifyData(verification: testVerification)
         response = try app.getResponse(
             from: userURI + "verify",
@@ -137,7 +155,14 @@ final class UserTests: XCTestCase {
             body: userVerifyData
         )
         XCTAssertTrue(response.http.status.code == 200, "should be 200 OK")
-        // FIXME: check accessLevel, then verify user, then check accessLevel
+        // check accessLevel has been applied
+        user = try app.getResult(
+            from: "/api/v3/admin/users/" + idString,
+            method: .GET,
+            headers: adminHeaders,
+            decodeTo: User.self
+        )
+        XCTAssertTrue(user.accessLevel == .verified, "should be .verified")
         
         // test already verified
         response = try app.getResponse(
@@ -150,8 +175,7 @@ final class UserTests: XCTestCase {
         XCTAssertTrue(response.http.body.description.contains("already verified"), "already verified")
         
         // test duplicate code
-        userCreateData.username = "testUser2"
-        _ = try app.getResponse(from: userURI + "create", method: .POST, body: userCreateData)
+        _ = try app.createUser(username: "testUser2", password: testPassword, accessLevel: .verified, on: conn)
         credentials = BasicAuthorization(username: "testUser2", password: testPassword)
         headers = HTTPHeaders()
         headers.basicAuthorization = credentials
@@ -168,14 +192,13 @@ final class UserTests: XCTestCase {
     }
     
     /// `POST /api/v3/auth/recovery`
-    func testAccountRecovery() throws {
-        // create user
-        let userCreateData = UserCreateData(username: testUsername, password: testPassword)
-        let createdData = try app.getResult(
-            from: userURI + "create",
-            method: .POST,
-            body: userCreateData,
-            decodeTo: CreatedUserData.self
+    func testAuthRecovery() throws {
+        // create verified user
+        let createdUserData = try app.createUser(
+            username: testUsername,
+            password: testPassword,
+            accessLevel: .verified,
+            on: conn
         )
         let userVerifyData = UserVerifyData(verification: testVerification)
         let credentials = BasicAuthorization(username: testUsername, password: testPassword)
@@ -184,7 +207,7 @@ final class UserTests: XCTestCase {
         _ = try app.getResponse(from: userURI + "verify", method: .POST, headers: headers, body: userVerifyData)
         
         // test recovery with key
-        var userRecoveryData = UserRecoveryData(username: testUsername, recoveryKey: createdData.recoveryKey!)
+        var userRecoveryData = UserRecoveryData(username: testUsername, recoveryKey: createdUserData.recoveryKey!)
         var result = try app.getResult(
             from: authURI + "recovery",
             method: .POST,
