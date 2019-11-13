@@ -283,9 +283,8 @@ struct AuthController: RouteCollection {
     /// - Requires: Currently logged in.
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: 401 error if the authentication failed. 409 error if the user somehow
-    ///   wasn't logged in. A 5xx response should be reported as a likely bug, please and
-    ///   thank you.
-    /// - Returns: HTTPStatus response. 204 if the token was successfully deleted.
+    ///   wasn't logged in.
+    /// - Returns: 204 No Content if the token was successfully deleted.
     func logoutHandler(_ req: Request) throws -> Future<HTTPStatus> {
         let user = try req.requireAuthenticated(User.self)
         try req.unauthenticate(User.self)
@@ -295,7 +294,7 @@ struct AuthController: RouteCollection {
             .flatMap {
                 (existingToken) in
                 if let existing = existingToken {
-                    return existing.delete(on: req).transform(to: HTTPStatus.noContent)
+                    return existing.delete(on: req).transform(to: .noContent)
                 } else {
                     throw Abort(.conflict, reason: "user is not logged in")
                 }
