@@ -305,7 +305,12 @@ extension UserCreateData: Validatable, Reflectable {
     /// and `.password` is least 6 characters in length.
     static func validations() throws -> Validations<UserCreateData> {
         var validations = Validations(UserCreateData.self)
-        try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics))
+        // if testing allow "-" in name so that generated usernames can be UUID
+        if (try Environment.detect().isRelease) {
+            try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics))
+        } else {
+            try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics + .dash))
+        }
         try validations.add(\.password, .count(6...))
         return validations
     }
@@ -318,5 +323,15 @@ extension UserVerifyData: Validatable, Reflectable {
         var validations = Validations(UserVerifyData.self)
         try validations.add(\.verification, .count(6...7) && .characterSet(.alphanumerics + .whitespaces))
         return validations
+    }
+}
+
+extension CharacterSet {
+    /// Define a character set containing just a "-", to allow UUID as username.
+    /// This is only needed for our .testing environment.
+    fileprivate static var dash: CharacterSet {
+        var dash: CharacterSet = .init()
+        dash.insert(charactersIn: "-")
+        return dash
     }
 }
