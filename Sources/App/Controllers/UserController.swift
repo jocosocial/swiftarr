@@ -27,6 +27,7 @@ struct UserController: RouteCollection {
         
         // set protected route groups
         let basicAuthGroup = userRoutes.grouped([basicAuthMiddleware, guardAuthMiddleware])
+        let sharedAuthGroup = userRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware, guardAuthMiddleware])
         let tokenAuthGroup = userRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
         
         // open access endpoints
@@ -34,6 +35,9 @@ struct UserController: RouteCollection {
         
         // endpoints available only when not logged in
         basicAuthGroup.post(UserVerifyData.self, at: "verify", use: verifyHandler)
+        
+        // endpoints available whether logged in or out
+        sharedAuthGroup.get("whoami", use: whoamiHandler)
         
         // endpoints available only when logged in
         tokenAuthGroup.post(UserPasswordData.self, at: "password", use: passwordHandler)
@@ -123,6 +127,34 @@ struct UserController: RouteCollection {
                     }
                 }
         }
+    }
+    
+    // MARK: - sharedAuthGroup Handlers (logged in OR out)
+    // All handlers in this route group require a valid HTTP Basic Authorization
+    // *or* HTTP Bearer Authorization header in the request.
+    
+    /// `GET /api/v3/user/whoami`
+    ///
+    /// Returns the current user's `.id`, `.username` and whether they're currently logged in.
+    ///
+    /// This endpoint can be reached with either Basic or Bearer authenticaton, and might be
+    /// useful in a multi-account environment to determine which account's credentials are
+    /// currently being used.
+    ///
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Returns: The current user's ID and username.
+    func whoamiHandler(_ req: Request) throws -> Future<CurrentUserData> {
+        let user = try req.authenticated(User.self)
+        // well, we have to unwrap somewhere
+        guard let my = user, let id = my.id else {
+            throw Abort(.internalServerError, reason: "this is seriously not possible")
+        }
+        var currentUserData = CurrentUserData(userID: id, username: my.username, isLoggedIn: true)
+        // if there's a BasicAuthorization header, not logged in
+        if let _ = req.http.headers.basicAuthorization {
+            currentUserData.isLoggedIn = false
+        }
+        return req.future(currentUserData)
     }
     
     // MARK: - basicAuthGroup Handlers (not logged in)
@@ -302,6 +334,16 @@ struct CreatedUserData: Content {
     /// request and this is a primary account, the generated recovery key, otherwise `nil`.
     /// A recoveryKey is generated only upon receipt of a successful registration.
     let recoveryKey: String?
+}
+
+/// Returned by `UserController.whoamiHandler(_:).`
+struct CurrentUserData: Content {
+    /// The currrent user's ID.
+    let userID: UUID
+    /// The current user's username.
+    let username: String
+    /// Whether the user is currently logged in.
+    var isLoggedIn: Bool
 }
 
 /// Used by `UserController.createHandler(_:data:) for initial creation of an account.

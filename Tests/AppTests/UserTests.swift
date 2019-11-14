@@ -331,4 +331,34 @@ final class UserTests: XCTestCase {
         token = try app.login(username: testUsername, password: newPassword, on: conn)
         XCTAssertFalse(token.token.isEmpty, "should receive valid token string")
     }
+    
+    /// `GET /api/v3/user/whoami`
+    func testUserWhoami() throws {
+        _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+
+        // test basic whoami
+        headers.basicAuthorization = BasicAuthorization(username: testUsername, password: testPassword)
+        var currentUserData = try app.getResult(
+            from: userURI + "whoami",
+            method: .GET,
+            headers: headers,
+            decodeTo: CurrentUserData.self
+        )
+        XCTAssertTrue(currentUserData.username == testUsername, "should be \(testUsername)")
+        XCTAssertFalse(currentUserData.isLoggedIn, "should not be logged in")
+        
+        // test bearer whoami
+        let token = try app.login(username: testUsername, on: conn)
+        headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        currentUserData = try app.getResult(
+            from: userURI + "whoami",
+            method: .GET,
+            headers: headers,
+            decodeTo: CurrentUserData.self
+        )
+        XCTAssertTrue(currentUserData.username == testUsername, "should be \(testUsername)")
+        XCTAssertTrue(currentUserData.isLoggedIn, "should be logged in")
+    }
 }
