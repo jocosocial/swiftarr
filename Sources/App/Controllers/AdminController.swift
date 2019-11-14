@@ -21,12 +21,10 @@ struct AdminController: RouteCollection {
         let adminRoutes = router.grouped("api", "v3", "admin")
         
         // instantiate authentication middleware
-        let basicAuthMiddleware = User.basicAuthMiddleware(using: BCryptDigest())
         let guardAuthMiddleware = User.guardAuthMiddleware()
         let tokenAuthMiddleware = User.tokenAuthMiddleware()
         
         // set protected route groups
-        let basicAuthGroup = adminRoutes.grouped(basicAuthMiddleware)
         let tokenAuthGroup = adminRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
         
         // open access endpoints
