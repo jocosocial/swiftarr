@@ -46,7 +46,15 @@ struct AdminController: RouteCollection {
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
-
+    
+    /// `GET /api/v3/admin/user/ID`
+    ///
+    /// Retrieves the full `User` model of the specified user.
+    ///
+    /// - Requires: `UserAccessLevel` of `.admin`.
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Throws: 403 error if the user is not an admin.
+    /// - Returns: The specified user's `User` model.
     func userHandler(_ req: Request) throws -> Future<User> {
         let user = try req.requireAuthenticated(User.self)
         guard user.accessLevel == .admin else {
