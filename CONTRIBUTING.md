@@ -72,7 +72,7 @@ things short; otherwise probably use a UUID.
 
 * If creating a new `class`, mark it as a `final class` so that the compiler can fully optimize it.
 
-* Alphabetize `func`s, `structs`, etc. by name within their respective sections to help keep the code navigable.
+* Alphabetize `func`s, `struct`s, etc. by name within their respective sections to help keep the code navigable.
 This is not necessary within `XCTestCase` classes; just add to the end. Generally avoid messing with `// MARK:`s,
 as a number are used to help organize the `docs/` generation.
 
@@ -97,7 +97,7 @@ let user = User(username: data.username, // also NO
                 recoveryKey: recoveryHash,
                 ...)
 
-let user = User(
+let user = User( // YES
     username: data.username,
     password: passwordHash,
     recoveryKey: recoveryHash,
@@ -125,9 +125,8 @@ response  in a `/// -Throws: ...` block and include the branch condition in a te
 throw Abort(.conflict, reason: "username '\(data.username)' is not available")
 ```
 
-* Choose an appropriate `HTTPStatus` code to return from endpoint handlers. The default status is always
-200 OK on successful execution, but it can be simply transformed, or wrapped in a custom `Response` if also
-returning data.
+* Choose an appropriate `HTTPStatus` code to return from endpoint handlers. The default is always 200 OK on
+successful execution, but it can be simply transformed, or wrapped in a custom `Response` if also returning data.
 
 ```swift
 let createdUserData = CreatedUserData(...) // returns 200 OK
