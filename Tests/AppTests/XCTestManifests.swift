@@ -20,8 +20,10 @@ extension UserTests {
         ("testAuthRecovery", testAuthRecovery),
         ("testRegistrationCodesMigration", testRegistrationCodesMigration),
         ("testUserAccessLevelsAreOrdered", testUserAccessLevelsAreOrdered),
-        ("testUserCreation", testUserCreation),
+        ("testUserCreate", testUserCreate),
+        ("testUserPassword", testUserPassword),
         ("testUserVerify", testUserVerify),
+        ("testUserWhoami", testUserWhoami),
     ]
 }
 
