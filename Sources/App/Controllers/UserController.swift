@@ -312,12 +312,13 @@ struct UserCreateData: Content {
     var password: String
 }
 
+/// Used by `UserController.passwordHandler(_:data:)` for changing a password.
 struct UserPasswordData: Content {
     /// The user's desired new password.
     var password: String
 }
 
-/// Used by `UserController.verifyHandler(_:)` to verify a created but unverified
+/// Used by `UserController.verifyHandler(_:data:)` to verify a created but unverified
 /// account.
 struct UserVerifyData: Content {
     /// The registration code provided to the user.

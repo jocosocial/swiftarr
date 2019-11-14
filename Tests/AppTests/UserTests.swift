@@ -306,6 +306,7 @@ final class UserTests: XCTestCase {
         XCTAssertNotEqual(token.token, newToken.token, "tokens should not match")
     }
     
+    /// `POST /api/v3/user/password`
     func testUserPassword() throws {
         // create logged in user
         _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
