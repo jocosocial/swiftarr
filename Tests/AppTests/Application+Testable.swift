@@ -39,14 +39,11 @@ extension Application {
     /// - Parameters:
     ///   - username: An optional username (or randomly generated if `nil`).
     ///   - password: Password for this user.
-    ///   - recoveryKey: Recovery key for this user.
-    ///   - accessLevel: The desired `UserAccessLevel` for this user.
     ///   - connection: The database connection.
     /// - Returns: `CreatedUserData`
     func createUser(
         username: String? = nil,
         password: String,
-        accessLevel: UserAccessLevel,
         on connection: PostgreSQLConnection
     ) throws -> CreatedUserData {
         // generate random username if none specified
