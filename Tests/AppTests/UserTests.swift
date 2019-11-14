@@ -66,7 +66,7 @@ final class UserTests: XCTestCase {
     /// `User.create()` testing convenience helper
     /// `GET /api/v3/test/getusers`
     /// `GET /api/v3/test/getprofiles``
-    func testUserCreation() throws {
+    func testUserCreate() throws {
         // a specified user via helper
         let user = try app.createUser(username: testUsername, password: testPassword, on: conn)
         // a random user via helper
