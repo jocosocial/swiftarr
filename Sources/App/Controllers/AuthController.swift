@@ -1,5 +1,5 @@
 import Vapor
-import Authentication
+import Crypto
 import FluentSQL
 import Redis
 
