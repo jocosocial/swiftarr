@@ -91,6 +91,14 @@
             </ul>
           </li>
           <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Extensions.html">Extensions</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/CharacterSet.html">CharacterSet</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
             <a class="nav-group-name-link" href="../Functions.html">Functions</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
@@ -111,6 +119,9 @@
             <a class="nav-group-name-link" href="../Structs.html">Structures</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/AdminController.html">AdminController</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/AdminUser.html">AdminUser</a>
               </li>
               <li class="nav-group-task">
@@ -126,6 +137,9 @@
                 <a class="nav-group-task-link" href="../Structs/TestController.html">TestController</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TestUsers.html">TestUsers</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/TokenStringData.html">TokenStringData</a>
               </li>
               <li class="nav-group-task">
@@ -133,6 +147,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserCreateData.html">UserCreateData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserPasswordData.html">UserPasswordData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserRecoveryData.html">UserRecoveryData</a>
@@ -234,7 +251,7 @@ explicitly logs out on <em>any</em> client on <em>any</em> device, the token is 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L50-L72">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L51-L73">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -267,7 +284,7 @@ explicitly logs out on <em>any</em> client on <em>any</em> device, the token is 
 
 <p>Attempts to authorize the user using a combination of <code><a href="../Classes/User.html#/s:3App4UserC8usernameSSvp">User.username</a></code> and <em>any one</em> of
 the <code><a href="../Classes/User.html#/s:3App4UserC12verificationSSSgvp">User.verification</a></code> (registration code), <code><a href="../Classes/User.html#/s:3App4UserC8passwordSSvp">User.password</a></code> or <code><a href="../Classes/User.html#/s:3App4UserC11recoveryKeySSvp">User.recoveryKey</a></code>
-(returned by <code>UserController.createHandler(_:)</code>) values.</p>
+(returned by <code><a href="../Structs/UserController.html#/s:3App14UserControllerV13createHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA0B10CreateDataVtKF">UserController.createHandler(_:data:)</a></code>) values.</p>
 
 <p>The use case is a forgotten password. While an API client has probably stored the
 information internally, that doesn&rsquo;t necessarily help if the user is setting up another
@@ -279,13 +296,22 @@ Authentication</code> token upon success, then (b) use the returned token to imm
 <code>POST</code> to the <code>/api/v3/user/password</code> endpoint for password change/reset.</p>
 <div class="aside aside-note">
     <p class="aside-title">Note</p>
-    <p>To prevent brute force malicious attempts, there is a limit on successive
-failed recovery attempts, currently hard-coded to 10.</p>
+    <p>The <code><a href="../Classes/User.html#/s:3App4UserC12verificationSSSgvp">User.verification</a></code> registration code can only be used to recover <em>once</em>.
+This limitation is to prevent a possible race condition in which a malicious
+user has obtained another&rsquo;s registration code. After one successful recovery has
+been executed via the code, subsequent recovery can only be done via the recoveryKey
+provided during initial account creation.</p>
+
+</div>
+<div class="aside aside-note">
+    <p class="aside-title">Note</p>
+    <p>To prevent brute-force malicious attempts, there is a limit on successive
+failed recovery attempts, currently hard-coded to 5.</p>
 
 </div>
 <div class="aside aside-requires">
     <p class="aside-title">Requires</p>
-    <p><code>RecoveryData</code> payload in the HTTP body.</p>
+    <p><code><a href="../Structs/UserRecoveryData.html">UserRecoveryData</a></code> payload in the HTTP body.</p>
 
 </div>
 <div class="aside aside-throws">
@@ -329,7 +355,7 @@ likely bug, please and thank you.</p>
                               </td>
                               <td>
                                 <div>
-                                  <p><code>RecoveryData</code> struct containing the username and recoveryKey
+                                  <p><code><a href="../Structs/UserRecoveryData.html">UserRecoveryData</a></code> struct containing the username and recoveryKey
 pair to attempt.</p>
                                 </div>
                               </td>
@@ -343,7 +369,7 @@ pair to attempt.</p>
 HTTP requests, until expiry or revocation.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L104-L180">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L111-L192">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -456,7 +482,7 @@ banned. A 5xx response should be reported as a likely bug, please and thank you.
 HTTP requests, until expiry or revocation.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L228-L251">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L240-L263">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -508,8 +534,7 @@ a 409 error if you encounter one so that the specifics can be looked into.</p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
     401 error if the authentication failed. 409 error if the user somehow
-wasn&rsquo;t logged in. A 5xx response should be reported as a likely bug, please and
-thank you.
+wasn&rsquo;t logged in.
 
 </div>
 
@@ -543,10 +568,10 @@ thank you.
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>HTTPStatus response. 204 if the token was successfully deleted.</p>
+                        <p>204 No Content if the token was successfully deleted.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L277-L294">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L288-L302">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -559,7 +584,7 @@ thank you.
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-10)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-13)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.11.2</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>

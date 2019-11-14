@@ -91,6 +91,14 @@
             </ul>
           </li>
           <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Extensions.html">Extensions</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/CharacterSet.html">CharacterSet</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
             <a class="nav-group-name-link" href="../Functions.html">Functions</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
@@ -111,6 +119,9 @@
             <a class="nav-group-name-link" href="../Structs.html">Structures</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/AdminController.html">AdminController</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/AdminUser.html">AdminUser</a>
               </li>
               <li class="nav-group-task">
@@ -126,6 +137,9 @@
                 <a class="nav-group-task-link" href="../Structs/TestController.html">TestController</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TestUsers.html">TestUsers</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/TokenStringData.html">TokenStringData</a>
               </li>
               <li class="nav-group-task">
@@ -133,6 +147,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserCreateData.html">UserCreateData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserPasswordData.html">UserPasswordData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserRecoveryData.html">UserRecoveryData</a>
@@ -201,7 +218,7 @@ entirely.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L17-L39">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L18-L40">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -220,9 +237,9 @@ entirely.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App14UserControllerV13createHandler_4data3NIO15EventLoopFutureCyAA07CreatedB4DataVG5Vapor7RequestC_AA0b6CreateL0VtKF"></a>
+                    <a name="/s:3App14UserControllerV13createHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA0B10CreateDataVtKF"></a>
                     <a name="//apple_ref/swift/Method/createHandler(_:data:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App14UserControllerV13createHandler_4data3NIO15EventLoopFutureCyAA07CreatedB4DataVG5Vapor7RequestC_AA0b6CreateL0VtKF">createHandler(_:data:)</a>
+                    <a class="token" href="#/s:3App14UserControllerV13createHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA0B10CreateDataVtKF">createHandler(_:data:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -264,7 +281,7 @@ likely bug, please and thank you.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">createHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">data</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserCreateData.html">UserCreateData</a></span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Structs/CreatedUserData.html">CreatedUserData</a></span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">createHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">data</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserCreateData.html">UserCreateData</a></span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">Response</span><span class="o">&gt;</span></code></pre>
 
                         </div>
                       </div>
@@ -304,7 +321,7 @@ likely bug, please and thank you.</p>
                         <p>The newly created user&rsquo;s ID, username, and a recovery key string</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L65-L124">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L66-L126">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -355,7 +372,7 @@ another user.
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">verifyHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">data</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserVerifyData.html">UserVerifyData</a></span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">HTTPResponseStatus</span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">verifyHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">data</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserVerifyData.html">UserVerifyData</a></span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">HTTPStatus</span><span class="o">&gt;</span></code></pre>
 
                         </div>
                       </div>
@@ -395,7 +412,69 @@ another user.
                         <p>HTTP status 200 on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L143-L191">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L145-L181">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/tokenAuthGroup%20Handlers%20(logged%20in)"></a>
+                <a name="//apple_ref/swift/Section/tokenAuthGroup Handlers (logged in)" class="dashAnchor"></a>
+                <a href="#/tokenAuthGroup%20Handlers%20(logged%20in)">
+                  <h3 class="section-name">tokenAuthGroup Handlers (logged in)</h3>
+                </a>
+              </div>
+              <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App14UserControllerV15passwordHandler_4data3NIO15EventLoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestC_AA0B12PasswordDataVtKF"></a>
+                    <a name="//apple_ref/swift/Method/passwordHandler(_:data:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App14UserControllerV15passwordHandler_4data3NIO15EventLoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestC_AA0B12PasswordDataVtKF">passwordHandler(_:data:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>POST /api/v3/user/password</code></p>
+
+<p>Updates a user&rsquo;s password to the supplied value, encrypted.</p>
+<div class="aside aside-requires">
+    <p class="aside-title">Requires</p>
+    <code><a href="../Structs/UserPasswordData.html">UserPasswordData</a></code> payload in the HTTP body.
+
+<ul>
+<li>req: The incoming request <code>Container</code>, provided automatically.</li>
+<li>data: <code><a href="../Structs/UserPasswordData.html">UserPasswordData</a></code> struct containing the user&rsquo;s desired password.</li>
+</ul>
+
+</div>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    400 if the supplied password is not at least 6 characters.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">passwordHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">data</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserPasswordData.html">UserPasswordData</a></span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">HTTPStatus</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>201 Created on success.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L196-L204">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -408,7 +487,7 @@ another user.
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-10)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-13)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.11.2</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>

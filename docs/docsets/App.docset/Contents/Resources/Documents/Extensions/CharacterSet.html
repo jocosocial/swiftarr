@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>UserRecoveryData Structure Reference</title>
+    <title>CharacterSet Extension Reference</title>
     <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
     <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
     <meta charset="utf-8">
@@ -14,9 +14,9 @@
   </head>
   <body>
 
-    <a name="//apple_ref/swift/Struct/UserRecoveryData" class="dashAnchor"></a>
+    <a name="//apple_ref/swift/Extension/CharacterSet" class="dashAnchor"></a>
 
-    <a title="UserRecoveryData Structure Reference"></a>
+    <a title="CharacterSet Extension Reference"></a>
 
     <header class="header">
       <p class="header-col header-col--primary">
@@ -44,7 +44,7 @@
     <p class="breadcrumbs">
       <a class="breadcrumb" href="../index.html">App Reference</a>
       <img class="carat" src="../img/carat.png" />
-      UserRecoveryData Structure Reference
+      CharacterSet Extension Reference
     </p>
 
     <div class="content-wrapper">
@@ -165,15 +165,14 @@
 
         <section class="section">
           <div class="section-content">
-            <h1>UserRecoveryData</h1>
+            <h1>CharacterSet</h1>
               <div class="declaration">
                 <div class="language">
-                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">UserRecoveryData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                  <pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">CharacterSet</span></code></pre>
 
                 </div>
               </div>
-            <p>Used by <code><a href="../Structs/AuthController.html#/s:3App14AuthControllerV15recoveryHandler_4data3NIO15EventLoopFutureCyAA15TokenStringDataVG5Vapor7RequestC_AA012UserRecoveryM0VtKF">AuthController.recoveryHandler(_:data:)</a></code> for the incoming recovery attempt.</p>
-
+            
           </div>
         </section>
 
@@ -184,9 +183,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App16UserRecoveryDataV8usernameSSvp"></a>
-                    <a name="//apple_ref/swift/Property/username" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App16UserRecoveryDataV8usernameSSvp">username</a>
+                    <a name="/s:10Foundation12CharacterSetV3AppE4dash33_AC74409D44206084435032F808607065LLACvpZ"></a>
+                    <a name="//apple_ref/swift/Variable/dash" class="dashAnchor"></a>
+                    <a class="token" href="#/s:10Foundation12CharacterSetV3AppE4dash33_AC74409D44206084435032F808607065LLACvpZ">dash</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -194,92 +193,20 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>The user&rsquo;s username.</p>
+                        <p>Define a character set containing just a <q>-</q>, to allow UUID as username.
+This is only needed for our .testing environment.</p>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">username</span><span class="p">:</span> <span class="kt">String</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">fileprivate</span> <span class="kd">static</span> <span class="k">var</span> <span class="nv">dash</span><span class="p">:</span> <span class="kt">CharacterSet</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L310">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App16UserRecoveryDataV11recoveryKeySSvp"></a>
-                    <a name="//apple_ref/swift/Property/recoveryKey" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App16UserRecoveryDataV11recoveryKeySSvp">recoveryKey</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>The string to use – any one of: password / registration key / recovery key.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">recoveryKey</span><span class="p">:</span> <span class="kt">String</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L312">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-              </ul>
-            </div>
-            <div class="task-group">
-              <div class="task-name-container">
-                <a name="/Helper%20Structs"></a>
-                <a name="//apple_ref/swift/Section/Helper Structs" class="dashAnchor"></a>
-                <a href="#/Helper%20Structs">
-                  <h3 class="section-name">Helper Structs</h3>
-                </a>
-              </div>
-              <ul class="item-container">
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App16UserRecoveryDataV11validations10Validation11ValidationsVyACGyKFZ"></a>
-                    <a name="//apple_ref/swift/Method/validations()" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App16UserRecoveryDataV11validations10Validation11ValidationsVyACGyKFZ">validations()</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Validates that <code><a href="../Structs/UserRecoveryData.html#/s:3App16UserRecoveryDataV8usernameSSvp">.username</a></code> is 1 or more alphanumeric characters,
-and <code>.recoveryCode</code> is at least 6 character in length (minimum for
-both registration codes and passwords).</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">validations</span><span class="p">()</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Validations</span><span class="o">&lt;</span><span class="kt">UserRecoveryData</span><span class="o">&gt;</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L331-L336">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L366-L370">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

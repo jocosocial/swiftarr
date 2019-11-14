@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>TestController Structure Reference</title>
+    <title>AdminController Structure Reference</title>
     <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
     <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
     <meta charset="utf-8">
@@ -14,9 +14,9 @@
   </head>
   <body>
 
-    <a name="//apple_ref/swift/Struct/TestController" class="dashAnchor"></a>
+    <a name="//apple_ref/swift/Struct/AdminController" class="dashAnchor"></a>
 
-    <a title="TestController Structure Reference"></a>
+    <a title="AdminController Structure Reference"></a>
 
     <header class="header">
       <p class="header-col header-col--primary">
@@ -44,7 +44,7 @@
     <p class="breadcrumbs">
       <a class="breadcrumb" href="../index.html">App Reference</a>
       <img class="carat" src="../img/carat.png" />
-      TestController Structure Reference
+      AdminController Structure Reference
     </p>
 
     <div class="content-wrapper">
@@ -165,20 +165,19 @@
 
         <section class="section">
           <div class="section-content">
-            <h1>TestController</h1>
+            <h1>AdminController</h1>
               <div class="declaration">
                 <div class="language">
-                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">TestController</span> <span class="p">:</span> <span class="kt">RouteCollection</span></code></pre>
+                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">AdminController</span> <span class="p">:</span> <span class="kt">RouteCollection</span></code></pre>
 
                 </div>
               </div>
-            <p>The collection of <code>/api/v3/test/*</code> route endpoints and handler functions for unit
-testing and benchmarking purposes.</p>
-<div class="aside aside-note">
-    <p class="aside-title">Note</p>
-    These endpoints are <strong>NOT</strong> intended as API for client development.
+            <p>The collection of <code>/api/v3/admin/*</code> route endpoints and handler functions related
+to a user&rsquo;s own data.</p>
 
-</div>
+<p>Separating these from the endpoints related to users in general helps make for a
+cleaner collection, since use of <code>User.parameter</code> in the paths here can be avoided
+entirely.</p>
 
           </div>
         </section>
@@ -197,9 +196,9 @@ testing and benchmarking purposes.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App14TestControllerV4boot6routery5Vapor6Router_p_tKF"></a>
+                    <a name="/s:3App15AdminControllerV4boot6routery5Vapor6Router_p_tKF"></a>
                     <a name="//apple_ref/swift/Method/boot(router:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App14TestControllerV4boot6routery5Vapor6Router_p_tKF">boot(router:)</a>
+                    <a class="token" href="#/s:3App15AdminControllerV4boot6routery5Vapor6Router_p_tKF">boot(router:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -219,7 +218,7 @@ testing and benchmarking purposes.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/TestController.swift#L15-L41">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AdminController.swift#L18-L36">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -228,19 +227,19 @@ testing and benchmarking purposes.</p>
             </div>
             <div class="task-group">
               <div class="task-name-container">
-                <a name="/Open%20Access%20Handlers"></a>
-                <a name="//apple_ref/swift/Section/Open Access Handlers" class="dashAnchor"></a>
-                <a href="#/Open%20Access%20Handlers">
-                  <h3 class="section-name">Open Access Handlers</h3>
+                <a name="/tokenAuthGroup%20Handlers%20(logged%20in)"></a>
+                <a name="//apple_ref/swift/Section/tokenAuthGroup Handlers (logged in)" class="dashAnchor"></a>
+                <a href="#/tokenAuthGroup%20Handlers%20(logged%20in)">
+                  <h3 class="section-name">tokenAuthGroup Handlers (logged in)</h3>
                 </a>
               </div>
               <ul class="item-container">
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App14TestControllerV15getUsersHandlery3NIO15EventLoopFutureCySayAA4UserCGG5Vapor7RequestCKF"></a>
-                    <a name="//apple_ref/swift/Method/getUsersHandler(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App14TestControllerV15getUsersHandlery3NIO15EventLoopFutureCySayAA4UserCGG5Vapor7RequestCKF">getUsersHandler(_:)</a>
+                    <a name="/s:3App15AdminControllerV11userHandlery3NIO15EventLoopFutureCyAA4UserCG5Vapor7RequestCKF"></a>
+                    <a name="//apple_ref/swift/Method/userHandler(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15AdminControllerV11userHandlery3NIO15EventLoopFutureCyAA4UserCG5Vapor7RequestCKF">userHandler(_:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -248,16 +247,26 @@ testing and benchmarking purposes.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p><code>GET /api/v3/test/getusers</code></p>
+                        <p><code>GET /api/v3/admin/user/ID</code></p>
 
-<p>Returns the first 10 users in the database.</p>
+<p>Retrieves the full <code><a href="../Classes/User.html">User</a></code> model of the specified user.</p>
+<div class="aside aside-requires">
+    <p class="aside-title">Requires</p>
+    <code><a href="../Enums/UserAccessLevel.html">UserAccessLevel</a></code> of <code>.admin</code>.
+
+</div>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    403 error if the user is not an admin.
+
+</div>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">getUsersHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="p">[</span><span class="kt"><a href="../Classes/User.html">User</a></span><span class="p">]</span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">userHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Classes/User.html">User</a></span><span class="o">&gt;</span></code></pre>
 
                         </div>
                       </div>
@@ -282,121 +291,10 @@ testing and benchmarking purposes.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>An array of at most the first 10 <code><a href="../Classes/User.html">User</a></code> models in the database.</p>
+                        <p>The specified user&rsquo;s <code><a href="../Classes/User.html">User</a></code> model.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/TestController.swift#L51-L53">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App14TestControllerV18getProfilesHandlery3NIO15EventLoopFutureCySayAA11UserProfileCGG5Vapor7RequestCKF"></a>
-                    <a name="//apple_ref/swift/Method/getProfilesHandler(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App14TestControllerV18getProfilesHandlery3NIO15EventLoopFutureCySayAA11UserProfileCGG5Vapor7RequestCKF">getProfilesHandler(_:)</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p><code>GET /api/v3/test/getprofiles</code></p>
-
-<p>Returns the first 10 profiles in the database.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">getProfilesHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="p">[</span><span class="kt"><a href="../Classes/UserProfile.html">UserProfile</a></span><span class="p">]</span><span class="o">&gt;</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div>
-                        <h4>Parameters</h4>
-                        <table class="graybox">
-                          <tbody>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>req</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
-                                </div>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                      <div>
-                        <h4>Return Value</h4>
-                        <p>An array of at most the first 10 <code><a href="../Classes/UserProfile.html">UserProfile</a></code> models in the databases.</p>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/TestController.swift#L61-L63">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App14TestControllerV27getRegistrationCodesHandlery3NIO15EventLoopFutureCySayAA0E4CodeCGG5Vapor7RequestCKF"></a>
-                    <a name="//apple_ref/swift/Method/getRegistrationCodesHandler(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App14TestControllerV27getRegistrationCodesHandlery3NIO15EventLoopFutureCySayAA0E4CodeCGG5Vapor7RequestCKF">getRegistrationCodesHandler(_:)</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p><code>GET /api/v3/test/getregistrationcodes</code></p>
-
-<p>Returns an array of all stored <code><a href="../Classes/RegistrationCode.html">RegistrationCode</a></code> models. If called in a production
-environment, the actual codes are sanitized before return.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">getRegistrationCodesHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="p">[</span><span class="kt"><a href="../Classes/RegistrationCode.html">RegistrationCode</a></span><span class="p">]</span><span class="o">&gt;</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div>
-                        <h4>Parameters</h4>
-                        <table class="graybox">
-                          <tbody>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>req</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
-                                </div>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                      <div>
-                        <h4>Return Value</h4>
-                        <p>An array of the <code>RegistrationCoe</code> models in the databases.</p>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/TestController.swift#L72-L83">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AdminController.swift#L58-L64">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
