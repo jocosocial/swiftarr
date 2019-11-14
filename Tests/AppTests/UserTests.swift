@@ -261,4 +261,48 @@ final class UserTests: XCTestCase {
         XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
         XCTAssertTrue(response.http.body.description.contains("Team member"), "Team member")
     }
+    
+    /// `POST /api/v3/auth/login`
+    func testAuthLogin() throws {
+        // test verified user
+        var credentials = BasicAuthorization(username: "verified", password: testPassword)
+        var headers = HTTPHeaders()
+        headers.basicAuthorization = credentials
+        let result = try app.getResult(
+            from: authURI + "login",
+            method: .POST,
+            headers: headers,
+            decodeTo: TokenStringData.self
+        )
+        XCTAssertFalse(result.token.isEmpty, "should receive valid token string")
+        
+        // test banned user fails
+        credentials = BasicAuthorization(username: "banned", password: testPassword)
+        headers.basicAuthorization = credentials
+        let response = try app.getResponse(
+            from: authURI + "login",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
+        XCTAssertTrue(response.http.body.description.contains("nope"), "nope")
+    }
+    
+    /// `POST /api/v3/auth/logout`
+    func testAuthLogout() throws {
+        // create logged in user
+        _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        let token = try app.login(username: testUsername, on: conn)
+        let bearerCredentials = BearerAuthorization(token: token.token)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = bearerCredentials
+        
+        // test logout
+        let response = try app.getResponse(from: authURI + "logout", method: .POST, headers: headers)
+        XCTAssertTrue(response.http.status.code == 204, "should be 204 No Content")
+        
+        // test re-login generates new token
+        let newToken = try app.login(username: testUsername, on: conn)
+        XCTAssertNotEqual(token.token, newToken.token, "tokens should not match")
+    }
 }
