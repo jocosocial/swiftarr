@@ -59,7 +59,8 @@ preferences.
 
 * Naming conventions should be consistent. For example, endpoints generally accept data struct names of the
 form `<Model><Action>Data` and return `<CompletedAction><Model>Data` (such as `UserCreateData` and
-`CreatedUserData` in the case of user creation).
+`CreatedUserData` in the case of user creation). Test names alway start with `test` and generally follow an
+endpont pattern (e.g. `testAuthLogin` for `/api/v3/auth/login`).
 
 * If creating a new Model, try to keep the `Model.swift` clean by sticking to the essentials (such as properties,
 initializers and any subtypes). Use `extension`s for everything else and place them in a separate
@@ -71,11 +72,17 @@ things short; otherwise probably use a UUID.
 
 * If creating a new `class`, mark it as a `final class` so that the compiler can fully optimize it.
 
+* Alphabetize `func`s, `structs`, etc. by name within their respective sections to help keep the code navigable.
+This is not necessary within `XCTestCase` classes; just add to the end. Generally avoid messing with `// MARK:`s,
+as a number are used to help organize the `docs/` generation.
+
 * Avoid force-unwrapping optionals; there's virtually (if not literally) always a way around it. The only code that
 should contain a `!` is test code, where you *want* things to fail.
 
-* When possible, incoming data should be validated using Vapor's
-[`Validatable`](https://docs.vapor.codes/3.0/validation/overview/) protocol rather than in-line.
+* When practical, incoming data should be validated using Vapor's
+[`Validatable`](https://docs.vapor.codes/3.0/validation/overview/) protocol rather than in-line. While custom 
+`Validation` closures can be used for more complex handling than the built-in `Validator` operators provide,
+the current intent is just to enforce data format here and handle any processing issues in-line.
 
 * Whitespace is good.
 
@@ -83,17 +90,17 @@ should contain a `!` is test code, where you *want* things to fail.
 But don't use Xcode's pretty indentation style, because it can make things look like ass on GitHub.
 
 ```swift
-let user = User(username: data.username, password: data.password, verification: data.registrationCode, ...) // NO
+let user = User(username: data.username, password: passwordHash, recoveryKey: recoveryHash, ...) // NO
 
 let user = User(username: data.username, // also NO
-                password: data.password,
-                verification: data.registrationCode,
+                password: passwordHash,
+                recoveryKey: recoveryHash,
                 ...)
 
-let user = User( // YES
+let user = User(
     username: data.username,
-    password: data.password,
-    verification: data.registrationCode,
+    password: passwordHash,
+    recoveryKey: recoveryHash,
     ...
 )
 ```
@@ -109,23 +116,28 @@ guard let toast = try? Breakfast.toast(.challah, slices: 2),
 }
 ```
 
-* When directly throwing an error, avoid using Vapor sugar and construct it manually so that it is ultra-clear and
-easy to spot. Always include a return message for the client. (And of course be sure to document it in a
-`/// -Throws: ...` block and include the branch condition in a test.)
+* When directly throwing an error, always include a return message for the client. If it is intended to inform the
+client developer, make it clear what condition failed; if it is something that might be passed on to the end user,
+write clearly and understandable to that audience. (And of course be sure to document the potential error
+response  in a `/// -Throws: ...` block and include the branch condition in a test.)
 
 ```swift
-// this is really tempting
-throw Abort(.conflict)
+throw Abort(.conflict, reason: "username '\(data.username)' is not available")
+```
 
-// and this is certainly better
-throw Abort(.conflict, reason: "username is not available")
+* Choose an appropriate `HTTPStatus` code to return from endpoint handlers. The default status is always
+200 OK on successful execution, but it can be simply transformed, or wrapped in a custom `Response` if also
+returning data.
 
-// but this is near impossible to miss
-let responseStatus = HTTPResponseStatus(
-    statusCode: 409,
-    reasonPhrase: "username '\(data.username)' is not available"
-)
-throw Abort(responseStatus)
+```swift
+let createdUserData = CreatedUserData(...) // returns 200 OK
+return createdUserData
+
+let response = Response(http: HTTPResponse(status: .created), using: req) // returns 201 Created
+try response.content.encode(createdUserData)
+return response
+
+return user.delete(on: req).transform(to: .noContent) // returns 204 No Content
 ```
 
 * In most cases, unless for clarity or the compiler insists, prefer to let Swift infer the type rather than explicitly
