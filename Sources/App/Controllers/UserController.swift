@@ -26,7 +26,7 @@ struct UserController: RouteCollection {
         let tokenAuthMiddleware = User.tokenAuthMiddleware()
         
         // set protected route groups
-        let basicAuthGroup = userRoutes.grouped(basicAuthMiddleware)
+        let basicAuthGroup = userRoutes.grouped([basicAuthMiddleware, guardAuthMiddleware])
         let tokenAuthGroup = userRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
         
         // open access endpoints
