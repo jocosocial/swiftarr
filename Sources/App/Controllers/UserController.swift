@@ -36,7 +36,7 @@ struct UserController: RouteCollection {
         basicAuthGroup.post(UserVerifyData.self, at: "verify", use: verifyHandler)
         
         // endpoints available only when logged in
-        
+        tokenAuthGroup.post(UserPasswordData.self, at: "password", use: passwordHandler)
     }
     
     // MARK: - Open Access Handlers
@@ -183,7 +183,26 @@ struct UserController: RouteCollection {
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
-
+    
+    /// `POST /api/v3/user/password`
+    ///
+    /// Updates a user's password to the supplied value, encrypted.
+    ///
+    /// - Requires: `UserPasswordData` payload in the HTTP body.
+    ///   - req: The incoming request `Container`, provided automatically.
+    ///   - data: `UserPasswordData` struct containing the user's desired password.
+    /// - Throws: 400 if the supplied password is not at least 6 characters.
+    /// - Returns: 201 Created on success.
+    func passwordHandler(_ req: Request, data: UserPasswordData) throws -> Future<HTTPStatus> {
+        let user = try req.requireAuthenticated(User.self)
+        // see `UserPasswordData.validations()`
+        try data.validate()
+        // encrypt, then update user
+        let passwordHash = try BCrypt.hash(data.password)
+        user.password = passwordHash
+        return user.save(on: req).transform(to: .created)
+    }
+    
     // MARK: - Helper Functions
 
     private let words: [String] = [
@@ -293,6 +312,11 @@ struct UserCreateData: Content {
     var password: String
 }
 
+struct UserPasswordData: Content {
+    /// The user's desired new password.
+    var password: String
+}
+
 /// Used by `UserController.verifyHandler(_:)` to verify a created but unverified
 /// account.
 struct UserVerifyData: Content {
@@ -311,6 +335,15 @@ extension UserCreateData: Validatable, Reflectable {
         } else {
             try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics + .dash))
         }
+        try validations.add(\.password, .count(6...))
+        return validations
+    }
+}
+
+extension UserPasswordData: Validatable, Reflectable {
+    /// Validates that the new password is at least 6 characters in length.
+    static func validations() throws -> Validations<UserPasswordData> {
+        var validations = Validations(UserPasswordData.self)
         try validations.add(\.password, .count(6...))
         return validations
     }

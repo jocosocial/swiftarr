@@ -305,4 +305,29 @@ final class UserTests: XCTestCase {
         let newToken = try app.login(username: testUsername, on: conn)
         XCTAssertNotEqual(token.token, newToken.token, "tokens should not match")
     }
+    
+    func testUserPassword() throws {
+        // create logged in user
+        _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        var token = try app.login(username: testUsername, on: conn)
+        let bearerCredentials = BearerAuthorization(token: token.token)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = bearerCredentials
+        
+        // test password change
+        let newPassword = "newpassword"
+        let userPasswordData = UserPasswordData(password: newPassword)
+        let response = try app.getResponse(
+            from: userURI + "password",
+            method: .POST,
+            headers: headers,
+            body: userPasswordData
+        )
+        XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+        
+        // test password works
+        _ = try app.getResponse(from: authURI + "logout", method: .POST, headers: headers)
+        token = try app.login(username: testUsername, password: newPassword, on: conn)
+        XCTAssertFalse(token.token.isEmpty, "should receive valid token string")
+    }
 }
