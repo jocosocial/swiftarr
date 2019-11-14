@@ -9,7 +9,7 @@ final class UserTests: XCTestCase {
     
     // set properties
     let testUsername = "grundoon"
-    let testPassword = "pasword"
+    let testPassword = "password"
     let testVerification = "ABC ABC"
     let authURI = "/api/v3/auth/"
     let testURI = "/api/v3/test/"
@@ -43,7 +43,7 @@ final class UserTests: XCTestCase {
         let accessLevel4: UserAccessLevel = .moderator
         let accessLevel5: UserAccessLevel = .tho
         let accessLevel6: UserAccessLevel = .admin
-
+        
         XCTAssert(accessLevel0.rawValue < accessLevel1.rawValue)
         XCTAssert(accessLevel1.rawValue > accessLevel0.rawValue && accessLevel1.rawValue < accessLevel2.rawValue)
         XCTAssert(accessLevel2.rawValue > accessLevel1.rawValue && accessLevel2.rawValue < accessLevel3.rawValue)
@@ -68,9 +68,9 @@ final class UserTests: XCTestCase {
     /// `GET /api/v3/test/getprofiles``
     func testUserCreation() throws {
         // a specified user via helper
-        let user = try app.createUser(username: testUsername, password: testPassword, accessLevel: .unverified, on: conn)
+        let user = try app.createUser(username: testUsername, password: testPassword, on: conn)
         // a random user via helper
-        _ = try app.createUser(password: testPassword, accessLevel: .unverified, on: conn)
+        _ = try app.createUser(password: testPassword, on: conn)
         // a user via API
         let apiUsername = "apiuser"
         let userCreateData = UserCreateData(username: apiUsername, password: "password")
@@ -83,10 +83,10 @@ final class UserTests: XCTestCase {
         
         // check user creations
         let users = try app.getResult(from: testURI + "/getusers", decodeTo: [User].self)
-        XCTAssertTrue(users.count == 4, "should be 4 users")
+        XCTAssertTrue(users.count == 10, "should be 10 users")
         XCTAssertTrue(users[0].username == "admin", "'admin' should be first user")
-        XCTAssertTrue(users[1].username == user.username, "should be `\(testUsername)`")
-        XCTAssertNotNil(UUID(uuidString: users[2].username), "should be a valid UUID")
+        XCTAssertTrue(users[7].username == user.username, "should be `\(testUsername)`")
+        XCTAssertNotNil(UUID(uuidString: users[8].username), "should be a valid UUID")
         XCTAssertTrue(users.last?.username == result.username, "last user should be '\(apiUsername)'")
         
         // check profile creations
@@ -95,7 +95,7 @@ final class UserTests: XCTestCase {
             method: .GET,
             decodeTo: [UserProfile].self
         )
-        XCTAssert(profiles.count == 4, "should be 4 profiles")
+        XCTAssert(profiles.count == 10, "should be 10 profiles")
         XCTAssertEqual(profiles.last?.userID, users.last?.id, "profile.userID should be user.id")
         
         // test duplicate user
@@ -111,12 +111,7 @@ final class UserTests: XCTestCase {
     /// `POST /api/v3/user/verify`
     func testUserVerify() throws {
         // create user
-        let createdUserData = try app.createUser(
-            username: testUsername,
-            password: testPassword,
-            accessLevel: .unverified,
-            on: conn
-        )
+        let createdUserData = try app.createUser(username: testUsername,password: testPassword, on: conn)
         var credentials = BasicAuthorization(username: testUsername, password: testPassword)
         var headers = HTTPHeaders()
         headers.basicAuthorization = credentials
@@ -131,16 +126,16 @@ final class UserTests: XCTestCase {
         )
         XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
         XCTAssertTrue(response.http.body.description.contains("not found"), "not found")
-
+        
         // test good code
         // check accessLevel is .unverified
-        let idString = "\(createdUserData.userID)"
+        let userID = "\(createdUserData.userID)"
         let adminToken = try app.login(username: "admin", on: conn)
         let adminCredentials = BearerAuthorization(token: adminToken.token)
         var adminHeaders = HTTPHeaders()
         adminHeaders.bearerAuthorization = adminCredentials
         var user = try app.getResult(
-            from: "/api/v3/admin/users/" + idString,
+            from: "/api/v3/admin/users/" + userID,
             method: .GET,
             headers: adminHeaders,
             decodeTo: User.self
@@ -157,7 +152,7 @@ final class UserTests: XCTestCase {
         XCTAssertTrue(response.http.status.code == 200, "should be 200 OK")
         // check accessLevel has been applied
         user = try app.getResult(
-            from: "/api/v3/admin/users/" + idString,
+            from: "/api/v3/admin/users/" + userID,
             method: .GET,
             headers: adminHeaders,
             decodeTo: User.self
@@ -175,11 +170,11 @@ final class UserTests: XCTestCase {
         XCTAssertTrue(response.http.body.description.contains("already verified"), "already verified")
         
         // test duplicate code
-        _ = try app.createUser(username: "testUser2", password: testPassword, accessLevel: .verified, on: conn)
+        _ = try app.createUser(username: "testUser2", password: testPassword, on: conn)
         credentials = BasicAuthorization(username: "testUser2", password: testPassword)
         headers = HTTPHeaders()
         headers.basicAuthorization = credentials
-
+        
         userVerifyData.verification = testVerification
         response = try app.getResponse(
             from: userURI + "verify",
@@ -194,12 +189,7 @@ final class UserTests: XCTestCase {
     /// `POST /api/v3/auth/recovery`
     func testAuthRecovery() throws {
         // create verified user
-        let createdUserData = try app.createUser(
-            username: testUsername,
-            password: testPassword,
-            accessLevel: .verified,
-            on: conn
-        )
+        let createdUserData = try app.createUser(username: testUsername, password: testPassword, on: conn)
         let userVerifyData = UserVerifyData(verification: testVerification)
         let credentials = BasicAuthorization(username: testUsername, password: testPassword)
         var headers = HTTPHeaders()
@@ -225,7 +215,7 @@ final class UserTests: XCTestCase {
             decodeTo: TokenStringData.self
         )
         XCTAssertFalse(result.token.isEmpty, "should receive valid token string")
-
+        
         // test recovery with registration code
         userRecoveryData.recoveryKey = testVerification
         result = try app.getResult(
