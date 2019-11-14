@@ -15,7 +15,13 @@ extension UserTests {
     //   `swift test --generate-linuxmain`
     // to regenerate.
     static let __allTests__UserTests = [
+        ("testAuthLogin", testAuthLogin),
+        ("testAuthLogout", testAuthLogout),
+        ("testAuthRecovery", testAuthRecovery),
+        ("testRegistrationCodesMigration", testRegistrationCodesMigration),
         ("testUserAccessLevelsAreOrdered", testUserAccessLevelsAreOrdered),
+        ("testUserCreation", testUserCreation),
+        ("testUserVerify", testUserVerify),
     ]
 }
 
