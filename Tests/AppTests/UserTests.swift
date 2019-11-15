@@ -401,6 +401,7 @@ final class UserTests: XCTestCase {
             decodeTo: CurrentUserData.self
         )
         XCTAssertTrue(response.http.status.code == 409 , "should be 409 Conflict")
+        XCTAssertTrue(response.http.body.description.contains("not available"), "not available")
         XCTAssertTrue(whoami.username == newUsername, "should still be \(newUsername)")
     }
 }
