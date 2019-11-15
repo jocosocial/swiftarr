@@ -64,8 +64,8 @@ struct UserController: RouteCollection {
     /// - Parameters:
     ///   - req: The incoming request `Container`, provided automatically.
     ///   - data: `UserCreateData` struct containing the user's desired username and password.
-    /// - Throws: 409 if the username is not available. A 5xx response should be reported as a
-    ///   likely bug, please and thank you.
+    /// - Throws: 409 errpr if the username is not available. A 5xx response should be reported
+    ///   as a likely bug, please and thank you.
     /// - Returns: The newly created user's ID, username, and a recovery key string
     func createHandler(_ req: Request, data: UserCreateData) throws -> Future<Response> {
         // see `UserCreateData.validations()`
@@ -101,7 +101,7 @@ struct UserController: RouteCollection {
                     parentID: nil,
                     accessLevel: .unverified
                 )
-
+                
                 // wrap in a transaction to ensure each user has an associated profile
                 // (creates both, or neither)
                 return req.transaction(on: .psql) {
@@ -211,7 +211,7 @@ struct UserController: RouteCollection {
                 }
         }
     }
-
+    
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
@@ -223,7 +223,7 @@ struct UserController: RouteCollection {
     /// - Requires: `UserPasswordData` payload in the HTTP body.
     ///   - req: The incoming request `Container`, provided automatically.
     ///   - data: `UserPasswordData` struct containing the user's desired password.
-    /// - Throws: 400 if the supplied password is not at least 6 characters.
+    /// - Throws: 400 error if the supplied password is not at least 6 characters.
     /// - Returns: 201 Created on success.
     func passwordHandler(_ req: Request, data: UserPasswordData) throws -> Future<HTTPStatus> {
         let user = try req.requireAuthenticated(User.self)
@@ -236,7 +236,7 @@ struct UserController: RouteCollection {
     }
     
     // MARK: - Helper Functions
-
+    
     private let words: [String] = [
         "aboriginal", "accept", "account", "acoustic", "adaptable", "adorable",
         "afternoon", "agreeable", "airport", "alive", "alluring", "amazing",
