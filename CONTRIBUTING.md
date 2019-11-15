@@ -3,13 +3,13 @@
 ### General
 
 Anybody should feel free to open or comment on an [issue](https://github.com/grundoon/swiftarr/issues)! This is
-the preferred place to consolidate all discussion related specifically to the `swiftarr` API backend. Questions,
-general feedback, suggestions, feature requests, bug reports and proposed changes are all fair game.
+the preferred place to consolidate discussion related specifically to the `swiftarr` API backend. Questions,
+general feedback, suggestions, feature requests, bug reports, and proposed changes are all fair game.
 
-While it *is* the preferred location, a (free) GitHub account is required to participate there directly, so it is not
-strictly necessary. The Twit-arr developers collectively participate in (or at least monitor to some extent) related
-Slack channels, the various Facebook groups, and the feedback forums within Twit-arr itself when it is active,
-so any of those places are also fine.
+While it *is* the preferred location, a (free) GitHub account is required to participate there directly. The Twit-arr
+developers collectively participate in (or at least monitor to some extent) related Slack channels, the various
+Facebook groups, and the feedback forums within Twit-arr itself when it is active, so any of those places are
+also fine-ish.
 
 ### Contributing Code
 
@@ -48,14 +48,14 @@ current – but it didn't exactly help make the code maintainable. So here we ar
 
 The code is intended to be straightforward in nature, readable, and consistent in style. Syntax shortcuts are
 generally avoided in deference to understandability for language and framework newcomers. There is no single
-reference style guide followed; conventions informally pull from a number of respected ones and personal
-preferences.
+reference style guide followed; conventions informally pull from a number of respected ones, personal
+preferences, and stepping back to view it all with maintainability at the forefront.
 
 * Indentation is 4 spaces. Not tabs, spaces.
 
 * All names should be super-clear as to purpose or function. Prefer variable `passwordHash` and function
 `generateRecoveryKey()` to `ph` and `genKey()`.
-[swift.org](https://swift.org/documentation/api-design-guidelines/) has strong opinions on this stuff.  
+[swift.org](https://swift.org/documentation/api-design-guidelines/) has opinions on this stuff.  
 
 * Naming conventions should be consistent. For example, endpoints generally accept data struct names of the
 form `<Model><Action>Data` and return `<CompletedAction><Model>Data` (such as `UserCreateData` and
@@ -140,16 +140,19 @@ return user.delete(on: req).transform(to: .noContent) // returns 204 No Content
 ```
 
 * In most cases, unless for clarity or the compiler insists, prefer to let Swift infer the type rather than explicitly
-specify it. Recent releases of the swift compiler have seen notable inference improvements.
+specify it. Recent releases of the swift compiler have been getting much better at wending their way through
+async twists and turns.
 
-* In most cases, prefer multi-level indentation to flush-left future chaining.
+* In most cases, prefer nested indentation to flush-left future chaining.
 
 * When specifying closure result variables, prefer using the multi-line format, enclosing them in parentheses. Taken
 together, these last three conventions tend to result in less cluttered, more easily scanned code. 
 
 ```swift
 // future chaining can help with reasoning about complex nesting
-return user.save(on: req).flatMap(to: UserProfile.self) { savedUser in
+    ...
+    return user.save(on: req)
+}.flatMap(to: UserProfile.self) { savedUser in
     let profile = UserProfile(...)
     return profile.save(on: req)
 }.map(to: CreatedUserData.self) { savedProfile in
