@@ -131,6 +131,9 @@
                 <a class="nav-group-task-link" href="../Structs/CreatedUserData.html">CreatedUserData</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CurrentUserData.html">CurrentUserData</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/RegistrationCodes.html">RegistrationCodes</a>
               </li>
               <li class="nav-group-task">
@@ -153,6 +156,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserRecoveryData.html">UserRecoveryData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserUsernameData.html">UserUsernameData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserVerifyData.html">UserVerifyData</a>
@@ -218,7 +224,7 @@ entirely.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L18-L40">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L18-L45">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -271,8 +277,8 @@ proceeding</em>.</p>
 </div>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
-    <p>409 if the username is not available. A 5xx response should be reported as a
-likely bug, please and thank you.</p>
+    <p>409 errpr if the username is not available. A 5xx response should be reported
+as a likely bug, please and thank you.</p>
 
 </div>
 
@@ -321,7 +327,77 @@ likely bug, please and thank you.</p>
                         <p>The newly created user&rsquo;s ID, username, and a recovery key string</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L66-L126">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L71-L131">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/sharedAuthGroup%20Handlers%20(logged%20in%20OR%20out)"></a>
+                <a name="//apple_ref/swift/Section/sharedAuthGroup Handlers (logged in OR out)" class="dashAnchor"></a>
+                <a href="#/sharedAuthGroup%20Handlers%20(logged%20in%20OR%20out)">
+                  <h3 class="section-name">sharedAuthGroup Handlers (logged in OR out)</h3>
+                </a>
+              </div>
+              <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App14UserControllerV13whoamiHandlery3NIO15EventLoopFutureCyAA07CurrentB4DataVG5Vapor7RequestCKF"></a>
+                    <a name="//apple_ref/swift/Method/whoamiHandler(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App14UserControllerV13whoamiHandlery3NIO15EventLoopFutureCyAA07CurrentB4DataVG5Vapor7RequestCKF">whoamiHandler(_:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>GET /api/v3/user/whoami</code></p>
+
+<p>Returns the current user&rsquo;s <code>.id</code>, <code>.username</code> and whether they&rsquo;re currently logged in.</p>
+
+<p>This endpoint can be reached with either Basic or Bearer authenticaton, and might be
+useful in a multi-account environment to determine which account&rsquo;s credentials are
+currently being used.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">whoamiHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Structs/CurrentUserData.html">CurrentUserData</a></span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>The current user&rsquo;s ID and username.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L147-L159">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -412,7 +488,7 @@ another user.
                         <p>HTTP status 200 on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L145-L181">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L178-L214">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -456,7 +532,7 @@ another user.
 </div>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
-    400 if the supplied password is not at least 6 characters.
+    400 error if the supplied password is not at least 6 characters.
 
 </div>
 
@@ -474,7 +550,86 @@ another user.
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L196-L204">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L229-L237">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App14UserControllerV15usernameHandler_4data3NIO15EventLoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestC_AA0B12UsernameDataVtKF"></a>
+                    <a name="//apple_ref/swift/Method/usernameHandler(_:data:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App14UserControllerV15usernameHandler_4data3NIO15EventLoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestC_AA0B12UsernameDataVtKF">usernameHandler(_:data:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>POST /api/v3/user/username</code></p>
+
+<p>Changes a user&rsquo;s username to the supplied value, if possible. Also updates the
+username in the associated <code><a href="../Classes/UserProfile.html">UserProfile</a></code>.</p>
+<div class="aside aside-requires">
+    <p class="aside-title">Requires</p>
+    <code><a href="../Structs/UserUsernameData.html">UserUsernameData</a></code> payload in the HTTP body.
+
+</div>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    409 errpr if the username is not available. A 5xx response should be reported
+as a likely bug, please and thank you.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">usernameHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">data</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserUsernameData.html">UserUsernameData</a></span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">HTTPStatus</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>data</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p><code><a href="../Structs/UserUsernameData.html">UserUsernameData</a></code> containing the user&rsquo;s desired new username.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>201 Created on success.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L251-L286">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -487,7 +642,7 @@ another user.
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-13)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-14)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.11.2</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>

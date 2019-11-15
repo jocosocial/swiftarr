@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>RegistrationCodes Structure Reference</title>
+    <title>CurrentUserData Structure Reference</title>
     <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
     <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
     <meta charset="utf-8">
@@ -14,9 +14,9 @@
   </head>
   <body>
 
-    <a name="//apple_ref/swift/Struct/RegistrationCodes" class="dashAnchor"></a>
+    <a name="//apple_ref/swift/Struct/CurrentUserData" class="dashAnchor"></a>
 
-    <a title="RegistrationCodes Structure Reference"></a>
+    <a title="CurrentUserData Structure Reference"></a>
 
     <header class="header">
       <p class="header-col header-col--primary">
@@ -44,7 +44,7 @@
     <p class="breadcrumbs">
       <a class="breadcrumb" href="../index.html">App Reference</a>
       <img class="carat" src="../img/carat.png" />
-      RegistrationCodes Structure Reference
+      CurrentUserData Structure Reference
     </p>
 
     <div class="content-wrapper">
@@ -171,15 +171,14 @@
 
         <section class="section">
           <div class="section-content">
-            <h1>RegistrationCodes</h1>
+            <h1>CurrentUserData</h1>
               <div class="declaration">
                 <div class="language">
-                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">RegistrationCodes</span> <span class="p">:</span> <span class="kt">Migration</span></code></pre>
+                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">CurrentUserData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                 </div>
               </div>
-            <p>A <code>Migration</code> that populates the <code><a href="../Classes/RegistrationCode.html">RegistrationCode</a></code> database from a <code>registration-codes.txt</code>
-file located at the root level of the project.</p>
+            <p>Returned by <code><a href="../Structs/UserController.html#/s:3App14UserControllerV13whoamiHandlery3NIO15EventLoopFutureCyAA07CurrentB4DataVG5Vapor7RequestCKF">UserController.whoamiHandler(_:).</a></code></p>
 
           </div>
         </section>
@@ -191,9 +190,9 @@ file located at the root level of the project.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:6Fluent9MigrationP8DatabaseQa"></a>
-                    <a name="//apple_ref/swift/Alias/Database" class="dashAnchor"></a>
-                    <a class="token" href="#/s:6Fluent9MigrationP8DatabaseQa">Database</a>
+                    <a name="/s:3App15CurrentUserDataV6userID10Foundation4UUIDVvp"></a>
+                    <a name="//apple_ref/swift/Property/userID" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15CurrentUserDataV6userID10Foundation4UUIDVvp">userID</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -201,18 +200,19 @@ file located at the root level of the project.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        
+                        <p>The currrent user&rsquo;s ID.</p>
+
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">typealias</span> <span class="kt">Database</span> <span class="o">=</span> <span class="kt">PostgreSQLDatabase</span></code></pre>
+                          <pre class="highlight swift"><code><span class="k">let</span> <span class="nv">userID</span><span class="p">:</span> <span class="kt">UUID</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Migrations/RegistrationCodes.swift#L">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L392">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -220,9 +220,9 @@ file located at the root level of the project.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App17RegistrationCodesV7prepare2on3NIO15EventLoopFutureCyytG10PostgreSQL0J13SQLConnectionC_tFZ"></a>
-                    <a name="//apple_ref/swift/Method/prepare(on:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App17RegistrationCodesV7prepare2on3NIO15EventLoopFutureCyytG10PostgreSQL0J13SQLConnectionC_tFZ">prepare(on:)</a>
+                    <a name="/s:3App15CurrentUserDataV8usernameSSvp"></a>
+                    <a name="//apple_ref/swift/Property/username" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15CurrentUserDataV8usernameSSvp">username</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -230,40 +230,19 @@ file located at the root level of the project.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Required by <code>Migration</code> protocol. Reads either a test or production text file at the
-root project level, converts the lines into elements of an array, then iterates over
-them to create new <code><a href="../Classes/RegistrationCode.html">RegistrationCode</a></code> models.</p>
+                        <p>The current user&rsquo;s username.</p>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">prepare</span><span class="p">(</span><span class="n">on</span> <span class="nv">conn</span><span class="p">:</span> <span class="kt">PostgreSQLConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">EventLoopFuture</span><span class="o">&lt;</span><span class="kt">Void</span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="k">let</span> <span class="nv">username</span><span class="p">:</span> <span class="kt">String</span></code></pre>
 
                         </div>
                       </div>
-                      <div>
-                        <h4>Parameters</h4>
-                        <table class="graybox">
-                          <tbody>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>conn</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>A connection to the database, provided automatically.</p>
-                                </div>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Migrations/RegistrationCodes.swift#L15-L54">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L394">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -271,9 +250,9 @@ them to create new <code><a href="../Classes/RegistrationCode.html">Registration
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App17RegistrationCodesV6revert2on3NIO15EventLoopFutureCyytG10PostgreSQL0J13SQLConnectionC_tFZ"></a>
-                    <a name="//apple_ref/swift/Method/revert(on:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App17RegistrationCodesV6revert2on3NIO15EventLoopFutureCyytG10PostgreSQL0J13SQLConnectionC_tFZ">revert(on:)</a>
+                    <a name="/s:3App15CurrentUserDataV10isLoggedInSbvp"></a>
+                    <a name="//apple_ref/swift/Property/isLoggedIn" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15CurrentUserDataV10isLoggedInSbvp">isLoggedIn</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -281,20 +260,19 @@ them to create new <code><a href="../Classes/RegistrationCode.html">Registration
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Required by<code>Migration</code> protocol, but these are static so no point removing them,
-just return a pre-completed <code>Future</code>.</p>
+                        <p>Whether the user is currently logged in.</p>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">revert</span><span class="p">(</span><span class="n">on</span> <span class="nv">connection</span><span class="p">:</span> <span class="kt">PostgreSQLConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">Void</span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">isLoggedIn</span><span class="p">:</span> <span class="kt">Bool</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Migrations/RegistrationCodes.swift#L58-L60">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L396">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
