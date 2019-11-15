@@ -119,7 +119,7 @@ guard let toast = try? Breakfast.toast(.challah, slices: 2),
 * When directly throwing an error, always include a return message for the client. If it is intended to inform the
 client developer, make it clear what condition failed; if it is something that might be passed on to the end user,
 write clearly and understandable to that audience. (And of course be sure to document the potential error
-response  in a `/// -Throws: ...` block and include the branch condition in a test.)
+response  in a `/// - Throws: ...` block and include the branch condition in a test.)
 
 ```swift
 throw Abort(.conflict, reason: "username '\(data.username)' is not available")
