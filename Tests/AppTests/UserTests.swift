@@ -361,4 +361,46 @@ final class UserTests: XCTestCase {
         XCTAssertTrue(currentUserData.username == testUsername, "should be \(testUsername)")
         XCTAssertTrue(currentUserData.isLoggedIn, "should be logged in")
     }
+    
+    /// `POST /api/v3/user/username`
+    func testUserUsername() throws {
+        // create logged in user
+        let user = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        let token = try app.login(username: user.username, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // test username change
+        let newUsername = "newusername"
+        var userUsernameData = UserUsernameData(username: newUsername)
+        var response = try app.getResponse(
+            from: userURI + "username",
+            method: .POST,
+            headers: headers,
+            body: userUsernameData
+        )
+        var whoami = try app.getResult(
+            from: userURI + "whoami",
+            headers: headers,
+            decodeTo: CurrentUserData.self
+        )
+        XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+        XCTAssertTrue(whoami.username == newUsername, "should be \(newUsername)")
+        
+        // test unavailable username
+        userUsernameData.username = "verified"
+        response = try app.getResponse(
+            from: userURI + "username",
+            method: .POST,
+            headers: headers,
+            body: userUsernameData
+        )
+        whoami = try app.getResult(
+            from: userURI + "whoami",
+            headers: headers,
+            decodeTo: CurrentUserData.self
+        )
+        XCTAssertTrue(response.http.status.code == 409 , "should be 409 Conflict")
+        XCTAssertTrue(whoami.username == newUsername, "should still be \(newUsername)")
+    }
 }

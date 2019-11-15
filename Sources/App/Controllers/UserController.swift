@@ -41,6 +41,7 @@ struct UserController: RouteCollection {
         
         // endpoints available only when logged in
         tokenAuthGroup.post(UserPasswordData.self, at: "password", use: passwordHandler)
+        tokenAuthGroup.post(UserUsernameData.self, at: "username", use: usernameHandler)
     }
     
     // MARK: - Open Access Handlers
@@ -235,6 +236,55 @@ struct UserController: RouteCollection {
         return user.save(on: req).transform(to: .created)
     }
     
+    /// `POST /api/v3/user/username`
+    ///
+    /// Changes a user's username to the supplied value, if possible. Also updates the
+    /// username in the associated `UserProfile`.
+    ///
+    /// - Requires: `UserUsernameData` payload in the HTTP body.
+    /// - Parameters:
+    ///   - req: The incoming request `Container`, provided automatically.
+    ///   - data: `UserUsernameData` containing the user's desired new username.
+    /// - Throws: 409 errpr if the username is not available. A 5xx response should be reported
+    ///   as a likely bug, please and thank you.
+    /// - Returns: 201 Created on success.
+    func usernameHandler(_ req: Request, data: UserUsernameData) throws -> Future<HTTPStatus> {
+        let user = try req.requireAuthenticated(User.self)
+        // see `UserUsernameData.validations()`
+        try data.validate()
+        // check for existing username
+        return User.query(on: req)
+            .filter(\.username == data.username)
+            .first()
+            .flatMap {
+                (existingUser) in
+                // abort if name is already taken
+                guard existingUser == nil else {
+                    throw Abort(.conflict, reason: "username '\(data.username)' is not available")
+                }
+                // need to update profile too
+                return try user.profile.query(on: req).first().flatMap {
+                    (existingProfile) in
+                    guard let profile = existingProfile else {
+                        throw Abort(.internalServerError, reason: "user's profile not found")
+                    }
+                    user.username = data.username
+                    profile.username = data.username
+                    // update both, or neither
+                    return req.transaction(on: .psql) {
+                        (connection) in
+                        return user.save(on: connection).flatMap {
+                            (_) in
+                            return profile.save(on: connection).map {
+                                (_) in
+                                return .created
+                            }
+                        }
+                    }
+                }
+        }
+    }
+    
     // MARK: - Helper Functions
     
     private let words: [String] = [
@@ -360,6 +410,12 @@ struct UserPasswordData: Content {
     var password: String
 }
 
+/// Used by `UserController.usernameHandler(_:data:)` for changing a username.
+struct UserUsernameData: Content {
+    /// The user's desired new username.
+    var username: String
+}
+
 /// Used by `UserController.verifyHandler(_:data:)` to verify a created but unverified
 /// account.
 struct UserVerifyData: Content {
@@ -388,6 +444,15 @@ extension UserPasswordData: Validatable, Reflectable {
     static func validations() throws -> Validations<UserPasswordData> {
         var validations = Validations(UserPasswordData.self)
         try validations.add(\.password, .count(6...))
+        return validations
+    }
+}
+
+extension UserUsernameData: Validatable, Reflectable {
+    /// Validates that the new username is 1 or more alphanumeric characters
+    static func validations() throws -> Validations<UserUsernameData> {
+        var validations = Validations(UserUsernameData.self)
+        try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics))
         return validations
     }
 }
