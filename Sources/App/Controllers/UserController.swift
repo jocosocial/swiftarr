@@ -40,6 +40,7 @@ struct UserController: RouteCollection {
         sharedAuthGroup.get("whoami", use: whoamiHandler)
         
         // endpoints available only when logged in
+        tokenAuthGroup.post(UserAddData.self, at: "add", use: addHandler)
         tokenAuthGroup.post(UserPasswordData.self, at: "password", use: passwordHandler)
         tokenAuthGroup.post(UserUsernameData.self, at: "username", use: usernameHandler)
     }
@@ -67,7 +68,7 @@ struct UserController: RouteCollection {
     ///   - data: `UserCreateData` struct containing the user's desired username and password.
     /// - Throws: 409 errpr if the username is not available. A 5xx response should be reported
     ///   as a likely bug, please and thank you.
-    /// - Returns: The newly created user's ID, username, and a recovery key string
+    /// - Returns: The newly created user's ID, username, and a recovery key string.
     func createHandler(_ req: Request, data: UserCreateData) throws -> Future<Response> {
         // see `UserCreateData.validations()`
         try data.validate()
@@ -216,6 +217,83 @@ struct UserController: RouteCollection {
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
+    
+    /// `POST /api/v3/user/add`
+    ///
+    /// Adds a new `User` sub-account and its associated `UserProfile` to the current user.
+    /// If either fail, neither is created, since we want to ensure that all accounts
+    /// have profiles.
+    ///
+    /// An `AddedUserData` structure is returned on success, containing the new user's ID
+    /// and username.
+    ///
+    /// - Note: API v3 supports a sub-account model, rather than the creation of individual
+    ///   accounts for multiple identities in prior versions. A sub-account inherits its parent
+    ///   user's `.accessLevel`, `.recoveryKey` and `.verification` values. Each `User`
+    ///   requires use of its own Bearer Authentication token and must log in individually;
+    ///   multiple accounts can all be simultaneously logged in.
+    ///
+    /// - Requires: `UserAddData` payload in the HTTP body.
+    /// - Parameters:
+    ///   - req: The incoming request `Container`, provided automatically.
+    ///   - data: `UserAddData` struct containing the user's desired username and password.
+    /// - Throws: 403 error if the user is banned or currently quarantined. 409 errpr if the
+    ///   username is not available. A 5xx response should be reported as a likely bug, please
+    ///   and thank you.
+    /// - Returns: The newly created user's ID and username.
+    func addHandler(_ req: Request, data: UserAddData) throws -> Future<Response> {
+        let user = try req.requireAuthenticated(User.self)
+        // see `UserAddData.validations()`
+        try data.validate()
+        // only upstanding citizens need apply
+        guard user.accessLevel.rawValue >= UserAccessLevel.verified.rawValue else {
+            throw Abort(.forbidden, reason: "user not currently permitted to create sub-account")
+        }
+        // check if existing username
+        return User.query(on: req)
+            .filter(\.username == data.username)
+            .first()
+            .flatMap {
+                (existingUser) in
+                guard existingUser == nil else {
+                    throw Abort(.conflict, reason: "username '\(data.username)' is not available")
+                }
+                // if user has a parent, sub-account has samee, else this account is parent
+                let parentID = user.parentID ?? user.id
+                let passwordHash = try BCrypt.hash(data.password)
+                // sub-account inherits .accessLevel, .recoveryKey and .verification
+                let subAccount = User(
+                    username: data.username,
+                    password: passwordHash,
+                    recoveryKey: user.recoveryKey,
+                    verification: user.verification,
+                    parentID: parentID,
+                    accessLevel: user.accessLevel
+                )
+                // both, or neither
+                return req.transaction(on: .psql) {
+                    (connection) in
+                    return subAccount.save(on: connection).flatMap {
+                        (savedUser) in
+                        // create profile
+                        guard let id = savedUser.id else {
+                            throw Abort(.internalServerError, reason: "new sub-account not saved")
+                        }
+                        let profile = UserProfile(userID: id, username: savedUser.username)
+                        return profile.save(on: connection).map {
+                            (savedProfile) in
+                            let addedUserData = AddedUserData(
+                                userID: id,
+                                username: savedUser.username
+                            )
+                            let response = Response(http: HTTPResponse(status: .created), using: req)
+                            try response.content.encode(addedUserData)
+                            return response
+                        }
+                    }
+                }
+        }
+    }
     
     /// `POST /api/v3/user/password`
     ///
@@ -374,11 +452,18 @@ struct UserController: RouteCollection {
 
 // MARK: - Helper Structs
 
+/// Returned by `UserController.addHandler(_:data:)`.
+struct AddedUserData: Content {
+    /// The newly created sub-account's ID.
+    let userID: UUID
+    /// The newly created sub-account's username.
+    let username: String
+}
 /// Returned by `UserController.createHandler(_:data:).`
 struct CreatedUserData: Content {
     /// The newly created user's ID.
     let userID: UUID
-    /// The newly created user's username
+    /// The newly created user's username.
     let username: String
     /// If an optional `UserCreateData.verification` registration code was supplied in the
     /// request and this is a primary account, the generated recovery key, otherwise `nil`.
@@ -394,6 +479,14 @@ struct CurrentUserData: Content {
     let username: String
     /// Whether the user is currently logged in.
     var isLoggedIn: Bool
+}
+
+/// Used by `UserController.addHandler(_:data:) for adding a sub-account.
+struct UserAddData: Content {
+    /// The username for the sub-account.
+    var username: String
+    /// The password for the sub-account.
+    var password: String
 }
 
 /// Used by `UserController.createHandler(_:data:) for initial creation of an account.
@@ -421,6 +514,17 @@ struct UserUsernameData: Content {
 struct UserVerifyData: Content {
     /// The registration code provided to the user.
     var verification: String
+}
+
+extension UserAddData: Validatable, Reflectable {
+    /// Validates that `.username` is 1 or more alphanumeric characters,
+    /// and `.password` is least 6 characters in length.
+    static func validations() throws -> Validations<UserAddData> {
+        var validations = Validations(UserAddData.self)
+        try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics))
+        try validations.add(\.password, .count(6...))
+        return validations
+    }
 }
 
 extension UserCreateData: Validatable, Reflectable {

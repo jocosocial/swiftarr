@@ -11,6 +11,7 @@ final class UserTests: XCTestCase {
     let testUsername = "grundoon"
     let testPassword = "password"
     let testVerification = "ABC ABC"
+    let adminURI = "/api/v3/admin/"
     let authURI = "/api/v3/auth/"
     let testURI = "/api/v3/test/"
     let userURI = "/api/v3/user/"
@@ -403,5 +404,81 @@ final class UserTests: XCTestCase {
         XCTAssertTrue(response.http.status.code == 409 , "should be 409 Conflict")
         XCTAssertTrue(response.http.body.description.contains("not available"), "not available")
         XCTAssertTrue(whoami.username == newUsername, "should still be \(newUsername)")
+    }
+    
+    /// `POST /api/v3/user/add`
+    func testUserAdd() throws {
+        // create fresh verified user, will need recoveryKey later
+        let user = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.basicAuthorization = BasicAuthorization(username: testUsername, password: testPassword)
+        let userVerifyData = UserVerifyData(verification: testVerification)
+        _ = try app.getResponse(
+            from: userURI + "verify",
+            method: .POST,
+            headers: headers,
+            body: userVerifyData
+        )
+        var token = try app.login(username: testUsername, on: conn)
+        headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+
+        // need an admin too
+        let adminToken = try app.login(username: "admin", on: conn)
+        var adminHeaders = HTTPHeaders()
+        adminHeaders.bearerAuthorization = BearerAuthorization(token: adminToken.token)
+        
+        // test add subaccount
+        var userAddData = UserAddData(username: "subaccount", password: testPassword)
+        let addedUserData = try app.getResult(
+            from: userURI + "add",
+            method: .POST,
+            headers: headers,
+            body: userAddData,
+            decodeTo: AddedUserData.self
+        )
+        let addedUser = try app.getResult(
+            from: adminURI + "users/\(addedUserData.userID)",
+            method: .GET,
+            headers: adminHeaders,
+            decodeTo: User.self
+        )
+        XCTAssertTrue(addedUser.parentID == user.userID, "parent should be user")
+        
+        // test recovery works
+        let userRecoveryData = UserRecoveryData(
+            username: addedUserData.username,
+            recoveryKey: user.recoveryKey!
+        )
+        let result = try app.getResult(
+            from: authURI + "recovery",
+            method: .POST,
+            body: userRecoveryData,
+            decodeTo: TokenStringData.self
+        )
+        XCTAssertFalse(result.token.isEmpty, "should receive valid token string")
+
+        // test unavailable username
+        userAddData.username = "verified"
+        var response = try app.getResponse(
+            from: userURI + "add",
+            method: .POST,
+            headers: headers,
+            body: userAddData
+        )
+        XCTAssertTrue(response.http.status.code == 409, "should be 409 Conflict")
+        XCTAssertTrue(response.http.body.description.contains("not available"), "not available")
+        
+        // test accessLevel
+        token = try app.login(username: "quarantined", on: conn)
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        response = try app.getResponse(
+            from: userURI + "add",
+            method: .POST,
+            headers: headers,
+            body: userAddData
+        )
+        XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
+        XCTAssertTrue(response.http.body.description.contains("not currently"), "not currently")
     }
 }
