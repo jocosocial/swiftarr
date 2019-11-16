@@ -112,20 +112,18 @@ final class UserProfile: Codable {
     // MARK: - Codable Representations
     
     /// Used for editing by the owner of the profile.
-    final class Private: Codable {
-        /// The profile's ID.
-        var id: UUID
-        /// The user's username.
-        var username: String
-        /// The filename of the user's profile image.
-        var userImage: String
+    final class Edit: Codable {
+        /// The user's username. [not editable]
+        let username: String
+        /// A generated displayName + username string. [not editable]
+        let displayedName: String
         /// An optional blurb about the user.
         var about: String
         /// An optional name for display alongside the username.
         var displayName: String
         /// An optional email address.
         var email: String
-        /// An optional home location (e.g. city)
+        /// An optional home location (e.g. city).
         var homeLocation: String
         /// An optional greeting/message to visitors of the profile.
         var message: String
@@ -140,12 +138,10 @@ final class UserProfile: Codable {
         
         // MARK: Initialization
         
-        /// Initializaes a new UserProfile.Private.
+        /// Initializaes a new `UserProfile.Edit`.
         ///
         /// - Parameters:
-        ///   - id: The ID of the profile.
         ///   - username: The user's username.
-        ///   - userImage: Filename of the user's profile image.
         ///   - about: A blurb about the user.
         ///   - displayName: A string to display alongside username.
         ///   - email: An email address.
@@ -156,9 +152,7 @@ final class UserProfile: Codable {
         ///   - roomNumber: The user's cabin number.
         ///   - limitAccess: Whether viewing of most profile details is limited to logged in users.
         init(
-            id: UUID,
             username: String,
-            userImage: String,
             about: String,
             displayName: String,
             email: String,
@@ -169,9 +163,12 @@ final class UserProfile: Codable {
             roomNumber: String,
             limitAccess: Bool
         ) {
-            self.id = id
             self.username = username
-            self.userImage = userImage
+            if displayName.isEmpty {
+                self.displayedName = "@\(username)"
+            } else {
+                self.displayedName = displayName + " (@\(username))"
+            }
             self.about = about
             self.displayName = displayName
             self.email = email

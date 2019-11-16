@@ -40,6 +40,8 @@ struct UserController: RouteCollection {
         sharedAuthGroup.get("whoami", use: whoamiHandler)
         
         // endpoints available only when logged in
+        tokenAuthGroup.get("profile", use: profileHandler)
+        
         tokenAuthGroup.post(UserAddData.self, at: "add", use: addHandler)
         tokenAuthGroup.post(UserPasswordData.self, at: "password", use: passwordHandler)
         tokenAuthGroup.post(UserUsernameData.self, at: "username", use: usernameHandler)
@@ -134,6 +136,30 @@ struct UserController: RouteCollection {
     // MARK: - sharedAuthGroup Handlers (logged in OR out)
     // All handlers in this route group require a valid HTTP Basic Authorization
     // *or* HTTP Bearer Authorization header in the request.
+    
+    /// `GET /api/v3/user/profile`
+    ///
+    /// Retrieves the user's own profile data for editing, as a `UserProfile.Edit` object.
+    ///
+    /// - Note: The `.username` and `.displayedName` properties of the returned object
+    ///   are for display convenience only. A username must be changed using the
+    ///   `POST /api/v3/user/username` endpoint. The displayedName property is generated from
+    ///   the username and displayName values.
+    ///
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: A `UserProfile.Edit` object containing the editable properties of the
+    ///   profile.
+    func profileHandler(_ req: Request) throws -> Future<UserProfile.Edit> {
+        let user = try req.requireAuthenticated(User.self)
+        return try user.profile.query(on: req).first().map {
+            (existingProfile) in
+            guard let profile = existingProfile else {
+                throw Abort(.internalServerError, reason: "profile not found")
+            }
+            return profile.convertToEdit()
+        }
+    }
     
     /// `GET /api/v3/user/whoami`
     ///
@@ -501,6 +527,28 @@ struct UserCreateData: Content {
 struct UserPasswordData: Content {
     /// The user's desired new password.
     var password: String
+}
+
+/// Used by `UserController.profileHandler(_:data:)` for editing a profile.
+struct UserProfileData: Content {
+    /// An optional blurb about the user.
+    var about: String
+    /// An optional name for display alongside the username.
+    var displayName: String
+    /// An optional email address.
+    var email: String
+    /// An optional home location (e.g. city).
+    var homeLocation: String
+    /// An optional greeting/message to visitors of the profile.
+    var message: String
+    /// An optional preferred form of address.
+    var preferredPronoun: String
+    /// An optional real name of the user.
+    var realName: String
+    /// An optional ship cabin number.
+    var roomNumber: String
+    /// Whether the full profile info should be limited to logged in users.
+    var limitAccess: Bool
 }
 
 /// Used by `UserController.usernameHandler(_:data:)` for changing a username.

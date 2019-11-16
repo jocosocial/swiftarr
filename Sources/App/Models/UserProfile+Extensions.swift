@@ -6,7 +6,7 @@ extension UserProfile: PostgreSQLUUIDModel {}
 
 // model and representations can be passed as HTTP body data
 extension UserProfile: Content {}
-extension UserProfile.Private: Content {}
+extension UserProfile.Edit: Content {}
 extension UserProfile.Public: Content {}
 
 // model can be used as endpoint parameter
@@ -50,3 +50,27 @@ extension UserProfile {
         return parent(\.userID)
     }
 }
+
+// MARK: - Methods
+
+extension UserProfile {
+    /// Converts a `UserProfile` model to a version intended for editing by the owning
+    /// user. `.username` and `.displayedName` are provided for client display convenience
+    /// only and may not be edited.
+    func convertToEdit() -> UserProfile.Edit {
+        return UserProfile.Edit(
+            username: self.username,
+            about: self.about ?? "",
+            displayName: self.displayName ?? "",
+            email: self.email ?? "",
+            homeLocation: self.homeLocation ?? "",
+            message: self.message ?? "",
+            preferredPronoun: self.preferredPronoun ?? "",
+            realName: self.realName ?? "",
+            roomNumber: self.roomNumber ?? "",
+            limitAccess: self.limitAccess
+        )
+    }
+}
+
+
