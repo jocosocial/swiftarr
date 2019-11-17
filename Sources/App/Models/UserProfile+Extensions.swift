@@ -81,6 +81,10 @@ extension UserProfile {
         )
     }
     
+    /// Converts a `UserProfile` model to a version that is publicly viewable. Essentially,
+    /// sensitive and unneeded data are omitted and the `.username` and `.displayName` properties
+    /// are massaged into the more familiar "Display Name (@username)" or "@username" (if
+    /// `.displayName` is empty) format as seen in posted content headers.
     func convertToPublic() -> UserProfile.Public {
         return UserProfile.Public(
             username: self.username,

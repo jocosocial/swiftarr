@@ -2,6 +2,12 @@ import Foundation
 import Vapor
 import FluentPostgreSQL
 
+/// When a `UserProfile` is edited, a `ProfileEdit` is created and associated with the
+/// profile.
+///
+/// This is done for accountability purposes and the data collected is intended to be viewable
+/// only by users with an access level of `.moderator` or above.
+
 struct ProfileEdit: Codable {
     // MARK: Properties
     
@@ -25,6 +31,7 @@ struct ProfileEdit: Codable {
     /// Initializes a new ProfileEdit.
     ///
     /// - Parameters:
+    ///   - profileID: The ID of the profile that was edited.
     ///   - profileData: The submitted `UserProfileData`, else `nil`.
     ///   - profileImage: The name of the submitted image, els `nil`.
     init(
