@@ -527,7 +527,7 @@ struct UserController: RouteCollection {
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: 500 error if the randomizer fails.
     /// - Returns: A recoveryKey String.
-    static func generateRecoveryKey(on req: Request) throws -> Future<String> {
+    private func generateRecoveryKey(on req: Request) throws -> Future<String> {
         guard let word1 = words.randomElement(),
             let word2 = words.randomElement(),
             let word3 = words.randomElement() else {
