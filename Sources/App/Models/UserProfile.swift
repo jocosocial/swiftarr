@@ -50,8 +50,7 @@ final class UserProfile: Codable {
     var roomNumber: String?
     
     /// Limits viewing this profile's info (except `.username` and `.displayName`, which are
-    /// always viewable) to logged-in users.
-    /// Default is `false`.
+    /// always viewable) to logged-in users. Default is `false` (don't limit).
     var limitAccess: Bool
 
     /// Timestamp of the model's creation, set automatically.
@@ -183,18 +182,14 @@ final class UserProfile: Codable {
 
     /// Used for public viewing of the profile.
     ///
-    /// The `.displayName` and `.username` properties of the underlying profile are used
-    ///  to generate `.displayedName` instead of being returned individually. A fully
-    ///  populated `.displayedName` property is of the format "Display Name (@username)",
-    ///  to match how the user appears in a header when posting. If there is no
-    ///  `.displayName` content, it is simply "@username".
+    /// The `.displayName` and `.username` properties of the underlying profile are used to
+    /// generate `.displayedName` instead of being returned individually. A fully populated
+    /// `.displayedName` property is of the format "Display Name (@username)", to match how the
+    /// user appears in a header when posting. If there is no `.displayName` content, it is
+    /// simply "@username".
     final class Public: Codable {
-        /// The profile's ID.
-        var id: UUID
         /// A generated displayName + username string.
         var displayedName: String
-        /// Filename of the user's profile image.
-        var userImage: String
         /// An optional blurb about the user.
         var about: String
         /// An optional email address for the user.
@@ -217,11 +212,9 @@ final class UserProfile: Codable {
         /// Creates a new UserProfile.Public.
         ///
         /// - Parameters:
-        ///   - id: The ID of the profile.
-        ///   - displayName: An optional name for display alongside the username.
         ///   - username: The user's username.
-        ///   - userImage: Filename of the user's profile image.
         ///   - about: A blurb about the user.
+        ///   - displayName: An optional name for display alongside the username.
         ///   - email: An email address for the user.
         ///   - homeLocation: A home location of the user.
         ///   - message: A greeting/message from the user.
@@ -230,11 +223,9 @@ final class UserProfile: Codable {
         ///   - roomNumber: The user's cabin number.
         ///   - note: A note about the user, belonging to the viewer (see `UserNote`).
         init(
-            id: UUID,
-            displayName: String,
             username: String,
-            userImage: String,
             about: String,
+            displayName: String,
             email: String,
             homeLocation: String,
             message: String,
@@ -243,14 +234,12 @@ final class UserProfile: Codable {
             roomNumber: String,
             note: String? = nil
         ) {
-            self.id = id
             // generate the .displayedName string
             if displayName.isEmpty {
                 self.displayedName = "@\(username)"
             } else {
                 self.displayedName = displayName + " (@\(username))"
             }
-            self.userImage = userImage
             self.about = about
             self.email = email
             self.homeLocation = homeLocation
