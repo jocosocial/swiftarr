@@ -156,8 +156,8 @@ struct UserController: RouteCollection {
         let user = try req.requireAuthenticated(User.self)
         // retrieve profile
         return try user.profile.query(on: req).first().map {
-            (existingProfile) in
-            guard let profile = existingProfile else {
+            (profile) in
+            guard let profile = profile else {
                 throw Abort(.internalServerError, reason: "profile not found")
             }
             // return .Edit properties only
@@ -192,8 +192,8 @@ struct UserController: RouteCollection {
         }
         // retrieve profile
         return try user.profile.query(on: req).first().flatMap {
-            (existingProfile) in
-            guard let profile = existingProfile else {
+            (profile) in
+            guard let profile = profile else {
                 throw Abort(.internalServerError, reason: "profile not found")
             }
             // update fields, nil if no value supplied
@@ -236,14 +236,15 @@ struct UserController: RouteCollection {
     func whoamiHandler(_ req: Request) throws -> Future<CurrentUserData> {
         let user = try req.authenticated(User.self)
         // well, we have to unwrap somewhere
-        guard let my = user, let id = my.id else {
+        guard let me = user else {
             throw Abort(.internalServerError, reason: "this is seriously not possible")
         }
-        var currentUserData = CurrentUserData(userID: id, username: my.username, isLoggedIn: true)
-        // if there's a BasicAuthorization header, not logged in
-        if let _ = req.http.headers.basicAuthorization {
-            currentUserData.isLoggedIn = false
-        }
+        let currentUserData = try CurrentUserData(
+            userID: me.requireID(),
+            username: me.username,
+            // if there's a BasicAuthorization header, not logged in
+            isLoggedIn: req.http.headers.basicAuthorization != nil ? false : true
+        )
         return req.future(currentUserData)
     }
     
@@ -277,9 +278,9 @@ struct UserController: RouteCollection {
             .filter(\.code == normalizedCode)
             .first()
             .flatMap {
-                (existingCode) in
+                (registrationCode) in
                 // abort if code not found
-                guard let registrationCode = existingCode else {
+                guard let registrationCode = registrationCode else {
                     throw Abort(.badRequest, reason: "registration code not found")
                 }
                 // abort if code is already used
@@ -429,8 +430,8 @@ struct UserController: RouteCollection {
                 }
                 // need to update profile too
                 return try user.profile.query(on: req).first().flatMap {
-                    (existingProfile) in
-                    guard let profile = existingProfile else {
+                    (profile) in
+                    guard let profile = profile else {
                         throw Abort(.internalServerError, reason: "user's profile not found")
                     }
                     user.username = data.username

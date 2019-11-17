@@ -116,9 +116,9 @@ struct AuthController: RouteCollection {
             .filter(\.username == data.username)
             .first()
             .flatMap {
-                (existingUser) in
+                (user) in
                 // abort if user not found
-                guard let user = existingUser else {
+                guard let user = user else {
                     throw Abort(.badRequest, reason: "username \"\(data.username)\" not found")
                 }
 
@@ -248,9 +248,9 @@ struct AuthController: RouteCollection {
             .filter(\.userID == user.requireID())
             .first()
             .flatMap {
-                (existingToken) in
-                if let existing = existingToken {
-                    return req.future(TokenStringData(token: existing))
+                (token) in
+                if let token = token {
+                    return req.future(TokenStringData(token: token))
                 } else {
                     // otherwise generate and return new token
                     let token = try Token.generate(for: user)
@@ -292,12 +292,11 @@ struct AuthController: RouteCollection {
             .filter(\.userID == user.requireID())
             .first()
             .flatMap {
-                (existingToken) in
-                if let existing = existingToken {
-                    return existing.delete(on: req).transform(to: .noContent)
-                } else {
+                (token) in
+                guard let token = token else {
                     throw Abort(.conflict, reason: "user is not logged in")
                 }
+                return token.delete(on: req).transform(to: .noContent)
         }
     }
 }
