@@ -32,8 +32,8 @@ struct ProfileEdit: Codable {
     ///
     /// - Parameters:
     ///   - profileID: The ID of the profile that was edited.
-    ///   - profileData: The submitted `UserProfileData`, else `nil`.
-    ///   - profileImage: The name of the submitted image, els `nil`.
+    ///   - profileData: The submitted `UserProfileData`, else nil.
+    ///   - profileImage: The name of the submitted image, else nil.
     init(
         profileID: UUID,
         profileData: UserProfileData? = nil,

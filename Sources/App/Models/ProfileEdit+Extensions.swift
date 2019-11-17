@@ -38,7 +38,7 @@ extension ProfileEdit {
 
 extension ProfileEdit {
     /// The parent `UserProfile` of the edit.
-    var user: Parent<ProfileEdit, UserProfile> {
+    var profile: Parent<ProfileEdit, UserProfile> {
         return parent(\.profileID)
     }
 }
