@@ -37,11 +37,11 @@ struct UserController: RouteCollection {
         basicAuthGroup.post(UserVerifyData.self, at: "verify", use: verifyHandler)
         
         // endpoints available whether logged in or out
+        sharedAuthGroup.get("profile", use: profileHandler)
+        sharedAuthGroup.post(UserProfileData.self, at: "profile", use: profileUpdateHander)
         sharedAuthGroup.get("whoami", use: whoamiHandler)
         
         // endpoints available only when logged in
-        tokenAuthGroup.get("profile", use: profileHandler)
-        
         tokenAuthGroup.post(UserAddData.self, at: "add", use: addHandler)
         tokenAuthGroup.post(UserPasswordData.self, at: "password", use: passwordHandler)
         tokenAuthGroup.post(UserUsernameData.self, at: "username", use: usernameHandler)
@@ -162,6 +162,64 @@ struct UserController: RouteCollection {
             }
             // return .Edit properties only
             return profile.convertToEdit()
+        }
+    }
+    
+    /// `POST /api/v3/user/profile`
+    ///
+    /// Updates the user's profile.
+    ///
+    /// This endpoint can be reached with either Basic or Bearer authenticaton, so that a user
+    /// can customize their profile even if they do not yet have their registration code.
+    ///
+    /// - Note: All fields of the `UserProfileData` structure being submitted **must** be
+    ///   present and have values. While the properties of the profile itself are optional, the
+    ///   submitted values all *replace* the existing propety values. Submitting a value of `""`
+    ///   resets its respective profile property to `nil`.
+    ///
+    /// - Requires: `UserProfileData` payload in the HTTP body.
+    /// - Parameters:
+    ///   - req: The incoming request `Container`, provided automatically.
+    ///   - data: `UserProfileData` struct containing the editable properties of the profile.
+    /// - Throws: 403 error if the user is banned.
+    /// - Returns: A`UserProfile.Edit` object containing the updated editable properties of
+    ///   the profile.
+    func profileUpdateHander(_ req: Request, data: UserProfileData) throws -> Future<UserProfile.Edit> {
+        let user = try req.requireAuthenticated(User.self)
+        // abort if banned, profile might even be deleted
+        guard user.accessLevel != .banned else {
+            throw Abort(.forbidden, reason: "profile cannot be edited")
+        }
+        // retrieve profile
+        return try user.profile.query(on: req).first().flatMap {
+            (existingProfile) in
+            guard let profile = existingProfile else {
+                throw Abort(.internalServerError, reason: "profile not found")
+            }
+            // update fields, nil if no value supplied
+            profile.about = data.about.isEmpty ? nil : data.about
+            profile.displayName = data.displayName.isEmpty ? nil : data.displayName
+            profile.email = data.email.isEmpty ? nil : data.email
+            profile.homeLocation = data.homeLocation.isEmpty ? nil : data.homeLocation
+            profile.message = data.message.isEmpty ? nil : data.message
+            profile.preferredPronoun = data.message.isEmpty ? nil : data.preferredPronoun
+            profile.realName = data.realName.isEmpty ? nil : data.realName
+            profile.roomNumber = data.roomNumber.isEmpty ? nil : data.roomNumber
+            profile.limitAccess = data.limitAccess
+            return profile.save(on: req).flatMap {
+                (savedProfile) in
+                // record update for accountability
+                let profileEdit = try ProfileEdit(
+                    profileID: profile.requireID(),
+                    profileData: data,
+                    profileImage: nil
+                )
+                return profileEdit.save(on: req).map {
+                    (_) in
+                    // return .Edit properties of updated profile
+                    return savedProfile.convertToEdit()
+                }
+            }
         }
     }
     
@@ -532,7 +590,7 @@ struct UserPasswordData: Content {
     var password: String
 }
 
-/// Used by `UserController.profileHandler(_:data:)` for editing a profile.
+/// Used by `UserController.profileUpdateHandler(_:data:)` for editing a profile.
 struct UserProfileData: Content {
     /// An optional blurb about the user.
     var about: String
@@ -550,7 +608,7 @@ struct UserProfileData: Content {
     var realName: String
     /// An optional ship cabin number.
     var roomNumber: String
-    /// Whether the full profile info should be limited to logged in users.
+    /// Whether display of the optional fields' data should be limited to logged in users.
     var limitAccess: Bool
 }
 
