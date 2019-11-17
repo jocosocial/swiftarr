@@ -527,7 +527,7 @@ struct UserController: RouteCollection {
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: 500 error if the randomizer fails.
     /// - Returns: A recoveryKey String.
-    private func generateRecoveryKey(on req: Request) throws -> Future<String> {
+    static func generateRecoveryKey(on req: Request) throws -> Future<String> {
         guard let word1 = words.randomElement(),
             let word2 = words.randomElement(),
             let word3 = words.randomElement() else {
@@ -553,10 +553,8 @@ struct CreatedUserData: Content {
     let userID: UUID
     /// The newly created user's username.
     let username: String
-    /// If an optional `UserCreateData.verification` registration code was supplied in the
-    /// request and this is a primary account, the generated recovery key, otherwise `nil`.
-    /// A recoveryKey is generated only upon receipt of a successful registration.
-    let recoveryKey: String?
+    /// The newly created user's recoveryKey.
+    let recoveryKey: String
 }
 
 /// Returned by `UserController.whoamiHandler(_:).`
