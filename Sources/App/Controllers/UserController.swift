@@ -132,7 +132,62 @@ struct UserController: RouteCollection {
         }
     }
     
-    // MARK: - sharedAuthGroup Handlers (logged in OR out)
+    // MARK: - basicAuthGroup Handlers (not logged in)
+    // All handlers in this route group require a valid HTTP Basic Authentication
+    // header in the request.
+    
+    /// `POST /api/v3/user/verify`
+    ///
+    /// Changes a `User.accessLevel` from `.unverified` to `.verified` on successful submission
+    /// of a registration code.
+    ///
+    /// - Requires: `UserVerifyData` payload in the HTTP body.
+    /// - Parameters:
+    ///   - req: The incoming request `Container`, provided automatically.
+    ///   - data: `UserVerifyData` struct containing a registration code.
+    /// - Throws: 400 error if the user is already verified or the registration code is not
+    ///   a valid one. 409 error if the registration code has already been allocated to
+    ///   another user.
+    /// - Returns: HTTP status 200 on success.
+    func verifyHandler(_ req: Request, data: UserVerifyData) throws -> Future<HTTPStatus> {
+        let user = try req.requireAuthenticated(User.self)
+        // abort if user is already verified
+        guard user.verification == nil else {
+            throw Abort(.badRequest, reason: "user is already verified")
+        }
+        // see `UserVerifyData.validations()`
+        try data.validate()
+        let normalizedCode = data.verification.lowercased().replacingOccurrences(of: " ", with: "")
+        return RegistrationCode.query(on: req)
+            .filter(\.code == normalizedCode)
+            .first()
+            .flatMap {
+                (registrationCode) in
+                // abort if code not found
+                guard let registrationCode = registrationCode else {
+                    throw Abort(.badRequest, reason: "registration code not found")
+                }
+                // abort if code is already used
+                guard registrationCode.userID == nil else {
+                    throw Abort(.conflict, reason: "registration code has already been used")
+                }
+                // update models and return 200
+                return req.transaction(on: .psql) {
+                    (connection) in
+                    // update registrationCode
+                    registrationCode.userID = try user.requireID()
+                    return registrationCode.save(on: connection).flatMap {
+                        (_) in
+                        // update user
+                        user.accessLevel = .verified
+                        user.verification = registrationCode.code
+                        return user.save(on: connection).transform(to: .ok)
+                    }
+                }
+        }
+    }
+    
+    // MARK: - sharedAuthGroup Handlers (logged in *or* out)
     // All handlers in this route group require a valid HTTP Basic Authorization
     // *or* HTTP Bearer Authorization header in the request.
     
@@ -246,61 +301,6 @@ struct UserController: RouteCollection {
             isLoggedIn: req.http.headers.basicAuthorization != nil ? false : true
         )
         return req.future(currentUserData)
-    }
-    
-    // MARK: - basicAuthGroup Handlers (not logged in)
-    // All handlers in this route group require a valid HTTP Basic Authentication
-    // header in the request.
-    
-    /// `POST /api/v3/user/verify`
-    ///
-    /// Changes a `User.accessLevel` from `.unverified` to `.verified` on successful submission
-    /// of a registration code.
-    ///
-    /// - Requires: `UserVerifyData` payload in the HTTP body.
-    /// - Parameters:
-    ///   - req: The incoming request `Container`, provided automatically.
-    ///   - data: `UserVerifyData` struct containing a registration code.
-    /// - Throws: 400 error if the user is already verified or the registration code is not
-    ///   a valid one. 409 error if the registration code has already been allocated to
-    ///   another user.
-    /// - Returns: HTTP status 200 on success.
-    func verifyHandler(_ req: Request, data: UserVerifyData) throws -> Future<HTTPStatus> {
-        let user = try req.requireAuthenticated(User.self)
-        // abort if user is already verified
-        guard user.verification == nil else {
-            throw Abort(.badRequest, reason: "user is already verified")
-        }
-        // see `UserVerifyData.validations()`
-        try data.validate()
-        let normalizedCode = data.verification.lowercased().replacingOccurrences(of: " ", with: "")
-        return RegistrationCode.query(on: req)
-            .filter(\.code == normalizedCode)
-            .first()
-            .flatMap {
-                (registrationCode) in
-                // abort if code not found
-                guard let registrationCode = registrationCode else {
-                    throw Abort(.badRequest, reason: "registration code not found")
-                }
-                // abort if code is already used
-                guard registrationCode.userID == nil else {
-                    throw Abort(.conflict, reason: "registration code has already been used")
-                }
-                // update models and return 200
-                return req.transaction(on: .psql) {
-                    (connection) in
-                    // update registrationCode
-                    registrationCode.userID = try user.requireID()
-                    return registrationCode.save(on: connection).flatMap {
-                        (_) in
-                        // update user
-                        user.accessLevel = .verified
-                        user.verification = registrationCode.code
-                        return user.save(on: connection).transform(to: .ok)
-                    }
-                }
-        }
     }
     
     // MARK: - tokenAuthGroup Handlers (logged in)
