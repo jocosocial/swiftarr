@@ -15,6 +15,7 @@ final class UserTests: XCTestCase {
     let authURI = "/api/v3/auth/"
     let testURI = "/api/v3/test/"
     let userURI = "/api/v3/user/"
+    let usersURI = "/api/v3/users/"
     var app: Application!
     var conn: PostgreSQLConnection!
     
@@ -33,7 +34,7 @@ final class UserTests: XCTestCase {
     }
     
     // MARK: - Tests
-    // Note: We migrate an "admin" user during boot, so it is always present as `.first()`.
+    // Note: We migrate an "admin" user first during boot, so it is always present as `.first()`.
     
     /// Ensure that `UserAccessLevel` values are ordered and comparable by `.rawValue`.
     func testUserAccessLevelsAreOrdered() throws {
@@ -198,7 +199,7 @@ final class UserTests: XCTestCase {
         _ = try app.getResponse(from: userURI + "verify", method: .POST, headers: headers, body: userVerifyData)
         
         // test recovery with key
-        var userRecoveryData = UserRecoveryData(username: testUsername, recoveryKey: createdUserData.recoveryKey!)
+        var userRecoveryData = UserRecoveryData(username: testUsername, recoveryKey: createdUserData.recoveryKey)
         var result = try app.getResult(
             from: authURI + "recovery",
             method: .POST,
@@ -448,7 +449,7 @@ final class UserTests: XCTestCase {
         // test recovery works
         let userRecoveryData = UserRecoveryData(
             username: addedUserData.username,
-            recoveryKey: user.recoveryKey!
+            recoveryKey: user.recoveryKey
         )
         let result = try app.getResult(
             from: authURI + "recovery",
@@ -480,5 +481,97 @@ final class UserTests: XCTestCase {
         )
         XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
         XCTAssertTrue(response.http.body.description.contains("not currently"), "not currently")
+    }
+    
+    /// `GET /api/v3/user/profile`
+    /// `POST /api/v3/user/profile`
+    /// `GET /api/v3/users/ID/profile`
+    func testUserProfile() throws {
+        let user = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        var credentials = BasicAuthorization(username: testUsername, password: testPassword)
+        var headers = HTTPHeaders()
+        headers.basicAuthorization = credentials
+        
+        // test convertToEdit
+        var profileEdit = try app.getResult(
+            from: userURI + "profile",
+            method: .GET,
+            headers: headers,
+            decodeTo: UserProfile.Edit.self
+        )
+        XCTAssertTrue(profileEdit.username == testUsername, "should be \(testUsername)")
+        XCTAssertTrue(profileEdit.displayName.isEmpty, "should be empty")
+        
+        // test post edit
+        let userProfileData = UserProfileData(
+            about: "",
+            displayName: "Alistair Cookie",
+            email: "",
+            homeLocation: "",
+            message: "Tonight on Monsterpiece Theatre...",
+            preferredPronoun: "Sir",
+            realName: "Cookie Monster",
+            roomNumber: "",
+            limitAccess: true
+        )
+        profileEdit = try app.getResult(
+            from: userURI + "profile",
+            method: .POST,
+            headers: headers,
+            body: userProfileData,
+            decodeTo: UserProfile.Edit.self
+        )
+        XCTAssertTrue(profileEdit.realName.contains("Cookie"), "should have .realName")
+        XCTAssertTrue(profileEdit.displayedName == "Alistair Cookie (@\(testUsername))", "should be")
+        
+        // test limitAccess
+        var result = try app.getResult(
+            from: usersURI + "\(user.userID)/profile",
+            method: .GET,
+            headers: headers,
+            decodeTo: UserProfile.Public.self
+        )
+        XCTAssertTrue(result.message.contains("must be logged in"), "must be logged in")
+
+        let token = try app.login(username: testUsername, password: testPassword, on: conn)
+        headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        result = try app.getResult(
+            from: usersURI + "\(user.userID)/profile",
+            method: .GET,
+            headers: headers,
+            decodeTo: UserProfile.Public.self
+        )
+        XCTAssertTrue(result.message.contains("Tonight on"), "Tonight on")
+        
+        // test username change
+        let userUsernameData = UserUsernameData(username: "cookie")
+        _ = try app.getResponse(
+            from: userURI + "username",
+            method: .POST,
+            headers: headers,
+            body: userUsernameData
+        )
+        profileEdit = try app.getResult(
+            from: userURI + "profile",
+            method: .GET,
+            headers: headers,
+            decodeTo: UserProfile.Edit.self
+        )
+        XCTAssertTrue(profileEdit.displayedName.contains("(@cookie)"), "should be decorated cookie")
+        XCTAssertTrue(profileEdit.preferredPronoun == "Sir", "should be there")
+        
+        // test banned user
+        credentials = BasicAuthorization(username: "banned", password: testPassword)
+        headers = HTTPHeaders()
+        headers.basicAuthorization = credentials
+        let response = try app.getResponse(
+            from: userURI + "profile",
+            method: .POST,
+            headers: headers,
+            body: userProfileData
+        )
+        XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
+        XCTAssertTrue(response.http.body.description.contains("cannot be edited"), "cannot be edited")
     }
 }
