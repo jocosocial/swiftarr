@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>Token Class Reference</title>
+    <title>ProfileEdit Structure Reference</title>
     <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
     <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
     <meta charset="utf-8">
@@ -14,9 +14,9 @@
   </head>
   <body>
 
-    <a name="//apple_ref/swift/Class/Token" class="dashAnchor"></a>
+    <a name="//apple_ref/swift/Struct/ProfileEdit" class="dashAnchor"></a>
 
-    <a title="Token Class Reference"></a>
+    <a title="ProfileEdit Structure Reference"></a>
 
     <header class="header">
       <p class="header-col header-col--primary">
@@ -44,7 +44,7 @@
     <p class="breadcrumbs">
       <a class="breadcrumb" href="../index.html">App Reference</a>
       <img class="carat" src="../img/carat.png" />
-      Token Class Reference
+      ProfileEdit Structure Reference
     </p>
 
     <div class="content-wrapper">
@@ -186,20 +186,18 @@
 
         <section class="section">
           <div class="section-content">
-            <h1>Token</h1>
+            <h1>ProfileEdit</h1>
               <div class="declaration">
                 <div class="language">
-                  <pre class="highlight swift"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">Token</span> <span class="p">:</span> <span class="kt">Codable</span></code></pre>
+                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">ProfileEdit</span> <span class="p">:</span> <span class="kt">Codable</span></code></pre>
 
                 </div>
               </div>
-            <p>A <code>Token</code> model associates a randomly generated string with a <code><a href="../Classes/User.html">User</a></code>.</p>
+            <p>When a <code><a href="../Classes/UserProfile.html">UserProfile</a></code> is edited, a <code>ProfileEdit</code> is created and associated with the
+profile.</p>
 
-<p>A Token is generated upon each login, and revoked by deletion upon each logout.
-The <code>.token</code> value is used in between those events in an HTTP Bearer Authorization
-header field to authenticate the user sending API requests. There is no
-identifying user info in a <code>.token</code>; the association to a specific <code><a href="../Classes/User.html">User</a></code> is
-done internally on the API server through this model.</p>
+<p>This is done for accountability purposes and the data collected is intended to be viewable
+only by users with an access level of <code>.moderator</code> or above.</p>
 
           </div>
         </section>
@@ -218,9 +216,9 @@ done internally on the API server through this model.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App5TokenC2id10Foundation4UUIDVSgvp"></a>
+                    <a name="/s:3App11ProfileEditV2id10Foundation4UUIDVSgvp"></a>
                     <a name="//apple_ref/swift/Property/id" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App5TokenC2id10Foundation4UUIDVSgvp">id</a>
+                    <a class="token" href="#/s:3App11ProfileEditV2id10Foundation4UUIDVSgvp">id</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -228,7 +226,7 @@ done internally on the API server through this model.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>The Token&rsquo;s ID, provisioned automatically.</p>
+                        <p>The edit&rsquo;s ID.</p>
 
                       </div>
                       <div class="declaration">
@@ -240,7 +238,7 @@ done internally on the API server through this model.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/Token.swift#L18">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/ProfileEdit.swift#L15">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -248,9 +246,9 @@ done internally on the API server through this model.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App5TokenC5tokenSSvp"></a>
-                    <a name="//apple_ref/swift/Property/token" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App5TokenC5tokenSSvp">token</a>
+                    <a name="/s:3App11ProfileEditV9profileID10Foundation4UUIDVvp"></a>
+                    <a name="//apple_ref/swift/Property/profileID" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App11ProfileEditV9profileID10Foundation4UUIDVvp">profileID</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -258,19 +256,19 @@ done internally on the API server through this model.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>The generated token value.</p>
+                        <p>The ID of the profile that was edited.</p>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">token</span><span class="p">:</span> <span class="kt">String</span></code></pre>
+                          <pre class="highlight swift"><code><span class="k">let</span> <span class="nv">profileID</span><span class="p">:</span> <span class="kt">UUID</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/Token.swift#L21">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/ProfileEdit.swift#L18">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -278,9 +276,9 @@ done internally on the API server through this model.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App5TokenC6userID10Foundation4UUIDVvp"></a>
-                    <a name="//apple_ref/swift/Property/userID" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App5TokenC6userID10Foundation4UUIDVvp">userID</a>
+                    <a name="/s:3App11ProfileEditV11profileDataAA04UserbE0VSgvp"></a>
+                    <a name="//apple_ref/swift/Property/profileData" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App11ProfileEditV11profileDataAA04UserbE0VSgvp">profileData</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -288,19 +286,19 @@ done internally on the API server through this model.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>The ID of the <code><a href="../Classes/User.html">User</a></code> associated to the Token.</p>
+                        <p>If this is a profile data update, the submitted <code><a href="../Structs/UserProfileData.html">UserProfileData</a></code>.</p>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">userID</span><span class="p">:</span> <span class="kt"><a href="../Classes/User.html">User</a></span><span class="o">.</span><span class="kt">ID</span></code></pre>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">profileData</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserProfileData.html">UserProfileData</a></span><span class="p">?</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/Token.swift#L24">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/ProfileEdit.swift#L21">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -308,9 +306,39 @@ done internally on the API server through this model.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App5TokenC9createdAt10Foundation4DateVSgvp"></a>
+                    <a name="/s:3App11ProfileEditV12profileImageSSSgvp"></a>
+                    <a name="//apple_ref/swift/Property/profileImage" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App11ProfileEditV12profileImageSSSgvp">profileImage</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>If this is a profile image update, the image filename.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">profileImage</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/ProfileEdit.swift#L24">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App11ProfileEditV9createdAt10Foundation4DateVSgvp"></a>
                     <a name="//apple_ref/swift/Property/createdAt" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App5TokenC9createdAt10Foundation4DateVSgvp">createdAt</a>
+                    <a class="token" href="#/s:3App11ProfileEditV9createdAt10Foundation4DateVSgvp">createdAt</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -330,7 +358,7 @@ done internally on the API server through this model.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/Token.swift#L27">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/ProfileEdit.swift#L27">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -339,19 +367,19 @@ done internally on the API server through this model.</p>
             </div>
             <div class="task-group">
               <div class="task-name-container">
-                <a name="/Initializaton"></a>
-                <a name="//apple_ref/swift/Section/Initializaton" class="dashAnchor"></a>
-                <a href="#/Initializaton">
-                  <h3 class="section-name">Initializaton</h3>
+                <a name="/Initialization"></a>
+                <a name="//apple_ref/swift/Section/Initialization" class="dashAnchor"></a>
+                <a href="#/Initialization">
+                  <h3 class="section-name">Initialization</h3>
                 </a>
               </div>
               <ul class="item-container">
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App5TokenC5token6userIDACSS_10Foundation4UUIDVtcfc"></a>
-                    <a name="//apple_ref/swift/Method/init(token:userID:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App5TokenC5token6userIDACSS_10Foundation4UUIDVtcfc">init(token:userID:)</a>
+                    <a name="/s:3App11ProfileEditV9profileID0D4Data0D5ImageAC10Foundation4UUIDV_AA04UserbF0VSgSSSgtcfc"></a>
+                    <a name="//apple_ref/swift/Method/init(profileID:profileData:profileImage:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App11ProfileEditV9profileID0D4Data0D5ImageAC10Foundation4UUIDV_AA04UserbF0VSgSSSgtcfc">init(profileID:profileData:profileImage:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -359,14 +387,18 @@ done internally on the API server through this model.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Initializes a new Token.</p>
+                        <p>Initializes a new ProfileEdit.</p>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="nf">init</span><span class="p">(</span><span class="nv">token</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">userID</span><span class="p">:</span> <span class="kt"><a href="../Classes/User.html">User</a></span><span class="o">.</span><span class="kt">ID</span><span class="p">)</span></code></pre>
+                          <pre class="highlight swift"><code><span class="nf">init</span><span class="p">(</span>
+    <span class="nv">profileID</span><span class="p">:</span> <span class="kt">UUID</span><span class="p">,</span>
+    <span class="nv">profileData</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserProfileData.html">UserProfileData</a></span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+    <span class="nv">profileImage</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>
+<span class="p">)</span></code></pre>
 
                         </div>
                       </div>
@@ -377,24 +409,36 @@ done internally on the API server through this model.</p>
                             <tr>
                               <td>
                                 <code>
-                                <em>token</em>
+                                <em>profileID</em>
                                 </code>
                               </td>
                               <td>
                                 <div>
-                                  <p>The generated token string.</p>
+                                  <p>The ID of the profile that was edited.</p>
                                 </div>
                               </td>
                             </tr>
                             <tr>
                               <td>
                                 <code>
-                                <em>userID</em>
+                                <em>profileData</em>
                                 </code>
                               </td>
                               <td>
                                 <div>
-                                  <p>The ID of the <code><a href="../Classes/User.html">User</a></code> associated to the token.</p>
+                                  <p>The submitted <code><a href="../Structs/UserProfileData.html">UserProfileData</a></code>, else <code>nil</code>.</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>profileImage</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The name of the submitted image, els <code>nil</code>.</p>
                                 </div>
                               </td>
                             </tr>
@@ -402,7 +446,7 @@ done internally on the API server through this model.</p>
                         </table>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/Token.swift#L36-L39">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/ProfileEdit.swift#L37-L45">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -421,9 +465,9 @@ done internally on the API server through this model.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App5TokenC7prepare2on3NIO15EventLoopFutureCyytG10PostgreSQL0I13SQLConnectionC_tFZ"></a>
+                    <a name="/s:3App11ProfileEditV7prepare2on3NIO15EventLoopFutureCyytG10PostgreSQL0J13SQLConnectionC_tFZ"></a>
                     <a name="//apple_ref/swift/Method/prepare(on:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App5TokenC7prepare2on3NIO15EventLoopFutureCyytG10PostgreSQL0I13SQLConnectionC_tFZ">prepare(on:)</a>
+                    <a class="token" href="#/s:3App11ProfileEditV7prepare2on3NIO15EventLoopFutureCyytG10PostgreSQL0J13SQLConnectionC_tFZ">prepare(on:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -431,7 +475,8 @@ done internally on the API server through this model.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Creates the table, with foreign key constrain to associated <code><a href="../Classes/User.html">User</a></code>.</p>
+                        <p>Required by <code>Migration</code> protocol. Creates the table, with foreign key constraint
+to <code><a href="../Classes/UserProfile.html">UserProfile</a></code>.</p>
 
                       </div>
                       <div class="declaration">
@@ -461,12 +506,8 @@ done internally on the API server through this model.</p>
                           </tbody>
                         </table>
                       </div>
-                      <div>
-                        <h4>Return Value</h4>
-                        <p>A Void promise.</p>
-                      </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/Token+Extensions.swift#L18-L25">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/ProfileEdit+Extensions.swift#L20-L27">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -485,9 +526,9 @@ done internally on the API server through this model.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App5TokenC12createdAtKeys08WritableE4PathCyAC10Foundation4DateVSgGSgvpZ"></a>
+                    <a name="/s:3App11ProfileEditV12createdAtKeys08WritableF4PathCyAC10Foundation4DateVSgGSgvpZ"></a>
                     <a name="//apple_ref/swift/Variable/createdAtKey" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App5TokenC12createdAtKeys08WritableE4PathCyAC10Foundation4DateVSgGSgvpZ">createdAtKey</a>
+                    <a class="token" href="#/s:3App11ProfileEditV12createdAtKeys08WritableF4PathCyAC10Foundation4DateVSgGSgvpZ">createdAtKey</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -507,7 +548,7 @@ done internally on the API server through this model.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/Token+Extensions.swift#L32">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/ProfileEdit+Extensions.swift#L34">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -516,19 +557,19 @@ done internally on the API server through this model.</p>
             </div>
             <div class="task-group">
               <div class="task-name-container">
-                <a name="/Authentication.Token%20Conformance"></a>
-                <a name="//apple_ref/swift/Section/Authentication.Token Conformance" class="dashAnchor"></a>
-                <a href="#/Authentication.Token%20Conformance">
-                  <h3 class="section-name">Authentication.Token Conformance</h3>
+                <a name="/Parent"></a>
+                <a name="//apple_ref/swift/Section/Parent" class="dashAnchor"></a>
+                <a href="#/Parent">
+                  <h3 class="section-name">Parent</h3>
                 </a>
               </div>
               <ul class="item-container">
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App5TokenC8UserTypea"></a>
-                    <a name="//apple_ref/swift/Alias/UserType" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App5TokenC8UserTypea">UserType</a>
+                    <a name="/s:3App11ProfileEditV4user6Fluent6ParentVyAcA04UserB0CGvp"></a>
+                    <a name="//apple_ref/swift/Property/user" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App11ProfileEditV4user6Fluent6ParentVyAcA04UserB0CGvp">user</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -536,166 +577,19 @@ done internally on the API server through this model.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Required typealias, using <code><a href="../Classes/User.html">User</a></code> class for Authentication.</p>
+                        <p>The parent <code><a href="../Classes/UserProfile.html">UserProfile</a></code> of the edit.</p>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">typealias</span> <span class="kt">UserType</span> <span class="o">=</span> <span class="kt"><a href="../Classes/User.html">User</a></span></code></pre>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">user</span><span class="p">:</span> <span class="kt">Parent</span><span class="o">&lt;</span><span class="kt">ProfileEdit</span><span class="p">,</span> <span class="kt"><a href="../Classes/UserProfile.html">UserProfile</a></span><span class="o">&gt;</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/Token+Extensions.swift#L39">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App5TokenC9userIDKeys15WritableKeyPathCyAC10Foundation4UUIDVGvpZ"></a>
-                    <a name="//apple_ref/swift/Variable/userIDKey" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App5TokenC9userIDKeys15WritableKeyPathCyAC10Foundation4UUIDVGvpZ">userIDKey</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Required key for associating UserType to Token.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">static</span> <span class="k">let</span> <span class="nv">userIDKey</span><span class="p">:</span> <span class="kt">Token</span><span class="o">.</span><span class="kt">UserIDKey</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/Token+Extensions.swift#L41">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-              </ul>
-            </div>
-            <div class="task-group">
-              <div class="task-name-container">
-                <a name="/BearerAuthenticatable%20Conformance"></a>
-                <a name="//apple_ref/swift/Section/BearerAuthenticatable Conformance" class="dashAnchor"></a>
-                <a href="#/BearerAuthenticatable%20Conformance">
-                  <h3 class="section-name">BearerAuthenticatable Conformance</h3>
-                </a>
-              </div>
-              <ul class="item-container">
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App5TokenC8tokenKeys08WritableD4PathCyACSSGvpZ"></a>
-                    <a name="//apple_ref/swift/Variable/tokenKey" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App5TokenC8tokenKeys08WritableD4PathCyACSSGvpZ">tokenKey</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Required key for HTTP Bearer Authorization token.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">static</span> <span class="k">let</span> <span class="nv">tokenKey</span><span class="p">:</span> <span class="kt">Token</span><span class="o">.</span><span class="kt">TokenKey</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/Token+Extensions.swift#L48">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-              </ul>
-            </div>
-            <div class="task-group">
-              <div class="task-name-container">
-                <a name="/Methods"></a>
-                <a name="//apple_ref/swift/Section/Methods" class="dashAnchor"></a>
-                <a href="#/Methods">
-                  <h3 class="section-name">Methods</h3>
-                </a>
-              </div>
-              <ul class="item-container">
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App5TokenC8generate3for6lengthAcA4UserC_SitKFZ"></a>
-                    <a name="//apple_ref/swift/Method/generate(for:length:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App5TokenC8generate3for6lengthAcA4UserC_SitKFZ">generate(for:length:)</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Creates a new random Token.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">generate</span><span class="p">(</span><span class="k">for</span> <span class="nv">user</span><span class="p">:</span> <span class="kt"><a href="../Classes/User.html">User</a></span><span class="p">,</span> <span class="nv">length</span><span class="p">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">16</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Token</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div>
-                        <h4>Parameters</h4>
-                        <table class="graybox">
-                          <tbody>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>user</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The <code><a href="../Classes/User.html">User</a></code> to be associated with this <code>Token</code>.</p>
-                                </div>
-                              </td>
-                            </tr>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>length</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>Desired length of token data, defaults to 16.</p>
-                                </div>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                      <div>
-                        <h4>Return Value</h4>
-                        <p>A <code>Token</code> object.</p>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/Token+Extensions.swift#L59-L65">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/ProfileEdit+Extensions.swift#L41-L43">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

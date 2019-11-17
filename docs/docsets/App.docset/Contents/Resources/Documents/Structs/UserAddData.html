@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>UserUsernameData Structure Reference</title>
+    <title>UserAddData Structure Reference</title>
     <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
     <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
     <meta charset="utf-8">
@@ -14,9 +14,9 @@
   </head>
   <body>
 
-    <a name="//apple_ref/swift/Struct/UserUsernameData" class="dashAnchor"></a>
+    <a name="//apple_ref/swift/Struct/UserAddData" class="dashAnchor"></a>
 
-    <a title="UserUsernameData Structure Reference"></a>
+    <a title="UserAddData Structure Reference"></a>
 
     <header class="header">
       <p class="header-col header-col--primary">
@@ -44,7 +44,7 @@
     <p class="breadcrumbs">
       <a class="breadcrumb" href="../index.html">App Reference</a>
       <img class="carat" src="../img/carat.png" />
-      UserUsernameData Structure Reference
+      UserAddData Structure Reference
     </p>
 
     <div class="content-wrapper">
@@ -186,14 +186,14 @@
 
         <section class="section">
           <div class="section-content">
-            <h1>UserUsernameData</h1>
+            <h1>UserAddData</h1>
               <div class="declaration">
                 <div class="language">
-                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">UserUsernameData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">UserAddData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                 </div>
               </div>
-            <p>Used by <code><a href="../Structs/UserController.html#/s:3App14UserControllerV15usernameHandler_4data3NIO15EventLoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestC_AA0B12UsernameDataVtKF">UserController.usernameHandler(_:data:)</a></code> for changing a username.</p>
+            <p>Used by `UserController.addHandler(_:data:) for adding a sub-account.</p>
 
           </div>
         </section>
@@ -205,9 +205,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App16UserUsernameDataV8usernameSSvp"></a>
+                    <a name="/s:3App11UserAddDataV8usernameSSvp"></a>
                     <a name="//apple_ref/swift/Property/username" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App16UserUsernameDataV8usernameSSvp">username</a>
+                    <a class="token" href="#/s:3App11UserAddDataV8usernameSSvp">username</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -215,7 +215,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>The user&rsquo;s desired new username.</p>
+                        <p>The username for the sub-account.</p>
 
                       </div>
                       <div class="declaration">
@@ -227,7 +227,37 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L617">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L573">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App11UserAddDataV8passwordSSvp"></a>
+                    <a name="//apple_ref/swift/Property/password" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App11UserAddDataV8passwordSSvp">password</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The password for the sub-account.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">password</span><span class="p">:</span> <span class="kt">String</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L575">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -246,9 +276,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App16UserUsernameDataV11validations10Validation11ValidationsVyACGyKFZ"></a>
+                    <a name="/s:3App11UserAddDataV11validations10Validation11ValidationsVyACGyKFZ"></a>
                     <a name="//apple_ref/swift/Method/validations()" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App16UserUsernameDataV11validations10Validation11ValidationsVyACGyKFZ">validations()</a>
+                    <a class="token" href="#/s:3App11UserAddDataV11validations10Validation11ValidationsVyACGyKFZ">validations()</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -256,19 +286,20 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Validates that the new username is 1 or more alphanumeric characters</p>
+                        <p>Validates that <code><a href="../Structs/UserAddData.html#/s:3App11UserAddDataV8usernameSSvp">.username</a></code> is 1 or more alphanumeric characters,
+and <code><a href="../Structs/UserAddData.html#/s:3App11UserAddDataV8passwordSSvp">.password</a></code> is least 6 characters in length.</p>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">validations</span><span class="p">()</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Validations</span><span class="o">&lt;</span><span class="kt">UserUsernameData</span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">validations</span><span class="p">()</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Validations</span><span class="o">&lt;</span><span class="kt">UserAddData</span><span class="o">&gt;</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L665-L669">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L630-L635">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

@@ -75,7 +75,7 @@
                 <a class="nav-group-task-link" href="../../Classes/UserProfile.html">UserProfile</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../../Classes/UserProfile/Private.html">– Private</a>
+                <a class="nav-group-task-link" href="../../Classes/UserProfile/Edit.html">– Edit</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../../Classes/UserProfile/Public.html">– Public</a>
@@ -119,6 +119,9 @@
             <a class="nav-group-name-link" href="../../Structs.html">Structures</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../../Structs/AddedUserData.html">AddedUserData</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../../Structs/AdminController.html">AdminController</a>
               </li>
               <li class="nav-group-task">
@@ -134,6 +137,9 @@
                 <a class="nav-group-task-link" href="../../Structs/CurrentUserData.html">CurrentUserData</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../../Structs/ProfileEdit.html">ProfileEdit</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../../Structs/RegistrationCodes.html">RegistrationCodes</a>
               </li>
               <li class="nav-group-task">
@@ -146,6 +152,9 @@
                 <a class="nav-group-task-link" href="../../Structs/TokenStringData.html">TokenStringData</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../../Structs/UserAddData.html">UserAddData</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../../Structs/UserController.html">UserController</a>
               </li>
               <li class="nav-group-task">
@@ -155,6 +164,9 @@
                 <a class="nav-group-task-link" href="../../Structs/UserPasswordData.html">UserPasswordData</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../../Structs/UserProfileData.html">UserProfileData</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../../Structs/UserRecoveryData.html">UserRecoveryData</a>
               </li>
               <li class="nav-group-task">
@@ -162,6 +174,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../../Structs/UserVerifyData.html">UserVerifyData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../../Structs/UsersController.html">UsersController</a>
               </li>
             </ul>
           </li>
@@ -180,11 +195,11 @@
               </div>
             <p>Used for public viewing of the profile.</p>
 
-<p>The <code><a href="../../Classes/UserProfile.html#/s:3App11UserProfileC11displayNameSSSgvp">.displayName</a></code> and <code><a href="../../Classes/UserProfile.html#/s:3App11UserProfileC8usernameSSvp">.username</a></code> properties of the underlying profile are used
- to generate <code>.displayedName</code> instead of being returned individually. A fully
- populated <code>.displayedName</code> property is of the format <q>Display Name (@username)</q>,
- to match how the user appears in a header when posting. If there is no
- <code><a href="../../Classes/UserProfile.html#/s:3App11UserProfileC11displayNameSSSgvp">.displayName</a></code> content, it is simply <q>@username</q>.</p>
+<p>The <code><a href="../../Classes/UserProfile.html#/s:3App11UserProfileC11displayNameSSSgvp">.displayName</a></code> and <code><a href="../../Classes/UserProfile.html#/s:3App11UserProfileC8usernameSSvp">.username</a></code> properties of the underlying profile are used to
+generate <code>.displayedName</code> instead of being returned individually. A fully populated
+<code>.displayedName</code> property is of the format <q>Display Name (@username)</q>, to match how the
+user appears in a header when posting. If there is no <code><a href="../../Classes/UserProfile.html#/s:3App11UserProfileC11displayNameSSSgvp">.displayName</a></code> content, it is
+simply <q>@username</q>.</p>
 
           </div>
         </section>
@@ -193,36 +208,6 @@
           <div class="section-content">
             <div class="task-group">
               <ul class="item-container">
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App11UserProfileC6PublicC2id10Foundation4UUIDVvp"></a>
-                    <a name="//apple_ref/swift/Property/id" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App11UserProfileC6PublicC2id10Foundation4UUIDVvp">id</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>The profile&rsquo;s ID.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">UUID</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserProfile.swift#L196">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
                 <li class="item">
                   <div>
                     <code>
@@ -248,37 +233,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserProfile.swift#L198">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App11UserProfileC6PublicC9userImageSSvp"></a>
-                    <a name="//apple_ref/swift/Property/userImage" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App11UserProfileC6PublicC9userImageSSvp">userImage</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Filename of the user&rsquo;s profile image.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">userImage</span><span class="p">:</span> <span class="kt">String</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserProfile.swift#L200">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserProfile.swift#L192">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -308,7 +263,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserProfile.swift#L202">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserProfile.swift#L194">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -338,7 +293,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserProfile.swift#L204">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserProfile.swift#L196">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -368,7 +323,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserProfile.swift#L206">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserProfile.swift#L198">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -398,7 +353,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserProfile.swift#L208">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserProfile.swift#L200">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -428,7 +383,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserProfile.swift#L210">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserProfile.swift#L202">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -458,7 +413,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserProfile.swift#L212">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserProfile.swift#L204">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -488,7 +443,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserProfile.swift#L214">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserProfile.swift#L206">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -518,7 +473,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserProfile.swift#L216">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserProfile.swift#L208">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -537,9 +492,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App11UserProfileC6PublicC2id11displayName8username9userImage5about5email12homeLocation7message16preferredPronoun04realG010roomNumber4noteAE10Foundation4UUIDV_S11SSgtcfc"></a>
-                    <a name="//apple_ref/swift/Method/init(id:displayName:username:userImage:about:email:homeLocation:message:preferredPronoun:realName:roomNumber:note:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App11UserProfileC6PublicC2id11displayName8username9userImage5about5email12homeLocation7message16preferredPronoun04realG010roomNumber4noteAE10Foundation4UUIDV_S11SSgtcfc">init(id:displayName:username:userImage:about:email:homeLocation:message:preferredPronoun:realName:roomNumber:note:)</a>
+                    <a name="/s:3App11UserProfileC6PublicC8username5about11displayName5email12homeLocation7message16preferredPronoun04realH010roomNumber4noteAESS_S9SSgtcfc"></a>
+                    <a name="//apple_ref/swift/Method/init(username:about:displayName:email:homeLocation:message:preferredPronoun:realName:roomNumber:note:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App11UserProfileC6PublicC8username5about11displayName5email12homeLocation7message16preferredPronoun04realH010roomNumber4noteAESS_S9SSgtcfc">init(username:about:displayName:email:homeLocation:message:preferredPronoun:realName:roomNumber:note:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -555,11 +510,9 @@
                         <div class="language">
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="nf">init</span><span class="p">(</span>
-    <span class="nv">id</span><span class="p">:</span> <span class="kt">UUID</span><span class="p">,</span>
-    <span class="nv">displayName</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
     <span class="nv">username</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
-    <span class="nv">userImage</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
     <span class="nv">about</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
+    <span class="nv">displayName</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
     <span class="nv">email</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
     <span class="nv">homeLocation</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
     <span class="nv">message</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span>
@@ -578,30 +531,6 @@
                             <tr>
                               <td>
                                 <code>
-                                <em>id</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The ID of the profile.</p>
-                                </div>
-                              </td>
-                            </tr>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>displayName</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>An optional name for display alongside the username.</p>
-                                </div>
-                              </td>
-                            </tr>
-                            <tr>
-                              <td>
-                                <code>
                                 <em>username</em>
                                 </code>
                               </td>
@@ -614,24 +543,24 @@
                             <tr>
                               <td>
                                 <code>
-                                <em>userImage</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>Filename of the user&rsquo;s profile image.</p>
-                                </div>
-                              </td>
-                            </tr>
-                            <tr>
-                              <td>
-                                <code>
                                 <em>about</em>
                                 </code>
                               </td>
                               <td>
                                 <div>
                                   <p>A blurb about the user.</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>displayName</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>An optional name for display alongside the username.</p>
                                 </div>
                               </td>
                             </tr>
@@ -723,7 +652,7 @@
                         </table>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserProfile.swift#L235-L265">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserProfile.swift#L225-L251">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -736,7 +665,7 @@
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-14)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-16)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.11.2</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>
