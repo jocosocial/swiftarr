@@ -60,6 +60,13 @@ extension User: TokenAuthenticatable {
 // MARK: - Children
 
 extension User {
+    /// The `UserNotes` owned by the user.
+    var notes: Children<User, UserNote> {
+        return children(\.userID)
+    }
+}
+
+extension User {
     /// The child `UserProfile` of the user.
     var profile: Children<User, UserProfile> {
         return children(\.userID)
