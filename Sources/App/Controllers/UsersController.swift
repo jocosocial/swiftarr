@@ -77,7 +77,7 @@ struct UsersController: RouteCollection {
             // get profile and convert to .Public
             return try user.profile.query(on: req).first().flatMap {
                 (profile) in
-                guard let profile = profile else {
+                guard let profile = profile, let profileID = profile.id else {
                     throw Abort(.internalServerError, reason: "profile not found")
                 }
                 let publicProfile = profile.convertToPublic()
@@ -93,9 +93,17 @@ struct UsersController: RouteCollection {
                     publicProfile.realName = ""
                     publicProfile.roomNumber = ""
                 }
-                // FIXME: needs UserNote
-                // check for `UserNote`
-                return req.future(publicProfile)
+                // include UserNote if any, then return
+                return try requester.notes.query(on: req)
+                    .filter(\.profileID == profileID)
+                    .first()
+                    .map {
+                        (note) in
+                        if let note = note {
+                            publicProfile.note = note.note
+                        }
+                        return publicProfile
+                }
             }
         }
     }
