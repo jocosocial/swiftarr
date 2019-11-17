@@ -25,7 +25,7 @@ extension UserProfile: Migration {
             try addProperties(to: builder)
             // enforce unique username, just because
             builder.unique(on: \.username)
-            // foreigh key contraint to User
+            // foreign key contraint to User
             builder.reference(from: \.userID, to: \User.id)
         }
     }

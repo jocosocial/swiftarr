@@ -21,7 +21,7 @@ extension ProfileEdit: Migration {
         return Database.create(self, on: connection) {
             (builder) in
             try addProperties(to: builder)
-            // foreigh key contraint to User
+            // foreign key contraint to User
             builder.reference(from: \.profileID, to: \UserProfile.id)
         }
     }
