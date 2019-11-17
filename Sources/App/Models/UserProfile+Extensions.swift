@@ -80,6 +80,20 @@ extension UserProfile {
             limitAccess: self.limitAccess
         )
     }
+    
+    func convertToPublic() -> UserProfile.Public {
+        return UserProfile.Public(
+            username: self.username,
+            about: self.about ?? "",
+            displayName: self.displayName ?? "",
+            email: self.email ?? "",
+            homeLocation: self.homeLocation ?? "",
+            message: self.message ?? "",
+            preferredPronoun: self.preferredPronoun ?? "",
+            realName: self.realName ?? "",
+            roomNumber: self.roomNumber ?? ""
+        )
+    }
 }
 
 
