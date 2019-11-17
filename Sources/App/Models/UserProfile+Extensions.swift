@@ -51,6 +51,15 @@ extension UserProfile {
     }
 }
 
+// MARK: - Children
+
+extension UserProfile {
+    /// The child `ProfileEdit` accountability records of the profile.
+    var edits: Children<UserProfile, ProfileEdit> {
+        return children(\.profileID)
+    }
+}
+
 // MARK: - Methods
 
 extension UserProfile {
