@@ -68,8 +68,7 @@ struct UserController: RouteCollection {
     /// - Parameters:
     ///   - req: The incoming request `Container`, provided automatically.
     ///   - data: `UserCreateData` struct containing the user's desired username and password.
-    /// - Throws: 409 errpr if the username is not available. A 5xx response should be reported
-    ///   as a likely bug, please and thank you.
+    /// - Throws: 409 errpr if the username is not available.
     /// - Returns: The newly created user's ID, username, and a recovery key string.
     func createHandler(_ req: Request, data: UserCreateData) throws -> Future<Response> {
         // see `UserCreateData.validations()`
@@ -113,14 +112,14 @@ struct UserController: RouteCollection {
                     return user.save(on: connection).flatMap {
                         (savedUser) in
                         // create profile
-                        guard let id = savedUser.id else {
-                            throw Abort(.internalServerError, reason: "new user not saved")
-                        }
-                        let profile = UserProfile(userID: id, username: savedUser.username)
+                        let profile = try UserProfile(
+                            userID: savedUser.requireID(),
+                            username: savedUser.username
+                        )
                         return profile.save(on: connection).map {
-                            (savedProfile) in
-                            let createdUserData = CreatedUserData(
-                                userID: id,
+                            (_) in
+                            let createdUserData = try CreatedUserData(
+                                userID: savedUser.requireID(),
                                 username: savedUser.username,
                                 recoveryKey: recoveryKey
                             )
@@ -141,6 +140,9 @@ struct UserController: RouteCollection {
     ///
     /// Retrieves the user's own profile data for editing, as a `UserProfile.Edit` object.
     ///
+    /// This endpoint can be reached with either Basic or Bearer authenticaton, so that a user
+    /// can customize their profile even if they do not yet have their registration code.
+    ///
     /// - Note: The `.username` and `.displayedName` properties of the returned object
     ///   are for display convenience only. A username must be changed using the
     ///   `POST /api/v3/user/username` endpoint. The displayedName property is generated from
@@ -152,11 +154,13 @@ struct UserController: RouteCollection {
     ///   profile.
     func profileHandler(_ req: Request) throws -> Future<UserProfile.Edit> {
         let user = try req.requireAuthenticated(User.self)
+        // retrieve profile
         return try user.profile.query(on: req).first().map {
             (existingProfile) in
             guard let profile = existingProfile else {
                 throw Abort(.internalServerError, reason: "profile not found")
             }
+            // return .Edit properties only
             return profile.convertToEdit()
         }
     }
@@ -230,7 +234,7 @@ struct UserController: RouteCollection {
                     // update registrationCode
                     registrationCode.userID = try user.requireID()
                     return registrationCode.save(on: connection).flatMap {
-                        (savedCode) in
+                        (_) in
                         // update user
                         user.accessLevel = .verified
                         user.verification = registrationCode.code
@@ -264,8 +268,7 @@ struct UserController: RouteCollection {
     ///   - req: The incoming request `Container`, provided automatically.
     ///   - data: `UserAddData` struct containing the user's desired username and password.
     /// - Throws: 403 error if the user is banned or currently quarantined. 409 errpr if the
-    ///   username is not available. A 5xx response should be reported as a likely bug, please
-    ///   and thank you.
+    ///   username is not available.
     /// - Returns: The newly created user's ID and username.
     func addHandler(_ req: Request, data: UserAddData) throws -> Future<Response> {
         let user = try req.requireAuthenticated(User.self)
@@ -302,14 +305,14 @@ struct UserController: RouteCollection {
                     return subAccount.save(on: connection).flatMap {
                         (savedUser) in
                         // create profile
-                        guard let id = savedUser.id else {
-                            throw Abort(.internalServerError, reason: "new sub-account not saved")
-                        }
-                        let profile = UserProfile(userID: id, username: savedUser.username)
+                        let profile = try UserProfile(
+                            userID: savedUser.requireID(),
+                            username: savedUser.username
+                        )
                         return profile.save(on: connection).map {
-                            (savedProfile) in
-                            let addedUserData = AddedUserData(
-                                userID: id,
+                            (_) in
+                            let addedUserData = try AddedUserData(
+                                userID: savedUser.requireID(),
                                 username: savedUser.username
                             )
                             let response = Response(http: HTTPResponse(status: .created), using: req)
