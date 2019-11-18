@@ -85,8 +85,9 @@ extension UserProfile {
     /// sensitive and unneeded data are omitted and the `.username` and `.displayName` properties
     /// are massaged into the more familiar "Display Name (@username)" or "@username" (if
     /// `.displayName` is empty) format as seen in posted content headers.
-    func convertToPublic() -> UserProfile.Public {
+    func convertToPublic() throws -> UserProfile.Public {
         return UserProfile.Public(
+            profileID: try self.requireID(),
             username: self.username,
             about: self.about ?? "",
             displayName: self.displayName ?? "",

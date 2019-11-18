@@ -188,6 +188,8 @@ final class UserProfile: Codable {
     /// user appears in a header when posting. If there is no `.displayName` content, it is
     /// simply "@username".
     final class Public: Codable {
+        /// The profile's ID.
+        var profileID: UUID
         /// A generated displayName + username string.
         var displayedName: String
         /// An optional blurb about the user.
@@ -212,6 +214,7 @@ final class UserProfile: Codable {
         /// Creates a new UserProfile.Public.
         ///
         /// - Parameters:
+        ///   - profileID: The profile's ID.
         ///   - username: The user's username.
         ///   - about: A blurb about the user.
         ///   - displayName: An optional name for display alongside the username.
@@ -223,6 +226,7 @@ final class UserProfile: Codable {
         ///   - roomNumber: The user's cabin number.
         ///   - note: A note about the user, belonging to the viewer (see `UserNote`).
         init(
+            profileID: UUID,
             username: String,
             about: String,
             displayName: String,
@@ -234,6 +238,7 @@ final class UserProfile: Codable {
             roomNumber: String,
             note: String? = nil
         ) {
+            self.profileID = profileID
             // generate the .displayedName string
             if displayName.isEmpty {
                 self.displayedName = "@\(username)"
