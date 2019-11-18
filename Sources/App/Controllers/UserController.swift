@@ -87,7 +87,7 @@ struct UserController: RouteCollection {
                 
                 // create recovery key
                 var recoveryKey = ""
-                _ = try self.generateRecoveryKey(on: req).map {
+                _ = try UserController.generateRecoveryKey(on: req).map {
                     (resolvedKey) in
                     recoveryKey = resolvedKey
                 }
@@ -453,7 +453,7 @@ struct UserController: RouteCollection {
     
     // MARK: - Helper Functions
     
-    private let words: [String] = [
+    static let words: [String] = [
         "aboriginal", "accept", "account", "acoustic", "adaptable", "adorable",
         "afternoon", "agreeable", "airport", "alive", "alluring", "amazing",
         "amused", "announce", "applause", "appreciate", "approve", "aquatic",
@@ -527,7 +527,7 @@ struct UserController: RouteCollection {
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: 500 error if the randomizer fails.
     /// - Returns: A recoveryKey String.
-    private func generateRecoveryKey(on req: Request) throws -> Future<String> {
+    static func generateRecoveryKey(on req: Request) throws -> Future<String> {
         guard let word1 = words.randomElement(),
             let word2 = words.randomElement(),
             let word3 = words.randomElement() else {
