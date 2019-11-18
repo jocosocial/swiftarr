@@ -48,7 +48,7 @@ struct UsersController: RouteCollection {
     // All handlers in this route group require a valid HTTP Basic Authorization
     // *or* HTTP Bearer Authorization header in the request.
     
-    /// `GET /api/v3/user/ID:/profile`
+    /// `GET /api/v3/user/ID/profile`
     ///
     /// Retrieves the user's own profile data for editing, as a `UserProfile.Edit` object.
     ///
@@ -80,7 +80,7 @@ struct UsersController: RouteCollection {
                 guard let profile = profile, let profileID = profile.id else {
                     throw Abort(.internalServerError, reason: "profile not found")
                 }
-                let publicProfile = profile.convertToPublic()
+                let publicProfile = try profile.convertToPublic()
                 // if auth type is Basic, requestor is not logged in, so hide info if
                 // `.limitAccess` is true or requestor is .banned
                 if (req.http.headers.basicAuthorization != nil && profile.limitAccess)
@@ -119,7 +119,6 @@ struct UsersController: RouteCollection {
     
     
     // MARK: - Helper Functions
-    
 }
 
 // MARK: - Helper Structs
