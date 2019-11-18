@@ -27,6 +27,9 @@ final class UserNote: Codable {
     /// Timestamp of the model's creation, set automatically.
     var createdAt: Date?
     
+    /// Timestatmp of the model's last update, set automatically.
+    var updatedAt: Date?
+    
     // MARK: Initialization
     
     /// Creates a new UserNote.
@@ -39,34 +42,5 @@ final class UserNote: Codable {
         self.userID = userID
         self.profileID = profileID
         self.note = note
-    }
-    
-    // MARK: Codable Representations
-    
-    /// Used for returning a user's collection of notes.
-    final class Private: Codable {
-        /// The note's ID.
-        var noteID: UUID
-        /// The associated profile's ID.
-        var profileID: UUID
-        /// The profile's .displayedName value.
-        var profileUser: String
-        /// The text of the note.
-        var note: String
-        
-        // MARK: Initialization
-        /// Creates a new UserNote.Public.
-        ///
-        /// - Parameters:
-        ///   - noteID: The note's ID.
-        ///   - profileID: The ID of the profile on which it appears.
-        ///   - profileUser: The profile owner's full .displayedName.
-        ///   - note: The text of the note.
-        init(noteID: UUID, profileID: UUID, profileUser: String, note: String) {
-            self.noteID = noteID
-            self.profileID = profileID
-            self.profileUser = profileUser
-            self.note = note
-        }
     }
 }

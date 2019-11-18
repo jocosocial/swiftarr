@@ -6,7 +6,6 @@ extension UserNote: PostgreSQLUUIDModel {}
 
 // model and representations can be passed as HTTP body data
 extension UserNote: Content {}
-//extension UserNote.Public: Content {}
 
 // model can be used as endpoint parameter
 extension UserNote: Parameter {}
@@ -35,6 +34,8 @@ extension UserNote: Migration {
 extension UserNote {
     /// Required key for `\.createdAt` functionality.
     static var createdAtKey: TimestampKey? { return \.createdAt }
+    /// Required key for `\.updatedAt` functionality.
+    static var updatedAtKey: TimestampKey? { return \.updatedAt}
 }
 
 // MARK: - Parents
@@ -52,4 +53,3 @@ extension UserNote {
         return parent(\.profileID)
     }
 }
-

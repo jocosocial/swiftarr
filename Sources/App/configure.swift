@@ -101,6 +101,7 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     migrations.add(model: Token.self, database: .psql)
     migrations.add(model: RegistrationCode.self, database: .psql)
     migrations.add(model: ProfileEdit.self, database: .psql)
+    migrations.add(model: UserNote.self, database: .psql)
     migrations.add(migration: AdminUser.self, database: .psql)
     migrations.add(migration: RegistrationCodes.self, database: .psql)
     if (env == .testing || env == .development) {

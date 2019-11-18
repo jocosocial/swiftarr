@@ -43,6 +43,7 @@ struct UserController: RouteCollection {
         
         // endpoints available only when logged in
         tokenAuthGroup.post(UserAddData.self, at: "add", use: addHandler)
+        tokenAuthGroup.get("notes", use: notesHandler)
         tokenAuthGroup.post(UserPasswordData.self, at: "password", use: passwordHandler)
         tokenAuthGroup.post(UserUsernameData.self, at: "username", use: usernameHandler)
     }
@@ -383,6 +384,53 @@ struct UserController: RouteCollection {
         }
     }
     
+    /// `GET /api/v3/user/notes`
+    ///
+    /// Retrieves all `UserNote`s owned by the current user, as an array of `NoteData` objects.
+    ///
+    /// The `NoteData` object is intended to be display friendly, including fields for
+    /// potential sorting, the ID of the profile which can be linked to, and the profile's user
+    /// in the familiar .displayedName format. The .noteID is included as well to support
+    /// editing of notes outside of a profile-viewing context.
+    ///
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: The user's notes as an array of `NoteData`, or an empty array if none exist.
+    func notesHandler(_ req: Request) throws -> Future<[NoteData]> {
+        let user = try req.requireAuthenticated(User.self)
+        // FIXME: need to account for Blocks
+        // fetch all notes
+        return try user.notes.query(on: req).all().map {
+            (notes) in
+            // create array for return
+            var notesData = [NoteData]()
+            try notes.forEach {
+                // unwrap Date? fields
+                guard let createdAt = $0.createdAt,
+                    let updatedAt = $0.updatedAt else {
+                        throw Abort(.internalServerError, reason: "note has no timestamps")
+                }
+                // create NoteData
+                var noteData = try NoteData(
+                    noteID: $0.requireID(),
+                    createdAt: createdAt,
+                    updataedAt: updatedAt,
+                    profileID: $0.profileID,
+                    profileUser: "",
+                    note: $0.note
+                )
+                // .displayedName is probably best to send
+                _ = $0.profile.query(on: req).first().map {
+                    (profile) in
+                    let publicProfile = try profile?.convertToPublic()
+                    noteData.profileUser = publicProfile?.displayedName ?? "unknown (please report this bug)"
+                }
+                notesData.append(noteData)
+            }
+            return notesData
+        }
+    }
+    
     /// `POST /api/v3/user/password`
     ///
     /// Updates a user's password to the supplied value, encrypted.
@@ -565,6 +613,22 @@ struct CurrentUserData: Content {
     let username: String
     /// Whether the user is currently logged in.
     var isLoggedIn: Bool
+}
+
+/// Returned by `UserController.notesHandler(_:)`.
+struct NoteData: Content {
+    /// The ID of the note.
+    let noteID: UUID
+    /// Timestamp of the note's creation.
+    let createdAt: Date
+    /// Timestamp of the note's last update.
+    let updataedAt: Date
+    /// The ID of the associated profile.
+    let profileID: UUID
+    /// The .displayName of the profile's user.
+    var profileUser: String
+    /// The text of the note.
+    let note: String
 }
 
 /// Used by `UserController.addHandler(_:data:) for adding a sub-account.
