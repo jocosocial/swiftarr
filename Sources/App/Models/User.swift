@@ -62,6 +62,9 @@ final class User: Codable {
     /// Timestamp of the model's soft-deletion, set automatically.
     var deletedAt: Date?
     
+    /// Timestamp of the child UserProfile's last update.
+    var profileUpdatedAt: Date
+    
     // MARK: Initialization
     
     /// Initializes a new User.
@@ -69,17 +72,20 @@ final class User: Codable {
     /// - Parameters:
     ///   - username: The user's username, unadorned (e.g. "grundoon", not "@grundoon").
     ///   - password: A `BCrypt` hash of the user's password. Please **never** store actual
-    /// passwords.
+    ///     passwords.
     ///   - recoveryKey: A `BCrypt` hash of the user's recovery key. Please **never** store
-    /// the actual key.
+    ///     the actual key.
     ///   - verification: A token of known identity, such as a provided code or a verified email
-    /// address. `nil` if not yet verified.
+    ///     address. `nil` if not yet verified.
     ///   - parentID: If a sub-account, the `id` of the master acount, otherwise `nil`.
     ///   - accessLevel: The user's access level (see `UserAccessLevel`).
     ///   - keywordMutes: The user's list of keywords that mute posts, initially empty.
     ///   - recoveryAttempts: The number of successive failed attempts at password recovery,
-    /// initially 0.
+    ///     initially 0.
     ///   - reports: The total number of reports made on the user's posts, initially 0.
+    ///   - profileUpdatedAt: The timestamp of the associated profile's last update, initially
+    ///     epoch.
+    
     init(
         username: String,
         password: String,
@@ -89,7 +95,8 @@ final class User: Codable {
         accessLevel: UserAccessLevel,
         keywordMutes: [String] = [],
         recoveryAttempts: Int = 0,
-        reports: Int = 0
+        reports: Int = 0,
+        profileUpdatedAt: Date = Date(timeIntervalSince1970: 0)
     ) {
         self.username = username
         self.password = password
@@ -100,6 +107,7 @@ final class User: Codable {
         self.keywordMutes = keywordMutes
         self.recoveryAttempts = recoveryAttempts
         self.reports = reports
+        self.profileUpdatedAt = profileUpdatedAt
     }
     
     // MARK: - Codable Representations
