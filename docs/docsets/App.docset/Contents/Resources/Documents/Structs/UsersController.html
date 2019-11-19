@@ -72,6 +72,12 @@
                 <a class="nav-group-task-link" href="../Classes/User/Public.html">– Public</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/UserNote.html">UserNote</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/UserNote/Edit.html">– Edit</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/UserProfile.html">UserProfile</a>
               </li>
               <li class="nav-group-task">
@@ -131,10 +137,19 @@
                 <a class="nav-group-task-link" href="../Structs/AuthController.html">AuthController</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreatedNoteData.html">CreatedNoteData</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/CreatedUserData.html">CreatedUserData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/CurrentUserData.html">CurrentUserData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/NoteCreateData.html">NoteCreateData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/NoteData.html">NoteData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/ProfileEdit.html">ProfileEdit</a>
@@ -239,7 +254,7 @@ entirely.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L18-L42">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L18-L45">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -268,7 +283,7 @@ entirely.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p><code>GET /api/v3/user/ID:/profile</code></p>
+                        <p><code>GET /api/v3/user/ID/profile</code></p>
 
 <p>Retrieves the user&rsquo;s own profile data for editing, as a <code><a href="../Classes/UserProfile/Edit.html">UserProfile.Edit</a></code> object.</p>
 
@@ -322,7 +337,240 @@ the username and displayName values.</p>
 profile.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L67-L101">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L70-L112">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/tokenAuthGroup%20Handlers%20(logged%20in)"></a>
+                <a name="//apple_ref/swift/Section/tokenAuthGroup Handlers (logged in)" class="dashAnchor"></a>
+                <a href="#/tokenAuthGroup%20Handlers%20(logged%20in)">
+                  <h3 class="section-name">tokenAuthGroup Handlers (logged in)</h3>
+                </a>
+              </div>
+              <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App15UsersControllerV17noteCreateHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA04NoteE4DataVtKF"></a>
+                    <a name="//apple_ref/swift/Method/noteCreateHandler(_:data:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15UsersControllerV17noteCreateHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA04NoteE4DataVtKF">noteCreateHandler(_:data:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>POST /api/v3/users/ID/note</code></p>
+
+<p>Creates a new <code>UseerNote</code> associated with the specified user&rsquo;s profile and the current
+user.</p>
+<div class="aside aside-note">
+    <p class="aside-title">Note</p>
+    <p>In order to support the editing of a note in contexts other than when
+actively viewing a profile, the contents of <code>profile.note</code> cannot be used to determine
+if there is an existing associated UserNote, since it is possible for a valid note to
+contain no text at any given time. This means that a GET should be performed on this
+endpoint prior to attempting a POST. If GET returns data, use <code>POST /api/v3/user/note</code>
+to update the note instead of this endpoint.</p>
+
+</div>
+<div class="aside aside-requires">
+    <p class="aside-title">Requires</p>
+    <p><code><a href="../Structs/NoteCreateData.html">NoteCreateData</a></code> payload in the HTTP body.</p>
+
+</div>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>409 error if there is an existing note on the profile. A 5xx response should
+be reported as a likely bug, please and thank you.</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">noteCreateHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">data</span><span class="p">:</span> <span class="kt"><a href="../Structs/NoteCreateData.html">NoteCreateData</a></span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">Response</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>data</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p><code><a href="../Structs/NoteCreateData.html">NoteCreateData</a></code> struct containing the text of the note.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>The newly created note&rsquo;s ID and text.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L142-L182">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App15UsersControllerV17noteDeleteHandlery3NIO15EventLoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestCKF"></a>
+                    <a name="//apple_ref/swift/Method/noteDeleteHandler(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15UsersControllerV17noteDeleteHandlery3NIO15EventLoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestCKF">noteDeleteHandler(_:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>POST /api/v3/users/ID/note/delete</code></p>
+
+<p>Deletes an existing <code>UseerNote</code> associated with the specified user&rsquo;s profile and
+the current user.</p>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    400 error if there is no existing note on the profile. A 5xx response should
+be reported as a likely bug, please and thank you.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">noteDeleteHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">HTTPStatus</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>204 No Content on success.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L193-L218">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App15UsersControllerV11noteHandlery3NIO15EventLoopFutureCyAA8UserNoteC4EditCG5Vapor7RequestCKF"></a>
+                    <a name="//apple_ref/swift/Method/noteHandler(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15UsersControllerV11noteHandlery3NIO15EventLoopFutureCyAA8UserNoteC4EditCG5Vapor7RequestCKF">noteHandler(_:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>GET /api/v3/users/ID/note</code></p>
+
+<p>Retrieves an existing <code>UseerNote</code> associated with the specified user&rsquo;s profile and
+the current user.</p>
+<div class="aside aside-note">
+    <p class="aside-title">Note</p>
+    <p>In order to support the editing of a note in contexts other than when
+actively viewing a profile, the contents of <code>profile.note</code> cannot be used to determine
+if there is an exiting associated UserNote, since it is possible for a valid note to
+contain no text at any given time. Use this GET endpoint prior to attempting a POST
+to it.</p>
+
+</div>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>400 error if there is no existing note on the profile. A 5xx response should
+be reported as a likely bug, please and thank you.</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">noteHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Classes/UserNote.html">UserNote</a></span><span class="o">.</span><span class="kt">Edit</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>The note&rsquo;s ID and text.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L235-L259">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -335,7 +583,7 @@ profile.</p>
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-16)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-18)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.11.2</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>

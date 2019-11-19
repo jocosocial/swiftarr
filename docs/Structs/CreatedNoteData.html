@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>TestController Structure Reference</title>
+    <title>CreatedNoteData Structure Reference</title>
     <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
     <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
     <meta charset="utf-8">
@@ -14,9 +14,9 @@
   </head>
   <body>
 
-    <a name="//apple_ref/swift/Struct/TestController" class="dashAnchor"></a>
+    <a name="//apple_ref/swift/Struct/CreatedNoteData" class="dashAnchor"></a>
 
-    <a title="TestController Structure Reference"></a>
+    <a title="CreatedNoteData Structure Reference"></a>
 
     <header class="header">
       <p class="header-col header-col--primary">
@@ -44,7 +44,7 @@
     <p class="breadcrumbs">
       <a class="breadcrumb" href="../index.html">App Reference</a>
       <img class="carat" src="../img/carat.png" />
-      TestController Structure Reference
+      CreatedNoteData Structure Reference
     </p>
 
     <div class="content-wrapper">
@@ -201,20 +201,14 @@
 
         <section class="section">
           <div class="section-content">
-            <h1>TestController</h1>
+            <h1>CreatedNoteData</h1>
               <div class="declaration">
                 <div class="language">
-                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">TestController</span> <span class="p">:</span> <span class="kt">RouteCollection</span></code></pre>
+                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">CreatedNoteData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                 </div>
               </div>
-            <p>The collection of <code>/api/v3/test/*</code> route endpoints and handler functions for unit
-testing and benchmarking purposes.</p>
-<div class="aside aside-note">
-    <p class="aside-title">Note</p>
-    These endpoints are <strong>NOT</strong> intended as API for client development.
-
-</div>
+            <p>Returned by <code>UsersController.noteHandler(_:data:).</code></p>
 
           </div>
         </section>
@@ -222,20 +216,13 @@ testing and benchmarking purposes.</p>
         <section class="section">
           <div class="section-content">
             <div class="task-group">
-              <div class="task-name-container">
-                <a name="/RouteCollection%20Conformance"></a>
-                <a name="//apple_ref/swift/Section/RouteCollection Conformance" class="dashAnchor"></a>
-                <a href="#/RouteCollection%20Conformance">
-                  <h3 class="section-name">RouteCollection Conformance</h3>
-                </a>
-              </div>
               <ul class="item-container">
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App14TestControllerV4boot6routery5Vapor6Router_p_tKF"></a>
-                    <a name="//apple_ref/swift/Method/boot(router:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App14TestControllerV4boot6routery5Vapor6Router_p_tKF">boot(router:)</a>
+                    <a name="/s:3App15CreatedNoteDataV6noteID10Foundation4UUIDVvp"></a>
+                    <a name="//apple_ref/swift/Property/noteID" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15CreatedNoteDataV6noteID10Foundation4UUIDVvp">noteID</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -243,85 +230,19 @@ testing and benchmarking purposes.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Required. Registers routes to the incoming router.</p>
+                        <p>The ID of the note.</p>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">boot</span><span class="p">(</span><span class="nv">router</span><span class="p">:</span> <span class="kt">Router</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">noteID</span><span class="p">:</span> <span class="kt">UUID</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/TestController.swift#L15-L41">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-              </ul>
-            </div>
-            <div class="task-group">
-              <div class="task-name-container">
-                <a name="/Open%20Access%20Handlers"></a>
-                <a name="//apple_ref/swift/Section/Open Access Handlers" class="dashAnchor"></a>
-                <a href="#/Open%20Access%20Handlers">
-                  <h3 class="section-name">Open Access Handlers</h3>
-                </a>
-              </div>
-              <ul class="item-container">
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App14TestControllerV15getUsersHandlery3NIO15EventLoopFutureCySayAA4UserCGG5Vapor7RequestCKF"></a>
-                    <a name="//apple_ref/swift/Method/getUsersHandler(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App14TestControllerV15getUsersHandlery3NIO15EventLoopFutureCySayAA4UserCGG5Vapor7RequestCKF">getUsersHandler(_:)</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p><code>GET /api/v3/test/getusers</code></p>
-
-<p>Returns the first 10 users in the database.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">getUsersHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="p">[</span><span class="kt"><a href="../Classes/User.html">User</a></span><span class="p">]</span><span class="o">&gt;</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div>
-                        <h4>Parameters</h4>
-                        <table class="graybox">
-                          <tbody>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>req</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
-                                </div>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                      <div>
-                        <h4>Return Value</h4>
-                        <p>An array of at most the first 10 <code><a href="../Classes/User.html">User</a></code> models in the database.</p>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/TestController.swift#L51-L53">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L269">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -329,9 +250,9 @@ testing and benchmarking purposes.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App14TestControllerV18getProfilesHandlery3NIO15EventLoopFutureCySayAA11UserProfileCGG5Vapor7RequestCKF"></a>
-                    <a name="//apple_ref/swift/Method/getProfilesHandler(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App14TestControllerV18getProfilesHandlery3NIO15EventLoopFutureCySayAA11UserProfileCGG5Vapor7RequestCKF">getProfilesHandler(_:)</a>
+                    <a name="/s:3App15CreatedNoteDataV4noteSSvp"></a>
+                    <a name="//apple_ref/swift/Property/note" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15CreatedNoteDataV4noteSSvp">note</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -339,100 +260,19 @@ testing and benchmarking purposes.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p><code>GET /api/v3/test/getprofiles</code></p>
-
-<p>Returns the first 10 profiles in the database.</p>
+                        <p>The text of the note.</p>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">getProfilesHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="p">[</span><span class="kt"><a href="../Classes/UserProfile.html">UserProfile</a></span><span class="p">]</span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">note</span><span class="p">:</span> <span class="kt">String</span></code></pre>
 
                         </div>
                       </div>
-                      <div>
-                        <h4>Parameters</h4>
-                        <table class="graybox">
-                          <tbody>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>req</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
-                                </div>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                      <div>
-                        <h4>Return Value</h4>
-                        <p>An array of at most the first 10 <code><a href="../Classes/UserProfile.html">UserProfile</a></code> models in the databases.</p>
-                      </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/TestController.swift#L61-L63">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App14TestControllerV27getRegistrationCodesHandlery3NIO15EventLoopFutureCySayAA0E4CodeCGG5Vapor7RequestCKF"></a>
-                    <a name="//apple_ref/swift/Method/getRegistrationCodesHandler(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App14TestControllerV27getRegistrationCodesHandlery3NIO15EventLoopFutureCySayAA0E4CodeCGG5Vapor7RequestCKF">getRegistrationCodesHandler(_:)</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p><code>GET /api/v3/test/getregistrationcodes</code></p>
-
-<p>Returns an array of all stored <code><a href="../Classes/RegistrationCode.html">RegistrationCode</a></code> models. If called in a production
-environment, the actual codes are sanitized before return.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">getRegistrationCodesHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="p">[</span><span class="kt"><a href="../Classes/RegistrationCode.html">RegistrationCode</a></span><span class="p">]</span><span class="o">&gt;</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div>
-                        <h4>Parameters</h4>
-                        <table class="graybox">
-                          <tbody>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>req</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
-                                </div>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                      <div>
-                        <h4>Return Value</h4>
-                        <p>An array of the <code>RegistrationCoe</code> models in the databases.</p>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/TestController.swift#L72-L83">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L271">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

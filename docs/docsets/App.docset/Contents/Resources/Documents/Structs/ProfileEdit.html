@@ -72,6 +72,12 @@
                 <a class="nav-group-task-link" href="../Classes/User/Public.html">– Public</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/UserNote.html">UserNote</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/UserNote/Edit.html">– Edit</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/UserProfile.html">UserProfile</a>
               </li>
               <li class="nav-group-task">
@@ -131,10 +137,19 @@
                 <a class="nav-group-task-link" href="../Structs/AuthController.html">AuthController</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreatedNoteData.html">CreatedNoteData</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/CreatedUserData.html">CreatedUserData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/CurrentUserData.html">CurrentUserData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/NoteCreateData.html">NoteCreateData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/NoteData.html">NoteData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/ProfileEdit.html">ProfileEdit</a>
@@ -426,7 +441,7 @@ only by users with an access level of <code>.moderator</code> or above.</p>
                               </td>
                               <td>
                                 <div>
-                                  <p>The submitted <code><a href="../Structs/UserProfileData.html">UserProfileData</a></code>, else <code>nil</code>.</p>
+                                  <p>The submitted <code><a href="../Structs/UserProfileData.html">UserProfileData</a></code>, else nil.</p>
                                 </div>
                               </td>
                             </tr>
@@ -438,7 +453,7 @@ only by users with an access level of <code>.moderator</code> or above.</p>
                               </td>
                               <td>
                                 <div>
-                                  <p>The name of the submitted image, els <code>nil</code>.</p>
+                                  <p>The name of the submitted image, else nil.</p>
                                 </div>
                               </td>
                             </tr>
@@ -567,9 +582,9 @@ to <code><a href="../Classes/UserProfile.html">UserProfile</a></code>.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App11ProfileEditV4user6Fluent6ParentVyAcA04UserB0CGvp"></a>
-                    <a name="//apple_ref/swift/Property/user" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App11ProfileEditV4user6Fluent6ParentVyAcA04UserB0CGvp">user</a>
+                    <a name="/s:3App11ProfileEditV7profile6Fluent6ParentVyAcA04UserB0CGvp"></a>
+                    <a name="//apple_ref/swift/Property/profile" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App11ProfileEditV7profile6Fluent6ParentVyAcA04UserB0CGvp">profile</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -584,7 +599,7 @@ to <code><a href="../Classes/UserProfile.html">UserProfile</a></code>.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">user</span><span class="p">:</span> <span class="kt">Parent</span><span class="o">&lt;</span><span class="kt">ProfileEdit</span><span class="p">,</span> <span class="kt"><a href="../Classes/UserProfile.html">UserProfile</a></span><span class="o">&gt;</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">profile</span><span class="p">:</span> <span class="kt">Parent</span><span class="o">&lt;</span><span class="kt">ProfileEdit</span><span class="p">,</span> <span class="kt"><a href="../Classes/UserProfile.html">UserProfile</a></span><span class="o">&gt;</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
 
                         </div>
                       </div>
@@ -602,7 +617,7 @@ to <code><a href="../Classes/UserProfile.html">UserProfile</a></code>.</p>
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-16)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-18)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.11.2</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>

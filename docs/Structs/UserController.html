@@ -72,6 +72,12 @@
                 <a class="nav-group-task-link" href="../Classes/User/Public.html">– Public</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/UserNote.html">UserNote</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/UserNote/Edit.html">– Edit</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/UserProfile.html">UserProfile</a>
               </li>
               <li class="nav-group-task">
@@ -131,10 +137,19 @@
                 <a class="nav-group-task-link" href="../Structs/AuthController.html">AuthController</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreatedNoteData.html">CreatedNoteData</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/CreatedUserData.html">CreatedUserData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/CurrentUserData.html">CurrentUserData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/NoteCreateData.html">NoteCreateData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/NoteData.html">NoteData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/ProfileEdit.html">ProfileEdit</a>
@@ -239,7 +254,7 @@ entirely.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L18-L48">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L18-L49">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -341,238 +356,7 @@ proceeding</em>.</p>
                         <p>The newly created user&rsquo;s ID, username, and a recovery key string.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L73-L133">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-              </ul>
-            </div>
-            <div class="task-group">
-              <div class="task-name-container">
-                <a name="/sharedAuthGroup%20Handlers%20(logged%20in%20OR%20out)"></a>
-                <a name="//apple_ref/swift/Section/sharedAuthGroup Handlers (logged in OR out)" class="dashAnchor"></a>
-                <a href="#/sharedAuthGroup%20Handlers%20(logged%20in%20OR%20out)">
-                  <h3 class="section-name">sharedAuthGroup Handlers (logged in OR out)</h3>
-                </a>
-              </div>
-              <ul class="item-container">
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App14UserControllerV14profileHandlery3NIO15EventLoopFutureCyAA0B7ProfileC4EditCG5Vapor7RequestCKF"></a>
-                    <a name="//apple_ref/swift/Method/profileHandler(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App14UserControllerV14profileHandlery3NIO15EventLoopFutureCyAA0B7ProfileC4EditCG5Vapor7RequestCKF">profileHandler(_:)</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p><code>GET /api/v3/user/profile</code></p>
-
-<p>Retrieves the user&rsquo;s own profile data for editing, as a <code><a href="../Classes/UserProfile/Edit.html">UserProfile.Edit</a></code> object.</p>
-
-<p>This endpoint can be reached with either Basic or Bearer authenticaton, so that a user
-can customize their profile even if they do not yet have their registration code.</p>
-<div class="aside aside-note">
-    <p class="aside-title">Note</p>
-    <p>The <code>.username</code> and <code>.displayedName</code> properties of the returned object
-are for display convenience only. A username must be changed using the
-<code>POST /api/v3/user/username</code> endpoint. The displayedName property is generated from
-the username and displayName values.</p>
-
-</div>
-<div class="aside aside-throws">
-    <p class="aside-title">Throws</p>
-    <p>A 5xx response should be reported as a likely bug, please and thank you.</p>
-
-</div>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">profileHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Classes/UserProfile.html">UserProfile</a></span><span class="o">.</span><span class="kt">Edit</span><span class="o">&gt;</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div>
-                        <h4>Parameters</h4>
-                        <table class="graybox">
-                          <tbody>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>req</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
-                                </div>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                      <div>
-                        <h4>Return Value</h4>
-                        <p>A <code><a href="../Classes/UserProfile/Edit.html">UserProfile.Edit</a></code> object containing the editable properties of the
-profile.</p>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L155-L166">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App14UserControllerV19profileUpdateHander_4data3NIO15EventLoopFutureCyAA0B7ProfileC4EditCG5Vapor7RequestC_AA0bL4DataVtKF"></a>
-                    <a name="//apple_ref/swift/Method/profileUpdateHander(_:data:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App14UserControllerV19profileUpdateHander_4data3NIO15EventLoopFutureCyAA0B7ProfileC4EditCG5Vapor7RequestC_AA0bL4DataVtKF">profileUpdateHander(_:data:)</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p><code>POST /api/v3/user/profile</code></p>
-
-<p>Updates the user&rsquo;s profile.</p>
-
-<p>This endpoint can be reached with either Basic or Bearer authenticaton, so that a user
-can customize their profile even if they do not yet have their registration code.</p>
-<div class="aside aside-note">
-    <p class="aside-title">Note</p>
-    <p>All fields of the <code><a href="../Structs/UserProfileData.html">UserProfileData</a></code> structure being submitted <strong>must</strong> be
-present and have values. While the properties of the profile itself are optional, the
-submitted values all <em>replace</em> the existing propety values. Submitting a value of <code>&quot;&quot;</code>
-resets its respective profile property to <code>nil</code>.</p>
-
-</div>
-<div class="aside aside-requires">
-    <p class="aside-title">Requires</p>
-    <p><code><a href="../Structs/UserProfileData.html">UserProfileData</a></code> payload in the HTTP body.</p>
-
-</div>
-<div class="aside aside-throws">
-    <p class="aside-title">Throws</p>
-    <p>403 error if the user is banned.</p>
-
-</div>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">profileUpdateHander</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">data</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserProfileData.html">UserProfileData</a></span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Classes/UserProfile.html">UserProfile</a></span><span class="o">.</span><span class="kt">Edit</span><span class="o">&gt;</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div>
-                        <h4>Parameters</h4>
-                        <table class="graybox">
-                          <tbody>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>req</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
-                                </div>
-                              </td>
-                            </tr>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>data</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p><code><a href="../Structs/UserProfileData.html">UserProfileData</a></code> struct containing the editable properties of the profile.</p>
-                                </div>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                      <div>
-                        <h4>Return Value</h4>
-                        <p>A<code><a href="../Classes/UserProfile/Edit.html">UserProfile.Edit</a></code> object containing the updated editable properties of
-the profile.</p>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L187-L224">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App14UserControllerV13whoamiHandlery3NIO15EventLoopFutureCyAA07CurrentB4DataVG5Vapor7RequestCKF"></a>
-                    <a name="//apple_ref/swift/Method/whoamiHandler(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App14UserControllerV13whoamiHandlery3NIO15EventLoopFutureCyAA07CurrentB4DataVG5Vapor7RequestCKF">whoamiHandler(_:)</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p><code>GET /api/v3/user/whoami</code></p>
-
-<p>Returns the current user&rsquo;s <code>.id</code>, <code>.username</code> and whether they&rsquo;re currently logged in.</p>
-
-<p>This endpoint can be reached with either Basic or Bearer authenticaton, and might be
-useful in a multi-account environment to determine which account&rsquo;s credentials are
-currently being used.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">whoamiHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Structs/CurrentUserData.html">CurrentUserData</a></span><span class="o">&gt;</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div>
-                        <h4>Parameters</h4>
-                        <table class="graybox">
-                          <tbody>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>req</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
-                                </div>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                      <div>
-                        <h4>Return Value</h4>
-                        <p>The current user&rsquo;s ID and username.</p>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L236-L249">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L74-L134">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -663,7 +447,238 @@ another user.
                         <p>HTTP status 200 on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L268-L304">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L153-L189">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/sharedAuthGroup%20Handlers%20(logged%20in%20*or*%20out)"></a>
+                <a name="//apple_ref/swift/Section/sharedAuthGroup Handlers (logged in *or* out)" class="dashAnchor"></a>
+                <a href="#/sharedAuthGroup%20Handlers%20(logged%20in%20*or*%20out)">
+                  <h3 class="section-name">sharedAuthGroup Handlers (logged in *or* out)</h3>
+                </a>
+              </div>
+              <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App14UserControllerV14profileHandlery3NIO15EventLoopFutureCyAA0B7ProfileC4EditCG5Vapor7RequestCKF"></a>
+                    <a name="//apple_ref/swift/Method/profileHandler(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App14UserControllerV14profileHandlery3NIO15EventLoopFutureCyAA0B7ProfileC4EditCG5Vapor7RequestCKF">profileHandler(_:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>GET /api/v3/user/profile</code></p>
+
+<p>Retrieves the user&rsquo;s own profile data for editing, as a <code><a href="../Classes/UserProfile/Edit.html">UserProfile.Edit</a></code> object.</p>
+
+<p>This endpoint can be reached with either Basic or Bearer authenticaton, so that a user
+can customize their profile even if they do not yet have their registration code.</p>
+<div class="aside aside-note">
+    <p class="aside-title">Note</p>
+    <p>The <code>.username</code> and <code>.displayedName</code> properties of the returned object
+are for display convenience only. A username must be changed using the
+<code>POST /api/v3/user/username</code> endpoint. The displayedName property is generated from
+the username and displayName values.</p>
+
+</div>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>A 5xx response should be reported as a likely bug, please and thank you.</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">profileHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Classes/UserProfile.html">UserProfile</a></span><span class="o">.</span><span class="kt">Edit</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>A <code><a href="../Classes/UserProfile/Edit.html">UserProfile.Edit</a></code> object containing the editable properties of the
+profile.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L211-L222">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App14UserControllerV19profileUpdateHander_4data3NIO15EventLoopFutureCyAA0B7ProfileC4EditCG5Vapor7RequestC_AA0bL4DataVtKF"></a>
+                    <a name="//apple_ref/swift/Method/profileUpdateHander(_:data:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App14UserControllerV19profileUpdateHander_4data3NIO15EventLoopFutureCyAA0B7ProfileC4EditCG5Vapor7RequestC_AA0bL4DataVtKF">profileUpdateHander(_:data:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>POST /api/v3/user/profile</code></p>
+
+<p>Updates the user&rsquo;s profile.</p>
+
+<p>This endpoint can be reached with either Basic or Bearer authenticaton, so that a user
+can customize their profile even if they do not yet have their registration code.</p>
+<div class="aside aside-note">
+    <p class="aside-title">Note</p>
+    <p>All fields of the <code><a href="../Structs/UserProfileData.html">UserProfileData</a></code> structure being submitted <strong>must</strong> be
+present and have values. While the properties of the profile itself are optional, the
+submitted values all <em>replace</em> the existing propety values. Submitting a value of <code>&quot;&quot;</code>
+resets its respective profile property to <code>nil</code>.</p>
+
+</div>
+<div class="aside aside-requires">
+    <p class="aside-title">Requires</p>
+    <p><code><a href="../Structs/UserProfileData.html">UserProfileData</a></code> payload in the HTTP body.</p>
+
+</div>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>403 error if the user is banned.</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">profileUpdateHander</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">data</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserProfileData.html">UserProfileData</a></span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Classes/UserProfile.html">UserProfile</a></span><span class="o">.</span><span class="kt">Edit</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>data</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p><code><a href="../Structs/UserProfileData.html">UserProfileData</a></code> struct containing the editable properties of the profile.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>A<code><a href="../Classes/UserProfile/Edit.html">UserProfile.Edit</a></code> object containing the updated editable properties of
+the profile.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L243-L280">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App14UserControllerV13whoamiHandlery3NIO15EventLoopFutureCyAA07CurrentB4DataVG5Vapor7RequestCKF"></a>
+                    <a name="//apple_ref/swift/Method/whoamiHandler(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App14UserControllerV13whoamiHandlery3NIO15EventLoopFutureCyAA07CurrentB4DataVG5Vapor7RequestCKF">whoamiHandler(_:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>GET /api/v3/user/whoami</code></p>
+
+<p>Returns the current user&rsquo;s <code>.id</code>, <code>.username</code> and whether they&rsquo;re currently logged in.</p>
+
+<p>This endpoint can be reached with either Basic or Bearer authenticaton, and might be
+useful in a multi-account environment to determine which account&rsquo;s credentials are
+currently being used.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">whoamiHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Structs/CurrentUserData.html">CurrentUserData</a></span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>The current user&rsquo;s ID and username.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L292-L305">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -766,7 +781,72 @@ username is not available.</p>
                         <p>The newly created user&rsquo;s ID and username.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L332-L384">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L333-L385">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App14UserControllerV12notesHandlery3NIO15EventLoopFutureCySayAA8NoteDataVGG5Vapor7RequestCKF"></a>
+                    <a name="//apple_ref/swift/Method/notesHandler(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App14UserControllerV12notesHandlery3NIO15EventLoopFutureCySayAA8NoteDataVGG5Vapor7RequestCKF">notesHandler(_:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>GET /api/v3/user/notes</code></p>
+
+<p>Retrieves all <code><a href="../Classes/UserNote.html">UserNote</a></code>s owned by the current user, as an array of <code><a href="../Structs/NoteData.html">NoteData</a></code> objects.</p>
+
+<p>The <code><a href="../Structs/NoteData.html">NoteData</a></code> object is intended to be display friendly, including fields for
+potential sorting, the ID of the profile which can be linked to, and the profile&rsquo;s user
+in the familiar .displayedName format. The .noteID is included as well to support
+editing of notes outside of a profile-viewing context.</p>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    A 5xx response should be reported as a likely bug, please and thank you.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">notesHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="p">[</span><span class="kt"><a href="../Structs/NoteData.html">NoteData</a></span><span class="p">]</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>The user&rsquo;s notes as an array of <code><a href="../Structs/NoteData.html">NoteData</a></code>, or an empty array if none exist.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L399-L432">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -817,7 +897,7 @@ username is not available.</p>
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L395-L403">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L443-L451">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -896,7 +976,106 @@ as a likely bug, please and thank you.
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L417-L452">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L465-L500">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/Helper%20Functions"></a>
+                <a name="//apple_ref/swift/Section/Helper Functions" class="dashAnchor"></a>
+                <a href="#/Helper%20Functions">
+                  <h3 class="section-name">Helper Functions</h3>
+                </a>
+              </div>
+              <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App14UserControllerV5wordsSaySSGvpZ"></a>
+                    <a name="//apple_ref/swift/Variable/words" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App14UserControllerV5wordsSaySSGvpZ">words</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>An array of words used to generate random phrases.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">static</span> <span class="k">let</span> <span class="nv">words</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L505">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App14UserControllerV19generateRecoveryKey2on3NIO15EventLoopFutureCySSG5Vapor7RequestC_tKFZ"></a>
+                    <a name="//apple_ref/swift/Method/generateRecoveryKey(on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App14UserControllerV19generateRecoveryKey2on3NIO15EventLoopFutureCySSG5Vapor7RequestC_tKFZ">generateRecoveryKey(on:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Generates a recovery key of 3 words randomly chosen from <code><a href="../Structs/UserController.html#/s:3App14UserControllerV5wordsSaySSGvpZ">words</a></code> array.</p>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    500 error if the randomizer fails.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">generateRecoveryKey</span><span class="p">(</span><span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>A recoveryKey String.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L579-L587">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -909,7 +1088,7 @@ as a likely bug, please and thank you.
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-16)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-18)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.11.2</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>

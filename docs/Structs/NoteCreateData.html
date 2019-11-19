@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>TestUsers Structure Reference</title>
+    <title>NoteCreateData Structure Reference</title>
     <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
     <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
     <meta charset="utf-8">
@@ -14,9 +14,9 @@
   </head>
   <body>
 
-    <a name="//apple_ref/swift/Struct/TestUsers" class="dashAnchor"></a>
+    <a name="//apple_ref/swift/Struct/NoteCreateData" class="dashAnchor"></a>
 
-    <a title="TestUsers Structure Reference"></a>
+    <a title="NoteCreateData Structure Reference"></a>
 
     <header class="header">
       <p class="header-col header-col--primary">
@@ -44,7 +44,7 @@
     <p class="breadcrumbs">
       <a class="breadcrumb" href="../index.html">App Reference</a>
       <img class="carat" src="../img/carat.png" />
-      TestUsers Structure Reference
+      NoteCreateData Structure Reference
     </p>
 
     <div class="content-wrapper">
@@ -201,15 +201,14 @@
 
         <section class="section">
           <div class="section-content">
-            <h1>TestUsers</h1>
+            <h1>NoteCreateData</h1>
               <div class="declaration">
                 <div class="language">
-                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">TestUsers</span> <span class="p">:</span> <span class="kt">Migration</span></code></pre>
+                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">NoteCreateData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                 </div>
               </div>
-            <p>A <code>Migration</code> that creates a set of test users during startup, so that there exists one
-at each <code>.accessLevel</code>. This migration should only be run in non-production environments.</p>
+            <p>Used by <code>UsersController.noteHandler(_:data:)</code> to create a <code><a href="../Classes/UserNote.html">UserNote</a></code>.</p>
 
           </div>
         </section>
@@ -221,9 +220,9 @@ at each <code>.accessLevel</code>. This migration should only be run in non-prod
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:6Fluent9MigrationP8DatabaseQa"></a>
-                    <a name="//apple_ref/swift/Alias/Database" class="dashAnchor"></a>
-                    <a class="token" href="#/s:6Fluent9MigrationP8DatabaseQa">Database</a>
+                    <a name="/s:3App14NoteCreateDataV4noteSSvp"></a>
+                    <a name="//apple_ref/swift/Property/note" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App14NoteCreateDataV4noteSSvp">note</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -231,98 +230,19 @@ at each <code>.accessLevel</code>. This migration should only be run in non-prod
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">typealias</span> <span class="kt">Database</span> <span class="o">=</span> <span class="kt">PostgreSQLDatabase</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Migrations/TestUsers.swift#L">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App9TestUsersV7prepare2on3NIO15EventLoopFutureCyytG10PostgreSQL0J13SQLConnectionC_tFZ"></a>
-                    <a name="//apple_ref/swift/Method/prepare(on:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App9TestUsersV7prepare2on3NIO15EventLoopFutureCyytG10PostgreSQL0J13SQLConnectionC_tFZ">prepare(on:)</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Required by <code>Migration</code> protocol.</p>
+                        <p>The text of the note.</p>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">prepare</span><span class="p">(</span><span class="n">on</span> <span class="nv">connection</span><span class="p">:</span> <span class="kt">PostgreSQLConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">Void</span><span class="o">&gt;</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div>
-                        <h4>Parameters</h4>
-                        <table class="graybox">
-                          <tbody>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>connection</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>A connection to the database, provided automatically.</p>
-                                </div>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Migrations/TestUsers.swift#L14-L47">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App9TestUsersV6revert2on3NIO15EventLoopFutureCyytG10PostgreSQL0J13SQLConnectionC_tFZ"></a>
-                    <a name="//apple_ref/swift/Method/revert(on:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App9TestUsersV6revert2on3NIO15EventLoopFutureCyytG10PostgreSQL0J13SQLConnectionC_tFZ">revert(on:)</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Required by<code>Migration</code> protocol, but no point removing the test users, so
-just return a pre-completed <code>Future</code>.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">revert</span><span class="p">(</span><span class="n">on</span> <span class="nv">connection</span><span class="p">:</span> <span class="kt">PostgreSQLConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">Void</span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">note</span><span class="p">:</span> <span class="kt">String</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Migrations/TestUsers.swift#L51-L53">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L277">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
