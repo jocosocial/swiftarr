@@ -117,50 +117,63 @@ struct UsersController: RouteCollection {
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
-    
-    /// `POST /api/v3/users/profile/ID/note`
+        
+    /// `POST /api/v3/users/ID/note`
     ///
-    /// Creates a new `UseerNote` associated with the specified profile and the current user.
+    /// Creates a new `UseerNote` associated with the specified user's profile and the current
+    /// user.
     ///
-    /// - Note: `UserNote` creation requires use of a profile ID, thus this endpoint is
-    ///   intended for use only when the user is viewing another user's profile (from which
-    ///   the ID is obtained).
+    /// - Note: In order to support the editing of a note in contexts other than when
+    ///   actively viewing a profile, the contents of `profile.note` cannot be used to determine
+    ///   if there is an existing associated UserNote, since it is possible for a valid note to
+    ///   contain no text at any given time. This means that a GET should be performed on this
+    ///   endpoint prior to attempting a POST. If GET returns data, use `POST /api/v3/user/note`
+    ///   to update the note instead of this endpoint.
     ///
     /// - Requires: `NoteCreateData` payload in the HTTP body.
     /// - Parameters:
     ///   - req: The incoming request `Container`, provided automatically.
     ///   - data: `NoteCreateData` struct containing the text of the note.
-    /// - Throws: 409 error if there is an existing note on the profile.
-    /// - Returns: `CreatedNoteData` containing the newly created note's ID and text.
-    func noteHandler(_ req: Request, data: NoteCreateData) throws -> Future<Response> {
+    /// - Throws: 409 error if there is an existing note on the profile. A 5xx response should
+    ///   be reported as a likely bug, please and thank you.
+    /// - Returns: The newly created note's ID and text.
+    func noteCreateHandler(_ req: Request, data: NoteCreateData) throws -> Future<Response> {
         let user = try req.requireAuthenticated(User.self)
-        return try req.parameters.next(UserProfile.self).flatMap {
-            (profile) in
-            // check for existing note
-            return try user.notes.query(on: req)
-                .filter(\.profileID == profile.requireID())
-                .first()
-                .flatMap {
-                    (existingNote) in
-                    guard existingNote == nil else {
-                        throw Abort(.conflict, reason: "note already exists for this profile")
-                    }
-                    // create note
-                    let note = try UserNote(
-                        userID: user.requireID(),
-                        profileID: profile.requireID(),
-                        note: data.note
-                    )
-                    // return
-                    return note.save(on: req).map {
-                        (savedNote) in
-                        let createdNotsData = try CreatedNoteData(
-                            noteID: savedNote.requireID(),
-                            note: savedNote.note
+        // get profile's user
+        return try req.parameters.next(User.self).flatMap {
+            (profileUser) in
+            // get their profile
+            return try profileUser.profile.query(on: req).first().flatMap {
+                (profile) in
+                guard let profile = profile else {
+                    throw Abort(.internalServerError, reason: "profile not found, note not created")
+                }
+                // check for existing note
+                return try user.notes.query(on: req)
+                    .filter(\.profileID == profile.requireID())
+                    .first()
+                    .flatMap {
+                        (existingNote) in
+                        guard existingNote == nil else {
+                            throw Abort(.conflict, reason: "note already exists for this profile")
+                        }
+                        // create note
+                        let note = try UserNote(
+                            userID: user.requireID(),
+                            profileID: profile.requireID(),
+                            note: data.note
                         )
-                        let response = Response(http: HTTPResponse(status: .created), using: req)
-                        try response.content.encode(createdNotsData)
-                        return response
+                        // return note's data
+                        return note.save(on: req).map {
+                            (savedNote) in
+                            let createdNoteData = try CreatedNoteData(
+                                noteID: savedNote.requireID(),
+                                note: savedNote.note
+                            )
+                            let response = Response(http: HTTPResponse(status: .created), using: req)
+                            try response.content.encode(createdNoteData)
+                            return response
+                        }
                     }
             }
         }
