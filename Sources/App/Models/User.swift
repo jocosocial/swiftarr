@@ -108,7 +108,7 @@ final class User: Codable {
     final class Admin: Codable {
         // MARK: Properties
         /// The user's ID.
-        var id: UUID?
+        var id: UUID
         /// The user's username.
         var username: String
         /// The user's identifying token.
@@ -146,7 +146,7 @@ final class User: Codable {
         ///   - updatedAt: Timestamp of last update to the user's model.
         ///   - deletedAt: Timestamp of the model's soft-deletion.
         init(
-            id: UUID?,
+            id: UUID,
             username: String,
             verification: String?,
             parentID: UUID?,
@@ -176,7 +176,7 @@ final class User: Codable {
     final class Header: Codable {
         // MARK: Properties
         /// The user's ID.
-        var id: UUID?
+        var id: UUID
         /// The string for displaying the user's identity.
         var displayedName: String
         /// The filename of the user's profile image.
@@ -189,7 +189,7 @@ final class User: Codable {
         ///   - id: The user's ID.
         ///   - displayedName: The string for displaying the user's identity.
         ///   - image: The filename of the user's profile image.
-        init(id: UUID?, displayedName: String, image: String) {
+        init(id: UUID, displayedName: String, image: String) {
             self.id = id
             self.displayedName = displayedName
             self.image = image
@@ -200,7 +200,7 @@ final class User: Codable {
     final class Public: Codable {
         // MARK: Properties
         /// The user's ID.
-        var id: UUID?
+        var id: UUID
         /// The user's username.
         var username: String
         /// Timestamp of last update to the user's profile.
@@ -213,7 +213,7 @@ final class User: Codable {
         ///   - id: The user's ID.
         ///   - username: The user's username.
         ///   - updatedAt: Timestamp of last update to the user's profile.
-        init(id: UUID?, username: String, updatedAt: Date) {
+        init(id: UUID, username: String, updatedAt: Date) {
             self.id = id
             self.username = username
             self.updatedAt = updatedAt
