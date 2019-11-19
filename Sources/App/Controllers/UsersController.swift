@@ -38,7 +38,9 @@ struct UsersController: RouteCollection {
         sharedAuthGroup.get(User.parameter, "profile", use: profileHandler)
         
         // endpoints available only when logged in
-        tokenAuthGroup.post(NoteCreateData.self, at: "profile", UserProfile.parameter, "note", use: noteHandler)
+        tokenAuthGroup.post(NoteCreateData.self, at: User.parameter, "note", use: noteCreateHandler)
+        tokenAuthGroup.post(User.parameter, "note", "delete", use: noteDeleteHandler)
+        tokenAuthGroup.get(User.parameter, "note", use: noteHandler)
         
     }
     
@@ -179,6 +181,83 @@ struct UsersController: RouteCollection {
         }
     }
     
+    /// `POST /api/v3/users/ID/note/delete`
+    ///
+    /// Deletes an existing `UseerNote` associated with the specified user's profile and
+    /// the current user.
+    ///
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Throws: 400 error if there is no existing note on the profile. A 5xx response should
+    ///   be reported as a likely bug, please and thank you.
+    /// - Returns: 204 No Content on success.
+    func noteDeleteHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        let user = try req.requireAuthenticated(User.self)
+        // get profile's user
+        return try req.parameters.next(User.self).flatMap {
+            (profileUser) in
+            // get their profile
+            return try profileUser.profile.query(on: req).first().flatMap {
+                (profile) in
+                guard let profile = profile else {
+                    throw Abort(.internalServerError, reason: "profile not found, note not deleted")
+                }
+                // delete note if found
+                return try user.notes.query(on: req)
+                    .filter(\.profileID == profile.requireID())
+                    .first()
+                    .flatMap {
+                        (note) in
+                        guard let note = note else {
+                            throw Abort(.notFound, reason: "no existing note found")
+                        }
+                        // force true delete
+                        return note.delete(force: true, on: req).transform(to: .noContent)
+                }
+            }
+        }
+    }
+        
+    /// `GET /api/v3/users/ID/note`
+    ///
+    /// Retrieves an existing `UseerNote` associated with the specified user's profile and
+    /// the current user.
+    ///
+    /// - Note: In order to support the editing of a note in contexts other than when
+    ///   actively viewing a profile, the contents of `profile.note` cannot be used to determine
+    ///   if there is an exiting associated UserNote, since it is possible for a valid note to
+    ///   contain no text at any given time. Use this GET endpoint prior to attempting a POST
+    ///   to it.
+    ///
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Throws: 400 error if there is no existing note on the profile. A 5xx response should
+    ///   be reported as a likely bug, please and thank you.
+    /// - Returns: The note's ID and text.
+    func noteHandler(_ req: Request) throws -> Future<UserNote.Edit> {
+        let user = try req.requireAuthenticated(User.self)
+        // get profile's user
+        return try req.parameters.next(User.self).flatMap {
+            (profileUser) in
+            // get their profile
+            return try profileUser.profile.query(on: req).first().flatMap {
+                (profile) in
+                guard let profile = profile else {
+                    throw Abort(.internalServerError, reason: "profile not found")
+                }
+                // return note data if any
+                return try user.notes.query(on: req)
+                    .filter(\.profileID == profile.requireID())
+                    .first()
+                    .map {
+                        (note) in
+                        guard let note = note else {
+                            throw Abort(.badRequest, reason: "no existing note found")
+                        }
+                        return try note.convertToEdit()
+                }
+            }
+        }
+    }
+
     // MARK: - Helper Functions
 }
 
