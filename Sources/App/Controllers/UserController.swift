@@ -43,6 +43,7 @@ struct UserController: RouteCollection {
         
         // endpoints available only when logged in
         tokenAuthGroup.post(UserAddData.self, at: "add", use: addHandler)
+        tokenAuthGroup.post(NoteUpdateData.self, at: "note", use: noteHandler)
         tokenAuthGroup.get("notes", use: notesHandler)
         tokenAuthGroup.post(UserPasswordData.self, at: "password", use: passwordHandler)
         tokenAuthGroup.post(UserUsernameData.self, at: "username", use: usernameHandler)
@@ -384,6 +385,54 @@ struct UserController: RouteCollection {
         }
     }
     
+    /// `POST /api/v3/user/note`
+    ///
+    /// Updates a `UserNote` with the supplied note text.
+    ///
+    /// - Requires: `NoteUpdateData` payload in HTTP body.
+    /// - Parameters:
+    ///   - req: The incoming request `Container`, provided automatically.
+    ///   - data: `NoteUpdateData` struct containing the note's ID and updated text.
+    /// - Throws: 403 if the note is not owned by the user. A 5xx response should be reported
+    ///   as a likely bug, please and thank you.
+    /// - Returns: The updated note as a `NoteData` object.
+    func noteHandler(_ req: Request, data: NoteUpdateData) throws -> Future<NoteData> {
+        let user = try req.requireAuthenticated(User.self)
+        // retrieve note
+        return UserNote.find(data.noteID, on: req).flatMap {
+            (note) in
+            // ensure it belongs to user
+            guard let note = note, try note.userID == user.requireID() else {
+                throw Abort(.unauthorized, reason: "note does not belong to user")
+            }
+            note.note = data.note
+            return note.save(on: req).map {
+                (savedNote) in
+                // unwrap Date? fields
+                guard let createdAt = savedNote.createdAt,
+                    let updatedAt = savedNote.updatedAt else {
+                        throw Abort(.internalServerError, reason: "note has no timestamps")
+                }
+                // create NoteData
+                var noteData = try NoteData(
+                    noteID: note.requireID(),
+                    createdAt: createdAt,
+                    updataedAt: updatedAt,
+                    profileID: savedNote.profileID,
+                    profileUser: "",
+                    note: savedNote.note
+                )
+                // .displayedName is probably best to send
+                _ = savedNote.profile.query(on: req).first().map {
+                    (profile) in
+                    let publicProfile = try profile?.convertToPublic()
+                    noteData.profileUser = publicProfile?.displayedName ?? "unknown (please report this bug)"
+                }
+                return noteData
+            }
+        }
+    }
+    
     /// `GET /api/v3/user/notes`
     ///
     /// Retrieves all `UserNote`s owned by the current user, as an array of `NoteData` objects.
@@ -616,7 +665,7 @@ struct CurrentUserData: Content {
     var isLoggedIn: Bool
 }
 
-/// Returned by `UserController.notesHandler(_:)`.
+/// Returned by `UserController.notesHandler(_:)` and `UserController.noteHandler(_:data:)`.
 struct NoteData: Content {
     /// The ID of the note.
     let noteID: UUID
@@ -629,6 +678,14 @@ struct NoteData: Content {
     /// The .displayName of the profile's user.
     var profileUser: String
     /// The text of the note.
+    let note: String
+}
+
+/// Used by `UserController.noteHandler(_:data:)` to update a user note.
+struct NoteUpdateData: Content {
+    /// The ID of the note being updated.
+    let noteID: UUID
+    /// The udated text of the note.
     let note: String
 }
 
