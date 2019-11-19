@@ -501,6 +501,7 @@ struct UserController: RouteCollection {
     
     // MARK: - Helper Functions
     
+    /// An array of words used to generate random phrases.
     static let words: [String] = [
         "aboriginal", "accept", "account", "acoustic", "adaptable", "adorable",
         "afternoon", "agreeable", "airport", "alive", "alluring", "amazing",
