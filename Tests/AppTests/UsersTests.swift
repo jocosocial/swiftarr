@@ -69,9 +69,9 @@ final class UsersTests: XCTestCase {
             headers: headers,
             decodeTo: User.Public.self
         )
-        XCTAssertTrue(preResult.id == postResult.id, "should be same")
+        XCTAssertTrue(preResult.id == postResult.id, "should be same ID")
         XCTAssertTrue(postResult.username == newUsername, "should be \(newUsername)")
-        XCTAssertFalse(preResult.updatedAt == postResult.updatedAt, "should be different")
+        XCTAssertFalse(preResult.updatedAt == postResult.updatedAt, "should be different dates")
                 
         // test findHandler with UUID
         let uuidResult = try app.getResult(
@@ -80,7 +80,7 @@ final class UsersTests: XCTestCase {
             headers: headers,
             decodeTo: User.Public.self
         )
-        XCTAssertTrue(uuidResult.id == user.userID, "should be the same")
+        XCTAssertTrue(uuidResult.id == user.userID, "should be the same ID")
 
         // test findHandler with username
         let usernameResult = try app.getResult(
@@ -89,7 +89,7 @@ final class UsersTests: XCTestCase {
             headers: headers,
             decodeTo: User.Public.self
         )
-        XCTAssertTrue(usernameResult.id == user.userID, "should be the same")
+        XCTAssertTrue(usernameResult.id == user.userID, "should be the same ID")
 
         // test findHandler with garbage
         let usernameResponse = try app.getResponse(
