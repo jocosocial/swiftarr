@@ -773,26 +773,35 @@ struct UserVerifyData: Content {
 }
 
 extension UserAddData: Validatable, Reflectable {
-    /// Validates that `.username` is 1 or more alphanumeric characters,
+    /// Validates that `.username` is 1 or more characters beginning with an alphanumeric,
     /// and `.password` is least 6 characters in length.
     static func validations() throws -> Validations<UserAddData> {
         var validations = Validations(UserAddData.self)
-        try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics))
+        try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics + .separators))
+        validations.add("username must start with an alphanumeric") {
+            (data) in
+            guard let first = data.username.unicodeScalars.first,
+                !CharacterSet.separators.contains(first) else {
+                    throw Abort(.badRequest, reason: "username must start with an alphanumeric")
+            }
+        }
         try validations.add(\.password, .count(6...))
         return validations
     }
 }
 
 extension UserCreateData: Validatable, Reflectable {
-    /// Validates that `.username` is 1 or more alphanumeric characters,
+    /// Validates that `.username` is 1 or more characters beginning with an alphanumeric,
     /// and `.password` is least 6 characters in length.
     static func validations() throws -> Validations<UserCreateData> {
         var validations = Validations(UserCreateData.self)
-        // if testing allow "-" in name so that generated usernames can be UUID
-        if (try Environment.detect().isRelease) {
-            try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics))
-        } else {
-            try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics + .dash))
+        try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics + .separators))
+        validations.add("username must start with an alphanumeric") {
+            (data) in
+            guard let first = data.username.unicodeScalars.first,
+                !CharacterSet.separators.contains(first) else {
+                    throw Abort(.badRequest, reason: "username must start with an alphanumeric")
+            }
         }
         try validations.add(\.password, .count(6...))
         return validations
@@ -809,10 +818,18 @@ extension UserPasswordData: Validatable, Reflectable {
 }
 
 extension UserUsernameData: Validatable, Reflectable {
-    /// Validates that the new username is 1 or more alphanumeric characters
+    /// Validates that the new username is 1 or more characters and begins with an
+    /// alphanumeric.
     static func validations() throws -> Validations<UserUsernameData> {
         var validations = Validations(UserUsernameData.self)
-        try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics))
+        try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics + .separators))
+        validations.add("username must start with an alphanumeric") {
+            (data) in
+            guard let first = data.username.unicodeScalars.first,
+                !CharacterSet.separators.contains(first) else {
+                    throw Abort(.badRequest, reason: "username must start with an alphanumeric")
+            }
+        }
         return validations
     }
 }
@@ -828,11 +845,11 @@ extension UserVerifyData: Validatable, Reflectable {
 }
 
 extension CharacterSet {
-    /// Define a character set containing just a "-", to allow UUID as username.
-    /// This is only needed for our .testing environment.
-    fileprivate static var dash: CharacterSet {
-        var dash: CharacterSet = .init()
-        dash.insert(charactersIn: "-")
-        return dash
+    /// Define a character set containing characters other than alphanumerics that are allowed
+    /// in a username.
+    fileprivate static var separators: CharacterSet {
+        var separatorChars: CharacterSet = .init()
+        separatorChars.insert(charactersIn: "-_+")
+        return separatorChars
     }
 }
