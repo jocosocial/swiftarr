@@ -13,6 +13,8 @@ enum UserAccessLevel: UInt8, PostgreSQLRawEnum {
     case quarantined
     /// A user account that has been activated for full read-write access.
     case verified
+    /// A special class of account for registered API clients. [see `ClientController`]
+    case client
     /// An account whose owner is part of the Moderator Team.
     case moderator
     /// An account officially associated with Management, has access to all `.moderator`
