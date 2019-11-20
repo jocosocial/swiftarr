@@ -574,4 +574,96 @@ final class UserTests: XCTestCase {
         XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
         XCTAssertTrue(response.http.body.description.contains("cannot be edited"), "cannot be edited")
     }
+    
+    /// `POST /api/v3/users/ID/note`
+    /// `GET /api/v3/users/ID/note`
+    /// `GET /api/v3/user/notes`
+    /// `POST /api/v3/user/note`
+    /// `POST /api/v3/users/ID/note/delete`
+    func testUserNotes() throws {
+        // create logged in user
+        _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        let token = try app.login(username: testUsername, password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+
+        // get some users
+        let unverifiedUser = try app.getResult(
+            from: usersURI + "find/unverified",
+            method: .GET,
+            headers: headers,
+            decodeTo: User.Public.self
+        )
+        let verifiedUser = try app.getResult(
+            from: usersURI + "find/verified",
+            method: .GET,
+            headers: headers,
+            decodeTo: User.Public.self
+        )
+
+        // test create note
+        let note1 = NoteCreateData(note: "had dinner with unverified last night")
+        let note2 = NoteCreateData(note: "great scrabble player")
+        let createdNoteData1 = try app.getResult(
+            from: usersURI + "\(unverifiedUser.id)/note",
+            method: .POST,
+            headers: headers,
+            body: note1,
+            decodeTo: CreatedNoteData.self
+        )
+        let createdNoteData2 = try app.getResult(
+            from: usersURI + "\(verifiedUser.id)/note",
+            method: .POST,
+            headers: headers,
+            body: note2,
+            decodeTo: CreatedNoteData.self
+        )
+        XCTAssertTrue(createdNoteData1.note == note1.note, "should be the same text")
+        
+        // test retrieve note
+        let noteEdit = try app.getResult(
+            from: usersURI + "\(unverifiedUser.id)/note",
+            method: .GET,
+            headers: headers,
+            decodeTo: UserNote.Edit.self
+        )
+        XCTAssertTrue(noteEdit.noteID == createdNoteData1.noteID, "should be same ID")
+        
+        // test retrieve notes
+        var notes = try app.getResult(
+            from: userURI + "notes",
+            method: .GET,
+            headers: headers,
+            decodeTo: [NoteData].self
+        )
+        XCTAssertTrue(notes.count == 2, "should be 2 notes")
+        XCTAssertTrue(notes.first?.noteID != notes.last?.noteID, "should be different notes")
+        
+        // test update note
+        let noteUpdateData = NoteUpdateData(noteID: createdNoteData2.noteID, note: "")
+        let noteData = try app.getResult(
+             from: userURI + "note",
+             method: .POST,
+             headers: headers,
+             body: noteUpdateData,
+             decodeTo: NoteData.self
+         )
+        XCTAssertTrue(noteData.note.isEmpty, "should be emptry string")
+        
+        // test delete note
+        let response = try app.getResponse(
+            from: usersURI + "\(unverifiedUser.id)/note/delete",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 204, "should be 204 No Content")
+        notes = try app.getResult(
+            from: userURI + "notes",
+            method: .GET,
+            headers: headers,
+            decodeTo: [NoteData].self
+        )
+        XCTAssertTrue(notes.count == 1, "should be 1 note")
+        XCTAssertTrue(notes.first?.noteID == createdNoteData2.noteID, "should be same IDs")
+    }
 }
