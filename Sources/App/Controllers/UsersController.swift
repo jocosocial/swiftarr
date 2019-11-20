@@ -46,8 +46,11 @@ struct UsersController: RouteCollection {
     
     // MARK: - Open Access Handlers
     
+    // MARK: - basicAuthGroup Handlers (not logged in)
+    // All handlers in this route group require a valid HTTP Basic Authentication
+    // header in the request.
     
-    // MARK: - sharedAuthGroup Handlers (logged in OR out)
+    // MARK: - sharedAuthGroup Handlers (logged in *or* out)
     // All handlers in this route group require a valid HTTP Basic Authorization
     // *or* HTTP Bearer Authorization header in the request.
     
@@ -110,11 +113,6 @@ struct UsersController: RouteCollection {
             }
         }
     }
-    
-    // MARK: - basicAuthGroup Handlers (not logged in)
-    // All handlers in this route group require a valid HTTP Basic Authentication
-    // header in the request.
-    
     
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication

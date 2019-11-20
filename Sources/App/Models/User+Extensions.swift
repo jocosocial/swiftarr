@@ -72,3 +72,30 @@ extension User {
         return children(\.userID)
     }
 }
+
+// MARK: - Methods
+
+extension User {
+    /// Converts a `User` model to a version that is publicly viewable. Only the ID, username
+    /// and imestamp of the last profile update.
+    func convertToPublic() throws -> User.Public {
+        return try User.Public(
+            id: self.requireID(),
+            username: self.username,
+            updatedAt: self.profileUpdatedAt
+        )
+    }
+
+}
+
+extension Future where T: User {
+    /// Converts a `Future<User>` to a `Future<User.Public>`. This extension provides the
+    /// convenience of simply using `user.convertToPublic()` and allowing the compiler to
+    /// choose the appropriate version for the context.
+    func convertToPublic() throws -> Future<User.Public> {
+        return self.map {
+            (user) in
+            return try user.convertToPublic()
+        }
+    }
+}

@@ -119,7 +119,14 @@ struct UserController: RouteCollection {
                             username: savedUser.username
                         )
                         return profile.save(on: connection).map {
-                            (_) in
+                            (savedProfile) in
+                            // touch savedUser.profileUpdatedAt
+                            guard let profileUpdatedAt = savedProfile.updatedAt else {
+                                throw Abort(.internalServerError, reason: "profile has no timestamp")
+                            }
+                            savedUser.profileUpdatedAt = profileUpdatedAt
+                            _ = savedUser.save(on: connection)
+                            // return user data as .created
                             let createdUserData = try CreatedUserData(
                                 userID: savedUser.requireID(),
                                 username: savedUser.username,
@@ -265,6 +272,12 @@ struct UserController: RouteCollection {
             profile.limitAccess = data.limitAccess
             return profile.save(on: req).flatMap {
                 (savedProfile) in
+                // touch savedUser.profileUpdatedAt
+                guard let profileUpdatedAt = savedProfile.updatedAt else {
+                    throw Abort(.internalServerError, reason: "profile has no timestamp")
+                }
+                user.profileUpdatedAt = profileUpdatedAt
+                _ = user.save(on: req)
                 // record update for accountability
                 let profileEdit = try ProfileEdit(
                     profileID: profile.requireID(),
@@ -371,7 +384,14 @@ struct UserController: RouteCollection {
                             username: savedUser.username
                         )
                         return profile.save(on: connection).map {
-                            (_) in
+                            (savedProfile) in
+                            // touch savedUser.profileUpdatedAt
+                            guard let profileUpdatedAt = savedProfile.updatedAt else {
+                                throw Abort(.internalServerError, reason: "profile has no timestamp")
+                            }
+                            savedUser.profileUpdatedAt = profileUpdatedAt
+                            _ = savedUser.save(on: connection)
+                            // return user data as .created
                             let addedUserData = try AddedUserData(
                                 userID: savedUser.requireID(),
                                 username: savedUser.username
@@ -537,9 +557,15 @@ struct UserController: RouteCollection {
                     return req.transaction(on: .psql) {
                         (connection) in
                         return user.save(on: connection).flatMap {
-                            (_) in
+                            (savedUser) in
                             return profile.save(on: connection).map {
-                                (_) in
+                                (savedProfile) in
+                                // touch savedUser.profileUpdatedAt
+                                guard let profileUpdatedAt = savedProfile.updatedAt else {
+                                    throw Abort(.internalServerError, reason: "profile has no timestamp")
+                                }
+                                savedUser.profileUpdatedAt = profileUpdatedAt
+                                _ = savedUser.save(on: connection)
                                 return .created
                             }
                         }
