@@ -52,7 +52,7 @@ struct UsersController: RouteCollection {
     // All handlers in this route group require a valid HTTP Basic Authentication
     // header in the request.
     
-    // MARK: - sharedAuthGroup Handlers (logged in *or* out)
+    // MARK: - sharedAuthGroup Handlers (logged in or not)
     // All handlers in this route group require a valid HTTP Basic Authorization
     // *or* HTTP Bearer Authorization header in the request.
     

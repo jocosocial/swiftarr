@@ -82,7 +82,6 @@ struct TestController: RouteCollection {
         }
     }
 
-
     // MARK: - basicAuthGroup Handlers (not logged in)
     // All handlers in this route group require a valid HTTP Basic Authentication
     // header in the request.

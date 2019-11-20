@@ -190,7 +190,7 @@ struct UserController: RouteCollection {
         }
     }
     
-    // MARK: - sharedAuthGroup Handlers (logged in *or* out)
+    // MARK: - sharedAuthGroup Handlers (logged in or not)
     // All handlers in this route group require a valid HTTP Basic Authorization
     // *or* HTTP Bearer Authorization header in the request.
     
@@ -833,11 +833,11 @@ extension UserVerifyData: Validatable, Reflectable {
 }
 
 extension CharacterSet {
-    /// Define a character set containing characters other than alphanumerics that are allowed
+    /// Defines a character set containing characters other than alphanumerics that are allowed
     /// in a username.
     fileprivate static var separators: CharacterSet {
         var separatorChars: CharacterSet = .init()
-        separatorChars.insert(charactersIn: "-_+")
+        separatorChars.insert(charactersIn: "-_+.")
         return separatorChars
     }
 }
