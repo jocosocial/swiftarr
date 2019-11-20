@@ -36,7 +36,9 @@ struct UsersController: RouteCollection {
         
         // endpoints available whether logged in or out
         sharedAuthGroup.get(User.parameter, "profile", use: profileHandler)
-        
+        sharedAuthGroup.get("find", String.parameter, use: findHandler)
+        sharedAuthGroup.get(User.parameter, use: userHandler)
+
         // endpoints available only when logged in
         tokenAuthGroup.post(NoteCreateData.self, at: User.parameter, "note", use: noteCreateHandler)
         tokenAuthGroup.post(User.parameter, "note", "delete", use: noteDeleteHandler)
@@ -54,7 +56,51 @@ struct UsersController: RouteCollection {
     // All handlers in this route group require a valid HTTP Basic Authorization
     // *or* HTTP Bearer Authorization header in the request.
     
-    /// `GET /api/v3/user/ID/profile`
+    /// `GET /api/v3/users/find/STRING`
+    ///
+    /// Retrieves a user's .Public info using either an ID (UUID string) or a username.
+    ///
+    /// This endpoint is of limited utility, but is included for the case of obtaining a
+    /// user's ID from a username. If you have an ID and want the associated username, use
+    /// the more efficient `/api/v3/users/ID` endpoint instead.
+    ///
+    /// - Note: Because a username can be changed, there is no guarantee that a once-valid
+    ///   username will result in a successful return, even though the User itself does
+    ///   exist.
+    ///
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Throws: 404 error if no match is found.
+    /// - Returns: The user's ID, username and timestamp of last info update.
+    func findHandler(_ req: Request) throws -> Future<User.Public> {
+        let parameter = try req.parameters.next(String.self)
+        // try converting to UUID
+        let userID = UUID(uuidString: parameter)
+        return UserProfile.query(on: req).group(.or) {
+            (or) in
+            // search ID if a UUID
+            if let userID = userID {
+                or.filter(\.userID == userID)
+            }
+            // search as username
+            or.filter(\.username == parameter)
+            }.first()
+            .map {
+                (profile) in
+                // unwrap timestamp if match found
+                guard let profile = profile, let updatedAt = profile.updatedAt else {
+                    throw Abort(.notFound, reason: "no user found for identifier '\(parameter)'")
+                }
+                // return as User.Public
+                let userPublic = User.Public(
+                    id: profile.userID,
+                    username: profile.username,
+                    updatedAt: updatedAt
+                )
+                return userPublic
+        }
+    }
+    
+    /// `GET /api/v3/users/ID/profile`
     ///
     /// Retrieves the user's own profile data for editing, as a `UserProfile.Edit` object.
     ///
@@ -114,6 +160,26 @@ struct UsersController: RouteCollection {
         }
     }
     
+    /// `GET /api/v3/users/ID`
+    ///
+    /// Retrieves the specified user's .Public info.
+    ///
+    /// This endpoint provides one-off retrieval of a user's username and the timestamp of
+    /// the last time their publicly viewable data was updated. It would typically be used to:
+    ///
+    ///  - obtain a username from an ID
+    ///  - determine if a user's info has updated since it was last obtained (username change,
+    ///    displayedName change, profile photo change, or any field on their profile)
+    ///
+    /// For bulk data retrieval, see the `ClientController` endpoints.
+    ///
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Throws: 404 error if no match is found.
+    /// - Returns: The user's ID, username and timestamp of last info update.
+    func userHandler(_ req: Request) throws -> Future<User.Public> {
+        return try req.parameters.next(User.self).convertToPublic()        
+    }
+        
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
