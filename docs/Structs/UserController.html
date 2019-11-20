@@ -102,6 +102,9 @@
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Extensions/CharacterSet.html">CharacterSet</a>
               </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Future.html">Future</a>
+              </li>
             </ul>
           </li>
           <li class="nav-group-name">
@@ -150,6 +153,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/NoteData.html">NoteData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/NoteUpdateData.html">NoteUpdateData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/ProfileEdit.html">ProfileEdit</a>
@@ -254,7 +260,7 @@ entirely.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L18-L49">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L18-L50">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -356,7 +362,7 @@ proceeding</em>.</p>
                         <p>The newly created user&rsquo;s ID, username, and a recovery key string.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L74-L134">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L75-L142">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -447,7 +453,7 @@ another user.
                         <p>HTTP status 200 on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L153-L189">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L161-L197">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -530,7 +536,7 @@ the username and displayName values.</p>
 profile.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L211-L222">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L219-L230">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -619,7 +625,7 @@ resets its respective profile property to <code>nil</code>.</p>
 the profile.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L243-L280">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L251-L294">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -678,7 +684,7 @@ currently being used.</p>
                         <p>The current user&rsquo;s ID and username.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L292-L305">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L306-L319">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -781,7 +787,85 @@ username is not available.</p>
                         <p>The newly created user&rsquo;s ID and username.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L333-L385">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L347-L406">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App14UserControllerV11noteHandler_4data3NIO15EventLoopFutureCyAA8NoteDataVG5Vapor7RequestC_AA0k6UpdateL0VtKF"></a>
+                    <a name="//apple_ref/swift/Method/noteHandler(_:data:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App14UserControllerV11noteHandler_4data3NIO15EventLoopFutureCyAA8NoteDataVG5Vapor7RequestC_AA0k6UpdateL0VtKF">noteHandler(_:data:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>POST /api/v3/user/note</code></p>
+
+<p>Updates a <code><a href="../Classes/UserNote.html">UserNote</a></code> with the supplied note text.</p>
+<div class="aside aside-requires">
+    <p class="aside-title">Requires</p>
+    <code><a href="../Structs/NoteUpdateData.html">NoteUpdateData</a></code> payload in HTTP body.
+
+</div>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    403 if the note is not owned by the user. A 5xx response should be reported
+as a likely bug, please and thank you.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">noteHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">data</span><span class="p">:</span> <span class="kt"><a href="../Structs/NoteUpdateData.html">NoteUpdateData</a></span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Structs/NoteData.html">NoteData</a></span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>data</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p><code><a href="../Structs/NoteUpdateData.html">NoteUpdateData</a></code> struct containing the note&rsquo;s ID and updated text.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>The updated note as a <code><a href="../Structs/NoteData.html">NoteData</a></code> object.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L419-L454">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -846,7 +930,7 @@ editing of notes outside of a profile-viewing context.</p>
                         <p>The user&rsquo;s notes as an array of <code><a href="../Structs/NoteData.html">NoteData</a></code>, or an empty array if none exist.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L399-L432">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L468-L501">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -897,7 +981,7 @@ editing of notes outside of a profile-viewing context.</p>
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L443-L451">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L512-L520">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -976,7 +1060,7 @@ as a likely bug, please and thank you.
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L465-L500">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L534-L575">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1017,7 +1101,7 @@ as a likely bug, please and thank you.
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L505">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L580">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1075,7 +1159,7 @@ as a likely bug, please and thank you.
                         <p>A recoveryKey String.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L579-L587">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L654-L662">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1088,7 +1172,7 @@ as a likely bug, please and thank you.
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-18)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-19)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.11.2</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>

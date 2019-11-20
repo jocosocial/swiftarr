@@ -102,6 +102,9 @@
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Extensions/CharacterSet.html">CharacterSet</a>
               </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Future.html">Future</a>
+              </li>
             </ul>
           </li>
           <li class="nav-group-name">
@@ -150,6 +153,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/NoteData.html">NoteData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/NoteUpdateData.html">NoteUpdateData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/ProfileEdit.html">ProfileEdit</a>
@@ -254,7 +260,7 @@ entirely.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L18-L45">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L18-L47">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -263,13 +269,84 @@ entirely.</p>
             </div>
             <div class="task-group">
               <div class="task-name-container">
-                <a name="/sharedAuthGroup%20Handlers%20(logged%20in%20OR%20out)"></a>
-                <a name="//apple_ref/swift/Section/sharedAuthGroup Handlers (logged in OR out)" class="dashAnchor"></a>
-                <a href="#/sharedAuthGroup%20Handlers%20(logged%20in%20OR%20out)">
-                  <h3 class="section-name">sharedAuthGroup Handlers (logged in OR out)</h3>
+                <a name="/sharedAuthGroup%20Handlers%20(logged%20in%20*or*%20out)"></a>
+                <a name="//apple_ref/swift/Section/sharedAuthGroup Handlers (logged in *or* out)" class="dashAnchor"></a>
+                <a href="#/sharedAuthGroup%20Handlers%20(logged%20in%20*or*%20out)">
+                  <h3 class="section-name">sharedAuthGroup Handlers (logged in *or* out)</h3>
                 </a>
               </div>
               <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App15UsersControllerV11findHandlery3NIO15EventLoopFutureCyAA4UserC6PublicCG5Vapor7RequestCKF"></a>
+                    <a name="//apple_ref/swift/Method/findHandler(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15UsersControllerV11findHandlery3NIO15EventLoopFutureCyAA4UserC6PublicCG5Vapor7RequestCKF">findHandler(_:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>GET /api/v3/users/find/STRING</code></p>
+
+<p>Retrieves a user&rsquo;s .Public info using either an ID (UUID string) or a username.</p>
+
+<p>This endpoint is of limited utility, but is included for the case of obtaining a
+user&rsquo;s ID from a username. If you have an ID and want the associated username, use
+the more efficient <code>/api/v3/users/ID</code> endpoint instead.</p>
+<div class="aside aside-note">
+    <p class="aside-title">Note</p>
+    <p>Because a username can be changed, there is no guarantee that a once-valid
+username will result in a successful return, even though the User itself does
+exist.</p>
+
+</div>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>404 error if no match is found.</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">findHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Classes/User.html">User</a></span><span class="o">.</span><span class="kt">Public</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>The user&rsquo;s ID, username and timestamp of last info update.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L74-L101">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
                 <li class="item">
                   <div>
                     <code>
@@ -283,7 +360,7 @@ entirely.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p><code>GET /api/v3/user/ID/profile</code></p>
+                        <p><code>GET /api/v3/users/ID/profile</code></p>
 
 <p>Retrieves the user&rsquo;s own profile data for editing, as a <code><a href="../Classes/UserProfile/Edit.html">UserProfile.Edit</a></code> object.</p>
 
@@ -337,7 +414,78 @@ the username and displayName values.</p>
 profile.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L70-L112">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L119-L161">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App15UsersControllerV11userHandlery3NIO15EventLoopFutureCyAA4UserC6PublicCG5Vapor7RequestCKF"></a>
+                    <a name="//apple_ref/swift/Method/userHandler(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15UsersControllerV11userHandlery3NIO15EventLoopFutureCyAA4UserC6PublicCG5Vapor7RequestCKF">userHandler(_:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>GET /api/v3/users/ID</code></p>
+
+<p>Retrieves the specified user&rsquo;s .Public info.</p>
+
+<p>This endpoint provides one-off retrieval of a user&rsquo;s username and the timestamp of
+the last time their publicly viewable data was updated. It would typically be used to:</p>
+
+<ul>
+<li>obtain a username from an ID</li>
+<li>determine if a user&rsquo;s info has updated since it was last obtained (username change,
+displayedName change, profile photo change, or any field on their profile)</li>
+</ul>
+
+<p>For bulk data retrieval, see the <code>ClientController</code> endpoints.</p>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    404 error if no match is found.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">userHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Classes/User.html">User</a></span><span class="o">.</span><span class="kt">Public</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>The user&rsquo;s ID, username and timestamp of last info update.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L179-L181">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -437,7 +585,7 @@ be reported as a likely bug, please and thank you.</p>
                         <p>The newly created note&rsquo;s ID and text.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L142-L182">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L206-L246">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -499,7 +647,7 @@ be reported as a likely bug, please and thank you.
                         <p>204 No Content on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L193-L218">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L257-L282">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -570,7 +718,7 @@ be reported as a likely bug, please and thank you.</p>
                         <p>The note&rsquo;s ID and text.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L235-L259">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L299-L323">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -583,7 +731,7 @@ be reported as a likely bug, please and thank you.</p>
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-18)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-19)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.11.2</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>

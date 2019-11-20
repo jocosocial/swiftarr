@@ -102,6 +102,9 @@
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Extensions/CharacterSet.html">CharacterSet</a>
               </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Future.html">Future</a>
+              </li>
             </ul>
           </li>
           <li class="nav-group-name">
@@ -150,6 +153,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/NoteData.html">NoteData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/NoteUpdateData.html">NoteUpdateData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/ProfileEdit.html">ProfileEdit</a>
@@ -629,6 +635,36 @@ or the parent&rsquo;s access level if a sub-account.</p>
                     </section>
                   </div>
                 </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App4UserC16profileUpdatedAt10Foundation4DateVvp"></a>
+                    <a name="//apple_ref/swift/Property/profileUpdatedAt" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App4UserC16profileUpdatedAt10Foundation4DateVvp">profileUpdatedAt</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Timestamp of the child UserProfile&rsquo;s last update.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">profileUpdatedAt</span><span class="p">:</span> <span class="kt">Date</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User.swift#L66">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
               </ul>
             </div>
             <div class="task-group">
@@ -643,9 +679,9 @@ or the parent&rsquo;s access level if a sub-account.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App4UserC8username8password11recoveryKey12verification8parentID11accessLevel12keywordMutes0E8Attempts7reportsACSS_S3SSg10Foundation4UUIDVSgAA0b6AccessK0OSaySSGS2itcfc"></a>
-                    <a name="//apple_ref/swift/Method/init(username:password:recoveryKey:verification:parentID:accessLevel:keywordMutes:recoveryAttempts:reports:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App4UserC8username8password11recoveryKey12verification8parentID11accessLevel12keywordMutes0E8Attempts7reportsACSS_S3SSg10Foundation4UUIDVSgAA0b6AccessK0OSaySSGS2itcfc">init(username:password:recoveryKey:verification:parentID:accessLevel:keywordMutes:recoveryAttempts:reports:)</a>
+                    <a name="/s:3App4UserC8username8password11recoveryKey12verification8parentID11accessLevel12keywordMutes0E8Attempts7reports16profileUpdatedAtACSS_S3SSg10Foundation4UUIDVSgAA0b6AccessK0OSaySSGS2iAO4DateVtcfc"></a>
+                    <a name="//apple_ref/swift/Method/init(username:password:recoveryKey:verification:parentID:accessLevel:keywordMutes:recoveryAttempts:reports:profileUpdatedAt:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App4UserC8username8password11recoveryKey12verification8parentID11accessLevel12keywordMutes0E8Attempts7reports16profileUpdatedAtACSS_S3SSg10Foundation4UUIDVSgAA0b6AccessK0OSaySSGS2iAO4DateVtcfc">init(username:password:recoveryKey:verification:parentID:accessLevel:keywordMutes:recoveryAttempts:reports:profileUpdatedAt:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -669,7 +705,8 @@ or the parent&rsquo;s access level if a sub-account.</p>
     <span class="nv">accessLevel</span><span class="p">:</span> <span class="kt"><a href="../Enums/UserAccessLevel.html">UserAccessLevel</a></span><span class="p">,</span>
     <span class="nv">keywordMutes</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
     <span class="nv">recoveryAttempts</span><span class="p">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-    <span class="nv">reports</span><span class="p">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="nv">reports</span><span class="p">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="nv">profileUpdatedAt</span><span class="p">:</span> <span class="kt">Date</span> <span class="o">=</span> <span class="kt">Date</span><span class="p">(</span><span class="nv">timeIntervalSince1970</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span>
 <span class="p">)</span></code></pre>
 
                         </div>
@@ -790,11 +827,24 @@ initially 0.</p>
                                 </div>
                               </td>
                             </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>profileUpdatedAt</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The timestamp of the associated profile&rsquo;s last update, initially
+epoch.</p>
+                                </div>
+                              </td>
+                            </tr>
                           </tbody>
                         </table>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User.swift#L83-L103">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User.swift#L89-L111">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -836,7 +886,7 @@ initially 0.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User.swift#L108-L173">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User.swift#L116-L181">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -867,7 +917,7 @@ initially 0.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User.swift#L176-L197">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User.swift#L184-L205">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -898,7 +948,7 @@ initially 0.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User.swift#L200-L221">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User.swift#L208-L229">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1260,13 +1310,55 @@ initially 0.</p>
                 </li>
               </ul>
             </div>
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/Methods"></a>
+                <a name="//apple_ref/swift/Section/Methods" class="dashAnchor"></a>
+                <a href="#/Methods">
+                  <h3 class="section-name">Methods</h3>
+                </a>
+              </div>
+              <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App4UserC15convertToPublicAC0E0CyKF"></a>
+                    <a name="//apple_ref/swift/Method/convertToPublic()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App4UserC15convertToPublicAC0E0CyKF">convertToPublic()</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Converts a <code>User</code> model to a version that is publicly viewable. Only the ID, username
+and imestamp of the last profile update.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">convertToPublic</span><span class="p">()</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">User</span><span class="o">.</span><span class="kt"><a href="../Classes/User/Public.html">Public</a></span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/User+Extensions.swift#L81-L87">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
           </div>
         </section>
 
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-18)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-19)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.11.2</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>
