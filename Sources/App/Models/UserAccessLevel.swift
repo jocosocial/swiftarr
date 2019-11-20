@@ -1,15 +1,15 @@
 import FluentPostgreSQL
 
-/// All API endpoints are protected by a mimimum user access level.
+/// All API endpoints are protected by a minimum user access level.
 /// This `enum` structure is ordered and should *never* be modified when
 /// working with stored production `User` data – bad things will happen.
 
 enum UserAccessLevel: UInt8, PostgreSQLRawEnum {
-    /// A user account that has not yet been activated. (read-only, limited)
+    /// A user account that has not yet been activated. [read-only, limited]
     case unverified
-    /// A user account that has been banned. (read-only, limited)
+    /// A user account that has been banned. [read-only, limited]
     case banned
-    /// A `.verified` user account that has triggered Moderator review. (read-only)
+    /// A `.verified` user account that has triggered Moderator review. [read-only]
     case quarantined
     /// A user account that has been activated for full read-write access.
     case verified

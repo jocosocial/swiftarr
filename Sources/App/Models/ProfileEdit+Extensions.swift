@@ -17,6 +17,7 @@ extension ProfileEdit: Migration {
     /// to `UserProfile`.
     ///
     /// - Parameter connection: The connection to the database, usually the Request.
+    /// - Returns: Void.
     static func prepare(on connection: PostgreSQLConnection) -> Future<Void> {
         return Database.create(self, on: connection) {
             (builder) in

@@ -13,6 +13,7 @@ extension RegistrationCode: Migration {
     /// Required by `Migration` protocol. Creates the table, with unique constraint on `.code`.
     ///
     /// - Parameter connection: A connection to the database, provided automatically.
+    /// - Returns: Void.
     static func prepare(on connection: PostgreSQLConnection) -> Future<Void> {
         return Database.create(self, on: connection) {
             builder in

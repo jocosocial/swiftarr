@@ -20,6 +20,7 @@ extension User: Migration {
     /// Required by `Migration` protocol. Creates the table, with unique constraint on `.username`.
     ///
     /// - Parameter connection: A connection to the database, provided automatically.
+    /// - Returns: Void.
     static func prepare(on connection: PostgreSQLConnection) -> Future<Void> {
         return Database.create(self, on: connection) {
             builder in
@@ -60,13 +61,11 @@ extension User: TokenAuthenticatable {
 // MARK: - Children
 
 extension User {
-    /// The `UserNotes` owned by the user.
+    /// The `UserNote`s owned by the user.
     var notes: Children<User, UserNote> {
         return children(\.userID)
     }
-}
 
-extension User {
     /// The child `UserProfile` of the user.
     var profile: Children<User, UserProfile> {
         return children(\.userID)
@@ -77,7 +76,7 @@ extension User {
 
 extension User {
     /// Converts a `User` model to a version that is publicly viewable. Only the ID, username
-    /// and imestamp of the last profile update.
+    /// and timestamp of the last profile update are returned.
     func convertToPublic() throws -> User.Public {
         return try User.Public(
             id: self.requireID(),
@@ -85,7 +84,6 @@ extension User {
             updatedAt: self.profileUpdatedAt
         )
     }
-
 }
 
 extension Future where T: User {

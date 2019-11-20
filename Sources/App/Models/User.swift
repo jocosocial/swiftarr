@@ -9,13 +9,13 @@ import Authentication
 /// instances of User. The terms "primary account", "parent account" and "master account"
 /// are used interchangeably to refer to any account that is not a sub-account.
 ///
-/// A primary account holds the verification token and access level, and all
-/// sub-accounts (if any) inherit these two credentials.
+/// A primary account holds the access level, verification token and recovery key, and all
+/// sub-accounts (if any) inherit these three credentials.
 ///
-/// `User.id` and `User.parentID` are provisioned automatically, by the model protocols
-/// and `UsersController` account creation handlers respectively. `User.createdAt`,
-/// `User.updatedAt` and `User.deletedAt` are all maintained automatically by the model
-/// protocols and should never be otherwise programmatically modified.
+/// `.id` and `.parentID` are provisioned automatically, by the model protocols and
+/// `UsersController` account creation handlers respectively. `.createdAt`, .updatedAt` and
+/// `.deletedAt` are all maintained automatically by the model protocols and should never be
+///  otherwise modified.
 
 final class User: Codable {
     // MARK: Properties
@@ -41,7 +41,7 @@ final class User: Codable {
     var parentID: UUID?
     
     /// The user's `UserAccessLevel`, set to `.unverified` at time of creation,
-    /// or the parent's access level if a sub-account.
+    /// or to the parent's access level if a sub-account.
     var accessLevel: UserAccessLevel
     
     /// An array of keywords on which the user can mute a post.

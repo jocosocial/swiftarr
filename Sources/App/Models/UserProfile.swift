@@ -2,7 +2,7 @@ import Foundation
 import Vapor
 import FluentPostgreSQL
 
-/// The optional information provided by a user for their Profile page. The associated
+/// The optional information provided by a user for their profile page. The associated
 /// `UserProfile` is automatically created wnen a `User` is created via the endpoint. Only
 /// the `.userID`, `.username` and `.userSearch` fields are populated upon initialization.
 
@@ -128,7 +128,7 @@ final class UserProfile: Codable {
         var message: String
         /// An optional preferred form of address.
         var preferredPronoun: String
-        /// An optional real name of the user.
+        /// An optional real world name of the user.
         var realName: String
         /// An optional ship cabin number.
         var roomNumber: String
@@ -147,7 +147,7 @@ final class UserProfile: Codable {
         ///   - homeLocation: The user's home location.
         ///   - message: A greeting/message to users visiting the profile.
         ///   - preferredPronoun: A preferred pronoun or form of address.
-        ///   - realName: The user's real name.
+        ///   - realName: The user's real world name.
         ///   - roomNumber: The user's cabin number.
         ///   - limitAccess: Whether viewing of most profile details is limited to logged in users.
         init(
@@ -202,11 +202,11 @@ final class UserProfile: Codable {
         var message: String
         /// An optional preferred pronoun or form of address.
         var preferredPronoun: String
-        /// An optional full name of the user.
+        /// An optional real world name of the user.
         var realName: String
         /// An optional cabin number for the user.
         var roomNumber: String
-        /// A `UserNote` owned by the visiting user, about the profile's user (see `UserNote`).
+        /// A UserNote owned by the visiting user, about the profile's user (see `UserNote`).
         var note: String?
         
         // MARK: Initialization

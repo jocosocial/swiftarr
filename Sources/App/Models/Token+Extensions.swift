@@ -14,7 +14,7 @@ extension Token: Migration {
     /// Creates the table, with foreign key constrain to associated `User`.
     ///
     /// - Parameter connection: The connection to the database, usually the Request.
-    /// - Returns: A Void promise.
+    /// - Returns: Void.
     static func prepare(on connection: PostgreSQLConnection) -> Future<Void> {
         return Database.create(self, on: connection) {
             builder in

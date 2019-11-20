@@ -18,6 +18,7 @@ extension UserNote: Migration {
     /// to `User` and `UserProfile`.
     ///
     /// - Parameter connection: The connection to the database, usually the Request.
+    /// - Returns: Void.
     static func prepare(on connection: PostgreSQLConnection) -> Future<Void> {
         return Database.create(self, on: connection) {
             (builder) in
@@ -46,9 +47,7 @@ extension UserNote {
     var user: Parent<UserNote, User> {
         return parent(\.userID)
     }
-}
 
-extension UserNote {
     /// The parent `UserProfile` of the note.
     var profile: Parent<UserNote, UserProfile> {
         return parent(\.profileID)
