@@ -704,7 +704,7 @@ struct NoteData: Content {
     /// The .displayName of the profile's user.
     var profileUser: String
     /// The text of the note.
-    let note: String
+    var note: String
 }
 
 /// Used by `UserController.noteHandler(_:data:)` to update a user note.
