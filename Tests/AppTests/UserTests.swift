@@ -38,21 +38,22 @@ final class UserTests: XCTestCase {
     
     /// Ensure that `UserAccessLevel` values are ordered and comparable by `.rawValue`.
     func testUserAccessLevelsAreOrdered() throws {
-        let accessLevel0: UserAccessLevel = .unverified
-        let accessLevel1: UserAccessLevel = .banned
-        let accessLevel2: UserAccessLevel = .quarantined
-        let accessLevel3: UserAccessLevel = .verified
-        let accessLevel4: UserAccessLevel = .moderator
-        let accessLevel5: UserAccessLevel = .tho
-        let accessLevel6: UserAccessLevel = .admin
+        let unverified: UserAccessLevel = .unverified
+        let banned: UserAccessLevel = .banned
+        let quarantined: UserAccessLevel = .quarantined
+        let verified: UserAccessLevel = .verified
+        let client: UserAccessLevel = .client
+        let moderator: UserAccessLevel = .moderator
+        let tho: UserAccessLevel = .tho
+        let admin: UserAccessLevel = .admin
         
-        XCTAssert(accessLevel0.rawValue < accessLevel1.rawValue)
-        XCTAssert(accessLevel1.rawValue > accessLevel0.rawValue && accessLevel1.rawValue < accessLevel2.rawValue)
-        XCTAssert(accessLevel2.rawValue > accessLevel1.rawValue && accessLevel2.rawValue < accessLevel3.rawValue)
-        XCTAssert(accessLevel3.rawValue > accessLevel2.rawValue && accessLevel3.rawValue < accessLevel4.rawValue)
-        XCTAssert(accessLevel4.rawValue > accessLevel3.rawValue && accessLevel4.rawValue < accessLevel5.rawValue)
-        XCTAssert(accessLevel5.rawValue > accessLevel4.rawValue && accessLevel5.rawValue < accessLevel6.rawValue)
-        XCTAssert(accessLevel6.rawValue > accessLevel5.rawValue)
+        XCTAssert(unverified.rawValue < banned.rawValue)
+        XCTAssert(banned.rawValue < quarantined.rawValue)
+        XCTAssert(quarantined.rawValue < verified.rawValue)
+        XCTAssert(verified.rawValue < client.rawValue)
+        XCTAssert(client.rawValue < moderator.rawValue)
+        XCTAssert(moderator.rawValue < tho.rawValue)
+        XCTAssert(tho.rawValue < admin.rawValue)
     }
     
     /// `GET /api/v3/test/getregistrationcodes`
@@ -85,11 +86,10 @@ final class UserTests: XCTestCase {
         
         // check user creations
         let users = try app.getResult(from: testURI + "/getusers", decodeTo: [User].self)
-        XCTAssertTrue(users.count == 10, "should be 10 users")
         XCTAssertTrue(users[0].username == "admin", "'admin' should be first user")
-        XCTAssertTrue(users[7].username == user.username, "should be `\(testUsername)`")
-        XCTAssertNotNil(UUID(uuidString: users[8].username), "should be a valid UUID")
-        XCTAssertTrue(users.last?.username == result.username, "last user should be '\(apiUsername)'")
+        XCTAssertTrue(users[users.count - 3].username == user.username, "should be `\(testUsername)`")
+        XCTAssertNotNil(UUID(uuidString: users[users.count - 2].username), "should be a valid UUID")
+        XCTAssertTrue(users[users.count - 1].username == result.username, "last user should be '\(apiUsername)'")
         
         // check profile creations
         let profiles = try app.getResult(
@@ -372,8 +372,8 @@ final class UserTests: XCTestCase {
         var headers = HTTPHeaders()
         headers.bearerAuthorization = BearerAuthorization(token: token.token)
         
-        // test username change
-        let newUsername = "newusername"
+        // test username change and .separators charset
+        let newUsername = "new+us_er.na-me"
         var userUsernameData = UserUsernameData(username: newUsername)
         var response = try app.getResponse(
             from: userURI + "username",
@@ -389,6 +389,17 @@ final class UserTests: XCTestCase {
         XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
         XCTAssertTrue(whoami.username == newUsername, "should be \(newUsername)")
         
+        // test bad username
+        userUsernameData.username = "_underscored"
+        response = try app.getResponse(
+            from: userURI + "username",
+            method: .POST,
+            headers: headers,
+            body: userUsernameData
+        )
+        XCTAssertTrue(response.http.status.code == 400 , "should be 400 Bad Request")
+        XCTAssertTrue(response.http.body.description.contains("must start with"), "must start with")
+
         // test unavailable username
         userUsernameData.username = "verified"
         response = try app.getResponse(
@@ -504,14 +515,14 @@ final class UserTests: XCTestCase {
         
         // test post edit
         let userProfileData = UserProfileData(
-            about: "",
+            about: "I'm a test user.",
             displayName: "Alistair Cookie",
-            email: "",
-            homeLocation: "",
+            email: "grundoon@gmail.com",
+            homeLocation: "Boat",
             message: "Tonight on Monsterpiece Theatre...",
             preferredPronoun: "Sir",
             realName: "Cookie Monster",
-            roomNumber: "",
+            roomNumber: "11001",
             limitAccess: true
         )
         profileEdit = try app.getResult(
@@ -628,6 +639,15 @@ final class UserTests: XCTestCase {
             decodeTo: UserNote.Edit.self
         )
         XCTAssertTrue(noteEdit.noteID == createdNoteData1.noteID, "should be same ID")
+        
+        // test note appears on profile
+        let profile = try app.getResult(
+            from: usersURI + "\(unverifiedUser.id)/profile",
+            method: .GET,
+            headers: headers,
+            decodeTo: UserProfile.Public.self
+        )
+        XCTAssertTrue(profile.note == note1.note, "should have \(note1.note) value")
         
         // test retrieve notes
         var notes = try app.getResult(
