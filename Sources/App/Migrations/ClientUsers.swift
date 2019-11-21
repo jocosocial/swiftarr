@@ -55,8 +55,10 @@ struct ClientUsers: Migration {
                 guard triad.count == 3 else {
                     fatalError("client entry is malformed")
                 }
+                // normalize recoveryKey, then encrypt
+                let normalizedKey = triad[2].lowercased().replacingOccurrences(of: " ", with: "")
                 let password = try? BCrypt.hash(triad[1].trimmingCharacters(in: .whitespaces))
-                let recovery = try? BCrypt.hash(triad[3].trimmingCharacters(in: .whitespaces))
+                let recovery = try? BCrypt.hash(normalizedKey)
                 guard let passwordHash = password,
                     let recoveryHash = recovery else {
                         fatalError("could not create client users: password hash failed")
