@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>CreatedUserData Structure Reference</title>
+    <title>ClientController Structure Reference</title>
     <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
     <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
     <meta charset="utf-8">
@@ -14,9 +14,9 @@
   </head>
   <body>
 
-    <a name="//apple_ref/swift/Struct/CreatedUserData" class="dashAnchor"></a>
+    <a name="//apple_ref/swift/Struct/ClientController" class="dashAnchor"></a>
 
-    <a title="CreatedUserData Structure Reference"></a>
+    <a title="ClientController Structure Reference"></a>
 
     <header class="header">
       <p class="header-col header-col--primary">
@@ -44,7 +44,7 @@
     <p class="breadcrumbs">
       <a class="breadcrumb" href="../index.html">App Reference</a>
       <img class="carat" src="../img/carat.png" />
-      CreatedUserData Structure Reference
+      ClientController Structure Reference
     </p>
 
     <div class="content-wrapper">
@@ -213,14 +213,15 @@
 
         <section class="section">
           <div class="section-content">
-            <h1>CreatedUserData</h1>
+            <h1>ClientController</h1>
               <div class="declaration">
                 <div class="language">
-                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">CreatedUserData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">ClientController</span> <span class="p">:</span> <span class="kt">RouteCollection</span></code></pre>
 
                 </div>
               </div>
-            <p>Returned by <code><a href="../Structs/UserController.html#/s:3App14UserControllerV13createHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA0B10CreateDataVtKF">UserController.createHandler(_:data:).</a></code></p>
+            <p>The collection of <code>/api/v3/client/*</code> route endpoints and handler functions that provide
+bulk retrieval services for registered API clients.</p>
 
           </div>
         </section>
@@ -228,13 +229,20 @@
         <section class="section">
           <div class="section-content">
             <div class="task-group">
+              <div class="task-name-container">
+                <a name="/RouteCollection%20Conformance"></a>
+                <a name="//apple_ref/swift/Section/RouteCollection Conformance" class="dashAnchor"></a>
+                <a href="#/RouteCollection%20Conformance">
+                  <h3 class="section-name">RouteCollection Conformance</h3>
+                </a>
+              </div>
               <ul class="item-container">
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App15CreatedUserDataV6userID10Foundation4UUIDVvp"></a>
-                    <a name="//apple_ref/swift/Property/userID" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App15CreatedUserDataV6userID10Foundation4UUIDVvp">userID</a>
+                    <a name="/s:3App16ClientControllerV4boot6routery5Vapor6Router_p_tKF"></a>
+                    <a name="//apple_ref/swift/Method/boot(router:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App16ClientControllerV4boot6routery5Vapor6Router_p_tKF">boot(router:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -242,79 +250,19 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>The newly created user&rsquo;s ID.</p>
+                        <p>Required. Registers routes to the incoming router.</p>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">let</span> <span class="nv">userID</span><span class="p">:</span> <span class="kt">UUID</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">boot</span><span class="p">(</span><span class="nv">router</span><span class="p">:</span> <span class="kt">Router</span><span class="p">)</span> <span class="k">throws</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L665">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App15CreatedUserDataV8usernameSSvp"></a>
-                    <a name="//apple_ref/swift/Property/username" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App15CreatedUserDataV8usernameSSvp">username</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>The newly created user&rsquo;s username.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">let</span> <span class="nv">username</span><span class="p">:</span> <span class="kt">String</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L667">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App15CreatedUserDataV11recoveryKeySSvp"></a>
-                    <a name="//apple_ref/swift/Property/recoveryKey" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App15CreatedUserDataV11recoveryKeySSvp">recoveryKey</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>The newly created user&rsquo;s recoveryKey.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">let</span> <span class="nv">recoveryKey</span><span class="p">:</span> <span class="kt">String</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L669">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L13-L36">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

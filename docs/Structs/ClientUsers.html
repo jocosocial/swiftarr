@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>CreatedUserData Structure Reference</title>
+    <title>ClientUsers Structure Reference</title>
     <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
     <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
     <meta charset="utf-8">
@@ -14,9 +14,9 @@
   </head>
   <body>
 
-    <a name="//apple_ref/swift/Struct/CreatedUserData" class="dashAnchor"></a>
+    <a name="//apple_ref/swift/Struct/ClientUsers" class="dashAnchor"></a>
 
-    <a title="CreatedUserData Structure Reference"></a>
+    <a title="ClientUsers Structure Reference"></a>
 
     <header class="header">
       <p class="header-col header-col--primary">
@@ -44,7 +44,7 @@
     <p class="breadcrumbs">
       <a class="breadcrumb" href="../index.html">App Reference</a>
       <img class="carat" src="../img/carat.png" />
-      CreatedUserData Structure Reference
+      ClientUsers Structure Reference
     </p>
 
     <div class="content-wrapper">
@@ -213,14 +213,23 @@
 
         <section class="section">
           <div class="section-content">
-            <h1>CreatedUserData</h1>
+            <h1>ClientUsers</h1>
               <div class="declaration">
                 <div class="language">
-                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">CreatedUserData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">ClientUsers</span> <span class="p">:</span> <span class="kt">Migration</span></code></pre>
 
                 </div>
               </div>
-            <p>Returned by <code><a href="../Structs/UserController.html#/s:3App14UserControllerV13createHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA0B10CreateDataVtKF">UserController.createHandler(_:data:).</a></code></p>
+            <p>A <code>Migration</code> that creates a set of registered client users during startup, from a
+<code>registered-clients.txt</code> file located at the root level of the project. The file must
+be of the format:</p>
+<pre class="highlight swift"><code><span class="nv">clientUserame1</span><span class="p">:</span><span class="nv">password1</span><span class="p">:</span><span class="n">recoveryKey1</span>
+<span class="nv">clientUsername2</span><span class="p">:</span><span class="nv">password2</span><span class="p">:</span><span class="n">recoveryKey2</span>
+<span class="o">...</span>
+</code></pre>
+
+<p>-Note: Each API client that wishes to make use of <code><a href="../Structs/ClientController.html">ClientController</a></code> endpoints <strong>must</strong>
+ provide a client username and password pair prior to production startup.</p>
 
           </div>
         </section>
@@ -232,9 +241,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App15CreatedUserDataV6userID10Foundation4UUIDVvp"></a>
-                    <a name="//apple_ref/swift/Property/userID" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App15CreatedUserDataV6userID10Foundation4UUIDVvp">userID</a>
+                    <a name="/s:6Fluent9MigrationP8DatabaseQa"></a>
+                    <a name="//apple_ref/swift/Alias/Database" class="dashAnchor"></a>
+                    <a class="token" href="#/s:6Fluent9MigrationP8DatabaseQa">Database</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -242,19 +251,18 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>The newly created user&rsquo;s ID.</p>
-
+                        
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">let</span> <span class="nv">userID</span><span class="p">:</span> <span class="kt">UUID</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">typealias</span> <span class="kt">Database</span> <span class="o">=</span> <span class="kt">PostgreSQLDatabase</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L665">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Migrations/ClientUsers.swift#L">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -262,9 +270,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App15CreatedUserDataV8usernameSSvp"></a>
-                    <a name="//apple_ref/swift/Property/username" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App15CreatedUserDataV8usernameSSvp">username</a>
+                    <a name="/s:3App11ClientUsersV7prepare2on3NIO15EventLoopFutureCyytG10PostgreSQL0J13SQLConnectionC_tFZ"></a>
+                    <a name="//apple_ref/swift/Method/prepare(on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App11ClientUsersV7prepare2on3NIO15EventLoopFutureCyytG10PostgreSQL0J13SQLConnectionC_tFZ">prepare(on:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -272,19 +280,49 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>The newly created user&rsquo;s username.</p>
+                        <p>Required by <code>Migration</code> protocol. Reads either a test or production text file at the
+root project level, converts the lines into elements of an arrar, then iterates over
+them to create new <code><a href="../Classes/User.html">User</a></code> models with <code><a href="../Enums/UserAccessLevel.html">UserAccessLevel</a></code> of <code>.client</code>.</p>
+<div class="aside aside-requires">
+    <p class="aside-title">Requires</p>
+    <code>registered-clients.txt</code> file in root directory.
+
+</div>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">let</span> <span class="nv">username</span><span class="p">:</span> <span class="kt">String</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">prepare</span><span class="p">(</span><span class="n">on</span> <span class="nv">connection</span><span class="p">:</span> <span class="kt">PostgreSQLConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">Void</span><span class="o">&gt;</span></code></pre>
 
                         </div>
                       </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>connection</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>A connection to the database, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>Void.</p>
+                      </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L667">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Migrations/ClientUsers.swift#L26-L89">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -292,9 +330,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App15CreatedUserDataV11recoveryKeySSvp"></a>
-                    <a name="//apple_ref/swift/Property/recoveryKey" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App15CreatedUserDataV11recoveryKeySSvp">recoveryKey</a>
+                    <a name="/s:3App11ClientUsersV6revert2on3NIO15EventLoopFutureCyytG10PostgreSQL0J13SQLConnectionC_tFZ"></a>
+                    <a name="//apple_ref/swift/Method/revert(on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App11ClientUsersV6revert2on3NIO15EventLoopFutureCyytG10PostgreSQL0J13SQLConnectionC_tFZ">revert(on:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -302,19 +340,20 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>The newly created user&rsquo;s recoveryKey.</p>
+                        <p>Required by<code>Migration</code> protocol, but no point removing the client users, so
+just return a pre-completed <code>Future</code>.</p>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">let</span> <span class="nv">recoveryKey</span><span class="p">:</span> <span class="kt">String</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">revert</span><span class="p">(</span><span class="n">on</span> <span class="nv">connection</span><span class="p">:</span> <span class="kt">PostgreSQLConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">Void</span><span class="o">&gt;</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L669">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Migrations/ClientUsers.swift#L93-L95">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
