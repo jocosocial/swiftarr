@@ -11,7 +11,9 @@ struct RegistrationCodes: Migration {
     /// root project level, converts the lines into elements of an array, then iterates over
     /// them to create new `RegistrationCode` models.
     ///
+    /// - Requires: `registration-codes.txt` file in root directory.
     /// - Parameter conn: A connection to the database, provided automatically.
+    /// - Returns: Void
     static func prepare(on conn: PostgreSQLConnection) -> EventLoopFuture<Void> {
         // get file containing registration codes
         let codesFile: String

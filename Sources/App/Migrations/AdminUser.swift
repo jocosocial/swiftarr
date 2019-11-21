@@ -17,6 +17,7 @@ struct AdminUser: Migration {
     /// check caution.
     ///
     /// - Parameter connection: A connection to the database, provided automatically.
+    /// - Returns: Void.
     static func prepare(on connection: PostgreSQLConnection) -> Future<Void> {
         // retrieve password and recovery key from environment, else use defaults
         let password = Environment.get("ADMIN_PASSWORD") ?? "password"
