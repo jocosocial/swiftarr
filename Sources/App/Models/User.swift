@@ -13,7 +13,7 @@ import Authentication
 /// sub-accounts (if any) inherit these three credentials.
 ///
 /// `.id` and `.parentID` are provisioned automatically, by the model protocols and
-/// `UsersController` account creation handlers respectively. `.createdAt`, .updatedAt` and
+/// `UsersController` account creation handlers respectively. `.createdAt`, `.updatedAt` and
 /// `.deletedAt` are all maintained automatically by the model protocols and should never be
 ///  otherwise modified.
 
