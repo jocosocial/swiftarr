@@ -185,26 +185,31 @@ final class UserProfile: Codable {
         // MARK: Properties
         /// The user's ID.
         var userID: UUID
-        /// The string for displaying the user's identity.
+        /// The generated displayName + username string for displaying the user's identity.
         var displayedName: String
         /// The filename of the user's profile image.
         var userImage: String
         
         // MARK: Initialization
-        /// Initializes a User.Header model.
+        /// Initializes a UserProfile.Header model.
         ///
         /// - Parameters:
-        ///   - id: The user's ID.
-        ///   - displayedName: The string for displaying the user's identity.
+        ///   - userID: The user's ID.
+        ///   - username: The user's username, used to generate `.displayedName`
+        ///   - displayName: The user's displayName, used to generate `.displayedName`.
         ///   - image: The filename of the user's profile image.
-        init(userID: UUID, displayedName: String, userImage: String) {
+        init(userID: UUID, username: String, displayName: String, userImage: String) {
             self.userID = userID
-            self.displayedName = displayedName
+            // generate the .displayedName string
+            if displayName.isEmpty {
+                self.displayedName = "@\(username)"
+            } else {
+                self.displayedName = displayName + " (@\(username))"
+            }
             self.userImage = userImage
         }
     }
     
-
     /// Used for public viewing of the profile.
     ///
     /// The `.displayName` and `.username` properties of the underlying profile are used to

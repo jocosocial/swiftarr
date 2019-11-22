@@ -7,6 +7,7 @@ extension UserProfile: PostgreSQLUUIDModel {}
 // model and representations can be passed as HTTP body data
 extension UserProfile: Content {}
 extension UserProfile.Edit: Content {}
+extension UserProfile.Header: Content {}
 extension UserProfile.Public: Content {}
 
 // model can be used as endpoint parameter
@@ -64,6 +65,17 @@ extension UserProfile {
 // MARK: - Methods
 
 extension UserProfile {
+    /// Converts a `UserProfile` model to a version intended for content headers. Only the ID,
+    /// generated `.displayedName` and name of the profile's user image are returned.
+    func convertToHeader() throws -> UserProfile.Header {
+        return UserProfile.Header(
+            userID: self.userID,
+            username: self.username,
+            displayName: self.displayName ?? "",
+            userImage: self.userImage
+        )
+    }
+    
     /// Converts a `UserProfile` model to a version intended for editing by the owning
     /// user. `.username` and `.displayedName` are provided for client display convenience
     /// only and may not be edited.
@@ -102,4 +114,15 @@ extension UserProfile {
     }
 }
 
+extension Future where T: UserProfile {
+    /// Converts a `Future<UserProfile>` to a `Future<UserProfile.Header>`. This extension
+    /// provides the convenience of simply using `profile.convertToHeader()` and allowing the
+    /// compiler to choose the appropriate version for the context.
+    func convertToHeader() throws -> Future<UserProfile.Header> {
+        return self.map {
+            (profile) in
+            return try profile.convertToHeader()
+        }
+    }
+}
 
