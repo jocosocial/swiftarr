@@ -278,6 +278,15 @@ final class UserTests: XCTestCase {
         )
         XCTAssertFalse(result.token.isEmpty, "should receive valid token string")
         
+        // test token is reused
+        let token = try app.getResult(
+            from: authURI + "login",
+            method: .POST,
+            headers: headers,
+            decodeTo: TokenStringData.self
+        )
+        XCTAssertTrue(token.token == result.token, "should be \(result.token)")
+
         // test banned user fails
         credentials = BasicAuthorization(username: "banned", password: testPassword)
         headers.basicAuthorization = credentials
@@ -320,7 +329,7 @@ final class UserTests: XCTestCase {
         // test password change
         let newPassword = "newpassword"
         let userPasswordData = UserPasswordData(password: newPassword)
-        let response = try app.getResponse(
+        var response = try app.getResponse(
             from: userURI + "password",
             method: .POST,
             headers: headers,
@@ -332,6 +341,18 @@ final class UserTests: XCTestCase {
         _ = try app.getResponse(from: authURI + "logout", method: .POST, headers: headers)
         token = try app.login(username: testUsername, password: newPassword, on: conn)
         XCTAssertFalse(token.token.isEmpty, "should receive valid token string")
+        
+        // test .client fails
+        token = try app.login(username: "client", password: testPassword, on: conn)
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        response = try app.getResponse(
+            from: userURI + "password",
+            method: .POST,
+            headers: headers,
+            body: userPasswordData
+        )
+        XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
+        XCTAssertTrue(response.http.body.description.contains("would break"), "would break")
     }
     
     /// `GET /api/v3/user/whoami`
@@ -368,7 +389,7 @@ final class UserTests: XCTestCase {
     func testUserUsername() throws {
         // create logged in user
         let user = try app.createUser(username: testUsername, password: testPassword, on: conn)
-        let token = try app.login(username: user.username, on: conn)
+        var token = try app.login(username: user.username, on: conn)
         var headers = HTTPHeaders()
         headers.bearerAuthorization = BearerAuthorization(token: token.token)
         
@@ -416,6 +437,18 @@ final class UserTests: XCTestCase {
         XCTAssertTrue(response.http.status.code == 409 , "should be 409 Conflict")
         XCTAssertTrue(response.http.body.description.contains("not available"), "not available")
         XCTAssertTrue(whoami.username == newUsername, "should still be \(newUsername)")
+        
+        // test .client fails
+        token = try app.login(username: "client", password: testPassword, on: conn)
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        response = try app.getResponse(
+            from: userURI + "username",
+            method: .POST,
+            headers: headers,
+            body: userUsernameData
+        )
+        XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
+        XCTAssertTrue(response.http.body.description.contains("would break"), "would break")
     }
     
     /// `POST /api/v3/user/add`
@@ -572,11 +605,26 @@ final class UserTests: XCTestCase {
         XCTAssertTrue(profileEdit.displayedName.contains("(@cookie)"), "should be decorated cookie")
         XCTAssertTrue(profileEdit.preferredPronoun == "Sir", "should be there")
         
+        // test retrieve banned
+        let bannedUser = try app.getResult(
+            from: usersURI + "find/banned",
+            method: .GET,
+            headers: headers,
+            decodeTo: User.Public.self
+        )
+        var response = try app.getResponse(
+            from: usersURI + "\(bannedUser.id)/profile",
+            method: .GET,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 404, "should be 404 Not Found")
+        XCTAssertTrue(response.http.body.description.contains("not available"), "not available")
+        
         // test banned user
         credentials = BasicAuthorization(username: "banned", password: testPassword)
         headers = HTTPHeaders()
         headers.basicAuthorization = credentials
-        let response = try app.getResponse(
+        response = try app.getResponse(
             from: userURI + "profile",
             method: .POST,
             headers: headers,
@@ -594,7 +642,7 @@ final class UserTests: XCTestCase {
     func testUserNotes() throws {
         // create logged in user
         _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
-        let token = try app.login(username: testUsername, password: testPassword, on: conn)
+        var token = try app.login(username: testUsername, password: testPassword, on: conn)
         var headers = HTTPHeaders()
         headers.bearerAuthorization = BearerAuthorization(token: token.token)
 
@@ -630,6 +678,16 @@ final class UserTests: XCTestCase {
             decodeTo: CreatedNoteData.self
         )
         XCTAssertTrue(createdNoteData1.note == note1.note, "should be the same text")
+        
+        // test note exists
+        var response = try app.getResponse(
+            from: usersURI + "\(verifiedUser.id)/note",
+            method: .POST,
+            headers: headers,
+            body: note2
+        )
+        XCTAssertTrue(response.http.status.code == 409, "should be 409 Conflict")
+        XCTAssertTrue(response.http.body.description.contains("already exists"), "already exists")
         
         // test retrieve note
         let noteEdit = try app.getResult(
@@ -669,9 +727,9 @@ final class UserTests: XCTestCase {
              decodeTo: NoteData.self
          )
         XCTAssertTrue(noteData.note.isEmpty, "should be emptry string")
-        
+                
         // test delete note
-        let response = try app.getResponse(
+        response = try app.getResponse(
             from: usersURI + "\(unverifiedUser.id)/note/delete",
             method: .POST,
             headers: headers
@@ -685,5 +743,17 @@ final class UserTests: XCTestCase {
         )
         XCTAssertTrue(notes.count == 1, "should be 1 note")
         XCTAssertTrue(notes.first?.noteID == createdNoteData2.noteID, "should be same IDs")
+        
+        // test bad note owner
+        token = try app.login(username: "admin", password: testPassword, on: conn)
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        response = try app.getResponse(
+            from: userURI + "note",
+            method: .POST,
+            headers: headers,
+            body: noteUpdateData
+        )
+        XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
+        XCTAssertTrue(response.http.body.description.contains("does not belong"), "does not belong")
     }
 }
