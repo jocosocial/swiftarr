@@ -164,12 +164,9 @@ struct UserController: RouteCollection {
         return RegistrationCode.query(on: req)
             .filter(\.code == normalizedCode)
             .first()
+            .unwrap(or: Abort(.badRequest, reason: "registration code not found"))
             .flatMap {
                 (registrationCode) in
-                // abort if code not found
-                guard let registrationCode = registrationCode else {
-                    throw Abort(.badRequest, reason: "registration code not found")
-                }
                 // abort if code is already used
                 guard registrationCode.userID == nil else {
                     throw Abort(.conflict, reason: "registration code has already been used")
@@ -213,13 +210,13 @@ struct UserController: RouteCollection {
     func profileHandler(_ req: Request) throws -> Future<UserProfile.Edit> {
         let user = try req.requireAuthenticated(User.self)
         // retrieve profile
-        return try user.profile.query(on: req).first().map {
-            (profile) in
-            guard let profile = profile else {
-                throw Abort(.internalServerError, reason: "profile not found")
-            }
-            // return .Edit properties only
-            return profile.convertToEdit()
+        return try user.profile.query(on: req)
+            .first()
+            .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
+            .map {
+                (profile) in
+                // return .Edit properties only
+                return profile.convertToEdit()
         }
     }
     
@@ -249,41 +246,38 @@ struct UserController: RouteCollection {
             throw Abort(.forbidden, reason: "profile cannot be edited")
         }
         // retrieve profile
-        return try user.profile.query(on: req).first().flatMap {
-            (profile) in
-            guard let profile = profile else {
-                throw Abort(.internalServerError, reason: "profile not found")
-            }
-            // update fields, nil if no value supplied
-            profile.about = data.about.isEmpty ? nil : data.about
-            profile.displayName = data.displayName.isEmpty ? nil : data.displayName
-            profile.email = data.email.isEmpty ? nil : data.email
-            profile.homeLocation = data.homeLocation.isEmpty ? nil : data.homeLocation
-            profile.message = data.message.isEmpty ? nil : data.message
-            profile.preferredPronoun = data.message.isEmpty ? nil : data.preferredPronoun
-            profile.realName = data.realName.isEmpty ? nil : data.realName
-            profile.roomNumber = data.roomNumber.isEmpty ? nil : data.roomNumber
-            profile.limitAccess = data.limitAccess
-            return profile.save(on: req).flatMap {
-                (savedProfile) in
-                // touch savedUser.profileUpdatedAt
-                guard let profileUpdatedAt = savedProfile.updatedAt else {
-                    throw Abort(.internalServerError, reason: "profile has no timestamp")
+        return try user.profile.query(on: req)
+            .first()
+            .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
+            .flatMap {
+                (profile) in
+                // update fields, nil if no value supplied
+                profile.about = data.about.isEmpty ? nil : data.about
+                profile.displayName = data.displayName.isEmpty ? nil : data.displayName
+                profile.email = data.email.isEmpty ? nil : data.email
+                profile.homeLocation = data.homeLocation.isEmpty ? nil : data.homeLocation
+                profile.message = data.message.isEmpty ? nil : data.message
+                profile.preferredPronoun = data.message.isEmpty ? nil : data.preferredPronoun
+                profile.realName = data.realName.isEmpty ? nil : data.realName
+                profile.roomNumber = data.roomNumber.isEmpty ? nil : data.roomNumber
+                profile.limitAccess = data.limitAccess
+                return profile.save(on: req).flatMap {
+                    (savedProfile) in
+                    // touch user.profileUpdatedAt
+                    user.profileUpdatedAt = savedProfile.updatedAt ?? Date()
+                    _ = user.save(on: req)
+                    // record update for accountability
+                    let profileEdit = try ProfileEdit(
+                        profileID: profile.requireID(),
+                        profileData: data,
+                        profileImage: nil
+                    )
+                    return profileEdit.save(on: req).map {
+                        (_) in
+                        // return .Edit properties of updated profile
+                        return savedProfile.convertToEdit()
+                    }
                 }
-                user.profileUpdatedAt = profileUpdatedAt
-                _ = user.save(on: req)
-                // record update for accountability
-                let profileEdit = try ProfileEdit(
-                    profileID: profile.requireID(),
-                    profileData: data,
-                    profileImage: nil
-                )
-                return profileEdit.save(on: req).map {
-                    (_) in
-                    // return .Edit properties of updated profile
-                    return savedProfile.convertToEdit()
-                }
-            }
         }
     }
     
@@ -355,7 +349,7 @@ struct UserController: RouteCollection {
                 guard existingUser == nil else {
                     throw Abort(.conflict, reason: "username '\(data.username)' is not available")
                 }
-                // if user has a parent, sub-account has samee, else this account is parent
+                // if user has a parent, sub-account inherits, else this account is parent
                 let parentID = user.parentID ?? user.id
                 let passwordHash = try BCrypt.hash(data.password)
                 // sub-account inherits .accessLevel, .recoveryKey and .verification
@@ -407,37 +401,37 @@ struct UserController: RouteCollection {
     func noteHandler(_ req: Request, data: NoteUpdateData) throws -> Future<NoteData> {
         let user = try req.requireAuthenticated(User.self)
         // retrieve note
-        return UserNote.find(data.noteID, on: req).flatMap {
-            (note) in
-            // ensure it belongs to user
-            guard let note = note, try note.userID == user.requireID() else {
-                throw Abort(.unauthorized, reason: "note does not belong to user")
-            }
-            note.note = data.note
-            return note.save(on: req).map {
-                (savedNote) in
-                // unwrap Date? fields
-                guard let createdAt = savedNote.createdAt,
-                    let updatedAt = savedNote.updatedAt else {
-                        throw Abort(.internalServerError, reason: "note has no timestamps")
+        return UserNote.find(data.noteID, on: req)
+            .unwrap(or: Abort(.notFound, reason: "note with ID '\(data.noteID)' not found"))
+            .flatMap {
+                (note) in
+                // ensure it belongs to user
+                guard try note.userID == user.requireID() else {
+                    throw Abort(.unauthorized, reason: "note does not belong to user")
                 }
-                // create NoteData
-                var noteData = try NoteData(
-                    noteID: note.requireID(),
-                    createdAt: createdAt,
-                    updataedAt: updatedAt,
-                    profileID: savedNote.profileID,
-                    profileUser: "",
-                    note: savedNote.note
-                )
-                // .displayedName is probably best to send
-                _ = savedNote.profile.query(on: req).first().map {
-                    (profile) in
-                    let publicProfile = try profile?.convertToPublic()
-                    noteData.profileUser = publicProfile?.displayedName ?? "unknown (please report this bug)"
+                note.note = data.note
+                return note.save(on: req).map {
+                    (savedNote) in
+                    // create NoteData
+                    var noteData = try NoteData(
+                        noteID: note.requireID(),
+                        createdAt: savedNote.createdAt ?? Date(),
+                        updataedAt: savedNote.updatedAt ?? Date(),
+                        profileID: savedNote.profileID,
+                        profileUser: "",
+                        note: savedNote.note
+                    )
+                    // .displayedName is probably best to send
+                    _ = savedNote.profile.query(on: req)
+                        .first()
+                        .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
+                        .map {
+                            (profile) in
+                            let publicProfile = try profile.convertToPublic()
+                            noteData.profileUser = publicProfile.displayedName
+                    }
+                    return noteData
                 }
-                return noteData
-            }
         }
     }
     
@@ -462,25 +456,23 @@ struct UserController: RouteCollection {
             // create array for return
             var notesData = [NoteData]()
             try notes.forEach {
-                // unwrap Date? fields
-                guard let createdAt = $0.createdAt,
-                    let updatedAt = $0.updatedAt else {
-                        throw Abort(.internalServerError, reason: "note has no timestamps")
-                }
                 // create NoteData
                 var noteData = try NoteData(
                     noteID: $0.requireID(),
-                    createdAt: createdAt,
-                    updataedAt: updatedAt,
+                    createdAt: $0.createdAt ?? Date(),
+                    updataedAt: $0.updatedAt ?? Date(),
                     profileID: $0.profileID,
                     profileUser: "",
                     note: $0.note
                 )
                 // .displayedName is probably best to send
-                _ = $0.profile.query(on: req).first().map {
-                    (profile) in
-                    let publicProfile = try profile?.convertToPublic()
-                    noteData.profileUser = publicProfile?.displayedName ?? "unknown (please report this bug)"
+                _ = $0.profile.query(on: req)
+                    .first()
+                    .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
+                    .map {
+                        (profile) in
+                        let publicProfile = try profile.convertToPublic()
+                        noteData.profileUser = publicProfile.displayedName
                 }
                 notesData.append(noteData)
             }
@@ -542,30 +534,27 @@ struct UserController: RouteCollection {
                     throw Abort(.conflict, reason: "username '\(data.username)' is not available")
                 }
                 // need to update profile too
-                return try user.profile.query(on: req).first().flatMap {
-                    (profile) in
-                    guard let profile = profile else {
-                        throw Abort(.internalServerError, reason: "user's profile not found")
-                    }
-                    user.username = data.username
-                    profile.username = data.username
-                    // update both, or neither
-                    return req.transaction(on: .psql) {
-                        (connection) in
-                        return user.save(on: connection).flatMap {
-                            (savedUser) in
-                            return profile.save(on: connection).map {
-                                (savedProfile) in
-                                // touch savedUser.profileUpdatedAt
-                                guard let profileUpdatedAt = savedProfile.updatedAt else {
-                                    throw Abort(.internalServerError, reason: "profile has no timestamp")
+                return try user.profile.query(on: req)
+                    .first()
+                    .unwrap(or: Abort(.internalServerError, reason: "user's profile not found"))
+                    .flatMap {
+                        (profile) in
+                        user.username = data.username
+                        profile.username = data.username
+                        // update both, or neither
+                        return req.transaction(on: .psql) {
+                            (connection) in
+                            return user.save(on: connection).flatMap {
+                                (savedUser) in
+                                return profile.save(on: connection).map {
+                                    (savedProfile) in
+                                    // touch savedUser.profileUpdatedAt
+                                    savedUser.profileUpdatedAt = savedProfile.updatedAt ?? Date()
+                                    _ = savedUser.save(on: connection)
+                                    return .created
                                 }
-                                savedUser.profileUpdatedAt = profileUpdatedAt
-                                _ = savedUser.save(on: connection)
-                                return .created
                             }
                         }
-                    }
                 }
         }
     }
