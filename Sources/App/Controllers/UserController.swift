@@ -499,6 +499,10 @@ struct UserController: RouteCollection {
     /// - Returns: 201 Created on success.
     func passwordHandler(_ req: Request, data: UserPasswordData) throws -> Future<HTTPStatus> {
         let user = try req.requireAuthenticated(User.self)
+        // clients are hard-coded
+        guard user.accessLevel != .client else {
+            throw Abort(.forbidden, reason: "password change would break a client")
+        }
         // see `UserPasswordData.validations()`
         try data.validate()
         // encrypt, then update user
@@ -521,6 +525,10 @@ struct UserController: RouteCollection {
     /// - Returns: 201 Created on success.
     func usernameHandler(_ req: Request, data: UserUsernameData) throws -> Future<HTTPStatus> {
         let user = try req.requireAuthenticated(User.self)
+        // clients are hard-coded
+        guard user.accessLevel != .client else {
+            throw Abort(.forbidden, reason: "username change would break a client")
+        }
         // see `UserUsernameData.validations()`
         try data.validate()
         // check for existing username
