@@ -84,17 +84,14 @@ struct UsersController: RouteCollection {
             // search as username
             or.filter(\.username == parameter)
             }.first()
+            .unwrap(or: Abort(.notFound, reason: "no user found for identifier '\(parameter)'"))
             .map {
                 (profile) in
-                // unwrap timestamp if match found
-                guard let profile = profile, let updatedAt = profile.updatedAt else {
-                    throw Abort(.notFound, reason: "no user found for identifier '\(parameter)'")
-                }
                 // return as User.Public
                 let userPublic = User.Public(
                     id: profile.userID,
                     username: profile.username,
-                    updatedAt: updatedAt
+                    updatedAt: profile.updatedAt ?? Date()
                 )
                 return userPublic
         }
@@ -127,34 +124,34 @@ struct UsersController: RouteCollection {
                 throw Abort(.notFound, reason: "profile is not available")
             }
             // get profile and convert to .Public
-            return try user.profile.query(on: req).first().flatMap {
-                (profile) in
-                guard let profile = profile, let profileID = profile.id else {
-                    throw Abort(.internalServerError, reason: "profile not found")
-                }
-                let publicProfile = try profile.convertToPublic()
-                // if auth type is Basic, requestor is not logged in, so hide info if
-                // `.limitAccess` is true or requestor is .banned
-                if (req.http.headers.basicAuthorization != nil && profile.limitAccess)
-                    || requester.accessLevel == .banned {
-                    publicProfile.about = ""
-                    publicProfile.email = ""
-                    publicProfile.homeLocation = ""
-                    publicProfile.message = "You must be logged in to view this user's Profile details."
-                    publicProfile.preferredPronoun = ""
-                    publicProfile.realName = ""
-                    publicProfile.roomNumber = ""
-                }
-                // include UserNote if any, then return
-                return try requester.notes.query(on: req)
-                    .filter(\.profileID == profileID)
-                    .first()
-                    .map {
-                        (note) in
-                        if let note = note {
-                            publicProfile.note = note.note
-                        }
-                        return publicProfile
+            return try user.profile.query(on: req)
+                .first()
+                .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
+                .flatMap {
+                    (profile) in
+                    let publicProfile = try profile.convertToPublic()
+                    // if auth type is Basic, requestor is not logged in, so hide info if
+                    // `.limitAccess` is true or requestor is .banned
+                    if (req.http.headers.basicAuthorization != nil && profile.limitAccess)
+                        || requester.accessLevel == .banned {
+                        publicProfile.about = ""
+                        publicProfile.email = ""
+                        publicProfile.homeLocation = ""
+                        publicProfile.message = "You must be logged in to view this user's Profile details."
+                        publicProfile.preferredPronoun = ""
+                        publicProfile.realName = ""
+                        publicProfile.roomNumber = ""
+                    }
+                    // include UserNote if any, then return
+                    return try requester.notes.query(on: req)
+                        .filter(\.profileID == profile.requireID())
+                        .first()
+                        .map {
+                            (note) in
+                            if let note = note {
+                                publicProfile.note = note.note
+                            }
+                            return publicProfile
                 }
             }
         }
@@ -209,37 +206,37 @@ struct UsersController: RouteCollection {
         return try req.parameters.next(User.self).flatMap {
             (profileUser) in
             // get their profile
-            return try profileUser.profile.query(on: req).first().flatMap {
-                (profile) in
-                guard let profile = profile else {
-                    throw Abort(.internalServerError, reason: "profile not found, note not created")
-                }
-                // check for existing note
-                return try user.notes.query(on: req)
-                    .filter(\.profileID == profile.requireID())
-                    .first()
-                    .flatMap {
-                        (existingNote) in
-                        guard existingNote == nil else {
-                            throw Abort(.conflict, reason: "note already exists for this profile")
-                        }
-                        // create note
-                        let note = try UserNote(
-                            userID: user.requireID(),
-                            profileID: profile.requireID(),
-                            note: data.note
-                        )
-                        // return note's data
-                        return note.save(on: req).map {
-                            (savedNote) in
-                            let createdNoteData = try CreatedNoteData(
-                                noteID: savedNote.requireID(),
-                                note: savedNote.note
+            return try profileUser.profile.query(on: req)
+                .first()
+                .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
+                .flatMap {
+                    (profile) in
+                    // check for existing note
+                    return try user.notes.query(on: req)
+                        .filter(\.profileID == profile.requireID())
+                        .first()
+                        .flatMap {
+                            (existingNote) in
+                            guard existingNote == nil else {
+                                throw Abort(.conflict, reason: "note already exists for this profile")
+                            }
+                            // create note
+                            let note = try UserNote(
+                                userID: user.requireID(),
+                                profileID: profile.requireID(),
+                                note: data.note
                             )
-                            let response = Response(http: HTTPResponse(status: .created), using: req)
-                            try response.content.encode(createdNoteData)
-                            return response
-                        }
+                            // return note's data
+                            return note.save(on: req).map {
+                                (savedNote) in
+                                let createdNoteData = try CreatedNoteData(
+                                    noteID: savedNote.requireID(),
+                                    note: savedNote.note
+                                )
+                                let response = Response(http: HTTPResponse(status: .created), using: req)
+                                try response.content.encode(createdNoteData)
+                                return response
+                            }
                     }
             }
         }
@@ -260,23 +257,21 @@ struct UsersController: RouteCollection {
         return try req.parameters.next(User.self).flatMap {
             (profileUser) in
             // get their profile
-            return try profileUser.profile.query(on: req).first().flatMap {
-                (profile) in
-                guard let profile = profile else {
-                    throw Abort(.internalServerError, reason: "profile not found, note not deleted")
-                }
-                // delete note if found
-                return try user.notes.query(on: req)
-                    .filter(\.profileID == profile.requireID())
-                    .first()
-                    .flatMap {
-                        (note) in
-                        guard let note = note else {
-                            throw Abort(.notFound, reason: "no existing note found")
-                        }
-                        // force true delete
-                        return note.delete(force: true, on: req).transform(to: .noContent)
-                }
+            return try profileUser.profile.query(on: req)
+                .first()
+                .unwrap(or: Abort(.internalServerError, reason: "profile not found, note not deleted"))
+                .flatMap {
+                    (profile) in
+                    // delete note if found
+                    return try user.notes.query(on: req)
+                        .filter(\.profileID == profile.requireID())
+                        .first()
+                        .unwrap(or: Abort(.notFound, reason: "no existing note found"))
+                        .flatMap {
+                            (note) in
+                            // force true delete
+                            return note.delete(force: true, on: req).transform(to: .noContent)
+                    }
             }
         }
     }
@@ -302,22 +297,20 @@ struct UsersController: RouteCollection {
         return try req.parameters.next(User.self).flatMap {
             (profileUser) in
             // get their profile
-            return try profileUser.profile.query(on: req).first().flatMap {
-                (profile) in
-                guard let profile = profile else {
-                    throw Abort(.internalServerError, reason: "profile not found")
-                }
-                // return note data if any
-                return try user.notes.query(on: req)
-                    .filter(\.profileID == profile.requireID())
-                    .first()
-                    .map {
-                        (note) in
-                        guard let note = note else {
-                            throw Abort(.badRequest, reason: "no existing note found")
-                        }
-                        return try note.convertToEdit()
-                }
+            return try profileUser.profile.query(on: req)
+                .first()
+                .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
+                .flatMap {
+                    (profile) in
+                    // return note data if any
+                    return try user.notes.query(on: req)
+                        .filter(\.profileID == profile.requireID())
+                        .first()
+                        .unwrap(or: Abort(.badRequest, reason: "no existing note found"))
+                        .map {
+                            (note) in
+                            return try note.convertToEdit()
+                    }
             }
         }
     }
