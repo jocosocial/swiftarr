@@ -188,7 +188,7 @@ final class User: Codable {
         /// The string for displaying the user's identity.
         var displayedName: String
         /// The filename of the user's profile image.
-        var image: String
+        var userImage: String
         
         // MARK: Initialization
         /// Initializes a User.Header model.
@@ -196,11 +196,11 @@ final class User: Codable {
         /// - Parameters:
         ///   - id: The user's ID.
         ///   - displayedName: The string for displaying the user's identity.
-        ///   - image: The filename of the user's profile image.
-        init(id: UUID, displayedName: String, image: String) {
+        ///   - userImage: The filename of the user's profile image.
+        init(id: UUID, displayedName: String, userImage: String) {
             self.id = id
             self.displayedName = displayedName
-            self.image = image
+            self.userImage = userImage
         }
     }
     
