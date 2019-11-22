@@ -97,7 +97,7 @@ final class UserTests: XCTestCase {
             method: .GET,
             decodeTo: [UserProfile].self
         )
-        XCTAssert(profiles.count == 10, "should be 10 profiles")
+        XCTAssertTrue(profiles.count == users.count, "should be \(users.count)")
         XCTAssertEqual(profiles.last?.userID, users.last?.id, "profile.userID should be user.id")
         
         // test duplicate user
