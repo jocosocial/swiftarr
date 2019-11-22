@@ -70,7 +70,8 @@ struct UserController: RouteCollection {
     /// - Parameters:
     ///   - req: The incoming request `Container`, provided automatically.
     ///   - data: `UserCreateData` struct containing the user's desired username and password.
-    /// - Throws: 409 errpr if the username is not available.
+    /// - Throws: 400 error if the username is an invalid formate. 409 errpr if the username is
+    ///   not available.
     /// - Returns: The newly created user's ID, username, and a recovery key string.
     func createHandler(_ req: Request, data: UserCreateData) throws -> Future<Response> {
         // see `UserCreateData.validations()`
@@ -329,8 +330,9 @@ struct UserController: RouteCollection {
     /// - Parameters:
     ///   - req: The incoming request `Container`, provided automatically.
     ///   - data: `UserAddData` struct containing the user's desired username and password.
-    /// - Throws: 403 error if the user is banned or currently quarantined. 409 errpr if the
-    ///   username is not available.
+    /// - Throws: 400 error if the username is an invalid format or password is not at least
+    ///   6 characters. 403 error if the user is banned or currently quarantined. 409 errpr if
+    ///   the username is not available.
     /// - Returns: The newly created user's ID and username.
     func addHandler(_ req: Request, data: UserAddData) throws -> Future<Response> {
         let user = try req.requireAuthenticated(User.self)
@@ -407,7 +409,7 @@ struct UserController: RouteCollection {
                 (note) in
                 // ensure it belongs to user
                 guard try note.userID == user.requireID() else {
-                    throw Abort(.unauthorized, reason: "note does not belong to user")
+                    throw Abort(.forbidden, reason: "note does not belong to user")
                 }
                 note.note = data.note
                 return note.save(on: req).map {
@@ -487,7 +489,8 @@ struct UserController: RouteCollection {
     /// - Requires: `UserPasswordData` payload in the HTTP body.
     ///   - req: The incoming request `Container`, provided automatically.
     ///   - data: `UserPasswordData` struct containing the user's desired password.
-    /// - Throws: 400 error if the supplied password is not at least 6 characters.
+    /// - Throws: 400 error if the supplied password is not at least 6 characters. 403 error
+    ///   if the user is a `.client`.
     /// - Returns: 201 Created on success.
     func passwordHandler(_ req: Request, data: UserPasswordData) throws -> Future<HTTPStatus> {
         let user = try req.requireAuthenticated(User.self)
@@ -512,8 +515,8 @@ struct UserController: RouteCollection {
     /// - Parameters:
     ///   - req: The incoming request `Container`, provided automatically.
     ///   - data: `UserUsernameData` containing the user's desired new username.
-    /// - Throws: 409 errpr if the username is not available. A 5xx response should be reported
-    ///   as a likely bug, please and thank you.
+    /// - Throws: 400 error if the username is an invalid format. 403 error if the user is a
+    ///   `.client`. 409 errpr if the username is not available.
     /// - Returns: 201 Created on success.
     func usernameHandler(_ req: Request, data: UserUsernameData) throws -> Future<HTTPStatus> {
         let user = try req.requireAuthenticated(User.self)
