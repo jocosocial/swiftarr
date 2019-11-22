@@ -105,6 +105,9 @@
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Extensions/Future.html">Future</a>
               </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/RouteCollection.html">RouteCollection</a>
+              </li>
             </ul>
           </li>
           <li class="nav-group-name">
@@ -269,13 +272,90 @@ bulk retrieval services for registered API clients.</p>
                 </li>
               </ul>
             </div>
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/tokenAuthGroup%20Handlers%20(logged%20in)"></a>
+                <a name="//apple_ref/swift/Section/tokenAuthGroup Handlers (logged in)" class="dashAnchor"></a>
+                <a href="#/tokenAuthGroup%20Handlers%20(logged%20in)">
+                  <h3 class="section-name">tokenAuthGroup Handlers (logged in)</h3>
+                </a>
+              </div>
+              <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App16ClientControllerV18userUpdatesHandlery3NIO15EventLoopFutureCySayAA4UserC6PublicCGG5Vapor7RequestCKF"></a>
+                    <a name="//apple_ref/swift/Method/userUpdatesHandler(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App16ClientControllerV18userUpdatesHandlery3NIO15EventLoopFutureCySayAA4UserC6PublicCGG5Vapor7RequestCKF">userUpdatesHandler(_:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>GET /api/v3/client/user/updates/since/DATE</code></p>
+
+<p>Retrieves the <code><a href="../Classes/User/Public.html">User.Public</a></code> of all users with a <code>.profileUpdatedAt</code> timestamp later
+than the specified date. The <code>DATE</code> parameter is a string, and may be provided in either
+of two formats:</p>
+<li>a string literal <code>Double</code> (e.g. <q>1574364935</q> or <q>1574364935.88991</q>)</li>
+<li><p>a UTC ISO8601 <q>yyyy-MM-dd&rsquo;T'HH:mm:ssZ</q> string (e.g. <q>2019-11-21T05:31:28Z</q>), the
+date format returned in <code>swiftarr</code> JSON responses</p></li>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    <p>400 error if no valid date string provided. 403 error if user is not
+a registered client.</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">userUpdatesHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="p">[</span><span class="kt"><a href="../Classes/User.html">User</a></span><span class="o">.</span><span class="kt">Public</span><span class="p">]</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>Array of all updated users, as <code><a href="../Classes/User/Public.html">User.Public</a></code> objects.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L66-L86">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
           </div>
         </section>
 
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-20)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-21)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.11.2</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>

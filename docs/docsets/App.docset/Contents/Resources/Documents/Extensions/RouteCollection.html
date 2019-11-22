@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>AdminController Structure Reference</title>
+    <title>RouteCollection Extension Reference</title>
     <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
     <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
     <meta charset="utf-8">
@@ -14,9 +14,9 @@
   </head>
   <body>
 
-    <a name="//apple_ref/swift/Struct/AdminController" class="dashAnchor"></a>
+    <a name="//apple_ref/swift/Extension/RouteCollection" class="dashAnchor"></a>
 
-    <a title="AdminController Structure Reference"></a>
+    <a title="RouteCollection Extension Reference"></a>
 
     <header class="header">
       <p class="header-col header-col--primary">
@@ -44,7 +44,7 @@
     <p class="breadcrumbs">
       <a class="breadcrumb" href="../index.html">App Reference</a>
       <img class="carat" src="../img/carat.png" />
-      AdminController Structure Reference
+      RouteCollection Extension Reference
     </p>
 
     <div class="content-wrapper">
@@ -216,40 +216,27 @@
 
         <section class="section">
           <div class="section-content">
-            <h1>AdminController</h1>
+            <h1>RouteCollection</h1>
               <div class="declaration">
                 <div class="language">
-                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">AdminController</span> <span class="p">:</span> <span class="kt">RouteCollection</span></code></pre>
+                  <pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">RouteCollection</span></code></pre>
 
                 </div>
               </div>
-            <p>The collection of <code>/api/v3/admin/*</code> route endpoints and handler functions related
-to a user&rsquo;s own data.</p>
-
-<p>Separating these from the endpoints related to users in general helps make for a
-cleaner collection, since use of <code>User.parameter</code> in the paths here can be avoided
-entirely.</p>
-
+            
           </div>
         </section>
 
         <section class="section">
           <div class="section-content">
             <div class="task-group">
-              <div class="task-name-container">
-                <a name="/RouteCollection%20Conformance"></a>
-                <a name="//apple_ref/swift/Section/RouteCollection Conformance" class="dashAnchor"></a>
-                <a href="#/RouteCollection%20Conformance">
-                  <h3 class="section-name">RouteCollection Conformance</h3>
-                </a>
-              </div>
               <ul class="item-container">
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App15AdminControllerV4boot6routery5Vapor6Router_p_tKF"></a>
-                    <a name="//apple_ref/swift/Method/boot(router:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App15AdminControllerV4boot6routery5Vapor6Router_p_tKF">boot(router:)</a>
+                    <a name="/s:5Vapor15RouteCollectionP3AppE17dateFromParameter6string10Foundation4DateVSgSS_tFZ"></a>
+                    <a name="//apple_ref/swift/Method/dateFromParameter(string:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:5Vapor15RouteCollectionP3AppE17dateFromParameter6string10Foundation4DateVSgSS_tFZ">dateFromParameter(string:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -257,58 +244,12 @@ entirely.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Required. Registers routes to the incoming router.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">boot</span><span class="p">(</span><span class="nv">router</span><span class="p">:</span> <span class="kt">Router</span><span class="p">)</span> <span class="k">throws</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AdminController.swift#L18-L36">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-              </ul>
-            </div>
-            <div class="task-group">
-              <div class="task-name-container">
-                <a name="/tokenAuthGroup%20Handlers%20(logged%20in)"></a>
-                <a name="//apple_ref/swift/Section/tokenAuthGroup Handlers (logged in)" class="dashAnchor"></a>
-                <a href="#/tokenAuthGroup%20Handlers%20(logged%20in)">
-                  <h3 class="section-name">tokenAuthGroup Handlers (logged in)</h3>
-                </a>
-              </div>
-              <ul class="item-container">
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App15AdminControllerV11userHandlery3NIO15EventLoopFutureCyAA4UserCG5Vapor7RequestCKF"></a>
-                    <a name="//apple_ref/swift/Method/userHandler(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App15AdminControllerV11userHandlery3NIO15EventLoopFutureCyAA4UserCG5Vapor7RequestCKF">userHandler(_:)</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p><code>GET /api/v3/admin/user/ID</code></p>
-
-<p>Retrieves the full <code><a href="../Classes/User.html">User</a></code> model of the specified user.</p>
-<div class="aside aside-requires">
-    <p class="aside-title">Requires</p>
-    <code><a href="../Enums/UserAccessLevel.html">UserAccessLevel</a></code> of <code>.admin</code>.
-
-</div>
-<div class="aside aside-throws">
-    <p class="aside-title">Throws</p>
-    403 error if the user is not an admin.
+                        <p>Transforms a string that might represent a date (either a <code>Double</code> or an ISO 8601
+representation) into a <code>Date</code>, if possible.</p>
+<div class="aside aside-note">
+    <p class="aside-title">Note</p>
+    <p>The representation is expected to be either a string literal <code>Double</code>, or a
+string in UTC <code>yyyy-MM-dd&#39;T&#39;HH:mm:ssZ</code> format.</p>
 
 </div>
 
@@ -317,7 +258,7 @@ entirely.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">userHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Classes/User.html">User</a></span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">dateFromParameter</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Date</span><span class="p">?</span></code></pre>
 
                         </div>
                       </div>
@@ -328,12 +269,12 @@ entirely.</p>
                             <tr>
                               <td>
                                 <code>
-                                <em>req</em>
+                                <em>string</em>
                                 </code>
                               </td>
                               <td>
                                 <div>
-                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
+                                  <p>The string to be transformed.</p>
                                 </div>
                               </td>
                             </tr>
@@ -342,10 +283,10 @@ entirely.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>The specified user&rsquo;s <code><a href="../Classes/User.html">User</a></code> model.</p>
+                        <p>A <code>Date</code> if the conversion was successful, otherwise <code>nil</code>.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AdminController.swift#L58-L64">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Extensions/RouteCollection+Extensions.swift#L14-L32">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
