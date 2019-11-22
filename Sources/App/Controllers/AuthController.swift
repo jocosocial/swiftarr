@@ -115,13 +115,9 @@ struct AuthController: RouteCollection {
         return User.query(on: req)
             .filter(\.username == data.username)
             .first()
+            .unwrap(or: Abort(.badRequest, reason: "username \"\(data.username)\" not found"))
             .flatMap {
                 (user) in
-                // abort if user not found
-                guard let user = user else {
-                    throw Abort(.badRequest, reason: "username \"\(data.username)\" not found")
-                }
-
                 // abort if account is seeing potential brute-force attack
                 guard user.recoveryAttempts < 5 else {
                     throw Abort(.forbidden, reason: "please see a Twit-arr Team member for password recovery")
@@ -291,11 +287,9 @@ struct AuthController: RouteCollection {
         return try Token.query(on: req)
             .filter(\.userID == user.requireID())
             .first()
+            .unwrap(or: Abort(.conflict, reason: "user is not logged in"))
             .flatMap {
                 (token) in
-                guard let token = token else {
-                    throw Abort(.conflict, reason: "user is not logged in")
-                }
                 return token.delete(on: req).transform(to: .noContent)
         }
     }
