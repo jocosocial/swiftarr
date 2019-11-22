@@ -8,7 +8,6 @@ extension User: PostgreSQLUUIDModel {}
 // model and representations can be passed as HTTP body data
 extension User: Content {}
 extension User.Admin: Content {}
-extension User.Header: Content {}
 extension User.Public: Content {}
 
 // model can be used as endpoint parameter
