@@ -37,6 +37,7 @@ final class ClientTests: XCTestCase {
     // MARK: - Tests
     // Note: We migrate an "admin" user first during boot, so it is always present as `.first()`.
     
+    /// Ensure that ClientUsers migration was successful.
     func testClientMigration() throws {
         // test client exists
         _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
@@ -52,8 +53,6 @@ final class ClientTests: XCTestCase {
         XCTAssertTrue(result.username == testClientname, "should be \(testClientname)")
         
         // test client can login
-        credentials = BasicAuthorization(username: testClientname, password: testPassword)
-        headers.basicAuthorization = credentials
         let token = try app.login(username: testClientname, password: testPassword, on: conn)
         XCTAssertFalse(token.token.isEmpty, "should receive valid token string")
         
