@@ -91,12 +91,14 @@ struct ClientController: RouteCollection {
     /// `GET /api/v3/client/user/updates/since/DATE`
     ///
     /// Retrieves the `User.Public` of all users with a `.profileUpdatedAt` timestamp later
-    /// than the specified date. The `DATE` parameter is a string, and may be provided in either
-    /// of two formats:
+    /// than the specified date. The `DATE` parameter is a string, and may be provided in
+    /// either of two formats:
     ///
     /// * a string literal `Double` (e.g. "1574364935" or "1574364935.88991")
-    /// * a UTC ISO8601 "yyyy-MM-dd'T'HH:mm:ssZ" string (e.g. "2019-11-21T05:31:28Z"), the
-    ///   date format returned in `swiftarr` JSON responses
+    /// * an ISO 8601 `yyyy-MM-dd'T'HH:mm:ssZ` string (e.g. "2019-11-21T05:31:28Z")
+    ///
+    /// The second format is precisely what is returned in `swiftarr` JSON responses, while
+    /// the numeric form makes for a prettier URL.
     ///
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: 400 error if no valid date string provided. 403 error if user is not
