@@ -35,8 +35,9 @@ struct UsersController: RouteCollection {
         // endpoints available only when not logged in
         
         // endpoints available whether logged in or out
-        sharedAuthGroup.get(User.parameter, "profile", use: profileHandler)
         sharedAuthGroup.get("find", String.parameter, use: findHandler)
+        sharedAuthGroup.get(User.parameter, "header", use: headerHandler)
+        sharedAuthGroup.get(User.parameter, "profile", use: profileHandler)
         sharedAuthGroup.get(User.parameter, use: userHandler)
 
         // endpoints available only when logged in
@@ -97,6 +98,30 @@ struct UsersController: RouteCollection {
         }
     }
     
+    /// `GET /api/v3/users/ID/header`
+    ///
+    /// Retrieves the specified user's `UserProfile.Header` info.
+    ///
+    /// This endpoint provides one-off retrieval of the user information appropriate for
+    /// a header on posted content – the user's ID, current generated `.displayedName`, and
+    /// filename of their current profile image.
+    ///
+    /// For bulk data retrieval, see the `ClientController` endpoints.
+    ///
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: The user's ID, `.displayedName` and profile image filename.
+    func headerHandler(_ req: Request) throws -> Future<UserProfile.Header> {
+        let user = try req.requireAuthenticated(User.self)
+        return try user.profile.query(on: req)
+            .first()
+            .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
+            .map {
+                (profile) in
+                return try profile.convertToHeader()
+        }
+    }
+
     /// `GET /api/v3/users/ID/profile`
     ///
     /// Retrieves the user's own profile data for editing, as a `UserProfile.Edit` object.

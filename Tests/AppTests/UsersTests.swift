@@ -99,4 +99,48 @@ final class UsersTests: XCTestCase {
         )
         XCTAssertTrue(usernameResponse.http.status.code == 404, "should be 404 Not Found")
     }
+    
+    /// `GET /api/v3/users/ID/header`
+    func testUsersHeader() throws {
+        // create user
+        let user = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.basicAuthorization = BasicAuthorization(username: testUsername, password: testPassword)
+        
+        // test header
+        var header = try app.getResult(
+            from: usersURI + "\(user.userID)/header",
+            method: .GET,
+            headers: headers,
+            decodeTo: UserProfile.Header.self
+        )
+        XCTAssertTrue(header.userID == user.userID, "should be \(user.userID)")
+        XCTAssertTrue(header.displayedName.contains("@\(user.username)"), "@\(user.username)")
+        
+        // test update
+        let userProfileData = UserProfileData(
+            about: "",
+            displayName: "Cookie Monster",
+            email: "",
+            homeLocation: "",
+            message: "",
+            preferredPronoun: "",
+            realName: "",
+            roomNumber: "",
+            limitAccess: false
+        )
+        _ = try app.getResponse(
+            from: userURI + "profile",
+            method: .POST,
+            headers: headers,
+            body: userProfileData
+        )
+        header = try app.getResult(
+            from: usersURI + "\(user.userID)/header",
+            method: .GET,
+            headers: headers,
+            decodeTo: UserProfile.Header.self
+        )
+        XCTAssertTrue(header.displayedName.contains("Cookie Monster (@"), "Cookie Monster (@\(user.username))")
+    }
 }
