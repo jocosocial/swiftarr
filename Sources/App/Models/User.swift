@@ -180,30 +180,6 @@ final class User: Codable {
         }
     }
     
-    /// Used for posted content headers.
-    final class Header: Codable {
-        // MARK: Properties
-        /// The user's ID.
-        var id: UUID
-        /// The string for displaying the user's identity.
-        var displayedName: String
-        /// The filename of the user's profile image.
-        var userImage: String
-        
-        // MARK: Initialization
-        /// Initializes a User.Header model.
-        ///
-        /// - Parameters:
-        ///   - id: The user's ID.
-        ///   - displayedName: The string for displaying the user's identity.
-        ///   - userImage: The filename of the user's profile image.
-        init(id: UUID, displayedName: String, userImage: String) {
-            self.id = id
-            self.displayedName = displayedName
-            self.userImage = userImage
-        }
-    }
-    
     /// Used for general identification and reference.
     final class Public: Codable {
         // MARK: Properties
