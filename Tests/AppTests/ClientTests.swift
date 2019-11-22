@@ -41,7 +41,7 @@ final class ClientTests: XCTestCase {
     func testClientMigration() throws {
         // test client exists
         _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
-        var credentials = BasicAuthorization(username: testUsername, password: testPassword)
+        let credentials = BasicAuthorization(username: testUsername, password: testPassword)
         var headers = HTTPHeaders()
         headers.basicAuthorization = credentials
         let result = try app.getResult(
