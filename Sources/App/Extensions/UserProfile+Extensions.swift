@@ -9,6 +9,7 @@ extension UserProfile: Content {}
 extension UserProfile.Edit: Content {}
 extension UserProfile.Header: Content {}
 extension UserProfile.Public: Content {}
+extension UserProfile.Search: Content {}
 
 // model can be used as endpoint parameter
 extension UserProfile: Parameter {}
@@ -65,17 +66,6 @@ extension UserProfile {
 // MARK: - Methods
 
 extension UserProfile {
-    /// Converts a `UserProfile` model to a version intended for content headers. Only the ID,
-    /// generated `.displayedName` and name of the profile's user image are returned.
-    func convertToHeader() throws -> UserProfile.Header {
-        return UserProfile.Header(
-            userID: self.userID,
-            username: self.username,
-            displayName: self.displayName ?? "",
-            userImage: self.userImage
-        )
-    }
-    
     /// Converts a `UserProfile` model to a version intended for editing by the owning
     /// user. `.username` and `.displayedName` are provided for client display convenience
     /// only and may not be edited.
@@ -91,6 +81,17 @@ extension UserProfile {
             realName: self.realName ?? "",
             roomNumber: self.roomNumber ?? "",
             limitAccess: self.limitAccess
+        )
+    }
+    
+    /// Converts a `UserProfile` model to a version intended for content headers. Only the ID,
+    /// generated `.displayedName` and name of the profile's user image are returned.
+    func convertToHeader() throws -> UserProfile.Header {
+        return UserProfile.Header(
+            userID: self.userID,
+            username: self.username,
+            displayName: self.displayName ?? "",
+            userImage: self.userImage
         )
     }
     
@@ -112,6 +113,15 @@ extension UserProfile {
             roomNumber: self.roomNumber ?? ""
         )
     }
+    
+    /// Converts a `UserProfile` model to a version intended for multi-field search. Only the ID
+    /// and a precomposed `.displayName` + `.username` + `.realName` string are returned.
+    func convertToSearch() throws -> UserProfile.Search {
+        return UserProfile.Search(
+            userID: self.userID,
+            userSearch: self.userSearch
+        )
+    }
 }
 
 extension Future where T: UserProfile {
@@ -122,6 +132,16 @@ extension Future where T: UserProfile {
         return self.map {
             (profile) in
             return try profile.convertToHeader()
+        }
+    }
+    
+    /// Converts a `Future<UserProfile>` to a `Future<UserProfile.Search>`. This extension
+    /// provides the convenience of simply using `profile.convertToSearcg()` and allowing the
+    /// compiler to choose the appropriate version for the context.
+    func convertToSearch() throws -> Future<UserProfile.Search> {
+        return self.map {
+            (profile) in
+            return try profile.convertToSearch()
         }
     }
 }

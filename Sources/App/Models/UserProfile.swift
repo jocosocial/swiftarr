@@ -285,4 +285,24 @@ final class UserProfile: Codable {
             self.note = note
         }
     }
+    
+    /// Used to broad search for a user based on any of their name fields.
+    final class Search: Codable {
+        // MARK: Properties
+        /// The user's ID.
+        var userID: UUID
+        /// The composed displayName + username + realName string for user search.
+        var userSearch: String
+        
+        // MARK: Initialization
+        /// Initializes a UserProfile.Search model.
+        ///
+        /// - Parameters:
+        ///   - userID: The user's ID.
+        ///   - userSearch: The user's composed displayName + username + realName string.
+        init(userID: UUID, userSearch: String) {
+            self.userID = userID
+            self.userSearch = userSearch
+        }
+    }
 }
