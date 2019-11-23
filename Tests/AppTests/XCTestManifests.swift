@@ -16,6 +16,8 @@ extension ClientTests {
     // to regenerate.
     static let __allTests__ClientTests = [
         ("testClientMigration", testClientMigration),
+        ("testUserHeaders", testUserHeaders),
+        ("testUserUpdates", testUserUpdates),
     ]
 }
 
@@ -46,6 +48,7 @@ extension UsersTests {
     // to regenerate.
     static let __allTests__UsersTests = [
         ("testUsersFind", testUsersFind),
+        ("testUsersHeader", testUsersHeader),
     ]
 }
 
