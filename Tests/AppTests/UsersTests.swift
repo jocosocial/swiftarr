@@ -143,4 +143,189 @@ final class UsersTests: XCTestCase {
         )
         XCTAssertTrue(header.displayedName.contains("Cookie Monster (@"), "Cookie Monster (@\(user.username))")
     }
+    
+    /// `GET /api/v3/users/match/username/STRING`
+    func testMatchUsername() throws {
+        // create logged in user
+        _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        let token = try app.login(username: testUsername, password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // test basic
+        var usernames = try app.getResult(
+            from: usersURI + "match/username/ver",
+            method: .GET,
+            headers: headers,
+            decodeTo: [String].self
+        )
+        XCTAssertTrue(usernames.count == 2, "should have 'unverified','verified'")
+        
+        // test case-insensitive
+        usernames = try app.getResult(
+            from: usersURI + "match/username/VER",
+            method: .GET,
+            headers: headers,
+            decodeTo: [String].self
+        )
+        XCTAssertTrue(usernames.count == 2, "should have 'unverified', 'verified'")
+        
+        // test single character
+        usernames = try app.getResult(
+            from: usersURI + "match/username/a",
+            method: .GET,
+            headers: headers,
+            decodeTo: [String].self
+        )
+        XCTAssertTrue(usernames.count == 4, "'admin', 'quarantined`, 'banned', 'moderator'")
+        
+        // test nada
+        usernames = try app.getResult(
+            from: usersURI + "match/username/x",
+            method: .GET,
+            headers: headers,
+            decodeTo: [String].self
+        )
+        XCTAssertTrue(usernames.count == 0, "should have no matches")
+        
+        // test + separator, and ensure prepended @
+        _ = try app.createUser(username: "jim+kim", password: testPassword, on: conn)
+        usernames = try app.getResult(
+            from: usersURI + "match/username/+",
+            method: .GET,
+            headers: headers,
+            decodeTo: [String].self
+        )
+        XCTAssertTrue(usernames.count == 1, "should have 'jim+kim'")
+        XCTAssertTrue(usernames[0] == "@jim+kim", "should be '@jim+kim'")
+        
+        // test - separator
+        _ = try app.createUser(username: "jim-kim", password: testPassword, on: conn)
+        usernames = try app.getResult(
+            from: usersURI + "match/username/-",
+            method: .GET,
+            headers: headers,
+            decodeTo: [String].self
+        )
+        XCTAssertTrue(usernames.count == 1, "should have 'jim-kim'")
+        XCTAssertTrue(usernames[0] == "@jim-kim", "should be '@jim-kim'")
+
+        // test _ separator
+        _ = try app.createUser(username: "jim_kim", password: testPassword, on: conn)
+        usernames = try app.getResult(
+            from: usersURI + "match/username/_",
+            method: .GET,
+            headers: headers,
+            decodeTo: [String].self
+        )
+        XCTAssertTrue(usernames.count == 1, "should have 'jim_kim'")
+        XCTAssertTrue(usernames[0] == "@jim_kim", "should be '@jim_kim'")
+
+        // test . separator
+        _ = try app.createUser(username: "jim.kim", password: testPassword, on: conn)
+        usernames = try app.getResult(
+            from: usersURI + "match/username/.",
+            method: .GET,
+            headers: headers,
+            decodeTo: [String].self
+        )
+        XCTAssertTrue(usernames.count == 1, "should have 'jim.kim'")
+        XCTAssertTrue(usernames[0] == "@jim.kim", "should be '@jim.kim'")
+    }
+    
+    /// `GET /api/v3/users/match/allnames/STRING`
+    func testMatchAllNames() throws {
+        // create logged in user
+        _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        let token = try app.login(username: testUsername, password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // test basic
+        var usernames = try app.getResult(
+            from: usersURI + "match/allnames/ver",
+            method: .GET,
+            headers: headers,
+            decodeTo: [UserProfile.Search].self
+        )
+        XCTAssertTrue(usernames.count == 2, "should have 'unverified','verified'")
+        
+        // test formatted username
+        usernames = try app.getResult(
+            from: usersURI + "match/allnames/@ver",
+            method: .GET,
+            headers: headers,
+            decodeTo: [UserProfile.Search].self
+        )
+        XCTAssertTrue(usernames.count == 1, "should have 'verified'")
+        XCTAssertTrue(usernames[0].userSearch == "@verified", "should be '@verified'")
+
+        // populate
+        let userProfileData = UserProfileData(
+            about: "",
+            displayName: "%Sir% 😀 Cookie!",
+            email: "",
+            homeLocation: "",
+            message: "",
+            preferredPronoun: "",
+            realName: "Alistair Cookie",
+            roomNumber: "",
+            limitAccess: false
+        )
+        _ = try app.getResponse(
+            from: userURI + "profile",
+            method: .POST,
+            headers: headers,
+            body: userProfileData
+        )
+        
+        // ensure userSearch returns intact
+        usernames = try app.getResult(
+            from: usersURI + "match/allnames/sir",
+            method: .GET,
+            headers: headers,
+            decodeTo: [UserProfile.Search].self
+        )
+        XCTAssertTrue(usernames.count == 1, "should have 'grundoon'")
+        XCTAssertTrue(usernames[0].userSearch == "%Sir% 😀 Cookie! (@grundoon) - Alistair Cookie", "should be")
+
+        // test !
+        usernames = try app.getResult(
+            from: usersURI + "match/allnames/!",
+            method: .GET,
+            headers: headers,
+            decodeTo: [UserProfile.Search].self
+        )
+        XCTAssertTrue(usernames.count == 1, "should have 'grundoon'")
+        XCTAssertTrue(usernames[0].userSearch.contains("grundoon"), "should be 'grundoon'")
+
+        // test unicode
+        usernames = try app.getResult(
+            from: usersURI + "match/allnames/%F0%9F%98%80",
+            method: .GET,
+            headers: headers,
+            decodeTo: [UserProfile.Search].self
+        )
+        XCTAssertTrue(usernames.count == 1, "should have 'grundoon'")
+        XCTAssertTrue(usernames[0].userSearch.contains("grundoon"), "should be 'grundoon'")
+
+        // test %20 space
+        usernames = try app.getResult(
+            from: usersURI + "match/allnames/r%20c",
+            method: .GET,
+            headers: headers,
+            decodeTo: [UserProfile.Search].self
+        )
+        XCTAssertTrue(usernames.count == 1, "should have 'grundoon'")
+        XCTAssertTrue(usernames[0].userSearch.contains("grundoon"), "should be 'grundoon'")
+
+        // test bad @
+        let response = try app.getResponse(
+            from: usersURI + "match/allnames/@",
+            method: .GET,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
+        XCTAssertTrue(response.http.body.description.contains("not a permitted"), "not a permitted")
+    }
 }

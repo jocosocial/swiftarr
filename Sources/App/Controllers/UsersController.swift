@@ -41,6 +41,8 @@ struct UsersController: RouteCollection {
         sharedAuthGroup.get(User.parameter, use: userHandler)
 
         // endpoints available only when logged in
+        tokenAuthGroup.get("match", "allnames", String.parameter, use: matchAllNamesHandler)
+        tokenAuthGroup.get("match", "username", String.parameter, use: matchUsernameHandler)
         tokenAuthGroup.post(NoteCreateData.self, at: User.parameter, "note", use: noteCreateHandler)
         tokenAuthGroup.post(User.parameter, "note", "delete", use: noteDeleteHandler)
         tokenAuthGroup.get(User.parameter, "note", use: noteHandler)
@@ -121,31 +123,6 @@ struct UsersController: RouteCollection {
             .map {
                 (profile) in
                 return try profile.convertToHeader()
-        }
-    }
-    
-    /// `GET /api/v3/users/match/username/STRING`
-    ///
-    /// Retrieves all usernames containing the specified substring, returning an array
-    /// of `@username` strings. The intended use for this endpoint is to help isolate a
-    /// particular user in an auto-complete type scenario.
-    ///
-    /// - Note: An `@` is prepended to each returned matching username as a convenience, but
-    ///   should never be included in the search itself. No base username can contain an `@`,
-    ///   thus there would never be a match.
-    ///
-    /// - Parameter req: he incoming request `Container`, provided automatically.
-    /// - Returns: An array of `@username` strings.
-    func matchUsernameHandler(_ req: Request) throws -> Future<[String]> {
-        // FIXME: account for blocks
-        let search = try req.parameters.next(String.self)
-        return UserProfile.query(on: req)
-            .filter(\.username, .ilike, "%\(search)%")
-            .sort(\.username, .ascending)
-            .all()
-            .map {
-                (profiles) in
-                return profiles.map { "@\($0.username)" }
         }
     }
     
@@ -235,7 +212,78 @@ struct UsersController: RouteCollection {
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
         
-    /// `POST /api/v3/users/ID/note`
+    /// `GET /api/v3/users/match/allnames/STRING`
+    ///
+    /// Retrieves all `UserProfile.userSearch` values containing the specified substring,
+    /// returning an array of precomposed `.userSearch` strings in `UserProfile.Search` format.
+    /// The intended use for this endpoint is to help isolate a particular user in an
+    /// auto-complete type scenario, by searching **all** of the `.displayName`, `.username`
+    /// and `.realName` profile fields.
+    ///
+    /// Compare to `/api/v3/user/match/username/STRING`, which searches just `.username` and
+    /// returns an array of just strings.
+    ///
+    /// - Note: If the search substring contains "unsafe" characters, they must be url encoded.
+    ///   Unicode characters are supported. A substring comprised only of whitespace is
+    ///   disallowed. A substring of "@" or "(@" is explicitly disallowed to prevent single-step
+    ///   username harvesting.
+    ///
+    /// For bulk `.userSearch` data retrieval, see the `ClientController` endpoints.
+    ///
+    /// - Parameter req: he incoming request `Container`, provided automatically.
+    /// - Throws: 403 error if the search term is not permitted.
+    /// - Returns: An array of `@username` strings.
+    func matchAllNamesHandler(_ req: Request) throws -> Future<[UserProfile.Search]> {
+        // FIXME: account for blocks
+        // let user = try req.requireAuthenticated(User.self)
+        var search = try req.parameters.next(String.self)
+        // postgres "_" and "%" are wildcards, so escape for literals
+        search = search.replacingOccurrences(of: "_", with: "\\_")
+        search = search.replacingOccurrences(of: "%", with: "\\%")
+        // trim and disallow "@" harvesting
+        search = search.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard search != "@", search != "(@" else {
+            throw Abort(.forbidden, reason: "'\(search)' is not a permitted search string")
+        }
+        return UserProfile.query(on: req)
+            .filter(\.userSearch, .ilike, "%\(search)%")
+            .sort(\.username, .ascending)
+            .all()
+            .map {
+                (profiles) in
+                return try profiles.map { try $0.convertToSearch() }
+        }
+    }
+
+    /// `GET /api/v3/users/match/username/STRING`
+    ///
+    /// Retrieves all usernames containing the specified substring, returning an array
+    /// of `@username` strings. The intended use for this endpoint is to help isolate a
+    /// particular user in an auto-complete type scenario.
+    ///
+    /// - Note: An `@` is prepended to each returned matching username as a convenience, but
+    ///   should never be included in the search itself. No base username can contain an `@`,
+    ///   thus there would never be a match.
+    ///
+    /// - Parameter req: he incoming request `Container`, provided automatically.
+    /// - Returns: An array of `@username` strings.
+    func matchUsernameHandler(_ req: Request) throws -> Future<[String]> {
+        // FIXME: account for blocks
+        // let user = try req.requireAuthenticated(User.self)
+        var search = try req.parameters.next(String.self)
+        // postgres "_" is wildcard, so escape for literal
+        search = search.replacingOccurrences(of: "_", with: "\\_")
+        return UserProfile.query(on: req)
+            .filter(\.username, .ilike, "%\(search)%")
+            .sort(\.username, .ascending)
+            .all()
+            .map {
+                (profiles) in
+                return profiles.map { "@\($0.username)" }
+        }
+    }
+    
+/// `POST /api/v3/users/ID/note`
     ///
     /// Creates a new `UseerNote` associated with the specified user's profile and the current
     /// user.
