@@ -322,7 +322,8 @@ proceeding</em>.</p>
 </div>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
-    <p>409 errpr if the username is not available.</p>
+    <p>400 error if the username is an invalid formate. 409 errpr if the username is
+not available.</p>
 
 </div>
 
@@ -371,7 +372,7 @@ proceeding</em>.</p>
                         <p>The newly created user&rsquo;s ID, username, and a recovery key string.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L75-L136">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L76-L137">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -462,7 +463,7 @@ another user.
                         <p>HTTP status 200 on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L155-L191">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L156-L189">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -545,7 +546,7 @@ the username and displayName values.</p>
 profile.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L213-L224">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L211-L222">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -634,7 +635,7 @@ resets its respective profile property to <code>nil</code>.</p>
 the profile.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L245-L288">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L243-L283">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -693,7 +694,7 @@ currently being used.</p>
                         <p>The current user&rsquo;s ID and username.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L300-L313">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L295-L308">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -746,8 +747,9 @@ multiple accounts can all be simultaneously logged in.</p>
 </div>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
-    <p>403 error if the user is banned or currently quarantined. 409 errpr if the
-username is not available.</p>
+    <p>400 error if the username is an invalid format or password is not at least
+6 characters. 403 error if the user is banned or currently quarantined. 409 errpr if
+the username is not available.</p>
 
 </div>
 
@@ -796,7 +798,7 @@ username is not available.</p>
                         <p>The newly created user&rsquo;s ID and username.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L341-L394">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L337-L390">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -874,7 +876,7 @@ as a likely bug, please and thank you.
                         <p>The updated note as a <code><a href="../Structs/NoteData.html">NoteData</a></code> object.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L407-L442">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L403-L438">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -939,7 +941,7 @@ editing of notes outside of a profile-viewing context.</p>
                         <p>The user&rsquo;s notes as an array of <code><a href="../Structs/NoteData.html">NoteData</a></code>, or an empty array if none exist.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L456-L489">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L452-L483">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -972,7 +974,8 @@ editing of notes outside of a profile-viewing context.</p>
 </div>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
-    400 error if the supplied password is not at least 6 characters.
+    400 error if the supplied password is not at least 6 characters. 403 error
+if the user is a <code>.client</code>.
 
 </div>
 
@@ -990,7 +993,7 @@ editing of notes outside of a profile-viewing context.</p>
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L500-L512">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L495-L507">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1019,8 +1022,8 @@ username in the associated <code><a href="../Classes/UserProfile.html">UserProfi
 </div>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
-    409 errpr if the username is not available. A 5xx response should be reported
-as a likely bug, please and thank you.
+    400 error if the username is an invalid format. 403 error if the user is a
+<code>.client</code>. 409 errpr if the username is not available.
 
 </div>
 
@@ -1069,7 +1072,7 @@ as a likely bug, please and thank you.
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L526-L571">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L521-L563">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1110,7 +1113,7 @@ as a likely bug, please and thank you.
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L576">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L568">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1168,7 +1171,7 @@ as a likely bug, please and thank you.
                         <p>A recoveryKey String.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L650-L658">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L642-L650">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1181,7 +1184,7 @@ as a likely bug, please and thank you.
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-21)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-22)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.12.0</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>
