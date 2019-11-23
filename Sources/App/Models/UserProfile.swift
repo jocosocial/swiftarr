@@ -93,8 +93,8 @@ final class UserProfile: Codable {
         limitAccess: Bool = false
     ) {
         self.userID = userID
-        // .userSearch is initially just .username
-        self.userSearch = username
+        // .userSearch is initially just @username
+        self.userSearch = "@\(username)"
         self.userImage = userImage
         self.username = username
         self.about = about
