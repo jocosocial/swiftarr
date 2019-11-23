@@ -263,6 +263,16 @@ struct UserController: RouteCollection {
                 profile.realName = data.realName.isEmpty ? nil : data.realName
                 profile.roomNumber = data.roomNumber.isEmpty ? nil : data.roomNumber
                 profile.limitAccess = data.limitAccess
+                
+                // build .userSearch value
+                var builder = [String]()
+                builder.append(profile.displayName ?? "")
+                builder.append(builder[0].isEmpty ? "@\(profile.username)" : "(@\(profile.username))")
+                if let realName = profile.realName {
+                    builder.append("- \(realName)")
+                }
+                profile.userSearch = builder.joined(separator: " ").trimmingCharacters(in: .whitespaces)
+
                 return profile.save(on: req).flatMap {
                     (savedProfile) in
                     // touch user.profileUpdatedAt
@@ -547,6 +557,16 @@ struct UserController: RouteCollection {
                         (profile) in
                         user.username = data.username
                         profile.username = data.username
+
+                        // rebuild .userSearch value
+                        var builder = [String]()
+                        builder.append(profile.displayName ?? "")
+                        builder.append(builder[0].isEmpty ? "@\(data.username)" : "(@\(data.username))")
+                        if let realName = profile.realName {
+                            builder.append("- \(realName)")
+                        }
+                        profile.userSearch = builder.joined(separator: " ").trimmingCharacters(in: .whitespaces)
+
                         // update both, or neither
                         return req.transaction(on: .psql) {
                             (connection) in
