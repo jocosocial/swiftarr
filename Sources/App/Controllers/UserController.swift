@@ -858,9 +858,9 @@ extension UserVerifyData: Validatable, Reflectable {
 extension CharacterSet {
     /// Defines a character set containing characters other than alphanumerics that are allowed
     /// in a username.
-    fileprivate static var separators: CharacterSet {
+    static var separators: CharacterSet {
         var separatorChars: CharacterSet = .init()
-        separatorChars.insert(charactersIn: "-_+.")
+        separatorChars.insert(charactersIn: "-.+_")
         return separatorChars
     }
 }
