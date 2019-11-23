@@ -67,6 +67,7 @@ struct ClientController: RouteCollection {
     ///   a registered client.
     /// - Returns: Array of all updated users, as `UserProfile.Header` objects.
     func userHeadersHandler(_ req: Request) throws -> Future<[UserProfile.Header]> {
+        // FIXME: account for blocks
         let user = try req.requireAuthenticated(User.self)
         // must be registered client
         guard user.accessLevel == .client else {
@@ -105,6 +106,7 @@ struct ClientController: RouteCollection {
     ///   a registered client.
     /// - Returns: Array of all updated users, as `User.Public` objects.
     func userUpdatesHandler(_ req: Request) throws -> Future<[User.Public]> {
+        // FIXME: account for blocks
         let user = try req.requireAuthenticated(User.self)
         // must be registered client
         guard user.accessLevel == .client else {

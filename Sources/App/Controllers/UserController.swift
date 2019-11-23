@@ -209,6 +209,7 @@ struct UserController: RouteCollection {
     /// - Returns: A `UserProfile.Edit` object containing the editable properties of the
     ///   profile.
     func profileHandler(_ req: Request) throws -> Future<UserProfile.Edit> {
+        // FIXME: account for banned user
         let user = try req.requireAuthenticated(User.self)
         // retrieve profile
         return try user.profile.query(on: req)
@@ -401,6 +402,7 @@ struct UserController: RouteCollection {
     ///   as a likely bug, please and thank you.
     /// - Returns: The updated note as a `NoteData` object.
     func noteHandler(_ req: Request, data: NoteUpdateData) throws -> Future<NoteData> {
+        // FIXME: account for blocks, banned user
         let user = try req.requireAuthenticated(User.self)
         // retrieve note
         return UserNote.find(data.noteID, on: req)
@@ -450,6 +452,7 @@ struct UserController: RouteCollection {
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: The user's notes as an array of `NoteData`, or an empty array if none exist.
     func notesHandler(_ req: Request) throws -> Future<[NoteData]> {
+        // FIXME: account for blocks, banned user
         let user = try req.requireAuthenticated(User.self)
         // FIXME: need to account for Blocks
         // fetch all notes

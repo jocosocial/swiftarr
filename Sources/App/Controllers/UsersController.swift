@@ -73,6 +73,7 @@ struct UsersController: RouteCollection {
     /// - Throws: 404 error if no match is found.
     /// - Returns: The user's ID, username and timestamp of last info update.
     func findHandler(_ req: Request) throws -> Future<User.Public> {
+        // FIXME: account for blocks
         let parameter = try req.parameters.next(String.self)
         // try converting to UUID
         let userID = UUID(uuidString: parameter)
@@ -112,6 +113,7 @@ struct UsersController: RouteCollection {
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: The user's ID, `.displayedName` and profile image filename.
     func headerHandler(_ req: Request) throws -> Future<UserProfile.Header> {
+        // FIXME: account for blocks
         let user = try req.requireAuthenticated(User.self)
         return try user.profile.query(on: req)
             .first()
@@ -121,7 +123,32 @@ struct UsersController: RouteCollection {
                 return try profile.convertToHeader()
         }
     }
-
+    
+    /// `GET /api/v3/users/match/username/STRING`
+    ///
+    /// Retrieves all usernames containing the specified substring, returning an array
+    /// of `@username` strings. The intended use for this endpoint is to help isolate a
+    /// particular user in an auto-complete type scenario.
+    ///
+    /// - Note: An `@` is prepended to each returned matching username as a convenience, but
+    ///   should never be included in the search itself. No base username can contain an `@`,
+    ///   thus there would never be a match.
+    ///
+    /// - Parameter req: he incoming request `Container`, provided automatically.
+    /// - Returns: An array of `@username` strings.
+    func matchUsernameHandler(_ req: Request) throws -> Future<[String]> {
+        // FIXME: account for blocks
+        let search = try req.parameters.next(String.self)
+        return UserProfile.query(on: req)
+            .filter(\.username, .ilike, "%\(search)%")
+            .sort(\.username, .ascending)
+            .all()
+            .map {
+                (profiles) in
+                return profiles.map { "@\($0.username)" }
+        }
+    }
+    
     /// `GET /api/v3/users/ID/profile`
     ///
     /// Retrieves the user's own profile data for editing, as a `UserProfile.Edit` object.
@@ -139,6 +166,7 @@ struct UsersController: RouteCollection {
     /// - Returns: A `UserProfile.Edit` object containing the editable properties of the
     ///   profile.
     func profileHandler(_ req: Request) throws -> Future<UserProfile.Public> {
+        // FIXME: account for blocks
         let requester = try req.requireAuthenticated(User.self)
         // get requested user
         return try req.parameters.next(User.self).flatMap {
@@ -199,6 +227,7 @@ struct UsersController: RouteCollection {
     /// - Throws: 404 error if no match is found.
     /// - Returns: The user's ID, username and timestamp of last info update.
     func userHandler(_ req: Request) throws -> Future<User.Public> {
+        // FIXME: account for blocks
         return try req.parameters.next(User.self).convertToPublic()        
     }
         
@@ -226,6 +255,7 @@ struct UsersController: RouteCollection {
     ///   be reported as a likely bug, please and thank you.
     /// - Returns: The newly created note's ID and text.
     func noteCreateHandler(_ req: Request, data: NoteCreateData) throws -> Future<Response> {
+        // FIXME: account for banned user
         let user = try req.requireAuthenticated(User.self)
         // get profile's user
         return try req.parameters.next(User.self).flatMap {
@@ -277,6 +307,7 @@ struct UsersController: RouteCollection {
     ///   be reported as a likely bug, please and thank you.
     /// - Returns: 204 No Content on success.
     func noteDeleteHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        // FIXME: account for blocks, banned user
         let user = try req.requireAuthenticated(User.self)
         // get profile's user
         return try req.parameters.next(User.self).flatMap {
@@ -317,6 +348,7 @@ struct UsersController: RouteCollection {
     ///   be reported as a likely bug, please and thank you.
     /// - Returns: The note's ID and text.
     func noteHandler(_ req: Request) throws -> Future<UserNote.Edit> {
+        // FIXME: account for blocks, banned user
         let user = try req.requireAuthenticated(User.self)
         // get profile's user
         return try req.parameters.next(User.self).flatMap {
