@@ -22,7 +22,7 @@ struct ClientController: RouteCollection {
         
         // set protected route groups
         let basicAuthGroup = clientRoutes.grouped([basicAuthMiddleware, guardAuthMiddleware])
-//        let sharedAuthGroup = clientRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware, guardAuthMiddleware])
+        //        let sharedAuthGroup = clientRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware, guardAuthMiddleware])
         let tokenAuthGroup = clientRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
         
         // open access endpoints
@@ -34,6 +34,7 @@ struct ClientController: RouteCollection {
         // endpoints available only when logged in
         tokenAuthGroup.get("user", "headers", "since", String.parameter, use: userHeadersHandler)
         tokenAuthGroup.get("user", "updates", "since", String.parameter, use: userUpdatesHandler)
+        tokenAuthGroup.get("usersearch", use: userSearchHandler)
     }
     
     // MARK: - Open Access Handlers
@@ -103,7 +104,50 @@ struct ClientController: RouteCollection {
                 }
         }
     }
-
+    
+    /// `GET /api/v3/client/usersearch`
+    ///
+    /// Retrieves all `UserProfile.userSearch` values, returning an array of precomposed
+    /// `.userSearch` strings in `UserProfile.Search` format. The intended use for this data
+    /// is to efficiently isolate a particular user in an auto-complete type scenario, using
+    /// **all** of the `.displayName`, `.username` and `.realName` profile fields.
+    ///
+    /// - Requires: `x-swiftarr-user` header in the request.
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Throws: 400 error if no valid date string provided. 401 error if the required header
+    ///   is missing or invalid. 403 error if user is not a registered client.
+    /// - Returns: The ID and `.userSearch` string values of all users, sorted by username.
+    func userSearchHandler(_ req: Request) throws -> Future<[UserProfile.Search]> {
+        // FIXME: account for blocks
+        let client = try req.requireAuthenticated(User.self)
+        // must be registered client
+        guard client.accessLevel == .client else {
+            throw Abort(.forbidden, reason: "registered clients only")
+        }
+        // must be on behalf of user
+        guard let userHeader = req.http.headers["x-swiftarr-user"].first,
+            let userID = UUID(uuidString: userHeader) else {
+                throw Abort(.unauthorized, reason: "no valid 'x-swiftarr-user' header found")
+        }
+        // find user
+        return User.find(userID, on: req)
+            .unwrap(or: Abort(.unauthorized, reason: "'x-swiftarr-user' user not found"))
+            .flatMap {
+                (user) in
+                // must be actual user
+                guard user.accessLevel != .client else {
+                    throw Abort(.unauthorized, reason: "'x-swiftarr-user' user cannot be client")
+                }
+                return UserProfile.query(on: req)
+                    .sort(\.username, .ascending)
+                    .all()
+                    .map {
+                        (profiles) in
+                        return try profiles.map { try $0.convertToSearch() }
+                }
+        }
+    }
+    
     /// `GET /api/v3/client/user/updates/since/DATE`
     ///
     /// Retrieves the `User.Public` of all users with a `.profileUpdatedAt` timestamp later

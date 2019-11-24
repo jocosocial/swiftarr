@@ -335,4 +335,74 @@ final class ClientTests: XCTestCase {
         XCTAssertTrue(response.http.status.code == 403, "should be 403 Bad Request")
         XCTAssertTrue(response.http.body.description.contains("clients only"), "clients only")
     }
+    
+    func testUsersearch() throws {
+        // create user for x-swiftarr-user header
+        let user = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        
+        // create logged in client
+        let token = try app.login(username: testClientname, password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+
+        // get client info for later
+        headers.basicAuthorization = BasicAuthorization(username: testClientname, password: testPassword)
+        let currentUserData = try app.getResult(
+            from: userURI + "whoami",
+            method: .GET,
+            headers: headers,
+            decodeTo: CurrentUserData.self
+        )
+
+        // test no header
+        headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        var response = try app.getResponse(
+            from: clientURI + "usersearch",
+            method: .GET,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 401, "should be 401 Unauthorized")
+        XCTAssertTrue(response.http.body.description.contains("no valid"), "no valid")
+
+        // test bad header
+        let uuid = UUID()
+        headers.add(name: "x-swiftarr-user", value: "\(uuid)")
+        response = try app.getResponse(
+            from: clientURI + "usersearch",
+            method: .GET,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 401, "should be 401 Unauthorized")
+        XCTAssertTrue(response.http.body.description.contains("user not found"), "user not found")
+        
+        // test user is client
+        headers.replaceOrAdd(name: "x-swiftarr-user", value: "\(currentUserData.userID)")
+        response = try app.getResponse(
+            from: clientURI + "usersearch",
+            method: .GET,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 401, "should be 401 Unauthorized")
+        XCTAssertTrue(response.http.body.description.contains("cannot be client"), "cannot be client")
+        
+        // test
+        headers.replaceOrAdd(name: "x-swiftarr-user", value: "\(user.userID)")
+        var userSearches = try app.getResult(
+            from: clientURI + "usersearch",
+            method: .GET,
+            headers: headers,
+            decodeTo: [UserProfile.Search].self
+        )
+        let count = userSearches.count
+        XCTAssertTrue(userSearches[0].userSearch.contains("@admin"), "should be '@admin'")
+        _ = try app.createUser(username: "zarathustra", password: testPassword, on: conn)
+        userSearches = try app.getResult(
+            from: clientURI + "usersearch",
+            method: .GET,
+            headers: headers,
+            decodeTo: [UserProfile.Search].self
+        )
+        XCTAssertTrue(userSearches.count == count + 1, "should be \(count) + 1")
+        XCTAssertTrue(userSearches[count].userSearch.contains("@zara"), "should be '@zarathustra")
+    }
 }
