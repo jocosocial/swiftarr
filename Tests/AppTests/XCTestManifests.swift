@@ -47,6 +47,8 @@ extension UsersTests {
     //   `swift test --generate-linuxmain`
     // to regenerate.
     static let __allTests__UsersTests = [
+        ("testMatchAllNames", testMatchAllNames),
+        ("testMatchUsername", testMatchUsername),
         ("testUsersFind", testUsersFind),
         ("testUsersHeader", testUsersHeader),
     ]
