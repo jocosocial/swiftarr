@@ -62,9 +62,10 @@ struct ClientController: RouteCollection {
     /// The second format is precisely what is returned in `swiftarr` JSON responses, while
     /// the numeric form makes for a prettier URL.
     ///
+    /// - Requires: `x-swiftarr-user` header in the request.
     /// - Parameter req: The incoming request `Container`, provided automatically.
-    /// - Throws: 400 error if no valid date string provided. 403 error if user is not
-    ///   a registered client.
+    /// - Throws: 400 error if no valid date string provided. 401 error if the required header
+    ///   is missing or invalid. 403 error if user is not a registered client.
     /// - Returns: Array of all updated users, as `UserProfile.Header` objects.
     func userHeadersHandler(_ req: Request) throws -> Future<[UserProfile.Header]> {
         // FIXME: account for blocks
@@ -112,9 +113,10 @@ struct ClientController: RouteCollection {
     /// The second format is precisely what is returned in `swiftarr` JSON responses, while
     /// the numeric form makes for a prettier URL.
     ///
+    /// - Requires: `x-swiftarr-user` header in the request.
     /// - Parameter req: The incoming request `Container`, provided automatically.
-    /// - Throws: 400 error if no valid date string provided. 403 error if user is not
-    ///   a registered client.
+    /// - Throws: 400 error if no valid date string provided. 401 error if the required header
+    ///   is missing or invalid. 403 error if user is not a registered client.
     /// - Returns: Array of all updated users, as `User.Public` objects.
     func userUpdatesHandler(_ req: Request) throws -> Future<[User.Public]> {
         // FIXME: account for blocks
