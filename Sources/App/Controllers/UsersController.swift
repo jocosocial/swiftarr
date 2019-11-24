@@ -232,7 +232,7 @@ struct UsersController: RouteCollection {
     ///
     /// - Parameter req: he incoming request `Container`, provided automatically.
     /// - Throws: 403 error if the search term is not permitted.
-    /// - Returns: An array of `@username` strings.
+    /// - Returns: The ID and profile.userSearch string values of all matching users.
     func matchAllNamesHandler(_ req: Request) throws -> Future<[UserProfile.Search]> {
         // FIXME: account for blocks
         // let user = try req.requireAuthenticated(User.self)
