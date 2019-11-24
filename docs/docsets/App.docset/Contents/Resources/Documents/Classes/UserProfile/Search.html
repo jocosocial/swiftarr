@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>Header Class Reference</title>
+    <title>Search Class Reference</title>
     <link rel="stylesheet" type="text/css" href="../../css/jazzy.css" />
     <link rel="stylesheet" type="text/css" href="../../css/highlight.css" />
     <meta charset="utf-8">
@@ -14,9 +14,9 @@
   </head>
   <body>
 
-    <a name="//apple_ref/swift/Class/Header" class="dashAnchor"></a>
+    <a name="//apple_ref/swift/Class/Search" class="dashAnchor"></a>
 
-    <a title="Header Class Reference"></a>
+    <a title="Search Class Reference"></a>
 
     <header class="header">
       <p class="header-col header-col--primary">
@@ -44,7 +44,7 @@
     <p class="breadcrumbs">
       <a class="breadcrumb" href="../../index.html">App Reference</a>
       <img class="carat" src="../../img/carat.png" />
-      Header Class Reference
+      Search Class Reference
     </p>
 
     <div class="content-wrapper">
@@ -219,14 +219,14 @@
 
         <section class="section">
           <div class="section-content">
-            <h1>Header</h1>
+            <h1>Search</h1>
               <div class="declaration">
                 <div class="language">
-                  <pre class="highlight swift"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">Header</span> <span class="p">:</span> <span class="kt">Codable</span></code></pre>
+                  <pre class="highlight swift"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">Search</span> <span class="p">:</span> <span class="kt">Codable</span></code></pre>
 
                 </div>
               </div>
-            <p>Used for posted content headers.</p>
+            <p>Used to broad search for a user based on any of their name fields.</p>
 
           </div>
         </section>
@@ -245,9 +245,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App11UserProfileC6HeaderC6userID10Foundation4UUIDVvp"></a>
+                    <a name="/s:3App11UserProfileC6SearchC6userID10Foundation4UUIDVvp"></a>
                     <a name="//apple_ref/swift/Property/userID" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App11UserProfileC6HeaderC6userID10Foundation4UUIDVvp">userID</a>
+                    <a class="token" href="#/s:3App11UserProfileC6SearchC6userID10Foundation4UUIDVvp">userID</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -267,7 +267,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserProfile.swift#L187">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserProfile.swift#L293">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -275,9 +275,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App11UserProfileC6HeaderC13displayedNameSSvp"></a>
-                    <a name="//apple_ref/swift/Property/displayedName" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App11UserProfileC6HeaderC13displayedNameSSvp">displayedName</a>
+                    <a name="/s:3App11UserProfileC6SearchC04userD0SSvp"></a>
+                    <a name="//apple_ref/swift/Property/userSearch" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App11UserProfileC6SearchC04userD0SSvp">userSearch</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -285,49 +285,19 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>The generated displayName + username string for displaying the user&rsquo;s identity.</p>
+                        <p>The composed displayName + username + realName string for user search.</p>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">displayedName</span><span class="p">:</span> <span class="kt">String</span></code></pre>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">userSearch</span><span class="p">:</span> <span class="kt">String</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserProfile.swift#L189">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App11UserProfileC6HeaderC9userImageSSvp"></a>
-                    <a name="//apple_ref/swift/Property/userImage" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App11UserProfileC6HeaderC9userImageSSvp">userImage</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>The filename of the user&rsquo;s profile image.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">userImage</span><span class="p">:</span> <span class="kt">String</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserProfile.swift#L191">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserProfile.swift#L295">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -346,9 +316,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App11UserProfileC6HeaderC6userID8username11displayName0E5ImageAE10Foundation4UUIDV_S3Stcfc"></a>
-                    <a name="//apple_ref/swift/Method/init(userID:username:displayName:userImage:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App11UserProfileC6HeaderC6userID8username11displayName0E5ImageAE10Foundation4UUIDV_S3Stcfc">init(userID:username:displayName:userImage:)</a>
+                    <a name="/s:3App11UserProfileC6SearchC6userID0eD0AE10Foundation4UUIDV_SStcfc"></a>
+                    <a name="//apple_ref/swift/Method/init(userID:userSearch:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App11UserProfileC6SearchC6userID0eD0AE10Foundation4UUIDV_SStcfc">init(userID:userSearch:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -356,14 +326,14 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Initializes a UserProfile.Header model.</p>
+                        <p>Initializes a UserProfile.Search model.</p>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="nf">init</span><span class="p">(</span><span class="nv">userID</span><span class="p">:</span> <span class="kt">UUID</span><span class="p">,</span> <span class="nv">username</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">displayName</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">userImage</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span></code></pre>
+                          <pre class="highlight swift"><code><span class="nf">init</span><span class="p">(</span><span class="nv">userID</span><span class="p">:</span> <span class="kt">UUID</span><span class="p">,</span> <span class="nv">userSearch</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span></code></pre>
 
                         </div>
                       </div>
@@ -386,36 +356,12 @@
                             <tr>
                               <td>
                                 <code>
-                                <em>username</em>
+                                <em>userSearch</em>
                                 </code>
                               </td>
                               <td>
                                 <div>
-                                  <p>The user&rsquo;s username, used to generate <code><a href="../../Classes/UserProfile/Header.html#/s:3App11UserProfileC6HeaderC13displayedNameSSvp">.displayedName</a></code></p>
-                                </div>
-                              </td>
-                            </tr>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>displayName</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The user&rsquo;s displayName, used to generate <code><a href="../../Classes/UserProfile/Header.html#/s:3App11UserProfileC6HeaderC13displayedNameSSvp">.displayedName</a></code>.</p>
-                                </div>
-                              </td>
-                            </tr>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>image</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The filename of the user&rsquo;s profile image.</p>
+                                  <p>The user&rsquo;s composed displayName + username + realName string.</p>
                                 </div>
                               </td>
                             </tr>
@@ -423,7 +369,7 @@
                         </table>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserProfile.swift#L201-L210">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/UserProfile.swift#L303-L306">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

@@ -86,6 +86,9 @@
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/UserProfile/Public.html">– Public</a>
               </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/UserProfile/Search.html">– Search</a>
+              </li>
             </ul>
           </li>
           <li class="nav-group-name">
@@ -269,7 +272,7 @@ entirely.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L18-L48">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L18-L50">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -351,7 +354,7 @@ exist.</p>
                         <p>The user&rsquo;s ID, username and timestamp of last info update.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L75-L99">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L77-L102">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -417,7 +420,7 @@ filename of their current profile image.</p>
                         <p>The user&rsquo;s ID, <code>.displayedName</code> and profile image filename.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L114-L123">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L117-L127">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -489,7 +492,7 @@ the username and displayName values.</p>
 profile.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L141-L183">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L145-L188">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -560,7 +563,7 @@ displayedName change, profile photo change, or any field on their profile)</li>
                         <p>The user&rsquo;s ID, username and timestamp of last info update.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L201-L203">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L206-L209">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -579,9 +582,9 @@ displayedName change, profile photo change, or any field on their profile)</li>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App15UsersControllerV17noteCreateHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA04NoteE4DataVtKF"></a>
-                    <a name="//apple_ref/swift/Method/noteCreateHandler(_:data:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App15UsersControllerV17noteCreateHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA04NoteE4DataVtKF">noteCreateHandler(_:data:)</a>
+                    <a name="/s:3App15UsersControllerV20matchAllNamesHandlery3NIO15EventLoopFutureCySayAA11UserProfileC6SearchCGG5Vapor7RequestCKF"></a>
+                    <a name="//apple_ref/swift/Method/matchAllNamesHandler(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15UsersControllerV20matchAllNamesHandlery3NIO15EventLoopFutureCySayAA11UserProfileC6SearchCGG5Vapor7RequestCKF">matchAllNamesHandler(_:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -589,29 +592,29 @@ displayedName change, profile photo change, or any field on their profile)</li>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p><code>POST /api/v3/users/ID/note</code></p>
+                        <p><code>GET /api/v3/users/match/allnames/STRING</code></p>
 
-<p>Creates a new <code>UseerNote</code> associated with the specified user&rsquo;s profile and the current
-user.</p>
+<p>Retrieves all <code><a href="../Classes/UserProfile.html#/s:3App11UserProfileC10userSearchSSvp">UserProfile.userSearch</a></code> values containing the specified substring,
+returning an array of precomposed <code>.userSearch</code> strings in <code><a href="../Classes/UserProfile/Search.html">UserProfile.Search</a></code> format.
+The intended use for this endpoint is to help isolate a particular user in an
+auto-complete type scenario, by searching <strong>all</strong> of the <code>.displayName</code>, <code>.username</code>
+and <code>.realName</code> profile fields.</p>
+
+<p>Compare to <code>/api/v3/user/match/username/STRING</code>, which searches just <code>.username</code> and
+returns an array of just strings.</p>
 <div class="aside aside-note">
     <p class="aside-title">Note</p>
-    <p>In order to support the editing of a note in contexts other than when
-actively viewing a profile, the contents of <code>profile.note</code> cannot be used to determine
-if there is an existing associated UserNote, since it is possible for a valid note to
-contain no text at any given time. This means that a GET should be performed on this
-endpoint prior to attempting a POST. If GET returns data, use <code>POST /api/v3/user/note</code>
-to update the note instead of this endpoint.</p>
+    If the search substring contains <q>unsafe</q> characters, they must be url encoded.
+Unicode characters are supported. A substring comprised only of whitespace is
+disallowed. A substring of <q>@</q> or <q>(@</q> is explicitly disallowed to prevent single-step
+username harvesting.
 
 </div>
-<div class="aside aside-requires">
-    <p class="aside-title">Requires</p>
-    <p><code><a href="../Structs/NoteCreateData.html">NoteCreateData</a></code> payload in the HTTP body.</p>
 
-</div>
+<p>For bulk <code>.userSearch</code> data retrieval, see the <code><a href="../Structs/ClientController.html">ClientController</a></code> endpoints.</p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
-    <p>409 error if there is an existing note on the profile. A 5xx response should
-be reported as a likely bug, please and thank you.</p>
+    403 error if the search term is not permitted.
 
 </div>
 
@@ -620,7 +623,7 @@ be reported as a likely bug, please and thank you.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">noteCreateHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">data</span><span class="p">:</span> <span class="kt"><a href="../Structs/NoteCreateData.html">NoteCreateData</a></span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">Response</span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">matchAllNamesHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="p">[</span><span class="kt"><a href="../Classes/UserProfile.html">UserProfile</a></span><span class="o">.</span><span class="kt">Search</span><span class="p">]</span><span class="o">&gt;</span></code></pre>
 
                         </div>
                       </div>
@@ -636,19 +639,7 @@ be reported as a likely bug, please and thank you.</p>
                               </td>
                               <td>
                                 <div>
-                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
-                                </div>
-                              </td>
-                            </tr>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>data</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p><code><a href="../Structs/NoteCreateData.html">NoteCreateData</a></code> struct containing the text of the note.</p>
+                                  <p>he incoming request <code>Container</code>, provided automatically.</p>
                                 </div>
                               </td>
                             </tr>
@@ -657,10 +648,122 @@ be reported as a likely bug, please and thank you.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>The newly created note&rsquo;s ID and text.</p>
+                        <p>An array of <code>@username</code> strings.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L228-L268">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L236-L256">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App15UsersControllerV20matchUsernameHandlery3NIO15EventLoopFutureCySaySSGG5Vapor7RequestCKF"></a>
+                    <a name="//apple_ref/swift/Method/matchUsernameHandler(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15UsersControllerV20matchUsernameHandlery3NIO15EventLoopFutureCySaySSGG5Vapor7RequestCKF">matchUsernameHandler(_:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>GET /api/v3/users/match/username/STRING</code></p>
+
+<p>Retrieves all usernames containing the specified substring, returning an array
+of <code>@username</code> strings. The intended use for this endpoint is to help isolate a
+particular user in an auto-complete type scenario.</p>
+<div class="aside aside-note">
+    <p class="aside-title">Note</p>
+    <p>An <code>@</code> is prepended to each returned matching username as a convenience, but
+should never be included in the search itself. No base username can contain an <code>@</code>,
+thus there would never be a match.</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">matchUsernameHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">String</span><span class="p">]</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>he incoming request <code>Container</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>An array of <code>@username</code> strings.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L270-L284">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App15UsersControllerV17noteCreateHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA04NoteE4DataVtKF"></a>
+                    <a name="//apple_ref/swift/Method/noteCreateHandler(_:data:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15UsersControllerV17noteCreateHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA04NoteE4DataVtKF">noteCreateHandler(_:data:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>POST /api/v3/users/ID/note</code></p>
+<pre class="highlight swift"><code><span class="kt">Creates</span> <span class="n">a</span> <span class="k">new</span> <span class="p">`</span><span class="nv">UseerNote</span><span class="p">`</span> <span class="n">associated</span> <span class="n">with</span> <span class="n">the</span> <span class="n">specified</span> <span class="n">user</span><span class="err">'</span><span class="n">s</span> <span class="n">profile</span> <span class="n">and</span> <span class="n">the</span> <span class="n">current</span>
+<span class="n">user</span><span class="o">.</span>
+
+<span class="o">-</span> <span class="kt">Note</span><span class="p">:</span> <span class="kt">In</span> <span class="n">order</span> <span class="n">to</span> <span class="n">support</span> <span class="n">the</span> <span class="n">editing</span> <span class="n">of</span> <span class="n">a</span> <span class="n">note</span> <span class="k">in</span> <span class="n">contexts</span> <span class="n">other</span> <span class="n">than</span> <span class="n">when</span>
+  <span class="n">actively</span> <span class="n">viewing</span> <span class="n">a</span> <span class="n">profile</span><span class="p">,</span> <span class="n">the</span> <span class="n">contents</span> <span class="n">of</span> <span class="err">`</span><span class="n">profile</span><span class="o">.</span><span class="n">note</span><span class="err">`</span> <span class="n">cannot</span> <span class="n">be</span> <span class="n">used</span> <span class="n">to</span> <span class="n">determine</span>
+  <span class="k">if</span> <span class="n">there</span> <span class="k">is</span> <span class="n">an</span> <span class="n">existing</span> <span class="n">associated</span> <span class="kt">UserNote</span><span class="p">,</span> <span class="n">since</span> <span class="n">it</span> <span class="k">is</span> <span class="n">possible</span> <span class="k">for</span> <span class="n">a</span> <span class="n">valid</span> <span class="n">note</span> <span class="n">to</span>
+  <span class="n">contain</span> <span class="n">no</span> <span class="n">text</span> <span class="n">at</span> <span class="n">any</span> <span class="n">given</span> <span class="n">time</span><span class="o">.</span> <span class="kt">This</span> <span class="n">means</span> <span class="n">that</span> <span class="n">a</span> <span class="kt">GET</span> <span class="n">should</span> <span class="n">be</span> <span class="n">performed</span> <span class="n">on</span> <span class="n">this</span>
+  <span class="n">endpoint</span> <span class="n">prior</span> <span class="n">to</span> <span class="n">attempting</span> <span class="n">a</span> <span class="kt">POST</span><span class="o">.</span> <span class="kt">If</span> <span class="kt">GET</span> <span class="n">returns</span> <span class="n">data</span><span class="p">,</span> <span class="n">use</span> <span class="err">`</span><span class="kt">POST</span> <span class="o">/</span><span class="n">api</span><span class="o">/</span><span class="n">v3</span><span class="o">/</span><span class="n">user</span><span class="o">/</span><span class="n">note</span><span class="err">`</span>
+  <span class="n">to</span> <span class="n">update</span> <span class="n">the</span> <span class="n">note</span> <span class="n">instead</span> <span class="n">of</span> <span class="n">this</span> <span class="n">endpoint</span><span class="o">.</span>
+
+<span class="o">-</span> <span class="kt">Requires</span><span class="p">:</span> <span class="p">`</span><span class="nv">NoteCreateData</span><span class="p">`</span> <span class="n">payload</span> <span class="k">in</span> <span class="n">the</span> <span class="kt">HTTP</span> <span class="n">body</span><span class="o">.</span>
+<span class="o">-</span> <span class="kt">Parameters</span><span class="p">:</span>
+  <span class="o">-</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">The</span> <span class="n">incoming</span> <span class="n">request</span> <span class="p">`</span><span class="nv">Container</span><span class="p">`,</span> <span class="n">provided</span> <span class="n">automatically</span><span class="o">.</span>
+  <span class="o">-</span> <span class="nv">data</span><span class="p">:</span> <span class="p">`</span><span class="nv">NoteCreateData</span><span class="p">`</span> <span class="kd">struct</span> <span class="n">containing</span> <span class="n">the</span> <span class="n">text</span> <span class="n">of</span> <span class="n">the</span> <span class="n">note</span><span class="o">.</span>
+<span class="o">-</span> <span class="kt">Throws</span><span class="p">:</span> <span class="mi">409</span> <span class="n">error</span> <span class="k">if</span> <span class="n">there</span> <span class="k">is</span> <span class="n">an</span> <span class="n">existing</span> <span class="n">note</span> <span class="n">on</span> <span class="n">the</span> <span class="n">profile</span><span class="o">.</span> <span class="kt">A</span> <span class="mi">5</span><span class="n">xx</span> <span class="n">response</span> <span class="n">should</span>
+  <span class="n">be</span> <span class="n">reported</span> <span class="k">as</span> <span class="n">a</span> <span class="n">likely</span> <span class="n">bug</span><span class="p">,</span> <span class="n">please</span> <span class="n">and</span> <span class="n">thank</span> <span class="n">you</span><span class="o">.</span>
+<span class="o">-</span> <span class="kt">Returns</span><span class="p">:</span> <span class="kt">The</span> <span class="n">newly</span> <span class="n">created</span> <span class="n">note</span><span class="err">'</span><span class="n">s</span> <span class="kt">ID</span> <span class="n">and</span> <span class="n">text</span><span class="o">.</span>
+</code></pre>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">noteCreateHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">data</span><span class="p">:</span> <span class="kt"><a href="../Structs/NoteCreateData.html">NoteCreateData</a></span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">Response</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L305-L346">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -722,7 +825,7 @@ be reported as a likely bug, please and thank you.
                         <p>204 No Content on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L279-L302">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L357-L381">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -793,7 +896,7 @@ be reported as a likely bug, please and thank you.</p>
                         <p>The note&rsquo;s ID and text.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L319-L341">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L398-L421">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -806,7 +909,7 @@ be reported as a likely bug, please and thank you.</p>
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-22)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-23)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.12.0</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>
