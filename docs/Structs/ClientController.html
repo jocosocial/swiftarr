@@ -268,7 +268,7 @@ bulk retrieval services for registered API clients.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L13-L37">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L13-L38">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -355,7 +355,76 @@ is missing or invalid. 403 error if user is not a registered client.
                         <p>Array of all updated users, as <code><a href="../Classes/UserProfile/Header.html">UserProfile.Header</a></code> objects.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L70-L102">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L71-L106">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App16ClientControllerV17userSearchHandlery3NIO15EventLoopFutureCySayAA11UserProfileC0E0CGG5Vapor7RequestCKF"></a>
+                    <a name="//apple_ref/swift/Method/userSearchHandler(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App16ClientControllerV17userSearchHandlery3NIO15EventLoopFutureCySayAA11UserProfileC0E0CGG5Vapor7RequestCKF">userSearchHandler(_:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>GET /api/v3/client/usersearch</code></p>
+
+<p>Retrieves all <code><a href="../Classes/UserProfile.html#/s:3App11UserProfileC10userSearchSSvp">UserProfile.userSearch</a></code> values, returning an array of precomposed
+<code>.userSearch</code> strings in <code><a href="../Classes/UserProfile/Search.html">UserProfile.Search</a></code> format. The intended use for this data
+is to efficiently isolate a particular user in an auto-complete type scenario, using
+<strong>all</strong> of the <code>.displayName</code>, <code>.username</code> and <code>.realName</code> profile fields.</p>
+<div class="aside aside-requires">
+    <p class="aside-title">Requires</p>
+    <code>x-swiftarr-user</code> header in the request.
+
+</div>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    400 error if no valid date string provided. 401 error if the required header
+is missing or invalid. 403 error if user is not a registered client.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">userSearchHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="p">[</span><span class="kt"><a href="../Classes/UserProfile.html">UserProfile</a></span><span class="o">.</span><span class="kt">Search</span><span class="p">]</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>The ID and <code>.userSearch</code> string values of all users, sorted by username.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L120-L149">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -431,7 +500,7 @@ is missing or invalid. 403 error if user is not a registered client.
                         <p>Array of all updated users, as <code><a href="../Classes/User/Public.html">User.Public</a></code> objects.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L121-L153">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L168-L203">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
