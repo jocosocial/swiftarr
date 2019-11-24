@@ -75,9 +75,19 @@ final class ClientTests: XCTestCase {
         // create logged in client
         var token = try app.login(username: testClientname, password: testPassword, on: conn)
         var headers = HTTPHeaders()
-        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // get client info for later
+        headers.basicAuthorization = BasicAuthorization(username: testClientname, password: testPassword)
+        let currentUserData = try app.getResult(
+            from: userURI + "whoami",
+            method: .GET,
+            headers: headers,
+            decodeTo: CurrentUserData.self
+        )
 
         // test no header
+        headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
         var response = try app.getResponse(
             from: clientURI + "user/updates/since/-1",
             method: .GET,
@@ -96,6 +106,16 @@ final class ClientTests: XCTestCase {
         )
         XCTAssertTrue(response.http.status.code == 401, "should be 401 Unauthorized")
         XCTAssertTrue(response.http.body.description.contains("user not found"), "user not found")
+
+        // test user is client
+        headers.replaceOrAdd(name: "x-swiftarr-user", value: "\(currentUserData.userID)")
+        response = try app.getResponse(
+            from: clientURI + "user/updates/since/-1",
+            method: .GET,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 401, "should be 401 Unauthorized")
+        XCTAssertTrue(response.http.body.description.contains("cannot be client"), "cannot be client")
 
         // test updates since -1
         headers.replaceOrAdd(name: "x-swiftarr-user", value: "\(user.userID)")
@@ -194,9 +214,19 @@ final class ClientTests: XCTestCase {
         // create logged in client
         var token = try app.login(username: testClientname, password: testPassword, on: conn)
         var headers = HTTPHeaders()
-        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // get client info for later
+        headers.basicAuthorization = BasicAuthorization(username: testClientname, password: testPassword)
+        let currentUserData = try app.getResult(
+            from: userURI + "whoami",
+            method: .GET,
+            headers: headers,
+            decodeTo: CurrentUserData.self
+        )
 
         // test no header
+        headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
         var response = try app.getResponse(
             from: clientURI + "user/headers/since/-1",
             method: .GET,
@@ -215,6 +245,16 @@ final class ClientTests: XCTestCase {
         )
         XCTAssertTrue(response.http.status.code == 401, "should be 401 Unauthorized")
         XCTAssertTrue(response.http.body.description.contains("user not found"), "user not found")
+
+        // test user is client
+        headers.replaceOrAdd(name: "x-swiftarr-user", value: "\(currentUserData.userID)")
+        response = try app.getResponse(
+            from: clientURI + "user/headers/since/-1",
+            method: .GET,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 401, "should be 401 Unauthorized")
+        XCTAssertTrue(response.http.body.description.contains("cannot be client"), "cannot be client")
 
         // test updates since -1
         headers.replaceOrAdd(name: "x-swiftarr-user", value: "\(user.userID)")
