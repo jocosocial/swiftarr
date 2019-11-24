@@ -69,12 +69,36 @@ final class ClientTests: XCTestCase {
     
     /// `GET /api/v3/client/user/updates/since/DATE`
     func testUserUpdates() throws {
+        // create user for x-swiftarr-user header
+        let user = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        
         // create logged in client
         var token = try app.login(username: testClientname, password: testPassword, on: conn)
         var headers = HTTPHeaders()
         headers.bearerAuthorization = BearerAuthorization(token: token.token)
-        
+
+        // test no header
+        var response = try app.getResponse(
+            from: clientURI + "user/updates/since/-1",
+            method: .GET,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 401, "should be 401 Unauthorized")
+        XCTAssertTrue(response.http.body.description.contains("no valid"), "no valid")
+
+        // test bad header
+        let uuid = UUID()
+        headers.add(name: "x-swiftarr-user", value: "\(uuid)")
+        response = try app.getResponse(
+            from: clientURI + "user/updates/since/-1",
+            method: .GET,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 401, "should be 401 Unauthorized")
+        XCTAssertTrue(response.http.body.description.contains("user not found"), "user not found")
+
         // test updates since -1
+        headers.replaceOrAdd(name: "x-swiftarr-user", value: "\(user.userID)")
         var users = try app.getResult(
             from: clientURI + "user/updates/since/-1",
             method: .GET,
@@ -82,7 +106,7 @@ final class ClientTests: XCTestCase {
             decodeTo: [User.Public].self
         )
         XCTAssertTrue(users.count > 1, "should be all accounts")
-        
+
         // create update
         var currentDate = Date()
         let userProfileData = UserProfileData(
@@ -96,7 +120,7 @@ final class ClientTests: XCTestCase {
             roomNumber: "",
             limitAccess: false
         )
-        var response = try app.getResponse(
+        response = try app.getResponse(
             from: userURI + "profile",
             method: .POST,
             headers: headers,
@@ -105,6 +129,7 @@ final class ClientTests: XCTestCase {
         XCTAssertTrue(response.http.status.code == 200, "should be 200 OK")
         
         // test updates with Double
+        sleep(1)
         users = try app.getResult(
             from: clientURI + "user/updates/since/\(currentDate.timeIntervalSince1970)",
             method: .GET,
@@ -149,8 +174,8 @@ final class ClientTests: XCTestCase {
         XCTAssertTrue(response.http.body.description.contains("not a recognized"), "not a recognized")
         
         // test not a client
-        _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
-        token = try app.login(username: testUsername, password: testPassword, on: conn)
+        _ = try app.createUser(username: "notclient", password: testPassword, on: conn)
+        token = try app.login(username: "notclient", password: testPassword, on: conn)
         headers.bearerAuthorization = BearerAuthorization(token: token.token)
         response = try app.getResponse(
             from: clientURI + "user/updates/since/\(currentDate.timeIntervalSince1970)",
@@ -163,12 +188,36 @@ final class ClientTests: XCTestCase {
     
     /// `GET /api/v3/client/user/headers/since/DATE`
     func testUserHeaders() throws {
+        // create user for x-swiftarr-user header
+        let user = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        
         // create logged in client
         var token = try app.login(username: testClientname, password: testPassword, on: conn)
         var headers = HTTPHeaders()
         headers.bearerAuthorization = BearerAuthorization(token: token.token)
-        
-        // test headers since -1
+
+        // test no header
+        var response = try app.getResponse(
+            from: clientURI + "user/headers/since/-1",
+            method: .GET,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 401, "should be 401 Unauthorized")
+        XCTAssertTrue(response.http.body.description.contains("no valid"), "no valid")
+
+        // test bad header
+        let uuid = UUID()
+        headers.add(name: "x-swiftarr-user", value: "\(uuid)")
+        response = try app.getResponse(
+            from: clientURI + "user/headers/since/-1",
+            method: .GET,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 401, "should be 401 Unauthorized")
+        XCTAssertTrue(response.http.body.description.contains("user not found"), "user not found")
+
+        // test updates since -1
+        headers.replaceOrAdd(name: "x-swiftarr-user", value: "\(user.userID)")
         var users = try app.getResult(
             from: clientURI + "user/headers/since/-1",
             method: .GET,
@@ -190,7 +239,7 @@ final class ClientTests: XCTestCase {
             roomNumber: "",
             limitAccess: false
         )
-        var response = try app.getResponse(
+        response = try app.getResponse(
             from: userURI + "profile",
             method: .POST,
             headers: headers,
@@ -199,6 +248,7 @@ final class ClientTests: XCTestCase {
         XCTAssertTrue(response.http.status.code == 200, "should be 200 OK")
 
         // test headers with 8601 string
+        sleep(1)
         var isoString = ""
         if #available(OSX 10.12, *) {
             isoString = ISO8601DateFormatter().string(from: currentDate)
@@ -211,7 +261,7 @@ final class ClientTests: XCTestCase {
             headers: headers,
             decodeTo: [UserProfile.Header].self
         )
-        XCTAssertTrue(users.count == 1, "should be 1 updated heaser")
+        XCTAssertTrue(users.count == 1, "should be 1 updated header")
         
         // test no updates
         sleep(1)
@@ -224,9 +274,18 @@ final class ClientTests: XCTestCase {
         )
         XCTAssertTrue(users.count == 0, "should be no updated headers")
 
+        // test bad date
+        response = try app.getResponse(
+            from: clientURI + "user/updates/since/GARBAGE",
+            method: .GET,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
+        XCTAssertTrue(response.http.body.description.contains("not a recognized"), "not a recognized")
+
         // test not a client
-        _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
-        token = try app.login(username: testUsername, password: testPassword, on: conn)
+        _ = try app.createUser(username: "notclient", password: testPassword, on: conn)
+        token = try app.login(username: "notclient", password: testPassword, on: conn)
         headers.bearerAuthorization = BearerAuthorization(token: token.token)
         response = try app.getResponse(
             from: clientURI + "user/headers/since/\(currentDate.timeIntervalSince1970)",
@@ -237,4 +296,3 @@ final class ClientTests: XCTestCase {
         XCTAssertTrue(response.http.body.description.contains("clients only"), "clients only")
     }
 }
-

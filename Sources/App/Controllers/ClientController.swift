@@ -68,24 +68,35 @@ struct ClientController: RouteCollection {
     /// - Returns: Array of all updated users, as `UserProfile.Header` objects.
     func userHeadersHandler(_ req: Request) throws -> Future<[UserProfile.Header]> {
         // FIXME: account for blocks
-        let user = try req.requireAuthenticated(User.self)
+        let client = try req.requireAuthenticated(User.self)
         // must be registered client
-        guard user.accessLevel == .client else {
+        guard client.accessLevel == .client else {
             throw Abort(.forbidden, reason: "registered clients only")
         }
-        // parse date parameter
-        let since = try req.parameters.next(String.self)
-        guard let date = ClientController.dateFromParameter(string: since) else {
-            throw Abort(.badRequest, reason: "'\(since)' is not a recognized date format")
+        // must be on behalf of user
+        guard let userHeader = req.http.headers["x-swiftarr-user"].first,
+            let userID = UUID(uuidString: userHeader) else {
+                throw Abort(.unauthorized, reason: "no valid 'x-swiftarr-user' header found")
         }
-        // return .Header array
-        return UserProfile.query(on: req)
-            .filter(\.updatedAt > date)
-            .all()
-            .map {
-                (profiles) in
-                let headers = try profiles.map { try $0.convertToHeader() }
-                return headers
+        // find user
+        return User.find(userID, on: req)
+            .unwrap(or: Abort(.unauthorized, reason: "'x-swiftarr-user' user not found"))
+            .flatMap {
+                (user) in
+                // parse date parameter
+                let since = try req.parameters.next(String.self)
+                guard let date = ClientController.dateFromParameter(string: since) else {
+                    throw Abort(.badRequest, reason: "'\(since)' is not a recognized date format")
+                }
+                // return .Header array
+                return UserProfile.query(on: req)
+                    .filter(\.updatedAt > date)
+                    .all()
+                    .map {
+                        (profiles) in
+                        let headers = try profiles.map { try $0.convertToHeader() }
+                        return headers
+                }
         }
     }
 
@@ -107,24 +118,35 @@ struct ClientController: RouteCollection {
     /// - Returns: Array of all updated users, as `User.Public` objects.
     func userUpdatesHandler(_ req: Request) throws -> Future<[User.Public]> {
         // FIXME: account for blocks
-        let user = try req.requireAuthenticated(User.self)
+        let client = try req.requireAuthenticated(User.self)
         // must be registered client
-        guard user.accessLevel == .client else {
+        guard client.accessLevel == .client else {
             throw Abort(.forbidden, reason: "registered clients only")
         }
-        // parse date parameter
-        let since = try req.parameters.next(String.self)
-        guard let date = ClientController.dateFromParameter(string: since) else {
-            throw Abort(.badRequest, reason: "'\(since)' is not a recognized date format")
+        // must be on behalf of user
+        guard let userHeader = req.http.headers["x-swiftarr-user"].first,
+            let userID = UUID(uuidString: userHeader) else {
+                throw Abort(.unauthorized, reason: "no valid 'x-swiftarr-user' header found")
         }
-        // return .Public array
-        return User.query(on: req)
-            .filter(\.profileUpdatedAt > date)
-            .all()
-            .map {
-                (users) in
-                let publicUsers = try users.map { try $0.convertToPublic() }
-                return publicUsers
+        // find user
+        return User.find(userID, on: req)
+            .unwrap(or: Abort(.unauthorized, reason: "'x-swiftarr-user' user not found"))
+            .flatMap {
+                (user) in
+                // parse date parameter
+                let since = try req.parameters.next(String.self)
+                guard let date = ClientController.dateFromParameter(string: since) else {
+                    throw Abort(.badRequest, reason: "'\(since)' is not a recognized date format")
+                }
+                // return .Public array
+                return User.query(on: req)
+                    .filter(\.profileUpdatedAt > date)
+                    .all()
+                    .map {
+                        (users) in
+                        let publicUsers = try users.map { try $0.convertToPublic() }
+                        return publicUsers
+                }
         }
     }
     
