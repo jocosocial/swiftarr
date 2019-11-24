@@ -17,6 +17,7 @@ extension ClientTests {
     static let __allTests__ClientTests = [
         ("testClientMigration", testClientMigration),
         ("testUserHeaders", testUserHeaders),
+        ("testUsersearch", testUsersearch),
         ("testUserUpdates", testUserUpdates),
     ]
 }
