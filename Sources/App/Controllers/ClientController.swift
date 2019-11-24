@@ -30,7 +30,7 @@ struct ClientController: RouteCollection {
         // endpoints available only when not logged in
         
         // endpoints available whether logged in or out
-
+        
         // endpoints available only when logged in
         tokenAuthGroup.get("user", "headers", "since", String.parameter, use: userHeadersHandler)
         tokenAuthGroup.get("user", "updates", "since", String.parameter, use: userUpdatesHandler)
@@ -45,7 +45,7 @@ struct ClientController: RouteCollection {
     // MARK: - sharedAuthGroup Handlers (logged in or not)
     // All handlers in this route group require a valid HTTP Basic Authentication
     // *or* HTTP Bearer Authentication header in the request.
-
+    
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
@@ -84,6 +84,9 @@ struct ClientController: RouteCollection {
             .unwrap(or: Abort(.unauthorized, reason: "'x-swiftarr-user' user not found"))
             .flatMap {
                 (user) in
+                guard user.accessLevel != .client else {
+                    throw Abort(.unauthorized, reason: "'x-swiftarr-user' user cannot be client")
+                }
                 // parse date parameter
                 let since = try req.parameters.next(String.self)
                 guard let date = ClientController.dateFromParameter(string: since) else {
@@ -135,6 +138,9 @@ struct ClientController: RouteCollection {
             .unwrap(or: Abort(.unauthorized, reason: "'x-swiftarr-user' user not found"))
             .flatMap {
                 (user) in
+                guard user.accessLevel != .client else {
+                    throw Abort(.unauthorized, reason: "'x-swiftarr-user' user cannot be client")
+                }
                 // parse date parameter
                 let since = try req.parameters.next(String.self)
                 guard let date = ClientController.dateFromParameter(string: since) else {
