@@ -43,6 +43,9 @@ struct UserController: RouteCollection {
         
         // endpoints available only when logged in
         tokenAuthGroup.post(UserAddData.self, at: "add", use: addHandler)
+        tokenAuthGroup.get("blocks", use: blocksHandler)
+        tokenAuthGroup.get("keywords", use: keywordsHandler)
+        tokenAuthGroup.get("mutes", use: mutesHandler)
         tokenAuthGroup.post(NoteUpdateData.self, at: "note", use: noteHandler)
         tokenAuthGroup.get("notes", use: notesHandler)
         tokenAuthGroup.post(UserPasswordData.self, at: "password", use: passwordHandler)
@@ -403,6 +406,144 @@ struct UserController: RouteCollection {
         }
     }
     
+    /// `GET /api/v3/user/blocks`
+    ///
+    /// Returns a list of the user's currently blocked users in named-list `BlockedUserData`
+    /// format. If the user is a subaccount, the parent user's blocks are returned.
+    ///
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: The blocked users as an array of `SeaMonkey` embedded in a named-list
+    ///   structure.
+    func blocksHandler(_ req: Request) throws -> Future<BlockedUserData> {
+        let user = try req.requireAuthenticated(User.self)
+        // if subaccount, we want parent's blocks
+        let barrelAccount = try user.parentAccount(on: req)
+        return barrelAccount.flatMap {
+            (barrelUser) in
+            // retrieve blocks barrel
+            return try Barrel.query(on: req)
+                .filter(\.ownerID == barrelUser.requireID())
+                .filter(\.barrelType == .userBlock)
+                .first()
+                .unwrap(or: Abort(.internalServerError, reason: "blocks barrel not found"))
+                .flatMap {
+                    (barrel) in
+                    // init return struct
+                    var blockedUserData = BlockedUserData(
+                        name: barrel.name,
+                        seamonkeys: []
+                    )
+                    let uuids = barrel.modelUUIDs
+                    // return empty list
+                    if uuids.count == 0 {
+                        return req.future(blockedUserData)
+                    }
+                    // convert IDs to sorted SeaMonkeys
+                    return User.query(on: req)
+                        .filter(\.id ~~ uuids)
+                        .sort(\.username, .ascending)
+                        .all()
+                        .map {
+                            (users) in
+                            var seamonkeys = [SeaMonkey]()
+                            for user in users {
+                                let seamonkey = try SeaMonkey(
+                                    userID: user.requireID(),
+                                    username: user.username
+                                )
+                                seamonkeys.append(seamonkey)
+                            }
+                            // add SeaMonkeys and return
+                            blockedUserData.seamonkeys = seamonkeys
+                            return blockedUserData
+                    }
+            }
+        }
+    }
+    
+    /// `GET /api/v3/user/keywords`
+    ///
+    /// Returns a list of the user's currently muted keywords in named-list `MutedKeywordData`
+    /// format.
+    ///
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: The muted keywords as an array of strings embedded in a named-list
+    ///   structure.
+    func keywordsHandler(_ req: Request) throws -> Future<MutedKeywordData> {
+        let user = try req.requireAuthenticated(User.self)
+        // retrieve keywords barrel
+        return try Barrel.query(on: req)
+            .filter(\.ownerID == user.requireID())
+            .filter(\.barrelType == .keywordMute)
+            .first()
+            .unwrap(or: Abort(.internalServerError, reason: "keywords barrel not found"))
+            .map {
+                (barrel) in
+                // ensure keywords array exists
+                guard let keywords = barrel.userInfo["keywords"] else {
+                    throw Abort(.internalServerError, reason: "no key 'keywords' found")
+                }
+                let mutedKeywordData = MutedKeywordData(
+                    name: barrel.name,
+                    keywords: keywords
+                )
+                return mutedKeywordData
+        }
+    }
+    
+    /// `GET /api/v3/user/mutes`
+    ///
+    /// Returns a list of the user's currently muted users in named-list `MutedUserData`
+    /// format.
+    ///
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: The muted users as an array of `SeaMonkey` embedded in a named-list
+    ///   structure.
+    func mutesHandler(_ req: Request) throws -> Future<MutedUserData> {
+        let user = try req.requireAuthenticated(User.self)
+        // retrieve mutes barrel
+        return try Barrel.query(on: req)
+            .filter(\.ownerID == user.requireID())
+            .filter(\.barrelType == .userMute)
+            .first()
+            .unwrap(or: Abort(.internalServerError, reason: "mutes barrel not found"))
+            .flatMap {
+                (barrel) in
+                // init return struct
+                var mutedUserData = MutedUserData(
+                    name: barrel.name,
+                    seamonkeys: []
+                )
+                let uuids = barrel.modelUUIDs
+                // return empty list
+                if uuids.count == 0 {
+                    return req.future(mutedUserData)
+                }
+                // convert IDs to sorted SeaMonkeys
+                return User.query(on: req)
+                    .filter(\.id ~~ uuids)
+                    .sort(\.username, .ascending)
+                    .all()
+                    .map {
+                        (users) in
+                        var seamonkeys = [SeaMonkey]()
+                        for user in users {
+                            let seamonkey = try SeaMonkey(
+                                userID: user.requireID(),
+                                username: user.username
+                            )
+                            seamonkeys.append(seamonkey)
+                        }
+                        // add SeaMonkeys and return
+                        mutedUserData.seamonkeys = seamonkeys
+                        return mutedUserData
+                }
+        }
+    }
+
     /// `POST /api/v3/user/note`
     ///
     /// Updates a `UserNote` with the supplied note text.
@@ -719,6 +860,15 @@ struct AddedUserData: Content {
     /// The newly created sub-account's username.
     let username: String
 }
+
+/// Returned by `UserController.blocksHandler(_:)`.
+struct BlockedUserData: Content {
+    /// The name of the barrel.
+    let name: String
+    /// The blocked `User`s.
+    var seamonkeys: [SeaMonkey]
+}
+
 /// Returned by `UserController.createHandler(_:data:).`
 struct CreatedUserData: Content {
     /// The newly created user's ID.
@@ -755,6 +905,22 @@ struct NoteData: Content {
     var note: String
 }
 
+/// Returned by `UserController.keywordsHandler(_:)`.
+struct MutedKeywordData: Content {
+    /// The name of the barrel.
+    let name: String
+    /// The muted keywords.
+    var keywords: [String]
+}
+
+/// Returned by `UserController.mutesHandler(_:)`.
+struct MutedUserData: Content {
+    /// The name of the barrel.
+    let name: String
+    /// The muted `User`s.
+    var seamonkeys: [SeaMonkey]
+}
+
 /// Used by `UserController.noteHandler(_:data:)` to update a user note.
 struct NoteUpdateData: Content {
     /// The ID of the note being updated.
@@ -769,6 +935,14 @@ struct UserAddData: Content {
     var username: String
     /// The password for the sub-account.
     var password: String
+}
+
+/// Returned by `Barrel`s as a unit representing a user.
+struct SeaMonkey: Content {
+    /// The user's ID.
+    var userID: UUID
+    /// The user's username.
+    var username: String
 }
 
 /// Used by `UserController.createHandler(_:data:) for initial creation of an account.
