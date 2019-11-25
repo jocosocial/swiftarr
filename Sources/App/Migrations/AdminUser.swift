@@ -60,9 +60,34 @@ struct AdminUser: Migration {
             guard let id = savedUser.id else {
                 fatalError("admin user creation failure: savedUser.id not found")
             }
-            // create associated profile directly
-            let profile = UserProfile(userID: id, username: savedUser.username)
-            return profile.save(on: connection).transform(to: ())
+            // create default barrels
+            var barrels: [Future<Barrel>] = .init()
+            let blocksBarrel = Barrel(
+                ownerID: id,
+                barrelType: .userBlock,
+                name: "Blocked Users"
+            )
+            barrels.append(blocksBarrel.save(on: connection))
+            let mutesBarrel = Barrel(
+                ownerID: id,
+                barrelType: .userMute,
+                name: "Muted Users"
+            )
+            barrels.append(mutesBarrel.save(on: connection))
+            let keywordsBarrel = Barrel(
+                ownerID: id,
+                barrelType: .keywordMute,
+                name: "Muted Keywords"
+            )
+            keywordsBarrel.userInfo.updateValue([], forKey: "keywords")
+            barrels.append(keywordsBarrel.save(on: connection))
+            // resolve futures, return void
+            return barrels.flatten(on: connection).flatMap {
+                (savedBarrels) in
+                // create associated profile directly
+                let profile = UserProfile(userID: id, username: savedUser.username)
+                return profile.save(on: connection).transform(to: ())
+            }
         }
     }
     

@@ -21,6 +21,7 @@ struct TestUsers: Migration {
             "moderator": .moderator,
             "tho": .tho
         ]
+        // create users
         var users: [User] = []
         for username in usernames {
             let password = try? BCrypt.hash("password")
@@ -37,12 +38,36 @@ struct TestUsers: Migration {
         }
         return users.map { $0.save(on: connection) }.flatten(on: connection).map {
             (savedUsers) in
+            // create profile and default barrels
             var profiles: [UserProfile] = []
             savedUsers.forEach {
                 guard let id = $0.id else { fatalError("user has no id") }
                 let profile = UserProfile(userID: id, username: $0.username)
                 profiles.append(profile)
+                var barrels: [Barrel] = []
+                let blocksBarrel = Barrel(
+                    ownerID: id,
+                    barrelType: .userBlock,
+                    name: "Blocked Users"
+                )
+                barrels.append(blocksBarrel)
+                let mutesBarrel = Barrel(
+                    ownerID: id,
+                    barrelType: .userMute,
+                    name: "Muted Users"
+                )
+                barrels.append(mutesBarrel)
+                let keywordsBarrel = Barrel(
+                    ownerID: id,
+                    barrelType: .keywordMute,
+                    name: "Muted Keywords"
+                )
+                keywordsBarrel.userInfo.updateValue([], forKey: "keywords")
+                barrels.append(keywordsBarrel)
+                // save barrels
+                _ = barrels.map { $0.save(on: connection) }
             }
+            // save profiles
             profiles.map { $0.save(on: connection) }.always(on: connection) { return }
         }
     }
