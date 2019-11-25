@@ -756,4 +756,62 @@ final class UserTests: XCTestCase {
         XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
         XCTAssertTrue(response.http.body.description.contains("does not belong"), "does not belong")
     }
+    
+    func testBarrelCreation() throws {
+        // create verified logged in user
+        var token = try app.login(username: "verified", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // test empty barrels exist
+        var blockedUserData = try app.getResult(
+            from: userURI + "blocks",
+            method: .GET,
+            headers: headers,
+            decodeTo: BlockedUserData.self
+        )
+        XCTAssertTrue(blockedUserData.name == "Blocked Users", "Blocked Users")
+        XCTAssertTrue(blockedUserData.seamonkeys.count == 0, "should be no blocks")
+        
+        let mutedUserData = try app.getResult(
+            from: userURI + "mutes",
+            method: .GET,
+            headers: headers,
+            decodeTo: MutedUserData.self
+        )
+        XCTAssertTrue(mutedUserData.name == "Muted Users", "Muted Users")
+        XCTAssertTrue(blockedUserData.seamonkeys.count == 0, "should be no mutes")
+        
+        let mutedKeywordData = try app.getResult(
+            from: userURI + "keywords",
+            method: .GET,
+            headers: headers,
+            decodeTo: MutedKeywordData.self
+        )
+        XCTAssertTrue(mutedKeywordData.name == "Muted Keywords", "Muted Keywords")
+        XCTAssertTrue(mutedKeywordData.keywords.count == 0, "should be no mutes")
+
+        // add subaccount
+        let userAddData = UserAddData(username: "subaccount", password: testPassword)
+        let addedUserData = try app.getResult(
+            from: userURI + "add",
+            method: .POST,
+            headers: headers,
+            body: userAddData,
+            decodeTo: AddedUserData.self
+        )
+        token = try app.login(username: addedUserData.username, password: testPassword, on: conn)
+        headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // test subaccount has empty blocks barrel
+        blockedUserData = try app.getResult(
+            from: userURI + "blocks",
+            method: .GET,
+            headers: headers,
+            decodeTo: BlockedUserData.self
+        )
+        XCTAssertTrue(blockedUserData.name == "Blocked Users", "Blocked Users")
+        XCTAssertTrue(blockedUserData.seamonkeys.count == 0, "should be no blocks")
+    }
 }
