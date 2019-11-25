@@ -125,6 +125,8 @@ extension UserProfile {
 }
 
 extension Future where T: UserProfile {
+    // MARK: - where T: UserProfile
+
     /// Converts a `Future<UserProfile>` to a `Future<UserProfile.Header>`. This extension
     /// provides the convenience of simply using `profile.convertToHeader()` and allowing the
     /// compiler to choose the appropriate version for the context.
