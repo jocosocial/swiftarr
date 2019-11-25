@@ -1,7 +1,6 @@
 import Vapor
 import Foundation
 import FluentPostgreSQL
-import AnyCodable
 
 final class Barrel: Codable {
     // MARK: Properties
@@ -17,9 +16,12 @@ final class Barrel: Codable {
     
     /// The name of the barrel.
     var name: String
+
+    /// The IDs of UUID-model barrel contents.
+    var modelUUIDs: [UUID]
     
-    /// A key:value dictionary to hold the barrel contents.
-    var userInfo: [String: AnyCodable]
+    /// A dictionary to hold string type barrel contents.
+    var userInfo: [String: [String]]
     
     /// Timestamp of the model's creation, set automatically.
     var createdAt: Date?
@@ -38,16 +40,19 @@ final class Barrel: Codable {
     ///   - ownerID: The ID of the owning entity.
     ///   - barrelType: The type of information the barrel holds.
     ///   - name: A name for the barrel.
-    ///   - userInfo: A dictionary that holds the barrel's contents.
+    ///   - modelUUIDs: The IDs of UUID-model barrel contents.
+    ///   - userInfo: A dictionary that holds string-type barrel contents.
     init(
         ownerID: UUID,
         barrelType: BarrelType,
         name: String = "",
-        userInfo: [String: AnyCodable] = .init()
+        modelUUIDs: [UUID] = .init(),
+        userInfo: [String: [String]] = .init()
     ) {
         self.ownerID = ownerID
         self.barrelType = barrelType
         self.name = name
+        self.modelUUIDs = modelUUIDs
         self.userInfo = userInfo
     }
 }
