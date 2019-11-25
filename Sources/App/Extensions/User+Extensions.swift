@@ -88,6 +88,19 @@ extension User {
             updatedAt: self.profileUpdatedAt
         )
     }
+    
+    func parentAccount(on req: Request) throws -> Future<User> {
+        let parentID = self.parentID != nil ? self.parentID : self.id
+        guard let userID = parentID else {
+            throw Abort(.internalServerError, reason: "parent ID not found")
+        }
+        return User.find(userID, on: req)
+            .unwrap(or: Abort(.internalServerError, reason: "parent not found"))
+            .map {
+                (user) in
+                return user
+        }
+    }
 }
 
 extension Future where T: User {
