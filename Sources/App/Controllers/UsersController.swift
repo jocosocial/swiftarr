@@ -128,18 +128,16 @@ struct UsersController: RouteCollection {
     
     /// `GET /api/v3/users/ID/profile`
     ///
-    /// Retrieves the user's own profile data for editing, as a `UserProfile.Edit` object.
+    /// Retrieves the specified user's profile, as a `UserProfile.Public` object.
     ///
-    /// This endpoint can be reached with either Basic or Bearer authenticaton, so that a user
-    /// can customize their profile even if they do not yet have their registration code.
-    ///
-    /// - Note: The `.username` and `.displayedName` properties of the returned object
-    ///   are for display convenience only. A username must be changed using the
-    ///   `POST /api/v3/user/username` endpoint. The displayedName property is generated from
-    ///   the username and displayName values.
+    /// This endpoint can be reached with either Basic or Bearer authenticaton. If using Basic
+    /// (requesting user is *not* logged in), the data returned may be a limited subset if the
+    /// profile user's `.limitAccess` setting is `true`, and the `.message` field will contain
+    /// text to inform the viewing user of that fact.
     ///
     /// - Parameter req: The incoming request `Container`, provided automatically.
-    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Throws: 404 error if the profile is not available. A 5xx response should be reported
+    ///   as a likely bug, please and thank you.
     /// - Returns: A `UserProfile.Edit` object containing the editable properties of the
     ///   profile.
     func profileHandler(_ req: Request) throws -> Future<UserProfile.Public> {
