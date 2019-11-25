@@ -109,11 +109,12 @@ struct UserController: RouteCollection {
                 )
                 
                 // wrap in a transaction to ensure each user has an associated profile
-                // (creates both, or neither)
                 return req.transaction(on: .psql) {
                     (connection) in
                     return user.save(on: connection).flatMap {
                         (savedUser) in
+                        // initialize default barrels
+                        _ = try self.createDefaultBarrels(for: savedUser, on: req)
                         // create profile
                         let profile = try UserProfile(
                             userID: savedUser.requireID(),
@@ -379,6 +380,8 @@ struct UserController: RouteCollection {
                     (connection) in
                     return subAccount.save(on: connection).flatMap {
                         (savedUser) in
+                        // initialize default barrels
+                        _ = try self.createDefaultBarrels(for: savedUser, on: req)
                         // create profile
                         let profile = try UserProfile(
                             userID: savedUser.requireID(),
@@ -657,6 +660,40 @@ struct UserController: RouteCollection {
         "zombie"
     ]
     
+    /// Create the default `Barrel`s for a user: blocked users, muted users and muted keywords.
+    /// A `.userBlock` barrel is only created for primary accounts; a subaccount is covered by
+    /// its parent's block list.
+    ///
+    /// - Parameters:
+    ///   - user: The owning `User` of the default barrels.
+    ///   - req: The incoming request `Container` of the calling handler.
+    func createDefaultBarrels(for user: User, on req: Request) throws -> Future<Void> {
+        var barrels: [Future<Barrel>] = .init()
+        // subaccounts don't own block lists, they're covered by the parent's
+        if user.parentID == nil {
+            let blocksBarrel = try Barrel(
+                ownerID: user.requireID(),
+                barrelType: .userBlock,
+                name: "Blocked Users"            )
+            barrels.append(blocksBarrel.save(on: req))
+        }
+        let mutesBarrel = try Barrel(
+            ownerID: user.requireID(),
+            barrelType: .userMute,
+            name: "Muted Users"
+        )
+        barrels.append(mutesBarrel.save(on: req))
+        let keywordsBarrel = try Barrel(
+            ownerID: user.requireID(),
+            barrelType: .keywordMute,
+            name: "Muted Keywords"
+        )
+        keywordsBarrel.userInfo.updateValue([], forKey: "keywords")
+        barrels.append(keywordsBarrel.save(on: req))
+        // resolve futures, return void
+        return barrels.flatten(on: req).transform(to: ())
+    }
+
     /// Generates a recovery key of 3 words randomly chosen from `words` array.
     ///
     /// - Parameter req: The incoming request `Container`, provided automatically.
