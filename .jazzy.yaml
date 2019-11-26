@@ -16,14 +16,65 @@ hide_documentation_coverage: no
 
 min_acl: fileprivate
 
-# custom_categories:
-#   - name: Models
-#     children:
-# 
-#   - name: Pivots
-#     children:
-#     
-#   - name: Controllers
-#     children:
-#     
-#   - 
+custom_categories:
+  - name: Models
+    children:
+    - Barrel
+    - RegistrationCode
+    - Token
+    - User
+    - UserNote
+    - UserProfile
+    
+  - name: Controllers
+    children:
+    - AdminController
+    - AuthController
+    - ClientController
+    - TestController
+    - UserController
+    - UsersController
+
+  - name: Enumerations
+    children:
+    - BarrelType
+    - UserAccessLevel
+
+  - name: Extensions
+    children:
+    - CharacterSet
+    - Future
+    - RouteCollection
+    
+  - name: Migrations
+    children:
+    - AdminUser
+    - ClientUsers
+    - RegistrationCodes
+    - TestUsers
+    
+  - name: Request Structs
+    children:
+    - NoteCreateData
+    - NoteUpdateData
+    - UserAddData
+    - UserCreateData
+    - UserPasswordData
+    - UserProfileData
+    - UserRecoveryData
+    - UserUsernameData
+    - UserVerifyData
+    
+  - name: Return Structs
+    children:
+    - AddedUserData
+    - AlertKeywordData
+    - BlockedUserData
+    - CreatedNoteData
+    - CreatedUserData
+    - CurrentUserData
+    - MuteKeywordData
+    - MutedUserData
+    - NoteData
+    - TokenStringData
+    

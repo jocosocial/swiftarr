@@ -281,9 +281,9 @@ struct UsersController: RouteCollection {
         }
     }
     
-/// `POST /api/v3/users/ID/note`
+    /// `POST /api/v3/users/ID/note`
     ///
-    /// Creates a new `UseerNote` associated with the specified user's profile and the current
+    /// Creates a new `UserNote` associated with the specified user's profile and the current
     /// user.
     ///
     /// - Note: In order to support the editing of a note in contexts other than when
@@ -423,7 +423,9 @@ struct UsersController: RouteCollection {
 
 // MARK: - Helper Structs
 
-/// Returned by `UsersController.noteHandler(_:data:).`
+/// Returned by `/api/v3/users/ID/note`.
+///
+/// See `UsersController.noteCreateHandler(_:data:)`.
 struct CreatedNoteData: Content {
     /// The ID of the note.
     var noteID: UUID
@@ -431,7 +433,9 @@ struct CreatedNoteData: Content {
     var note: String
 }
 
-/// Used by `UsersController.noteHandler(_:data:)` to create a `UserNote`.
+/// Required by `/api/v3/users/ID/note` to create a `UserNote`.
+///
+/// See `UsersController.noteCreateHandler(_:data:)`.
 struct NoteCreateData: Content {
     /// The text of the note.
     var note: String

@@ -978,7 +978,9 @@ struct NoteUpdateData: Content {
     let note: String
 }
 
-/// Used by `UserController.addHandler(_:data:) for adding a sub-account.
+/// Required by `/api/v3/user/add` for adding a sub-account.
+///
+/// See `UserController.addHandler(_:data:)`.
 struct UserAddData: Content {
     /// The username for the sub-account.
     var username: String
@@ -994,7 +996,9 @@ struct SeaMonkey: Content {
     var username: String
 }
 
-/// Used by `UserController.createHandler(_:data:) for initial creation of an account.
+/// Required by `/api/v3/user/create` for initial creation of an account.
+/// 
+/// See `UserController.createHandler(_:data:)`.
 struct UserCreateData: Content {
     /// The user's username.
     var username: String
