@@ -1,26 +1,6 @@
 {
   "warnings": [
-    {
-      "file": "/Users/grundev/Developer/swiftarr/Sources/App/Extensions/User+Extensions.swift",
-      "line": 92,
-      "symbol": "User.parentAccount(on:)",
-      "symbol_kind": "source.lang.swift.decl.function.method.instance",
-      "warning": "undocumented"
-    },
-    {
-      "file": "/Users/grundev/Developer/swiftarr/Sources/App/Models/Barrel.swift",
-      "line": 5,
-      "symbol": "Barrel",
-      "symbol_kind": "source.lang.swift.decl.class",
-      "warning": "undocumented"
-    },
-    {
-      "file": "/Users/grundev/Developer/swiftarr/Sources/App/Models/Barrel.swift",
-      "line": 18,
-      "symbol": "Barrel",
-      "symbol_kind": "source.lang.swift.decl.extension",
-      "warning": "undocumented"
-    }
+
   ],
   "source_directory": "/Users/grundev/Developer/swiftarr"
 }
