@@ -11,6 +11,77 @@ import Redis
 /// entirely.
 
 struct UserController: RouteCollection {
+    // MARK: Properties
+    
+    /// An array of words used to generate random phrases.
+    static let words: [String] = [
+        "aboriginal", "accept", "account", "acoustic", "adaptable", "adorable",
+        "afternoon", "agreeable", "airport", "alive", "alluring", "amazing",
+        "amused", "announce", "applause", "appreciate", "approve", "aquatic",
+        "arithmetic", "aromatic", "arrive", "aspiring", "attractive", "aunt",
+        "auspicious", "awake", "balance", "basin", "bat", "bath", "bed", "bee",
+        "befitting", "believe", "beneficial", "best", "bikes", "birds", "black",
+        "blue", "blush", "boat", "book", "bottle", "bouncy", "brains", "brass",
+        "brave", "bravo", "breezy", "brown", "brunch", "bubble", "business",
+        "cabbage", "cactus", "cake", "calm", "camera", "capable", "card",
+        "caring", "cats", "cause", "celery", "cheerful", "cheese", "cherry",
+        "chess", "chicken", "circle", "clean", "clover", "club", "coach",
+        "collect", "colorful", "comfortable", "complete", "connect",
+        "conscious", "cooperative", "cows", "crayon", "cuddly", "cute", "daily",
+        "dance", "dapper", "dashing", "dazzling", "debonair", "decisive",
+        "delicate", "delicious", "delight", "delightful", "design", "dinner",
+        "dinosaurs", "discovery", "dock", "doggo", "donkey", "drawer", "dress",
+        "drink", "drum", "dry", "duck", "dynamic", "earth", "eggs", "eight",
+        "elated", "elegant", "enchanted", "enchanting", "encourage", "enjoy",
+        "enormous", "entertain", "enthusiastic", "equal", "escape", "excellent",
+        "excite", "exciting", "exist", "expect", "expert", "exuberant", "fairy",
+        "familiar", "fancy", "fantastic", "farm", "fascinating", "feeling",
+        "fez", "first", "five", "fixed", "float", "flood", "flower", "fluffy",
+        "food", "fork", "frequent", "friend", "friendly", "frog", "fruit",
+        "future", "futuristic", "garrulous", "geese", "ghost", "giants",
+        "gifted", "gigantic", "giraffe", "glib", "glorious", "gorgeous",
+        "grape", "grass", "grateful", "gratuity", "gray", "green", "grin",
+        "groovy", "guide", "guitar", "hair", "haircut", "hand", "handsomely",
+        "happy", "harbor", "harmonious", "hat", "heal", "heat", "heavenly",
+        "hilarious", "hobbies", "honey", "horse", "hospitable", "hottub", "hug",
+        "humor", "humorous", "hungry", "illustrious", "impartial", "imported",
+        "improve", "impulse", "incredible", "inform", "instruct", "instrument",
+        "interesting", "internal", "introduce", "invincible", "island", "jazzy",
+        "jellyfish", "joke", "jolly", "joyous", "kind", "kindhearted", "kiss",
+        "kitteh", "knit", "knowledge", "ladybug", "lamp", "language", "laugh",
+        "learn", "lettuce", "library", "light", "like", "liquid", "listen",
+        "lively", "lizard", "love", "love", "loving", "lunch", "magenta",
+        "magical", "magnificent", "mailbox", "majestic", "marvelous", "melodic",
+        "milk", "mint", "mitten", "monkey", "morning", "moustache", "mouth",
+        "mysterious", "neighborly", "nest", "nifty", "oatmeal", "obtainable",
+        "ocean", "orange", "pancake", "panoramic", "pants", "partner", "party",
+        "pastoral", "peaceful", "pencil", "perfect", "person", "pet", "pets",
+        "pickle", "pie", "piquant", "pizza", "placid", "plants", "play",
+        "playground", "pleasant", "pleasure", "port", "porter", "position",
+        "possible", "potato", "precious", "print", "profuse", "public",
+        "pupper", "purple", "puzzle", "quaint", "quartz", "queen", "quiet",
+        "rabbit", "radiate", "rainstorm", "rainy", "reading", "real", "red",
+        "reflective", "rejoice", "respect", "responsible", "rest", "rhyme",
+        "ritzy", "robin", "romantic", "rose", "round", "route", "safe", "sail",
+        "sand", "savory", "science", "scientific", "scintillating", "scrabble",
+        "sea", "seal", "seashore", "serious", "share", "shiny", "ship",
+        "silent", "silk", "silly", "sincere", "skillful", "sleep", "sleepy",
+        "smile", "snail", "soak", "soft", "solid", "song", "songs", "soothe",
+        "sophisticated", "soup", "sparkling", "special", "spectacular",
+        "spiffy", "splendid", "spooky", "spoon", "square", "squeal", "squirrel",
+        "starboard", "stimulating", "stitch", "story", "succeed", "sun",
+        "superb", "supreme", "surprise", "swanky", "sweater", "sweet", "swim",
+        "table", "talented", "tasty", "team", "teeth", "terrific", "thankful",
+        "thirsty", "thoughtful", "three", "throne", "thumb", "tiara", "ticket",
+        "tiger", "tomato", "toothbrush", "toothpaste", "trail", "train",
+        "tranquil", "tree", "two", "ubiquitous", "umbrella", "underwear",
+        "unite", "unpack", "upbeat", "vacation", "verdant", "verse",
+        "victorious", "view", "violet", "volcano", "walk", "warm", "water",
+        "weather", "week", "welcome", "whimsical", "whirl", "whispering",
+        "white", "witty", "wolves", "wonder", "wonderful", "word", "writing",
+        "yarn", "year", "yellow", "yummy", "zealous", "zebra", "zesty", "zippy",
+        "zombie"
+    ]
     
     // MARK: RouteCollection Conformance
     
@@ -43,9 +114,10 @@ struct UserController: RouteCollection {
         
         // endpoints available only when logged in
         tokenAuthGroup.post(UserAddData.self, at: "add", use: addHandler)
+        tokenAuthGroup.get("alertwords", use: alertwordsHandler)
         tokenAuthGroup.get("blocks", use: blocksHandler)
-        tokenAuthGroup.get("keywords", use: keywordsHandler)
         tokenAuthGroup.get("mutes", use: mutesHandler)
+        tokenAuthGroup.get("mutewords", use: mutewordsHandler)
         tokenAuthGroup.post(NoteUpdateData.self, at: "note", use: noteHandler)
         tokenAuthGroup.get("notes", use: notesHandler)
         tokenAuthGroup.post(UserPasswordData.self, at: "password", use: passwordHandler)
@@ -406,6 +478,37 @@ struct UserController: RouteCollection {
         }
     }
     
+    /// `GET /api/v3/user/alertwords`
+    ///
+    /// Returns a list of the user's current alert keywords in named-list `AlertKeywordData`
+    /// format.
+    ///
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: The alert keywords as an array of strings embedded in a named-list
+    ///   structure.
+    func alertwordsHandler(_ req: Request) throws -> Future<AlertKeywordData> {
+        let user = try req.requireAuthenticated(User.self)
+        // retrieve keywords barrel
+        return try Barrel.query(on: req)
+            .filter(\.ownerID == user.requireID())
+            .filter(\.barrelType == .keywordAlert)
+            .first()
+            .unwrap(or: Abort(.internalServerError, reason: "alert keywords barrel not found"))
+            .map {
+                (barrel) in
+                // ensure keywords array exists
+                guard let keywords = barrel.userInfo["alertWords"] else {
+                    throw Abort(.internalServerError, reason: "no key 'alertWords' found")
+                }
+                let alertKeywordData = AlertKeywordData(
+                    name: barrel.name,
+                    keywords: keywords
+                )
+                return alertKeywordData
+        }
+    }
+
     /// `GET /api/v3/user/blocks`
     ///
     /// Returns a list of the user's currently blocked users in named-list `BlockedUserData`
@@ -462,7 +565,7 @@ struct UserController: RouteCollection {
         }
     }
     
-    /// `GET /api/v3/user/keywords`
+    /// `GET /api/v3/user/mutewords`
     ///
     /// Returns a list of the user's currently muted keywords in named-list `MutedKeywordData`
     /// format.
@@ -471,25 +574,25 @@ struct UserController: RouteCollection {
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: The muted keywords as an array of strings embedded in a named-list
     ///   structure.
-    func keywordsHandler(_ req: Request) throws -> Future<MutedKeywordData> {
+    func mutewordsHandler(_ req: Request) throws -> Future<MuteKeywordData> {
         let user = try req.requireAuthenticated(User.self)
         // retrieve keywords barrel
         return try Barrel.query(on: req)
             .filter(\.ownerID == user.requireID())
             .filter(\.barrelType == .keywordMute)
             .first()
-            .unwrap(or: Abort(.internalServerError, reason: "keywords barrel not found"))
+            .unwrap(or: Abort(.internalServerError, reason: "mute keywords barrel not found"))
             .map {
                 (barrel) in
                 // ensure keywords array exists
-                guard let keywords = barrel.userInfo["keywords"] else {
-                    throw Abort(.internalServerError, reason: "no key 'keywords' found")
+                guard let keywords = barrel.userInfo["muteWords"] else {
+                    throw Abort(.internalServerError, reason: "no key 'muteWords' found")
                 }
-                let mutedKeywordData = MutedKeywordData(
+                let muteKeywordData = MuteKeywordData(
                     name: barrel.name,
                     keywords: keywords
                 )
-                return mutedKeywordData
+                return muteKeywordData
         }
     }
     
@@ -730,86 +833,24 @@ struct UserController: RouteCollection {
     }
     
     // MARK: - Helper Functions
-    
-    /// An array of words used to generate random phrases.
-    static let words: [String] = [
-        "aboriginal", "accept", "account", "acoustic", "adaptable", "adorable",
-        "afternoon", "agreeable", "airport", "alive", "alluring", "amazing",
-        "amused", "announce", "applause", "appreciate", "approve", "aquatic",
-        "arithmetic", "aromatic", "arrive", "aspiring", "attractive", "aunt",
-        "auspicious", "awake", "balance", "basin", "bat", "bath", "bed", "bee",
-        "befitting", "believe", "beneficial", "best", "bikes", "birds", "black",
-        "blue", "blush", "boat", "book", "bottle", "bouncy", "brains", "brass",
-        "brave", "bravo", "breezy", "brown", "brunch", "bubble", "business",
-        "cabbage", "cactus", "cake", "calm", "camera", "capable", "card",
-        "caring", "cats", "cause", "celery", "cheerful", "cheese", "cherry",
-        "chess", "chicken", "circle", "clean", "clover", "club", "coach",
-        "collect", "colorful", "comfortable", "complete", "connect",
-        "conscious", "cooperative", "cows", "crayon", "cuddly", "cute", "daily",
-        "dance", "dapper", "dashing", "dazzling", "debonair", "decisive",
-        "delicate", "delicious", "delight", "delightful", "design", "dinner",
-        "dinosaurs", "discovery", "dock", "doggo", "donkey", "drawer", "dress",
-        "drink", "drum", "dry", "duck", "dynamic", "earth", "eggs", "eight",
-        "elated", "elegant", "enchanted", "enchanting", "encourage", "enjoy",
-        "enormous", "entertain", "enthusiastic", "equal", "escape", "excellent",
-        "excite", "exciting", "exist", "expect", "expert", "exuberant", "fairy",
-        "familiar", "fancy", "fantastic", "farm", "fascinating", "feeling",
-        "fez", "first", "five", "fixed", "float", "flood", "flower", "fluffy",
-        "food", "fork", "frequent", "friend", "friendly", "frog", "fruit",
-        "future", "futuristic", "garrulous", "geese", "ghost", "giants",
-        "gifted", "gigantic", "giraffe", "glib", "glorious", "gorgeous",
-        "grape", "grass", "grateful", "gratuity", "gray", "green", "grin",
-        "groovy", "guide", "guitar", "hair", "haircut", "hand", "handsomely",
-        "happy", "harbor", "harmonious", "hat", "heal", "heat", "heavenly",
-        "hilarious", "hobbies", "honey", "horse", "hospitable", "hottub", "hug",
-        "humor", "humorous", "hungry", "illustrious", "impartial", "imported",
-        "improve", "impulse", "incredible", "inform", "instruct", "instrument",
-        "interesting", "internal", "introduce", "invincible", "island", "jazzy",
-        "jellyfish", "joke", "jolly", "joyous", "kind", "kindhearted", "kiss",
-        "kitteh", "knit", "knowledge", "ladybug", "lamp", "language", "laugh",
-        "learn", "lettuce", "library", "light", "like", "liquid", "listen",
-        "lively", "lizard", "love", "love", "loving", "lunch", "magenta",
-        "magical", "magnificent", "mailbox", "majestic", "marvelous", "melodic",
-        "milk", "mint", "mitten", "monkey", "morning", "moustache", "mouth",
-        "mysterious", "neighborly", "nest", "nifty", "oatmeal", "obtainable",
-        "ocean", "orange", "pancake", "panoramic", "pants", "partner", "party",
-        "pastoral", "peaceful", "pencil", "perfect", "person", "pet", "pets",
-        "pickle", "pie", "piquant", "pizza", "placid", "plants", "play",
-        "playground", "pleasant", "pleasure", "port", "porter", "position",
-        "possible", "potato", "precious", "print", "profuse", "public",
-        "pupper", "purple", "puzzle", "quaint", "quartz", "queen", "quiet",
-        "rabbit", "radiate", "rainstorm", "rainy", "reading", "real", "red",
-        "reflective", "rejoice", "respect", "responsible", "rest", "rhyme",
-        "ritzy", "robin", "romantic", "rose", "round", "route", "safe", "sail",
-        "sand", "savory", "science", "scientific", "scintillating", "scrabble",
-        "sea", "seal", "seashore", "serious", "share", "shiny", "ship",
-        "silent", "silk", "silly", "sincere", "skillful", "sleep", "sleepy",
-        "smile", "snail", "soak", "soft", "solid", "song", "songs", "soothe",
-        "sophisticated", "soup", "sparkling", "special", "spectacular",
-        "spiffy", "splendid", "spooky", "spoon", "square", "squeal", "squirrel",
-        "starboard", "stimulating", "stitch", "story", "succeed", "sun",
-        "superb", "supreme", "surprise", "swanky", "sweater", "sweet", "swim",
-        "table", "talented", "tasty", "team", "teeth", "terrific", "thankful",
-        "thirsty", "thoughtful", "three", "throne", "thumb", "tiara", "ticket",
-        "tiger", "tomato", "toothbrush", "toothpaste", "trail", "train",
-        "tranquil", "tree", "two", "ubiquitous", "umbrella", "underwear",
-        "unite", "unpack", "upbeat", "vacation", "verdant", "verse",
-        "victorious", "view", "violet", "volcano", "walk", "warm", "water",
-        "weather", "week", "welcome", "whimsical", "whirl", "whispering",
-        "white", "witty", "wolves", "wonder", "wonderful", "word", "writing",
-        "yarn", "year", "yellow", "yummy", "zealous", "zebra", "zesty", "zippy",
-        "zombie"
-    ]
-    
-    /// Create the default `Barrel`s for a user: blocked users, muted users and muted keywords.
-    /// A `.userBlock` barrel is only created for primary accounts; a subaccount is covered by
-    /// its parent's block list.
+        
+    /// Create the default `Barrel`s for a user: blocked users, muted users, alert keywords and
+    /// muted keywords. A `.userBlock` barrel is only created for primary accounts; a subaccount
+    /// is covered by its parent's block list.
     ///
     /// - Parameters:
     ///   - user: The owning `User` of the default barrels.
     ///   - req: The incoming request `Container` of the calling handler.
+    /// - Returns: Void.
     func createDefaultBarrels(for user: User, on req: Request) throws -> Future<Void> {
         var barrels: [Future<Barrel>] = .init()
+        let alertKeywordsBarrel = try Barrel(
+            ownerID: user.requireID(),
+            barrelType: .keywordAlert,
+            name: "Alert Keywords"
+        )
+        alertKeywordsBarrel.userInfo.updateValue([], forKey: "alertWords")
+        barrels.append(alertKeywordsBarrel.save(on: req))
         // subaccounts don't own block lists, they're covered by the parent's
         if user.parentID == nil {
             let blocksBarrel = try Barrel(
@@ -824,13 +865,13 @@ struct UserController: RouteCollection {
             name: "Muted Users"
         )
         barrels.append(mutesBarrel.save(on: req))
-        let keywordsBarrel = try Barrel(
+        let muteKeywordsBarrel = try Barrel(
             ownerID: user.requireID(),
             barrelType: .keywordMute,
             name: "Muted Keywords"
         )
-        keywordsBarrel.userInfo.updateValue([], forKey: "keywords")
-        barrels.append(keywordsBarrel.save(on: req))
+        muteKeywordsBarrel.userInfo.updateValue([], forKey: "muteWords")
+        barrels.append(muteKeywordsBarrel.save(on: req))
         // resolve futures, return void
         return barrels.flatten(on: req).transform(to: ())
     }
@@ -861,6 +902,14 @@ struct AddedUserData: Content {
     let username: String
 }
 
+/// Returned by `UserController.alertwordsHandler(_:)`.
+struct AlertKeywordData: Content {
+    /// The name of the barrel.
+    let name: String
+    /// The muted keywords.
+    var keywords: [String]
+}
+
 /// Returned by `UserController.blocksHandler(_:)`.
 struct BlockedUserData: Content {
     /// The name of the barrel.
@@ -889,6 +938,22 @@ struct CurrentUserData: Content {
     var isLoggedIn: Bool
 }
 
+/// Returned by `UserController.mutewordsHandler(_:)`.
+struct MuteKeywordData: Content {
+    /// The name of the barrel.
+    let name: String
+    /// The muted keywords.
+    var keywords: [String]
+}
+
+/// Returned by `UserController.mutesHandler(_:)`.
+struct MutedUserData: Content {
+    /// The name of the barrel.
+    let name: String
+    /// The muted `User`s.
+    var seamonkeys: [SeaMonkey]
+}
+
 /// Returned by `UserController.notesHandler(_:)` and `UserController.noteHandler(_:data:)`.
 struct NoteData: Content {
     /// The ID of the note.
@@ -903,22 +968,6 @@ struct NoteData: Content {
     var profileUser: String
     /// The text of the note.
     var note: String
-}
-
-/// Returned by `UserController.keywordsHandler(_:)`.
-struct MutedKeywordData: Content {
-    /// The name of the barrel.
-    let name: String
-    /// The muted keywords.
-    var keywords: [String]
-}
-
-/// Returned by `UserController.mutesHandler(_:)`.
-struct MutedUserData: Content {
-    /// The name of the barrel.
-    let name: String
-    /// The muted `User`s.
-    var seamonkeys: [SeaMonkey]
 }
 
 /// Used by `UserController.noteHandler(_:data:)` to update a user note.

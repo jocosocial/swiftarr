@@ -764,6 +764,15 @@ final class UserTests: XCTestCase {
         headers.bearerAuthorization = BearerAuthorization(token: token.token)
         
         // test empty barrels exist
+        let alertKeywordData = try app.getResult(
+            from: userURI + "alertwords",
+            method: .GET,
+            headers: headers,
+            decodeTo: AlertKeywordData.self
+        )
+        XCTAssertTrue(alertKeywordData.name == "Alert Keywords", "Alert Keywords")
+        XCTAssertTrue(alertKeywordData.keywords.count == 0, "should be no alerts")
+
         var blockedUserData = try app.getResult(
             from: userURI + "blocks",
             method: .GET,
@@ -782,14 +791,14 @@ final class UserTests: XCTestCase {
         XCTAssertTrue(mutedUserData.name == "Muted Users", "Muted Users")
         XCTAssertTrue(blockedUserData.seamonkeys.count == 0, "should be no mutes")
         
-        let mutedKeywordData = try app.getResult(
-            from: userURI + "keywords",
+        let muteKeywordData = try app.getResult(
+            from: userURI + "mutewords",
             method: .GET,
             headers: headers,
-            decodeTo: MutedKeywordData.self
+            decodeTo: MuteKeywordData.self
         )
-        XCTAssertTrue(mutedKeywordData.name == "Muted Keywords", "Muted Keywords")
-        XCTAssertTrue(mutedKeywordData.keywords.count == 0, "should be no mutes")
+        XCTAssertTrue(muteKeywordData.name == "Muted Keywords", "Muted Keywords")
+        XCTAssertTrue(muteKeywordData.keywords.count == 0, "should be no mutes")
 
         // add subaccount
         let userAddData = UserAddData(username: "subaccount", password: testPassword)

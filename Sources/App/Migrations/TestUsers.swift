@@ -45,6 +45,13 @@ struct TestUsers: Migration {
                 let profile = UserProfile(userID: id, username: $0.username)
                 profiles.append(profile)
                 var barrels: [Barrel] = []
+                let alertKeywordsBarrel = Barrel(
+                    ownerID: id,
+                    barrelType: .keywordAlert,
+                    name: "Alert Keywords"
+                )
+                alertKeywordsBarrel.userInfo.updateValue([], forKey: "alertWords")
+                barrels.append(alertKeywordsBarrel)
                 let blocksBarrel = Barrel(
                     ownerID: id,
                     barrelType: .userBlock,
@@ -57,13 +64,13 @@ struct TestUsers: Migration {
                     name: "Muted Users"
                 )
                 barrels.append(mutesBarrel)
-                let keywordsBarrel = Barrel(
+                let muteKeywordsBarrel = Barrel(
                     ownerID: id,
                     barrelType: .keywordMute,
                     name: "Muted Keywords"
                 )
-                keywordsBarrel.userInfo.updateValue([], forKey: "keywords")
-                barrels.append(keywordsBarrel)
+                muteKeywordsBarrel.userInfo.updateValue([], forKey: "muteWords")
+                barrels.append(muteKeywordsBarrel)
                 // save barrels
                 _ = barrels.map { $0.save(on: connection) }
             }

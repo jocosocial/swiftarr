@@ -62,6 +62,13 @@ struct AdminUser: Migration {
             }
             // create default barrels
             var barrels: [Future<Barrel>] = .init()
+            let alertKeywordsBarrel = Barrel(
+                ownerID: id,
+                barrelType: .keywordAlert,
+                name: "Alert Keywords"
+            )
+            alertKeywordsBarrel.userInfo.updateValue([], forKey: "alertWords")
+            barrels.append(alertKeywordsBarrel.save(on: connection))
             let blocksBarrel = Barrel(
                 ownerID: id,
                 barrelType: .userBlock,
@@ -74,13 +81,13 @@ struct AdminUser: Migration {
                 name: "Muted Users"
             )
             barrels.append(mutesBarrel.save(on: connection))
-            let keywordsBarrel = Barrel(
+            let muteKeywordsBarrel = Barrel(
                 ownerID: id,
                 barrelType: .keywordMute,
                 name: "Muted Keywords"
             )
-            keywordsBarrel.userInfo.updateValue([], forKey: "keywords")
-            barrels.append(keywordsBarrel.save(on: connection))
+            muteKeywordsBarrel.userInfo.updateValue([], forKey: "muteWords")
+            barrels.append(muteKeywordsBarrel.save(on: connection))
             // resolve futures, return void
             return barrels.flatten(on: connection).flatMap {
                 (savedBarrels) in
