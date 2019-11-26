@@ -3,6 +3,8 @@ import FluentPostgreSQL
 /// The type of `Barrel`.
 
 enum BarrelType: String, PostgreSQLRawEnum {
+    /// A user's barrel of alert keywords.
+    case keywordAlert
     /// A user's barrel of muting keywords.
     case keywordMute
     /// A generic barrel of seamonkeys.
