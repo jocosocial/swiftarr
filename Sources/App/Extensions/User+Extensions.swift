@@ -89,6 +89,11 @@ extension User {
         )
     }
     
+    /// Returns the parent `User` of the user sending the request. If the requesting user has
+    /// no parent, the user itself is returned.
+    ///
+    /// - Parameter req: The incoming request `Container`, which provides reference to the
+    ///   sending user.
     func parentAccount(on req: Request) throws -> Future<User> {
         let parentID = self.parentID != nil ? self.parentID : self.id
         guard let userID = parentID else {
