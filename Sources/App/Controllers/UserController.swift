@@ -15,11 +15,11 @@ struct UserController: RouteCollection {
     
     /// The `BarrelType`s that a user may retrieve using endpoints in this controller.
     static let userBarrelTypes: [BarrelType] = [
+        .keywordAlert,
+        .keywordMute,
+        .seamonkey,
         .userBlock,
         .userMute,
-        .keywordMute,
-        .keywordAlert,
-        .seamonkey,
         .userWords
     ]
 
