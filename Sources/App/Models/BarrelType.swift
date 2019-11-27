@@ -30,12 +30,12 @@ enum BarrelType: String, PostgreSQLRawEnum, Comparable {
         }
     }
     
-    /// Equatable
+    /// Required `Equatable`.
     static func ==(lhs: BarrelType, rhs: BarrelType) -> Bool {
         return lhs.sortOrder == rhs.sortOrder
     }
     
-    /// Comparable
+    /// Required `Comparable`.
     static func <(lhs: BarrelType, rhs: BarrelType) -> Bool {
         return lhs.sortOrder < rhs.sortOrder
     }
