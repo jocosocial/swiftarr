@@ -1280,14 +1280,6 @@ struct BarrelListData: Content {
     let name: String
 }
 
-/// Required by `POST /api/v3/user/barrels/ID/rename`.
-///
-/// See `UserController.renameBarrelHandler(_:data:)`.
-struct BarrelRenameData: Content {
-    /// The name of the barrel.
-    let name: String
-}
-
 /// Returned by `UserController.blocksHandler(_:)`.
 struct BlockedUserData: Content {
     /// The name of the barrel.
