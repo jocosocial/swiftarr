@@ -687,7 +687,7 @@ struct UserController: RouteCollection {
                     var noteData = try NoteData(
                         noteID: note.requireID(),
                         createdAt: savedNote.createdAt ?? Date(),
-                        updataedAt: savedNote.updatedAt ?? Date(),
+                        updatedAt: savedNote.updatedAt ?? Date(),
                         profileID: savedNote.profileID,
                         profileUser: "",
                         note: savedNote.note
@@ -732,7 +732,7 @@ struct UserController: RouteCollection {
                 var noteData = try NoteData(
                     noteID: $0.requireID(),
                     createdAt: $0.createdAt ?? Date(),
-                    updataedAt: $0.updatedAt ?? Date(),
+                    updatedAt: $0.updatedAt ?? Date(),
                     profileID: $0.profileID,
                     profileUser: "",
                     note: $0.note
@@ -971,7 +971,7 @@ struct NoteData: Content {
     /// Timestamp of the note's creation.
     let createdAt: Date
     /// Timestamp of the note's last update.
-    let updataedAt: Date
+    let updatedAt: Date
     /// The ID of the associated profile.
     let profileID: UUID
     /// The .displayName of the profile's user.
