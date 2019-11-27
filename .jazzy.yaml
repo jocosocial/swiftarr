@@ -14,7 +14,7 @@ skip_undocumented: no
 hide_documentation_coverage: no
 # head:
 
-min_acl: fileprivate
+min_acl: private
 
 custom_categories:
   - name: Models
@@ -55,6 +55,7 @@ custom_categories:
     
   - name: Request Structs
     children:
+    - BarrelCreateData
     - NoteCreateData
     - NoteUpdateData
     - UserAddData
@@ -69,6 +70,8 @@ custom_categories:
     children:
     - AddedUserData
     - AlertKeywordData
+    - BarrelData
+    - BarrelListData
     - BlockedUserData
     - CreatedNoteData
     - CreatedUserData
