@@ -125,6 +125,12 @@ struct UserController: RouteCollection {
         // endpoints available only when logged in
         tokenAuthGroup.post(UserAddData.self, at: "add", use: addHandler)
         tokenAuthGroup.get("alertwords", use: alertwordsHandler)
+        tokenAuthGroup.post(BarrelCreateData.self, at: "barrel", use: createBarrelHandler)
+        tokenAuthGroup.get("barrels", use: barrelsHandler)
+        tokenAuthGroup.get("barrels", "seamonkey", use: seamonkeyBarrelsHandler)
+        tokenAuthGroup.get("barrels", String.parameter, use: barrelHandler)
+        tokenAuthGroup.post("barrels", String.parameter, "delete", use: deleteBarrelHandler)
+        tokenAuthGroup.post("barrels", String.parameter, "rename", String.parameter, use: renameBarrelHandler)
         tokenAuthGroup.get("blocks", use: blocksHandler)
         tokenAuthGroup.get("mutes", use: mutesHandler)
         tokenAuthGroup.get("mutewords", use: mutewordsHandler)
@@ -518,7 +524,109 @@ struct UserController: RouteCollection {
                 return alertKeywordData
         }
     }
+    
+    /// `GET /api/v3/user/barrels/ID`
+    ///
+    /// Returns the specified `Barrel`'s data as `BarrelData`.
+    ///
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Throws: 400 error if the specified ID is invalid. 403 error if the barrel is not
+    ///   owned by the user.
+    /// - Returns: `BarrelData` containing the barrel's ID, name, and contents.
+    func barrelHandler(_ req: Request) throws -> Future<BarrelData> {
+        let user = try req.requireAuthenticated(User.self)
+        // get ID parameter
+        let parameter = try req.parameters.next(String.self)
+        guard let barrelID = UUID(parameter) else {
+            throw Abort(.badRequest, reason: "parameter '\(parameter)' is not a UUID string")
+        }
+        // retrieve barrel
+        return Barrel.find(barrelID, on: req)
+            .unwrap(or: Abort(.badRequest, reason: "specified barrel not found"))
+            .flatMap {
+                (barrel) in
+                guard try barrel.ownerID == user.requireID() else {
+                    throw Abort(.forbidden, reason: "user is not owner of barrel")
+                }
+                // only user types can be retrieved here
+                let userTypes = UserController.userBarrelTypes
+                guard userTypes.contains(barrel.barrelType) else {
+                    throw Abort(
+                        .badRequest,
+                        reason: "'\(barrel.barrelType)' barrel cannot be retrieved by this endpoint"
+                    )
+                }
+                // initialize return struct
+                var barrelData = try BarrelData(
+                    barrelID: barrel.requireID(),
+                    name: barrel.name,
+                    seamonkeys: [],
+                    stringList: []
+                )
+                // populate .stringList
+                switch barrel.barrelType {
+                    case .keywordAlert:
+                        barrelData.stringList = barrel.userInfo["alertWords"]
+                    case .keywordMute:
+                        barrelData.stringList = barrel.userInfo["muteWords"]
+                    case .userWords:
+                        barrelData.stringList = barrel.userInfo["userWords"]
+                    default:
+                        barrelData.stringList = nil
+                }
+                // populate .seamonkeys
+                let uuids = barrel.modelUUIDs
+                return User.query(on: req)
+                    .filter(\.id ~~ uuids)
+                    .sort(\.username, .ascending)
+                    .all()
+                    .map {
+                        (users) in
+                        var seamonkeys = [SeaMonkey]()
+                        for user in users {
+                            let seamonkey = try SeaMonkey(
+                                userID: user.requireID(),
+                                username: "@\(user.username)"
+                            )
+                            seamonkeys.append(seamonkey)
+                        }
+                        // add SeaMonkeys and return
+                        barrelData.seamonkeys = seamonkeys
+                        return barrelData
+                }
+        }
+    }
 
+    /// `GET /api/v3/user/barrels`
+    ///
+    /// Returns a list of all the user's barrels.
+    ///
+    /// - Note: This does not return *all* barrels for which the user is the `ownerID`, just
+    ///   the default barrels and any .seamonkey or .userWords types they have created.
+    ///
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Returns: `[BarrelListData]` containing the barrel IDs and names.
+    func barrelsHandler(_ req: Request) throws -> Future<[BarrelListData]> {
+        let user = try req.requireAuthenticated(User.self)
+        // want just user types
+        let userTypes = UserController.userBarrelTypes
+        // retrieve user's barrels, sorted by name
+        return try Barrel.query(on: req)
+            .filter(\.ownerID == user.requireID())
+            .filter(\.barrelType ~~ userTypes)
+            .sort(\.name, .ascending)
+            .all()
+            .map {
+                (barrels) in
+                // apply .barrelType sort
+                let sortedBarrels = barrels.sorted(by: { $0.barrelType < $1.barrelType })
+                // convert to BarrelListData and return
+                return try sortedBarrels.map {
+                    try BarrelListData(barrelID: $0.requireID(), name: $0.name)
+                }
+        }
+    }
+    
     /// `GET /api/v3/user/blocks`
     ///
     /// Returns a list of the user's currently blocked users in named-list `BlockedUserData`
@@ -563,7 +671,7 @@ struct UserController: RouteCollection {
                             for user in users {
                                 let seamonkey = try SeaMonkey(
                                     userID: user.requireID(),
-                                    username: user.username
+                                    username: "@\(user.username)"
                                 )
                                 seamonkeys.append(seamonkey)
                             }
@@ -575,6 +683,123 @@ struct UserController: RouteCollection {
         }
     }
     
+    /// `POST /api/v3/user/barrel`
+    ///
+    /// Creates a new user-owned `Barrel` based on the contents of the supplied
+    /// `BarrelCreateData`.
+    ///
+    /// The `BarrelCreateData` must contain a `.name`, the other two fields are optional. If
+    /// seeding the barrel with UUIDs, only the `.uuidList` should be present. If seeding the
+    /// barrel with strings, only the `.stringList` should be present. If neither are provided,
+    /// the barrel is created as a UUID barrel of type `.seamonkey`.
+    ///
+    /// - Note: Do not send an empty array of strings in the `.stringList` field unless the
+    ///   barrel is intended as a string list. Omit the field entirely from the structure
+    ///   when submitting the request.
+    ///
+    /// The returned `BarrelData` struct will always contain the barrel's name and an
+    /// initialzed array of `SeaMonkey` (it will be empty if no seed UUIDs were supplied). If
+    /// the barrel is of type `.userWords`, a `.stringList` value will also be returned. The
+    /// presence or non-presence of this value is the client's cue as to what type of barrel
+    /// this is.
+    ///
+    /// - Requires: `BarrelCreateData` payload in the HTTP body.
+    /// - Parameters:
+    ///   - req: The incoming request `Container`, provided automatically.
+    ///   - data: `BarrelCreateData` struct containing the barrel name and any seed UUIDs or
+    ///     seed string array.
+    /// - Returns: `BarrelData` containing the newly created barrel's data contents.
+    func createBarrelHandler(_ req: Request, data: BarrelCreateData) throws -> Future<Response> {
+        let user = try req.requireAuthenticated(User.self)
+        // see `BarrelCreateData.validations()`
+        try data.validate()
+        // initialize barrel
+        let barrel = try Barrel(
+            ownerID: user.requireID(),
+            // if no .stringList, it's a barrel of monkeys
+            barrelType: data.stringList == nil ? .seamonkey : .userWords,
+            name: data.name,
+            modelUUIDs: [],
+            userInfo: [:]
+        )
+        // if .userWords, set userInfo key:value, else update modelUUIDs if any
+        switch barrel.barrelType {
+            case .userWords:
+                if let strings = data.stringList {
+                    barrel.userInfo.updateValue(strings, forKey: "userWords")
+            }
+            default:
+                if let uuids = data.uuidList {
+                    barrel.modelUUIDs = uuids
+            }
+        }
+        return barrel.save(on: req).flatMap {
+            (savedBarrel) in
+            // create SeaMonkeys from any UUIDs
+            return User.query(on: req)
+                .filter(\.id ~~ savedBarrel.modelUUIDs)
+                .sort(\.username, .ascending)
+                .all()
+                .map {
+                    (users) in
+                    var seamonkeys = [SeaMonkey]()
+                    for user in users {
+                        let seamonkey = try SeaMonkey(
+                            userID: user.requireID(),
+                            username: "@\(user.username)"
+                        )
+                        seamonkeys.append(seamonkey)
+                    }
+                    // return barrel data struct, with 201 response
+                    let barrelData = try BarrelData(
+                        barrelID: savedBarrel.requireID(),
+                        name: savedBarrel.name,
+                        seamonkeys: seamonkeys,
+                        // sets to nil if the key does not exist
+                        stringList: savedBarrel.userInfo["userWords"]
+                    )
+                    let response = Response(http: HTTPResponse(status: .created), using: req)
+                    try response.content.encode(barrelData)
+                    return response
+            }
+        }
+    }
+    
+    /// `POST /api/v3/user/barrels/ID/delete`
+    ///
+    /// Deletes the specified `Barrel`.
+    ///
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Throws: 400 error if the specified ID is invalid. 403 error if the barrel is not
+    ///   owned by the user.
+    /// - Returns: 204 No Content on success.
+    func deleteBarrelHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        let user = try req.requireAuthenticated(User.self)
+        // get ID parameter
+        let parameter = try req.parameters.next(String.self)
+        guard let barrelID = UUID(parameter) else {
+            throw Abort(.badRequest, reason: "parameter '\(parameter)' is not a UUID string")
+        }
+        // retrieve barrel
+        return Barrel.find(barrelID, on: req)
+            .unwrap(or: Abort(.badRequest, reason: "specified barrel not found"))
+            .flatMap {
+                (barrel) in
+                guard try barrel.ownerID == user.requireID() else {
+                    throw Abort(.forbidden, reason: "user is not owner of barrel")
+                }
+                // only user types can be retrieved here
+                let userTypes: [BarrelType] = [.seamonkey, .userWords]
+                guard userTypes.contains(barrel.barrelType) else {
+                    throw Abort(
+                        .badRequest,
+                        reason: "'\(barrel.barrelType)' barrel cannot be deleted by this endpoint"
+                    )
+                }
+                return barrel.delete(on: req).transform(to: .noContent)
+        }
+    }
+
     /// `GET /api/v3/user/mutewords`
     ///
     /// Returns a list of the user's currently muted keywords in named-list `MutedKeywordData`
@@ -646,7 +871,7 @@ struct UserController: RouteCollection {
                         for user in users {
                             let seamonkey = try SeaMonkey(
                                 userID: user.requireID(),
-                                username: user.username
+                                username: "@\(user.username)"
                             )
                             seamonkeys.append(seamonkey)
                         }
@@ -752,6 +977,76 @@ struct UserController: RouteCollection {
         }
     }
     
+    /// `POST /api/v3/user/barrels/ID/rename/STRING`
+    ///
+    /// Renames the specified `Barrel`.
+    ///
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Throws: 400 error if the specified ID is invalid or the barrel cannot be renamed.
+    ///   403 error if the barrel is not owned by the user.
+    /// - Returns: `BarrelData` containing the updated barrel data.
+    func renameBarrelHandler(_ req: Request) throws -> Future<BarrelData> {
+        let user = try req.requireAuthenticated(User.self)
+        // get parameters
+        let parameterID = try req.parameters.next(String.self)
+        let parameterName = try req.parameters.next(String.self)
+        guard let barrelID = UUID(parameterID) else {
+            throw Abort(.badRequest, reason: "parameter '\(parameterID)' is not a UUID string")
+        }
+        // retrieve barrel
+        return Barrel.find(barrelID, on: req)
+            .unwrap(or: Abort(.badRequest, reason: "specified barrel not found"))
+            .flatMap {
+                (barrel) in
+                guard try barrel.ownerID == user.requireID() else {
+                    throw Abort(.forbidden, reason: "user is not owner of barrel")
+                }
+                // only user types can be renamed
+                let userTypes: [BarrelType] = [.seamonkey, .userWords]
+                guard userTypes.contains(barrel.barrelType) else {
+                    throw Abort(.badRequest, reason: "'\(barrel.barrelType)' barrel cannot be renamed")
+                }
+                barrel.name = parameterName
+                return barrel.save(on: req).flatMap {
+                    (savedBarrel) in
+                    // initialize return struct
+                    var barrelData = try BarrelData(
+                        barrelID: savedBarrel.requireID(),
+                        name: savedBarrel.name,
+                        seamonkeys: [],
+                        stringList: []
+                    )
+                    // populate .stringList
+                    switch savedBarrel.barrelType {
+                        case .userWords:
+                            barrelData.stringList = savedBarrel.userInfo["userWords"]
+                        default:
+                            barrelData.stringList = nil
+                    }
+                    // populate .seamonkeys
+                    let uuids = savedBarrel.modelUUIDs
+                    return User.query(on: req)
+                        .filter(\.id ~~ uuids)
+                        .sort(\.username, .ascending)
+                        .all()
+                        .map {
+                            (users) in
+                            var seamonkeys = [SeaMonkey]()
+                            for user in users {
+                                let seamonkey = try SeaMonkey(
+                                    userID: user.requireID(),
+                                    username: "@\(user.username)"
+                                )
+                                seamonkeys.append(seamonkey)
+                            }
+                            // add SeaMonkeys and return
+                            barrelData.seamonkeys = seamonkeys
+                            return barrelData
+                    }
+                }
+        }
+    }
+
     /// `POST /api/v3/user/password`
     ///
     /// Updates a user's password to the supplied value, encrypted.
@@ -776,6 +1071,33 @@ struct UserController: RouteCollection {
         return user.save(on: req).transform(to: .created)
     }
     
+    /// `GET /api/v3/user/barrels/seamonkey`
+    ///
+    /// Returns a list of all the user's `.seamonkey` type barrels.
+    ///
+    /// - Note: While it can have other uses, this is primarily intended to provide easy
+    ///   access to user-defined filters on public content and recipient groups when
+    ///   initiating a `SeaMailThread`.
+    ///
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Returns: `[BarrelListData]` containing the barrel IDs and names.
+    func seamonkeyBarrelsHandler(_ req: Request) throws -> Future<[BarrelListData]> {
+        let user = try req.requireAuthenticated(User.self)
+        // retrieve user's barrels, sorted by name
+        return try Barrel.query(on: req)
+            .filter(\.ownerID == user.requireID())
+            .filter(\.barrelType == .seamonkey)
+            .sort(\.name, .ascending)
+            .all()
+            .map {
+                (barrels) in
+                // convert to BarrelListData and return
+                return try barrels.map {
+                    try BarrelListData(barrelID: $0.requireID(), name: $0.name)
+                }
+        }
+    }
+
     /// `POST /api/v3/user/username`
     ///
     /// Changes a user's username to the supplied value, if possible. Also updates the
@@ -920,6 +1242,52 @@ struct AlertKeywordData: Content {
     var keywords: [String]
 }
 
+/// Required by `POST /api/v3/user/barrel`.
+///
+/// See `UserController.createBarrel(_:data:)`.
+struct BarrelCreateData: Content {
+    /// The name of the barrel.
+    var name: String
+    /// An optional list of model UUIDs.
+    var uuidList: [UUID]?
+    /// An optional list of strings.
+    var stringList: [String]?
+}
+
+/// Returned by `POST /api/v3/user/barrel`,`GET /api/v3/user/barrels/ID`,
+/// `POST /api/v3/user/barrels/ID/rename/STRING`.
+///
+/// See `UserController.createBarrelHandler(_:data:)`, `UserController.barrelHandler(_:)`,
+/// `UserController.renameBarrelHandler(_:)`.
+struct BarrelData: Content {
+    /// The barrel's ID.
+    let barrelID: UUID
+    /// The name of the barrel.
+    let name: String
+    /// The barrel's `SeaMonkey` contents.
+    var seamonkeys: [SeaMonkey]
+    /// An optional list of strings.
+    var stringList: [String]?
+}
+
+/// Returned by `GET /api/v3/user/barrels` and `GET /api/v3/user/barrels/seamonkey`.
+///
+/// See `UserController.barrelsHandler(_:)` and `UserController.seamonkeyBarrelsHandler(_:)`.
+struct BarrelListData: Content {
+    /// The barrel's ID.
+    let barrelID: UUID
+    /// The name of the barrel.
+    let name: String
+}
+
+/// Required by `POST /api/v3/user/barrels/ID/rename`.
+///
+/// See `UserController.renameBarrelHandler(_:data:)`.
+struct BarrelRenameData: Content {
+    /// The name of the barrel.
+    let name: String
+}
+
 /// Returned by `UserController.blocksHandler(_:)`.
 struct BlockedUserData: Content {
     /// The name of the barrel.
@@ -1055,6 +1423,24 @@ struct UserUsernameData: Content {
 struct UserVerifyData: Content {
     /// The registration code provided to the user.
     var verification: String
+}
+
+// MARK: - Validation
+
+extension BarrelCreateData: Validatable, Reflectable {
+    /// Validates that `.name` contains a value, and that only one of `.uuidList` or
+    /// `.stringList` contains values.
+    static func validations() throws -> Validations<BarrelCreateData> {
+        var validations = Validations(BarrelCreateData.self)
+        try validations.add(\.name, .count(1...))
+        validations.add("'uuidList' and 'stringList' cannot both contain values") {
+            (data) in
+            guard data.uuidList == nil || data.stringList == nil else {
+                throw Abort(.badRequest, reason: "'uuidList' and 'stringList' cannot both contain values")
+            }
+        }
+        return validations
+    }
 }
 
 extension UserAddData: Validatable, Reflectable {
