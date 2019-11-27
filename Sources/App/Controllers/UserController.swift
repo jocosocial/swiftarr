@@ -13,6 +13,16 @@ import Redis
 struct UserController: RouteCollection {
     // MARK: Properties
     
+    /// The `BarrelType`s that a user may retrieve using endpoints in this controller.
+    static let userBarrelTypes: [BarrelType] = [
+        .userBlock,
+        .userMute,
+        .keywordMute,
+        .keywordAlert,
+        .seamonkey,
+        .userWords
+    ]
+
     /// An array of words used to generate random phrases.
     static let words: [String] = [
         "aboriginal", "accept", "account", "acoustic", "adaptable", "adorable",
