@@ -163,6 +163,9 @@
             <a class="nav-group-name-link" href="Request%20Structs.html">Request Structs</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/BarrelCreateData.html">BarrelCreateData</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/NoteCreateData.html">NoteCreateData</a>
               </li>
               <li class="nav-group-task">
@@ -199,6 +202,12 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/AlertKeywordData.html">AlertKeywordData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/BarrelData.html">BarrelData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/BarrelListData.html">BarrelListData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/BlockedUserData.html">BlockedUserData</a>
@@ -302,7 +311,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L898-L903">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1230-L1235">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -333,7 +342,75 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L906-L911">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1238-L1243">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App10BarrelDataV"></a>
+                    <a name="//apple_ref/swift/Struct/BarrelData" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App10BarrelDataV">BarrelData</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Returned by <code>POST /api/v3/user/barrel</code>,<code>GET /api/v3/user/barrels/ID</code>,
+<code>POST /api/v3/user/barrels/ID/rename/STRING</code>.</p>
+
+<p>See <code><a href="Structs/UserController.html#/s:3App14UserControllerV19createBarrelHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA0E10CreateDataVtKF">UserController.createBarrelHandler(_:data:)</a></code>, <code><a href="Structs/UserController.html#/s:3App14UserControllerV13barrelHandlery3NIO15EventLoopFutureCyAA10BarrelDataVG5Vapor7RequestCKF">UserController.barrelHandler(_:)</a></code>,
+<code><a href="Structs/UserController.html#/s:3App14UserControllerV19renameBarrelHandlery3NIO15EventLoopFutureCyAA0E4DataVG5Vapor7RequestCKF">UserController.renameBarrelHandler(_:)</a></code>.</p>
+
+                        <a href="Structs/BarrelData.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">BarrelData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1262-L1271">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App14BarrelListDataV"></a>
+                    <a name="//apple_ref/swift/Struct/BarrelListData" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App14BarrelListDataV">BarrelListData</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Returned by <code>GET /api/v3/user/barrels</code> and <code>GET /api/v3/user/barrels/seamonkey</code>.</p>
+
+<p>See <code><a href="Structs/UserController.html#/s:3App14UserControllerV14barrelsHandlery3NIO15EventLoopFutureCySayAA14BarrelListDataVGG5Vapor7RequestCKF">UserController.barrelsHandler(_:)</a></code> and <code><a href="Structs/UserController.html#/s:3App14UserControllerV23seamonkeyBarrelsHandlery3NIO15EventLoopFutureCySayAA14BarrelListDataVGG5Vapor7RequestCKF">UserController.seamonkeyBarrelsHandler(_:)</a></code>.</p>
+
+                        <a href="Structs/BarrelListData.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">BarrelListData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1276-L1281">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -364,7 +441,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L914-L919">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1284-L1289">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -395,7 +472,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L922-L929">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1292-L1299">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -426,7 +503,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L932-L939">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1302-L1309">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -457,7 +534,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L942-L947">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1312-L1317">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -488,7 +565,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L950-L955">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1320-L1325">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -519,7 +596,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L958-L971">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1328-L1341">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -619,7 +696,7 @@ to return a token string upon successful execution.</p>
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-25)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-27)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.12.0</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>

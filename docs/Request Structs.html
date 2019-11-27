@@ -163,6 +163,9 @@
             <a class="nav-group-name-link" href="Request%20Structs.html">Request Structs</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/BarrelCreateData.html">BarrelCreateData</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/NoteCreateData.html">NoteCreateData</a>
               </li>
               <li class="nav-group-task">
@@ -199,6 +202,12 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/AlertKeywordData.html">AlertKeywordData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/BarrelData.html">BarrelData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/BarrelListData.html">BarrelListData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/BlockedUserData.html">BlockedUserData</a>
@@ -279,9 +288,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App14NoteCreateDataV"></a>
-                    <a name="//apple_ref/swift/Struct/NoteCreateData" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App14NoteCreateDataV">NoteCreateData</a>
+                    <a name="/s:3App16BarrelCreateDataV"></a>
+                    <a name="//apple_ref/swift/Struct/BarrelCreateData" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App16BarrelCreateDataV">BarrelCreateData</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -289,37 +298,26 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Required by <code>/api/v3/users/ID/note</code> to create a <code><a href="Classes/UserNote.html">UserNote</a></code>.</p>
+                        <p>Required by <code>POST /api/v3/user/barrel</code>.</p>
 
-<p>See <code><a href="Structs/UsersController.html#/s:3App15UsersControllerV17noteCreateHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA04NoteE4DataVtKF">UsersController.noteCreateHandler(_:data:)</a></code>.</p>
+<p>See <code>UserController.createBarrel(_:data:)</code>.</p>
 
-                        <a href="Structs/NoteCreateData.html" class="slightly-smaller">See more</a>
+                        <a href="Structs/BarrelCreateData.html" class="slightly-smaller">See more</a>
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">NoteCreateData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">BarrelCreateData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L439-L442">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1248-L1255">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
                 </li>
-              </ul>
-            </div>
-            <div class="task-group">
-              <div class="task-name-container">
-                <a name="/Helper%20Structs2"></a>
-                <a name="//apple_ref/swift/Section/Helper Structs" class="dashAnchor"></a>
-                <a href="#/Helper%20Structs2">
-                  <h3 class="section-name">Helper Structs</h3>
-                </a>
-              </div>
-              <ul class="item-container">
                 <li class="item">
                   <div>
                     <code>
@@ -346,7 +344,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L974-L979">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1344-L1349">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -379,7 +377,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L984-L989">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1354-L1359">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -412,7 +410,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1002-L1007">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1372-L1377">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -443,7 +441,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1010-L1013">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1380-L1383">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -474,7 +472,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1016-L1035">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1386-L1405">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -505,7 +503,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1038-L1041">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1408-L1411">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -537,7 +535,51 @@ account.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1045-L1048">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1415-L1418">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/Helper%20Structs2"></a>
+                <a name="//apple_ref/swift/Section/Helper Structs" class="dashAnchor"></a>
+                <a href="#/Helper%20Structs2">
+                  <h3 class="section-name">Helper Structs</h3>
+                </a>
+              </div>
+              <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App14NoteCreateDataV"></a>
+                    <a name="//apple_ref/swift/Struct/NoteCreateData" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App14NoteCreateDataV">NoteCreateData</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Required by <code>/api/v3/users/ID/note</code> to create a <code><a href="Classes/UserNote.html">UserNote</a></code>.</p>
+
+<p>See <code><a href="Structs/UsersController.html#/s:3App15UsersControllerV17noteCreateHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA04NoteE4DataVtKF">UsersController.noteCreateHandler(_:data:)</a></code>.</p>
+
+                        <a href="Structs/NoteCreateData.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">NoteCreateData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L439-L442">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -592,7 +634,7 @@ account.</p>
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-25)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-27)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.12.0</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>
