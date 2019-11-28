@@ -427,7 +427,9 @@ struct UsersController: RouteCollection {
 
 // MARK: - Helper Structs
 
-/// Returned by `/api/v3/users/ID/note`.
+/// Used to return a newly created `UserNote` for display.
+///
+/// Returned by: `POST /api/v3/users/ID/note`
 ///
 /// See `UsersController.noteCreateHandler(_:data:)`.
 struct CreatedNoteData: Content {
@@ -437,7 +439,9 @@ struct CreatedNoteData: Content {
     var note: String
 }
 
-/// Required by `/api/v3/users/ID/note` to create a `UserNote`.
+/// Used to create a `UserNote` when viewing a user's profile.
+///
+/// Required by: `/api/v3/users/ID/note`
 ///
 /// See `UsersController.noteCreateHandler(_:data:)`.
 struct NoteCreateData: Content {
@@ -463,10 +467,12 @@ struct UserHeader: Content {
 
 /// Used to obtain user identity and whether any cached information may be stale.
 ///
-/// Returned by `GET /api/v3/users/ID`,`GET /api/v3/users/find/STRING`,
-/// `GET /api/v3/client/user/updates/since/DATE`.
+/// Returned by:
+/// * `GET /api/v3/users/ID`
+/// * `GET /api/v3/users/find/STRING`
+/// * `GET /api/v3/client/user/updates/since/DATE`
 ///
-/// See `UsersController.findHandler(_:)`, `UsersController.userHandler(_:)`,
+/// See `UsersController.userHandler(_:)`, `UsersController.findHandler(_:)`,
 /// `ClientController.userUpdatesHandler(_:)`.
 struct UserInfo: Content {
     /// The user's ID.
@@ -479,7 +485,9 @@ struct UserInfo: Content {
 
 /// Used to broad search for a user based on any of their name fields.
 ///
-/// Returned by `GET /api/v3/users/match/allnames/STRING`, `GET /api/v3/client/usersearch`.
+/// Returned by:
+/// * `GET /api/v3/users/match/allnames/STRING`
+/// * `GET /api/v3/client/usersearch`
 ///
 /// See `UsersController.matchAllNamesHandler(_:)`, `ClientController.userSearchHandler(_:)`.
 struct UserSearch: Content {

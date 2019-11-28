@@ -496,7 +496,7 @@ struct UserController: RouteCollection {
     
     /// `GET /api/v3/user/alertwords`
     ///
-    /// Returns a list of the user's current alert keywords in named-list `AlertKeywordData`
+    /// Returns a list of the user's current alert keywords in `AlertKeywordData` barrel
     /// format.
     ///
     /// - Parameter req: The incoming request `Container`, provided automatically.
@@ -1226,7 +1226,9 @@ struct UserController: RouteCollection {
 
 // MARK: - Helper Structs
 
-/// Returned by `POST /api/v3/user/add`.
+/// Used to return a newly created subaccount's ID and username.
+///
+/// Returned by: `POST /api/v3/user/add`
 ///
 /// See `UserController.addHandler(_:data:)`.
 struct AddedUserData: Content {
@@ -1236,7 +1238,9 @@ struct AddedUserData: Content {
     let username: String
 }
 
-/// Returned by `GET /api/v3/user/alertwords`.
+/// Used to obtain the user's current list of alert keywords.
+///
+/// Returned by: `GET /api/v3/user/alertwords`
 ///
 /// See `UserController.alertwordsHandler(_:)`.
 struct AlertKeywordData: Content {
@@ -1246,7 +1250,9 @@ struct AlertKeywordData: Content {
     var keywords: [String]
 }
 
-/// Required by `POST /api/v3/user/barrel` to create a barrel.
+/// Used to create a new user-owned .seamonkey or .userWords `Barrel`.
+///
+/// Required by: `POST /api/v3/user/barrel`
 ///
 /// See `UserController.createBarrel(_:data:)`.
 struct BarrelCreateData: Content {
@@ -1258,8 +1264,12 @@ struct BarrelCreateData: Content {
     var stringList: [String]?
 }
 
-/// Returned by `POST /api/v3/user/barrel`,`GET /api/v3/user/barrels/ID`,
-/// `POST /api/v3/user/barrels/ID/rename/STRING`.
+/// Used to return the contents of a user-owned .seamonkey or .userWords `Barrel`.
+///
+/// Returned by:
+/// * `POST /api/v3/user/barrel`
+/// * `GET /api/v3/user/barrels/ID`
+/// * `POST /api/v3/user/barrels/ID/rename/STRING`
 ///
 /// See `UserController.createBarrelHandler(_:data:)`, `UserController.barrelHandler(_:)`,
 /// `UserController.renameBarrelHandler(_:)`.
@@ -1274,7 +1284,11 @@ struct BarrelData: Content {
     var stringList: [String]?
 }
 
-/// Returned by `GET /api/v3/user/barrels`, `GET /api/v3/user/barrels/seamonkey`.
+/// Used to obtain a list of user-owned `Barrel` names and IDs.
+///
+/// Returned by:
+/// * `GET /api/v3/user/barrels`
+/// * `GET /api/v3/user/barrels/seamonkey`
 ///
 /// See `UserController.barrelsHandler(_:)`, `UserController.seamonkeyBarrelsHandler(_:)`.
 struct BarrelListData: Content {
@@ -1284,7 +1298,9 @@ struct BarrelListData: Content {
     let name: String
 }
 
-/// Returned by `GET /api/v3/user/blocks`
+/// Used to obtain the user's list of blocked users.
+///
+/// Returned by: `GET /api/v3/user/blocks`
 ///
 /// See `UserController.blocksHandler(_:)`.
 struct BlockedUserData: Content {
@@ -1294,7 +1310,9 @@ struct BlockedUserData: Content {
     var seamonkeys: [SeaMonkey]
 }
 
-/// Returned by `POST /api/v3/user/create`.
+/// Used to return a newly created accounts's ID, username and recovery key.
+///
+/// Returned by: `POST /api/v3/user/create`
 ///
 /// See `UserController.createHandler(_:data:).`
 struct CreatedUserData: Content {
@@ -1306,7 +1324,9 @@ struct CreatedUserData: Content {
     let recoveryKey: String
 }
 
-/// Returned by `GET /api/v3/user/whoami`.
+/// Used to obtain the current user's ID, username and logged in status.
+///
+/// Returned by: `GET /api/v3/user/whoami`
 ///
 /// See `UserController.whoamiHandler(_:).`
 struct CurrentUserData: Content {
@@ -1318,7 +1338,9 @@ struct CurrentUserData: Content {
     var isLoggedIn: Bool
 }
 
-/// Returned by `GET /api/v3/user/mutewords`.
+/// Used to obtain the user's current list of keywords for muting public content.
+///
+/// Returned by: `GET /api/v3/user/mutewords`
 ///
 /// See `UserController.mutewordsHandler(_:)`.
 struct MuteKeywordData: Content {
@@ -1328,7 +1350,9 @@ struct MuteKeywordData: Content {
     var keywords: [String]
 }
 
-/// Returned by `GET /api/v3/user/mutes`.
+/// Used to obtain the user's list of muted users.
+///
+/// Returned by: `GET /api/v3/user/mutes`
 ///
 /// See `UserController.mutesHandler(_:)`.
 struct MutedUserData: Content {
@@ -1338,7 +1362,11 @@ struct MutedUserData: Content {
     var seamonkeys: [SeaMonkey]
 }
 
-/// Returned by `GET /api/v3/user/notes`, `POST /api/v3/user/note`.
+/// Used to obtain the contents of a `UserNote` for display in a non-profile-viewing context.
+///
+/// Returned by:
+/// * `GET /api/v3/user/notes`
+/// * `POST /api/v3/user/note`
 ///
 /// See `UserController.notesHandler(_:)`, `UserController.noteHandler(_:data:)`.
 struct NoteData: Content {
@@ -1356,7 +1384,9 @@ struct NoteData: Content {
     var note: String
 }
 
-/// Required by `POST /api/v3/user/note` to update a user note.
+/// Used to update a `UserNote` in a non-profile-viewing context.
+///
+/// Required by: `POST /api/v3/user/note`
 ///
 /// See `UserController.noteHandler(_:data:)`.
 struct NoteUpdateData: Content {
@@ -1374,7 +1404,11 @@ struct SeaMonkey: Content {
     var username: String
 }
 
-/// Required by `POST /api/v3/user/create`, `POST /api/v3/user/add` to create an account.
+/// Used to create a new account or subaccount.
+///
+/// Required by:
+/// * `POST /api/v3/user/create`
+/// * `POST /api/v3/user/add`
 /// 
 /// See `UserController.createHandler(_:data:)`, `UserController.addHandler(_:data:)`.
 struct UserCreateData: Content {
@@ -1384,7 +1418,9 @@ struct UserCreateData: Content {
     var password: String
 }
 
-/// Required by `POST /api/v3/user/password` to change a password.
+/// Used to change a user's password.
+///
+/// Required by: `POST /api/v3/user/password`
 ///
 /// See `UserController.passwordHandler(_:data:)`.
 struct UserPasswordData: Content {
@@ -1392,7 +1428,9 @@ struct UserPasswordData: Content {
     var password: String
 }
 
-/// Required by `POST /api/v3/user/profile` to update a profile.
+/// Used to update a user's profile contents.
+///
+/// Required by: `POST /api/v3/user/profile`
 ///
 /// See `UserController.profileUpdateHandler(_:data:)`.
 struct UserProfileData: Content {
@@ -1416,7 +1454,9 @@ struct UserProfileData: Content {
     var limitAccess: Bool
 }
 
-/// Required by `POST /api/v3/user/username`  to change a username.
+/// Used to change a user's username.
+///
+/// Required by: `POST /api/v3/user/username`
 ///
 /// See `UserController.usernameHandler(_:data:)`.
 struct UserUsernameData: Content {
@@ -1424,7 +1464,9 @@ struct UserUsernameData: Content {
     var username: String
 }
 
-/// Required by `POST /api/v3/user/verify` to verify a created but unverified account.
+/// Used to verify a created but .unverified primary account.
+///
+/// Required by: `POST /api/v3/user/verify`
 ///
 /// See `UserController.verifyHandler(_:data:)`.
 struct UserVerifyData: Content {

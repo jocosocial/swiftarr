@@ -296,7 +296,11 @@ struct AuthController: RouteCollection {
 
 // MARK: - Helper Structs
 
-/// Returned by `POST /api/v3/auth/login` and `POST /api/v3/auth/recovery`.
+/// Used to return a token string for use in HTTP Bearer Authentication.
+///
+/// Returned by:
+/// * `POST /api/v3/auth/login`
+/// * `POST /api/v3/auth/recovery`
 ///
 /// See `AuthController.loginHandler(_:)` and `AuthController.recoveryHandler(_:data:)`.
 struct TokenStringData: Content {
@@ -309,7 +313,9 @@ struct TokenStringData: Content {
     }
 }
 
-/// Required by `POST /api/v3/auth/recovery` to attempt recovery from a lost password.
+/// Used to attempt to recover an account in a forgotten-password type scenario.
+///
+/// Required by: `POST /api/v3/auth/recovery`
 ///
 /// See `AuthController.recoveryHandler(_:data:)`.
 struct UserRecoveryData: Content {
