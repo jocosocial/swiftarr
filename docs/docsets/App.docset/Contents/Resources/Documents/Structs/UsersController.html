@@ -172,9 +172,6 @@
                 <a class="nav-group-task-link" href="../Structs/NoteUpdateData.html">NoteUpdateData</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/UserAddData.html">UserAddData</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserCreateData.html">UserCreateData</a>
               </li>
               <li class="nav-group-task">
@@ -228,6 +225,9 @@
                 <a class="nav-group-task-link" href="../Structs/MutedUserData.html">MutedUserData</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SeaMonkey.html">SeaMonkey</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/NoteData.html">NoteData</a>
               </li>
               <li class="nav-group-task">
@@ -257,9 +257,6 @@
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/ProfileEdit.html">ProfileEdit</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/SeaMonkey.html">SeaMonkey</a>
               </li>
             </ul>
           </li>
@@ -401,10 +398,11 @@ exist.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>The user&rsquo;s ID, username and timestamp of last info update.</p>
+                        <p><code><a href="../Classes/User/Public.html">User.Public</a></code> containing the user&rsquo;s ID, username and timestamp of last
+profile update.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L77-L102">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L78-L103">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -467,10 +465,11 @@ filename of their current profile image.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>The user&rsquo;s ID, <code>.displayedName</code> and profile image filename.</p>
+                        <p><code><a href="../Classes/UserProfile/Header.html">UserProfile.Header</a></code> containing the user&rsquo;s ID, <code>.displayedName</code> and profile
+image filename.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L117-L127">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L119-L129">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -533,11 +532,11 @@ as a likely bug, please and thank you.
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>A <code><a href="../Classes/UserProfile/Edit.html">UserProfile.Edit</a></code> object containing the editable properties of the
-profile.</p>
+                        <p><code><a href="../Classes/UserProfile/Public.html">UserProfile.Public</a></code> containing the displayable properties of the specified
+user&rsquo;s profile.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L143-L186">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L145-L188">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -605,10 +604,11 @@ displayedName change, profile photo change, or any field on their profile)</li>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>The user&rsquo;s ID, username and timestamp of last info update.</p>
+                        <p><code><a href="../Classes/User/Public.html">User.Public</a></code> containing the user&rsquo;s ID, username and timestamp of last
+profile update.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L204-L207">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L207-L210">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -693,10 +693,11 @@ username harvesting.
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>The ID and profile.userSearch string values of all matching users.</p>
+                        <p><code>[UserProfile.Search]</code> containing the ID and profile.userSearch string
+values of all matching users.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L234-L254">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L238-L258">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -757,10 +758,10 @@ thus there would never be a match.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>An array of <code>@username</code> strings.</p>
+                        <p><code>[String]</code> containng all matching usernames as <q>@username</q> strings.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L268-L282">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L272-L286">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -846,10 +847,10 @@ be reported as a likely bug, please and thank you.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>The newly created note&rsquo;s ID and text.</p>
+                        <p><code><a href="../Structs/CreatedNoteData.html">CreatedNoteData</a></code> containing the newly created note&rsquo;s ID and text.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L303-L344">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L307-L348">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -911,7 +912,7 @@ be reported as a likely bug, please and thank you.
                         <p>204 No Content on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L355-L379">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L359-L383">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -979,10 +980,10 @@ be reported as a likely bug, please and thank you.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>The note&rsquo;s ID and text.</p>
+                        <p><code><a href="../Classes/UserNote/Edit.html">UserNote.Edit</a></code> containing the note&rsquo;s ID and text.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L396-L419">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L400-L423">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

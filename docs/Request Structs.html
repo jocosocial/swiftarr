@@ -172,9 +172,6 @@
                 <a class="nav-group-task-link" href="Structs/NoteUpdateData.html">NoteUpdateData</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/UserAddData.html">UserAddData</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/UserCreateData.html">UserCreateData</a>
               </li>
               <li class="nav-group-task">
@@ -228,6 +225,9 @@
                 <a class="nav-group-task-link" href="Structs/MutedUserData.html">MutedUserData</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SeaMonkey.html">SeaMonkey</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/NoteData.html">NoteData</a>
               </li>
               <li class="nav-group-task">
@@ -257,9 +257,6 @@
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/ProfileEdit.html">ProfileEdit</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/SeaMonkey.html">SeaMonkey</a>
               </li>
             </ul>
           </li>
@@ -298,7 +295,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Required by <code>POST /api/v3/user/barrel</code>.</p>
+                        <p>Required by <code>POST /api/v3/user/barrel</code> to create a barrel.</p>
 
 <p>See <code>UserController.createBarrel(_:data:)</code>.</p>
 
@@ -313,7 +310,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1248-L1255">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1252-L1259">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -331,7 +328,9 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Used by <code><a href="Structs/UserController.html#/s:3App14UserControllerV11noteHandler_4data3NIO15EventLoopFutureCyAA8NoteDataVG5Vapor7RequestC_AA0k6UpdateL0VtKF">UserController.noteHandler(_:data:)</a></code> to update a user note.</p>
+                        <p>Required by <code>POST /api/v3/user/note</code> to update a user note.</p>
+
+<p>See <code><a href="Structs/UserController.html#/s:3App14UserControllerV11noteHandler_4data3NIO15EventLoopFutureCyAA8NoteDataVG5Vapor7RequestC_AA0k6UpdateL0VtKF">UserController.noteHandler(_:data:)</a></code>.</p>
 
                         <a href="Structs/NoteUpdateData.html" class="slightly-smaller">See more</a>
                       </div>
@@ -344,40 +343,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1344-L1349">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App11UserAddDataV"></a>
-                    <a name="//apple_ref/swift/Struct/UserAddData" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App11UserAddDataV">UserAddData</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Required by <code>/api/v3/user/add</code> for adding a sub-account.</p>
-
-<p>See <code><a href="Structs/UserController.html#/s:3App14UserControllerV10addHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA0B7AddDataVtKF">UserController.addHandler(_:data:)</a></code>.</p>
-
-                        <a href="Structs/UserAddData.html" class="slightly-smaller">See more</a>
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">UserAddData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1354-L1359">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1362-L1367">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -395,9 +361,9 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Required by <code>/api/v3/user/create</code> for initial creation of an account.</p>
+                        <p>Required by <code>POST /api/v3/user/create</code>, <code>POST /api/v3/user/add</code> to create an account.</p>
 
-<p>See <code><a href="Structs/UserController.html#/s:3App14UserControllerV13createHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA0B10CreateDataVtKF">UserController.createHandler(_:data:)</a></code>.</p>
+<p>See <code><a href="Structs/UserController.html#/s:3App14UserControllerV13createHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA0B10CreateDataVtKF">UserController.createHandler(_:data:)</a></code>, <code><a href="Structs/UserController.html#/s:3App14UserControllerV10addHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA0B10CreateDataVtKF">UserController.addHandler(_:data:)</a></code>.</p>
 
                         <a href="Structs/UserCreateData.html" class="slightly-smaller">See more</a>
                       </div>
@@ -410,7 +376,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1372-L1377">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1380-L1385">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -428,7 +394,9 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Used by <code><a href="Structs/UserController.html#/s:3App14UserControllerV15passwordHandler_4data3NIO15EventLoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestC_AA0B12PasswordDataVtKF">UserController.passwordHandler(_:data:)</a></code> for changing a password.</p>
+                        <p>Required by <code>POST /api/v3/user/password</code> to change a password.</p>
+
+<p>See <code><a href="Structs/UserController.html#/s:3App14UserControllerV15passwordHandler_4data3NIO15EventLoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestC_AA0B12PasswordDataVtKF">UserController.passwordHandler(_:data:)</a></code>.</p>
 
                         <a href="Structs/UserPasswordData.html" class="slightly-smaller">See more</a>
                       </div>
@@ -441,7 +409,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1380-L1383">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1390-L1393">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -459,7 +427,9 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Used by <code>UserController.profileUpdateHandler(_:data:)</code> for editing a profile.</p>
+                        <p>Required by <code>POST /api/v3/user/profile</code> to update a profile.</p>
+
+<p>See <code>UserController.profileUpdateHandler(_:data:)</code>.</p>
 
                         <a href="Structs/UserProfileData.html" class="slightly-smaller">See more</a>
                       </div>
@@ -472,7 +442,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1386-L1405">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1398-L1417">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -490,7 +460,9 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Used by <code><a href="Structs/UserController.html#/s:3App14UserControllerV15usernameHandler_4data3NIO15EventLoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestC_AA0B12UsernameDataVtKF">UserController.usernameHandler(_:data:)</a></code> for changing a username.</p>
+                        <p>Required by <code>POST /api/v3/user/username</code>  to change a username.</p>
+
+<p>See <code><a href="Structs/UserController.html#/s:3App14UserControllerV15usernameHandler_4data3NIO15EventLoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestC_AA0B12UsernameDataVtKF">UserController.usernameHandler(_:data:)</a></code>.</p>
 
                         <a href="Structs/UserUsernameData.html" class="slightly-smaller">See more</a>
                       </div>
@@ -503,7 +475,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1408-L1411">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1422-L1425">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -521,8 +493,9 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Used by <code><a href="Structs/UserController.html#/s:3App14UserControllerV13verifyHandler_4data3NIO15EventLoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestC_AA0B10VerifyDataVtKF">UserController.verifyHandler(_:data:)</a></code> to verify a created but unverified
-account.</p>
+                        <p>Required by <code>POST /api/v3/user/verify</code> to verify a created but unverified account.</p>
+
+<p>See <code><a href="Structs/UserController.html#/s:3App14UserControllerV13verifyHandler_4data3NIO15EventLoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestC_AA0B10VerifyDataVtKF">UserController.verifyHandler(_:data:)</a></code>.</p>
 
                         <a href="Structs/UserVerifyData.html" class="slightly-smaller">See more</a>
                       </div>
@@ -535,7 +508,7 @@ account.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1415-L1418">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1430-L1433">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -579,7 +552,7 @@ account.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L439-L442">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L443-L446">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -608,7 +581,9 @@ account.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Used by <code><a href="Structs/AuthController.html#/s:3App14AuthControllerV15recoveryHandler_4data3NIO15EventLoopFutureCyAA15TokenStringDataVG5Vapor7RequestC_AA012UserRecoveryM0VtKF">AuthController.recoveryHandler(_:data:)</a></code> for the incoming recovery attempt.</p>
+                        <p>Required by <code>POST /api/v3/auth/recovery</code> to attempt recovery from a lost password.</p>
+
+<p>See <code><a href="Structs/AuthController.html#/s:3App14AuthControllerV15recoveryHandler_4data3NIO15EventLoopFutureCyAA15TokenStringDataVG5Vapor7RequestC_AA012UserRecoveryM0VtKF">AuthController.recoveryHandler(_:data:)</a></code>.</p>
 
                         <a href="Structs/UserRecoveryData.html" class="slightly-smaller">See more</a>
                       </div>
@@ -621,7 +596,7 @@ account.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L301-L306">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L315-L320">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

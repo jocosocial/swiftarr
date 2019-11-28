@@ -172,9 +172,6 @@
                 <a class="nav-group-task-link" href="../Structs/NoteUpdateData.html">NoteUpdateData</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/UserAddData.html">UserAddData</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserCreateData.html">UserCreateData</a>
               </li>
               <li class="nav-group-task">
@@ -228,6 +225,9 @@
                 <a class="nav-group-task-link" href="../Structs/MutedUserData.html">MutedUserData</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SeaMonkey.html">SeaMonkey</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/NoteData.html">NoteData</a>
               </li>
               <li class="nav-group-task">
@@ -257,9 +257,6 @@
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/ProfileEdit.html">ProfileEdit</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/SeaMonkey.html">SeaMonkey</a>
               </li>
             </ul>
           </li>
@@ -493,10 +490,11 @@ not available.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>The newly created user&rsquo;s ID, username, and a recovery key string.</p>
+                        <p><code><a href="../Structs/CreatedUserData.html">CreatedUserData</a></code> containing the newly created user&rsquo;s ID, username, and a
+recovery key string.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L167-L229">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L168-L230">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -587,7 +585,7 @@ another user.
                         <p>HTTP status 200 on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L248-L281">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L249-L282">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -666,8 +664,7 @@ the username and displayName values.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>A <code><a href="../Classes/UserProfile/Edit.html">UserProfile.Edit</a></code> object containing the editable properties of the
-profile.</p>
+                        <p><code><a href="../Classes/UserProfile/Edit.html">UserProfile.Edit</a></code> containing the editable properties of the profile.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L303-L315">Show on GitHub</a>
@@ -755,11 +752,10 @@ resets its respective profile property to <code>nil</code>.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>A<code><a href="../Classes/UserProfile/Edit.html">UserProfile.Edit</a></code> object containing the updated editable properties of
-the profile.</p>
+                        <p><code><a href="../Classes/UserProfile/Edit.html">UserProfile.Edit</a></code> containing the updated editable properties of the profile.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L336-L386">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L335-L385">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -815,7 +811,8 @@ currently being used.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>The current user&rsquo;s ID and username.</p>
+                        <p><code><a href="../Structs/CurrentUserData.html">CurrentUserData</a></code> containing the current user&rsquo;s ID, username and logged in
+status.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L398-L411">Show on GitHub</a>
@@ -837,9 +834,9 @@ currently being used.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App14UserControllerV10addHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA0B7AddDataVtKF"></a>
+                    <a name="/s:3App14UserControllerV10addHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA0B10CreateDataVtKF"></a>
                     <a name="//apple_ref/swift/Method/addHandler(_:data:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App14UserControllerV10addHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA0B7AddDataVtKF">addHandler(_:data:)</a>
+                    <a class="token" href="#/s:3App14UserControllerV10addHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA0B10CreateDataVtKF">addHandler(_:data:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -866,7 +863,7 @@ multiple accounts can all be simultaneously logged in.</p>
 </div>
 <div class="aside aside-requires">
     <p class="aside-title">Requires</p>
-    <p><code><a href="../Structs/UserAddData.html">UserAddData</a></code> payload in the HTTP body.</p>
+    <p><code><a href="../Structs/UserCreateData.html">UserCreateData</a></code> payload in the HTTP body.</p>
 
 </div>
 <div class="aside aside-throws">
@@ -882,7 +879,7 @@ the username is not available.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">addHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">data</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserAddData.html">UserAddData</a></span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">Response</span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">addHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">data</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserCreateData.html">UserCreateData</a></span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">Response</span><span class="o">&gt;</span></code></pre>
 
                         </div>
                       </div>
@@ -910,7 +907,7 @@ the username is not available.</p>
                               </td>
                               <td>
                                 <div>
-                                  <p><code><a href="../Structs/UserAddData.html">UserAddData</a></code> struct containing the user&rsquo;s desired username and password.</p>
+                                  <p><code><a href="../Structs/UserCreateData.html">UserCreateData</a></code> struct containing the user&rsquo;s desired username and password.</p>
                                 </div>
                               </td>
                             </tr>
@@ -919,7 +916,7 @@ the username is not available.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>The newly created user&rsquo;s ID and username.</p>
+                        <p><code><a href="../Structs/AddedUserData.html">AddedUserData</a></code> containing the newly created user&rsquo;s ID and username.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L440-L495">Show on GitHub</a>
@@ -980,8 +977,8 @@ format.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>The alert keywords as an array of strings embedded in a named-list
-structure.</p>
+                        <p><code><a href="../Structs/AlertKeywordData.html">AlertKeywordData</a></code> containing the current alert keywords as an array of
+strings.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L506-L526">Show on GitHub</a>
@@ -1164,8 +1161,8 @@ format. If the user is a subaccount, the parent user&rsquo;s blocks are returned
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>The blocked users as an array of <code><a href="../Structs/SeaMonkey.html">SeaMonkey</a></code> embedded in a named-list
-structure.</p>
+                        <p><code><a href="../Structs/BlockedUserData.html">BlockedUserData</a></code> containing the currently blocked users as an array of
+<code><a href="../Structs/SeaMonkey.html">SeaMonkey</a></code>.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L639-L684">Show on GitHub</a>
@@ -1329,68 +1326,6 @@ owned by the user.
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App14UserControllerV16mutewordsHandlery3NIO15EventLoopFutureCyAA15MuteKeywordDataVG5Vapor7RequestCKF"></a>
-                    <a name="//apple_ref/swift/Method/mutewordsHandler(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App14UserControllerV16mutewordsHandlery3NIO15EventLoopFutureCyAA15MuteKeywordDataVG5Vapor7RequestCKF">mutewordsHandler(_:)</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p><code>GET /api/v3/user/mutewords</code></p>
-
-<p>Returns a list of the user&rsquo;s currently muted keywords in named-list <code>MutedKeywordData</code>
-format.</p>
-<div class="aside aside-throws">
-    <p class="aside-title">Throws</p>
-    A 5xx response should be reported as a likely bug, please and thank you.
-
-</div>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">mutewordsHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Structs/MuteKeywordData.html">MuteKeywordData</a></span><span class="o">&gt;</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div>
-                        <h4>Parameters</h4>
-                        <table class="graybox">
-                          <tbody>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>req</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
-                                </div>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                      <div>
-                        <h4>Return Value</h4>
-                        <p>The muted keywords as an array of strings embedded in a named-list
-structure.</p>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L812-L832">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
                     <a name="/s:3App14UserControllerV12mutesHandlery3NIO15EventLoopFutureCyAA05MutedB4DataVG5Vapor7RequestCKF"></a>
                     <a name="//apple_ref/swift/Method/mutesHandler(_:)" class="dashAnchor"></a>
                     <a class="token" href="#/s:3App14UserControllerV12mutesHandlery3NIO15EventLoopFutureCyAA05MutedB4DataVG5Vapor7RequestCKF">mutesHandler(_:)</a>
@@ -1441,11 +1376,73 @@ format.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>The muted users as an array of <code><a href="../Structs/SeaMonkey.html">SeaMonkey</a></code> embedded in a named-list
-structure.</p>
+                        <p><code><a href="../Structs/MutedUserData.html">MutedUserData</a></code> containing the currently muted users as an array of
+<code><a href="../Structs/SeaMonkey.html">SeaMonkey</a></code>.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L843-L883">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L812-L852">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App14UserControllerV16mutewordsHandlery3NIO15EventLoopFutureCyAA15MuteKeywordDataVG5Vapor7RequestCKF"></a>
+                    <a name="//apple_ref/swift/Method/mutewordsHandler(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App14UserControllerV16mutewordsHandlery3NIO15EventLoopFutureCyAA15MuteKeywordDataVG5Vapor7RequestCKF">mutewordsHandler(_:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>GET /api/v3/user/mutewords</code></p>
+
+<p>Returns a list of the user&rsquo;s currently muted keywords in named-list <code>MutedKeywordData</code>
+format.</p>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    A 5xx response should be reported as a likely bug, please and thank you.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">mutewordsHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Structs/MuteKeywordData.html">MuteKeywordData</a></span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p><code><a href="../Structs/MuteKeywordData.html">MuteKeywordData</a></code> containing the current muting keywords as an array of
+strings.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L863-L883">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1520,7 +1517,7 @@ as a likely bug, please and thank you.
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>The updated note as a <code><a href="../Structs/NoteData.html">NoteData</a></code> object.</p>
+                        <p><code><a href="../Structs/NoteData.html">NoteData</a></code> containing the updated note and metadata for display.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L896-L932">Show on GitHub</a>
@@ -1585,7 +1582,7 @@ editing of notes outside of a profile-viewing context.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>The user&rsquo;s notes as an array of <code><a href="../Structs/NoteData.html">NoteData</a></code>, or an empty array if none exist.</p>
+                        <p><code>[NoteData]</code> containing all of the user&rsquo;s notes.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L946-L978">Show on GitHub</a>
@@ -1975,7 +1972,7 @@ is covered by its parent&rsquo;s block list.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>A recoveryKey String.</p>
+                        <p>A recoveryKey string.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1216-L1224">Show on GitHub</a>
