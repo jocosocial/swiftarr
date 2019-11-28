@@ -391,7 +391,7 @@ final class ClientTests: XCTestCase {
             from: clientURI + "usersearch",
             method: .GET,
             headers: headers,
-            decodeTo: [UserProfile.Search].self
+            decodeTo: [UserSearch].self
         )
         let count = userSearches.count
         XCTAssertTrue(userSearches[0].userSearch.contains("@admin"), "should be '@admin'")
@@ -400,7 +400,7 @@ final class ClientTests: XCTestCase {
             from: clientURI + "usersearch",
             method: .GET,
             headers: headers,
-            decodeTo: [UserProfile.Search].self
+            decodeTo: [UserSearch].self
         )
         XCTAssertTrue(userSearches.count == count + 1, "should be \(count) + 1")
         XCTAssertTrue(userSearches[count].userSearch.contains("@zara"), "should be '@zarathustra")

@@ -108,7 +108,7 @@ struct ClientController: RouteCollection {
     /// `GET /api/v3/client/usersearch`
     ///
     /// Retrieves all `UserProfile.userSearch` values, returning an array of precomposed
-    /// `.userSearch` strings in `UserProfile.Search` format. The intended use for this data
+    /// `.userSearch` strings in `UserSearch` format. The intended use for this data
     /// is to efficiently isolate a particular user in an auto-complete type scenario, using
     /// **all** of the `.displayName`, `.username` and `.realName` profile fields.
     ///
@@ -116,9 +116,9 @@ struct ClientController: RouteCollection {
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: 400 error if no valid date string provided. 401 error if the required header
     ///   is missing or invalid. 403 error if user is not a registered client.
-    /// - Returns: `[UserProfile.Search]` containing the ID and `.userSearch` string values
+    /// - Returns: `[UserSearch]` containing the ID and `.userSearch` string values
     ///   of all users, sorted by username.
-    func userSearchHandler(_ req: Request) throws -> Future<[UserProfile.Search]> {
+    func userSearchHandler(_ req: Request) throws -> Future<[UserSearch]> {
         // FIXME: account for blocks
         let client = try req.requireAuthenticated(User.self)
         // must be registered client

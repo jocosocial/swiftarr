@@ -246,7 +246,7 @@ final class UsersTests: XCTestCase {
             from: usersURI + "match/allnames/ver",
             method: .GET,
             headers: headers,
-            decodeTo: [UserProfile.Search].self
+            decodeTo: [UserSearch].self
         )
         XCTAssertTrue(usernames.count == 2, "should have 'unverified','verified'")
         
@@ -255,7 +255,7 @@ final class UsersTests: XCTestCase {
             from: usersURI + "match/allnames/@ver",
             method: .GET,
             headers: headers,
-            decodeTo: [UserProfile.Search].self
+            decodeTo: [UserSearch].self
         )
         XCTAssertTrue(usernames.count == 1, "should have 'verified'")
         XCTAssertTrue(usernames[0].userSearch == "@verified", "should be '@verified'")
@@ -284,7 +284,7 @@ final class UsersTests: XCTestCase {
             from: usersURI + "match/allnames/sir",
             method: .GET,
             headers: headers,
-            decodeTo: [UserProfile.Search].self
+            decodeTo: [UserSearch].self
         )
         XCTAssertTrue(usernames.count == 1, "should have 'grundoon'")
         XCTAssertTrue(usernames[0].userSearch == "%Sir% 😀 Cookie! (@grundoon) - Alistair Cookie", "should be")
@@ -294,7 +294,7 @@ final class UsersTests: XCTestCase {
             from: usersURI + "match/allnames/!",
             method: .GET,
             headers: headers,
-            decodeTo: [UserProfile.Search].self
+            decodeTo: [UserSearch].self
         )
         XCTAssertTrue(usernames.count == 1, "should have 'grundoon'")
         XCTAssertTrue(usernames[0].userSearch.contains("grundoon"), "should be 'grundoon'")
@@ -304,7 +304,7 @@ final class UsersTests: XCTestCase {
             from: usersURI + "match/allnames/%F0%9F%98%80",
             method: .GET,
             headers: headers,
-            decodeTo: [UserProfile.Search].self
+            decodeTo: [UserSearch].self
         )
         XCTAssertTrue(usernames.count == 1, "should have 'grundoon'")
         XCTAssertTrue(usernames[0].userSearch.contains("grundoon"), "should be 'grundoon'")
@@ -314,7 +314,7 @@ final class UsersTests: XCTestCase {
             from: usersURI + "match/allnames/r%20c",
             method: .GET,
             headers: headers,
-            decodeTo: [UserProfile.Search].self
+            decodeTo: [UserSearch].self
         )
         XCTAssertTrue(usernames.count == 1, "should have 'grundoon'")
         XCTAssertTrue(usernames[0].userSearch.contains("grundoon"), "should be 'grundoon'")

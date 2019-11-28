@@ -216,7 +216,7 @@ struct UsersController: RouteCollection {
     /// `GET /api/v3/users/match/allnames/STRING`
     ///
     /// Retrieves all `UserProfile.userSearch` values containing the specified substring,
-    /// returning an array of precomposed `.userSearch` strings in `UserProfile.Search` format.
+    /// returning an array of precomposed `.userSearch` strings in `UserSearch` format.
     /// The intended use for this endpoint is to help isolate a particular user in an
     /// auto-complete type scenario, by searching **all** of the `.displayName`, `.username`
     /// and `.realName` profile fields.
@@ -233,9 +233,9 @@ struct UsersController: RouteCollection {
     ///
     /// - Parameter req: he incoming request `Container`, provided automatically.
     /// - Throws: 403 error if the search term is not permitted.
-    /// - Returns: `[UserProfile.Search]` containing the ID and profile.userSearch string
+    /// - Returns: `[UserSearch]` containing the ID and profile.userSearch string
     ///   values of all matching users.
-    func matchAllNamesHandler(_ req: Request) throws -> Future<[UserProfile.Search]> {
+    func matchAllNamesHandler(_ req: Request) throws -> Future<[UserSearch]> {
         // FIXME: account for blocks
         // let user = try req.requireAuthenticated(User.self)
         var search = try req.parameters.next(String.self)

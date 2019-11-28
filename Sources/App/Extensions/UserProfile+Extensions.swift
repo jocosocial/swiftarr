@@ -8,7 +8,6 @@ extension UserProfile: PostgreSQLUUIDModel {}
 extension UserProfile: Content {}
 extension UserProfile.Edit: Content {}
 extension UserProfile.Public: Content {}
-extension UserProfile.Search: Content {}
 
 // model can be used as endpoint parameter
 extension UserProfile: Parameter {}
@@ -120,8 +119,8 @@ extension UserProfile {
     
     /// Converts a `UserProfile` model to a version intended for multi-field search. Only the ID
     /// and a precomposed `.displayName` + `.username` + `.realName` string are returned.
-    func convertToSearch() throws -> UserProfile.Search {
-        return UserProfile.Search(
+    func convertToSearch() throws -> UserSearch {
+        return UserSearch(
             userID: self.userID,
             userSearch: self.userSearch
         )
@@ -141,10 +140,10 @@ extension Future where T: UserProfile {
         }
     }
     
-    /// Converts a `Future<UserProfile>` to a `Future<UserProfile.Search>`. This extension
-    /// provides the convenience of simply using `profile.convertToSearcg()` and allowing the
+    /// Converts a `Future<UserProfile>` to a `Future<UserSearch>`. This extension
+    /// provides the convenience of simply using `profile.convertToSearch()` and allowing the
     /// compiler to choose the appropriate version for the context.
-    func convertToSearch() throws -> Future<UserProfile.Search> {
+    func convertToSearch() throws -> Future<UserSearch> {
         return self.map {
             (profile) in
             return try profile.convertToSearch()
