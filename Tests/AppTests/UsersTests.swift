@@ -112,7 +112,7 @@ final class UsersTests: XCTestCase {
             from: usersURI + "\(user.userID)/header",
             method: .GET,
             headers: headers,
-            decodeTo: UserProfile.Header.self
+            decodeTo: UserHeader.self
         )
         XCTAssertTrue(header.userID == user.userID, "should be \(user.userID)")
         XCTAssertTrue(header.displayedName.contains("@\(user.username)"), "@\(user.username)")
@@ -139,7 +139,7 @@ final class UsersTests: XCTestCase {
             from: usersURI + "\(user.userID)/header",
             method: .GET,
             headers: headers,
-            decodeTo: UserProfile.Header.self
+            decodeTo: UserHeader.self
         )
         XCTAssertTrue(header.displayedName.contains("Cookie Monster (@"), "Cookie Monster (@\(user.username))")
     }

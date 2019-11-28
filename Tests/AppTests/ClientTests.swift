@@ -262,7 +262,7 @@ final class ClientTests: XCTestCase {
             from: clientURI + "user/headers/since/-1",
             method: .GET,
             headers: headers,
-            decodeTo: [UserProfile.Header].self
+            decodeTo: [UserHeader].self
         )
         XCTAssertTrue(users.count > 1, "should be all accounts")
         
@@ -299,7 +299,7 @@ final class ClientTests: XCTestCase {
             from: clientURI + "user/headers/since/\(isoString)",
             method: .GET,
             headers: headers,
-            decodeTo: [UserProfile.Header].self
+            decodeTo: [UserHeader].self
         )
         XCTAssertTrue(users.count == 1, "should be 1 updated header")
         
@@ -310,7 +310,7 @@ final class ClientTests: XCTestCase {
             from: clientURI + "user/headers/since/\(currentDate.timeIntervalSince1970)",
             method: .GET,
             headers: headers,
-            decodeTo: [UserProfile.Header].self
+            decodeTo: [UserHeader].self
         )
         XCTAssertTrue(users.count == 0, "should be no updated headers")
 

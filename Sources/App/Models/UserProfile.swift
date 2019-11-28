@@ -179,36 +179,6 @@ final class UserProfile: Codable {
             self.limitAccess = limitAccess
         }
     }
-
-    /// Used for posted content headers.
-    final class Header: Codable {
-        // MARK: Properties
-        /// The user's ID.
-        var userID: UUID
-        /// The generated displayName + username string for displaying the user's identity.
-        var displayedName: String
-        /// The filename of the user's profile image.
-        var userImage: String
-        
-        // MARK: Initialization
-        /// Initializes a UserProfile.Header model.
-        ///
-        /// - Parameters:
-        ///   - userID: The user's ID.
-        ///   - username: The user's username, used to generate `.displayedName`
-        ///   - displayName: The user's displayName, used to generate `.displayedName`.
-        ///   - image: The filename of the user's profile image.
-        init(userID: UUID, username: String, displayName: String, userImage: String) {
-            self.userID = userID
-            // generate the .displayedName string
-            if displayName.isEmpty {
-                self.displayedName = "@\(username)"
-            } else {
-                self.displayedName = displayName + " (@\(username))"
-            }
-            self.userImage = userImage
-        }
-    }
     
     /// Used for public viewing of the profile.
     ///

@@ -104,7 +104,7 @@ struct UsersController: RouteCollection {
     
     /// `GET /api/v3/users/ID/header`
     ///
-    /// Retrieves the specified user's `UserProfile.Header` info.
+    /// Retrieves the specified user's `UserHeader` info.
     ///
     /// This endpoint provides one-off retrieval of the user information appropriate for
     /// a header on posted content – the user's ID, current generated `.displayedName`, and
@@ -114,9 +114,9 @@ struct UsersController: RouteCollection {
     ///
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: `UserProfile.Header` containing the user's ID, `.displayedName` and profile
+    /// - Returns: `UserHeader` containing the user's ID, `.displayedName` and profile
     ///   image filename.
-    func headerHandler(_ req: Request) throws -> Future<UserProfile.Header> {
+    func headerHandler(_ req: Request) throws -> Future<UserHeader> {
         // FIXME: account for blocks
         let user = try req.requireAuthenticated(User.self)
         return try user.profile.query(on: req)

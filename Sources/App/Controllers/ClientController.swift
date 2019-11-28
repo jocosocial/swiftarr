@@ -53,7 +53,7 @@ struct ClientController: RouteCollection {
     
     /// `GET /api/v3/client/user/headers/since/DATE`
     ///
-    /// Retrieves the `UserProfile.Header` of all users with a `.profileUpdatedAt` timestamp
+    /// Retrieves the `UserHeader` of all users with a `.profileUpdatedAt` timestamp
     /// later than the specified date. The `DATE` parameter is a string, and may be provided
     /// in either of two formats:
     ///
@@ -67,8 +67,8 @@ struct ClientController: RouteCollection {
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: 400 error if no valid date string provided. 401 error if the required header
     ///   is missing or invalid. 403 error if user is not a registered client.
-    /// - Returns: `[UserProfile.Header]` array of all updated users.
-    func userHeadersHandler(_ req: Request) throws -> Future<[UserProfile.Header]> {
+    /// - Returns: `[UserHeader]` array of all updated users.
+    func userHeadersHandler(_ req: Request) throws -> Future<[UserHeader]> {
         // FIXME: account for blocks
         let client = try req.requireAuthenticated(User.self)
         // must be registered client
