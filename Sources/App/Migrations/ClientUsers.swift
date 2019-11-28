@@ -6,12 +6,12 @@ import Crypto
 /// `registered-clients.txt` file located at the root level of the project. The file must
 /// be of the format:
 ///
-///     clientUserame1:password1:recoveryKey1
+///     clientUsername1:password1:recoveryKey1
 ///     clientUsername2:password2:recoveryKey2
 ///     ...
 ///
-/// -Note: Each API client that wishes to make use of `ClientController` endpoints **must**
-///  provide a client username and password pair prior to production startup.
+/// - Note: Each API client that wishes to make use of `ClientController` endpoints **must**
+///  provide a client `username:password:recovery key` triplet prior to production startup.
 
 struct ClientUsers: Migration {
     typealias Database = PostgreSQLDatabase
