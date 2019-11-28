@@ -439,7 +439,7 @@ struct UserController: RouteCollection {
     /// - Returns: `AddedUserData` containing the newly created user's ID and username.
     func addHandler(_ req: Request, data: UserCreateData) throws -> Future<Response> {
         let user = try req.requireAuthenticated(User.self)
-        // see `UserAddData.validations()`
+        // see `UserCreateData.validations()`
         try data.validate()
         // only upstanding citizens need apply
         guard user.accessLevel.rawValue >= UserAccessLevel.verified.rawValue else {

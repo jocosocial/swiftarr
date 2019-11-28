@@ -84,12 +84,12 @@ final class BarrelTests: XCTestCase {
         XCTAssertTrue(muteKeywordData.keywords.count == 0, "should be no mutes")
 
         // add subaccount
-        let userAddData = UserAddData(username: "subaccount", password: testPassword)
+        let userCreateData = UserCreateData(username: "subaccount", password: testPassword)
         let addedUserData = try app.getResult(
             from: userURI + "add",
             method: .POST,
             headers: headers,
-            body: userAddData,
+            body: userCreateData,
             decodeTo: AddedUserData.self
         )
         token = try app.login(username: addedUserData.username, password: testPassword, on: conn)

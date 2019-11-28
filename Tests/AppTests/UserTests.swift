@@ -474,12 +474,12 @@ final class UserTests: XCTestCase {
         adminHeaders.bearerAuthorization = BearerAuthorization(token: adminToken.token)
         
         // test add subaccount
-        var userAddData = UserAddData(username: "subaccount", password: testPassword)
+        var userCreateData = UserCreateData(username: "subaccount", password: testPassword)
         let addedUserData = try app.getResult(
             from: userURI + "add",
             method: .POST,
             headers: headers,
-            body: userAddData,
+            body: userCreateData,
             decodeTo: AddedUserData.self
         )
         let addedUser = try app.getResult(
@@ -504,12 +504,12 @@ final class UserTests: XCTestCase {
         XCTAssertFalse(result.token.isEmpty, "should receive valid token string")
 
         // test unavailable username
-        userAddData.username = "verified"
+        userCreateData.username = "verified"
         var response = try app.getResponse(
             from: userURI + "add",
             method: .POST,
             headers: headers,
-            body: userAddData
+            body: userCreateData
         )
         XCTAssertTrue(response.http.status.code == 409, "should be 409 Conflict")
         XCTAssertTrue(response.http.body.description.contains("not available"), "not available")
@@ -521,7 +521,7 @@ final class UserTests: XCTestCase {
             from: userURI + "add",
             method: .POST,
             headers: headers,
-            body: userAddData
+            body: userCreateData
         )
         XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
         XCTAssertTrue(response.http.body.description.contains("not currently"), "not currently")
