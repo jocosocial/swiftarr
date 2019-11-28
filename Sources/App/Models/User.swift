@@ -44,9 +44,6 @@ final class User: Codable {
     /// or to the parent's access level if a sub-account.
     var accessLevel: UserAccessLevel
     
-    /// An array of keywords on which the user can mute a post.
-    var keywordMutes: [String]
-    
     /// Number of successive failed attempts at password recovery.
     var recoveryAttempts: Int
     
@@ -79,7 +76,6 @@ final class User: Codable {
     ///     address. `nil` if not yet verified.
     ///   - parentID: If a sub-account, the `id` of the master acount, otherwise `nil`.
     ///   - accessLevel: The user's access level (see `UserAccessLevel`).
-    ///   - keywordMutes: The user's list of keywords that mute posts, initially empty.
     ///   - recoveryAttempts: The number of successive failed attempts at password recovery,
     ///     initially 0.
     ///   - reports: The total number of reports made on the user's posts, initially 0.
@@ -93,7 +89,6 @@ final class User: Codable {
         verification: String? = nil,
         parentID: UUID? = nil,
         accessLevel: UserAccessLevel,
-        keywordMutes: [String] = [],
         recoveryAttempts: Int = 0,
         reports: Int = 0,
         profileUpdatedAt: Date = Date(timeIntervalSince1970: 0)
@@ -104,7 +99,6 @@ final class User: Codable {
         self.verification = verification
         self.parentID = parentID
         self.accessLevel = accessLevel
-        self.keywordMutes = keywordMutes
         self.recoveryAttempts = recoveryAttempts
         self.reports = reports
         self.profileUpdatedAt = profileUpdatedAt
@@ -126,8 +120,6 @@ final class User: Codable {
         /// The user's access level.
         var accessLevel: UserAccessLevel
         /// The user's muting keywords.
-        var keywordMutes: [String]
-        /// Number of successive failed attempts at password recovery.
         var recoveryAttempts: Int
         /// Cumulative number of reports on the user's posts.
         var reports: Int
@@ -147,7 +139,6 @@ final class User: Codable {
         ///   - verification: The user's identifying token.
         ///   - parentID: The user's parent user, if a sub-account
         ///   - accessLevel: The user's `UserAccessLevel`.
-        ///   - keywordMutes: An array of keywords the user uses to mute others' posts.
         ///   - recoveryAttempts: Number of successive failed password recovery attempts.
         ///   - reports: Cumulative number of reports on the user's posts.
         ///   - createdAt: Timestamp of user creation.
@@ -159,7 +150,6 @@ final class User: Codable {
             verification: String?,
             parentID: UUID?,
             accessLevel: UserAccessLevel,
-            keywordMutes: [String],
             recoveryAttempts: Int,
             reports: Int,
             createdAt: Date?,
@@ -171,7 +161,6 @@ final class User: Codable {
             self.verification = verification
             self.parentID = parentID
             self.accessLevel = accessLevel
-            self.keywordMutes = keywordMutes
             self.recoveryAttempts = recoveryAttempts
             self.reports = reports
             self.createdAt = createdAt
