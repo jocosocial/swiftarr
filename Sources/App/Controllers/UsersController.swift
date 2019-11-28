@@ -427,7 +427,7 @@ struct UsersController: RouteCollection {
 
 // MARK: - Helper Structs
 
-/// Used to return a newly created `UserNote` for display.
+/// Used to return a newly created `UserNote` for display or further edit.
 ///
 /// Returned by: `POST /api/v3/users/ID/note`
 ///
@@ -465,7 +465,7 @@ struct UserHeader: Content {
     var userImage: String
 }
 
-/// Used to obtain user identity and whether any cached information may be stale.
+/// Used to obtain user identity and determine whether any cached information may be stale.
 ///
 /// Returned by:
 /// * `GET /api/v3/users/ID`

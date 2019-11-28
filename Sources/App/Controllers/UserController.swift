@@ -119,7 +119,7 @@ struct UserController: RouteCollection {
         
         // endpoints available whether logged in or out
         sharedAuthGroup.get("profile", use: profileHandler)
-        sharedAuthGroup.post(UserProfileData.self, at: "profile", use: profileUpdateHander)
+        sharedAuthGroup.post(UserProfileData.self, at: "profile", use: profileUpdateHandler)
         sharedAuthGroup.get("whoami", use: whoamiHandler)
         
         // endpoints available only when logged in
@@ -332,7 +332,7 @@ struct UserController: RouteCollection {
     ///   - data: `UserProfileData` struct containing the editable properties of the profile.
     /// - Throws: 403 error if the user is banned.
     /// - Returns: `UserProfile.Edit` containing the updated editable properties of the profile.
-    func profileUpdateHander(_ req: Request, data: UserProfileData) throws -> Future<UserProfile.Edit> {
+    func profileUpdateHandler(_ req: Request, data: UserProfileData) throws -> Future<UserProfile.Edit> {
         let user = try req.requireAuthenticated(User.self)
         // abort if banned, profile might even be deleted
         guard user.accessLevel != .banned else {
@@ -1250,11 +1250,11 @@ struct AlertKeywordData: Content {
     var keywords: [String]
 }
 
-/// Used to create a new user-owned .seamonkey or .userWords `Barrel`.
+/// Used to create a new user-owned `.seamonkey` or `.userWords` `Barrel`.
 ///
 /// Required by: `POST /api/v3/user/barrel`
 ///
-/// See `UserController.createBarrel(_:data:)`.
+/// See `UserController.createBarrelHandler(_:data:)`.
 struct BarrelCreateData: Content {
     /// The name of the barrel.
     var name: String
@@ -1264,7 +1264,7 @@ struct BarrelCreateData: Content {
     var stringList: [String]?
 }
 
-/// Used to return the contents of a user-owned .seamonkey or .userWords `Barrel`.
+/// Used to return the contents of a user-owned `.seamonkey` or `.userWords` `Barrel`.
 ///
 /// Returned by:
 /// * `POST /api/v3/user/barrel`
@@ -1310,7 +1310,7 @@ struct BlockedUserData: Content {
     var seamonkeys: [SeaMonkey]
 }
 
-/// Used to return a newly created accounts's ID, username and recovery key.
+/// Used to return a newly created account's ID, username and recovery key.
 ///
 /// Returned by: `POST /api/v3/user/create`
 ///
@@ -1324,7 +1324,7 @@ struct CreatedUserData: Content {
     let recoveryKey: String
 }
 
-/// Used to obtain the current user's ID, username and logged in status.
+/// Used to obtain the current user's ID, username and logged-in status.
 ///
 /// Returned by: `GET /api/v3/user/whoami`
 ///
@@ -1464,7 +1464,7 @@ struct UserUsernameData: Content {
     var username: String
 }
 
-/// Used to verify a created but .unverified primary account.
+/// Used to verify (register) a created but `.unverified` primary account.
 ///
 /// Required by: `POST /api/v3/user/verify`
 ///
