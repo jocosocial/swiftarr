@@ -151,7 +151,7 @@ struct ClientController: RouteCollection {
     
     /// `GET /api/v3/client/user/updates/since/DATE`
     ///
-    /// Retrieves the `User.Public` of all users with a `.profileUpdatedAt` timestamp later
+    /// Retrieves the `UserInfo` of all users with a `.profileUpdatedAt` timestamp later
     /// than the specified date. The `DATE` parameter is a string, and may be provided in
     /// either of two formats:
     ///
@@ -165,8 +165,8 @@ struct ClientController: RouteCollection {
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: 400 error if no valid date string provided. 401 error if the required header
     ///   is missing or invalid. 403 error if user is not a registered client.
-    /// - Returns: `[User.Public]` containing all updated users.
-    func userUpdatesHandler(_ req: Request) throws -> Future<[User.Public]> {
+    /// - Returns: `[UserInfo]` containing all updated users.
+    func userUpdatesHandler(_ req: Request) throws -> Future<[UserInfo]> {
         // FIXME: account for blocks
         let client = try req.requireAuthenticated(User.self)
         // must be registered client
@@ -197,7 +197,7 @@ struct ClientController: RouteCollection {
                     .all()
                     .map {
                         (users) in
-                        let publicUsers = try users.map { try $0.convertToPublic() }
+                        let publicUsers = try users.map { try $0.convertToInfo() }
                         return publicUsers
                 }
         }

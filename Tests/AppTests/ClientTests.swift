@@ -48,7 +48,7 @@ final class ClientTests: XCTestCase {
             from: usersURI + "find/\(testClientname)",
             method: .GET,
             headers: headers,
-            decodeTo: User.Public.self
+            decodeTo: UserInfo.self
         )
         XCTAssertTrue(result.username == testClientname, "should be \(testClientname)")
         
@@ -123,7 +123,7 @@ final class ClientTests: XCTestCase {
             from: clientURI + "user/updates/since/-1",
             method: .GET,
             headers: headers,
-            decodeTo: [User.Public].self
+            decodeTo: [UserInfo].self
         )
         XCTAssertTrue(users.count > 1, "should be all accounts")
 
@@ -154,7 +154,7 @@ final class ClientTests: XCTestCase {
             from: clientURI + "user/updates/since/\(currentDate.timeIntervalSince1970)",
             method: .GET,
             headers: headers,
-            decodeTo: [User.Public].self
+            decodeTo: [UserInfo].self
         )
         XCTAssertTrue(users.count == 1, "should be 1 updated account")
 
@@ -169,7 +169,7 @@ final class ClientTests: XCTestCase {
             from: clientURI + "user/updates/since/\(isoString)",
             method: .GET,
             headers: headers,
-            decodeTo: [User.Public].self
+            decodeTo: [UserInfo].self
         )
         XCTAssertTrue(users.count == 1, "should be 1 updated account")
         
@@ -180,7 +180,7 @@ final class ClientTests: XCTestCase {
             from: clientURI + "user/updates/since/\(currentDate.timeIntervalSince1970)",
             method: .GET,
             headers: headers,
-            decodeTo: [User.Public].self
+            decodeTo: [UserInfo].self
         )
         XCTAssertTrue(users.count == 0, "should be no updated accounts")
 

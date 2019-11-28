@@ -123,19 +123,19 @@ final class BarrelTests: XCTestCase {
             from: usersURI + "find/admin",
             method: .GET,
             headers: headers,
-            decodeTo: User.Public.self
+            decodeTo: UserInfo.self
         )
         let moderator = try app.getResult(
             from: usersURI + "find/moderator",
             method: .GET,
             headers: headers,
-            decodeTo: User.Public.self
+            decodeTo: UserInfo.self
         )
 
         // test UUID barrel
         var barrelCreateData = BarrelCreateData(
             name: "Favorites",
-            uuidList: [admin.id, moderator.id],
+            uuidList: [admin.userID, moderator.userID],
             stringList: nil
         )
         var barrelData = try app.getResult(
@@ -170,7 +170,7 @@ final class BarrelTests: XCTestCase {
         // test get barrels + sort
         barrelCreateData = BarrelCreateData(
             name: "Favorites 2",
-            uuidList: [admin.id, moderator.id],
+            uuidList: [admin.userID, moderator.userID],
             stringList: nil
         )
         _ = try app.getResponse(
@@ -240,11 +240,11 @@ final class BarrelTests: XCTestCase {
             from: usersURI + "find/admin",
             method: .GET,
             headers: headers,
-            decodeTo: User.Public.self
+            decodeTo: UserInfo.self
         )
         let barrelCreateData = BarrelCreateData(
             name: "Favorites",
-            uuidList: [admin.id],
+            uuidList: [admin.userID],
             stringList: nil
         )
         let barrelData = try app.getResult(
@@ -324,11 +324,11 @@ final class BarrelTests: XCTestCase {
             from: usersURI + "find/admin",
             method: .GET,
             headers: headers,
-            decodeTo: User.Public.self
+            decodeTo: UserInfo.self
         )
         let barrelCreateData = BarrelCreateData(
             name: "Favorites",
-            uuidList: [admin.id],
+            uuidList: [admin.userID],
             stringList: nil
         )
         let barrelData = try app.getResult(
@@ -411,11 +411,11 @@ final class BarrelTests: XCTestCase {
             from: usersURI + "find/admin",
             method: .GET,
             headers: headers,
-            decodeTo: User.Public.self
+            decodeTo: UserInfo.self
         )
         let barrelCreateData = BarrelCreateData(
             name: "Favorites",
-            uuidList: [admin.id],
+            uuidList: [admin.userID],
             stringList: nil
         )
         var barrelData = try app.getResult(

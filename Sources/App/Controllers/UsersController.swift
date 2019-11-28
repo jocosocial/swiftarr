@@ -61,7 +61,7 @@ struct UsersController: RouteCollection {
     
     /// `GET /api/v3/users/find/STRING`
     ///
-    /// Retrieves a user's .Public info using either an ID (UUID string) or a username.
+    /// Retrieves a user's `UserInfo` using either an ID (UUID string) or a username.
     ///
     /// This endpoint is of limited utility, but is included for the case of obtaining a
     /// user's ID from a username. If you have an ID and want the associated username, use
@@ -73,9 +73,9 @@ struct UsersController: RouteCollection {
     ///
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: 404 error if no match is found.
-    /// - Returns: `User.Public` containing the user's ID, username and timestamp of last
+    /// - Returns: `UserInfo` containing the user's ID, username and timestamp of last
     ///   profile update.
-    func findHandler(_ req: Request) throws -> Future<User.Public> {
+    func findHandler(_ req: Request) throws -> Future<UserInfo> {
         // FIXME: account for blocks
         let parameter = try req.parameters.next(String.self)
         // try converting to UUID
@@ -92,13 +92,13 @@ struct UsersController: RouteCollection {
             .unwrap(or: Abort(.notFound, reason: "no user found for identifier '\(parameter)'"))
             .map {
                 (profile) in
-                // return as User.Public
-                let userPublic = User.Public(
-                    id: profile.userID,
+                // return as UserInfo
+                let userInfo = UserInfo(
+                    userID: profile.userID,
                     username: profile.username,
                     updatedAt: profile.updatedAt ?? Date()
                 )
-                return userPublic
+                return userInfo
         }
     }
     
@@ -189,7 +189,7 @@ struct UsersController: RouteCollection {
     
     /// `GET /api/v3/users/ID`
     ///
-    /// Retrieves the specified user's .Public info.
+    /// Retrieves the specified user's `UserInfo`.
     ///
     /// This endpoint provides one-off retrieval of a user's username and the timestamp of
     /// the last time their publicly viewable data was updated. It would typically be used to:
@@ -202,11 +202,11 @@ struct UsersController: RouteCollection {
     ///
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: 404 error if no match is found.
-    /// - Returns: `User.Public` containing the user's ID, username and timestamp of last
+    /// - Returns: `UserInfo` containing the user's ID, username and timestamp of last
     ///   profile update.
-    func userHandler(_ req: Request) throws -> Future<User.Public> {
+    func userHandler(_ req: Request) throws -> Future<UserInfo> {
         // FIXME: account for blocks
-        return try req.parameters.next(User.self).convertToPublic()        
+        return try req.parameters.next(User.self).convertToInfo()        
     }
         
     // MARK: - tokenAuthGroup Handlers (logged in)
@@ -443,4 +443,48 @@ struct CreatedNoteData: Content {
 struct NoteCreateData: Content {
     /// The text of the note.
     var note: String
+}
+
+/// Used to obtain a user's current header information (name and image) for attributed content.
+///
+/// Returned by:
+/// * `GET /api/v3/users/ID/header`
+/// * `GET /api/v3/client/user/headers/since/DATE`
+///
+/// See `UsersController.headerHandler(_:)`, `ClientController.userHeadersHandler(_:)`.
+struct UserHeader: Content {
+    /// The user's ID.
+    var userID: UUID
+    /// The user's displayName + username.
+    var displayedName: String
+    /// The filename of the user's profile image.
+    var userImage: String
+}
+
+/// Used to obtain user identity and whether any cached information may be stale.
+///
+/// Returned by `GET /api/v3/users/ID`,`GET /api/v3/users/find/STRING`,
+/// `GET /api/v3/client/user/updates/since/DATE`.
+///
+/// See `UsersController.findHandler(_:)`, `UsersController.userHandler(_:)`,
+/// `ClientController.userUpdatesHandler(_:)`.
+struct UserInfo: Content {
+    /// The user's ID.
+    var userID: UUID
+    /// The user's username.
+    var username: String
+    /// Timestamp of last update to the user's profile.
+    var updatedAt: Date
+}
+
+/// Used to broad search for a user based on any of their name fields.
+///
+/// Returned by `GET /api/v3/users/match/allnames/STRING`, `GET /api/v3/client/usersearch`.
+///
+/// See `UsersController.matchAllNamesHandler(_:)`, `ClientController.userSearchHandler(_:)`.
+struct UserSearch: Content {
+    /// The user's ID.
+    var userID: UUID
+    /// The user's composed displayName + username + realName.
+    var userSearch: String
 }

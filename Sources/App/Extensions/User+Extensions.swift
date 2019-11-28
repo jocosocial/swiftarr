@@ -8,7 +8,6 @@ extension User: PostgreSQLUUIDModel {}
 // model and representations can be passed as HTTP body data
 extension User: Content {}
 extension User.Admin: Content {}
-extension User.Public: Content {}
 
 // model can be used as endpoint parameter
 extension User: Parameter {}
@@ -81,9 +80,9 @@ extension User {
 extension User {
     /// Converts a `User` model to a version that is publicly viewable. Only the ID, username
     /// and timestamp of the last profile update are returned.
-    func convertToPublic() throws -> User.Public {
-        return try User.Public(
-            id: self.requireID(),
+    func convertToInfo() throws -> UserInfo {
+        return try UserInfo(
+            userID: self.requireID(),
             username: self.username,
             updatedAt: self.profileUpdatedAt
         )
@@ -109,13 +108,13 @@ extension User {
 }
 
 extension Future where T: User {
-    /// Converts a `Future<User>` to a `Future<User.Public>`. This extension provides the
-    /// convenience of simply using `user.convertToPublic()` and allowing the compiler to
+    /// Converts a `Future<User>` to a `Future<UserInfo>`. This extension provides the
+    /// convenience of simply using `user.convertToInfo()` and allowing the compiler to
     /// choose the appropriate version for the context.
-    func convertToPublic() throws -> Future<User.Public> {
+    func convertToInfo() throws -> Future<UserInfo> {
         return self.map {
             (user) in
-            return try user.convertToPublic()
+            return try user.convertToInfo()
         }
     }
 }

@@ -49,9 +49,9 @@ final class UsersTests: XCTestCase {
             from: usersURI + "\(user.userID)",
             method: .GET,
             headers: headers,
-            decodeTo: User.Public.self
+            decodeTo: UserInfo.self
         )
-        XCTAssertTrue(preResult.id == user.userID, "should be \(user.userID)")
+        XCTAssertTrue(preResult.userID == user.userID, "should be \(user.userID)")
         
         // test updatedAt changes
         sleep(1)
@@ -67,9 +67,9 @@ final class UsersTests: XCTestCase {
             from: usersURI + "\(user.userID)",
             method: .GET,
             headers: headers,
-            decodeTo: User.Public.self
+            decodeTo: UserInfo.self
         )
-        XCTAssertTrue(postResult.id == preResult.id, "should be \(preResult.id)")
+        XCTAssertTrue(postResult.userID == preResult.userID, "should be \(preResult.userID)")
         XCTAssertTrue(postResult.username == newUsername, "should be \(newUsername)")
         XCTAssertFalse(preResult.updatedAt == postResult.updatedAt, "should be different dates")
                 
@@ -78,18 +78,18 @@ final class UsersTests: XCTestCase {
             from: usersURI + "find/\(user.userID)",
             method: .GET,
             headers: headers,
-            decodeTo: User.Public.self
+            decodeTo: UserInfo.self
         )
-        XCTAssertTrue(uuidResult.id == user.userID, "should be \(user.userID)")
+        XCTAssertTrue(uuidResult.userID == user.userID, "should be \(user.userID)")
 
         // test findHandler with username
         let usernameResult = try app.getResult(
             from: usersURI + "find/\(newUsername)",
             method: .GET,
             headers: headers,
-            decodeTo: User.Public.self
+            decodeTo: UserInfo.self
         )
-        XCTAssertTrue(usernameResult.id == user.userID, "should be \(user.userID)")
+        XCTAssertTrue(usernameResult.userID == user.userID, "should be \(user.userID)")
 
         // test findHandler with garbage
         let usernameResponse = try app.getResponse(

@@ -168,28 +168,4 @@ final class User: Codable {
             self.deletedAt = deletedAt
         }
     }
-    
-    /// Used for general identification and reference.
-    final class Public: Codable {
-        // MARK: Properties
-        /// The user's ID.
-        var id: UUID
-        /// The user's username.
-        var username: String
-        /// Timestamp of last update to the user's profile.
-        var updatedAt: Date
-        
-        // MARK: Initialization
-        /// Initializes a User.Public model.
-        ///
-        /// - Parameters:
-        ///   - id: The user's ID.
-        ///   - username: The user's username.
-        ///   - updatedAt: Timestamp of last update to the user's profile.
-        init(id: UUID, username: String, updatedAt: Date) {
-            self.id = id
-            self.username = username
-            self.updatedAt = updatedAt
-        }
-    }
 }

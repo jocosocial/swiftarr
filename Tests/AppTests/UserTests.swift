@@ -610,10 +610,10 @@ final class UserTests: XCTestCase {
             from: usersURI + "find/banned",
             method: .GET,
             headers: headers,
-            decodeTo: User.Public.self
+            decodeTo: UserInfo.self
         )
         var response = try app.getResponse(
-            from: usersURI + "\(bannedUser.id)/profile",
+            from: usersURI + "\(bannedUser.userID)/profile",
             method: .GET,
             headers: headers
         )
@@ -651,27 +651,27 @@ final class UserTests: XCTestCase {
             from: usersURI + "find/unverified",
             method: .GET,
             headers: headers,
-            decodeTo: User.Public.self
+            decodeTo: UserInfo.self
         )
         let verifiedUser = try app.getResult(
             from: usersURI + "find/verified",
             method: .GET,
             headers: headers,
-            decodeTo: User.Public.self
+            decodeTo: UserInfo.self
         )
 
         // test create note
         let note1 = NoteCreateData(note: "had dinner with unverified last night")
         let note2 = NoteCreateData(note: "great scrabble player")
         let createdNoteData1 = try app.getResult(
-            from: usersURI + "\(unverifiedUser.id)/note",
+            from: usersURI + "\(unverifiedUser.userID)/note",
             method: .POST,
             headers: headers,
             body: note1,
             decodeTo: CreatedNoteData.self
         )
         let createdNoteData2 = try app.getResult(
-            from: usersURI + "\(verifiedUser.id)/note",
+            from: usersURI + "\(verifiedUser.userID)/note",
             method: .POST,
             headers: headers,
             body: note2,
@@ -681,7 +681,7 @@ final class UserTests: XCTestCase {
         
         // test note exists
         var response = try app.getResponse(
-            from: usersURI + "\(verifiedUser.id)/note",
+            from: usersURI + "\(verifiedUser.userID)/note",
             method: .POST,
             headers: headers,
             body: note2
@@ -691,7 +691,7 @@ final class UserTests: XCTestCase {
         
         // test retrieve note
         let noteEdit = try app.getResult(
-            from: usersURI + "\(unverifiedUser.id)/note",
+            from: usersURI + "\(unverifiedUser.userID)/note",
             method: .GET,
             headers: headers,
             decodeTo: UserNote.Edit.self
@@ -700,7 +700,7 @@ final class UserTests: XCTestCase {
         
         // test note appears on profile
         let profile = try app.getResult(
-            from: usersURI + "\(unverifiedUser.id)/profile",
+            from: usersURI + "\(unverifiedUser.userID)/profile",
             method: .GET,
             headers: headers,
             decodeTo: UserProfile.Public.self
@@ -730,7 +730,7 @@ final class UserTests: XCTestCase {
                 
         // test delete note
         response = try app.getResponse(
-            from: usersURI + "\(unverifiedUser.id)/note/delete",
+            from: usersURI + "\(unverifiedUser.userID)/note/delete",
             method: .POST,
             headers: headers
         )
