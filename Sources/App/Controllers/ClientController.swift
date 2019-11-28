@@ -67,7 +67,7 @@ struct ClientController: RouteCollection {
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: 400 error if no valid date string provided. 401 error if the required header
     ///   is missing or invalid. 403 error if user is not a registered client.
-    /// - Returns: Array of all updated users, as `UserProfile.Header` objects.
+    /// - Returns: `[UserProfile.Header]` array of all updated users.
     func userHeadersHandler(_ req: Request) throws -> Future<[UserProfile.Header]> {
         // FIXME: account for blocks
         let client = try req.requireAuthenticated(User.self)
@@ -116,7 +116,8 @@ struct ClientController: RouteCollection {
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: 400 error if no valid date string provided. 401 error if the required header
     ///   is missing or invalid. 403 error if user is not a registered client.
-    /// - Returns: The ID and `.userSearch` string values of all users, sorted by username.
+    /// - Returns: `[UserProfile.Search]` containing the ID and `.userSearch` string values
+    ///   of all users, sorted by username.
     func userSearchHandler(_ req: Request) throws -> Future<[UserProfile.Search]> {
         // FIXME: account for blocks
         let client = try req.requireAuthenticated(User.self)
@@ -164,7 +165,7 @@ struct ClientController: RouteCollection {
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: 400 error if no valid date string provided. 401 error if the required header
     ///   is missing or invalid. 403 error if user is not a registered client.
-    /// - Returns: Array of all updated users, as `User.Public` objects.
+    /// - Returns: `[User.Public]` containing all updated users.
     func userUpdatesHandler(_ req: Request) throws -> Future<[User.Public]> {
         // FIXME: account for blocks
         let client = try req.requireAuthenticated(User.self)

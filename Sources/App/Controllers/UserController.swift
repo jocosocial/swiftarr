@@ -123,7 +123,7 @@ struct UserController: RouteCollection {
         sharedAuthGroup.get("whoami", use: whoamiHandler)
         
         // endpoints available only when logged in
-        tokenAuthGroup.post(UserAddData.self, at: "add", use: addHandler)
+        tokenAuthGroup.post(UserCreateData.self, at: "add", use: addHandler)
         tokenAuthGroup.get("alertwords", use: alertwordsHandler)
         tokenAuthGroup.post(BarrelCreateData.self, at: "barrel", use: createBarrelHandler)
         tokenAuthGroup.get("barrels", use: barrelsHandler)
@@ -163,7 +163,8 @@ struct UserController: RouteCollection {
     ///   - data: `UserCreateData` struct containing the user's desired username and password.
     /// - Throws: 400 error if the username is an invalid formate. 409 errpr if the username is
     ///   not available.
-    /// - Returns: The newly created user's ID, username, and a recovery key string.
+    /// - Returns: `CreatedUserData` containing the newly created user's ID, username, and a
+    ///   recovery key string.
     func createHandler(_ req: Request, data: UserCreateData) throws -> Future<Response> {
         // see `UserCreateData.validations()`
         try data.validate()
@@ -298,8 +299,7 @@ struct UserController: RouteCollection {
     ///
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: A `UserProfile.Edit` object containing the editable properties of the
-    ///   profile.
+    /// - Returns: `UserProfile.Edit` containing the editable properties of the profile.
     func profileHandler(_ req: Request) throws -> Future<UserProfile.Edit> {
         // FIXME: account for banned user
         let user = try req.requireAuthenticated(User.self)
@@ -331,8 +331,7 @@ struct UserController: RouteCollection {
     ///   - req: The incoming request `Container`, provided automatically.
     ///   - data: `UserProfileData` struct containing the editable properties of the profile.
     /// - Throws: 403 error if the user is banned.
-    /// - Returns: A`UserProfile.Edit` object containing the updated editable properties of
-    ///   the profile.
+    /// - Returns: `UserProfile.Edit` containing the updated editable properties of the profile.
     func profileUpdateHander(_ req: Request, data: UserProfileData) throws -> Future<UserProfile.Edit> {
         let user = try req.requireAuthenticated(User.self)
         // abort if banned, profile might even be deleted
@@ -394,7 +393,8 @@ struct UserController: RouteCollection {
     /// currently being used.
     ///
     /// - Parameter req: The incoming request `Container`, provided automatically.
-    /// - Returns: The current user's ID and username.
+    /// - Returns: `CurrentUserData` containing the current user's ID, username and logged in
+    ///   status.
     func whoamiHandler(_ req: Request) throws -> Future<CurrentUserData> {
         let user = try req.authenticated(User.self)
         // well, we have to unwrap somewhere
@@ -429,15 +429,15 @@ struct UserController: RouteCollection {
     ///   requires use of its own Bearer Authentication token and must log in individually;
     ///   multiple accounts can all be simultaneously logged in.
     ///
-    /// - Requires: `UserAddData` payload in the HTTP body.
+    /// - Requires: `UserCreateData` payload in the HTTP body.
     /// - Parameters:
     ///   - req: The incoming request `Container`, provided automatically.
-    ///   - data: `UserAddData` struct containing the user's desired username and password.
+    ///   - data: `UserCreateData` struct containing the user's desired username and password.
     /// - Throws: 400 error if the username is an invalid format or password is not at least
     ///   6 characters. 403 error if the user is banned or currently quarantined. 409 errpr if
     ///   the username is not available.
-    /// - Returns: The newly created user's ID and username.
-    func addHandler(_ req: Request, data: UserAddData) throws -> Future<Response> {
+    /// - Returns: `AddedUserData` containing the newly created user's ID and username.
+    func addHandler(_ req: Request, data: UserCreateData) throws -> Future<Response> {
         let user = try req.requireAuthenticated(User.self)
         // see `UserAddData.validations()`
         try data.validate()
@@ -501,8 +501,8 @@ struct UserController: RouteCollection {
     ///
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: The alert keywords as an array of strings embedded in a named-list
-    ///   structure.
+    /// - Returns: `AlertKeywordData` containing the current alert keywords as an array of
+    ///   strings.
     func alertwordsHandler(_ req: Request) throws -> Future<AlertKeywordData> {
         let user = try req.requireAuthenticated(User.self)
         // retrieve keywords barrel
@@ -634,8 +634,8 @@ struct UserController: RouteCollection {
     ///
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: The blocked users as an array of `SeaMonkey` embedded in a named-list
-    ///   structure.
+    /// - Returns: `BlockedUserData` containing the currently blocked users as an array of
+    ///  `SeaMonkey`.
     func blocksHandler(_ req: Request) throws -> Future<BlockedUserData> {
         let user = try req.requireAuthenticated(User.self)
         // if subaccount, we want parent's blocks
@@ -800,37 +800,6 @@ struct UserController: RouteCollection {
         }
     }
 
-    /// `GET /api/v3/user/mutewords`
-    ///
-    /// Returns a list of the user's currently muted keywords in named-list `MutedKeywordData`
-    /// format.
-    ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
-    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: The muted keywords as an array of strings embedded in a named-list
-    ///   structure.
-    func mutewordsHandler(_ req: Request) throws -> Future<MuteKeywordData> {
-        let user = try req.requireAuthenticated(User.self)
-        // retrieve keywords barrel
-        return try Barrel.query(on: req)
-            .filter(\.ownerID == user.requireID())
-            .filter(\.barrelType == .keywordMute)
-            .first()
-            .unwrap(or: Abort(.internalServerError, reason: "mute keywords barrel not found"))
-            .map {
-                (barrel) in
-                // ensure keywords array exists
-                guard let keywords = barrel.userInfo["muteWords"] else {
-                    throw Abort(.internalServerError, reason: "no key 'muteWords' found")
-                }
-                let muteKeywordData = MuteKeywordData(
-                    name: barrel.name,
-                    keywords: keywords
-                )
-                return muteKeywordData
-        }
-    }
-    
     /// `GET /api/v3/user/mutes`
     ///
     /// Returns a list of the user's currently muted users in named-list `MutedUserData`
@@ -838,8 +807,8 @@ struct UserController: RouteCollection {
     ///
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: The muted users as an array of `SeaMonkey` embedded in a named-list
-    ///   structure.
+    /// - Returns: `MutedUserData` containing the currently muted users as an array of
+    ///  `SeaMonkey`.
     func mutesHandler(_ req: Request) throws -> Future<MutedUserData> {
         let user = try req.requireAuthenticated(User.self)
         // retrieve mutes barrel
@@ -882,6 +851,37 @@ struct UserController: RouteCollection {
         }
     }
 
+    /// `GET /api/v3/user/mutewords`
+    ///
+    /// Returns a list of the user's currently muted keywords in named-list `MutedKeywordData`
+    /// format.
+    ///
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: `MuteKeywordData` containing the current muting keywords as an array of
+    ///   strings.
+    func mutewordsHandler(_ req: Request) throws -> Future<MuteKeywordData> {
+        let user = try req.requireAuthenticated(User.self)
+        // retrieve keywords barrel
+        return try Barrel.query(on: req)
+            .filter(\.ownerID == user.requireID())
+            .filter(\.barrelType == .keywordMute)
+            .first()
+            .unwrap(or: Abort(.internalServerError, reason: "mute keywords barrel not found"))
+            .map {
+                (barrel) in
+                // ensure keywords array exists
+                guard let keywords = barrel.userInfo["muteWords"] else {
+                    throw Abort(.internalServerError, reason: "no key 'muteWords' found")
+                }
+                let muteKeywordData = MuteKeywordData(
+                    name: barrel.name,
+                    keywords: keywords
+                )
+                return muteKeywordData
+        }
+    }
+    
     /// `POST /api/v3/user/note`
     ///
     /// Updates a `UserNote` with the supplied note text.
@@ -892,7 +892,7 @@ struct UserController: RouteCollection {
     ///   - data: `NoteUpdateData` struct containing the note's ID and updated text.
     /// - Throws: 403 if the note is not owned by the user. A 5xx response should be reported
     ///   as a likely bug, please and thank you.
-    /// - Returns: The updated note as a `NoteData` object.
+    /// - Returns: `NoteData` containing the updated note and metadata for display.
     func noteHandler(_ req: Request, data: NoteUpdateData) throws -> Future<NoteData> {
         // FIXME: account for blocks, banned user
         let user = try req.requireAuthenticated(User.self)
@@ -942,7 +942,7 @@ struct UserController: RouteCollection {
     ///
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: The user's notes as an array of `NoteData`, or an empty array if none exist.
+    /// - Returns: `[NoteData]` containing all of the user's notes.
     func notesHandler(_ req: Request) throws -> Future<[NoteData]> {
         // FIXME: account for blocks, banned user
         let user = try req.requireAuthenticated(User.self)
@@ -1212,7 +1212,7 @@ struct UserController: RouteCollection {
     ///
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: 500 error if the randomizer fails.
-    /// - Returns: A recoveryKey String.
+    /// - Returns: A recoveryKey string.
     static func generateRecoveryKey(on req: Request) throws -> Future<String> {
         guard let word1 = words.randomElement(),
             let word2 = words.randomElement(),
@@ -1226,7 +1226,9 @@ struct UserController: RouteCollection {
 
 // MARK: - Helper Structs
 
-/// Returned by `UserController.addHandler(_:data:)`.
+/// Returned by `POST /api/v3/user/add`.
+///
+/// See `UserController.addHandler(_:data:)`.
 struct AddedUserData: Content {
     /// The newly created sub-account's ID.
     let userID: UUID
@@ -1234,7 +1236,9 @@ struct AddedUserData: Content {
     let username: String
 }
 
-/// Returned by `UserController.alertwordsHandler(_:)`.
+/// Returned by `GET /api/v3/user/alertwords`.
+///
+/// See `UserController.alertwordsHandler(_:)`.
 struct AlertKeywordData: Content {
     /// The name of the barrel.
     let name: String
@@ -1242,7 +1246,7 @@ struct AlertKeywordData: Content {
     var keywords: [String]
 }
 
-/// Required by `POST /api/v3/user/barrel`.
+/// Required by `POST /api/v3/user/barrel` to create a barrel.
 ///
 /// See `UserController.createBarrel(_:data:)`.
 struct BarrelCreateData: Content {
@@ -1270,9 +1274,9 @@ struct BarrelData: Content {
     var stringList: [String]?
 }
 
-/// Returned by `GET /api/v3/user/barrels` and `GET /api/v3/user/barrels/seamonkey`.
+/// Returned by `GET /api/v3/user/barrels`, `GET /api/v3/user/barrels/seamonkey`.
 ///
-/// See `UserController.barrelsHandler(_:)` and `UserController.seamonkeyBarrelsHandler(_:)`.
+/// See `UserController.barrelsHandler(_:)`, `UserController.seamonkeyBarrelsHandler(_:)`.
 struct BarrelListData: Content {
     /// The barrel's ID.
     let barrelID: UUID
@@ -1280,7 +1284,9 @@ struct BarrelListData: Content {
     let name: String
 }
 
-/// Returned by `UserController.blocksHandler(_:)`.
+/// Returned by `GET /api/v3/user/blocks`
+///
+/// See `UserController.blocksHandler(_:)`.
 struct BlockedUserData: Content {
     /// The name of the barrel.
     let name: String
@@ -1288,7 +1294,9 @@ struct BlockedUserData: Content {
     var seamonkeys: [SeaMonkey]
 }
 
-/// Returned by `UserController.createHandler(_:data:).`
+/// Returned by `POST /api/v3/user/create`.
+///
+/// See `UserController.createHandler(_:data:).`
 struct CreatedUserData: Content {
     /// The newly created user's ID.
     let userID: UUID
@@ -1298,7 +1306,9 @@ struct CreatedUserData: Content {
     let recoveryKey: String
 }
 
-/// Returned by `UserController.whoamiHandler(_:).`
+/// Returned by `GET /api/v3/user/whoami`.
+///
+/// See `UserController.whoamiHandler(_:).`
 struct CurrentUserData: Content {
     /// The currrent user's ID.
     let userID: UUID
@@ -1308,7 +1318,9 @@ struct CurrentUserData: Content {
     var isLoggedIn: Bool
 }
 
-/// Returned by `UserController.mutewordsHandler(_:)`.
+/// Returned by `GET /api/v3/user/mutewords`.
+///
+/// See `UserController.mutewordsHandler(_:)`.
 struct MuteKeywordData: Content {
     /// The name of the barrel.
     let name: String
@@ -1316,7 +1328,9 @@ struct MuteKeywordData: Content {
     var keywords: [String]
 }
 
-/// Returned by `UserController.mutesHandler(_:)`.
+/// Returned by `GET /api/v3/user/mutes`.
+///
+/// See `UserController.mutesHandler(_:)`.
 struct MutedUserData: Content {
     /// The name of the barrel.
     let name: String
@@ -1324,7 +1338,9 @@ struct MutedUserData: Content {
     var seamonkeys: [SeaMonkey]
 }
 
-/// Returned by `UserController.notesHandler(_:)` and `UserController.noteHandler(_:data:)`.
+/// Returned by `GET /api/v3/user/notes`, `POST /api/v3/user/note`.
+///
+/// See `UserController.notesHandler(_:)`, `UserController.noteHandler(_:data:)`.
 struct NoteData: Content {
     /// The ID of the note.
     let noteID: UUID
@@ -1340,22 +1356,14 @@ struct NoteData: Content {
     var note: String
 }
 
-/// Used by `UserController.noteHandler(_:data:)` to update a user note.
+/// Required by `POST /api/v3/user/note` to update a user note.
+///
+/// See `UserController.noteHandler(_:data:)`.
 struct NoteUpdateData: Content {
     /// The ID of the note being updated.
     let noteID: UUID
     /// The udated text of the note.
     let note: String
-}
-
-/// Required by `/api/v3/user/add` for adding a sub-account.
-///
-/// See `UserController.addHandler(_:data:)`.
-struct UserAddData: Content {
-    /// The username for the sub-account.
-    var username: String
-    /// The password for the sub-account.
-    var password: String
 }
 
 /// Returned by `Barrel`s as a unit representing a user.
@@ -1366,9 +1374,9 @@ struct SeaMonkey: Content {
     var username: String
 }
 
-/// Required by `/api/v3/user/create` for initial creation of an account.
+/// Required by `POST /api/v3/user/create`, `POST /api/v3/user/add` to create an account.
 /// 
-/// See `UserController.createHandler(_:data:)`.
+/// See `UserController.createHandler(_:data:)`, `UserController.addHandler(_:data:)`.
 struct UserCreateData: Content {
     /// The user's username.
     var username: String
@@ -1376,13 +1384,17 @@ struct UserCreateData: Content {
     var password: String
 }
 
-/// Used by `UserController.passwordHandler(_:data:)` for changing a password.
+/// Required by `POST /api/v3/user/password` to change a password.
+///
+/// See `UserController.passwordHandler(_:data:)`.
 struct UserPasswordData: Content {
     /// The user's desired new password.
     var password: String
 }
 
-/// Used by `UserController.profileUpdateHandler(_:data:)` for editing a profile.
+/// Required by `POST /api/v3/user/profile` to update a profile.
+///
+/// See `UserController.profileUpdateHandler(_:data:)`.
 struct UserProfileData: Content {
     /// An optional blurb about the user.
     var about: String
@@ -1404,14 +1416,17 @@ struct UserProfileData: Content {
     var limitAccess: Bool
 }
 
-/// Used by `UserController.usernameHandler(_:data:)` for changing a username.
+/// Required by `POST /api/v3/user/username`  to change a username.
+///
+/// See `UserController.usernameHandler(_:data:)`.
 struct UserUsernameData: Content {
     /// The user's desired new username.
     var username: String
 }
 
-/// Used by `UserController.verifyHandler(_:data:)` to verify a created but unverified
-/// account.
+/// Required by `POST /api/v3/user/verify` to verify a created but unverified account.
+///
+/// See `UserController.verifyHandler(_:data:)`.
 struct UserVerifyData: Content {
     /// The registration code provided to the user.
     var verification: String
@@ -1431,24 +1446,6 @@ extension BarrelCreateData: Validatable, Reflectable {
                 throw Abort(.badRequest, reason: "'uuidList' and 'stringList' cannot both contain values")
             }
         }
-        return validations
-    }
-}
-
-extension UserAddData: Validatable, Reflectable {
-    /// Validates that `.username` is 1 or more characters beginning with an alphanumeric,
-    /// and `.password` is least 6 characters in length.
-    static func validations() throws -> Validations<UserAddData> {
-        var validations = Validations(UserAddData.self)
-        try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics + .separators))
-        validations.add("username must start with an alphanumeric") {
-            (data) in
-            guard let first = data.username.unicodeScalars.first,
-                !CharacterSet.separators.contains(first) else {
-                    throw Abort(.badRequest, reason: "username must start with an alphanumeric")
-            }
-        }
-        try validations.add(\.password, .count(6...))
         return validations
     }
 }

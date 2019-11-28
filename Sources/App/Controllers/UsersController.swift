@@ -73,7 +73,8 @@ struct UsersController: RouteCollection {
     ///
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: 404 error if no match is found.
-    /// - Returns: The user's ID, username and timestamp of last info update.
+    /// - Returns: `User.Public` containing the user's ID, username and timestamp of last
+    ///   profile update.
     func findHandler(_ req: Request) throws -> Future<User.Public> {
         // FIXME: account for blocks
         let parameter = try req.parameters.next(String.self)
@@ -113,7 +114,8 @@ struct UsersController: RouteCollection {
     ///
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: The user's ID, `.displayedName` and profile image filename.
+    /// - Returns: `UserProfile.Header` containing the user's ID, `.displayedName` and profile
+    ///   image filename.
     func headerHandler(_ req: Request) throws -> Future<UserProfile.Header> {
         // FIXME: account for blocks
         let user = try req.requireAuthenticated(User.self)
@@ -138,8 +140,8 @@ struct UsersController: RouteCollection {
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: 404 error if the profile is not available. A 5xx response should be reported
     ///   as a likely bug, please and thank you.
-    /// - Returns: A `UserProfile.Edit` object containing the editable properties of the
-    ///   profile.
+    /// - Returns: `UserProfile.Public` containing the displayable properties of the specified
+    ///   user's profile.
     func profileHandler(_ req: Request) throws -> Future<UserProfile.Public> {
         // FIXME: account for blocks
         let requester = try req.requireAuthenticated(User.self)
@@ -200,7 +202,8 @@ struct UsersController: RouteCollection {
     ///
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: 404 error if no match is found.
-    /// - Returns: The user's ID, username and timestamp of last info update.
+    /// - Returns: `User.Public` containing the user's ID, username and timestamp of last
+    ///   profile update.
     func userHandler(_ req: Request) throws -> Future<User.Public> {
         // FIXME: account for blocks
         return try req.parameters.next(User.self).convertToPublic()        
@@ -230,7 +233,8 @@ struct UsersController: RouteCollection {
     ///
     /// - Parameter req: he incoming request `Container`, provided automatically.
     /// - Throws: 403 error if the search term is not permitted.
-    /// - Returns: The ID and profile.userSearch string values of all matching users.
+    /// - Returns: `[UserProfile.Search]` containing the ID and profile.userSearch string
+    ///   values of all matching users.
     func matchAllNamesHandler(_ req: Request) throws -> Future<[UserProfile.Search]> {
         // FIXME: account for blocks
         // let user = try req.requireAuthenticated(User.self)
@@ -264,7 +268,7 @@ struct UsersController: RouteCollection {
     ///   thus there would never be a match.
     ///
     /// - Parameter req: he incoming request `Container`, provided automatically.
-    /// - Returns: An array of `@username` strings.
+    /// - Returns: `[String]` containng all matching usernames as "@username" strings.
     func matchUsernameHandler(_ req: Request) throws -> Future<[String]> {
         // FIXME: account for blocks
         // let user = try req.requireAuthenticated(User.self)
@@ -299,7 +303,7 @@ struct UsersController: RouteCollection {
     ///   - data: `NoteCreateData` struct containing the text of the note.
     /// - Throws: 409 error if there is an existing note on the profile. A 5xx response should
     ///   be reported as a likely bug, please and thank you.
-    /// - Returns: The newly created note's ID and text.
+    /// - Returns: `CreatedNoteData` containing the newly created note's ID and text.
     func noteCreateHandler(_ req: Request, data: NoteCreateData) throws -> Future<Response> {
         // FIXME: account for banned user
         let user = try req.requireAuthenticated(User.self)
@@ -392,7 +396,7 @@ struct UsersController: RouteCollection {
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: 400 error if there is no existing note on the profile. A 5xx response should
     ///   be reported as a likely bug, please and thank you.
-    /// - Returns: The note's ID and text.
+    /// - Returns: `UserNote.Edit` containing the note's ID and text.
     func noteHandler(_ req: Request) throws -> Future<UserNote.Edit> {
         // FIXME: account for blocks, banned user
         let user = try req.requireAuthenticated(User.self)

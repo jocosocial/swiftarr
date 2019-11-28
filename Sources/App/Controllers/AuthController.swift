@@ -106,8 +106,8 @@ struct AuthController: RouteCollection {
     /// - Throws: 400 error if the recovery fails. 403 error if the maximum number of successive
     ///   failed recovery attempts has been reached. A 5xx response should be reported as a
     ///   likely bug, please and thank you.
-    /// - Returns: An authentication token (string) that should be used for all subsequent
-    ///   HTTP requests, until expiry or revocation.
+    /// - Returns: `TokenStringData` containing an authentication token (string) that should
+    ///   be used for all subsequent HTTP requests, until expiry or revocation.
     func recoveryHandler(_ req: Request, data: UserRecoveryData) throws -> Future<TokenStringData> {
         // see `UserRecoveryData.validations()`
         try data.validate()
@@ -231,8 +231,8 @@ struct AuthController: RouteCollection {
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: 401 error if the Basic authentication fails. 403 error if the user is
     ///   banned. A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: An authentication token (string) that should be used for all subsequent
-    ///   HTTP requests, until expiry or revocation.
+    /// - Returns: `TokenStringData` containing an authentication token (string) that should
+    ///   be used for all subsequent HTTP requests, until expiry or revocation.
     func loginHandler(_ req: Request) throws -> Future<TokenStringData> {
         let user = try req.requireAuthenticated(User.self)
         // no login for punks
@@ -276,7 +276,6 @@ struct AuthController: RouteCollection {
     /// There should be no side effect and it is likely harmless, but please do report
     /// a 409 error if you encounter one so that the specifics can be looked into.
     ///
-    /// - Requires: Currently logged in.
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: 401 error if the authentication failed. 409 error if the user somehow
     ///   wasn't logged in.
@@ -297,16 +296,9 @@ struct AuthController: RouteCollection {
 
 // MARK: - Helper Structs
 
-/// Used by `AuthController.recoveryHandler(_:data:)` for the incoming recovery attempt.
-struct UserRecoveryData: Content {
-    /// The user's username.
-    var username: String
-    /// The string to use – any one of: password / registration key / recovery key.
-    var recoveryKey: String
-}
-
-/// Used by `AuthController.loginHandler(_:)` and `AuthController.recoveryHandler(_:data:)`
-/// to return a token string upon successful execution.
+/// Returned by `POST /api/v3/auth/login` and `POST /api/v3/auth/recovery`.
+///
+/// See `AuthController.loginHandler(_:)` and `AuthController.recoveryHandler(_:data:)`.
 struct TokenStringData: Content {
     /// The token string.
     let token: String
@@ -316,6 +308,18 @@ struct TokenStringData: Content {
         self.token = token.token
     }
 }
+
+/// Required by `POST /api/v3/auth/recovery` to attempt recovery from a lost password.
+///
+/// See `AuthController.recoveryHandler(_:data:)`.
+struct UserRecoveryData: Content {
+    /// The user's username.
+    var username: String
+    /// The string to use – any one of: password / registration key / recovery key.
+    var recoveryKey: String
+}
+
+// MARK: - Validation
 
 extension UserRecoveryData: Validatable, Reflectable {
     /// Validates that `.username` is 1 or more alphanumeric characters,
@@ -327,5 +331,4 @@ extension UserRecoveryData: Validatable, Reflectable {
         try validations.add(\.recoveryKey, .count(6...))
         return validations
     }
-
 }
