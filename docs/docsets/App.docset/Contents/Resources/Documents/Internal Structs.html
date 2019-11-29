@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>Migrations  Reference</title>
+    <title>Internal Structs  Reference</title>
     <link rel="stylesheet" type="text/css" href="css/jazzy.css" />
     <link rel="stylesheet" type="text/css" href="css/highlight.css" />
     <meta charset="utf-8">
@@ -14,9 +14,9 @@
   </head>
   <body>
 
-    <a name="//apple_ref/swift/Section/Migrations" class="dashAnchor"></a>
+    <a name="//apple_ref/swift/Section/Internal Structs" class="dashAnchor"></a>
 
-    <a title="Migrations  Reference"></a>
+    <a title="Internal Structs  Reference"></a>
 
     <header class="header">
       <p class="header-col header-col--primary">
@@ -44,7 +44,7 @@
     <p class="breadcrumbs">
       <a class="breadcrumb" href="index.html">App Reference</a>
       <img class="carat" src="img/carat.png" />
-      Migrations  Reference
+      Internal Structs  Reference
     </p>
 
     <div class="content-wrapper">
@@ -266,7 +266,7 @@
 
         <section class="section">
           <div class="section-content">
-            <h1>Migrations</h1>
+            <h1>Internal Structs</h1>
             
           </div>
         </section>
@@ -278,9 +278,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App9AdminUserV"></a>
-                    <a name="//apple_ref/swift/Struct/AdminUser" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App9AdminUserV">AdminUser</a>
+                    <a name="/s:3App11ProfileEditV"></a>
+                    <a name="//apple_ref/swift/Struct/ProfileEdit" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App11ProfileEditV">ProfileEdit</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -288,145 +288,24 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>A <code>Migration</code> that creates the admin user upon startup. The password and recovery key are
-read from environment variables <code>ADMIN_PASSWORD</code> and <code>RECOVERY_KEY</code> if present, otherwise
-defaults are used.</p>
+                        <p>When a <code><a href="Classes/UserProfile.html">UserProfile</a></code> is edited, a <code>ProfileEdit</code> is created and associated with the
+profile.</p>
 
-<p>The defaults are intended and fine for development and testing, but should <strong>never</strong> be
-used in production. If not set to proper values in <code>docker-compose.yml</code> (or whatever
-other environment of your choice), reminders are printed to console during startup.</p>
+<p>This is done for accountability purposes and the data collected is intended to be viewable
+only by users with an access level of <code>.moderator</code> or above.</p>
 
-                        <a href="Structs/AdminUser.html" class="slightly-smaller">See more</a>
+                        <a href="Structs/ProfileEdit.html" class="slightly-smaller">See more</a>
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">AdminUser</span> <span class="p">:</span> <span class="kt">Migration</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">ProfileEdit</span> <span class="p">:</span> <span class="kt">Codable</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Migrations/AdminUser.swift#L13-L107">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-              </ul>
-            </div>
-            <div class="task-group">
-              <ul class="item-container">
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App11ClientUsersV"></a>
-                    <a name="//apple_ref/swift/Struct/ClientUsers" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App11ClientUsersV">ClientUsers</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>A <code>Migration</code> that creates a set of registered client users during startup, from a
-<code>registered-clients.txt</code> file located at the root level of the project. The file must
-be of the format:</p>
-<pre class="highlight swift"><code><span class="nv">clientUsername1</span><span class="p">:</span><span class="nv">password1</span><span class="p">:</span><span class="n">recoveryKey1</span>
-<span class="nv">clientUsername2</span><span class="p">:</span><span class="nv">password2</span><span class="p">:</span><span class="n">recoveryKey2</span>
-<span class="o">...</span>
-</code></pre>
-<div class="aside aside-note">
-    <p class="aside-title">Note</p>
-    Each API client that wishes to make use of <code><a href="Structs/ClientController.html">ClientController</a></code> endpoints <strong>must</strong>
-provide a client <code>username:password:recovery key</code> triplet prior to production startup.
-
-</div>
-
-                        <a href="Structs/ClientUsers.html" class="slightly-smaller">See more</a>
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">ClientUsers</span> <span class="p">:</span> <span class="kt">Migration</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Migrations/ClientUsers.swift#L16-L96">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-              </ul>
-            </div>
-            <div class="task-group">
-              <ul class="item-container">
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App17RegistrationCodesV"></a>
-                    <a name="//apple_ref/swift/Struct/RegistrationCodes" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App17RegistrationCodesV">RegistrationCodes</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>A <code>Migration</code> that populates the <code><a href="Classes/RegistrationCode.html">RegistrationCode</a></code> database from a <code>registration-codes.txt</code>
-file located at the root level of the project.</p>
-
-                        <a href="Structs/RegistrationCodes.html" class="slightly-smaller">See more</a>
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">RegistrationCodes</span> <span class="p">:</span> <span class="kt">Migration</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Migrations/RegistrationCodes.swift#L7-L63">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-              </ul>
-            </div>
-            <div class="task-group">
-              <ul class="item-container">
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App9TestUsersV"></a>
-                    <a name="//apple_ref/swift/Struct/TestUsers" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App9TestUsersV">TestUsers</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>A <code>Migration</code> that creates a set of test users during startup, so that there exists one
-at each <code>.accessLevel</code>. This migration should only be run in non-production environments.</p>
-
-                        <a href="Structs/TestUsers.html" class="slightly-smaller">See more</a>
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">TestUsers</span> <span class="p">:</span> <span class="kt">Migration</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Migrations/TestUsers.swift#L8-L87">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/ProfileEdit.swift#L11-L46">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

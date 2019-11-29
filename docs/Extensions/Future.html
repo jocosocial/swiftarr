@@ -69,9 +69,6 @@
                 <a class="nav-group-task-link" href="../Classes/User/Admin.html">– Admin</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/User/Public.html">– Public</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/UserNote.html">UserNote</a>
               </li>
               <li class="nav-group-task">
@@ -84,13 +81,7 @@
                 <a class="nav-group-task-link" href="../Classes/UserProfile/Edit.html">– Edit</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/UserProfile/Header.html">– Header</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/UserProfile/Public.html">– Public</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/UserProfile/Search.html">– Search</a>
               </li>
             </ul>
           </li>
@@ -233,6 +224,23 @@
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/TokenStringData.html">TokenStringData</a>
               </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserHeader.html">UserHeader</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserInfo.html">UserInfo</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserSearch.html">UserSearch</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Internal%20Structs.html">Internal Structs</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ProfileEdit.html">ProfileEdit</a>
+              </li>
             </ul>
           </li>
           <li class="nav-group-name">
@@ -249,14 +257,6 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App6routesyy5Vapor6Router_pKF">routes(_:)</a>
-              </li>
-            </ul>
-          </li>
-          <li class="nav-group-name">
-            <a class="nav-group-name-link" href="../Other%20Structs.html">Other Structures</a>
-            <ul class="nav-group-tasks">
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/ProfileEdit.html">ProfileEdit</a>
               </li>
             </ul>
           </li>
@@ -284,9 +284,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3NIO15EventLoopFutureC3AppAD4UserCRbzlE15convertToPublicACyAF0I0CGyKF"></a>
-                    <a name="//apple_ref/swift/Method/convertToPublic()" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3NIO15EventLoopFutureC3AppAD4UserCRbzlE15convertToPublicACyAF0I0CGyKF">convertToPublic()</a>
+                    <a name="/s:3NIO15EventLoopFutureC3AppAD4UserCRbzlE13convertToInfoACyAD0fI0VGyKF"></a>
+                    <a name="//apple_ref/swift/Method/convertToInfo()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3NIO15EventLoopFutureC3AppAD4UserCRbzlE13convertToInfoACyAD0fI0VGyKF">convertToInfo()</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -294,8 +294,8 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Converts a <code>Future&lt;User&gt;</code> to a <code>Future&lt;User.Public&gt;</code>. This extension provides the
-convenience of simply using <code>user.convertToPublic()</code> and allowing the compiler to
+                        <p>Converts a <code>Future&lt;User&gt;</code> to a <code>Future&lt;UserInfo&gt;</code>. This extension provides the
+convenience of simply using <code>user.convertToInfo()</code> and allowing the compiler to
 choose the appropriate version for the context.</p>
 
                       </div>
@@ -303,12 +303,12 @@ choose the appropriate version for the context.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">convertToPublic</span><span class="p">()</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Classes/User.html">User</a></span><span class="o">.</span><span class="kt">Public</span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">convertToInfo</span><span class="p">()</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Structs/UserInfo.html">UserInfo</a></span><span class="o">&gt;</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Extensions/User+Extensions.swift#L115-L120">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Extensions/User+Extensions.swift#L114-L119">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -327,9 +327,9 @@ choose the appropriate version for the context.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3NIO15EventLoopFutureC3AppAD11UserProfileCRbzlE15convertToHeaderACyAF0J0CGyKF"></a>
+                    <a name="/s:3NIO15EventLoopFutureC3AppAD11UserProfileCRbzlE15convertToHeaderACyAD0fJ0VGyKF"></a>
                     <a name="//apple_ref/swift/Method/convertToHeader()" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3NIO15EventLoopFutureC3AppAD11UserProfileCRbzlE15convertToHeaderACyAF0J0CGyKF">convertToHeader()</a>
+                    <a class="token" href="#/s:3NIO15EventLoopFutureC3AppAD11UserProfileCRbzlE15convertToHeaderACyAD0fJ0VGyKF">convertToHeader()</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -337,7 +337,7 @@ choose the appropriate version for the context.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Converts a <code>Future&lt;UserProfile&gt;</code> to a <code>Future&lt;UserProfile.Header&gt;</code>. This extension
+                        <p>Converts a <code>Future&lt;UserProfile&gt;</code> to a <code>Future&lt;UserHeader&gt;</code>. This extension
 provides the convenience of simply using <code>profile.convertToHeader()</code> and allowing the
 compiler to choose the appropriate version for the context.</p>
 
@@ -346,12 +346,12 @@ compiler to choose the appropriate version for the context.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">convertToHeader</span><span class="p">()</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Classes/UserProfile.html">UserProfile</a></span><span class="o">.</span><span class="kt">Header</span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">convertToHeader</span><span class="p">()</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Structs/UserHeader.html">UserHeader</a></span><span class="o">&gt;</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Extensions/UserProfile+Extensions.swift#L133-L138">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Extensions/UserProfile+Extensions.swift#L136-L141">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -359,9 +359,9 @@ compiler to choose the appropriate version for the context.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3NIO15EventLoopFutureC3AppAD11UserProfileCRbzlE15convertToSearchACyAF0J0CGyKF"></a>
+                    <a name="/s:3NIO15EventLoopFutureC3AppAD11UserProfileCRbzlE15convertToSearchACyAD0fJ0VGyKF"></a>
                     <a name="//apple_ref/swift/Method/convertToSearch()" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3NIO15EventLoopFutureC3AppAD11UserProfileCRbzlE15convertToSearchACyAF0J0CGyKF">convertToSearch()</a>
+                    <a class="token" href="#/s:3NIO15EventLoopFutureC3AppAD11UserProfileCRbzlE15convertToSearchACyAD0fJ0VGyKF">convertToSearch()</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -369,8 +369,8 @@ compiler to choose the appropriate version for the context.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Converts a <code>Future&lt;UserProfile&gt;</code> to a <code>Future&lt;UserProfile.Search&gt;</code>. This extension
-provides the convenience of simply using <code>profile.convertToSearcg()</code> and allowing the
+                        <p>Converts a <code>Future&lt;UserProfile&gt;</code> to a <code>Future&lt;UserSearch&gt;</code>. This extension
+provides the convenience of simply using <code>profile.convertToSearch()</code> and allowing the
 compiler to choose the appropriate version for the context.</p>
 
                       </div>
@@ -378,12 +378,12 @@ compiler to choose the appropriate version for the context.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">convertToSearch</span><span class="p">()</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Classes/UserProfile.html">UserProfile</a></span><span class="o">.</span><span class="kt">Search</span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">convertToSearch</span><span class="p">()</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Structs/UserSearch.html">UserSearch</a></span><span class="o">&gt;</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Extensions/UserProfile+Extensions.swift#L143-L148">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Extensions/UserProfile+Extensions.swift#L146-L151">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -396,7 +396,7 @@ compiler to choose the appropriate version for the context.</p>
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-27)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-29)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.12.0</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>

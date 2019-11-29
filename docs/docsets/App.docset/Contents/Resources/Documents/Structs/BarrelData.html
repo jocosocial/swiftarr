@@ -69,9 +69,6 @@
                 <a class="nav-group-task-link" href="../Classes/User/Admin.html">– Admin</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/User/Public.html">– Public</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/UserNote.html">UserNote</a>
               </li>
               <li class="nav-group-task">
@@ -84,13 +81,7 @@
                 <a class="nav-group-task-link" href="../Classes/UserProfile/Edit.html">– Edit</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/UserProfile/Header.html">– Header</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/UserProfile/Public.html">– Public</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/UserProfile/Search.html">– Search</a>
               </li>
             </ul>
           </li>
@@ -233,6 +224,23 @@
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/TokenStringData.html">TokenStringData</a>
               </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserHeader.html">UserHeader</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserInfo.html">UserInfo</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserSearch.html">UserSearch</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Internal%20Structs.html">Internal Structs</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ProfileEdit.html">ProfileEdit</a>
+              </li>
             </ul>
           </li>
           <li class="nav-group-name">
@@ -252,14 +260,6 @@
               </li>
             </ul>
           </li>
-          <li class="nav-group-name">
-            <a class="nav-group-name-link" href="../Other%20Structs.html">Other Structures</a>
-            <ul class="nav-group-tasks">
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/ProfileEdit.html">ProfileEdit</a>
-              </li>
-            </ul>
-          </li>
         </ul>
       </nav>
       <article class="main-content">
@@ -273,10 +273,20 @@
 
                 </div>
               </div>
-            <p>Returned by <code>POST /api/v3/user/barrel</code>,<code>GET /api/v3/user/barrels/ID</code>,
-<code>POST /api/v3/user/barrels/ID/rename/STRING</code>.</p>
+            <p>Used to return the contents of a user-owned <code>.seamonkey</code> or <code>.userWords</code> <code><a href="../Classes/Barrel.html">Barrel</a></code>.</p>
+
+<p>Returned by:</p>
+
+<ul>
+<li><code>POST /api/v3/user/barrel</code></li>
+<li><code>GET /api/v3/user/barrels/ID</code></li>
+<li><code>POST /api/v3/user/barrels/ID/add/STRING</code></li>
+<li><code>POST /api/v3/user/barrels/ID/remove/STRING</code></li>
+<li><code>POST /api/v3/user/barrels/ID/rename/STRING</code></li>
+</ul>
 
 <p>See <code><a href="../Structs/UserController.html#/s:3App14UserControllerV19createBarrelHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA0E10CreateDataVtKF">UserController.createBarrelHandler(_:data:)</a></code>, <code><a href="../Structs/UserController.html#/s:3App14UserControllerV13barrelHandlery3NIO15EventLoopFutureCyAA10BarrelDataVG5Vapor7RequestCKF">UserController.barrelHandler(_:)</a></code>,
+<code><a href="../Structs/UserController.html#/s:3App14UserControllerV16barrelAddHandlery3NIO15EventLoopFutureCyAA10BarrelDataVG5Vapor7RequestCKF">UserController.barrelAddHandler(_:)</a></code>, <code><a href="../Structs/UserController.html#/s:3App14UserControllerV19barrelRemoveHandlery3NIO15EventLoopFutureCyAA10BarrelDataVG5Vapor7RequestCKF">UserController.barrelRemoveHandler(_:)</a></code>,
 <code><a href="../Structs/UserController.html#/s:3App14UserControllerV19renameBarrelHandlery3NIO15EventLoopFutureCyAA0E4DataVG5Vapor7RequestCKF">UserController.renameBarrelHandler(_:)</a></code>.</p>
 
           </div>
@@ -311,7 +321,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1268">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L59">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -341,7 +351,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1270">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L61">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -371,7 +381,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1272">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L63">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -401,7 +411,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L1274">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L65">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -414,7 +424,7 @@
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-27)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-29)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.12.0</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>

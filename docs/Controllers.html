@@ -69,9 +69,6 @@
                 <a class="nav-group-task-link" href="Classes/User/Admin.html">– Admin</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Classes/User/Public.html">– Public</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Classes/UserNote.html">UserNote</a>
               </li>
               <li class="nav-group-task">
@@ -84,13 +81,7 @@
                 <a class="nav-group-task-link" href="Classes/UserProfile/Edit.html">– Edit</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Classes/UserProfile/Header.html">– Header</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Classes/UserProfile/Public.html">– Public</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Classes/UserProfile/Search.html">– Search</a>
               </li>
             </ul>
           </li>
@@ -233,6 +224,23 @@
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/TokenStringData.html">TokenStringData</a>
               </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/UserHeader.html">UserHeader</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/UserInfo.html">UserInfo</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/UserSearch.html">UserSearch</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="Internal%20Structs.html">Internal Structs</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/ProfileEdit.html">ProfileEdit</a>
+              </li>
             </ul>
           </li>
           <li class="nav-group-name">
@@ -249,14 +257,6 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Other%20Functions.html#/s:3App6routesyy5Vapor6Router_pKF">routes(_:)</a>
-              </li>
-            </ul>
-          </li>
-          <li class="nav-group-name">
-            <a class="nav-group-name-link" href="Other%20Structs.html">Other Structures</a>
-            <ul class="nav-group-tasks">
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/ProfileEdit.html">ProfileEdit</a>
               </li>
             </ul>
           </li>
@@ -335,9 +335,14 @@ to authentication.</p>
 (<a href="https://tools.ietf.org/html/rfc7617">RFC7617</a>) or <code>HTTP Bearer Authentication</code> (based on
 <a href="https://tools.ietf.org/html/rfc6750#section-2.1">RFC6750</a>) for virtually all endpoint
 access, with very few exceptions carved out for fully public data (such as the Event
-Schedule). The query-based <code>&amp;key=</code> scheme used in v2 is not supported at all.</p>
+Schedule).</p>
 
 <p>This means that essentially all HTTP requests <strong><em>must</em></strong> contain an <code>Authorization</code> header.</p>
+<div class="aside aside-important">
+    <p class="aside-title">Important</p>
+    The query-based <code>&amp;key=</code> scheme used in v2 is not supported at all.
+
+</div>
 
 <p>A valid <code>HTTP Basic Authentication</code> header resembles:</p>
 <pre class="highlight swift"><code><span class="kt">Authorization</span><span class="p">:</span> <span class="kt">Basic</span> <span class="kt">YWRtaW46cGFzc3dvcmQ</span><span class="o">=</span>
@@ -379,7 +384,7 @@ explicitly logs out on <em>any</em> client on <em>any</em> device, the token is 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L46-L295">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AuthController.swift#L48-L299">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -496,7 +501,7 @@ entirely.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L13-L1225">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L13-L1519">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -536,7 +541,7 @@ entirely.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L13-L426">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L13-L571">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -549,7 +554,7 @@ entirely.</p>
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-27)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-29)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.12.0</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>

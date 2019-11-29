@@ -69,9 +69,6 @@
                 <a class="nav-group-task-link" href="../Classes/User/Admin.html">– Admin</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/User/Public.html">– Public</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/UserNote.html">UserNote</a>
               </li>
               <li class="nav-group-task">
@@ -84,13 +81,7 @@
                 <a class="nav-group-task-link" href="../Classes/UserProfile/Edit.html">– Edit</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/UserProfile/Header.html">– Header</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/UserProfile/Public.html">– Public</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/UserProfile/Search.html">– Search</a>
               </li>
             </ul>
           </li>
@@ -233,6 +224,23 @@
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/TokenStringData.html">TokenStringData</a>
               </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserHeader.html">UserHeader</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserInfo.html">UserInfo</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserSearch.html">UserSearch</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Internal%20Structs.html">Internal Structs</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ProfileEdit.html">ProfileEdit</a>
+              </li>
             </ul>
           </li>
           <li class="nav-group-name">
@@ -249,14 +257,6 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App6routesyy5Vapor6Router_pKF">routes(_:)</a>
-              </li>
-            </ul>
-          </li>
-          <li class="nav-group-name">
-            <a class="nav-group-name-link" href="../Other%20Structs.html">Other Structures</a>
-            <ul class="nav-group-tasks">
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/ProfileEdit.html">ProfileEdit</a>
               </li>
             </ul>
           </li>
@@ -319,7 +319,7 @@ entirely.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L18-L50">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L18-L53">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -338,9 +338,9 @@ entirely.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App15UsersControllerV11findHandlery3NIO15EventLoopFutureCyAA4UserC6PublicCG5Vapor7RequestCKF"></a>
+                    <a name="/s:3App15UsersControllerV11findHandlery3NIO15EventLoopFutureCyAA8UserInfoVG5Vapor7RequestCKF"></a>
                     <a name="//apple_ref/swift/Method/findHandler(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App15UsersControllerV11findHandlery3NIO15EventLoopFutureCyAA4UserC6PublicCG5Vapor7RequestCKF">findHandler(_:)</a>
+                    <a class="token" href="#/s:3App15UsersControllerV11findHandlery3NIO15EventLoopFutureCyAA8UserInfoVG5Vapor7RequestCKF">findHandler(_:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -350,7 +350,7 @@ entirely.</p>
                       <div class="abstract">
                         <p><code>GET /api/v3/users/find/STRING</code></p>
 
-<p>Retrieves a user&rsquo;s .Public info using either an ID (UUID string) or a username.</p>
+<p>Retrieves a user&rsquo;s <code><a href="../Structs/UserInfo.html">UserInfo</a></code> using either an ID (UUID string) or a username.</p>
 
 <p>This endpoint is of limited utility, but is included for the case of obtaining a
 user&rsquo;s ID from a username. If you have an ID and want the associated username, use
@@ -373,7 +373,7 @@ exist.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">findHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Classes/User.html">User</a></span><span class="o">.</span><span class="kt">Public</span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">findHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Structs/UserInfo.html">UserInfo</a></span><span class="o">&gt;</span></code></pre>
 
                         </div>
                       </div>
@@ -398,11 +398,11 @@ exist.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><code><a href="../Classes/User/Public.html">User.Public</a></code> containing the user&rsquo;s ID, username and timestamp of last
+                        <p><code><a href="../Structs/UserInfo.html">UserInfo</a></code> containing the user&rsquo;s ID, username and timestamp of last
 profile update.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L78-L103">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L81-L107">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -410,9 +410,9 @@ profile update.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App15UsersControllerV13headerHandlery3NIO15EventLoopFutureCyAA11UserProfileC6HeaderCG5Vapor7RequestCKF"></a>
+                    <a name="/s:3App15UsersControllerV13headerHandlery3NIO15EventLoopFutureCyAA10UserHeaderVG5Vapor7RequestCKF"></a>
                     <a name="//apple_ref/swift/Method/headerHandler(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App15UsersControllerV13headerHandlery3NIO15EventLoopFutureCyAA11UserProfileC6HeaderCG5Vapor7RequestCKF">headerHandler(_:)</a>
+                    <a class="token" href="#/s:3App15UsersControllerV13headerHandlery3NIO15EventLoopFutureCyAA10UserHeaderVG5Vapor7RequestCKF">headerHandler(_:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -422,7 +422,7 @@ profile update.</p>
                       <div class="abstract">
                         <p><code>GET /api/v3/users/ID/header</code></p>
 
-<p>Retrieves the specified user&rsquo;s <code><a href="../Classes/UserProfile/Header.html">UserProfile.Header</a></code> info.</p>
+<p>Retrieves the specified user&rsquo;s <code><a href="../Structs/UserHeader.html">UserHeader</a></code> info.</p>
 
 <p>This endpoint provides one-off retrieval of the user information appropriate for
 a header on posted content – the user&rsquo;s ID, current generated <code>.displayedName</code>, and
@@ -440,7 +440,7 @@ filename of their current profile image.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">headerHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Classes/UserProfile.html">UserProfile</a></span><span class="o">.</span><span class="kt">Header</span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">headerHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Structs/UserHeader.html">UserHeader</a></span><span class="o">&gt;</span></code></pre>
 
                         </div>
                       </div>
@@ -465,11 +465,11 @@ filename of their current profile image.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><code><a href="../Classes/UserProfile/Header.html">UserProfile.Header</a></code> containing the user&rsquo;s ID, <code>.displayedName</code> and profile
+                        <p><code><a href="../Structs/UserHeader.html">UserHeader</a></code> containing the user&rsquo;s ID, <code>.displayedName</code> and profile
 image filename.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L119-L129">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L123-L137">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -536,7 +536,7 @@ as a likely bug, please and thank you.
 user&rsquo;s profile.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L145-L188">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L153-L195">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -544,9 +544,9 @@ user&rsquo;s profile.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App15UsersControllerV11userHandlery3NIO15EventLoopFutureCyAA4UserC6PublicCG5Vapor7RequestCKF"></a>
+                    <a name="/s:3App15UsersControllerV11userHandlery3NIO15EventLoopFutureCyAA8UserInfoVG5Vapor7RequestCKF"></a>
                     <a name="//apple_ref/swift/Method/userHandler(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App15UsersControllerV11userHandlery3NIO15EventLoopFutureCyAA4UserC6PublicCG5Vapor7RequestCKF">userHandler(_:)</a>
+                    <a class="token" href="#/s:3App15UsersControllerV11userHandlery3NIO15EventLoopFutureCyAA8UserInfoVG5Vapor7RequestCKF">userHandler(_:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -556,7 +556,7 @@ user&rsquo;s profile.</p>
                       <div class="abstract">
                         <p><code>GET /api/v3/users/ID</code></p>
 
-<p>Retrieves the specified user&rsquo;s .Public info.</p>
+<p>Retrieves the specified user&rsquo;s <code><a href="../Structs/UserInfo.html">UserInfo</a></code>.</p>
 
 <p>This endpoint provides one-off retrieval of a user&rsquo;s username and the timestamp of
 the last time their publicly viewable data was updated. It would typically be used to:</p>
@@ -579,7 +579,7 @@ displayedName change, profile photo change, or any field on their profile)</li>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">userHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Classes/User.html">User</a></span><span class="o">.</span><span class="kt">Public</span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">userHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Structs/UserInfo.html">UserInfo</a></span><span class="o">&gt;</span></code></pre>
 
                         </div>
                       </div>
@@ -604,11 +604,11 @@ displayedName change, profile photo change, or any field on their profile)</li>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><code><a href="../Classes/User/Public.html">User.Public</a></code> containing the user&rsquo;s ID, username and timestamp of last
+                        <p><code><a href="../Structs/UserInfo.html">UserInfo</a></code> containing the user&rsquo;s ID, username and timestamp of last
 profile update.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L207-L210">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L214-L218">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -627,9 +627,82 @@ profile update.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App15UsersControllerV20matchAllNamesHandlery3NIO15EventLoopFutureCySayAA11UserProfileC6SearchCGG5Vapor7RequestCKF"></a>
+                    <a name="/s:3App15UsersControllerV12blockHandlery3NIO15EventLoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestCKF"></a>
+                    <a name="//apple_ref/swift/Method/blockHandler(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15UsersControllerV12blockHandlery3NIO15EventLoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestCKF">blockHandler(_:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>POST /api/v3/users/ID/block</code></p>
+
+<p>Blocks the specified <code><a href="../Classes/User.html">User</a></code>. The blocking user and any subaccounts will not be able
+to see posts from the blocked <code><a href="../Classes/User.html">User</a></code> or any of their associated subaccounts, and vice
+versa. This affects all forms of communication, public and private, as well as user
+searches.</p>
+
+<p>Only the specified user is added to the block list, so as not to explicitly expose the
+ownership of any other accounts the blocked user may be using. The blocking of any
+associated user accounts is handled under the hood.</p>
+
+<p>Users with an <code>.accessLevel</code> of <code>.moderator</code> or higher may not be blocked. A block
+applied to such accounts will be accepted, but is effectively a uni-directional block.
+That is, the blocking user will not see the blocked user, but the blocked privileged
+user will still see the blocking user throughout the public areas of the system, and
+their role accounts will still be visible to the blocking user.</p>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    A 5xx response should be reported as a likely bug, please and thank you.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">blockHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">HTTPStatus</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>201 Created on success.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L244-L262">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App15UsersControllerV20matchAllNamesHandlery3NIO15EventLoopFutureCySayAA10UserSearchVGG5Vapor7RequestCKF"></a>
                     <a name="//apple_ref/swift/Method/matchAllNamesHandler(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App15UsersControllerV20matchAllNamesHandlery3NIO15EventLoopFutureCySayAA11UserProfileC6SearchCGG5Vapor7RequestCKF">matchAllNamesHandler(_:)</a>
+                    <a class="token" href="#/s:3App15UsersControllerV20matchAllNamesHandlery3NIO15EventLoopFutureCySayAA10UserSearchVGG5Vapor7RequestCKF">matchAllNamesHandler(_:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -640,7 +713,7 @@ profile update.</p>
                         <p><code>GET /api/v3/users/match/allnames/STRING</code></p>
 
 <p>Retrieves all <code><a href="../Classes/UserProfile.html#/s:3App11UserProfileC10userSearchSSvp">UserProfile.userSearch</a></code> values containing the specified substring,
-returning an array of precomposed <code>.userSearch</code> strings in <code><a href="../Classes/UserProfile/Search.html">UserProfile.Search</a></code> format.
+returning an array of precomposed <code>.userSearch</code> strings in <code><a href="../Structs/UserSearch.html">UserSearch</a></code> format.
 The intended use for this endpoint is to help isolate a particular user in an
 auto-complete type scenario, by searching <strong>all</strong> of the <code>.displayName</code>, <code>.username</code>
 and <code>.realName</code> profile fields.</p>
@@ -668,7 +741,7 @@ username harvesting.
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">matchAllNamesHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="p">[</span><span class="kt"><a href="../Classes/UserProfile.html">UserProfile</a></span><span class="o">.</span><span class="kt">Search</span><span class="p">]</span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">matchAllNamesHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="p">[</span><span class="kt"><a href="../Structs/UserSearch.html">UserSearch</a></span><span class="p">]</span><span class="o">&gt;</span></code></pre>
 
                         </div>
                       </div>
@@ -693,11 +766,11 @@ username harvesting.
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><code>[UserProfile.Search]</code> containing the ID and profile.userSearch string
+                        <p><code>[UserSearch]</code> containing the ID and profile.userSearch string
 values of all matching users.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L238-L258">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L286-L307">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -761,7 +834,77 @@ thus there would never be a match.</p>
                         <p><code>[String]</code> containng all matching usernames as <q>@username</q> strings.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L272-L286">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L321-L336">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App15UsersControllerV11muteHandlery3NIO15EventLoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestCKF"></a>
+                    <a name="//apple_ref/swift/Method/muteHandler(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15UsersControllerV11muteHandlery3NIO15EventLoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestCKF">muteHandler(_:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>POST /api/v3/users/ID/mute</code></p>
+
+<p>Mutes the specified <code><a href="../Classes/User.html">User</a></code> for the current user. The muting user will not see public
+posts from the muted user. A mute does not affect what is or is not visible to the
+muted user. A mute does not affect private communication channels.</p>
+
+<p>A mute does not mute any associated sub-accounts of the muted <code><a href="../Classes/User.html">User</a></code>, nor is it applied
+to any of the muting user&rsquo;s associated accounts. It is very much just <em>this</em> currently
+logged-in username muting <em>that</em> one username.</p>
+
+<p>Any user can be muted, including users with privileged <code>.accessLevel</code>. Such users are
+<em>not</em> muted, however, when posting from role accounts. That is, a <code>.moderator</code> can post
+<em>as</em> <code>@moderator</code> and it is visible to all users, period.</p>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    A 5xx response should be reported as a likely bug, please and thank you.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">muteHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">HTTPStatus</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>201 Created on success.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L355-L373">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -850,7 +993,7 @@ be reported as a likely bug, please and thank you.</p>
                         <p><code><a href="../Structs/CreatedNoteData.html">CreatedNoteData</a></code> containing the newly created note&rsquo;s ID and text.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L307-L348">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L394-L434">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -912,7 +1055,7 @@ be reported as a likely bug, please and thank you.
                         <p>204 No Content on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L359-L383">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L445-L468">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -983,7 +1126,130 @@ be reported as a likely bug, please and thank you.</p>
                         <p><code><a href="../Classes/UserNote/Edit.html">UserNote.Edit</a></code> containing the note&rsquo;s ID and text.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L400-L423">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L485-L507">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App15UsersControllerV14unblockHandlery3NIO15EventLoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestCKF"></a>
+                    <a name="//apple_ref/swift/Method/unblockHandler(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15UsersControllerV14unblockHandlery3NIO15EventLoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestCKF">unblockHandler(_:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>POST /api/v3/users/ID/unblock</code></p>
+
+<p>Removes a block of the specified <code><a href="../Classes/User.html">User</a></code> and all subaccounts by the current user and
+all associated accounts.</p>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    400 error if the specified user was not currently blocked. A 5xx response
+should be reported as a likely bug, please and thank you.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">unblockHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">HTTPStatus</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>204 No Content on success.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L518-L539">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App15UsersControllerV13unmuteHandlery3NIO15EventLoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestCKF"></a>
+                    <a name="//apple_ref/swift/Method/unmuteHandler(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15UsersControllerV13unmuteHandlery3NIO15EventLoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestCKF">unmuteHandler(_:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>POST /api/v3/users/ID/unmute</code></p>
+
+<p>Removes a mute of the specified <code><a href="../Classes/User.html">User</a></code> by the current user.</p>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    400 error if the specified user was not currently muted. A 5xx response should
+be reported as a likely bug, please and thank you.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">unmuteHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">HTTPStatus</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming request <code>Container</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>204 No Content on success.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L549-L570">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -996,7 +1262,7 @@ be reported as a likely bug, please and thank you.</p>
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-27)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-29)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.12.0</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>

@@ -69,9 +69,6 @@
                 <a class="nav-group-task-link" href="../Classes/User/Admin.html">– Admin</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/User/Public.html">– Public</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/UserNote.html">UserNote</a>
               </li>
               <li class="nav-group-task">
@@ -84,13 +81,7 @@
                 <a class="nav-group-task-link" href="../Classes/UserProfile/Edit.html">– Edit</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/UserProfile/Header.html">– Header</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/UserProfile/Public.html">– Public</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/UserProfile/Search.html">– Search</a>
               </li>
             </ul>
           </li>
@@ -233,6 +224,23 @@
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/TokenStringData.html">TokenStringData</a>
               </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserHeader.html">UserHeader</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserInfo.html">UserInfo</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserSearch.html">UserSearch</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Internal%20Structs.html">Internal Structs</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ProfileEdit.html">ProfileEdit</a>
+              </li>
             </ul>
           </li>
           <li class="nav-group-name">
@@ -249,14 +257,6 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App6routesyy5Vapor6Router_pKF">routes(_:)</a>
-              </li>
-            </ul>
-          </li>
-          <li class="nav-group-name">
-            <a class="nav-group-name-link" href="../Other%20Structs.html">Other Structures</a>
-            <ul class="nav-group-tasks">
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/ProfileEdit.html">ProfileEdit</a>
               </li>
             </ul>
           </li>
@@ -334,9 +334,9 @@ bulk retrieval services for registered API clients.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App16ClientControllerV18userHeadersHandlery3NIO15EventLoopFutureCySayAA11UserProfileC6HeaderCGG5Vapor7RequestCKF"></a>
+                    <a name="/s:3App16ClientControllerV18userHeadersHandlery3NIO15EventLoopFutureCySayAA10UserHeaderVGG5Vapor7RequestCKF"></a>
                     <a name="//apple_ref/swift/Method/userHeadersHandler(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App16ClientControllerV18userHeadersHandlery3NIO15EventLoopFutureCySayAA11UserProfileC6HeaderCGG5Vapor7RequestCKF">userHeadersHandler(_:)</a>
+                    <a class="token" href="#/s:3App16ClientControllerV18userHeadersHandlery3NIO15EventLoopFutureCySayAA10UserHeaderVGG5Vapor7RequestCKF">userHeadersHandler(_:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -346,7 +346,7 @@ bulk retrieval services for registered API clients.</p>
                       <div class="abstract">
                         <p><code>GET /api/v3/client/user/headers/since/DATE</code></p>
 
-<p>Retrieves the <code><a href="../Classes/UserProfile/Header.html">UserProfile.Header</a></code> of all users with a <code>.profileUpdatedAt</code> timestamp
+<p>Retrieves the <code><a href="../Structs/UserHeader.html">UserHeader</a></code> of all users with a <code>.profileUpdatedAt</code> timestamp
 later than the specified date. The <code>DATE</code> parameter is a string, and may be provided
 in either of two formats:</p>
 
@@ -374,7 +374,7 @@ is missing or invalid. 403 error if user is not a registered client.
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">userHeadersHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="p">[</span><span class="kt"><a href="../Classes/UserProfile.html">UserProfile</a></span><span class="o">.</span><span class="kt">Header</span><span class="p">]</span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">userHeadersHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="p">[</span><span class="kt"><a href="../Structs/UserHeader.html">UserHeader</a></span><span class="p">]</span><span class="o">&gt;</span></code></pre>
 
                         </div>
                       </div>
@@ -399,7 +399,7 @@ is missing or invalid. 403 error if user is not a registered client.
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><code>[UserProfile.Header]</code> array of all updated users.</p>
+                        <p><code>[UserHeader]</code> array of all updated users.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L71-L106">Show on GitHub</a>
@@ -410,9 +410,9 @@ is missing or invalid. 403 error if user is not a registered client.
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App16ClientControllerV17userSearchHandlery3NIO15EventLoopFutureCySayAA11UserProfileC0E0CGG5Vapor7RequestCKF"></a>
+                    <a name="/s:3App16ClientControllerV17userSearchHandlery3NIO15EventLoopFutureCySayAA04UserE0VGG5Vapor7RequestCKF"></a>
                     <a name="//apple_ref/swift/Method/userSearchHandler(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App16ClientControllerV17userSearchHandlery3NIO15EventLoopFutureCySayAA11UserProfileC0E0CGG5Vapor7RequestCKF">userSearchHandler(_:)</a>
+                    <a class="token" href="#/s:3App16ClientControllerV17userSearchHandlery3NIO15EventLoopFutureCySayAA04UserE0VGG5Vapor7RequestCKF">userSearchHandler(_:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -423,7 +423,7 @@ is missing or invalid. 403 error if user is not a registered client.
                         <p><code>GET /api/v3/client/usersearch</code></p>
 
 <p>Retrieves all <code><a href="../Classes/UserProfile.html#/s:3App11UserProfileC10userSearchSSvp">UserProfile.userSearch</a></code> values, returning an array of precomposed
-<code>.userSearch</code> strings in <code><a href="../Classes/UserProfile/Search.html">UserProfile.Search</a></code> format. The intended use for this data
+<code>.userSearch</code> strings in <code><a href="../Structs/UserSearch.html">UserSearch</a></code> format. The intended use for this data
 is to efficiently isolate a particular user in an auto-complete type scenario, using
 <strong>all</strong> of the <code>.displayName</code>, <code>.username</code> and <code>.realName</code> profile fields.</p>
 <div class="aside aside-requires">
@@ -443,7 +443,7 @@ is missing or invalid. 403 error if user is not a registered client.
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">userSearchHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="p">[</span><span class="kt"><a href="../Classes/UserProfile.html">UserProfile</a></span><span class="o">.</span><span class="kt">Search</span><span class="p">]</span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">userSearchHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="p">[</span><span class="kt"><a href="../Structs/UserSearch.html">UserSearch</a></span><span class="p">]</span><span class="o">&gt;</span></code></pre>
 
                         </div>
                       </div>
@@ -468,11 +468,11 @@ is missing or invalid. 403 error if user is not a registered client.
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><code>[UserProfile.Search]</code> containing the ID and <code>.userSearch</code> string values
+                        <p><code>[UserSearch]</code> containing the ID and <code>.userSearch</code> string values
 of all users, sorted by username.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L121-L150">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L121-L151">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -480,9 +480,9 @@ of all users, sorted by username.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App16ClientControllerV18userUpdatesHandlery3NIO15EventLoopFutureCySayAA4UserC6PublicCGG5Vapor7RequestCKF"></a>
+                    <a name="/s:3App16ClientControllerV18userUpdatesHandlery3NIO15EventLoopFutureCySayAA8UserInfoVGG5Vapor7RequestCKF"></a>
                     <a name="//apple_ref/swift/Method/userUpdatesHandler(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App16ClientControllerV18userUpdatesHandlery3NIO15EventLoopFutureCySayAA4UserC6PublicCGG5Vapor7RequestCKF">userUpdatesHandler(_:)</a>
+                    <a class="token" href="#/s:3App16ClientControllerV18userUpdatesHandlery3NIO15EventLoopFutureCySayAA8UserInfoVGG5Vapor7RequestCKF">userUpdatesHandler(_:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -492,7 +492,7 @@ of all users, sorted by username.</p>
                       <div class="abstract">
                         <p><code>GET /api/v3/client/user/updates/since/DATE</code></p>
 
-<p>Retrieves the <code><a href="../Classes/User/Public.html">User.Public</a></code> of all users with a <code>.profileUpdatedAt</code> timestamp later
+<p>Retrieves the <code><a href="../Structs/UserInfo.html">UserInfo</a></code> of all users with a <code>.profileUpdatedAt</code> timestamp later
 than the specified date. The <code>DATE</code> parameter is a string, and may be provided in
 either of two formats:</p>
 
@@ -520,7 +520,7 @@ is missing or invalid. 403 error if user is not a registered client.
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">userUpdatesHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="p">[</span><span class="kt"><a href="../Classes/User.html">User</a></span><span class="o">.</span><span class="kt">Public</span><span class="p">]</span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">userUpdatesHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="p">[</span><span class="kt"><a href="../Structs/UserInfo.html">UserInfo</a></span><span class="p">]</span><span class="o">&gt;</span></code></pre>
 
                         </div>
                       </div>
@@ -545,10 +545,10 @@ is missing or invalid. 403 error if user is not a registered client.
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><code>[User.Public]</code> containing all updated users.</p>
+                        <p><code>[UserInfo]</code> containing all updated users.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L169-L204">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L170-L204">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -561,7 +561,7 @@ is missing or invalid. 403 error if user is not a registered client.
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-27)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-29)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.12.0</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>
