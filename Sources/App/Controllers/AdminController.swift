@@ -66,5 +66,3 @@ struct AdminController: RouteCollection {
     // MARK: - Helper Functions
 
 }
-
-// MARK: - Helper Structs

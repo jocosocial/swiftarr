@@ -95,7 +95,3 @@ struct TestController: RouteCollection {
     // header in the request.
     
 }
-
-// MARK: - Helper Functions
-
-// MARK: - Helper Structs
