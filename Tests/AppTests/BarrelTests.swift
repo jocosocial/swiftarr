@@ -799,6 +799,14 @@ final class BarrelTests: XCTestCase {
             headers: headers
         )
         XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+        let blockedUserData = try app.getResult(
+            from: userURI + "blocks",
+            method: .GET,
+            headers: headers,
+            decodeTo: BlockedUserData.self
+        )
+        XCTAssertTrue(blockedUserData.seamonkeys.count == 1, "should be 1 block")
+        XCTAssertTrue(blockedUserData.seamonkeys[0].username == "@unverified", "should be '@unverified'")
     }
 
     func testUserUnblock() throws {
@@ -874,6 +882,14 @@ final class BarrelTests: XCTestCase {
             headers: headers
         )
         XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+        let mutedUserData = try app.getResult(
+            from: userURI + "mutes",
+            method: .GET,
+            headers: headers,
+            decodeTo: MutedUserData.self
+        )
+        XCTAssertTrue(mutedUserData.seamonkeys.count == 1, "should be 1 block")
+        XCTAssertTrue(mutedUserData.seamonkeys[0].username == "@unverified", "should be '@unverified'")
     }
 
     func testUserUnmute() throws {
