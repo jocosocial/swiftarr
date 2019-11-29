@@ -284,7 +284,9 @@ struct AuthController: RouteCollection {
     /// - Returns: 204 No Content if the token was successfully deleted.
     func logoutHandler(_ req: Request) throws -> Future<HTTPStatus> {
         let user = try req.requireAuthenticated(User.self)
+        // revoke current auth
         try req.unauthenticate(User.self)
+        // revoke token
         return try Token.query(on: req)
             .filter(\.userID == user.requireID())
             .first()

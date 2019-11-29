@@ -145,7 +145,6 @@ struct UsersController: RouteCollection {
     func profileHandler(_ req: Request) throws -> Future<UserProfile.Public> {
         // FIXME: account for blocks
         let requester = try req.requireAuthenticated(User.self)
-        // get requested user
         return try req.parameters.next(User.self).flatMap {
             (user) in
             // a .banned profile is only available to .moderator or above
@@ -160,8 +159,8 @@ struct UsersController: RouteCollection {
                 .flatMap {
                     (profile) in
                     let publicProfile = try profile.convertToPublic()
-                    // if auth type is Basic, requestor is not logged in, so hide info if
-                    // `.limitAccess` is true or requestor is .banned
+                    // if auth type is Basic, requester is not logged in, so hide info if
+                    // `.limitAccess` is true or requester is .banned
                     if (req.http.headers.basicAuthorization != nil && profile.limitAccess)
                         || requester.accessLevel == .banned {
                         publicProfile.about = ""
@@ -253,6 +252,7 @@ struct UsersController: RouteCollection {
             .all()
             .map {
                 (profiles) in
+                // return as UserSearch
                 return try profiles.map { try $0.convertToSearch() }
         }
     }
@@ -281,6 +281,7 @@ struct UsersController: RouteCollection {
             .all()
             .map {
                 (profiles) in
+                // return @username only
                 return profiles.map { "@\($0.username)" }
         }
     }
@@ -331,7 +332,7 @@ struct UsersController: RouteCollection {
                                 profileID: profile.requireID(),
                                 note: data.note
                             )
-                            // return note's data
+                            // return note's data with 201 response
                             return note.save(on: req).map {
                                 (savedNote) in
                                 let createdNoteData = try CreatedNoteData(

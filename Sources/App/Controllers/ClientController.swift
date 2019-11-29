@@ -93,7 +93,7 @@ struct ClientController: RouteCollection {
                 guard let date = ClientController.dateFromParameter(string: since) else {
                     throw Abort(.badRequest, reason: "'\(since)' is not a recognized date format")
                 }
-                // return .Header array
+                // return UserHeader array
                 return UserProfile.query(on: req)
                     .filter(\.updatedAt > date)
                     .all()
@@ -139,6 +139,7 @@ struct ClientController: RouteCollection {
                 guard user.accessLevel != .client else {
                     throw Abort(.unauthorized, reason: "'x-swiftarr-user' user cannot be client")
                 }
+                // return UserSearch array
                 return UserProfile.query(on: req)
                     .sort(\.username, .ascending)
                     .all()
@@ -191,14 +192,13 @@ struct ClientController: RouteCollection {
                 guard let date = ClientController.dateFromParameter(string: since) else {
                     throw Abort(.badRequest, reason: "'\(since)' is not a recognized date format")
                 }
-                // return .Public array
+                // return UserInfo array
                 return User.query(on: req)
                     .filter(\.profileUpdatedAt > date)
                     .all()
                     .map {
                         (users) in
-                        let publicUsers = try users.map { try $0.convertToInfo() }
-                        return publicUsers
+                        return try users.map { try $0.convertToInfo() }
                 }
         }
     }
