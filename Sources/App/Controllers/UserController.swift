@@ -167,7 +167,7 @@ struct UserController: RouteCollection {
     /// - Parameters:
     ///   - req: The incoming request `Container`, provided automatically.
     ///   - data: `UserCreateData` struct containing the user's desired username and password.
-    /// - Throws: 400 error if the username is an invalid formate. 409 errpr if the username is
+    /// - Throws: 400 error if the username is an invalid format. 409 errpr if the username is
     ///   not available.
     /// - Returns: `CreatedUserData` containing the newly created user's ID, username, and a
     ///   recovery key string.
