@@ -353,7 +353,6 @@ struct UsersController: RouteCollection {
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: 201 Created on success.
     func muteHandler(_ req: Request) throws -> Future<HTTPStatus> {
-        // FIXME: needs mute processing
         let requester = try req.requireAuthenticated(User.self)
         return try req.parameters.next(User.self).flatMap {
             (user) in
@@ -365,9 +364,12 @@ struct UsersController: RouteCollection {
                 .unwrap(or: Abort(.internalServerError, reason: "userMute barrel not found"))
                 .flatMap {
                     (barrel) in
-                    // add and return 201
+                    // add to barrel
                     barrel.modelUUIDs.append(try user.requireID())
-                    return barrel.save(on: req).transform(to: .created)
+                    // update cache, return 201
+                    let cache = try req.keyedCache(for: .redis)
+                    let key = try "mutes:\(user.requireID())"
+                    return cache.set(key, to: barrel.modelUUIDs).transform(to: .created)
             }
         }
     }
