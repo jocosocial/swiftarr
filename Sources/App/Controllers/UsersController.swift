@@ -41,12 +41,15 @@ struct UsersController: RouteCollection {
         sharedAuthGroup.get(User.parameter, use: userHandler)
 
         // endpoints available only when logged in
+        tokenAuthGroup.post(User.parameter, "block", use: blockHandler)
         tokenAuthGroup.get("match", "allnames", String.parameter, use: matchAllNamesHandler)
         tokenAuthGroup.get("match", "username", String.parameter, use: matchUsernameHandler)
+        tokenAuthGroup.post(User.parameter, "mute", use: muteHandler)
         tokenAuthGroup.post(NoteCreateData.self, at: User.parameter, "note", use: noteCreateHandler)
         tokenAuthGroup.post(User.parameter, "note", "delete", use: noteDeleteHandler)
         tokenAuthGroup.get(User.parameter, "note", use: noteHandler)
-        
+        tokenAuthGroup.post(User.parameter, "unblock", use: unblockHandler)
+        tokenAuthGroup.post(User.parameter, "unmute", use: unmuteHandler)
     }
     
     // MARK: - Open Access Handlers
@@ -217,7 +220,47 @@ struct UsersController: RouteCollection {
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
-        
+    
+    /// `POST /api/v3/users/ID/block`
+    ///
+    /// Blocks the specified `User`. The blocking user and any subaccounts will not be able
+    /// to see posts from the blocked `User` or any of their associated subaccounts, and vice
+    /// versa. This affects all forms of communication, public and private, as well as user
+    /// searches.
+    ///
+    /// Only the specified user is added to the block list, so as not to explicitly expose the
+    /// ownership of any other accounts the blocked user may be using. The blocking of any
+    /// associated user accounts is handled under the hood.
+    ///
+    /// Users with an `.accessLevel` of `.moderator` or higher may not be blocked. A block
+    /// applied to such accounts will be accepted, but is effectively a uni-directional block.
+    /// That is, the blocking user will not see the blocked user, but the blocked privileged
+    /// user will still see the blocking user throughout the public areas of the system, and
+    /// their role accounts will still be visible to the blocking user.
+    ///
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: 201 Created on success.
+    func blockHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        // FIXME: needs block processing
+        let requester = try req.requireAuthenticated(User.self)
+        return try req.parameters.next(User.self).flatMap {
+            (user) in
+            // get requester block barrel
+            return try Barrel.query(on: req)
+                .filter(\.ownerID == requester.requireID())
+                .filter(\.barrelType == .userBlock)
+                .first()
+                .unwrap(or: Abort(.internalServerError, reason: "userBlock barrel not found"))
+                .flatMap {
+                    (barrel) in
+                    // add and return 201
+                    barrel.modelUUIDs.append(try user.requireID())
+                    return barrel.save(on: req).transform(to: .created)
+            }
+        }
+    }
+    
     /// `GET /api/v3/users/match/allnames/STRING`
     ///
     /// Retrieves all `UserProfile.userSearch` values containing the specified substring,
@@ -292,6 +335,43 @@ struct UsersController: RouteCollection {
         }
     }
     
+    /// `POST /api/v3/users/ID/mute`
+    ///
+    /// Mutes the specified `User` for the current user. The muting user will not see public
+    /// posts from the muted user. A mute does not affect what is or is not visible to the
+    /// muted user. A mute does not affect private communication channels.
+    ///
+    /// A mute does not mute any associated sub-accounts of the muted `User`, nor is it applied
+    /// to any of the muting user's associated accounts. It is very much just *this* currently
+    /// logged-in username muting *that* one username.
+    ///
+    /// Any user can be muted, including users with privileged `.accessLevel`. Such users are
+    /// *not* muted, however, when posting from role accounts. That is, a `.moderator` can post
+    /// *as* `@moderator` and it is visible to all users, period.
+    ///
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: 201 Created on success.
+    func muteHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        // FIXME: needs mute processing
+        let requester = try req.requireAuthenticated(User.self)
+        return try req.parameters.next(User.self).flatMap {
+            (user) in
+            // get requester mute barrel
+            return try Barrel.query(on: req)
+                .filter(\.ownerID == requester.requireID())
+                .filter(\.barrelType == .userMute)
+                .first()
+                .unwrap(or: Abort(.internalServerError, reason: "userMute barrel not found"))
+                .flatMap {
+                    (barrel) in
+                    // add and return 201
+                    barrel.modelUUIDs.append(try user.requireID())
+                    return barrel.save(on: req).transform(to: .created)
+            }
+        }
+    }
+
     /// `POST /api/v3/users/ID/note`
     ///
     /// Creates a new `UserNote` associated with the specified user's profile and the current
@@ -425,6 +505,67 @@ struct UsersController: RouteCollection {
             }
         }
     }
-
-    // MARK: - Helper Functions
+    
+    /// `POST /api/v3/users/ID/unblock`
+    ///
+    /// Removes a block of the specified `User` and all subaccounts by the current user and
+    /// all associated accounts.
+    ///
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Throws: 400 error if the specified user was not currently blocked. A 5xx response
+    ///   should be reported as a likely bug, please and thank you.
+    /// - Returns: 204 No Content on success.
+    func unblockHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        // FIXME: needs block processing
+        let requester = try req.requireAuthenticated(User.self)
+        return try req.parameters.next(User.self).flatMap {
+            (user) in
+            // get requester block barrel
+            return try Barrel.query(on: req)
+                .filter(\.ownerID == requester.requireID())
+                .filter(\.barrelType == .userBlock)
+                .first()
+                .unwrap(or: Abort(.internalServerError, reason: "userBlock barrel not found"))
+                .flatMap {
+                    (barrel) in
+                    // remove and return 204
+                    guard let index = barrel.modelUUIDs.firstIndex(of: try user.requireID()) else {
+                        throw Abort(.badRequest, reason: "user not found in block list")
+                    }
+                    barrel.modelUUIDs.remove(at: index)
+                    return barrel.save(on: req).transform(to: .noContent)
+            }
+        }
+    }
+    
+    /// `POST /api/v3/users/ID/unmute`
+    ///
+    /// Removes a mute of the specified `User` by the current user.
+    ///
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Throws: 400 error if the specified user was not currently muted. A 5xx response should
+    ///   be reported as a likely bug, please and thank you.
+    /// - Returns: 204 No Content on success.
+    func unmuteHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        // FIXME: needs mute processing
+        let requester = try req.requireAuthenticated(User.self)
+        return try req.parameters.next(User.self).flatMap {
+            (user) in
+            // get requester mute barrel
+            return try Barrel.query(on: req)
+                .filter(\.ownerID == requester.requireID())
+                .filter(\.barrelType == .userMute)
+                .first()
+                .unwrap(or: Abort(.internalServerError, reason: "userMute barrel not found"))
+                .flatMap {
+                    (barrel) in
+                    // remove and return 204
+                    guard let index = barrel.modelUUIDs.firstIndex(of: try user.requireID()) else {
+                        throw Abort(.badRequest, reason: "user not found in mute list")
+                    }
+                    barrel.modelUUIDs.remove(at: index)
+                    return barrel.save(on: req).transform(to: .noContent)
+            }
+        }
+    }
 }

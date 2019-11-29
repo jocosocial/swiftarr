@@ -770,5 +770,155 @@ final class BarrelTests: XCTestCase {
         XCTAssertTrue(muteKeywordData.keywords.count == 1, "should be 1 keyword")
         XCTAssertTrue(muteKeywordData.keywords[0] == "Brains", "should be 'Brains'")
     }
+    
+    func testUserBlock() throws {
+        // create verified logged in user
+        let token = try app.login(username: "verified", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // test bad user
+        var response = try app.getResponse(
+            from: usersURI + "\(UUID())/block",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 404, "should be 404 Not Found")
+        XCTAssertTrue(response.http.body.description.contains("No model"), "No Model")
+        
+        // test block
+        let unverified = try app.getResult(
+            from: usersURI + "find/unverified",
+            method: .GET,
+            headers: headers,
+            decodeTo: UserInfo.self
+        )
+        response = try app.getResponse(
+            from: usersURI + "\(unverified.userID)/block",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+    }
+
+    func testUserUnblock() throws {
+        // create verified logged in user
+        let token = try app.login(username: "verified", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // test bad user
+        var response = try app.getResponse(
+            from: usersURI + "\(UUID())/unblock",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 404, "should be 404 Not Found")
+        XCTAssertTrue(response.http.body.description.contains("No model"), "No Model")
+        
+        // test not blocked
+        let unverified = try app.getResult(
+            from: usersURI + "find/unverified",
+            method: .GET,
+            headers: headers,
+            decodeTo: UserInfo.self
+        )
+        response = try app.getResponse(
+            from: usersURI + "\(unverified.userID)/unblock",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
+        XCTAssertTrue(response.http.body.description.contains("not found in"), "not found in")
+
+        // test unblock
+        response = try app.getResponse(
+            from: usersURI + "\(unverified.userID)/block",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+        response = try app.getResponse(
+            from: usersURI + "\(unverified.userID)/unblock",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 204, "should be 204 No Content")
+    }
+    
+    func testUserMute() throws {
+        // create verified logged in user
+        let token = try app.login(username: "verified", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // test bad user
+        var response = try app.getResponse(
+            from: usersURI + "\(UUID())/mute",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 404, "should be 404 Not Found")
+        XCTAssertTrue(response.http.body.description.contains("No model"), "No Model")
+        
+        // test block
+        let unverified = try app.getResult(
+            from: usersURI + "find/unverified",
+            method: .GET,
+            headers: headers,
+            decodeTo: UserInfo.self
+        )
+        response = try app.getResponse(
+            from: usersURI + "\(unverified.userID)/mute",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+    }
+
+    func testUserUnmute() throws {
+        // create verified logged in user
+        let token = try app.login(username: "verified", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // test bad user
+        var response = try app.getResponse(
+            from: usersURI + "\(UUID())/unmute",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 404, "should be 404 Not Found")
+        XCTAssertTrue(response.http.body.description.contains("No model"), "No Model")
+        
+        // test not blocked
+        let unverified = try app.getResult(
+            from: usersURI + "find/unverified",
+            method: .GET,
+            headers: headers,
+            decodeTo: UserInfo.self
+        )
+        response = try app.getResponse(
+            from: usersURI + "\(unverified.userID)/unmute",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
+        XCTAssertTrue(response.http.body.description.contains("not found in"), "not found in")
+
+        // test unblock
+        response = try app.getResponse(
+            from: usersURI + "\(unverified.userID)/mute",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+        response = try app.getResponse(
+            from: usersURI + "\(unverified.userID)/unmute",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 204, "should be 204 No Content")
+    }
 
 }
