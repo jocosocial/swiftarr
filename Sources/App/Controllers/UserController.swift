@@ -987,10 +987,7 @@ struct UserController: RouteCollection {
                 // only user types can be retrieved here
                 let userTypes: [BarrelType] = [.seamonkey, .userWords]
                 guard userTypes.contains(barrel.barrelType) else {
-                    throw Abort(
-                        .badRequest,
-                        reason: "'\(barrel.barrelType)' barrel cannot be deleted by this endpoint"
-                    )
+                    throw Abort(.badRequest,reason: "'\(barrel.barrelType)' barrel cannot be deleted")
                 }
                 return barrel.delete(on: req).transform(to: .noContent)
         }

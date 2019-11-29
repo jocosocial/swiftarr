@@ -371,21 +371,20 @@ final class BarrelTests: XCTestCase {
         XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
         XCTAssertTrue(response.http.body.description.contains("not owner"), "not owner")
         
-        // FIXME: can't test until other types exist
-//        // test wrong type
-//        let barrels = try app.getResult(
-//            from: userURI + "barrels",
-//            method: .GET,
-//            headers: headers,
-//            decodeTo: [BarrelListData].self
-//        )
-//        response = try app.getResponse(
-//            from: userURI + "barrels/\(barrels[0].barrelID)/delete",
-//            method: .POST,
-//            headers: headers
-//        )
-//        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
-//        XCTAssertTrue(response.http.body.description.contains("this endpoint"), "this endpoint")
+        // test wrong type
+        let barrels = try app.getResult(
+            from: userURI + "barrels",
+            method: .GET,
+            headers: headers,
+            decodeTo: [BarrelListData].self
+        )
+        response = try app.getResponse(
+            from: userURI + "barrels/\(barrels[0].barrelID)/delete",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
+        XCTAssertTrue(response.http.body.description.contains("cannot be deleted"), "cannot be deleted")
         
         // test delete
         token = try app.login(username: "verified", password: testPassword, on: conn)
@@ -458,21 +457,20 @@ final class BarrelTests: XCTestCase {
         XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
         XCTAssertTrue(response.http.body.description.contains("not owner"), "not owner")
         
-        // FIXME: can't test until other types exist
-//        // test wrong type
-//        let barrels = try app.getResult(
-//            from: userURI + "barrels",
-//            method: .GET,
-//            headers: headers,
-//            decodeTo: [BarrelListData].self
-//        )
-//        response = try app.getResponse(
-//            from: userURI + "barrels/\(barrels[0].barrelID)/rename/New%20Name",
-//            method: .POST,
-//            headers: headers
-//        )
-//        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
-//        XCTAssertTrue(response.http.body.description.contains("this endpoint"), "this endpoint")
+        // test wrong type
+        let barrels = try app.getResult(
+            from: userURI + "barrels",
+            method: .GET,
+            headers: headers,
+            decodeTo: [BarrelListData].self
+        )
+        response = try app.getResponse(
+            from: userURI + "barrels/\(barrels[0].barrelID)/rename/New%20Name",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
+        XCTAssertTrue(response.http.body.description.contains("cannot be renamed"), "cannot be renamed")
         
         // test rename
         token = try app.login(username: "verified", password: testPassword, on: conn)
@@ -522,7 +520,7 @@ final class BarrelTests: XCTestCase {
             uuidList: nil,
             stringList: ["apple"]
         )
-        var wordBarrelData = try app.getResult(
+        let wordBarrelData = try app.getResult(
             from: userURI + "barrel",
             method: .POST,
             headers: headers,
@@ -605,22 +603,42 @@ final class BarrelTests: XCTestCase {
         XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
         XCTAssertTrue(response.http.body.description.contains("not owner"), "not owner")
 
-        // FIXME: can't test until other types exist
-//        // test wrong type
-//        let barrels = try app.getResult(
-//            from: userURI + "barrels",
-//            method: .GET,
-//            headers: headers,
-//            decodeTo: [BarrelListData].self
-//        )
-//        response = try app.getResponse(
-//            from: userURI + "barrels/\(barrels[0].barrelID)/rename/New%20Name",
-//            method: .POST,
-//            headers: headers
-//        )
-//        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
-//        XCTAssertTrue(response.http.body.description.contains("this endpoint"), "this endpoint")
-        
+        // test wrong type
+        let barrels = try app.getResult(
+            from: userURI + "barrels",
+            method: .GET,
+            headers: headers,
+            decodeTo: [BarrelListData].self
+        )
+        response = try app.getResponse(
+            from: userURI + "barrels/\(barrels[0].barrelID)/add/\(moderator.userID)",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
+        XCTAssertTrue(response.http.body.description.contains("this endpoint"), "this endpoint")
+        response = try app.getResponse(
+            from: userURI + "barrels/\(barrels[0].barrelID)/remove/\(moderator.userID)",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
+        XCTAssertTrue(response.http.body.description.contains("this endpoint"), "this endpoint")
+        response = try app.getResponse(
+            from: userURI + "barrels/\(barrels[0].barrelID)/add/banana",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
+        XCTAssertTrue(response.http.body.description.contains("this endpoint"), "this endpoint")
+        response = try app.getResponse(
+            from: userURI + "barrels/\(barrels[0].barrelID)/remove/banana",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
+        XCTAssertTrue(response.http.body.description.contains("this endpoint"), "this endpoint")
+
         // test add uuid
         token = try app.login(username: "verified", password: testPassword, on: conn)
         headers = HTTPHeaders()
