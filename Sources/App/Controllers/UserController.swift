@@ -509,9 +509,8 @@ struct UserController: RouteCollection {
     /// - Returns: `AlertKeywordData` containing the updated contents of the barrel.
     func alertwordsAddHandler(_ req: Request) throws -> Future<AlertKeywordData> {
         let user = try req.requireAuthenticated(User.self)
-        // get parameter
         let parameter = try req.parameters.next(String.self)
-        // retrieve barrel
+        // get alertwords barrel
         return try Barrel.query(on: req)
             .filter(\.ownerID == user.requireID())
             .filter(\.barrelType == .keywordAlert)
@@ -546,7 +545,7 @@ struct UserController: RouteCollection {
     ///   strings.
     func alertwordsHandler(_ req: Request) throws -> Future<AlertKeywordData> {
         let user = try req.requireAuthenticated(User.self)
-        // retrieve keywords barrel
+        // get alertwords barrel
         return try Barrel.query(on: req)
             .filter(\.ownerID == user.requireID())
             .filter(\.barrelType == .keywordAlert)
@@ -575,9 +574,8 @@ struct UserController: RouteCollection {
     /// - Returns: `AlertKeywordData` containing the updated contents of the barrel.
     func alertwordsRemoveHandler(_ req: Request) throws -> Future<AlertKeywordData> {
         let user = try req.requireAuthenticated(User.self)
-        // get parameter
         let parameter = try req.parameters.next(String.self)
-        // retrieve barrel
+        // get alertwords barrel
         return try Barrel.query(on: req)
             .filter(\.ownerID == user.requireID())
             .filter(\.barrelType == .keywordAlert)
@@ -648,6 +646,7 @@ struct UserController: RouteCollection {
                                 .badRequest,
                                 reason: "parameter '\(parameterValue)' is not a UUID string"
                             )
+                            seamonkeys.append(seamonkey)
                         }
                         _ = User.find(uuid, on: req)
                             .unwrap(or: Abort(.badRequest, reason: "'\(uuid)' is not a valid user ID"))
@@ -881,9 +880,8 @@ struct UserController: RouteCollection {
     /// - Returns: `[BarrelListData]` containing the barrel IDs and names.
     func barrelsHandler(_ req: Request) throws -> Future<[BarrelListData]> {
         let user = try req.requireAuthenticated(User.self)
-        // want just user types
+        // get user's barrels, sorted by name
         let userTypes = UserController.userBarrelTypes
-        // retrieve user's barrels, sorted by name
         return try Barrel.query(on: req)
             .filter(\.ownerID == user.requireID())
             .filter(\.barrelType ~~ userTypes)
@@ -893,7 +891,7 @@ struct UserController: RouteCollection {
                 (barrels) in
                 // apply .barrelType sort
                 let sortedBarrels = barrels.sorted(by: { $0.barrelType < $1.barrelType })
-                // convert to BarrelListData and return
+                // return as BarrelListData
                 return try sortedBarrels.map {
                     try BarrelListData(barrelID: $0.requireID(), name: $0.name)
                 }
@@ -902,8 +900,8 @@ struct UserController: RouteCollection {
     
     /// `GET /api/v3/user/blocks`
     ///
-    /// Returns a list of the user's currently blocked users in named-list `BlockedUserData`
-    /// format. If the user is a subaccount, the parent user's blocks are returned.
+    /// Returns a list of the user's currently blocked users in `BlockedUserData` format.
+    /// If the user is a subaccount, the parent user's blocks are returned.
     ///
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
@@ -915,7 +913,7 @@ struct UserController: RouteCollection {
         let barrelAccount = try user.parentAccount(on: req)
         return barrelAccount.flatMap {
             (barrelUser) in
-            // retrieve blocks barrel
+            // get blocks barrel
             return try Barrel.query(on: req)
                 .filter(\.ownerID == barrelUser.requireID())
                 .filter(\.barrelType == .userBlock)
@@ -1072,8 +1070,7 @@ struct UserController: RouteCollection {
 
     /// `GET /api/v3/user/mutes`
     ///
-    /// Returns a list of the user's currently muted users in named-list `MutedUserData`
-    /// format.
+    /// Returns a list of the user's currently muted users in `MutedUserData` format.
     ///
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
@@ -1130,9 +1127,8 @@ struct UserController: RouteCollection {
     /// - Returns: `MuteKeywordData` containing the updated contents of the barrel.
     func mutewordsAddHandler(_ req: Request) throws -> Future<MuteKeywordData> {
         let user = try req.requireAuthenticated(User.self)
-        // get parameter
         let parameter = try req.parameters.next(String.self)
-        // retrieve barrel
+        // get barrel
         return try Barrel.query(on: req)
             .filter(\.ownerID == user.requireID())
             .filter(\.barrelType == .keywordMute)
@@ -1167,7 +1163,7 @@ struct UserController: RouteCollection {
     ///   strings.
     func mutewordsHandler(_ req: Request) throws -> Future<MuteKeywordData> {
         let user = try req.requireAuthenticated(User.self)
-        // retrieve keywords barrel
+        // get mutewords barrel
         return try Barrel.query(on: req)
             .filter(\.ownerID == user.requireID())
             .filter(\.barrelType == .keywordMute)
@@ -1196,9 +1192,8 @@ struct UserController: RouteCollection {
     /// - Returns: `MuteKeywordData` containing the updated contents of the barrel.
     func mutewordsRemoveHandler(_ req: Request) throws -> Future<MuteKeywordData> {
         let user = try req.requireAuthenticated(User.self)
-        // get parameter
         let parameter = try req.parameters.next(String.self)
-        // retrieve barrel
+        // get barrel
         return try Barrel.query(on: req)
             .filter(\.ownerID == user.requireID())
             .filter(\.barrelType == .keywordMute)
@@ -1239,7 +1234,7 @@ struct UserController: RouteCollection {
     func noteHandler(_ req: Request, data: NoteUpdateData) throws -> Future<NoteData> {
         // FIXME: account for blocks, banned user
         let user = try req.requireAuthenticated(User.self)
-        // retrieve note
+        // get note
         return UserNote.find(data.noteID, on: req)
             .unwrap(or: Abort(.notFound, reason: "note with ID '\(data.noteID)' not found"))
             .flatMap {
@@ -1289,8 +1284,7 @@ struct UserController: RouteCollection {
     func notesHandler(_ req: Request) throws -> Future<[NoteData]> {
         // FIXME: account for blocks, banned user
         let user = try req.requireAuthenticated(User.self)
-        // FIXME: need to account for Blocks
-        // fetch all notes
+        // get all notes
         return try user.notes.query(on: req).all().map {
             (notes) in
             // create array for return
@@ -1426,7 +1420,7 @@ struct UserController: RouteCollection {
     /// - Returns: `[BarrelListData]` containing the barrel IDs and names.
     func seamonkeyBarrelsHandler(_ req: Request) throws -> Future<[BarrelListData]> {
         let user = try req.requireAuthenticated(User.self)
-        // retrieve user's barrels, sorted by name
+        // get user's seamonkey barrels, sorted by name
         return try Barrel.query(on: req)
             .filter(\.ownerID == user.requireID())
             .filter(\.barrelType == .seamonkey)
