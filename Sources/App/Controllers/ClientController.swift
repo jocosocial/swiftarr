@@ -205,5 +205,3 @@ struct ClientController: RouteCollection {
     
     // MARK: - Helper Functions
 }
-
-// MARK: - Helper Structs
