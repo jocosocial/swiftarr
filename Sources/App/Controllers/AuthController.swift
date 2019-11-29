@@ -10,7 +10,9 @@ import Redis
 /// ([RFC7617](https://tools.ietf.org/html/rfc7617)) or `HTTP Bearer Authentication` (based on
 /// [RFC6750](https://tools.ietf.org/html/rfc6750#section-2.1)) for virtually all endpoint
 /// access, with very few exceptions carved out for fully public data (such as the Event
-/// Schedule). The query-based `&key=` scheme used in v2 is not supported at all.
+/// Schedule).
+///
+///  - Important: The query-based `&key=` scheme used in v2 is not supported at all.
 ///
 /// This means that essentially all HTTP requests ***must*** contain an `Authorization` header.
 ///
