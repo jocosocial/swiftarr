@@ -58,7 +58,6 @@ custom_categories:
     - BarrelCreateData
     - NoteCreateData
     - NoteUpdateData
-    - UserAddData
     - UserCreateData
     - UserPasswordData
     - UserProfileData
@@ -81,4 +80,11 @@ custom_categories:
     - SeaMonkey
     - NoteData
     - TokenStringData
+    - UserHeader
+    - UserInfo
+    - UserSearch
+    
+  - name: Internal Structs
+    children:
+    - ProfileEdit
     
