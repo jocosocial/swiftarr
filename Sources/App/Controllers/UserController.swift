@@ -553,13 +553,10 @@ struct UserController: RouteCollection {
             .unwrap(or: Abort(.internalServerError, reason: "alert keywords barrel not found"))
             .map {
                 (barrel) in
-                // ensure keywords array exists
-                guard let keywords = barrel.userInfo["alertWords"] else {
-                    throw Abort(.internalServerError, reason: "no key 'alertWords' found")
-                }
+                // return as AlertKeywordData
                 let alertKeywordData = AlertKeywordData(
                     name: barrel.name,
-                    keywords: keywords
+                    keywords: barrel.userInfo["alertWords"] ?? []
                 )
                 return alertKeywordData
         }
@@ -588,7 +585,7 @@ struct UserController: RouteCollection {
                 guard let index = alertWords.firstIndex(of: parameter) else {
                     throw Abort(.badRequest, reason: "'\(parameter)' is not in barrel")
                 }
-                _ = alertWords.remove(at: index)
+                alertWords.remove(at: index)
                 barrel.userInfo.updateValue(alertWords.sorted(), forKey: "alertWords")
                 return barrel.save(on: req).map {
                     (savedBarrel) in
@@ -800,7 +797,7 @@ struct UserController: RouteCollection {
                     guard let index = userWords.firstIndex(of: parameter) else {
                         throw Abort(.badRequest, reason: "'\(parameter)' is not in barrel")
                     }
-                    _ = userWords.remove(at: index)
+                    userWords.remove(at: index)
                     barrel.userInfo.updateValue(userWords.sorted(), forKey: "userWords")
             }
             return barrel.save(on: req).flatMap {
@@ -1139,13 +1136,10 @@ struct UserController: RouteCollection {
             .unwrap(or: Abort(.internalServerError, reason: "mute keywords barrel not found"))
             .map {
                 (barrel) in
-                // ensure keywords array exists
-                guard let keywords = barrel.userInfo["muteWords"] else {
-                    throw Abort(.internalServerError, reason: "no key 'muteWords' found")
-                }
+                // return as MuteKeywordData
                 let muteKeywordData = MuteKeywordData(
                     name: barrel.name,
-                    keywords: keywords
+                    keywords: barrel.userInfo["muteWords"] ?? []
                 )
                 return muteKeywordData
         }
