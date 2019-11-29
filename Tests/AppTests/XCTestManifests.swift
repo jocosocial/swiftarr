@@ -15,8 +15,11 @@ extension BarrelTests {
     //   `swift test --generate-linuxmain`
     // to regenerate.
     static let __allTests__BarrelTests = [
+        ("testAlertWordsModify", testAlertWordsModify),
         ("testBarrelCreate", testBarrelCreate),
+        ("testBarrelModify", testBarrelModify),
         ("testDefaultBarrels", testDefaultBarrels),
+        ("testMuteWordsModify", testMuteWordsModify),
         ("testUserBarrel", testUserBarrel),
         ("testUserBarrelDelete", testUserBarrelDelete),
         ("testUserBarrelRename", testUserBarrelRename),
