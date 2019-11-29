@@ -486,5 +486,183 @@ final class BarrelTests: XCTestCase {
         )
         XCTAssertTrue(barrelData.name == "New Name", "should be 'New Name'")
     }
+    
+    /// `POST /api/v3/user/barrels/ID/add/STRING`
+    /// `POST /api/v3/user/barrels/ID/remove/STRING`
+    func testBarrelModify() throws {
+        // create verified logged in user
+        var token = try app.login(username: "verified", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // create seamonkey barrel
+        let admin = try app.getResult(
+            from: usersURI + "find/admin",
+            method: .GET,
+            headers: headers,
+            decodeTo: UserInfo.self
+        )
+        var barrelCreateData = BarrelCreateData(
+            name: "Favorites",
+            uuidList: [admin.userID],
+            stringList: nil
+        )
+        var uuidBarrelData = try app.getResult(
+            from: userURI + "barrel",
+            method: .POST,
+            headers: headers,
+            body: barrelCreateData,
+            decodeTo: BarrelData.self
+        )
+        XCTAssertTrue(uuidBarrelData.name == "Favorites", "should be 'Favorites'")
+        
+        // create userWords barrel
+        barrelCreateData = BarrelCreateData(
+            name: "Words",
+            uuidList: nil,
+            stringList: ["apple"]
+        )
+        var wordBarrelData = try app.getResult(
+            from: userURI + "barrel",
+            method: .POST,
+            headers: headers,
+            body: barrelCreateData,
+            decodeTo: BarrelData.self
+        )
+        XCTAssertTrue(wordBarrelData.name == "Words", "should be 'Words'")
+
+        // get test UUID
+        let moderator = try app.getResult(
+            from: usersURI + "find/moderator",
+            method: .GET,
+            headers: headers,
+            decodeTo: UserInfo.self
+        )
+        
+        // test bad ID string
+        var response = try app.getResponse(
+            from: userURI + "barrels/GARBAGE/add/\(moderator.userID)",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
+        XCTAssertTrue(response.http.body.description.contains("not a UUID"), "not a UUID")
+        response = try app.getResponse(
+            from: userURI + "barrels/GARBAGE/remove/\(moderator.userID)",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
+        XCTAssertTrue(response.http.body.description.contains("not a UUID"), "not a UUID")
+
+        // test bad ID
+        response = try app.getResponse(
+            from: userURI + "barrels/\(UUID())/add/\(moderator.userID)",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
+        XCTAssertTrue(response.http.body.description.contains("not found"), "not found")
+        response = try app.getResponse(
+            from: userURI + "barrels/\(UUID())/remove/\(moderator.userID)",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
+        XCTAssertTrue(response.http.body.description.contains("not found"), "not found")
+
+        // test bad owner
+        _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        token = try app.login(username: testUsername, password: testPassword, on: conn)
+        headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        response = try app.getResponse(
+            from: userURI + "barrels/\(uuidBarrelData.barrelID)/add/\(moderator.userID)",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
+        XCTAssertTrue(response.http.body.description.contains("not owner"), "not owner")
+        response = try app.getResponse(
+            from: userURI + "barrels/\(uuidBarrelData.barrelID)/remove/\(moderator.userID)",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
+        XCTAssertTrue(response.http.body.description.contains("not owner"), "not owner")
+        response = try app.getResponse(
+            from: userURI + "barrels/\(wordBarrelData.barrelID)/add/\(moderator.userID)",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
+        XCTAssertTrue(response.http.body.description.contains("not owner"), "not owner")
+        response = try app.getResponse(
+            from: userURI + "barrels/\(wordBarrelData.barrelID)/remove/\(moderator.userID)",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
+        XCTAssertTrue(response.http.body.description.contains("not owner"), "not owner")
+
+        // FIXME: can't test until other types exist
+//        // test wrong type
+//        let barrels = try app.getResult(
+//            from: userURI + "barrels",
+//            method: .GET,
+//            headers: headers,
+//            decodeTo: [BarrelListData].self
+//        )
+//        response = try app.getResponse(
+//            from: userURI + "barrels/\(barrels[0].barrelID)/rename/New%20Name",
+//            method: .POST,
+//            headers: headers
+//        )
+//        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
+//        XCTAssertTrue(response.http.body.description.contains("this endpoint"), "this endpoint")
+        
+        // test add uuid
+        token = try app.login(username: "verified", password: testPassword, on: conn)
+        headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        uuidBarrelData = try app.getResult(
+            from: userURI + "barrels/\(uuidBarrelData.barrelID)/add/\(moderator.userID)",
+            method: .POST,
+            headers: headers,
+            decodeTo: BarrelData.self
+        )
+        XCTAssertTrue(uuidBarrelData.seamonkeys.count == 2, "should have 2")
+        XCTAssertTrue(uuidBarrelData.seamonkeys[1].username == "@moderator", "should be '@moderator'")
+        
+        // test remove uuid
+        uuidBarrelData = try app.getResult(
+            from: userURI + "barrels/\(uuidBarrelData.barrelID)/remove/\(moderator.userID)",
+            method: .POST,
+            headers: headers,
+            decodeTo: BarrelData.self
+        )
+        XCTAssertTrue(uuidBarrelData.seamonkeys.count == 1, "should have 1")
+        XCTAssertTrue(uuidBarrelData.seamonkeys[0].username == "@admin", "should be '@admin'")
+        
+        // test add string
+        uuidBarrelData = try app.getResult(
+            from: userURI + "barrels/\(wordBarrelData.barrelID)/add/banana",
+            method: .POST,
+            headers: headers,
+            decodeTo: BarrelData.self
+        )
+        XCTAssertTrue(uuidBarrelData.stringList?.count == 2, "should have 2")
+        XCTAssertTrue(uuidBarrelData.stringList?[1] == "banana", "should be 'banana'")
+        
+        // test remove string
+        uuidBarrelData = try app.getResult(
+            from: userURI + "barrels/\(wordBarrelData.barrelID)/remove/apple",
+            method: .POST,
+            headers: headers,
+            decodeTo: BarrelData.self
+        )
+        XCTAssertTrue(uuidBarrelData.stringList?.count == 1, "should have 1")
+        XCTAssertTrue(uuidBarrelData.stringList?[0] == "banana", "should be 'banana'")
+    }
 }
 
