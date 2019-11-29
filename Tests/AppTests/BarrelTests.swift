@@ -54,7 +54,7 @@ final class BarrelTests: XCTestCase {
             decodeTo: AlertKeywordData.self
         )
         XCTAssertTrue(alertKeywordData.name == "Alert Keywords", "Alert Keywords")
-        XCTAssertTrue(alertKeywordData.keywords.count == 0, "should be no alerts")
+        XCTAssertTrue(alertKeywordData.keywords.isEmpty, "should be no alerts")
 
         var blockedUserData = try app.getResult(
             from: userURI + "blocks",
@@ -63,7 +63,7 @@ final class BarrelTests: XCTestCase {
             decodeTo: BlockedUserData.self
         )
         XCTAssertTrue(blockedUserData.name == "Blocked Users", "Blocked Users")
-        XCTAssertTrue(blockedUserData.seamonkeys.count == 0, "should be no blocks")
+        XCTAssertTrue(blockedUserData.seamonkeys.isEmpty, "should be no blocks")
         
         let mutedUserData = try app.getResult(
             from: userURI + "mutes",
@@ -72,7 +72,7 @@ final class BarrelTests: XCTestCase {
             decodeTo: MutedUserData.self
         )
         XCTAssertTrue(mutedUserData.name == "Muted Users", "Muted Users")
-        XCTAssertTrue(blockedUserData.seamonkeys.count == 0, "should be no mutes")
+        XCTAssertTrue(blockedUserData.seamonkeys.isEmpty, "should be no mutes")
         
         let muteKeywordData = try app.getResult(
             from: userURI + "mutewords",
@@ -81,7 +81,7 @@ final class BarrelTests: XCTestCase {
             decodeTo: MuteKeywordData.self
         )
         XCTAssertTrue(muteKeywordData.name == "Muted Keywords", "Muted Keywords")
-        XCTAssertTrue(muteKeywordData.keywords.count == 0, "should be no mutes")
+        XCTAssertTrue(muteKeywordData.keywords.isEmpty, "should be no mutes")
 
         // add subaccount
         let userCreateData = UserCreateData(username: "subaccount", password: testPassword)
@@ -104,7 +104,7 @@ final class BarrelTests: XCTestCase {
             decodeTo: BlockedUserData.self
         )
         XCTAssertTrue(blockedUserData.name == "Blocked Users", "Blocked Users")
-        XCTAssertTrue(blockedUserData.seamonkeys.count == 0, "should be no blocks")
+        XCTAssertTrue(blockedUserData.seamonkeys.isEmpty, "should be no blocks")
     }
     
     /// `POST /api/v3/user/barrel`
@@ -165,7 +165,7 @@ final class BarrelTests: XCTestCase {
         )
         XCTAssertTrue(barrelData.name == "Bikeshedding", "should be 'Bikeshedding'")
         XCTAssertTrue(barrelData.stringList?.count == 2, "should be 2 words")
-        XCTAssertTrue(barrelData.seamonkeys.count == 0, "should be no seamonkeys")
+        XCTAssertTrue(barrelData.seamonkeys.isEmpty, "should be no seamonkeys")
         
         // test get barrels + sort
         barrelCreateData = BarrelCreateData(
