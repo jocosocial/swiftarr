@@ -270,8 +270,8 @@ final class BarrelTests: XCTestCase {
             method: .GET,
             headers: headers
         )
-        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
-        XCTAssertTrue(response.http.body.description.contains("not a UUID"), "not a UUID")
+        XCTAssertTrue(response.http.status.code == 500, "should be 500 Internal Server Error")
+        XCTAssertTrue(response.http.body.description.contains("Could not convert"), "Could not convert")
         
         // test bad ID
         response = try app.getResponse(
@@ -279,8 +279,8 @@ final class BarrelTests: XCTestCase {
             method: .GET,
             headers: headers
         )
-        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
-        XCTAssertTrue(response.http.body.description.contains("not found"), "not found")
+        XCTAssertTrue(response.http.status.code == 404, "should be 404 Not Found")
+        XCTAssertTrue(response.http.body.description.contains("No model"), "No model")
 
         // test bad owner
         _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
@@ -346,8 +346,8 @@ final class BarrelTests: XCTestCase {
             method: .POST,
             headers: headers
         )
-        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
-        XCTAssertTrue(response.http.body.description.contains("not a UUID"), "not a UUID")
+        XCTAssertTrue(response.http.status.code == 500, "should be 500 Internal Server Error")
+        XCTAssertTrue(response.http.body.description.contains("Could not convert"), "Could not convert")
         
         // test bad ID
         response = try app.getResponse(
@@ -355,8 +355,8 @@ final class BarrelTests: XCTestCase {
             method: .POST,
             headers: headers
         )
-        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
-        XCTAssertTrue(response.http.body.description.contains("not found"), "not found")
+        XCTAssertTrue(response.http.status.code == 404, "should be 404 Not Found")
+        XCTAssertTrue(response.http.body.description.contains("No model"), "No model")
 
         // test bad owner
         _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
@@ -432,8 +432,8 @@ final class BarrelTests: XCTestCase {
             method: .POST,
             headers: headers
         )
-        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
-        XCTAssertTrue(response.http.body.description.contains("not a UUID"), "not a UUID")
+        XCTAssertTrue(response.http.status.code == 500, "should be 500 Internal Server Error")
+        XCTAssertTrue(response.http.body.description.contains("Could not conver"), "Could not convert")
         
         // test bad ID
         response = try app.getResponse(
@@ -441,8 +441,8 @@ final class BarrelTests: XCTestCase {
             method: .POST,
             headers: headers
         )
-        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
-        XCTAssertTrue(response.http.body.description.contains("not found"), "not found")
+        XCTAssertTrue(response.http.status.code == 404, "should be 404 Not Found")
+        XCTAssertTrue(response.http.body.description.contains("No model"), "No model")
         
         // test bad owner
         _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
@@ -543,15 +543,15 @@ final class BarrelTests: XCTestCase {
             method: .POST,
             headers: headers
         )
-        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
-        XCTAssertTrue(response.http.body.description.contains("not a UUID"), "not a UUID")
+        XCTAssertTrue(response.http.status.code == 500, "should be 500 Internal Server Error")
+        XCTAssertTrue(response.http.body.description.contains("Could not convert"), "Could not convert")
         response = try app.getResponse(
             from: userURI + "barrels/GARBAGE/remove/\(moderator.userID)",
             method: .POST,
             headers: headers
         )
-        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
-        XCTAssertTrue(response.http.body.description.contains("not a UUID"), "not a UUID")
+        XCTAssertTrue(response.http.status.code == 500, "should be 500 Internal Server Error")
+        XCTAssertTrue(response.http.body.description.contains("Could not convert"), "Could not convert")
 
         // test bad ID
         response = try app.getResponse(
@@ -559,15 +559,15 @@ final class BarrelTests: XCTestCase {
             method: .POST,
             headers: headers
         )
-        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
-        XCTAssertTrue(response.http.body.description.contains("not found"), "not found")
+        XCTAssertTrue(response.http.status.code == 404, "should be 404 Not Found")
+        XCTAssertTrue(response.http.body.description.contains("No model"), "No model")
         response = try app.getResponse(
             from: userURI + "barrels/\(UUID())/remove/\(moderator.userID)",
             method: .POST,
             headers: headers
         )
-        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
-        XCTAssertTrue(response.http.body.description.contains("not found"), "not found")
+        XCTAssertTrue(response.http.status.code == 404, "should be 404 Not Found")
+        XCTAssertTrue(response.http.body.description.contains("No model"), "No model")
 
         // test bad owner
         _ = try app.createUser(username: testUsername, password: testPassword, on: conn)

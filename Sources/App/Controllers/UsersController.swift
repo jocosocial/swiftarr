@@ -77,6 +77,7 @@ struct UsersController: RouteCollection {
     ///   profile update.
     func findHandler(_ req: Request) throws -> Future<UserInfo> {
         // FIXME: account for blocks
+//        let requester = try req.requireAuthenticated(User.self)
         let parameter = try req.parameters.next(String.self)
         // try converting to UUID
         let userID = UUID(uuidString: parameter)
@@ -118,13 +119,17 @@ struct UsersController: RouteCollection {
     ///   image filename.
     func headerHandler(_ req: Request) throws -> Future<UserHeader> {
         // FIXME: account for blocks
-        let user = try req.requireAuthenticated(User.self)
-        return try user.profile.query(on: req)
-            .first()
-            .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
-            .map {
-                (profile) in
-                return try profile.convertToHeader()
+//        let requester = try req.requireAuthenticated(User.self)
+        return try req.parameters.next(User.self).flatMap {
+            (user) in
+            return try user.profile.query(on: req)
+                .first()
+                .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
+                .map {
+                    (profile) in
+                    // return UserHeader
+                    return try profile.convertToHeader()
+            }
         }
     }
     
@@ -205,9 +210,10 @@ struct UsersController: RouteCollection {
     ///   profile update.
     func userHandler(_ req: Request) throws -> Future<UserInfo> {
         // FIXME: account for blocks
+//        let requester = try req.authenticated(User.self)
         return try req.parameters.next(User.self).convertToInfo()        
     }
-        
+    
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
@@ -236,7 +242,7 @@ struct UsersController: RouteCollection {
     ///   values of all matching users.
     func matchAllNamesHandler(_ req: Request) throws -> Future<[UserSearch]> {
         // FIXME: account for blocks
-        // let user = try req.requireAuthenticated(User.self)
+        // let requester = try req.requireAuthenticated(User.self)
         var search = try req.parameters.next(String.self)
         // postgres "_" and "%" are wildcards, so escape for literals
         search = search.replacingOccurrences(of: "_", with: "\\_")
@@ -271,7 +277,7 @@ struct UsersController: RouteCollection {
     /// - Returns: `[String]` containng all matching usernames as "@username" strings.
     func matchUsernameHandler(_ req: Request) throws -> Future<[String]> {
         // FIXME: account for blocks
-        // let user = try req.requireAuthenticated(User.self)
+        // let requester = try req.requireAuthenticated(User.self)
         var search = try req.parameters.next(String.self)
         // postgres "_" is wildcard, so escape for literal
         search = search.replacingOccurrences(of: "_", with: "\\_")
@@ -307,18 +313,17 @@ struct UsersController: RouteCollection {
     /// - Returns: `CreatedNoteData` containing the newly created note's ID and text.
     func noteCreateHandler(_ req: Request, data: NoteCreateData) throws -> Future<Response> {
         // FIXME: account for banned user
-        let user = try req.requireAuthenticated(User.self)
-        // get profile's user
+        let requester = try req.requireAuthenticated(User.self)
         return try req.parameters.next(User.self).flatMap {
-            (profileUser) in
-            // get their profile
-            return try profileUser.profile.query(on: req)
+            (user) in
+            // get user profile
+            return try user.profile.query(on: req)
                 .first()
                 .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
                 .flatMap {
                     (profile) in
                     // check for existing note
-                    return try user.notes.query(on: req)
+                    return try requester.notes.query(on: req)
                         .filter(\.profileID == profile.requireID())
                         .first()
                         .flatMap {
@@ -328,7 +333,7 @@ struct UsersController: RouteCollection {
                             }
                             // create note
                             let note = try UserNote(
-                                userID: user.requireID(),
+                                userID: requester.requireID(),
                                 profileID: profile.requireID(),
                                 note: data.note
                             )
@@ -359,18 +364,17 @@ struct UsersController: RouteCollection {
     /// - Returns: 204 No Content on success.
     func noteDeleteHandler(_ req: Request) throws -> Future<HTTPStatus> {
         // FIXME: account for blocks, banned user
-        let user = try req.requireAuthenticated(User.self)
-        // get profile's user
+        let requester = try req.requireAuthenticated(User.self)
         return try req.parameters.next(User.self).flatMap {
-            (profileUser) in
-            // get their profile
-            return try profileUser.profile.query(on: req)
+            (user) in
+            // get user profile
+            return try user.profile.query(on: req)
                 .first()
                 .unwrap(or: Abort(.internalServerError, reason: "profile not found, note not deleted"))
                 .flatMap {
                     (profile) in
                     // delete note if found
-                    return try user.notes.query(on: req)
+                    return try requester.notes.query(on: req)
                         .filter(\.profileID == profile.requireID())
                         .first()
                         .unwrap(or: Abort(.notFound, reason: "no existing note found"))
@@ -400,18 +404,17 @@ struct UsersController: RouteCollection {
     /// - Returns: `UserNote.Edit` containing the note's ID and text.
     func noteHandler(_ req: Request) throws -> Future<UserNote.Edit> {
         // FIXME: account for blocks, banned user
-        let user = try req.requireAuthenticated(User.self)
-        // get profile's user
+        let requester = try req.requireAuthenticated(User.self)
         return try req.parameters.next(User.self).flatMap {
-            (profileUser) in
-            // get their profile
-            return try profileUser.profile.query(on: req)
+            (user) in
+            // get user profile
+            return try user.profile.query(on: req)
                 .first()
                 .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
                 .flatMap {
                     (profile) in
                     // return note data if any
-                    return try user.notes.query(on: req)
+                    return try requester.notes.query(on: req)
                         .filter(\.profileID == profile.requireID())
                         .first()
                         .unwrap(or: Abort(.badRequest, reason: "no existing note found"))
