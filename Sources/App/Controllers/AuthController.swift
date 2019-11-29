@@ -12,9 +12,9 @@ import Redis
 /// access, with very few exceptions carved out for fully public data (such as the Event
 /// Schedule).
 ///
-///  - Important: The query-based `&key=` scheme used in v2 is not supported at all.
-///
 /// This means that essentially all HTTP requests ***must*** contain an `Authorization` header.
+///
+///  - Important: The query-based `&key=` scheme used in v2 is not supported at all.
 ///
 /// A valid `HTTP Basic Authentication` header resembles:
 ///
