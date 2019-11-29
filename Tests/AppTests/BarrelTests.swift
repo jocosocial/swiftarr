@@ -682,5 +682,93 @@ final class BarrelTests: XCTestCase {
         XCTAssertTrue(uuidBarrelData.stringList?.count == 1, "should have 1")
         XCTAssertTrue(uuidBarrelData.stringList?[0] == "banana", "should be 'banana'")
     }
-}
+    
+    func testAlertWordsModify() throws {
+        // create verified logged in user
+        let token = try app.login(username: "verified", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // test add
+        var alertKeywordData = try app.getResult(
+            from: userURI + "alertwords",
+            method: .GET,
+            headers: headers,
+            decodeTo: AlertKeywordData.self
+        )
+        XCTAssertTrue(alertKeywordData.keywords.isEmpty, "should be no keywords")
+        alertKeywordData = try app.getResult(
+            from: userURI + "alertwords/add/test%20phrase",
+            method: .POST,
+            headers: headers,
+            decodeTo: AlertKeywordData.self
+        )
+        XCTAssertTrue(alertKeywordData.keywords.count == 1, "should be 1 keyword")
+        XCTAssertTrue(alertKeywordData.keywords[0] == "test phrase", "should be 'test phrase'")
+        
+        // test sort
+        alertKeywordData = try app.getResult(
+            from: userURI + "alertwords/add/Brains",
+            method: .POST,
+            headers: headers,
+            decodeTo: AlertKeywordData.self
+        )
+        XCTAssertTrue(alertKeywordData.keywords.count == 2, "should be 2 keywords")
+        XCTAssertTrue(alertKeywordData.keywords[1] == "test phrase", "should be 'test phrase'")
+        
+        // test remove
+        alertKeywordData = try app.getResult(
+            from: userURI + "alertwords/remove/test%20phrase",
+            method: .POST,
+            headers: headers,
+            decodeTo: AlertKeywordData.self
+        )
+        XCTAssertTrue(alertKeywordData.keywords.count == 1, "should be 1 keyword")
+        XCTAssertTrue(alertKeywordData.keywords[0] == "Brains", "should be 'Brains'")
+    }
+    
+    func testMuteWordsModify() throws {
+        // create verified logged in user
+        let token = try app.login(username: "verified", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // test add
+        var muteKeywordData = try app.getResult(
+            from: userURI + "mutewords",
+            method: .GET,
+            headers: headers,
+            decodeTo: MuteKeywordData.self
+        )
+        XCTAssertTrue(muteKeywordData.keywords.isEmpty, "should be no keywords")
+        muteKeywordData = try app.getResult(
+            from: userURI + "mutewords/add/test%20phrase",
+            method: .POST,
+            headers: headers,
+            decodeTo: MuteKeywordData.self
+        )
+        XCTAssertTrue(muteKeywordData.keywords.count == 1, "should be 1 keyword")
+        XCTAssertTrue(muteKeywordData.keywords[0] == "test phrase", "should be 'test phrase'")
+        
+        // test sort
+        muteKeywordData = try app.getResult(
+            from: userURI + "mutewords/add/Brains",
+            method: .POST,
+            headers: headers,
+            decodeTo: MuteKeywordData.self
+        )
+        XCTAssertTrue(muteKeywordData.keywords.count == 2, "should be 2 keywords")
+        XCTAssertTrue(muteKeywordData.keywords[1] == "test phrase", "should be 'test phrase'")
+        
+        // test remove
+        muteKeywordData = try app.getResult(
+            from: userURI + "mutewords/remove/test%20phrase",
+            method: .POST,
+            headers: headers,
+            decodeTo: MuteKeywordData.self
+        )
+        XCTAssertTrue(muteKeywordData.keywords.count == 1, "should be 1 keyword")
+        XCTAssertTrue(muteKeywordData.keywords[0] == "Brains", "should be 'Brains'")
+    }
 
+}

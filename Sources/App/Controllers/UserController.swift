@@ -125,6 +125,8 @@ struct UserController: RouteCollection {
         // endpoints available only when logged in
         tokenAuthGroup.post(UserCreateData.self, at: "add", use: addHandler)
         tokenAuthGroup.get("alertwords", use: alertwordsHandler)
+        tokenAuthGroup.post("alertwords", "add", String.parameter, use: alertwordsAddHandler)
+        tokenAuthGroup.post("alertwords", "remove", String.parameter, use: alertwordsRemoveHandler)
         tokenAuthGroup.post(BarrelCreateData.self, at: "barrel", use: createBarrelHandler)
         tokenAuthGroup.get("barrels", use: barrelsHandler)
         tokenAuthGroup.get("barrels", "seamonkey", use: seamonkeyBarrelsHandler)
@@ -136,6 +138,8 @@ struct UserController: RouteCollection {
         tokenAuthGroup.get("blocks", use: blocksHandler)
         tokenAuthGroup.get("mutes", use: mutesHandler)
         tokenAuthGroup.get("mutewords", use: mutewordsHandler)
+        tokenAuthGroup.post("mutewords", "add", String.parameter, use: mutewordsAddHandler)
+        tokenAuthGroup.post("mutewords", "remove", String.parameter, use: mutewordsRemoveHandler)
         tokenAuthGroup.post(NoteUpdateData.self, at: "note", use: noteHandler)
         tokenAuthGroup.get("notes", use: notesHandler)
         tokenAuthGroup.post(UserPasswordData.self, at: "password", use: passwordHandler)
@@ -496,6 +500,41 @@ struct UserController: RouteCollection {
         }
     }
     
+    /// `POST /api/v3/user/alertwords/add/STRING`
+    ///
+    /// Adds a string to the user's "Alert Keywords" barrel.
+    ///
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: `AlertKeywordData` containing the updated contents of the barrel.
+    func alertwordsAddHandler(_ req: Request) throws -> Future<AlertKeywordData> {
+        let user = try req.requireAuthenticated(User.self)
+        // get parameter
+        let parameter = try req.parameters.next(String.self)
+        // retrieve barrel
+        return try Barrel.query(on: req)
+            .filter(\.ownerID == user.requireID())
+            .filter(\.barrelType == .keywordAlert)
+            .first()
+            .unwrap(or: Abort(.internalServerError, reason: "alert keywords barrel not found"))
+            .flatMap {
+                (barrel) in
+                // add string
+                var alertWords = barrel.userInfo["alertWords"] ?? []
+                alertWords.append(parameter)
+                barrel.userInfo.updateValue(alertWords.sorted(), forKey: "alertWords")
+                return barrel.save(on: req).map {
+                    (savedBarrel) in
+                    // return sorted list
+                    let alertKeywordData = AlertKeywordData(
+                        name: savedBarrel.name,
+                        keywords: alertWords.sorted()
+                    )
+                    return alertKeywordData
+                }
+        }
+    }
+    
     /// `GET /api/v3/user/alertwords`
     ///
     /// Returns a list of the user's current alert keywords in `AlertKeywordData` barrel
@@ -527,6 +566,44 @@ struct UserController: RouteCollection {
         }
     }
     
+    /// `POST /api/v3/user/alertwords/remove/STRING`
+    ///
+    /// Removes a string from the user's "Alert Keywords" barrel.
+    ///
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: `AlertKeywordData` containing the updated contents of the barrel.
+    func alertwordsRemoveHandler(_ req: Request) throws -> Future<AlertKeywordData> {
+        let user = try req.requireAuthenticated(User.self)
+        // get parameter
+        let parameter = try req.parameters.next(String.self)
+        // retrieve barrel
+        return try Barrel.query(on: req)
+            .filter(\.ownerID == user.requireID())
+            .filter(\.barrelType == .keywordAlert)
+            .first()
+            .unwrap(or: Abort(.internalServerError, reason: "alert keywords barrel not found"))
+            .flatMap {
+                (barrel) in
+                // remove string
+                var alertWords = barrel.userInfo["alertWords"] ?? []
+                guard let index = alertWords.firstIndex(of: parameter) else {
+                    throw Abort(.badRequest, reason: "'\(parameter)' is not in barrel")
+                }
+                _ = alertWords.remove(at: index)
+                barrel.userInfo.updateValue(alertWords.sorted(), forKey: "alertWords")
+                return barrel.save(on: req).map {
+                    (savedBarrel) in
+                    // return sorted list
+                    let alertKeywordData = AlertKeywordData(
+                        name: savedBarrel.name,
+                        keywords: alertWords.sorted()
+                    )
+                    return alertKeywordData
+                }
+        }
+    }
+
     /// `POST /api/v3/user/barrels/ID/add/STRING`
     ///
     /// Adds an item (either UUID or String) to the specified `Barrel`.
@@ -537,7 +614,7 @@ struct UserController: RouteCollection {
     ///
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: 400 error if the specified ID or supplied parameter is invalid. 403 error if
-    ///   the barrel is not owned by the user
+    ///   the barrel is not owned by the user.
     /// - Returns: `BarrelData` containing the updated contents of the barrel.
     func barrelAddHandler(_ req: Request) throws -> Future<BarrelData> {
         let user = try req.requireAuthenticated(User.self)
@@ -1044,7 +1121,42 @@ struct UserController: RouteCollection {
         }
     }
 
-    /// `GET /api/v3/user/mutewords`
+    /// `POST /api/v3/user/mutewords/add/STRING`
+    ///
+    /// Adds a string to the user's "Muted Keywords" barrel.
+    ///
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: `MuteKeywordData` containing the updated contents of the barrel.
+    func mutewordsAddHandler(_ req: Request) throws -> Future<MuteKeywordData> {
+        let user = try req.requireAuthenticated(User.self)
+        // get parameter
+        let parameter = try req.parameters.next(String.self)
+        // retrieve barrel
+        return try Barrel.query(on: req)
+            .filter(\.ownerID == user.requireID())
+            .filter(\.barrelType == .keywordMute)
+            .first()
+            .unwrap(or: Abort(.internalServerError, reason: "muted keywords barrel not found"))
+            .flatMap {
+                (barrel) in
+                // add string
+                var muteWords = barrel.userInfo["muteWords"] ?? []
+                muteWords.append(parameter)
+                barrel.userInfo.updateValue(muteWords.sorted(), forKey: "muteWords")
+                return barrel.save(on: req).map {
+                    (savedBarrel) in
+                    // return sorted list
+                    let muteKeywordData = MuteKeywordData(
+                        name: savedBarrel.name,
+                        keywords: muteWords.sorted()
+                    )
+                    return muteKeywordData
+                }
+        }
+    }
+    
+/// `GET /api/v3/user/mutewords`
     ///
     /// Returns a list of the user's currently muted keywords in named-list `MutedKeywordData`
     /// format.
@@ -1072,6 +1184,44 @@ struct UserController: RouteCollection {
                     keywords: keywords
                 )
                 return muteKeywordData
+        }
+    }
+    
+    /// `POST /api/v3/user/mutewords/remove/STRING`
+    ///
+    /// Removes a string from the user's "Muted Keywords" barrel.
+    ///
+    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: `MuteKeywordData` containing the updated contents of the barrel.
+    func mutewordsRemoveHandler(_ req: Request) throws -> Future<MuteKeywordData> {
+        let user = try req.requireAuthenticated(User.self)
+        // get parameter
+        let parameter = try req.parameters.next(String.self)
+        // retrieve barrel
+        return try Barrel.query(on: req)
+            .filter(\.ownerID == user.requireID())
+            .filter(\.barrelType == .keywordMute)
+            .first()
+            .unwrap(or: Abort(.internalServerError, reason: "muted keywords barrel not found"))
+            .flatMap {
+                (barrel) in
+                // remove string
+                var muteWords = barrel.userInfo["muteWords"] ?? []
+                guard let index = muteWords.firstIndex(of: parameter) else {
+                    throw Abort(.badRequest, reason: "'\(parameter)' is not in barrel")
+                }
+                _ = muteWords.remove(at: index)
+                barrel.userInfo.updateValue(muteWords.sorted(), forKey: "muteWords")
+                return barrel.save(on: req).map {
+                    (savedBarrel) in
+                    // return sorted list
+                    let muteKeywordData = MuteKeywordData(
+                        name: savedBarrel.name,
+                        keywords: muteWords.sorted()
+                    )
+                    return muteKeywordData
+                }
         }
     }
     
