@@ -23,6 +23,10 @@ extension BarrelTests {
         ("testUserBarrel", testUserBarrel),
         ("testUserBarrelDelete", testUserBarrelDelete),
         ("testUserBarrelRename", testUserBarrelRename),
+        ("testUserBlock", testUserBlock),
+        ("testUserMute", testUserMute),
+        ("testUserUnblock", testUserUnblock),
+        ("testUserUnmute", testUserUnmute),
     ]
 }
 
