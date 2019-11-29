@@ -14,9 +14,13 @@ struct AddedUserData: Content {
 
 /// Used to obtain the user's current list of alert keywords.
 ///
-/// Returned by: `GET /api/v3/user/alertwords`
+/// Returned by:
+/// * `GET /api/v3/user/alertwords`
+/// * `POST /api/v3/user/alertwords/add/STRING`
+/// * `POST /api/v3/user/alertwords/remove/STRING`
 ///
-/// See `UserController.alertwordsHandler(_:)`.
+/// See `UserController.alertwordsHandler(_:)`, `UserController.alertwordsAddHandler(_:)`,
+/// `UserController.alertwordsRemoveHandler(_:)`.
 struct AlertKeywordData: Content {
     /// The name of the barrel.
     let name: String
@@ -129,9 +133,13 @@ struct CurrentUserData: Content {
 
 /// Used to obtain the user's current list of keywords for muting public content.
 ///
-/// Returned by: `GET /api/v3/user/mutewords`
+/// Returned by:
+/// * `GET /api/v3/user/mutewords`
+/// * `POST /api/v3/user/mutewords/add/STRING`
+/// * `POST /api/v3/user/mutewords/remove/STRING`
 ///
-/// See `UserController.mutewordsHandler(_:)`.
+/// See `UserController.mutewordsHandler(_:)`, `UserController.mutewordsAddHandler(_:)`,
+/// `UserController.mutewordsRemoveHandler(_:)`.
 struct MuteKeywordData: Content {
     /// The name of the barrel.
     let name: String
