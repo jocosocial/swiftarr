@@ -223,8 +223,8 @@ struct UsersController: RouteCollection {
     
     /// `POST /api/v3/users/ID/block`
     ///
-    /// Blocks the specified `User`. The blocking user and any subaccounts will not be able
-    /// to see posts from the blocked `User` or any of their associated subaccounts, and vice
+    /// Blocks the specified `User`. The blocking user and any sub-accounts will not be able
+    /// to see posts from the blocked `User` or any of their associated sub-accounts, and vice
     /// versa. This affects all forms of communication, public and private, as well as user
     /// searches.
     ///
@@ -513,7 +513,7 @@ struct UsersController: RouteCollection {
     
     /// `POST /api/v3/users/ID/unblock`
     ///
-    /// Removes a block of the specified `User` and all subaccounts by the current user and
+    /// Removes a block of the specified `User` and all sub-accounts by the current user and
     /// all associated accounts.
     ///
     /// - Parameter req: The incoming request `Container`, provided automatically.

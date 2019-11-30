@@ -83,7 +83,7 @@ final class BarrelTests: XCTestCase {
         XCTAssertTrue(muteKeywordData.name == "Muted Keywords", "Muted Keywords")
         XCTAssertTrue(muteKeywordData.keywords.isEmpty, "should be no mutes")
 
-        // add subaccount
+        // add sub-account
         let userCreateData = UserCreateData(username: "subaccount", password: testPassword)
         let addedUserData = try app.getResult(
             from: userURI + "add",
@@ -96,7 +96,7 @@ final class BarrelTests: XCTestCase {
         headers = HTTPHeaders()
         headers.bearerAuthorization = BearerAuthorization(token: token.token)
         
-        // test subaccount has empty blocks barrel
+        // test sub-account has empty blocks barrel
         blockedUserData = try app.getResult(
             from: userURI + "blocks",
             method: .GET,

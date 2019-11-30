@@ -1,6 +1,6 @@
 import Vapor
 
-/// Used to return a newly created subaccount's ID and username.
+/// Used to return a newly created sub-account's ID and username.
 ///
 /// Returned by: `POST /api/v3/user/add`
 ///
@@ -228,7 +228,7 @@ struct TokenStringData: Content {
     }
 }
 
-/// Used to create a new account or subaccount.
+/// Used to create a new account or sub-account.
 ///
 /// Required by:
 /// * `POST /api/v3/user/create`

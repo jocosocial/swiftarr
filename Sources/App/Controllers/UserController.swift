@@ -872,7 +872,7 @@ struct UserController: RouteCollection {
     /// `GET /api/v3/user/blocks`
     ///
     /// Returns a list of the user's currently blocked users in `BlockedUserData` format.
-    /// If the user is a subaccount, the parent user's blocks are returned.
+    /// If the user is a sub-account, the parent user's blocks are returned.
     ///
     /// - Parameter req: The incoming request `Container`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
@@ -880,7 +880,7 @@ struct UserController: RouteCollection {
     ///  `SeaMonkey`.
     func blocksHandler(_ req: Request) throws -> Future<BlockedUserData> {
         let user = try req.requireAuthenticated(User.self)
-        // if subaccount, we want parent's blocks
+        // if sub-account, we want parent's blocks
         let barrelAccount = try user.parentAccount(on: req)
         return barrelAccount.flatMap {
             (barrelUser) in
@@ -1461,7 +1461,7 @@ struct UserController: RouteCollection {
     // MARK: - Helper Functions
         
     /// Create the default `Barrel`s for a user: blocked users, muted users, alert keywords and
-    /// muted keywords. A `.userBlock` barrel is only created for primary accounts; a subaccount
+    /// muted keywords. A `.userBlock` barrel is only created for primary accounts; a sub-account
     /// is covered by its parent's block list.
     ///
     /// - Parameters:
@@ -1477,7 +1477,7 @@ struct UserController: RouteCollection {
         )
         alertKeywordsBarrel.userInfo.updateValue([], forKey: "alertWords")
         barrels.append(alertKeywordsBarrel.save(on: req))
-        // subaccounts don't own block lists, they're covered by the parent's
+        // sub-accounts don't own block lists, they're covered by the parent's
         if user.parentID == nil {
             let blocksBarrel = try Barrel(
                 ownerID: user.requireID(),

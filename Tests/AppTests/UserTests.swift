@@ -473,7 +473,7 @@ final class UserTests: XCTestCase {
         var adminHeaders = HTTPHeaders()
         adminHeaders.bearerAuthorization = BearerAuthorization(token: adminToken.token)
         
-        // test add subaccount
+        // test add sub-account
         var userCreateData = UserCreateData(username: "subaccount", password: testPassword)
         let addedUserData = try app.getResult(
             from: userURI + "add",
