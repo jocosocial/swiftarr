@@ -366,10 +366,13 @@ struct UsersController: RouteCollection {
                     (barrel) in
                     // add to barrel
                     barrel.modelUUIDs.append(try user.requireID())
-                    // update cache, return 201
-                    let cache = try req.keyedCache(for: .redis)
-                    let key = try "mutes:\(user.requireID())"
-                    return cache.set(key, to: barrel.modelUUIDs).transform(to: .created)
+                    return barrel.save(on: req).flatMap {
+                        (savedBarrel) in
+                        // update cache, return 201
+                        let cache = try req.keyedCache(for: .redis)
+                        let key = try "mutes:\(user.requireID())"
+                        return cache.set(key, to: savedBarrel.modelUUIDs).transform(to: .created)
+                    }
             }
         }
     }
