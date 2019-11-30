@@ -370,7 +370,7 @@ struct UsersController: RouteCollection {
                         (savedBarrel) in
                         // update cache, return 201
                         let cache = try req.keyedCache(for: .redis)
-                        let key = try "mutes:\(user.requireID())"
+                        let key = try "mutes:\(requester.requireID())"
                         return cache.set(key, to: savedBarrel.modelUUIDs).transform(to: .created)
                     }
             }
