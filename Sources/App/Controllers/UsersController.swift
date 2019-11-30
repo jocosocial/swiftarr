@@ -552,7 +552,6 @@ struct UsersController: RouteCollection {
     ///   be reported as a likely bug, please and thank you.
     /// - Returns: 204 No Content on success.
     func unmuteHandler(_ req: Request) throws -> Future<HTTPStatus> {
-        // FIXME: needs mute processing
         let requester = try req.requireAuthenticated(User.self)
         return try req.parameters.next(User.self).flatMap {
             (user) in
@@ -564,12 +563,18 @@ struct UsersController: RouteCollection {
                 .unwrap(or: Abort(.internalServerError, reason: "userMute barrel not found"))
                 .flatMap {
                     (barrel) in
-                    // remove and return 204
+                    // remove from barrel
                     guard let index = barrel.modelUUIDs.firstIndex(of: try user.requireID()) else {
                         throw Abort(.badRequest, reason: "user not found in mute list")
                     }
                     barrel.modelUUIDs.remove(at: index)
-                    return barrel.save(on: req).transform(to: .noContent)
+                    return barrel.save(on: req).flatMap {
+                        (savedBarrel) in
+                        // update cache, return 204
+                        let cache = try req.keyedCache(for: .redis)
+                        let key = try "mutes:\(user.requireID())"
+                        return cache.set(key, to: savedBarrel.modelUUIDs).transform(to: .noContent)
+                    }
             }
         }
     }
