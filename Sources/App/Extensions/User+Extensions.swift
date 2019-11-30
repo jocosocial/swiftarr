@@ -78,6 +78,26 @@ extension User {
 // MARK: - Methods
 
 extension User {
+    /// Returns a list of IDs of all accounts associated with the `User`. If user is a primary
+    /// account (has no `.parentID`) it returns itself plus any sub-accounts. If user is a
+    /// sub-account, it determines its parent, then returns the parent and all sub-accounts.
+    ///
+    /// - Parameter req: The incoming request `Container`, which provides the `EventLoop` on
+    ///   which the query must be run.
+    /// - Returns: `[UUID]` containing all the user's associated IDs.
+    func allAccountIDs(on req: Request) -> Future<[UUID]> {
+        let parent = self.parentID != nil ? self.parentID : self.id
+        return User.query(on: req).group(.or) {
+            (or) in
+            or.filter(\.id == parent)
+            or.filter(\.parentID == parent)
+        }.all()
+            .map {
+                (users) in
+                return try users.map { try $0.requireID() }
+        }
+    }
+    
     /// Converts a `User` model to a version that is publicly viewable. Only the ID, username
     /// and timestamp of the last profile update are returned.
     func convertToInfo() throws -> UserInfo {
