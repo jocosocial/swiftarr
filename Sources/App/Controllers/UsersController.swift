@@ -663,12 +663,10 @@ struct UsersController: RouteCollection {
     ///
     /// To avoid the potential race condition of multiple blocks being modified simultaneously,
     /// a simple locking scheme is used for the removal processing. A lock expires after 1
-    /// second if not explicitly deleted.
-    ///
-    /// To avoid the resulting potential up-to-1-second system-wide request blocking this could
-    /// create (albeit rarely), `swiftarr` uses an intermediary to perform the removals, then
-    /// updates the atomic keyedCache used for filtering.
-    ///
+    /// second if not explicitly deleted. To avoid resulting potential request fulfillment
+    /// blocking, `swiftarr` uses an intermediary to perform the block removals, then updates the
+    /// atomic keyedCache used for filtering.
+    /// 
     /// - Parameters:
     ///   - requester: The `User` removing the block.
     ///   - user: The `User` currently being blocked.
@@ -748,11 +746,9 @@ struct UsersController: RouteCollection {
     ///
     /// To avoid the potential race condition of multiple blocks being modified simultaneously,
     /// a simple locking scheme is used for the block generation. A lock expires after 1 second
-    /// if not explicitly deleted.
-    ///
-    /// To avoid the resulting potential up-to-1-second system-wide request blocking this
-    /// could create (albeit rarely), `swiftarr` uses an intermediary to perform the block
-    /// additions, then updates the atomic keyedCache used for filtering.
+    /// if not explicitly deleted. To avoid resulting potential request fulfillment blocking,
+    /// `swiftarr` uses an intermediary to perform the block additions, then updates the live
+    /// atomic keyedCache used for filtering.
     ///
     /// - Parameters:
     ///   - requester: The `User` requesting the block.
