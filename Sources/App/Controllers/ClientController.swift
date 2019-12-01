@@ -1,6 +1,7 @@
 import Vapor
 import Crypto
 import FluentSQL
+import Fluent
 
 /// The collection of `/api/v3/client/*` route endpoints and handler functions that provide
 /// bulk retrieval services for registered API clients.
@@ -93,14 +94,23 @@ struct ClientController: RouteCollection {
                 guard let date = ClientController.dateFromParameter(string: since) else {
                     throw Abort(.badRequest, reason: "'\(since)' is not a recognized date format")
                 }
-                // return UserHeader array
-                return UserProfile.query(on: req)
-                    .filter(\.updatedAt > date)
-                    .all()
-                    .map {
-                        (profiles) in
-                        let headers = try profiles.map { try $0.convertToHeader() }
-                        return headers
+                // remove blocked users
+                let cache = try req.keyedCache(for: .redis)
+                let key = try "blocks:\(user.requireID())"
+                let cachedBlocks = cache.get(key, as: [UUID].self)
+                return cachedBlocks.flatMap {
+                    (blocks) in
+                    let blocked = blocks ?? []
+                    // return UserHeader array
+                    return UserProfile.query(on: req)
+                        .filter(\.updatedAt > date)
+                        .filter(\.userID !~ blocked)
+                        .all()
+                        .map {
+                            (profiles) in
+                            let headers = try profiles.map { try $0.convertToHeader() }
+                            return headers
+                    }
                 }
         }
     }
@@ -139,13 +149,22 @@ struct ClientController: RouteCollection {
                 guard user.accessLevel != .client else {
                     throw Abort(.unauthorized, reason: "'x-swiftarr-user' user cannot be client")
                 }
-                // return UserSearch array
-                return UserProfile.query(on: req)
-                    .sort(\.username, .ascending)
-                    .all()
-                    .map {
-                        (profiles) in
-                        return try profiles.map { try $0.convertToSearch() }
+                // remove blocked users
+                let cache = try req.keyedCache(for: .redis)
+                let key = try "blocks:\(user.requireID())"
+                let cachedBlocks = cache.get(key, as: [UUID].self)
+                return cachedBlocks.flatMap {
+                    (blocks) in
+                    let blocked = blocks ?? []
+                    return UserProfile.query(on: req)
+                        .filter(\.userID !~ blocked)
+                        .sort(\.username, .ascending)
+                        .all()
+                        .map {
+                            (profiles) in
+                            // return as [UserSearch]
+                            return try profiles.map { try $0.convertToSearch() }
+                    }
                 }
         }
     }
@@ -192,13 +211,22 @@ struct ClientController: RouteCollection {
                 guard let date = ClientController.dateFromParameter(string: since) else {
                     throw Abort(.badRequest, reason: "'\(since)' is not a recognized date format")
                 }
-                // return UserInfo array
-                return User.query(on: req)
-                    .filter(\.profileUpdatedAt > date)
-                    .all()
-                    .map {
-                        (users) in
-                        return try users.map { try $0.convertToInfo() }
+                // remove blocked users
+                let cache = try req.keyedCache(for: .redis)
+                let key = try "blocks:\(user.requireID())"
+                let cachedBlocks = cache.get(key, as: [UUID].self)
+                return cachedBlocks.flatMap {
+                    (blocks) in
+                    let blocked = blocks ?? []
+                    return User.query(on: req)
+                        .filter(\.profileUpdatedAt > date)
+                        .filter(\.id !~ blocked)
+                        .all()
+                        .map {
+                            (users) in
+                            // return as [UserInfo]
+                            return try users.map { try $0.convertToInfo() }
+                    }
                 }
         }
     }

@@ -125,8 +125,44 @@ final class ClientTests: XCTestCase {
             headers: headers,
             decodeTo: [UserInfo].self
         )
+        let usersCount = users.count
         XCTAssertTrue(users.count > 1, "should be all accounts")
-
+        
+        // test blocked
+        let clientHeaders = headers
+        headers = HTTPHeaders()
+        token = try app.login(username: testUsername, password: testPassword, on: conn)
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        let verifiedInfo = try app.getResult(
+            from: usersURI + "find/verified",
+            method: .GET,
+            headers: headers,
+            decodeTo: UserInfo.self
+        )
+        response = try app.getResponse(
+            from: usersURI + "\(verifiedInfo.userID)/block",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+        let userHeaders = headers
+        headers = clientHeaders
+        users = try app.getResult(
+            from: clientURI + "user/updates/since/-1",
+            method: .GET,
+            headers: headers,
+            decodeTo: [UserInfo].self
+        )
+        XCTAssertTrue(users.count == usersCount - 1, "should be 1 fewer")
+        headers = userHeaders
+        response = try app.getResponse(
+            from: usersURI + "\(verifiedInfo.userID)/unblock",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 204, "should be 204 No Content")
+        headers = clientHeaders
+        
         // create update
         var currentDate = Date()
         let userProfileData = UserProfileData(
@@ -264,8 +300,44 @@ final class ClientTests: XCTestCase {
             headers: headers,
             decodeTo: [UserHeader].self
         )
+        let usersCount = users.count
         XCTAssertTrue(users.count > 1, "should be all accounts")
         
+        // test blocked
+        let clientHeaders = headers
+        headers = HTTPHeaders()
+        token = try app.login(username: testUsername, password: testPassword, on: conn)
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        let verifiedInfo = try app.getResult(
+            from: usersURI + "find/verified",
+            method: .GET,
+            headers: headers,
+            decodeTo: UserInfo.self
+        )
+        response = try app.getResponse(
+            from: usersURI + "\(verifiedInfo.userID)/block",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+        let userHeaders = headers
+        headers = clientHeaders
+        users = try app.getResult(
+            from: clientURI + "user/headers/since/-1",
+            method: .GET,
+            headers: headers,
+            decodeTo: [UserHeader].self
+        )
+        XCTAssertTrue(users.count == usersCount - 1, "should be 1 fewer")
+        headers = userHeaders
+        response = try app.getResponse(
+            from: usersURI + "\(verifiedInfo.userID)/unblock",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 204, "should be 204 No Content")
+        headers = clientHeaders
+
         // create update
         var currentDate = Date()
         let userProfileData = UserProfileData(
@@ -341,7 +413,7 @@ final class ClientTests: XCTestCase {
         let user = try app.createUser(username: testUsername, password: testPassword, on: conn)
         
         // create logged in client
-        let token = try app.login(username: testClientname, password: testPassword, on: conn)
+        var token = try app.login(username: testClientname, password: testPassword, on: conn)
         var headers = HTTPHeaders()
 
         // get client info for later
@@ -393,7 +465,7 @@ final class ClientTests: XCTestCase {
             headers: headers,
             decodeTo: [UserSearch].self
         )
-        let count = userSearches.count
+        let searchCount = userSearches.count
         XCTAssertTrue(userSearches[0].userSearch.contains("@admin"), "should be '@admin'")
         _ = try app.createUser(username: "zarathustra", password: testPassword, on: conn)
         userSearches = try app.getResult(
@@ -402,7 +474,43 @@ final class ClientTests: XCTestCase {
             headers: headers,
             decodeTo: [UserSearch].self
         )
-        XCTAssertTrue(userSearches.count == count + 1, "should be \(count) + 1")
-        XCTAssertTrue(userSearches[count].userSearch.contains("@zara"), "should be '@zarathustra")
+        XCTAssertTrue(userSearches.count == searchCount + 1, "should be \(searchCount) + 1")
+        XCTAssertTrue(userSearches[searchCount].userSearch.contains("@zara"), "should be '@zarathustra")
+        
+        // test blocked
+        let clientHeaders = headers
+        headers = HTTPHeaders()
+        token = try app.login(username: testUsername, password: testPassword, on: conn)
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        let verifiedInfo = try app.getResult(
+            from: usersURI + "find/verified",
+            method: .GET,
+            headers: headers,
+            decodeTo: UserInfo.self
+        )
+        response = try app.getResponse(
+            from: usersURI + "\(verifiedInfo.userID)/block",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+        let userHeaders = headers
+        headers = clientHeaders
+        userSearches = try app.getResult(
+            from: clientURI + "usersearch",
+            method: .GET,
+            headers: headers,
+            decodeTo: [UserSearch].self
+        )
+        XCTAssertTrue(userSearches.count == searchCount, "should be \(searchCount)")
+        headers = userHeaders
+        response = try app.getResponse(
+            from: usersURI + "\(verifiedInfo.userID)/unblock",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 204, "should be 204 No Content")
+        headers = clientHeaders
+
     }
 }
