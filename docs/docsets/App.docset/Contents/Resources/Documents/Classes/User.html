@@ -1299,6 +1299,62 @@ epoch.</p>
                 <li class="item">
                   <div>
                     <code>
+                    <a name="/s:3App4UserC13allAccountIDs2on3NIO15EventLoopFutureCySay10Foundation4UUIDVGG5Vapor7RequestC_tF"></a>
+                    <a name="//apple_ref/swift/Method/allAccountIDs(on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App4UserC13allAccountIDs2on3NIO15EventLoopFutureCySay10Foundation4UUIDVGG5Vapor7RequestC_tF">allAccountIDs(on:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Returns a list of IDs of all accounts associated with the <code>User</code>. If user is a primary
+account (has no <code><a href="../Classes/User.html#/s:3App4UserC8parentID10Foundation4UUIDVSgvp">.parentID</a></code>) it returns itself plus any sub-accounts. If user is a
+sub-account, it determines its parent, then returns the parent and all sub-accounts.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">allAccountIDs</span><span class="p">(</span><span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">UUID</span><span class="p">]</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming request <code>Container</code>, which provides the <code>EventLoop</code> on
+which the query must be run.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p><code>[UUID]</code> containing all the user&rsquo;s associated IDs.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Extensions/User+Extensions.swift#L88-L99">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
                     <a name="/s:3App4UserC13convertToInfoAA0bE0VyKF"></a>
                     <a name="//apple_ref/swift/Method/convertToInfo()" class="dashAnchor"></a>
                     <a class="token" href="#/s:3App4UserC13convertToInfoAA0bE0VyKF">convertToInfo()</a>
@@ -1322,7 +1378,7 @@ and timestamp of the last profile update are returned.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Extensions/User+Extensions.swift#L83-L89">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Extensions/User+Extensions.swift#L103-L109">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1373,7 +1429,7 @@ sending user.</p>
                         </table>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Extensions/User+Extensions.swift#L96-L107">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Extensions/User+Extensions.swift#L116-L127">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1386,7 +1442,7 @@ sending user.</p>
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-29)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-30)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.12.0</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>

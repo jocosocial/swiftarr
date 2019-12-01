@@ -319,7 +319,7 @@ entirely.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L18-L53">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L19-L54">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -402,7 +402,7 @@ exist.</p>
 profile update.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L81-L107">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L82-L124">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -469,7 +469,7 @@ filename of their current profile image.</p>
 image filename.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L123-L137">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L140-L164">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -536,7 +536,7 @@ as a likely bug, please and thank you.
 user&rsquo;s profile.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L153-L195">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L180-L232">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -608,7 +608,7 @@ displayedName change, profile photo change, or any field on their profile)</li>
 profile update.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L214-L218">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L251-L267">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -639,8 +639,8 @@ profile update.</p>
                       <div class="abstract">
                         <p><code>POST /api/v3/users/ID/block</code></p>
 
-<p>Blocks the specified <code><a href="../Classes/User.html">User</a></code>. The blocking user and any subaccounts will not be able
-to see posts from the blocked <code><a href="../Classes/User.html">User</a></code> or any of their associated subaccounts, and vice
+<p>Blocks the specified <code><a href="../Classes/User.html">User</a></code>. The blocking user and any sub-accounts will not be able
+to see posts from the blocked <code><a href="../Classes/User.html">User</a></code> or any of their associated sub-accounts, and vice
 versa. This affects all forms of communication, public and private, as well as user
 searches.</p>
 
@@ -692,7 +692,7 @@ their role accounts will still be visible to the blocking user.</p>
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L244-L262">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L293-L314">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -770,7 +770,7 @@ username harvesting.
 values of all matching users.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L286-L307">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L338-L367">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -834,7 +834,7 @@ thus there would never be a match.</p>
                         <p><code>[String]</code> containng all matching usernames as <q>@username</q> strings.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L321-L336">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L381-L404">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -904,7 +904,7 @@ logged-in username muting <em>that</em> one username.</p>
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L355-L373">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L423-L446">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -943,8 +943,9 @@ to update the note instead of this endpoint.</p>
 </div>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
-    <p>409 error if there is an existing note on the profile. A 5xx response should
-be reported as a likely bug, please and thank you.</p>
+    <p>400 error if the profile is a banned user&rsquo;s. 409 error if there is an existing
+note on the profile. A 5xx response should be reported as a likely bug, please and
+thank you.</p>
 
 </div>
 
@@ -993,7 +994,7 @@ be reported as a likely bug, please and thank you.</p>
                         <p><code><a href="../Structs/CreatedNoteData.html">CreatedNoteData</a></code> containing the newly created note&rsquo;s ID and text.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L394-L434">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L468-L512">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1055,7 +1056,7 @@ be reported as a likely bug, please and thank you.
                         <p>204 No Content on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L445-L468">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L523-L546">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1126,7 +1127,7 @@ be reported as a likely bug, please and thank you.</p>
                         <p><code><a href="../Classes/UserNote/Edit.html">UserNote.Edit</a></code> containing the note&rsquo;s ID and text.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L485-L507">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L563-L585">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1146,7 +1147,7 @@ be reported as a likely bug, please and thank you.</p>
                       <div class="abstract">
                         <p><code>POST /api/v3/users/ID/unblock</code></p>
 
-<p>Removes a block of the specified <code><a href="../Classes/User.html">User</a></code> and all subaccounts by the current user and
+<p>Removes a block of the specified <code><a href="../Classes/User.html">User</a></code> and all sub-accounts by the current user and
 all associated accounts.</p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
@@ -1188,7 +1189,7 @@ should be reported as a likely bug, please and thank you.
                         <p>204 No Content on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L518-L539">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L596-L620">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1249,7 +1250,202 @@ be reported as a likely bug, please and thank you.
                         <p>204 No Content on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L549-L570">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L630-L656">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/Helper%20Functions"></a>
+                <a name="//apple_ref/swift/Section/Helper Functions" class="dashAnchor"></a>
+                <a href="#/Helper%20Functions">
+                  <h3 class="section-name">Helper Functions</h3>
+                </a>
+              </div>
+              <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App15UsersControllerV20removeBlockFromCache2by2of2on3NIO15EventLoopFutureCyytGAA4UserC_AM5Vapor7RequestCtKF"></a>
+                    <a name="//apple_ref/swift/Method/removeBlockFromCache(by:of:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15UsersControllerV20removeBlockFromCache2by2of2on3NIO15EventLoopFutureCyytGAA4UserC_AM5Vapor7RequestCtKF">removeBlockFromCache(by:of:on:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Updates the cache values for all accounts involved in a block removal. The currently
+blocked user and any associated accounts are removed from all blocking user&rsquo;s associated
+accounts&rsquo; blocks caches, and vice versa.</p>
+
+<p>To avoid the potential race condition of multiple blocks being modified simultaneously,
+a simple locking scheme is used for the removal processing. A lock expires after 1
+second if not explicitly deleted.</p>
+
+<p>To avoid the resulting potential up-to-1-second system-wide request blocking this could
+create (albeit rarely), <code>swiftarr</code> uses an intermediary to perform the removals, then
+updates the atomic keyedCache used for filtering.</p>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    A 5xx response should be reported as a likely bug, please and thank you.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">removeBlockFromCache</span><span class="p">(</span><span class="n">by</span> <span class="nv">requester</span><span class="p">:</span> <span class="kt"><a href="../Classes/User.html">User</a></span><span class="p">,</span> <span class="n">of</span> <span class="nv">user</span><span class="p">:</span> <span class="kt"><a href="../Classes/User.html">User</a></span><span class="p">,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">Void</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>requester</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The <code><a href="../Classes/User.html">User</a></code> removing the block.</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>user</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The <code><a href="../Classes/User.html">User</a></code> currently being blocked.</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming <code>Request</code>, which provides the <code>EventLoop</code> on which this must run.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>Void.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L678-L743">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App15UsersControllerV14setBlocksCache2by2of2on3NIO15EventLoopFutureCyytGAA4UserC_AM5Vapor7RequestCtKF"></a>
+                    <a name="//apple_ref/swift/Method/setBlocksCache(by:of:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15UsersControllerV14setBlocksCache2by2of2on3NIO15EventLoopFutureCyytGAA4UserC_AM5Vapor7RequestCtKF">setBlocksCache(by:of:on:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Updates the cache values for all accounts involved in a block. Blocked user and any
+associated accounts are added to all blocking user&rsquo;s associated accounts&rsquo; blocks caches,
+and vice versa.</p>
+
+<p>To avoid the potential race condition of multiple blocks being modified simultaneously,
+a simple locking scheme is used for the block generation. A lock expires after 1 second
+if not explicitly deleted.</p>
+
+<p>To avoid the resulting potential up-to-1-second system-wide request blocking this
+could create (albeit rarely), <code>swiftarr</code> uses an intermediary to perform the block
+additions, then updates the atomic keyedCache used for filtering.</p>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    A 5xx response should be reported as a likely bug, please and thank you.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">setBlocksCache</span><span class="p">(</span><span class="n">by</span> <span class="nv">requester</span><span class="p">:</span> <span class="kt"><a href="../Classes/User.html">User</a></span><span class="p">,</span> <span class="n">of</span> <span class="nv">user</span><span class="p">:</span> <span class="kt"><a href="../Classes/User.html">User</a></span><span class="p">,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">Void</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>requester</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The <code><a href="../Classes/User.html">User</a></code> requesting the block.</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>user</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The <code><a href="../Classes/User.html">User</a></code> being blocked.</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming <code>Request</code>, which provides the <code>EventLoop</code> on which this must run.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>Void.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L763-L826">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1262,7 +1458,7 @@ be reported as a likely bug, please and thank you.
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-29)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-11-30)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.12.0</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>
