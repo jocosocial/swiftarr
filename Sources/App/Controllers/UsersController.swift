@@ -242,7 +242,6 @@ struct UsersController: RouteCollection {
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: 201 Created on success.
     func blockHandler(_ req: Request) throws -> Future<HTTPStatus> {
-        // FIXME: needs block processing
         let requester = try req.requireAuthenticated(User.self)
         return try req.parameters.next(User.self).flatMap {
             (user) in
@@ -254,9 +253,13 @@ struct UsersController: RouteCollection {
                 .unwrap(or: Abort(.internalServerError, reason: "userBlock barrel not found"))
                 .flatMap {
                     (barrel) in
-                    // add and return 201
+                    // add blocked user to barrel
                     barrel.modelUUIDs.append(try user.requireID())
-                    return barrel.save(on: req).transform(to: .created)
+                    return barrel.save(on: req).flatMap {
+                        (_) in
+                        // update cache and return 201
+                        return try self.setBlocksCache(by: requester, of: user, on: req).transform(to: .created)
+                    }
             }
         }
     }
@@ -521,7 +524,6 @@ struct UsersController: RouteCollection {
     ///   should be reported as a likely bug, please and thank you.
     /// - Returns: 204 No Content on success.
     func unblockHandler(_ req: Request) throws -> Future<HTTPStatus> {
-        // FIXME: needs block processing
         let requester = try req.requireAuthenticated(User.self)
         return try req.parameters.next(User.self).flatMap {
             (user) in
@@ -533,12 +535,16 @@ struct UsersController: RouteCollection {
                 .unwrap(or: Abort(.internalServerError, reason: "userBlock barrel not found"))
                 .flatMap {
                     (barrel) in
-                    // remove and return 204
+                    // remove user from barrel
                     guard let index = barrel.modelUUIDs.firstIndex(of: try user.requireID()) else {
                         throw Abort(.badRequest, reason: "user not found in block list")
                     }
                     barrel.modelUUIDs.remove(at: index)
-                    return barrel.save(on: req).transform(to: .noContent)
+                    return barrel.save(on: req).flatMap {
+                        (_) in
+                        // update cache and return 204
+                        return try self.removeBlockFromCache(by: requester, of: user, on: req).transform(to: .noContent)
+                    }
             }
         }
     }
@@ -575,6 +581,176 @@ struct UsersController: RouteCollection {
                         let key = try "mutes:\(user.requireID())"
                         return cache.set(key, to: savedBarrel.modelUUIDs).transform(to: .noContent)
                     }
+            }
+        }
+    }
+    
+    // MARK: - Helper Functions
+    
+    /// Updates the cache values for all accounts involved in a block removal. The currently
+    /// blocked user and any associated accounts are removed from all blocking user's associated
+    /// accounts' blocks caches, and vice versa.
+    ///
+    /// To avoid the potential race condition of multiple blocks being modified simultaneously,
+    /// a simple locking scheme is used for the block generation. A lock expires after 1 second
+    /// if not explicitly deleted.
+    ///
+    /// To avoid the resulting potential up-to-1-second system-wide request blocking this could
+    /// create (albeit rarely), `swiftarr` uses an intermediary to perform the removals, then
+    /// updates the atomic keyedCache used for filtering.
+    ///
+    /// - Parameters:
+    ///   - requester: The `User` removing the block.
+    ///   - user: The `User` currently being blocked.
+    ///   - req:The incoming `Request`, which provides the `EventLoop` on which this must run.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: Void.
+    func removeBlockFromCache(by requester: User, of user: User, on req: Request) throws -> Future<Void> {
+        // get keyedCache for later
+        let cache = try req.keyedCache(for: .redis)
+        // get all involved IDs
+        let requesterUUIDs = requester.allAccountIDs(on: req)
+        let blockUUIDs = user.allAccountIDs(on: req)
+        return flatMap(requesterUUIDs, blockUUIDs) {
+            (ruuids, buuids) in
+            // need to talk directly with Redis for .command
+            return req.withPooledConnection(to: .redis) {
+                (redis) in
+                // create lock with 1-second expiry
+                let lockValue = UUID().uuidString
+                let commandArgs = ["blocksLock", RedisData(bulk:"\(lockValue)")]
+                return flatMap(redis.command("SETNX", commandArgs),
+                               redis.expire("blocksLock", after: 1)) {
+                    (_, _) in
+                    var futures: [Future<Void>] = []
+                    // update requester caches
+                    for uuid in ruuids {
+                        let redisKey = "rblocks:\(uuid)"
+                        let cacheKey = "blocks:\(uuid)"
+                        let cachedBlocks = redis.get(redisKey, as: [String].self)
+                        let _ = cachedBlocks.map {
+                            (cached) in
+                            var blocks = cached ?? []
+                            let removals = buuids.map { "\($0)" }
+                            blocks.removeAll(where: { removals.contains($0) })
+                            futures.append(redis.set(redisKey, to: blocks))
+                            // update keyedCache
+                            futures.append(cache.set(cacheKey, to: blocks))
+                        }
+                    }
+                    // update blocked user caches
+                    for uuid in buuids {
+                        let redisKey = "rblocks:\(uuid)"
+                        let cacheKey = "blocks:\(uuid)"
+                        let cachedBlocks = redis.get(redisKey, as: [String].self)
+                        let _ = cachedBlocks.map {
+                            (cached) in
+                            var blocks = cached ?? []
+                            let removals = ruuids.map { "\($0)" }
+                            blocks.removeAll(where: { removals.contains($0) })
+                            futures.append(redis.set(redisKey, to: blocks))
+                            // update keyedCache
+                            futures.append(cache.set(cacheKey, to: blocks))
+                        }
+                    }
+                    // resolve futures
+                    return futures.flatten(on: req).flatMap {
+                        (_) in
+                        // unlock
+                        return redis.get("blocksLock", as: String.self).flatMap {
+                            (lock) in
+                            guard let lock = lock, lock == lockValue else {
+                                // hmm... notify of error, just allow lock to expire
+                                throw Abort(.internalServerError, reason: "lock conflict")
+                            }
+                            // delete lock
+                            return redis.delete("blocksLock").transform(to: ())
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    /// Updates the cache values for all accounts involved in a block. Blocked user and any
+    /// associated accounts are added to all blocking user's associated accounts' blocks caches,
+    /// and vice versa.
+    ///
+    /// To avoid the potential race condition of multiple blocks being modified simultaneously,
+    /// a simple locking scheme is used for the block generation. A lock expires after 1 second
+    /// if not explicitly deleted.
+    ///
+    /// To avoid the resulting potential up-to-1-second system-wide request blocking this
+    /// could create (albeit rarely), `swiftarr` uses an intermediary to perform the block
+    /// additions, then updates the atomic keyedCache used for filtering.
+    ///
+    /// - Parameters:
+    ///   - requester: The `User` requesting the block.
+    ///   - user: The `User` being blocked.
+    ///   - req:The incoming `Request`, which provides the `EventLoop` on which this must run.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: Void.
+    func setBlocksCache(by requester: User, of user: User, on req: Request) throws -> Future<Void> {
+        // get keyedCache for later
+        let cache = try req.keyedCache(for: .redis)
+        // get all involved IDs
+        let requesterUUIDs = requester.allAccountIDs(on: req)
+        let blockUUIDs = user.allAccountIDs(on: req)
+        return flatMap(requesterUUIDs, blockUUIDs) {
+            (ruuids, buuids) in
+            // need to talk directly with Redis for .command
+            return req.withPooledConnection(to: .redis) {
+                (redis) in
+                // create lock with 1-second expiry
+                let lockValue = UUID().uuidString
+                let commandArgs = ["blocksLock", RedisData(bulk:"\(lockValue)")]
+                return flatMap(redis.command("SETNX", commandArgs),
+                               redis.expire("blocksLock", after: 1)) {
+                    (_, _) in
+                    var futures: [Future<Void>] = []
+                    // update requester caches
+                    for uuid in ruuids {
+                        let redisKey = "rblocks:\(uuid)"
+                        let cacheKey = "blocks:\(uuid)"
+                        let cachedBlocks = redis.get(redisKey, as: [String].self)
+                        let _ = cachedBlocks.map {
+                            (cached) in
+                            var blocks = cached ?? []
+                            blocks += buuids.map { "\($0)" }
+                            futures.append(redis.set(redisKey, to: blocks))
+                            // update keyedCache
+                            futures.append(cache.set(cacheKey, to: blocks))
+                        }
+                    }
+                    // update blocked user caches
+                    for uuid in buuids {
+                        let redisKey = "rblocks:\(uuid)"
+                        let cacheKey = "blocks:\(uuid)"
+                        let cachedBlocks = redis.get(redisKey, as: [String].self)
+                        let _ = cachedBlocks.map {
+                            (cached) in
+                            var blocks = cached ?? []
+                            blocks += ruuids.map { "\($0)" }
+                            futures.append(redis.set(redisKey, to: blocks))
+                            // update keyedCache
+                            futures.append(cache.set(cacheKey, to: blocks))
+                        }
+                    }
+                    // resolve futures
+                    return futures.flatten(on: req).flatMap {
+                        (_) in
+                        // unlock
+                        return redis.get("blocksLock", as: String.self).flatMap {
+                            (lock) in
+                            guard let lock = lock, lock == lockValue else {
+                                // hmm... notify of error, just allow lock to expire
+                                throw Abort(.internalServerError, reason: "lock conflict")
+                            }
+                            // delete lock
+                            return redis.delete("blocksLock").transform(to: ())
+                        }
+                    }
+                }
             }
         }
     }
