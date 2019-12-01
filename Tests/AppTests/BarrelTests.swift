@@ -936,5 +936,196 @@ final class BarrelTests: XCTestCase {
         )
         XCTAssertTrue(response.http.status.code == 204, "should be 204 No Content")
     }
+    
+    func testUserFilters() throws {
+        // create test and verified logged in user
+        let _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        let token = try app.login(username: "verified", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // test find
+        var userInfo = try app.getResult(
+            from: usersURI + "find/\(testUsername)",
+            method: .GET,
+            headers: headers,
+            decodeTo: UserInfo.self
+        )
+        XCTAssertTrue(userInfo.username == "\(testUsername)", "should be '\(testUsername)'")
+        
+        // test header
+        var userHeader = try app.getResult(
+            from: usersURI + "\(userInfo.userID)/header",
+            method: .GET,
+            headers: headers,
+            decodeTo: UserHeader.self
+        )
+        XCTAssertTrue(userHeader.displayedName.contains("@\(testUsername)"), "@\(testUsername)")
+        
+        // test profile
+        var profile = try app.getResult(
+            from: usersURI + "\(userInfo.userID)/profile",
+            method: .GET,
+            headers: headers,
+            decodeTo: UserProfile.Public.self
+        )
+        XCTAssertTrue(profile.displayedName.contains("@\(testUsername)"), "@\(testUsername)")
+        
+        // test user
+        userInfo = try app.getResult(
+            from: usersURI + "\(userInfo.userID)",
+            method: .GET,
+            headers: headers,
+            decodeTo: UserInfo.self
+        )
+        XCTAssertTrue(userInfo.username == "\(testUsername)", "should be '\(testUsername)'")
+        
+        // test allnames
+        var allnames = try app.getResult(
+            from: usersURI + "match/allnames/n",
+            method: .GET,
+            headers: headers,
+            decodeTo: [UserSearch].self
+        )
+        let allnamesCount = allnames.count
+        XCTAssertNotNil(allnames.first(where: { $0.userSearch.contains("@\(testUsername)") }), "not nil")
+        
+        // test username
+        var usernames = try app.getResult(
+            from: usersURI + "match/username/n",
+            method: .GET,
+            headers: headers,
+            decodeTo: [String].self
+        )
+        let usernamesCount = usernames.count
+        XCTAssertNotNil(usernames.first(where: { $0.contains("@\(testUsername)") }), "not nil")
+        
+        // block user
+        var response = try app.getResponse(
+            from: usersURI + "\(userInfo.userID)/block",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+        
+        // test find
+        response = try app.getResponse(
+            from: usersURI + "find/\(testUsername)",
+            method: .GET,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 404, "should be 404 Not Found")
+        XCTAssertTrue(response.http.body.description.contains("for identifier"), "for identifier")
+        
+        // test header
+        response = try app.getResponse(
+            from: usersURI + "\(userInfo.userID)/header",
+            method: .GET,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 404, "should be 404 Not Found")
+        XCTAssertTrue(response.http.body.description.contains("not available"), "not available")
+        
+        // test profile
+        response = try app.getResponse(
+            from: usersURI + "\(userInfo.userID)/profile",
+            method: .GET,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 404, "should be 404 Not Found")
+        XCTAssertTrue(response.http.body.description.contains("not available"), "not available")
 
+        // test user
+        response = try app.getResponse(
+            from: usersURI + "\(userInfo.userID)",
+            method: .GET,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 404, "should be 404 Not Found")
+        XCTAssertTrue(response.http.body.description.contains("not available"), "not available")
+
+        // test allnames
+        allnames = try app.getResult(
+            from: usersURI + "match/allnames/n",
+            method: .GET,
+            headers: headers,
+            decodeTo: [UserSearch].self
+        )
+        XCTAssertTrue(allnames.count == allnamesCount - 1, "should be one less")
+        XCTAssertNil(allnames.first(where: { $0.userSearch.contains("@\(testUsername)") }), "nil")
+        
+        // test username
+        usernames = try app.getResult(
+            from: usersURI + "match/username/n",
+            method: .GET,
+            headers: headers,
+            decodeTo: [String].self
+        )
+        XCTAssertTrue(usernames.count == usernamesCount - 1, "should be one less")
+        XCTAssertNil(usernames.first(where: { $0.contains("@\(testUsername)") }), "nil")
+
+        // unblock user
+        response = try app.getResponse(
+            from: usersURI + "\(userInfo.userID)/unblock",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 204, "should be 204 No Content")
+        
+        // test find
+        userInfo = try app.getResult(
+            from: usersURI + "find/\(testUsername)",
+            method: .GET,
+            headers: headers,
+            decodeTo: UserInfo.self
+        )
+        XCTAssertTrue(userInfo.username == "\(testUsername)", "should be '\(testUsername)'")
+        
+        // test header
+        userHeader = try app.getResult(
+            from: usersURI + "\(userInfo.userID)/header",
+            method: .GET,
+            headers: headers,
+            decodeTo: UserHeader.self
+        )
+        XCTAssertTrue(userHeader.displayedName.contains("@\(testUsername)"), "@\(testUsername)")
+        
+        // test profile
+        profile = try app.getResult(
+            from: usersURI + "\(userInfo.userID)/profile",
+            method: .GET,
+            headers: headers,
+            decodeTo: UserProfile.Public.self
+        )
+        XCTAssertTrue(profile.displayedName.contains("@\(testUsername)"), "@\(testUsername)")
+        
+        // test user
+        userInfo = try app.getResult(
+            from: usersURI + "\(userInfo.userID)",
+            method: .GET,
+            headers: headers,
+            decodeTo: UserInfo.self
+        )
+        XCTAssertTrue(userInfo.username == "\(testUsername)", "should be '\(testUsername)'")
+        
+        // test allnames
+        allnames = try app.getResult(
+            from: usersURI + "match/allnames/n",
+            method: .GET,
+            headers: headers,
+            decodeTo: [UserSearch].self
+        )
+        XCTAssertTrue(allnames.count == allnamesCount, "should be same")
+        XCTAssertNotNil(allnames.first(where: { $0.userSearch.contains("@\(testUsername)") }), "not nil")
+        
+        // test username
+        usernames = try app.getResult(
+            from: usersURI + "match/username/n",
+            method: .GET,
+            headers: headers,
+            decodeTo: [String].self
+        )
+        XCTAssertTrue(usernames.count == usernamesCount, "should be same")
+        XCTAssertNotNil(usernames.first(where: { $0.contains("@\(testUsername)") }), "not nil")
+    }
 }

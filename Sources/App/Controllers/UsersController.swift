@@ -1,6 +1,7 @@
 import Vapor
 import Crypto
 import FluentSQL
+import Fluent
 import Redis
 
 /// The collection of `/api/v3/user/*` route endpoints and handler functions related
@@ -79,30 +80,46 @@ struct UsersController: RouteCollection {
     /// - Returns: `UserInfo` containing the user's ID, username and timestamp of last
     ///   profile update.
     func findHandler(_ req: Request) throws -> Future<UserInfo> {
-        // FIXME: account for blocks
-//        let requester = try req.requireAuthenticated(User.self)
+        let requester = try req.requireAuthenticated(User.self)
         let parameter = try req.parameters.next(String.self)
         // try converting to UUID
         let userID = UUID(uuidString: parameter)
-        return UserProfile.query(on: req).group(.or) {
+        return User.query(on: req).group(.or) {
             (or) in
             // search ID if a UUID
             if let userID = userID {
-                or.filter(\.userID == userID)
+                or.filter(\.id == userID)
             }
             // search as username
             or.filter(\.username == parameter)
-            }.first()
+        }.first()
             .unwrap(or: Abort(.notFound, reason: "no user found for identifier '\(parameter)'"))
-            .map {
-                (profile) in
-                // return as UserInfo
-                let userInfo = UserInfo(
-                    userID: profile.userID,
-                    username: profile.username,
-                    updatedAt: profile.updatedAt ?? Date()
-                )
-                return userInfo
+            .flatMap {
+                (user) in
+                // 404 if blocked
+                let cache = try req.keyedCache(for: .redis)
+                let key = try "blocks:\(requester.requireID())"
+                let cachedBlocks = cache.get(key, as: [UUID].self)
+                return cachedBlocks.flatMap {
+                    (blocks) in
+                    let blocked = blocks ?? []
+                    if blocked.contains(try user.requireID()) {
+                        throw Abort(.notFound, reason: "no user found for identifier '\(parameter)'")
+                    }
+                    return try user.profile.query(on: req)
+                        .first()
+                        .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
+                        .map {
+                            (profile) in
+                            // return as UserInfo
+                            let userInfo = UserInfo(
+                                userID: profile.userID,
+                                username: profile.username,
+                                updatedAt: profile.updatedAt ?? Date()
+                            )
+                            return userInfo
+                    }
+                }
         }
     }
     
@@ -121,17 +138,27 @@ struct UsersController: RouteCollection {
     /// - Returns: `UserHeader` containing the user's ID, `.displayedName` and profile
     ///   image filename.
     func headerHandler(_ req: Request) throws -> Future<UserHeader> {
-        // FIXME: account for blocks
-//        let requester = try req.requireAuthenticated(User.self)
+        let requester = try req.requireAuthenticated(User.self)
         return try req.parameters.next(User.self).flatMap {
             (user) in
-            return try user.profile.query(on: req)
-                .first()
-                .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
-                .map {
-                    (profile) in
-                    // return UserHeader
-                    return try profile.convertToHeader()
+            // 404 if blocked
+            let cache = try req.keyedCache(for: .redis)
+            let key = try "blocks:\(requester.requireID())"
+            let cachedBlocks = cache.get(key, as: [UUID].self)
+            return cachedBlocks.flatMap {
+                (blocks) in
+                let blocked = blocks ?? []
+                if blocked.contains(try user.requireID()) {
+                    throw Abort(.notFound, reason: "user is not available")
+                }
+                return try user.profile.query(on: req)
+                    .first()
+                    .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
+                    .map {
+                        (profile) in
+                        // return as UserHeader
+                        return try profile.convertToHeader()
+                }
             }
         }
     }
@@ -151,44 +178,54 @@ struct UsersController: RouteCollection {
     /// - Returns: `UserProfile.Public` containing the displayable properties of the specified
     ///   user's profile.
     func profileHandler(_ req: Request) throws -> Future<UserProfile.Public> {
-        // FIXME: account for blocks
         let requester = try req.requireAuthenticated(User.self)
         return try req.parameters.next(User.self).flatMap {
             (user) in
-            // a .banned profile is only available to .moderator or above
-            if user.accessLevel == .banned
-                && requester.accessLevel.rawValue < UserAccessLevel.moderator.rawValue {
-                throw Abort(.notFound, reason: "profile is not available")
-            }
-            // get profile and convert to .Public
-            return try user.profile.query(on: req)
-                .first()
-                .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
-                .flatMap {
-                    (profile) in
-                    let publicProfile = try profile.convertToPublic()
-                    // if auth type is Basic, requester is not logged in, so hide info if
-                    // `.limitAccess` is true or requester is .banned
-                    if (req.http.headers.basicAuthorization != nil && profile.limitAccess)
-                        || requester.accessLevel == .banned {
-                        publicProfile.about = ""
-                        publicProfile.email = ""
-                        publicProfile.homeLocation = ""
-                        publicProfile.message = "You must be logged in to view this user's Profile details."
-                        publicProfile.preferredPronoun = ""
-                        publicProfile.realName = ""
-                        publicProfile.roomNumber = ""
-                    }
-                    // include UserNote if any, then return
-                    return try requester.notes.query(on: req)
-                        .filter(\.profileID == profile.requireID())
-                        .first()
-                        .map {
-                            (note) in
-                            if let note = note {
-                                publicProfile.note = note.note
-                            }
-                            return publicProfile
+            // 404 if blocked
+            let cache = try req.keyedCache(for: .redis)
+            let key = try "blocks:\(requester.requireID())"
+            let cachedBlocks = cache.get(key, as: [UUID].self)
+            return cachedBlocks.flatMap {
+                (blocks) in
+                let blocked = blocks ?? []
+                if blocked.contains(try user.requireID()) {
+                    throw Abort(.notFound, reason: "profile is not available")
+                }
+                // a .banned profile is only available to .moderator or above
+                if user.accessLevel == .banned
+                    && requester.accessLevel.rawValue < UserAccessLevel.moderator.rawValue {
+                    throw Abort(.notFound, reason: "profile is not available")
+                }
+                // get profile and convert to .Public
+                return try user.profile.query(on: req)
+                    .first()
+                    .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
+                    .flatMap {
+                        (profile) in
+                        let publicProfile = try profile.convertToPublic()
+                        // if auth type is Basic, requester is not logged in, so hide info if
+                        // `.limitAccess` is true or requester is .banned
+                        if (req.http.headers.basicAuthorization != nil && profile.limitAccess)
+                            || requester.accessLevel == .banned {
+                            publicProfile.about = ""
+                            publicProfile.email = ""
+                            publicProfile.homeLocation = ""
+                            publicProfile.message = "You must be logged in to view this user's Profile details."
+                            publicProfile.preferredPronoun = ""
+                            publicProfile.realName = ""
+                            publicProfile.roomNumber = ""
+                        }
+                        // include UserNote if any, then return
+                        return try requester.notes.query(on: req)
+                            .filter(\.profileID == profile.requireID())
+                            .first()
+                            .map {
+                                (note) in
+                                if let note = note {
+                                    publicProfile.note = note.note
+                                }
+                                return publicProfile
+                        }
                 }
             }
         }
@@ -212,9 +249,21 @@ struct UsersController: RouteCollection {
     /// - Returns: `UserInfo` containing the user's ID, username and timestamp of last
     ///   profile update.
     func userHandler(_ req: Request) throws -> Future<UserInfo> {
-        // FIXME: account for blocks
-//        let requester = try req.authenticated(User.self)
-        return try req.parameters.next(User.self).convertToInfo()        
+        let requester = try req.requireAuthenticated(User.self)
+        let parameter = try req.parameters.next(User.self)
+        // 404 if blocked
+        let cache = try req.keyedCache(for: .redis)
+        let key = try "blocks:\(requester.requireID())"
+        let cachedBlocks = cache.get(key, as: [UUID].self)
+        return map(parameter, cachedBlocks) {
+            (user, blocks) in
+            let blocked = blocks ?? []
+            if blocked.contains(try user.requireID()) {
+                throw Abort(.notFound, reason: "user is not available")
+            }
+            // return as UserInfo
+            return try user.convertToInfo()
+        }
     }
     
     // MARK: - tokenAuthGroup Handlers (logged in)
@@ -287,8 +336,7 @@ struct UsersController: RouteCollection {
     /// - Returns: `[UserSearch]` containing the ID and profile.userSearch string
     ///   values of all matching users.
     func matchAllNamesHandler(_ req: Request) throws -> Future<[UserSearch]> {
-        // FIXME: account for blocks
-        // let requester = try req.requireAuthenticated(User.self)
+        let requester = try req.requireAuthenticated(User.self)
         var search = try req.parameters.next(String.self)
         // postgres "_" and "%" are wildcards, so escape for literals
         search = search.replacingOccurrences(of: "_", with: "\\_")
@@ -298,14 +346,23 @@ struct UsersController: RouteCollection {
         guard search != "@", search != "(@" else {
             throw Abort(.forbidden, reason: "'\(search)' is not a permitted search string")
         }
-        return UserProfile.query(on: req)
-            .filter(\.userSearch, .ilike, "%\(search)%")
-            .sort(\.username, .ascending)
-            .all()
-            .map {
-                (profiles) in
-                // return as UserSearch
-                return try profiles.map { try $0.convertToSearch() }
+        // remove blocks from results
+        let cache = try req.keyedCache(for: .redis)
+        let key = try "blocks:\(requester.requireID())"
+        let cachedBlocks = cache.get(key, as: [UUID].self)
+        return cachedBlocks.flatMap {
+            (blocks) in
+            let blocked = blocks ?? []
+            return UserProfile.query(on: req)
+                .filter(\.userSearch, .ilike, "%\(search)%")
+                .filter(\.userID !~ blocked)
+                .sort(\.username, .ascending)
+                .all()
+                .map {
+                    (profiles) in
+                    // return as UserSearch
+                    return try profiles.map { try $0.convertToSearch() }
+            }
         }
     }
 
@@ -322,20 +379,28 @@ struct UsersController: RouteCollection {
     /// - Parameter req: he incoming request `Container`, provided automatically.
     /// - Returns: `[String]` containng all matching usernames as "@username" strings.
     func matchUsernameHandler(_ req: Request) throws -> Future<[String]> {
-        // FIXME: account for blocks
-        // let requester = try req.requireAuthenticated(User.self)
+        let requester = try req.requireAuthenticated(User.self)
         var search = try req.parameters.next(String.self)
         // postgres "_" is wildcard, so escape for literal
         search = search.replacingOccurrences(of: "_", with: "\\_")
-        return UserProfile.query(on: req)
-            .filter(\.username, .ilike, "%\(search)%")
-            .sort(\.username, .ascending)
-            .all()
-            .map {
-                (profiles) in
-                // return @username only
-                return profiles.map { "@\($0.username)" }
+        // remove blocks from results
+        let cache = try req.keyedCache(for: .redis)
+        let key = try "blocks:\(requester.requireID())"
+        let cachedBlocks = cache.get(key, as: [UUID].self)
+        return cachedBlocks.flatMap {
+            (blocks) in
+            let blocked = blocks ?? []
+            return UserProfile.query(on: req)
+                .filter(\.username, .ilike, "%\(search)%")
+                .filter(\.userID !~ blocked)
+                .sort(\.username, .ascending)
+                .all()
+                .map {
+                    (profiles) in
+                    // return @username only
+                    return profiles.map { "@\($0.username)" }
         }
+    }
     }
     
     /// `POST /api/v3/users/ID/mute`
@@ -396,14 +461,19 @@ struct UsersController: RouteCollection {
     /// - Parameters:
     ///   - req: The incoming request `Container`, provided automatically.
     ///   - data: `NoteCreateData` struct containing the text of the note.
-    /// - Throws: 409 error if there is an existing note on the profile. A 5xx response should
-    ///   be reported as a likely bug, please and thank you.
+    /// - Throws: 400 error if the profile is a banned user's. 409 error if there is an existing
+    ///   note on the profile. A 5xx response should be reported as a likely bug, please and
+    ///   thank you.
     /// - Returns: `CreatedNoteData` containing the newly created note's ID and text.
     func noteCreateHandler(_ req: Request, data: NoteCreateData) throws -> Future<Response> {
         // FIXME: account for banned user
         let requester = try req.requireAuthenticated(User.self)
         return try req.parameters.next(User.self).flatMap {
             (user) in
+            // profile shouldn't be visible, but just in case
+            guard user.accessLevel != .banned else {
+                throw Abort(.badRequest, reason: "notes are unavailable for profile")
+            }
             // get user profile
             return try user.profile.query(on: req)
                 .first()
