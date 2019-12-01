@@ -52,7 +52,7 @@ struct AdminController: RouteCollection {
     /// Retrieves the full `User` model of the specified user.
     ///
     /// - Requires: `UserAccessLevel` of `.admin`.
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 403 error if the user is not an admin.
     /// - Returns: The specified user's `User` model.
     func userHandler(_ req: Request) throws -> Future<User> {

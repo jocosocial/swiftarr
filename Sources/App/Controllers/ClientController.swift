@@ -64,7 +64,7 @@ struct ClientController: RouteCollection {
     /// the numeric form makes for a prettier URL.
     ///
     /// - Requires: `x-swiftarr-user` header in the request.
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 400 error if no valid date string provided. 401 error if the required header
     ///   is missing or invalid. 403 error if user is not a registered client.
     /// - Returns: `[UserHeader]` array of all updated users.
@@ -113,7 +113,7 @@ struct ClientController: RouteCollection {
     /// **all** of the `.displayName`, `.username` and `.realName` profile fields.
     ///
     /// - Requires: `x-swiftarr-user` header in the request.
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 400 error if no valid date string provided. 401 error if the required header
     ///   is missing or invalid. 403 error if user is not a registered client.
     /// - Returns: `[UserSearch]` containing the ID and `.userSearch` string values
@@ -163,7 +163,7 @@ struct ClientController: RouteCollection {
     /// the numeric form makes for a prettier URL.
     ///
     /// - Requires: `x-swiftarr-user` header in the request.
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 400 error if no valid date string provided. 401 error if the required header
     ///   is missing or invalid. 403 error if user is not a registered client.
     /// - Returns: `[UserInfo]` containing all updated users.

@@ -102,7 +102,7 @@ struct AuthController: RouteCollection {
     ///
     /// - Requires: `UserRecoveryData` payload in the HTTP body.
     /// - Parameters:
-    ///   - req: The incoming request `Container`, provided automatically.
+    ///   - req: The incoming `Request`, provided automatically.
     ///   - data: `UserRecoveryData` struct containing the username and recoveryKey
     ///   pair to attempt.
     /// - Throws: 400 error if the recovery fails. 403 error if the maximum number of successive
@@ -230,7 +230,7 @@ struct AuthController: RouteCollection {
     ///   **not** supported in API v3.
     ///
     /// - Requires: `User.accessLevel` other than `.banned`.
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 401 error if the Basic authentication fails. 403 error if the user is
     ///   banned. A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `TokenStringData` containing an authentication token (string) that should
@@ -278,7 +278,7 @@ struct AuthController: RouteCollection {
     /// There should be no side effect and it is likely harmless, but please do report
     /// a 409 error if you encounter one so that the specifics can be looked into.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 401 error if the authentication failed. 409 error if the user somehow
     ///   wasn't logged in.
     /// - Returns: 204 No Content if the token was successfully deleted.

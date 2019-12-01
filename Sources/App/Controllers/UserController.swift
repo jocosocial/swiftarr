@@ -165,7 +165,7 @@ struct UserController: RouteCollection {
     ///
     /// - Requires: `UserCreateData` payload in the HTTP body.
     /// - Parameters:
-    ///   - req: The incoming request `Container`, provided automatically.
+    ///   - req: The incoming `Request`, provided automatically.
     ///   - data: `UserCreateData` struct containing the user's desired username and password.
     /// - Throws: 400 error if the username is an invalid format. 409 errpr if the username is
     ///   not available.
@@ -246,7 +246,7 @@ struct UserController: RouteCollection {
     ///
     /// - Requires: `UserVerifyData` payload in the HTTP body.
     /// - Parameters:
-    ///   - req: The incoming request `Container`, provided automatically.
+    ///   - req: The incoming `Request`, provided automatically.
     ///   - data: `UserVerifyData` struct containing a registration code.
     /// - Throws: 400 error if the user is already verified or the registration code is not
     ///   a valid one. 409 error if the registration code has already been allocated to
@@ -303,11 +303,11 @@ struct UserController: RouteCollection {
     ///   `POST /api/v3/user/username` endpoint. The displayedName property is generated from
     ///   the username and displayName values.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
-    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 403 error if the user is banned. A 5xx response should be reported as a likely
+    ///   bug, please and thank you.
     /// - Returns: `UserProfile.Edit` containing the editable properties of the profile.
     func profileHandler(_ req: Request) throws -> Future<UserProfile.Edit> {
-        // FIXME: account for banned user
         let user = try req.requireAuthenticated(User.self)
         // retrieve profile
         return try user.profile.query(on: req)
@@ -334,7 +334,7 @@ struct UserController: RouteCollection {
     ///
     /// - Requires: `UserProfileData` payload in the HTTP body.
     /// - Parameters:
-    ///   - req: The incoming request `Container`, provided automatically.
+    ///   - req: The incoming `Request`, provided automatically.
     ///   - data: `UserProfileData` struct containing the editable properties of the profile.
     /// - Throws: 403 error if the user is banned.
     /// - Returns: `UserProfile.Edit` containing the updated editable properties of the profile.
@@ -398,7 +398,7 @@ struct UserController: RouteCollection {
     /// useful in a multi-account environment to determine which account's credentials are
     /// currently being used.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Returns: `CurrentUserData` containing the current user's ID, username and logged in
     ///   status.
     func whoamiHandler(_ req: Request) throws -> Future<CurrentUserData> {
@@ -437,7 +437,7 @@ struct UserController: RouteCollection {
     ///
     /// - Requires: `UserCreateData` payload in the HTTP body.
     /// - Parameters:
-    ///   - req: The incoming request `Container`, provided automatically.
+    ///   - req: The incoming `Request`, provided automatically.
     ///   - data: `UserCreateData` struct containing the user's desired username and password.
     /// - Throws: 400 error if the username is an invalid format or password is not at least
     ///   6 characters. 403 error if the user is banned or currently quarantined. 409 errpr if
@@ -504,7 +504,7 @@ struct UserController: RouteCollection {
     ///
     /// Adds a string to the user's "Alert Keywords" barrel.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `AlertKeywordData` containing the updated contents of the barrel.
     func alertwordsAddHandler(_ req: Request) throws -> Future<AlertKeywordData> {
@@ -539,7 +539,7 @@ struct UserController: RouteCollection {
     /// Returns a list of the user's current alert keywords in `AlertKeywordData` barrel
     /// format.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `AlertKeywordData` containing the current alert keywords as an array of
     ///   strings.
@@ -566,7 +566,7 @@ struct UserController: RouteCollection {
     ///
     /// Removes a string from the user's "Alert Keywords" barrel.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `AlertKeywordData` containing the updated contents of the barrel.
     func alertwordsRemoveHandler(_ req: Request) throws -> Future<AlertKeywordData> {
@@ -607,7 +607,7 @@ struct UserController: RouteCollection {
     ///   `.seamonkey` or `.userWords`. All other types have their own dedicated endpoints for
     ///   content modification.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 400 error if the barrel type is not supported by the endpoint. 403 error if
     ///   the barrel is not owned by the user. 404 or 500 error if the specified ID value is
     ///   invalid.
@@ -688,7 +688,7 @@ struct UserController: RouteCollection {
     ///
     /// Returns the specified `Barrel`'s data as `BarrelData`.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 400 error if the barrel type is not supported by the endpoint. 403 error if
     ///   the barrel is not owned by the user. 404 or 500 error if the specified ID value is
     ///   invalid.
@@ -758,7 +758,7 @@ struct UserController: RouteCollection {
     ///   `.seamonkey` or `.userWords`. All other types have their own dedicated endpoints for
     ///   content modification.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 400 error if the barrel type is not supported by the endpoint. 403 error if
     ///   the barrel is not owned by the user. 404 or 500 error if the specified ID value is
     ///   invalid.
@@ -847,7 +847,7 @@ struct UserController: RouteCollection {
     /// - Note: This does not return *all* barrels for which the user is the `ownerID`, just
     ///   the default barrels and any .seamonkey or .userWords types they have created.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Returns: `[BarrelListData]` containing the barrel IDs and names.
     func barrelsHandler(_ req: Request) throws -> Future<[BarrelListData]> {
         let user = try req.requireAuthenticated(User.self)
@@ -874,7 +874,7 @@ struct UserController: RouteCollection {
     /// Returns a list of the user's currently blocked users in `BlockedUserData` format.
     /// If the user is a sub-account, the parent user's blocks are returned.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `BlockedUserData` containing the currently blocked users as an array of
     ///  `SeaMonkey`.
@@ -947,7 +947,7 @@ struct UserController: RouteCollection {
     ///
     /// - Requires: `BarrelCreateData` payload in the HTTP body.
     /// - Parameters:
-    ///   - req: The incoming request `Container`, provided automatically.
+    ///   - req: The incoming `Request`, provided automatically.
     ///   - data: `BarrelCreateData` struct containing the barrel name and any seed UUIDs or
     ///     seed string array.
     /// - Returns: `BarrelData` containing the newly created barrel's data contents.
@@ -1011,7 +1011,7 @@ struct UserController: RouteCollection {
     ///
     /// Deletes the specified `Barrel`.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 400 error if the barrel type is not supported by the endpoint. 403 error if
     ///   the barrel is not owned by the user. 404 or 500 error if the specified ID value is
     ///   invalid.
@@ -1037,7 +1037,7 @@ struct UserController: RouteCollection {
     ///
     /// Returns a list of the user's currently muted users in `MutedUserData` format.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `MutedUserData` containing the currently muted users as an array of
     ///  `SeaMonkey`.
@@ -1087,7 +1087,7 @@ struct UserController: RouteCollection {
     ///
     /// Adds a string to the user's "Muted Keywords" barrel.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `MuteKeywordData` containing the updated contents of the barrel.
     func mutewordsAddHandler(_ req: Request) throws -> Future<MuteKeywordData> {
@@ -1122,7 +1122,7 @@ struct UserController: RouteCollection {
     /// Returns a list of the user's currently muted keywords in named-list `MutedKeywordData`
     /// format.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `MuteKeywordData` containing the current muting keywords as an array of
     ///   strings.
@@ -1149,7 +1149,7 @@ struct UserController: RouteCollection {
     ///
     /// Removes a string from the user's "Muted Keywords" barrel.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `MuteKeywordData` containing the updated contents of the barrel.
     func mutewordsRemoveHandler(_ req: Request) throws -> Future<MuteKeywordData> {
@@ -1188,7 +1188,7 @@ struct UserController: RouteCollection {
     ///
     /// - Requires: `NoteUpdateData` payload in HTTP body.
     /// - Parameters:
-    ///   - req: The incoming request `Container`, provided automatically.
+    ///   - req: The incoming `Request`, provided automatically.
     ///   - data: `NoteUpdateData` struct containing the note's ID and updated text.
     /// - Throws: 403 if the note is not owned by the user. A 5xx response should be reported
     ///   as a likely bug, please and thank you.
@@ -1240,7 +1240,7 @@ struct UserController: RouteCollection {
     /// in the familiar .displayedName format. The .noteID is included as well to support
     /// editing of notes outside of a profile-viewing context.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `[NoteData]` containing all of the user's notes.
     func notesHandler(_ req: Request) throws -> Future<[NoteData]> {
@@ -1280,7 +1280,7 @@ struct UserController: RouteCollection {
     ///
     /// Renames the specified `Barrel`.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 400 error if the barrel type is not supported by the endpoint. 403 error if
     ///   the barrel is not owned by the user. 404 or 500 error if the specified ID value is
     ///   invalid.
@@ -1346,7 +1346,7 @@ struct UserController: RouteCollection {
     /// Updates a user's password to the supplied value, encrypted.
     ///
     /// - Requires: `UserPasswordData` payload in the HTTP body.
-    ///   - req: The incoming request `Container`, provided automatically.
+    ///   - req: The incoming `Request`, provided automatically.
     ///   - data: `UserPasswordData` struct containing the user's desired password.
     /// - Throws: 400 error if the supplied password is not at least 6 characters. 403 error
     ///   if the user is a `.client`.
@@ -1373,7 +1373,7 @@ struct UserController: RouteCollection {
     ///   access to user-defined filters on public content and recipient groups when
     ///   initiating a `SeaMailThread`.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Returns: `[BarrelListData]` containing the barrel IDs and names.
     func seamonkeyBarrelsHandler(_ req: Request) throws -> Future<[BarrelListData]> {
         let user = try req.requireAuthenticated(User.self)
@@ -1399,7 +1399,7 @@ struct UserController: RouteCollection {
     ///
     /// - Requires: `UserUsernameData` payload in the HTTP body.
     /// - Parameters:
-    ///   - req: The incoming request `Container`, provided automatically.
+    ///   - req: The incoming `Request`, provided automatically.
     ///   - data: `UserUsernameData` containing the user's desired new username.
     /// - Throws: 400 error if the username is an invalid format. 403 error if the user is a
     ///   `.client`. 409 errpr if the username is not available.
@@ -1504,7 +1504,7 @@ struct UserController: RouteCollection {
 
     /// Generates a recovery key of 3 words randomly chosen from `words` array.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 500 error if the randomizer fails.
     /// - Returns: A recoveryKey string.
     static func generateRecoveryKey(on req: Request) throws -> Future<String> {

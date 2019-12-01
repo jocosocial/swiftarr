@@ -46,7 +46,7 @@ struct TestController: RouteCollection {
     ///
     /// Returns the first 10 users in the database.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Returns: An array of at most the first 10 `User` models in the database.
     func getUsersHandler(_ req: Request) throws -> Future<[User]> {
         return User.query(on: req).range(...10).all()
@@ -56,7 +56,7 @@ struct TestController: RouteCollection {
     ///
     /// Returns the first 10 profiles in the database.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Returns: An array of at most the first 10 `UserProfile` models in the databases.
     func getProfilesHandler(_ req: Request) throws -> Future<[UserProfile]> {
         return UserProfile.query(on: req).range(...10).all()
@@ -67,7 +67,7 @@ struct TestController: RouteCollection {
     /// Returns an array of all stored `RegistrationCode` models. If called in a production
     /// environment, the actual codes are sanitized before return.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Returns: An array of the `RegistrationCoe` models in the databases.
     func getRegistrationCodesHandler(_ req: Request) throws -> Future<[RegistrationCode]> {
         return RegistrationCode.query(on: req).all().flatMap {

@@ -75,7 +75,7 @@ struct UsersController: RouteCollection {
     ///   username will result in a successful return, even though the User itself does
     ///   exist.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 404 error if no match is found.
     /// - Returns: `UserInfo` containing the user's ID, username and timestamp of last
     ///   profile update.
@@ -133,7 +133,7 @@ struct UsersController: RouteCollection {
     ///
     /// For bulk data retrieval, see the `ClientController` endpoints.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `UserHeader` containing the user's ID, `.displayedName` and profile
     ///   image filename.
@@ -172,7 +172,7 @@ struct UsersController: RouteCollection {
     /// profile user's `.limitAccess` setting is `true`, and the `.message` field will contain
     /// text to inform the viewing user of that fact.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 404 error if the profile is not available. A 5xx response should be reported
     ///   as a likely bug, please and thank you.
     /// - Returns: `UserProfile.Public` containing the displayable properties of the specified
@@ -244,7 +244,7 @@ struct UsersController: RouteCollection {
     ///
     /// For bulk data retrieval, see the `ClientController` endpoints.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 404 error if no match is found.
     /// - Returns: `UserInfo` containing the user's ID, username and timestamp of last
     ///   profile update.
@@ -287,7 +287,7 @@ struct UsersController: RouteCollection {
     /// user will still see the blocking user throughout the public areas of the system, and
     /// their role accounts will still be visible to the blocking user.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: 201 Created on success.
     func blockHandler(_ req: Request) throws -> Future<HTTPStatus> {
@@ -417,7 +417,7 @@ struct UsersController: RouteCollection {
     /// *not* muted, however, when posting from role accounts. That is, a `.moderator` can post
     /// *as* `@moderator` and it is visible to all users, period.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: 201 Created on success.
     func muteHandler(_ req: Request) throws -> Future<HTTPStatus> {
@@ -459,7 +459,7 @@ struct UsersController: RouteCollection {
     ///
     /// - Requires: `NoteCreateData` payload in the HTTP body.
     /// - Parameters:
-    ///   - req: The incoming request `Container`, provided automatically.
+    ///   - req: The incoming `Request`, provided automatically.
     ///   - data: `NoteCreateData` struct containing the text of the note.
     /// - Throws: 400 error if the profile is a banned user's. 409 error if there is an existing
     ///   note on the profile. A 5xx response should be reported as a likely bug, please and
@@ -516,7 +516,7 @@ struct UsersController: RouteCollection {
     /// Deletes an existing `UseerNote` associated with the specified user's profile and
     /// the current user.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 400 error if there is no existing note on the profile. A 5xx response should
     ///   be reported as a likely bug, please and thank you.
     /// - Returns: 204 No Content on success.
@@ -556,7 +556,7 @@ struct UsersController: RouteCollection {
     ///   contain no text at any given time. Use this GET endpoint prior to attempting a POST
     ///   to it.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 400 error if there is no existing note on the profile. A 5xx response should
     ///   be reported as a likely bug, please and thank you.
     /// - Returns: `UserNote.Edit` containing the note's ID and text.
@@ -589,7 +589,7 @@ struct UsersController: RouteCollection {
     /// Removes a block of the specified `User` and all sub-accounts by the current user and
     /// all associated accounts.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 400 error if the specified user was not currently blocked. A 5xx response
     ///   should be reported as a likely bug, please and thank you.
     /// - Returns: 204 No Content on success.
@@ -623,7 +623,7 @@ struct UsersController: RouteCollection {
     ///
     /// Removes a mute of the specified `User` by the current user.
     ///
-    /// - Parameter req: The incoming request `Container`, provided automatically.
+    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 400 error if the specified user was not currently muted. A 5xx response should
     ///   be reported as a likely bug, please and thank you.
     /// - Returns: 204 No Content on success.
