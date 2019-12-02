@@ -7,7 +7,7 @@ import FluentPostgreSQL
 final class EventParser {
     
     /// A `DateFormatter` for converting sched.com's non-standard date strings to a `Date`.
-    static let dateFormatter: DateFormatter = {
+    let dateFormatter: DateFormatter = {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyyMMdd'T'HHmmss'Z'"
         return dateFormatter
@@ -19,7 +19,7 @@ final class EventParser {
     ///   - icsArray: Array of strings from a sched.com `.ics` export.
     ///   - connection: The connection to a database.
     /// - Returns: `[Event]` containing the events.
-    static func parse(_ icsArray: [String], on connection: PostgreSQLConnection) -> Future<[Event]> {
+    func parse(_ icsArray: [String], on connection: PostgreSQLConnection) -> Future<[Event]> {
         var events: [Event] = []
         var eventComponents: [String] = []
         var inEvent: Bool = false
@@ -60,7 +60,7 @@ final class EventParser {
     ///
     /// - Parameter components: `[String]` containing the lines to be processed.
     /// - Returns: `Event` if the date strings could be parsed, else `nil`.
-    static func makeEvent(from components: [String]) -> Event? {
+    func makeEvent(from components: [String]) -> Event? {
         var startTime: Date? = nil
         var endTime: Date? = nil
         var title: String = ""
