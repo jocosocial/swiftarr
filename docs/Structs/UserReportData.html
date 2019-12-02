@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>MutedUserData Structure Reference</title>
+    <title>UserReportData Structure Reference</title>
     <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
     <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
     <meta charset="utf-8">
@@ -14,9 +14,9 @@
   </head>
   <body>
 
-    <a name="//apple_ref/swift/Struct/MutedUserData" class="dashAnchor"></a>
+    <a name="//apple_ref/swift/Struct/UserReportData" class="dashAnchor"></a>
 
-    <a title="MutedUserData Structure Reference"></a>
+    <a title="UserReportData Structure Reference"></a>
 
     <header class="header">
       <p class="header-col header-col--primary">
@@ -44,7 +44,7 @@
     <p class="breadcrumbs">
       <a class="breadcrumb" href="../index.html">App Reference</a>
       <img class="carat" src="../img/carat.png" />
-      MutedUserData Structure Reference
+      UserReportData Structure Reference
     </p>
 
     <div class="content-wrapper">
@@ -275,18 +275,22 @@
 
         <section class="section">
           <div class="section-content">
-            <h1>MutedUserData</h1>
+            <h1>UserReportData</h1>
               <div class="declaration">
                 <div class="language">
-                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">MutedUserData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">UserReportData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                 </div>
               </div>
-            <p>Used to obtain the user&rsquo;s list of muted users.</p>
+            <p>Used to submit a message with a <code><a href="../Structs/Report.html">Report</a></code>.</p>
 
-<p>Returned by: <code>GET /api/v3/user/mutes</code></p>
+<p>Required by:</p>
 
-<p>See <code><a href="../Structs/UserController.html#/s:3App14UserControllerV12mutesHandlery3NIO15EventLoopFutureCyAA05MutedB4DataVG5Vapor7RequestCKF">UserController.mutesHandler(_:)</a></code>.</p>
+<ul>
+<li><code>POST /api/v3/users/ID/report</code></li>
+</ul>
+
+<p>See <code><a href="../Structs/UsersController.html#/s:3App15UsersControllerV13reportHandler_4data3NIO15EventLoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestC_AA14UserReportDataVtKF">UsersController.reportHandler(_:data:)</a></code>.</p>
 
           </div>
         </section>
@@ -298,9 +302,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App13MutedUserDataV4nameSSvp"></a>
-                    <a name="//apple_ref/swift/Property/name" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App13MutedUserDataV4nameSSvp">name</a>
+                    <a name="/s:3App14UserReportDataV7messageSSvp"></a>
+                    <a name="//apple_ref/swift/Property/message" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App14UserReportDataV7messageSSvp">message</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -308,49 +312,19 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>The name of the barrel.</p>
+                        <p>An optional message from the submitting user.</p>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">let</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span></code></pre>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">message</span><span class="p">:</span> <span class="kt">String</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L157">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App13MutedUserDataV10seamonkeysSayAA9SeaMonkeyVGvp"></a>
-                    <a name="//apple_ref/swift/Property/seamonkeys" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App13MutedUserDataV10seamonkeysSayAA9SeaMonkeyVGvp">seamonkeys</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>The muted <code><a href="../Classes/User.html">User</a></code>s.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">seamonkeys</span><span class="p">:</span> <span class="p">[</span><span class="kt"><a href="../Structs/SeaMonkey.html">SeaMonkey</a></span><span class="p">]</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L159">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L335">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

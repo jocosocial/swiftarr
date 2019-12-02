@@ -60,6 +60,9 @@
                 <a class="nav-group-task-link" href="../Classes/RegistrationCode.html">RegistrationCode</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/Report.html">Report</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/Token.html">Token</a>
               </li>
               <li class="nav-group-task">
@@ -113,6 +116,9 @@
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Enums/BarrelType.html">BarrelType</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Enums/ReportType.html">ReportType</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Enums/UserAccessLevel.html">UserAccessLevel</a>
@@ -173,6 +179,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserRecoveryData.html">UserRecoveryData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserReportData.html">UserReportData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserUsernameData.html">UserUsernameData</a>
@@ -319,7 +328,7 @@ entirely.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AdminController.swift#L18-L36">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AdminController.swift#L18-L37">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -351,11 +360,6 @@ entirely.</p>
                         <p><code>GET /api/v3/admin/user/ID</code></p>
 
 <p>Retrieves the full <code><a href="../Classes/User.html">User</a></code> model of the specified user.</p>
-<div class="aside aside-requires">
-    <p class="aside-title">Requires</p>
-    <code><a href="../Enums/UserAccessLevel.html">UserAccessLevel</a></code> of <code>.admin</code>.
-
-</div>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
     403 error if the user is not an admin.
@@ -392,10 +396,70 @@ entirely.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>The specified user&rsquo;s <code><a href="../Classes/User.html">User</a></code> model.</p>
+                        <p><code><a href="../Classes/User.html">User</a></code>.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AdminController.swift#L58-L64">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App15AdminControllerV14reportsHandlery3NIO15EventLoopFutureCySayAA6ReportVGG5Vapor7RequestCKF"></a>
+                    <a name="//apple_ref/swift/Method/reportsHandler(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15AdminControllerV14reportsHandlery3NIO15EventLoopFutureCySayAA6ReportVGG5Vapor7RequestCKF">reportsHandler(_:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>GET /api/v3/admin/reports</code></p>
+
+<p>Retrieves the full <code><a href="../Structs/Report.html">Report</a></code> model of all reports.</p>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    403 error if the user is not an admin.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">reportsHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="p">[</span><span class="kt"><a href="../Structs/Report.html">Report</a></span><span class="p">]</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming <code>Request</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p><code>[Report]</code>.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/AdminController.swift#L73-L79">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

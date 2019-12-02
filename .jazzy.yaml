@@ -21,6 +21,7 @@ custom_categories:
     children:
     - Barrel
     - RegistrationCode
+    - Report
     - Token
     - User
     - UserNote
@@ -38,6 +39,7 @@ custom_categories:
   - name: Enumerations
     children:
     - BarrelType
+    - ReportType
     - UserAccessLevel
 
   - name: Extensions
@@ -62,6 +64,7 @@ custom_categories:
     - UserPasswordData
     - UserProfileData
     - UserRecoveryData
+    - UserReportData
     - UserUsernameData
     - UserVerifyData
     
