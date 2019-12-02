@@ -75,7 +75,7 @@ extension User {
     }
 }
 
-// MARK: - Methods
+// MARK: - Functions
 
 extension User {
     /// Returns a list of IDs of all accounts associated with the `User`. If user is a primary

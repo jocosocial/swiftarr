@@ -81,6 +81,9 @@ struct TestUsers: Migration {
     
     /// Required by`Migration` protocol, but no point removing the test users, so
     /// just return a pre-completed `Future`.
+    /// 
+    /// - Parameter connection: The database connection.
+    /// - Returns: Void.
     static func revert(on connection: PostgreSQLConnection) -> Future<Void> {
         return .done(on: connection)
     }

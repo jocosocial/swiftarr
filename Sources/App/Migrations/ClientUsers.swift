@@ -24,7 +24,7 @@ struct ClientUsers: Migration {
     /// - Parameter connection: A connection to the database, provided automatically.
     /// - Returns: Void.
     static func prepare(on connection: PostgreSQLConnection) -> Future<Void> {
-         // get file containing client pairs
+        // get file containing client triplets
         let clientsFile: String
         do {
             if (try Environment.detect().isRelease) {
@@ -88,8 +88,11 @@ struct ClientUsers: Migration {
         }
     }
     
-    /// Required by`Migration` protocol, but no point removing the client users, so
+    /// Required by`Migration` protocol, but no point removing the seed client users, so
     /// just return a pre-completed `Future`.
+    ///
+    /// - Parameter connection: The database connection.
+    /// - Returns: Void.
     static func revert(on connection: PostgreSQLConnection) -> Future<Void> {
         return .done(on: connection)
     }

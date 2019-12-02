@@ -57,7 +57,10 @@ struct RegistrationCodes: Migration {
     
     /// Required by`Migration` protocol, but these are static so no point removing them,
     /// just return a pre-completed `Future`.
+    /// 
+    /// - Parameter connection: The database connection.
+    /// - Returns: Void.
     static func revert(on connection: PostgreSQLConnection) -> Future<Void> {
-        return Future.done(on: connection)
+        return .done(on: connection)
     }
 }
