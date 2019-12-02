@@ -324,6 +324,17 @@ struct UserRecoveryData: Content {
     var recoveryKey: String
 }
 
+/// Used to submit a message with a `Report`.
+///
+/// Required by:
+/// * `POST /api/v3/users/ID/report`
+///
+/// See `UsersController.reportHandler(_:data:)`.
+struct UserReportData: Content {
+    /// An optional message from the submitting user.
+    var message: String
+}
+
 /// Used to broad search for a user based on any of their name fields.
 ///
 /// Returned by:

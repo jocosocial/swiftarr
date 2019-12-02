@@ -328,4 +328,54 @@ final class UsersTests: XCTestCase {
         XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
         XCTAssertTrue(response.http.body.description.contains("not a permitted"), "not a permitted")
     }
+    
+    func testUserReport() throws {
+        // create logged in user
+        let user = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        var token = try app.login(username: testUsername, password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // test submit
+        let userInfo = try app.getResult(
+            from: usersURI + "find/verified",
+            method: .GET,
+            headers: headers,
+            decodeTo: UserInfo.self
+        )
+        var userReportData = UserReportData(message: "")
+        var response = try app.getResponse(
+            from: usersURI + "\(userInfo.userID)/report",
+            method: .POST,
+            headers: headers,
+            body: userReportData
+        )
+        XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+        
+        // test no limit
+        userReportData.message = "Ugh."
+        response = try app.getResponse(
+            from: usersURI + "\(userInfo.userID)/report",
+            method: .POST,
+            headers: headers,
+            body: userReportData
+        )
+        XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+        
+        // test data
+        token = try app.login(username: "admin", password: testPassword, on: conn)
+        var adminHeaders = HTTPHeaders()
+        adminHeaders.bearerAuthorization = BearerAuthorization(token: token.token)
+        let reports = try app.getResult(
+            from: adminURI + "reports",
+            method: .GET,
+            headers: adminHeaders,
+            decodeTo: [Report].self
+        )
+        XCTAssertTrue(reports.count == 2, "should be 2 reports")
+        XCTAssertTrue(reports[0].submitterID == user.userID, "should be \(user.userID)")
+        XCTAssertTrue(reports[0].reportedID == userInfo.userID.uuidString, "should be \(userInfo.userID.uuidString)")
+        XCTAssertFalse(reports[0].isClosed, "should be open")
+        XCTAssertTrue(reports[1].submitterMessage == userReportData.message, "should be \(userReportData.message)")
+    }
 }

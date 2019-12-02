@@ -49,6 +49,7 @@ struct UsersController: RouteCollection {
         tokenAuthGroup.post(NoteCreateData.self, at: User.parameter, "note", use: noteCreateHandler)
         tokenAuthGroup.post(User.parameter, "note", "delete", use: noteDeleteHandler)
         tokenAuthGroup.get(User.parameter, "note", use: noteHandler)
+        tokenAuthGroup.post(UserReportData.self, at: User.parameter, "report", use: reportHandler)
         tokenAuthGroup.post(User.parameter, "unblock", use: unblockHandler)
         tokenAuthGroup.post(User.parameter, "unmute", use: unmuteHandler)
     }
@@ -581,6 +582,35 @@ struct UsersController: RouteCollection {
                             return try note.convertToEdit()
                     }
             }
+        }
+    }
+    
+    /// `POST /api/v3/users/ID/report`
+    ///
+    /// Creates a `Report` regarding the specified `User`.
+    ///
+    /// - Note: The accompanying report message is optional on the part of the submitting user,
+    ///   but the `UserReportData` is mandatory in order to allow one. If there is no message,
+    ///   send an empty string in the `.message` field.
+    ///
+    /// - Requires: `UserReportData` payload in the HTTP body.
+    /// - Parameters:
+    ///   - req: The incoming `Request`, provided automatically.
+    ///   - data: `UserReportData` containing an optional accompanying message.
+    /// - Returns: 201 Created on success.
+    func reportHandler(_ req: Request, data: UserReportData) throws -> Future<HTTPStatus> {
+        let submitter = try req.requireAuthenticated(User.self)
+        let parent = try submitter.parentAccount(on: req)
+        let user = try req.parameters.next(User.self)
+        return flatMap(parent, user) {
+            (parent, user) in
+            let report = Report(
+                reportType: .user,
+                reportedID: try user.requireID().uuidString,
+                submitterID: try parent.requireID(),
+                submitterMessage: data.message
+            )
+            return report.save(on: req).transform(to: .created)
         }
     }
     

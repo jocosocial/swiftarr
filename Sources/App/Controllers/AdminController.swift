@@ -32,6 +32,7 @@ struct AdminController: RouteCollection {
         // endpoints available only when not logged in
         
         // endpoints available only when logged in
+        tokenAuthGroup.get("reports", use: reportsHandler)
         tokenAuthGroup.get("users", User.parameter, use: userHandler)
     }
     
@@ -51,16 +52,30 @@ struct AdminController: RouteCollection {
     ///
     /// Retrieves the full `User` model of the specified user.
     ///
-    /// - Requires: `UserAccessLevel` of `.admin`.
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 403 error if the user is not an admin.
-    /// - Returns: The specified user's `User` model.
+    /// - Returns: `User`.
     func userHandler(_ req: Request) throws -> Future<User> {
         let user = try req.requireAuthenticated(User.self)
         guard user.accessLevel == .admin else {
             throw Abort(.forbidden, reason: "admins only")
         }
         return try req.parameters.next(User.self)
+    }
+    
+    /// `GET /api/v3/admin/reports`
+    ///
+    /// Retrieves the full `Report` model of all reports.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 403 error if the user is not an admin.
+    /// - Returns: `[Report]`.
+    func reportsHandler(_ req: Request) throws -> Future<[Report]> {
+        let user = try req.requireAuthenticated(User.self)
+        guard user.accessLevel == .admin else {
+            throw Abort(.forbidden, reason: "admins only")
+        }
+        return Report.query(on: req).all()
     }
     
     // MARK: - Helper Functions
