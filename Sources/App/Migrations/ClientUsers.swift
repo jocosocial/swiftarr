@@ -16,8 +16,8 @@ import Crypto
 struct ClientUsers: Migration {
     typealias Database = PostgreSQLDatabase
     
-    /// Required by `Migration` protocol. Reads either a test or production text file at the
-    /// root project level, converts the lines into elements of an arrar, then iterates over
+    /// Required by `Migration` protocol. Reads either a test or production text file in the
+    /// `seeds/` subdirectory, converts the lines into elements of an arrar, then iterates over
     /// them to create new `User` models with `UserAccessLevel` of `.client`.
     ///
     /// - Requires: `registered-clients.txt` file in root directory.

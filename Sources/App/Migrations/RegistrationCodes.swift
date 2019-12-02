@@ -7,8 +7,8 @@ import FluentPostgreSQL
 struct RegistrationCodes: Migration {
         typealias Database = PostgreSQLDatabase
     
-    /// Required by `Migration` protocol. Reads either a test or production text file at the
-    /// root project level, converts the lines into elements of an array, then iterates over
+    /// Required by `Migration` protocol. Reads either a test or production text file in the
+    /// `seeds/` subdirectory, converts the lines into elements of an array, then iterates over
     /// them to create new `RegistrationCode` models.
     ///
     /// - Requires: `registration-codes.txt` file in root directory.

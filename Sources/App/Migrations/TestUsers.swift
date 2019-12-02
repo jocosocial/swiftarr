@@ -8,7 +8,7 @@ import Crypto
 struct TestUsers: Migration {
     typealias Database = PostgreSQLDatabase
     
-    /// Required by `Migration` protocol.
+    /// Required by `Migration` protocol. Creates a set of test users at each `.accessLevel`.
     ///
     /// - Parameter connection: A connection to the database, provided automatically.
     /// - Returns: Void.
