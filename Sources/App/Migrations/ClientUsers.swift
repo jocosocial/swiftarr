@@ -3,8 +3,8 @@ import FluentPostgreSQL
 import Crypto
 
 /// A `Migration` that creates a set of registered client users during startup, from a
-/// `registered-clients.txt` file located at the root level of the project. The file must
-/// be of the format:
+/// `registered-clients.txt` file located in the `seeds` subdirectory of the project. The file
+/// must be of the format:
 ///
 ///     clientUsername1:password1:recoveryKey1
 ///     clientUsername2:password2:recoveryKey2
@@ -34,7 +34,7 @@ struct ClientUsers: Migration {
                 clientsFile = "test-registered-clients.txt"
             }
             let directoryConfig = DirectoryConfig.detect()
-            let clientsPath = directoryConfig.workDir.appending(clientsFile)
+            let clientsPath = directoryConfig.workDir.appending("seeds/").appending(clientsFile)
             // read file as string
             guard let data = FileManager.default.contents(atPath: clientsPath),
                 let dataString = String(bytes: data, encoding: .utf8) else {

@@ -2,7 +2,7 @@ import Vapor
 import FluentPostgreSQL
 
 /// A `Migration` that populates the `RegistrationCode` database from a `registration-codes.txt`
-/// file located at the root level of the project.
+/// file located in the `seeds` subdirectory of the project.
 
 struct RegistrationCodes: Migration {
         typealias Database = PostgreSQLDatabase
@@ -26,7 +26,7 @@ struct RegistrationCodes: Migration {
                 codesFile = "test-registration-codes.txt"
             }
             let directoryConfig = DirectoryConfig.detect()
-            let codesPath = directoryConfig.workDir.appending(codesFile)
+            let codesPath = directoryConfig.workDir.appending("seeds/").appending(codesFile)
             // read file as string
             guard let data = FileManager.default.contents(atPath: codesPath),
                 let dataString = String(bytes: data, encoding: .utf8) else {
