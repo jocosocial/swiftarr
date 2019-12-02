@@ -7,6 +7,10 @@ import FluentPostgreSQL
 /// review on any of: an individual `Twarrt` or `ForumPost`, an entire `Forum`, or a `User`
 /// (such as for general behavioral pattern, or their profile contents).
 ///
+/// The `.submitterID` is always the user's primary user ID. An individual post can only be
+/// reported once per primary user. There is no per user restriction on the number of reports
+/// of a particular `Forum` or `User`.
+///
 /// The `.reportedID` field is a string value, because the entity being reported may have
 /// either a UUID or an integer based ID, which is determined via the `.reportType`.
 
@@ -26,7 +30,7 @@ struct Report: Codable {
     var submitterID: UUID
     
     /// An optional message from the submitter.
-    var submitterMessage: String?
+    var submitterMessage: String
     
     /// The status of the report.
     var isClosed: Bool
@@ -50,7 +54,7 @@ struct Report: Codable {
         reportType: ReportType,
         reportedID: String,
         submitterID: UUID,
-        submitterMessage: String? = nil
+        submitterMessage: String = ""
     ) {
         self.reportType = reportType
         self.reportedID = reportedID
