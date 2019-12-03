@@ -10,6 +10,9 @@ final class EventParser {
     let dateFormatter: DateFormatter = {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyyMMdd'T'HHmmss'Z'"
+        // FIXME: still need to figure out how to serve up dates
+        // -18000/-14400 seconds is EST/EDT
+        dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
         return dateFormatter
     }()
     
@@ -70,8 +73,18 @@ final class EventParser {
         var uid: String = ""
         
         for component in components {
+            // stray newlines make empty elements
+            guard !component.isEmpty else {
+                continue
+            }
             let pair = component.split(separator: ":", maxSplits: 1)
-            let (key, value) = (String(pair[0]), String(pair[1]))
+            var (key, value): (String, String)
+            // account for empty fields
+            if pair.count == 2 {
+                (key, value) = (String(pair[0]), String(pair[1]))
+            } else {
+                (key, value) = (String(pair[0]), "")
+            }
             switch key {
                 case "DTSTART":
                     startTime = dateFormatter.date(from: value)
