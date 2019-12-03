@@ -131,6 +131,44 @@ struct CurrentUserData: Content {
     var isLoggedIn: Bool
 }
 
+/// Used to obtain an event's details.
+///
+/// Returned by:
+/// * `GET /api/v3/events`
+/// * `GET /api/v3/events/official`
+/// * `GET /api/v3/events/shadow`
+/// * `GET /api/v3/events/now`
+/// * `GET /api/v3/events/official/now`
+/// * `GET /api/v3/events/shadow/now`
+/// * `GET /api/v3/events/today`
+/// * `GET /api/v3/events/official/today`
+/// * `GET /api/v3/events/shadow/today`
+/// * `GET /api/v3/events/match/STRING`
+///
+/// See `EventController.eventsHandler(_:)`, `EventController.officialHandler(_:)`,
+/// `EventController.shadowHandler(_:)`, `EventController.eventsNowHandler(_:)`,
+/// `EventController.officialNowHandler(_:)`,`EventController.shadowNowHandler(_:)`,
+/// `EventController.eventsTodayHandler(_:)`, `EventController.officialTodayHandler(_:)`,
+/// `EventController.shadowTodayHandler(_:)`, `EventController.eventsMatchHandler(_:)`.
+struct EventData: Content {
+    /// The event's ID.
+    var eventID: UUID
+    /// The event's title.
+    var title: String
+    /// A description of the event.
+    var description: String
+    /// Starting time of the event
+    var startTime: Date
+    /// Ending time of the event.
+    var endTime: Date
+    /// The location of the event.
+    var location: String
+    /// The event category.
+    var eventType: String
+    /// The event's associated `Forum`.
+    var forum: Int?
+}
+
 /// Used to obtain the user's current list of keywords for muting public content.
 ///
 /// Returned by:

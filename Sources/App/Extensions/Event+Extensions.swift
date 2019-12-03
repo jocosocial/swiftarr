@@ -38,3 +38,33 @@ extension Event {
     static var deletedAtKey: TimestampKey? { return \.deletedAt }
 }
 
+// MARK: - Functions
+
+extension Event {
+    /// Converts an `Event` model to a version omitting data that is of no interest to a
+    ///
+    func convertToData() throws -> EventData {
+        return try EventData(
+            eventID: self.requireID(),
+            title: self.title,
+            description: self.description,
+            startTime: self.startTime,
+            endTime: self.endTime,
+            location: self.location,
+            eventType: self.eventType.label,
+            forum: self.forumID
+        )
+    }
+}
+
+extension Future where T: Event {
+    /// Converts a `Future<Event>` to a `Future<EventData>`. This extension provides the
+    /// convenience of simply using `event.convertToData()` and allowing the compiler to
+    /// choose the appropriate version for the context.
+    func convertToData() throws -> Future<EventData> {
+        return self.map {
+            (event) in
+            return try event.convertToData()
+        }
+    }
+}
