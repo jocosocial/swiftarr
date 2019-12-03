@@ -26,6 +26,7 @@ enum EventType: String, PostgreSQLRawEnum {
     /// A workshop event.
     case workshop
     
+    /// Consumer-friendly case names.
     var label: String {
         switch self {
             case .gaming: return "Gaming"
@@ -41,5 +42,4 @@ enum EventType: String, PostgreSQLRawEnum {
             case .workshop: return "Workshop"
         }
     }
-
 }

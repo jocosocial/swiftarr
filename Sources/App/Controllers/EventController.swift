@@ -2,6 +2,9 @@ import Vapor
 import Crypto
 import FluentSQL
 
+/// The collection of `/api/v3/events/*` route endpoints and handler functions related
+/// to the event schedule.
+
 struct EventController: RouteCollection {
     
     // MARK: RouteCollection Conformance
