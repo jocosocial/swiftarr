@@ -25,4 +25,21 @@ enum EventType: String, PostgreSQLRawEnum {
     case signing
     /// A workshop event.
     case workshop
+    
+    var label: String {
+        switch self {
+            case .gaming: return "Gaming"
+            case .general: return "Official"
+            case .livePodcast: return "Live Podcast"
+            case .mainConcert: return "Main Concert"
+            case .officeHours: return "Office Hours"
+            case .party: return "Party"
+            case .qaPanel: return "Q&A/Panel"
+            case .readingPerformance: return "Reading/Performance"
+            case .shadow: return "Shadow Event"
+            case .signing: return "Signing"
+            case .workshop: return "Workshop"
+        }
+    }
+
 }
