@@ -85,17 +85,20 @@ final class EventParser {
             } else {
                 (key, value) = (String(pair[0]), "")
             }
+            // strip escaped nonsense
+            value = value.replacingOccurrences(of: "&amp;", with: "&")
+            value = value.replacingOccurrences(of: "\\", with: "")
             switch key {
                 case "DTSTART":
                     startTime = dateFormatter.date(from: value)
                 case "DTEND":
                     endTime = dateFormatter.date(from: value)
                 case "SUMMARY":
-                    title = value.replacingOccurrences(of: "\\,", with: ",")
+                    title = value
                 case "DESCRIPTION":
-                    description = value.replacingOccurrences(of: "\\,", with: ",")
+                    description = value
                 case "LOCATION":
-                    location = value.replacingOccurrences(of: "\\,", with: ",")
+                    location = value
                 case "CATEGORIES":
                     switch value.trimmingCharacters(in: .whitespaces) {
                         case "GAMING":
