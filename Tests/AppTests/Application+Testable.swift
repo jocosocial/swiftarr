@@ -34,6 +34,51 @@ extension Application {
         try Application.testable(envArgs: migrateEnvironment).asyncRun().wait()
     }
     
+    /// Convenience utility to create a test event.
+    ///
+    /// - Parameters:
+    ///   - startTime: Start time of the event.
+    ///   - endTime: End time of the event.
+    ///   - title: Title of the event.
+    ///   - description: Description of the event.
+    ///   - location: Location of the event.
+    ///   - eventType: The type of event.
+    ///   - uid: A uid for the event.
+    ///   - connection: A database connection.
+    func createEvent(
+        startTime: Date,
+        endTime: Date,
+        title: String,
+        description: String,
+        location: String,
+        eventType: EventType,
+        uid: String,
+        on connection: PostgreSQLConnection
+    ) throws -> EventData {
+        let event = Event(
+            startTime: startTime,
+            endTime: endTime,
+            title: title,
+            description: description,
+            location: location,
+            eventType: eventType,
+            uid: uid
+        )
+        let savedEvent = try event.save(on: connection).wait()
+        let eventData = try EventData(
+            eventID: savedEvent.requireID(),
+            title: savedEvent.title,
+            description: savedEvent.description,
+            startTime: savedEvent.startTime,
+            endTime: savedEvent.endTime,
+            location: savedEvent.location,
+            eventType: savedEvent.eventType.label,
+            forum: nil
+        )
+        return eventData
+    }
+    
+    
     /// Convenience utility to create a test User and its associated profile.
     ///
     /// - Parameters:
@@ -70,7 +115,7 @@ extension Application {
         let returned = try responder.respond(to: wrappedRequest).wait()
         return try returned.content.syncDecode(CreatedUserData.self)
     }
-
+    
     /// Logs in the supplied user and returns the Bearer Authentication token.
     ///
     /// - Parameters:
@@ -169,8 +214,8 @@ extension Application {
         // discard the response
         _ = try self.getResponse(from: path, method: method, headers: headers, body: body)
     }
-
-// MARK: - Return Results Only
+    
+    // MARK: - Return Results Only
     
     /// Returns the decoded content of the response to a request with an optional
     /// generic body.
