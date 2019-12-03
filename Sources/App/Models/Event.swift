@@ -4,7 +4,7 @@ import FluentPostgreSQL
 
 /// An `Event` on the official schedule, imported from sched.com's `.ics` format.
 
-struct Event: Codable {
+final class Event: Codable {
     // MARK: Properties
     
     /// The event's ID.
@@ -30,6 +30,9 @@ struct Event: Codable {
     
     /// The event's official identifier. (sched.com "UID")
     var uid: String
+    
+    /// The ID of a forum associated with the event.
+    var forumID: Int?
     
     /// Timestamp of the model's creation, set automatically.
     var createdAt: Date?
@@ -68,5 +71,6 @@ struct Event: Codable {
         self.location = location
         self.eventType = eventType
         self.uid = uid
+        self.forumID = nil
     }
 }
