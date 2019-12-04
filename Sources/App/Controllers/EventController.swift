@@ -76,7 +76,7 @@ struct EventController: RouteCollection {
         return Event.query(on: req).group(.or) {
             (or) in
             or.filter(\.title, .ilike, "%\(search)%")
-            or.filter(\.description, .ilike, "%\(search)%")
+            or.filter(\.info, .ilike, "%\(search)%")
         }.all()
             .map {
                 (events) in
@@ -123,6 +123,7 @@ struct EventController: RouteCollection {
                 return try events.map { try $0.convertToData() }
         }
     }
+    
     /// `GET /api/v3/events/official`
     ///
     /// Retrieve all official events on the schedule.

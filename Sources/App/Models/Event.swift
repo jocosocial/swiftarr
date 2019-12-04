@@ -20,7 +20,7 @@ final class Event: Codable {
     var title: String
     
     /// A description of the event. (sched.com "DESCRIPTION")
-    var description: String
+    var info: String
     
     /// The location of the event. (sched.com "LOCATION")
     var location: String
@@ -67,7 +67,7 @@ final class Event: Codable {
         self.startTime = startTime
         self.endTime = endTime
         self.title = title
-        self.description = description
+        self.info = description
         self.location = location
         self.eventType = eventType
         self.uid = uid

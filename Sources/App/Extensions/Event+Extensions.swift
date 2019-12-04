@@ -47,7 +47,7 @@ extension Event {
         return try EventData(
             eventID: self.requireID(),
             title: self.title,
-            description: self.description,
+            description: self.info,
             startTime: self.startTime,
             endTime: self.endTime,
             location: self.location,

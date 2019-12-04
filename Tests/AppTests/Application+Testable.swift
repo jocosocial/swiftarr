@@ -68,7 +68,7 @@ extension Application {
         let eventData = try EventData(
             eventID: savedEvent.requireID(),
             title: savedEvent.title,
-            description: savedEvent.description,
+            description: savedEvent.info,
             startTime: savedEvent.startTime,
             endTime: savedEvent.endTime,
             location: savedEvent.location,
