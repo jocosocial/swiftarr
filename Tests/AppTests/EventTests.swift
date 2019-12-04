@@ -291,7 +291,6 @@ final class EventTests: XCTestCase {
         let scheduleFile = "test-updated-schedule.ics"
         let directoryConfig = DirectoryConfig.detect()
         let schedulePath = directoryConfig.workDir.appending("seeds/").appending(scheduleFile)
-        // read file as string
         guard let data = FileManager.default.contents(atPath: schedulePath),
             let dataString = String(bytes: data, encoding: .utf8) else {
                 XCTFail("Could not read schedule file.")
