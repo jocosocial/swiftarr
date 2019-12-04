@@ -305,7 +305,6 @@ final class EventTests: XCTestCase {
             body: eventsUpdateData,
             decodeTo: [EventData].self
         )
-        print("\(events[0].description)")
         XCTAssertTrue(events.count == 3, "should be 2 updated events, 1 new")
     }
 }
