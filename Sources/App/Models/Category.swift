@@ -1,6 +1,8 @@
 import Vapor
-import Foundation
 import FluentPostgreSQL
+
+/// Categories are used to organize Twit-arr `Forum`s into a managable structure. All `Forum`s
+/// belong to a single `Category`.
 
 final class Category: Codable {
     // MARK: Properties
