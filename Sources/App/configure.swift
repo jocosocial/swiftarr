@@ -105,6 +105,8 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     migrations.add(model: Barrel.self, database: .psql)
     migrations.add(model: Report.self, database: .psql)
     migrations.add(model: Event.self, database: .psql)
+    migrations.add(model: Category.self, database: .psql)
+    migrations.add(model: Forum.self, database: .psql)
     migrations.add(migration: AdminUser.self, database: .psql)
     migrations.add(migration: ClientUsers.self, database: .psql)
     migrations.add(migration: RegistrationCodes.self, database: .psql)
