@@ -53,6 +53,7 @@ extension EventTests {
         ("testEventsMigration", testEventsMigration),
         ("testEventsNow", testEventsNow),
         ("testEventsToday", testEventsToday),
+        ("testEventsUpdate", testEventsUpdate),
     ]
 }
 
