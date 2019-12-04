@@ -169,6 +169,16 @@ struct EventData: Content {
     var forum: Int?
 }
 
+/// Used to update the `Event` database.
+///
+/// Required by: `POST /api/v3/events/update`
+///
+/// See `EventController.eventsUpdateHandler(_:data:)`.
+struct EventsUpdateData: Content {
+    /// The `.ics` event schedule file.
+    var schedule: String
+}
+
 /// Used to obtain the user's current list of keywords for muting public content.
 ///
 /// Returned by:

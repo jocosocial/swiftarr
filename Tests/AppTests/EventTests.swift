@@ -280,4 +280,32 @@ final class EventTests: XCTestCase {
         )
         XCTAssertTrue(events.count == eventsCount + 2, "should be \(eventsCount + 2)")
     }
+    
+    func testEventsUpdate() throws {
+        // create logged in admin
+        let token = try app.login(username: "admin", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // test upload
+        let scheduleFile = "test-updated-schedule.ics"
+        let directoryConfig = DirectoryConfig.detect()
+        let schedulePath = directoryConfig.workDir.appending("seeds/").appending(scheduleFile)
+        // read file as string
+        guard let data = FileManager.default.contents(atPath: schedulePath),
+            let dataString = String(bytes: data, encoding: .utf8) else {
+                XCTFail("Could not read schedule file.")
+                return
+        }
+        let eventsUpdateData = EventsUpdateData(schedule: dataString)
+        let events = try app.getResult(
+            from: eventsURI + "update",
+            method: .POST,
+            headers: headers,
+            body: eventsUpdateData,
+            decodeTo: [EventData].self
+        )
+        print("\(events[0].description)")
+        XCTAssertTrue(events.count == 3, "should be 2 updated events, 1 new")
+    }
 }

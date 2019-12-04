@@ -40,7 +40,8 @@ struct EventController: RouteCollection {
         // endpoints available whether logged in or out
         
         // endpoints available only when logged in
-        
+        tokenAuthGroup.post(EventsUpdateData.self, at: "update", use: eventsUpdateHandler)
+    
     }
     
     // MARK: - Open Access Handlers
@@ -242,4 +243,79 @@ struct EventController: RouteCollection {
         }
     }
     
+    // MARK: - tokenAuthGroup Handlers (logged in)
+    // All handlers in this route group require a valid HTTP Bearer Authentication
+    // header in the request.
+    
+    /// `POST /api/v3/events/update`
+    ///
+    /// Updates the `Event` database from an `.ics` file.
+    ///
+    /// - Requires: `EventUpdateData` payload in the HTTP body.
+    /// - Parameters:
+    ///   - req: The incoming `Request`, provided automatically.
+    ///   - data: `EventUpdateData` containing an updated event schedule.
+    /// - Throws: 403 Forbidden if the user is not an admin.
+    /// - Returns: `[EventData]` containing the events that were updated or added.
+    func eventsUpdateHandler(_ req: Request, data: EventsUpdateData) throws -> Future<[EventData]> {
+        let user = try req.requireAuthenticated(User.self)
+        guard user.accessLevel == .admin else {
+            throw Abort(.forbidden, reason: "admins only")
+        }
+        var schedule = data.schedule
+        schedule = schedule.replacingOccurrences(of: "&amp;", with: "&")
+        schedule = schedule.replacingOccurrences(of: "\\,", with: ",")
+        let psqlConnection = req.newConnection(to: .psql)
+        return psqlConnection.flatMap {
+            (connection) in
+            // convert to [Event]
+            let scheduleArray = schedule.components(separatedBy: .newlines)
+            let scheduleEvents = EventParser().parse(scheduleArray, on: connection)
+            let existingEvents = Event.query(on: req).all()
+            return flatMap(scheduleEvents, existingEvents) {
+                (updates, events) in
+                var updatedEvents: [Future<Event>] = []
+                for update in updates {
+                    let event = events.first(where: { $0.uid == update.uid })
+                    // if event exists
+                    if let event = event {
+                        // update existing event
+                        if event.startTime != update.startTime
+                            || event.endTime != update.endTime
+                            || event.title != update.title
+                            || event.info != update.info
+                            || event.location != update.location
+                            || event.eventType != update.eventType {
+                            event.startTime = update.startTime
+                            event.endTime = update.endTime
+                            event.title = update.title
+                            event.info = update.info
+                            event.location = update.location
+                            event.eventType = update.eventType
+                            // save future
+                            updatedEvents.append(event.save(on: req))
+                        }
+                    } else {
+                        // else create new event
+                        let newEvent = Event(
+                            startTime: update.startTime,
+                            endTime: update.endTime,
+                            title: update.title,
+                            description: update.info,
+                            location: update.location,
+                            eventType: update.eventType,
+                            uid: update.uid
+                        )
+                        // save future
+                        updatedEvents.append(newEvent.save(on: req))
+                    }
+                }
+                // resolve futures, return as EventData
+                return updatedEvents.flatten(on: req).map {
+                    (returnEvents) in
+                    return try returnEvents.map { try $0.convertToData() }
+                }
+            }
+        }
+    }
 }
