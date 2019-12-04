@@ -27,6 +27,11 @@ final class Category: Codable {
 
     // MARK: Initialization
     
+    /// Initializes a new Category.
+    ///
+    /// - Parameters:
+    ///   - title: The title for the the category.
+    ///   - isRestricted: Whether users can create forums in the category.
     init(
         title: String,
         isRestricted: Bool = false
