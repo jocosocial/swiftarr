@@ -38,3 +38,17 @@ extension Forum {
     /// Required key for `\.deletedAt` soft delete functionality.
     static var deletedAtKey: TimestampKey? { return \.deletedAt }
 }
+
+// MARK: - Parents
+
+extension Forum {
+    /// The parent `Category` of the forum.
+    var category: Parent<Forum, Category> {
+        return parent(\.categoryID)
+    }
+    
+    /// The parent `User` who created the forum.
+    var creator: Parent<Forum, User> {
+        return parent(\.creatorID)
+    }
+}

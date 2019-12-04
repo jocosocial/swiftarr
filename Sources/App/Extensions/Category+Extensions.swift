@@ -37,3 +37,12 @@ extension Category {
     /// Required key for `\.deletedAt` soft delete functionality.
     static var deletedAtKey: TimestampKey? { return \.deletedAt }
 }
+
+// MARK: - Children
+
+extension Category {
+    /// The `Forum`s belonging to the category.
+    var forums: Children<Category, Forum> {
+        return children(\.categoryID)
+    }
+}
