@@ -20,6 +20,7 @@ custom_categories:
   - name: Models
     children:
     - Barrel
+    - Event
     - RegistrationCode
     - Report
     - Token
@@ -32,6 +33,7 @@ custom_categories:
     - AdminController
     - AuthController
     - ClientController
+    - EventController
     - TestController
     - UserController
     - UsersController
@@ -39,6 +41,7 @@ custom_categories:
   - name: Enumerations
     children:
     - BarrelType
+    - EventType
     - ReportType
     - UserAccessLevel
 
@@ -52,12 +55,14 @@ custom_categories:
     children:
     - AdminUser
     - ClientUsers
+    - Events
     - RegistrationCodes
     - TestUsers
     
   - name: Request Structs
     children:
     - BarrelCreateData
+    - EventsUpdateData
     - NoteCreateData
     - NoteUpdateData
     - UserCreateData
@@ -78,6 +83,7 @@ custom_categories:
     - CreatedNoteData
     - CreatedUserData
     - CurrentUserData
+    - EventData
     - MuteKeywordData
     - MutedUserData
     - SeaMonkey
@@ -87,7 +93,8 @@ custom_categories:
     - UserInfo
     - UserSearch
     
-  - name: Internal Structs
+  - name: Internal Structs/Classes
     children:
+    - EventParser
     - ProfileEdit
     
