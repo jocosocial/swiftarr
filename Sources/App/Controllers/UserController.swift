@@ -291,6 +291,11 @@ struct UserController: RouteCollection {
     // All handlers in this route group require a valid HTTP Basic Authorization
     // *or* HTTP Bearer Authorization header in the request.
     
+//    func imageHandler(_ req: Request) throws -> Future<String> {
+//        let user = try req.requireAuthenticated(User.self)
+//        
+//    }
+    
     /// `GET /api/v3/user/profile`
     ///
     /// Retrieves the user's own profile data for editing, as a `UserProfile.Edit` object.

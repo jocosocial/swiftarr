@@ -756,4 +756,17 @@ final class UserTests: XCTestCase {
         XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
         XCTAssertTrue(response.http.body.description.contains("does not belong"), "does not belong")
     }
+    
+//    func testUserImage() throws {
+//        // create user
+//        let user = try app.createUser(username: testUsername, password: testPassword, on: conn)
+//        var headers = HTTPHeaders()
+//        headers.basicAuthorization = BasicAuthorization(username: testUsername, password: testPassword)
+//
+//        // test jpg upload
+//        let imageFile = "test-image.jpg"
+//        let directoryConfig = DirectoryConfig.detect()
+//        let imagePath = directoryConfig.workDir.appending("seeds/").appending(imageFile)
+//
+//    }
 }
