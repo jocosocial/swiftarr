@@ -113,6 +113,7 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     migrations.add(migration: RegistrationCodes.self, database: .psql)
     migrations.add(migration: Events.self, database: .psql)
     migrations.add(migration: Categories.self, database: .psql)
+    migrations.add(migration: Forums.self, database: .psql)
     if (env == .testing || env == .development) {
         migrations.add(migration: TestUsers.self, database: .psql)
     }
