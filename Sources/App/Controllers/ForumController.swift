@@ -124,12 +124,14 @@ struct ForumController: RouteCollection {
     
     /// `GET /api/v3/forum/catgories/ID`
     ///
-    /// Retrieve a list of all forums in the specifiec `Category`, sorted by title.
+    /// Retrieve a list of all forums in the specifiec `Category`, sorted by title. If the
+    /// forum is user-created and a user block applies, the forum will not be returned.
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 404 error if the category ID is not valid.
     /// - Returns: `[ForumData]` containing all category forums.
     func categoryForumsHandler(_ req: Request) throws -> Future<[ForumData]> {
+        let user = try req.requireAuthenticated(User.self)
         return try req.parameters.next(Category.self).flatMap {
             (category) in
             if category.isRestricted {
@@ -145,17 +147,26 @@ struct ForumController: RouteCollection {
                         }
                 }
             } else {
-                // sort user categories
-                return try Forum.query(on: req)
-                    .filter(\.categoryID == category.requireID())
-                    .sort(\.title, .ascending)
-                    .all()
-                    .map {
-                        (forums) in
-                        // return as ForumData
-                        return try forums.map {
-                            try ForumData(forumID: $0.requireID(), title: $0.title)
-                        }
+                // remove blocks from results
+                let cache = try req.keyedCache(for: .redis)
+                let key = try "blocks:\(user.requireID())"
+                let cachedBlocks = cache.get(key, as: [UUID].self)
+                return cachedBlocks.flatMap {
+                    (blocks) in
+                    let blocked = blocks ?? []
+                    // sort user categories
+                    return try Forum.query(on: req)
+                        .filter(\.categoryID == category.requireID())
+                        .filter(\.creatorID !~ blocked)
+                        .sort(\.title, .ascending)
+                        .all()
+                        .map {
+                            (forums) in
+                            // return as ForumData
+                            return try forums.map {
+                                try ForumData(forumID: $0.requireID(), title: $0.title)
+                            }
+                    }
                 }
             }
         }
