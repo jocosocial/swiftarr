@@ -1,8 +1,8 @@
 import Vapor
 import FluentPostgreSQL
 
-// model uses Int as primary key
-extension Forum: PostgreSQLModel {}
+// model uses UUID as primary key
+extension Forum: PostgreSQLUUIDModel {}
 
 // model can be passed as HTTP body data
 extension Forum: Content {}
