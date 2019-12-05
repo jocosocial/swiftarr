@@ -37,7 +37,7 @@ final class EventTests: XCTestCase {
     // MARK: - Tests
     // Note: We migrate an "admin" user first during boot, so it is always present as `.first()`.
     
-    /// Ensure `Events` migration was successful.
+    /// Ensure that `Events` migration was successful.
     func testEventsMigration() throws {
         let events = try app.getResult(
             from: eventsURI,
