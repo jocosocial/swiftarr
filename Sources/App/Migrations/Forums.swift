@@ -12,10 +12,22 @@ struct Forums: Migration {
     /// - Returns: Void.
     static func prepare(on connection: PostgreSQLConnection) -> EventLoopFuture<Void> {
         // initial set of Twit-arr forums
-        let adminForums: [String] = [
-            "Twit-arr Support",
-            "Twit-arr Feedback"
-        ]
+        var adminForums: [String] = []
+        do {
+            if (try Environment.detect().isRelease) {
+                adminForums = [
+                    // forum list here
+                ]
+            } else {
+                // test forums
+                adminForums = [
+                    "Twit-arr Support",
+                    "Twit-arr Feedback"
+                ]
+            }
+        } catch let error {
+            fatalError("Environment.detect() failed! error: \(error)")
+        }
         // get admin, category IDs
         return User.query(on: connection).first().flatMap {
             (admin) in
