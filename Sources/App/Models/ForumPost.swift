@@ -1,6 +1,9 @@
 import Vapor
 import FluentPostgreSQL
 
+/// An individual post within a `Forum`. A ForumPost must contain either text
+/// content or image content, or both.
+
 final class ForumPost: Codable {
     // MARK: Properties
     
