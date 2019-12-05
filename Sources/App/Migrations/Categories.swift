@@ -18,10 +18,18 @@ struct Categories: Migration {
             "Shadow Event Forums"
         ]
         // categories to which users can add forums
-        let userCategories: [String] = [
-            "Test 1",
-            "Test 2"
-        ]
+        var userCategories: [String] = []
+        do {
+            if (try Environment.detect().isRelease) {
+                userCategories = [
+                    // category list here
+                ]
+            } else {
+                userCategories = ["Test 1", "Test 2"]
+            }
+        } catch let error {
+            fatalError("Environment.detect() failed! error: \(error)")
+        }
         // create categories
         var categories: [Category] = []
         for adminCategory in adminCategories {
