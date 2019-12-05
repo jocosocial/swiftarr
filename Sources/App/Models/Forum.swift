@@ -12,13 +12,13 @@ final class Forum: Codable {
     // MARK: Properties
     
     /// The forum's ID.
-    var id: Int?
+    var id: UUID?
     
     /// The title of the forum.
     var title: String
     
     /// The ID of the forum's category.
-    var categoryID: Int
+    var categoryID: UUID
     
     /// The ID of the user who "owns" the forum.
     var creatorID: UUID
@@ -46,7 +46,7 @@ final class Forum: Codable {
     ///   - isLocked: Whether the forum is administratively locked.
     init(
         title: String,
-        categoryID: Int,
+        categoryID: UUID,
         creatorID: UUID,
         isLocked: Bool = false
     ) {

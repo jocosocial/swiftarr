@@ -8,7 +8,7 @@ final class Category: Codable {
     // MARK: Properties
     
     /// The category's ID.
-    var id: Int?
+    var id: UUID?
     
     /// The title of the category.
     var title: String
