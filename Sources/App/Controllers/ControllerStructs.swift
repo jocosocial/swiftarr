@@ -195,6 +195,38 @@ struct EventsUpdateData: Content {
     var schedule: String
 }
 
+/// Used to create a new `Forum`.
+///
+/// Required by: `POST /api/v3/forum/categories/ID/create`
+///
+/// See `ForumController.forumCreateHandler(_:data:)`.
+struct ForumCreateData: Content {
+    /// The forum's title.
+    var title: String
+    /// The text content of the forum post.
+    var text: String
+    /// The image content of the forum post.
+    var image: Data?
+}
+
+/// Used to return the contents of a `Forum`.
+///
+/// Returned by:
+/// * `POST /api/v3/forum/categories/ID/create`
+/// * `GET /api/v3/forum/ID`
+///
+/// See `ForumController.forumCreateHandler(_:data:)`, `ForumController.forumHandler(_:)`.
+struct ForumData: Content {
+    /// The forum's ID.
+    var forumID: UUID
+    /// The forum's title
+    var title: String
+    /// The ID of the forum's creator.
+    var creatorID: UUID
+    /// The posts in the forum.
+    var posts: [ForumPostData]
+}
+
 /// Used to return the ID and title of a `Forum`.
 ///
 /// Returned by:
@@ -208,6 +240,14 @@ struct ForumListData: Content {
     var forumID: UUID
     /// The forum's title.
     var title: String
+}
+
+/// Used to return the contents of a `ForumPost`.
+struct ForumPostData: Content {
+    /// The text content of the post.
+    var text: String
+    /// The filename of the image content of the post.
+    var image: String
 }
 
 /// Used to obtain the user's current list of keywords for muting public content.
