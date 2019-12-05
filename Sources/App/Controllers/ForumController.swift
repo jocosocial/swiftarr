@@ -129,8 +129,8 @@ struct ForumController: RouteCollection {
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 404 error if the category ID is not valid.
-    /// - Returns: `[ForumData]` containing all category forums.
-    func categoryForumsHandler(_ req: Request) throws -> Future<[ForumData]> {
+    /// - Returns: `[ForumListData]` containing all category forums.
+    func categoryForumsHandler(_ req: Request) throws -> Future<[ForumListData]> {
         let user = try req.requireAuthenticated(User.self)
         return try req.parameters.next(Category.self).flatMap {
             (category) in
@@ -141,9 +141,9 @@ struct ForumController: RouteCollection {
                     .all()
                     .map {
                         (forums) in
-                        // return as ForumData
+                        // return as ForumListData
                         return try forums.map {
-                            try ForumData(forumID: $0.requireID(), title: $0.title)
+                            try ForumListData(forumID: $0.requireID(), title: $0.title)
                         }
                 }
             } else {
@@ -162,9 +162,9 @@ struct ForumController: RouteCollection {
                         .all()
                         .map {
                             (forums) in
-                            // return as ForumData
+                            // return as ForumListData
                             return try forums.map {
-                                try ForumData(forumID: $0.requireID(), title: $0.title)
+                                try ForumListData(forumID: $0.requireID(), title: $0.title)
                             }
                     }
                 }
@@ -182,17 +182,17 @@ struct ForumController: RouteCollection {
     /// Retrieve a list of all `Forum`s created by the user, sorted by title.
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[ForumData]` containing all forums created by the user.
-    func ownerHandler(_ req: Request) throws-> Future<[ForumData]> {
+    /// - Returns: `[ForumListData]` containing all forums created by the user.
+    func ownerHandler(_ req: Request) throws-> Future<[ForumListData]> {
         let user = try req.requireAuthenticated(User.self)
         return try user.forums.query(on: req)
             .sort(\.title, .ascending)
             .all()
             .map {
                 (forums) in
-                // return as ForumData
+                // return as ForumListData
                 return try forums.map {
-                    try ForumData(forumID: $0.requireID(), title: $0.title)
+                    try ForumListData(forumID: $0.requireID(), title: $0.title)
                 }
         }
     }

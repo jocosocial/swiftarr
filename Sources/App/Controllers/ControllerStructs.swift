@@ -202,8 +202,8 @@ struct EventsUpdateData: Content {
 /// * `GET /api/v3/forum/owner`
 /// * `GET /api/v3/user/forums`
 ///
-/// See `ForumController.categoryForumsHandler(_:)`, ForumController.ownerHandler(_:)`.
-struct ForumData: Content {
+/// See `ForumController.categoryForumsHandler(_:)`, `ForumController.ownerHandler(_:)`.
+struct ForumListData: Content {
     /// The forum's ID.
     var forumID: UUID
     /// The forum's title.

@@ -122,7 +122,7 @@ final class ForumTests: XCTestCase {
             from: forumURI + "categories/\(categories[0].categoryID)",
             method: .GET,
             headers: headers,
-            decodeTo: [ForumData].self
+            decodeTo: [ForumListData].self
         )
         XCTAssertTrue(forums.count == 2, "should be 2 forums")
         XCTAssertTrue(forums[1].title == "Twit-arr Feedback", "should be 'Twit-arr Feedback")
@@ -141,7 +141,7 @@ final class ForumTests: XCTestCase {
             from: forumURI + "owner",
             method: .GET,
             headers: headers,
-            decodeTo: [ForumData].self
+            decodeTo: [ForumListData].self
         )
         XCTAssertTrue(forumForums.count == 2, "should be 2 forums")
         
@@ -150,7 +150,7 @@ final class ForumTests: XCTestCase {
             from: userURI + "forums",
             method: .GET,
             headers: headers,
-            decodeTo: [ForumData].self
+            decodeTo: [ForumListData].self
         )
         XCTAssertTrue(forumForums.count == userForums.count, "should be same")
         XCTAssertTrue(forumForums[0].forumID == userForums[0].forumID, "should be same order")
