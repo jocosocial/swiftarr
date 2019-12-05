@@ -91,6 +91,9 @@ final class ForumTests: XCTestCase {
         XCTAssertTrue(categories[0].title == "Test 1", "should be 'Test 1'")
     }
     
+    /// `GET /api/v3/forum/categories/admin`
+    /// `GET /api/v3/forum/categories/user`
+    /// `GET /api/v3/forum/categories/ID`
     func testForumCategory() throws {
         // create user
         _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
