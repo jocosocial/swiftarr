@@ -32,12 +32,17 @@ struct ForumController: RouteCollection {
         // endpoints available only when not logged in
         
         // endpoints available whether logged in or out
+//        sharedAuthGroup.get(Forum.parameter, use: forumHandler)
         sharedAuthGroup.get("categories", use: categoriesHandler)
         sharedAuthGroup.get("categories", "admin", use: categoriesAdminHandler)
         sharedAuthGroup.get("categories", "user", use: categoriesUserHandler)
         sharedAuthGroup.get("categories", Category.parameter, use: categoryForumsHandler)
         
         // endpoints available only when logged in
+//        tokenAuthGroup.post(ForumCreateData.self, at: "categories", Category.parameter, "create", use: forumCreateHandler)
+        tokenAuthGroup.post(Forum.parameter, "lock", use: forumLockHandler)
+        tokenAuthGroup.post(Forum.parameter, "rename", String.parameter, use: forumRenameHandler)
+        tokenAuthGroup.post(Forum.parameter, "unlock", use: forumUnlockHandler)
         tokenAuthGroup.get("owner", use: ownerHandler)
     }
     
@@ -172,9 +177,87 @@ struct ForumController: RouteCollection {
         }
     }
     
+//    func forumHandler(_ req: Request) throws -> Future<ForumData> {
+//
+//    }
+    
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
+    
+//    func forumCreateHandler(_ req: Request, data: ForumCreateData) throws -> Future<ForumData> {
+//        
+//    }
+    
+    /// `POST /api/v3/forum/ID/lock`
+    ///
+    /// Place a read-only lock on the specified `Forum`.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 403 error if the user does not have credentials to modify the forum. 404 error
+    ///   if the forum ID is not valid.
+    /// - Returns: 201 Created on success.
+    func forumLockHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        let user = try req.requireAuthenticated(User.self)
+        let parameter = try req.parameters.next(Forum.self)
+        return parameter.flatMap {
+            (forum) in
+            // must be forum owner or .moderator
+            guard try forum.creatorID == user.requireID()
+                || user.accessLevel.rawValue >= UserAccessLevel.moderator.rawValue else {
+                    throw Abort(.forbidden, reason: "forum cannot be modified by user")
+            }
+            forum.isLocked = true
+            return forum.save(on: req).transform(to: .created)
+        }
+    }
+
+    /// `POST /api/v3/forum/ID/unlock`
+    ///
+    /// Rename the specified `Forum` to the specified title string.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 403 error if the user does not have credentials to modify the forum. 404 error
+    ///   if the forum ID is not valid.
+    /// - Returns: 204 No Content on success.
+    func forumRenameHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        let user = try req.requireAuthenticated(User.self)
+        let forumParameter = try req.parameters.next(Forum.self)
+        let nameParameter = try req.parameters.next(String.self)
+        return forumParameter.flatMap {
+            (forum) in
+            // must be forum owner or .moderator
+            guard try forum.creatorID == user.requireID()
+                || user.accessLevel.rawValue >= UserAccessLevel.moderator.rawValue else {
+                    throw Abort(.forbidden, reason: "forum cannot be modified by user")
+            }
+            forum.title = nameParameter
+            return forum.save(on: req).transform(to: .created)
+        }
+    }
+    
+    /// `POST /api/v3/forum/ID/unlock`
+    ///
+    /// Remove a read-only lock on the specified `Forum`.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 403 error if the user does not have credentials to modify the forum. 404 error
+    ///   if the forum ID is not valid.
+    /// - Returns: 204 No Content on success.
+    func forumUnlockHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        let user = try req.requireAuthenticated(User.self)
+        let parameter = try req.parameters.next(Forum.self)
+        return parameter.flatMap {
+            (forum) in
+            // must be forum owner or .moderator
+            guard try forum.creatorID == user.requireID()
+                || user.accessLevel.rawValue >= UserAccessLevel.moderator.rawValue else {
+                    throw Abort(.forbidden, reason: "forum cannot be modified by user")
+            }
+            forum.isLocked = false
+            return forum.save(on: req).transform(to: .noContent)
+        }
+    }
     
     /// `GET /api/v3/forum/owner`
     /// `GET /api/v3/user/forums`
