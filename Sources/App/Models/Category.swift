@@ -2,8 +2,8 @@ import Vapor
 import FluentPostgreSQL
 
 /// Categories are used to organize Twit-arr `Forum`s into a managable structure. All `Forum`s
-/// belong to a single `Category`. A category is classified as one of two types: "restricted"
-/// (an "official" set of forums) or "user" (users can create forums).
+/// belong to a single `Category`. A category is classified as one of two types: "admin"
+/// (an administratively controlled set of forums) or "user" (users can create forums).
 
 final class Category: Codable {
     // MARK: Properties
