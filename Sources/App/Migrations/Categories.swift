@@ -25,6 +25,7 @@ struct Categories: Migration {
                     // category list here
                 ]
             } else {
+                // test categories
                 userCategories = ["Test 1", "Test 2"]
             }
         } catch let error {
