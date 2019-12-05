@@ -56,6 +56,7 @@ extension Forum {
 // MARK: - Children
 
 extension Forum {
+    /// The `ForumPost`s within the forum.
     var posts: Children<Forum, ForumPost> {
         return children(\.forumID)
     }
