@@ -155,4 +155,22 @@ final class ForumTests: XCTestCase {
         XCTAssertTrue(forumForums.count == userForums.count, "should be same")
         XCTAssertTrue(forumForums[0].forumID == userForums[0].forumID, "should be same order")
     }
+    
+//    /// `POST /api/v3/forum/categories/ID/create`
+//    func testForumCreate() throws {
+//
+//    }
+    
+//    /// `POST /api/v3/forum/ID/lock`
+//    /// `POST /api/v3/forum/ID/unlock`
+//    func testForumLock() throws {
+//
+//    }
+    
+//    /// `POST /api/v3/forum/ID/rename/STRING`
+//    func testForumRename() throws {
+//        
+//    }
+    
+    // test forum block
 }
