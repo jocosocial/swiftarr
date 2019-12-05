@@ -1,20 +1,20 @@
 import Vapor
 import FluentPostgreSQL
 
-// model uses UUID as primary key
-extension Forum: PostgreSQLUUIDModel {}
+// model uses Int as primary key
+extension ForumPost: PostgreSQLModel {}
 
 // model can be passed as HTTP body data
-extension Forum: Content {}
+extension ForumPost: Content {}
 
 // model can be used as endpoint parameter
-extension Forum: Parameter {}
+extension ForumPost: Parameter {}
 
 // MARK: - Custom Migration
 
-extension Forum: Migration {
+extension ForumPost: Migration {
     /// Required by `Migration` protocol. Creates the table, with foreign key  constraint
-    /// to `Category`.
+    /// to `Forum`.
     ///
     /// - Parameter connection: The connection to the database, usually the Request.
     /// - Returns: Void.
@@ -22,15 +22,15 @@ extension Forum: Migration {
         return Database.create(self, on: connection) {
             (builder) in
             try addProperties(to: builder)
-            // foreign key constraint to Category
-            builder.reference(from: \.categoryID, to: \Category.id)
+            // foreign key constraint to Forum
+            builder.reference(from: \.forumID, to: \Forum.id)
         }
     }
 }
 
 // MARK: - Timestamping Conformance
 
-extension Forum {
+extension ForumPost {
     /// Required key for `\.createdAt` functionality.
     static var createdAtKey: TimestampKey? { return \.createdAt }
     /// Required key for `\.updatedAt` functionality.
@@ -39,24 +39,11 @@ extension Forum {
     static var deletedAtKey: TimestampKey? { return \.deletedAt }
 }
 
-// MARK: - Parents
+// MARK: - Parent
 
-extension Forum {
-    /// The parent `Category` of the forum.
-    var category: Parent<Forum, Category> {
-        return parent(\.categoryID)
-    }
-    
-    /// The parent `User` who created the forum.
-    var creator: Parent<Forum, User> {
-        return parent(\.creatorID)
-    }
-}
-
-// MARK: - Children
-
-extension Forum {
-    var posts: Children<Forum, ForumPost> {
-        return children(\.forumID)
+extension ForumPost {
+    /// The parent `Forum` of the post.
+    var forum: Parent<ForumPost, Forum> {
+        return parent(\.forumID)
     }
 }
