@@ -91,6 +91,22 @@ struct BlockedUserData: Content {
     var seamonkeys: [SeaMonkey]
 }
 
+/// Used to return the ID and title of a `Category`.
+///
+/// Returned by:
+/// * `GET /api/v3/forum/categories`
+/// * `GET /api/v3/forum/categories/admin`
+/// * `GET /api/v3/forum/categories/user`
+///
+/// See `ForumController.categoriesHandler(_:)`, `ForumController.categoriesAdminHandler(_:)`,
+/// `ForumController.categoriesUserHandler(_:)`.
+struct CategoryData: Content {
+    /// The ID of the category.
+    var categoryID: UUID
+    /// The title of the category.
+    var title: String
+}
+
 /// Used to return a newly created `UserNote` for display or further edit.
 ///
 /// Returned by: `POST /api/v3/users/ID/note`
@@ -177,6 +193,21 @@ struct EventData: Content {
 struct EventsUpdateData: Content {
     /// The `.ics` event schedule file.
     var schedule: String
+}
+
+/// Used to return the ID and title of a `Forum`.
+///
+/// Returned by:
+/// * `GET /api/v3/forum/categories/ID`
+/// * `GET /api/v3/forum/owner`
+/// * `GET /api/v3/user/forums`
+///
+/// See `ForumController.categoryForumsHandler(_:)`, ForumController.ownerHandler(_:)`.
+struct ForumData: Content {
+    /// The forum's ID.
+    var forumID: UUID
+    /// The forum's title.
+    var title: String
 }
 
 /// Used to obtain the user's current list of keywords for muting public content.
