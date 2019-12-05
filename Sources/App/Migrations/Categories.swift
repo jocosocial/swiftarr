@@ -38,7 +38,7 @@ struct Categories: Migration {
             .transform(to: ())
     }
     
-    /// Required by`Migration` protocol, but no point removing the categorie, so
+    /// Required by`Migration` protocol, but no point removing the categories, so
     /// just return a pre-completed `Future`.
     ///
     /// - Parameter connection: The database connection.
@@ -46,5 +46,4 @@ struct Categories: Migration {
     static func revert(on connection: PostgreSQLConnection) -> Future<Void> {
         return .done(on: connection)
     }
-
 }
