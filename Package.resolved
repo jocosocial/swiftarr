@@ -182,6 +182,15 @@
         }
       },
       {
+        "package": "SwiftGD",
+        "repositoryURL": "https://github.com/twostraws/SwiftGD.git",
+        "state": {
+          "branch": "master",
+          "revision": "32ba5360e5a7f79926261cf46e68ea6d305f5df2",
+          "version": null
+        }
+      },
+      {
         "package": "TemplateKit",
         "repositoryURL": "https://github.com/vapor/template-kit.git",
         "state": {
