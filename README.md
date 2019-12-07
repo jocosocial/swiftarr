@@ -2,7 +2,7 @@
 
 <p align="center">
     <br>
-    <a href="http://github.com/grundoon/swiftarr/docs/">
+    <a href="http://github.com/grundoon/swiftarr/tree/master/docs/">
         <img src="http://img.shields.io/badge/read_the-docs-2196f3.svg" alt="Documentation">
     </a>
     <a href="LICENSE">
@@ -72,10 +72,10 @@ pulling the latest updates from the repository and regenerating the .xcodeproj f
 
 ## Documentation
 
-- **API_cheatsheet.md**: A quick endpoint reference for client development, including payload requirements and
+- [**API_cheatsheet.md**](https://github.com/grundoon/swiftarr/blob/master/API_cheatsheet.md): A quick endpoint reference for client development, including payload requirements and
 return types.
 
-- **docs/**: A complete API reference generated directly from the documentation markup within the source code,
+- [**docs/**](http://github.com/grundoon/swiftarr/tree/master/docs/): A complete API reference generated directly from the documentation markup within the source code,
 in navigable HTML format.
 
 - **source code**: The source code itself is, in every sense, the definitive documentation. It is thoroughly
