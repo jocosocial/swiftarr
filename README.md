@@ -11,9 +11,64 @@
 </p>
 <br>
 
-`swiftarr` is the asynchronous back-end to Twit-arr, implementing API v3. `swiftarr` is written entirely in
-(unsurprisingly) Swift, using the Vapor 3 framework, and the SwiftGD wrapper for image processing. `swiftarr`
-runs on either macOS or Linux.
+`swiftarr` is the back-end engine of Twit-arr, implementing API v3. `swiftarr` is unsurpringly written entirely in
+Swift, using the asynchronous Vapor 3 framework built on SwiftNIO, and the SwiftGD wrapper for image
+processing. `swiftarr` runs on either macOS or Linux (Ubuntu).
+
+--- 
+
+## Welcome to API v3
+
+* Users
+    - can create unlimited sub-accounts, all tied to one registration code
+    - can change username
+    - can block other users (applies to all sub-accounts) throught the platform
+    - each account can mute public content based on user or keyword
+    - can create unlimited lists of other users – aka: barrels of (sea)monkeys
+* Authentication
+    - all authentication is done through HTTP headers
+    - password recovery uses a a per-user (covers all sub-accounts) recovery key generated when the primary user
+account is created (the key is 3 words, nothing cryptic)
+* Clients
+    - are a new class of account permitted to request certain bulk data
+    - are static across all client instances (e.g. RainbowMonkey is a client and all instances use a hard-coded username/password)
+    - proxy for the actual client user via an `x-swiftarr-user` header, so that blocks are respected
+* Barrels
+    - are multi-purpose containers which can hold an array of IDs and/or a dictionary of strings
+    - are used for block/mute/keyword lists, user-created lists, things not yet thought of
+    - a user's set of seamonkey barrels can be used for filtering or as "auto-complete" results
+* Forums
+    - all forums belong to a category
+    - a category can be restricted ("official") or not (users can create forums therein)
+    - categories are created, and forums may be categorized, by Moderators
+* Events
+    - each event on the schedule can have an "official" associated forum
+* More
+    - soon™
+
+---
+
+## API Client Notes
+
+* Dates are UTC and relative to epoch.
+* All authentication is done through HTTP headers. See `AuthController`.
+* Images are the WIP that got shoved aside to push this out, very stubby at the moment.
+* Required HTTP payload structs can be encoded as either JSON or MultiPart.
+* Returned data is always JSON.
+* The intended on-boarding flow:
+    1. "welcome!"
+    2. username/password ---> recovery key
+    3. the user is **strongly** encouraged to screenshot/notes app/write down recovery key before proceeding
+    4. "user can now edit profile, read twitarr or forums – if they want to *create* content and Agree to Stuff" then...
+    5. registration code --- Basic auth ---> token (user is now logged in)
+    6. use token in Bearer auth until token no longer works
+* When a token no longer works (401 error response):
+    1. try `POST /api/v3/auth/login` with Basic auth
+    2. either a new token or a 401 or 403  error is returned
+    3. if 401, client is not supplying correct credentials, have user re-enter manually or try recovery
+    4. if 403, stop, do not try again, user is read-only    
+* more
+* soon™
 
 ## Getting Started
 
@@ -65,19 +120,6 @@ Yes, that's a bunch the first time through and it does take some time. From here
 pulling the latest updates from the repository and regenerating the .xcodeproj file.
 
 (more to come... )
-
-## API Client Notes
-
-* Dates are UTC and based on epoch.
-* All authentication is done through HTTP headers. See `AuthController`.
-* Images are the WIP that got shoved aside to push this out, very stubby at the moment.
-* probably
-* lots
-* more
-* that
-* I'll
-* get
-* to, but really need to eat.
 
 ## Documentation
 
