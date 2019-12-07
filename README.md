@@ -58,7 +58,6 @@ account is created (the key is 3 words, nothing cryptic)
 * All authentication is done through HTTP headers. See `AuthController`.
 * All entities are referenced by ID (either UUID or Int). While usernames are unlikely to change often, they should be
 considered ephemeral and only ever be used to *attempt* to obtain an ID  (`api/v3/users/find/username`).
-a username's ID, that's pretty much the only thing 
 * Images are the WIP that got shoved aside to push this out, very stubby at the moment.
 * Required HTTP payload structs can be encoded as either JSON or MultiPart.
 * Returned data is always JSON.
