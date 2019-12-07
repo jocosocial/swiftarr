@@ -327,13 +327,101 @@
 
 <p><br></p>
 
-<p><code>swiftarr</code> is the asynchronous back-end to Twit-arr, implementing API v3. <code>swiftarr</code> is written entirely in
-(unsurprisingly) Swift, using the Vapor 3 framework, and the SwiftGD wrapper for image processing. <code>swiftarr</code>
-runs on either macOS or Linux.</p>
+<p><code>swiftarr</code> is the back-end engine of Twit-arr, implementing API v3. <code>swiftarr</code> is unsurpringly written entirely in
+Swift, using the asynchronous Vapor 3 framework built on SwiftNIO, and the SwiftGD wrapper for image
+processing. <code>swiftarr</code> runs on either macOS or Linux (Ubuntu).</p>
+
+<hr>
+<h2 id='welcome-to-api-v3' class='heading'>Welcome to API v3</h2>
+
+<ul>
+<li>Users
+
+<ul>
+<li>can create unlimited sub-accounts, all tied to one registration code</li>
+<li>can change username</li>
+<li>can block other users (applies to all sub-accounts) throught the platform</li>
+<li>each account can mute public content based on user or keyword</li>
+<li>can create unlimited lists of other users – aka: barrels of (sea)monkeys</li>
+</ul></li>
+<li>Authentication
+
+<ul>
+<li>all authentication is done through HTTP headers</li>
+<li>password recovery uses a a per-user (covers all sub-accounts) recovery key generated when the primary user
+account is created (the key is 3 words, nothing cryptic)</li>
+</ul></li>
+<li>Clients
+
+<ul>
+<li>are a new class of account permitted to request certain bulk data</li>
+<li>are static across all client instances (e.g. RainbowMonkey is a client and all instances use a hard-coded username/password)</li>
+<li>proxy for the actual client user via an <code>x-swiftarr-user</code> header, so that blocks are respected</li>
+</ul></li>
+<li>Barrels
+
+<ul>
+<li>are multi-purpose containers which can hold an array of IDs and/or a dictionary of strings</li>
+<li>are used for block/mute/keyword lists, user-created lists, things not yet thought of</li>
+<li>a user&rsquo;s set of seamonkey barrels can be used for filtering or as <q>auto-complete</q> results</li>
+</ul></li>
+<li>Forums
+
+<ul>
+<li>all forums belong to a category</li>
+<li>a category can be restricted (<q>official</q>) or not (users can create forums therein)</li>
+<li>categories are created, and forums may be categorized, by Moderators</li>
+</ul></li>
+<li>Events
+
+<ul>
+<li>each event on the schedule can have an <q>official</q> associated forum</li>
+</ul></li>
+<li>More
+
+<ul>
+<li>soon™</li>
+</ul></li>
+</ul>
+
+<hr>
+<h2 id='api-client-notes' class='heading'>API Client Notes</h2>
+
+<ul>
+<li>Dates are UTC and relative to epoch.</li>
+<li>All authentication is done through HTTP headers. See <code><a href="Structs/AuthController.html">AuthController</a></code>.</li>
+<li>Images are the WIP that got shoved aside to push this out, very stubby at the moment.</li>
+<li>Required HTTP payload structs can be encoded as either JSON or MultiPart.</li>
+<li>Returned data is always JSON.</li>
+<li>All endpoints are currently GET/POST to maintain high compatibility for web clients. PUT/DELETE can be mapped
+onto them if this offends sensibilities, er, I mean&hellip; is desired.</li>
+<li>Query parameters are pretty much avoided in favor of endpoints except for the few necessary cases.</li>
+<li>The intended on-boarding flow:
+
+<ol>
+<li><q>welcome!</q></li>
+<li>username/password &mdash;&gt; recovery key</li>
+<li>the user is <strong>strongly</strong> encouraged to screenshot/notes app/write down recovery key before proceeding</li>
+<li><q>user can now edit profile, read twitarr or forums – if they want to *create* content and Agree to Stuff</q> then&hellip;</li>
+<li>registration code &mdash; Basic auth &mdash;&gt; token (user is now logged in)</li>
+<li>use token in Bearer auth until token no longer works</li>
+</ol></li>
+<li>When a token no longer works (401 error response):
+
+<ol>
+<li>try <code>POST /api/v3/auth/login</code> with Basic auth</li>
+<li>either a new token or a 401 or 403  error is returned</li>
+<li>if 401, client is not supplying correct credentials, have user re-enter manually or try recovery</li>
+<li>if 403, stop, do not try again, user is read-only<br></li>
+</ol></li>
+<li>more</li>
+<li>soon™</li>
+</ul>
 <h2 id='getting-started' class='heading'>Getting Started</h2>
 
 <p>If you&rsquo;re here for something other than curiosity or to provide <a href="https://github.com/grundoon/swiftarr/issues">feedback</a>,
-you&rsquo;re probably either developing an API client or maybe even thinking about <a href="https://github.com/grundoon/swiftarr/blob/master/CONTRIBUTING.md">getting involved</a> with <code>swiftarr</code> development itself.</p>
+you&rsquo;re probably either developing an API client or maybe even thinking about
+<a href="https://github.com/grundoon/swiftarr/blob/master/CONTRIBUTING.md">getting involved</a> with <code>swiftarr</code> development itself.</p>
 <h3 id='requirements' class='heading'>Requirements</h3>
 
 <p>There are five requirements for either running an instance of <code>swiftarr</code> or development itself.</p>
@@ -407,7 +495,7 @@ improve upon them!</p></li>
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-12-06)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-12-07)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.12.0</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>
