@@ -179,6 +179,18 @@ struct EventsUpdateData: Content {
     var schedule: String
 }
 
+/// Used to upload an image file.
+///
+/// Required by: `POST /api/v3/user/image`
+///
+/// See `UserController.imageHandler(_:data)`.
+struct ImageUploadData: Content {
+    /// The name of the image file.
+    var filename: String
+    /// The image in `Data` format.
+    var image: Data
+}
+
 /// Used to obtain the user's current list of keywords for muting public content.
 ///
 /// Returned by:
@@ -274,6 +286,16 @@ struct TokenStringData: Content {
     init(token: Token) {
         self.token = token.token
     }
+}
+
+/// Used to return a filename for an uploaded image.
+///
+/// Returned by: `POST /api/v3/user/image`
+///
+/// See `UserController.imageHandler(_:data:)`
+struct UploadedImageData: Content {
+    /// The generated name of the uploaded image.
+    var filename: String
 }
 
 /// Used to create a new account or sub-account.
