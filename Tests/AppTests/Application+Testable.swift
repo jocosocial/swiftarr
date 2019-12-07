@@ -267,6 +267,67 @@ extension Application {
             decodeTo: type
         )
     }
+    
+    // MARK: Use MultiPart for Content
+    
+    /// Returns the response to a request with a generic optional body.
+    ///
+    /// - Parameters:
+    ///   - path: The endpoint being tested.
+    ///   - method: HTTPMethod for the request.
+    ///   - headers: HTTPHeaders for the request (usually just "Authorization").
+    ///   - body: An optional body to be encoded as the request's content as `.formData`.
+    /// - Returns: The `Response` to the request.
+func getFormResponse<T>(
+        from path: String,
+        method: HTTPMethod = .POST,
+        headers: HTTPHeaders = .init(),
+        body: T? = nil
+    ) throws -> Response where T: Content {
+        // the responder to reply to the request
+        let responder = try self.make(Responder.self)
+        // create and container-wrap the request
+        let request = HTTPRequest(
+            method: method,
+            url: URL(string: path)!,
+            headers: headers
+        )
+        let wrappedRequest = Request(http: request, using: self)
+        // encode any body object as the request's content
+        if let body = body {
+            try wrappedRequest.content.encode(body, as: .formData)
+        }
+        // send request and return the `Response`
+        return try responder.respond(to: wrappedRequest).wait()
+    }
+    
+    /// Returns the decoded content of the response to a request with an optional
+    /// generic MultiPart encoded body.
+    ///
+    /// - Parameters:
+    ///   - path: The endpoint being tested.
+    ///   - method: HTTPMethod for the request.
+    ///   - headers: HTTPHeaders for the request (usually just "Authorization").
+    ///   - body: An optional body to be encoded as the request's content, as `.formData`.
+    ///   - type: The `Decodable` result type to be returned.
+    /// - Returns: The decoded body of the response to the request.
+func getFormResult<C, T>(
+        from path: String,
+        method: HTTPMethod = .GET,
+        headers: HTTPHeaders = .init(),
+        body: C? = nil,
+        decodeTo type: T.Type
+    ) throws -> T where C: Content, T: Decodable {
+        let response = try self.getFormResponse(
+            from: path,
+            method: method,
+            headers: headers,
+            body: body
+        )
+        return try response.content.decode(type).wait()
+    }
+
+
 }
 
 /// An empty `Content` object that can be used to keep the compiler happy when there
