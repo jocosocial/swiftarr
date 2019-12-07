@@ -757,16 +757,27 @@ final class UserTests: XCTestCase {
         XCTAssertTrue(response.http.body.description.contains("does not belong"), "does not belong")
     }
     
-//    func testUserImage() throws {
-//        // create user
-//        let user = try app.createUser(username: testUsername, password: testPassword, on: conn)
-//        var headers = HTTPHeaders()
-//        headers.basicAuthorization = BasicAuthorization(username: testUsername, password: testPassword)
-//
-//        // test jpg upload
-//        let imageFile = "test-image.jpg"
-//        let directoryConfig = DirectoryConfig.detect()
-//        let imagePath = directoryConfig.workDir.appending("seeds/").appending(imageFile)
-//
-//    }
+    func testUserImage() throws {
+        // create user
+        let user = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.basicAuthorization = BasicAuthorization(username: testUsername, password: testPassword)
+
+        // test jpg upload
+        let imageFile = "test-image.jpg"
+        let directoryConfig = DirectoryConfig.detect()
+        let imagePath = directoryConfig.workDir.appending("seeds/").appending(imageFile)
+        let data = FileManager.default.contents(atPath: imagePath)
+        let imageUploadData = ImageUploadData(filename: imageFile, image: data!)
+        let uploadedImageData = try app.getResult(
+            from: userURI + "image",
+            method: .POST,
+            headers: headers,
+            body: imageUploadData,
+            decodeTo: UploadedImageData.self
+         )
+//        XCTAssertNotNil(UUID(uploadedImageData.filename), "should be 200 OK")
+        XCTAssertNotNil(uploadedImageData.filename == "Hello", "should be 'Hello'")
+
+    }
 }

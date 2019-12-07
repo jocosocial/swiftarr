@@ -124,6 +124,8 @@ struct UserController: RouteCollection, ImageHandler {
         basicAuthGroup.post(UserVerifyData.self, at: "verify", use: verifyHandler)
         
         // endpoints available whether logged in or out
+        sharedAuthGroup.post(ImageUploadData.self, at: "image", use: imageHandler)
+        sharedAuthGroup.post("image", "remove", use: imageRemoveHandler)
         sharedAuthGroup.get("profile", use: profileHandler)
         sharedAuthGroup.post(UserProfileData.self, at: "profile", use: profileUpdateHandler)
         sharedAuthGroup.get("whoami", use: whoamiHandler)
@@ -297,10 +299,56 @@ struct UserController: RouteCollection, ImageHandler {
     // All handlers in this route group require a valid HTTP Basic Authorization
     // *or* HTTP Bearer Authorization header in the request.
     
-//    func imageHandler(_ req: Request) throws -> Future<String> {
-//        let user = try req.requireAuthenticated(User.self)
-//        
-//    }
+    /// `POST /api/v3/user/image`
+    ///
+    /// Sets the user's profile image to the file uploaded in the HTTP body.
+    ///
+    /// - Requires: `ImageUpdloadData` payload in the HTTP body.
+    /// - Parameters:
+    ///   - req: The incoming `Request`, provided automatically.
+    ///   - data: `ImageUploadData` containg the filename and image file.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: `UploadedImageData` containing the generated image identifier string.
+    func imageHandler(_ req: Request, data: ImageUploadData) throws -> Future<UploadedImageData> {
+        let user = try req.requireAuthenticated(User.self)
+        return try processImage(data: data.image, forType: .userProfile, on: req).flatMap {
+            (filename) in
+            // save name to profile
+            return try user.profile.query(on: req)
+                .first()
+                .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
+                .flatMap {
+                    (profile) in
+                    profile.userImage = filename
+                    return profile.save(on: req).map {
+                        (_) in
+                        // return as UploadedImageData
+                        return UploadedImageData(filename: filename)
+                    }
+            }
+        }
+    }
+    
+    /// `POST /api/v3/user/image/remove`
+    ///
+    /// Removes the user's profile image from their `UserProfile`.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: 204 No Content on success.
+    func imageRemoveHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        let user = try req.requireAuthenticated(User.self)
+        return try user.profile.query(on: req)
+            .first()
+            .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
+            .flatMap {
+                (profile) in
+                // FIXME: this should probably be a default image
+                // ... or could let .isEmpty trigger a default
+                profile.userImage = ""
+                return profile.save(on: req).transform(to: .noContent)
+        }
+    }
     
     /// `GET /api/v3/user/profile`
     ///
