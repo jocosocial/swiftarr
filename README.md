@@ -55,6 +55,9 @@ account is created (the key is 3 words, nothing cryptic)
 * Images are the WIP that got shoved aside to push this out, very stubby at the moment.
 * Required HTTP payload structs can be encoded as either JSON or MultiPart.
 * Returned data is always JSON.
+* All endpoints are currently GET/POST to maintain high compatibility for web clients. PUT/DELETE can be mapped
+onto them if this offends sensibilities, er, I mean... is desired.
+* Query parameters are pretty much avoided in favor of endpoints except for the few necessary cases.
 * The intended on-boarding flow:
     1. "welcome!"
     2. username/password ---> recovery key
