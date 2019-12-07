@@ -59,7 +59,7 @@ final class EventParser {
     
     /// Creates an `Event` from an array of the raw lines appearing between `BEGIN:VEVENT` and
     /// `END:VEVENT` lines in a sched.com `.ics` file. Escape characters that may appear in
-    /// "SUMMARY", "DESPRIPTION" and "LOCATION" values are stripped.
+    /// "SUMMARY", "DESCRIPTION" and "LOCATION" values are stripped.
     ///
     /// - Parameter components: `[String]` containing the lines to be processed.
     /// - Returns: `Event` if the date strings could be parsed, else `nil`.
