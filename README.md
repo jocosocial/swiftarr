@@ -47,12 +47,13 @@ If running on macOS with Xcode installed, the easiest way to get an instance up 
 2. Install `libgd`.
     - On macOS using [Homebrew](https://brew.sh), simply `brew install gd`.
     - On linux, `apt-get libgd-dev` as root.
-3. Install [Vapor](http://docs.vapor.codes/3.0/install/macos/). (I don't actually know if this is necessary for just
-running an instance, and have no way to easily test that at the moment, but it *might* be needed to get the correct
-SSL library and shimming for SwiftNIO.)
+3. Install the [Vapor](http://docs.vapor.codes/3.0/install/macos/) toolbox. (I don't actually know if this is necessary
+for just running an instance, and have no way to easily test that at the moment, but it *might* be needed to get the
+correct SSL library and shimming for SwiftNIO.)
 4. Download or clone the `switarr` [repository](https://github.com/grundoon/swiftarr).
-4. Run `./scripts/instance.sh up` from the `swiftarr` directory to create and launch postgres and redis Docker containers.
-5. Generate the `swiftarr.xcodeproj` file, then open it in Xcode.
+5. Run `./scripts/instance.sh up` from the `swiftarr` directory to create and launch postgres and redis
+Docker containers.
+6. Generate the `swiftarr.xcodeproj` file, then open it in Xcode.
 
 ```shell
 cd <swiftarr-directory>
@@ -62,6 +63,9 @@ open ./swiftarr.xcodeproj
 
 Make sure the selected Scheme is "My Mac" in Xcode, hit Run, and `swiftarr` should shortly be available at http://localhost:8081.
 To shut down the Docker containers, `./scripts/instance.sh stop`.
+
+Yes, that's a bunch the first time through and it does take some time. From here on out though, it's just a matter of
+pulling the latest updates from the repository and regenerating the .xcodeproj file.
 
 (more to come... )
 
