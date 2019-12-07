@@ -1,0 +1,18 @@
+version: '3'
+services:
+
+  postgres:
+    image: postgres
+    container_name: postgres
+    environment:
+      POSTGRES_DB: swiftarr
+      POSTGRES_USER: swiftarr
+      POSTGRES_PASSWORD: password
+    ports:
+      - 5432:5432
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+      - 6379:6379
