@@ -130,7 +130,7 @@ struct AuthController: RouteCollection {
 
                 // protect against ping-pong attack from compromised registration code...
                 // if the code being sent normalizes to 6 characters, it is most likely a
-                // registration code, so abort it's already been used
+                // registration code, so abort if it's already been used
                 if normalizedKey.count == 6 {
                     guard user.verification?.first != "*" else {
                         throw Abort(.badRequest, reason: "account must be recovered using the recovery key")
