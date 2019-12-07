@@ -12,10 +12,10 @@
 <br>
 
 If you're here for something other than curiosity or to provide [feedback](https://github.com/grundoon/swiftarr/issues),
-you're probably either developing an API client or maybe even thinking about
+you're probably developing an API client or maybe even thinking about
 [getting involved](https://github.com/grundoon/swiftarr/blob/master/CONTRIBUTING.md) with `swiftarr` development itself.
 
-`swiftarr` is the back-end engine of Twit-arr, implementing API v3. `swiftarr` is unsurpringly written entirely in
+`swiftarr` is the back-end engine of Twit-arr, implementing API v3. `swiftarr` is unsurprisingly written entirely in
 Swift, using the asynchronous Vapor 3 framework built on SwiftNIO, and the SwiftGD wrapper for image
 processing. `swiftarr` runs on either macOS or Linux (Ubuntu).
 
