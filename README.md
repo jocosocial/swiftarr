@@ -66,6 +66,18 @@ pulling the latest updates from the repository and regenerating the .xcodeproj f
 
 (more to come... )
 
+## API Client Notes
+
+* Dates are UTC and based on epoch.
+* All authentication is done through HTTP headers. See `AuthController`.
+* Images are the WIP that got shoved aside to push this out, very stubby at the moment.
+* probably
+* lots
+* more
+* that
+* I'll
+* get
+* to, but really need to eat.
 
 ## Documentation
 
