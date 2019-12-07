@@ -18,8 +18,8 @@ runs on either macOS or Linux.
 ## Getting Started
 
 If you're here for something other than curiosity or to provide [feedback](https://github.com/grundoon/swiftarr/issues),
-you're probably either developing an API client or maybe even thinking about [getting involved]
-(https://github.com/grundoon/swiftarr/blob/master/CONTRIBUTING.md) with `swiftarr` development itself.
+you're probably either developing an API client or maybe even thinking about
+[getting involved](https://github.com/grundoon/swiftarr/blob/master/CONTRIBUTING.md) with `swiftarr` development itself.
 
 ### Requirements
 
