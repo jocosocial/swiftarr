@@ -42,6 +42,7 @@ custom_categories:
     children:
     - BarrelType
     - EventType
+    - ImageHandlerType
     - ReportType
     - UserAccessLevel
 
@@ -59,10 +60,15 @@ custom_categories:
     - RegistrationCodes
     - TestUsers
     
+  - name: Protocols
+    children:
+    - ImageHandler
+    
   - name: Request Structs
     children:
     - BarrelCreateData
     - EventsUpdateData
+    - ImageUploadData
     - NoteCreateData
     - NoteUpdateData
     - UserCreateData
@@ -89,6 +95,7 @@ custom_categories:
     - SeaMonkey
     - NoteData
     - TokenStringData
+    - UploadedImageData
     - UserHeader
     - UserInfo
     - UserSearch
