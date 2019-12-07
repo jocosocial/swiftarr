@@ -15,16 +15,16 @@ if [ $# -lt 1 ]; then
 fi
 
 case "$1" in
-    up)     echo "creating dev database services"
+    up)     echo "creating instance database services"
             docker-compose -f scripts/docker-compose-instance.yml up
             ;;
-    start)  echo "starting dev database services"
+    start)  echo "starting instance database services"
             docker-compose -f scripts/docker-compose-instance.yml start
             ;;
-    stop)   echo "stopping dev database services"
+    stop)   echo "stopping instance database services"
             docker-compose -f scripts/docker-compose-instance.yml stop
             ;;
-    remove) echo "removing dev database containers"
+    remove) echo "removing instance database containers"
             docker-compose -f scripts/docker-compose-instance.yml rm
             ;;
     *)      echo "parameter '$1' not understood (must be 'up' 'start' 'stop' or 'remove'"
