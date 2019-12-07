@@ -11,6 +11,10 @@
 </p>
 <br>
 
+If you're here for something other than curiosity or to provide [feedback](https://github.com/grundoon/swiftarr/issues),
+you're probably either developing an API client or maybe even thinking about
+[getting involved](https://github.com/grundoon/swiftarr/blob/master/CONTRIBUTING.md) with `swiftarr` development itself.
+
 `swiftarr` is the back-end engine of Twit-arr, implementing API v3. `swiftarr` is unsurpringly written entirely in
 Swift, using the asynchronous Vapor 3 framework built on SwiftNIO, and the SwiftGD wrapper for image
 processing. `swiftarr` runs on either macOS or Linux (Ubuntu).
@@ -22,8 +26,8 @@ processing. `swiftarr` runs on either macOS or Linux (Ubuntu).
 * Users
     - can create unlimited sub-accounts, all tied to one registration code
     - can change username
-    - can block other users (applies to all sub-accounts) throught the platform
-    - each account can mute public content based on user or keyword
+    - can block other users (applies to all sub-accounts) throughout the platform
+    - each individual account can mute public content based on individual account or keyword
     - can create unlimited lists of other users – aka: barrels of (sea)monkeys
 * Authentication
     - all authentication is done through HTTP headers
@@ -40,7 +44,7 @@ account is created (the key is 3 words, nothing cryptic)
 * Forums
     - all forums belong to a category
     - a category can be restricted ("official") or not (users can create forums therein)
-    - categories are created, and forums may be categorized, by Moderators
+    - categories are created, and forums may be re-categorized, by Moderators
 * Events
     - each event on the schedule can have an "official" associated forum
 * More
@@ -52,6 +56,9 @@ account is created (the key is 3 words, nothing cryptic)
 
 * Dates are UTC and relative to epoch.
 * All authentication is done through HTTP headers. See `AuthController`.
+* All entities are referenced by ID (either UUID or Int). While usernames are unlikely to change often, they should be
+considered ephemeral and only ever be used to *attempt* to obtain an ID  (`api/v3/users/find/username`).
+a username's ID, that's pretty much the only thing 
 * Images are the WIP that got shoved aside to push this out, very stubby at the moment.
 * Required HTTP payload structs can be encoded as either JSON or MultiPart.
 * Returned data is always JSON.
@@ -74,10 +81,6 @@ onto them if this offends sensibilities, er, I mean... is desired.
 * soon™
 
 ## Getting Started
-
-If you're here for something other than curiosity or to provide [feedback](https://github.com/grundoon/swiftarr/issues),
-you're probably either developing an API client or maybe even thinking about
-[getting involved](https://github.com/grundoon/swiftarr/blob/master/CONTRIBUTING.md) with `swiftarr` development itself.
 
 ### Requirements
 
