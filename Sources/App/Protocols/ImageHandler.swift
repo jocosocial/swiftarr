@@ -1,7 +1,11 @@
 import Vapor
 
+/// A `Protocol` used to provide image processing within RouteCollection controllers.
+
 protocol ImageHandler {
+    /// The base directory for image storage for this type.
     var imageDir: String { get }
+    /// The image processing function.
     func processImage(data: Data?, forType: ImageHandlerType, on req: Request) throws -> Future<String>
 }
 
