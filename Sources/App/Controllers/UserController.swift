@@ -2,6 +2,7 @@ import Vapor
 import Crypto
 import FluentSQL
 import Redis
+import SwiftGD
 
 /// The collection of `/api/v3/user/*` route endpoints and handler functions related
 /// to a user's own data.
@@ -10,8 +11,13 @@ import Redis
 /// cleaner collection, since use of `User.parameter` in the paths here can be avoided
 /// entirely.
 
-struct UserController: RouteCollection {
+struct UserController: RouteCollection, ImageHandler {
     // MARK: Properties
+    
+    /// ImageHandler conformance, the base directory for storing profile images.
+    var imageDir: String {
+        return "images/profile"
+    }
     
     /// The `BarrelType`s that a user may retrieve using endpoints in this controller.
     static let userBarrelTypes: [BarrelType] = [
