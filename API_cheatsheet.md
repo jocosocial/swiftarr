@@ -31,7 +31,6 @@
 ||| Endpoint | Requires -> Returns | Use to... |
 | :--- | :--- | :--- | :--- | :--- |
 | T | `POST` | `/api/v3/user/add` | `UserAddData` -> `AddedUserData` | create sub-account |
-| S | `GET` | `/api/v3/user/image` | 
 | S | `POST` | `/api/v3/user/image` | `ImageUploadData` -> `UploadedImageData` | upload profile image |
 | S | `POST` | `/api/v3/user/image/remove` |  -> HTTP Status | remove profile image |
 | T | `POST` | `/api/v3/user/password` | `UserPasswordData` -> HTTP Status | change password |
@@ -93,7 +92,7 @@
 * user notes
 
 ||| Endpoint | Requires -> Returns | Use to... |
-| :--- | :--- | :--- |:--- | :--- | :--- |
+| :--- | :--- | :--- |:--- | :--- |
 | T | `POST` | `/api/v3/users/ID/note` | `NoteCreateData` -> `CreatedNoteData` | create user note |
 | T | `GET` | `/api/v3/users/ID/note` | -> `UserNote.Edit` | retrieve user note for edit |
 | T | `POST` | `/api/v3/users/ID/note/delete` | -> HTTP Status | delete user note |
@@ -101,7 +100,7 @@
 * search
 
 ||| Endpoint | Requires -> Returns | Use to... |
-| :--- | :--- | :--- |:--- | :--- | :--- |
+| :--- | :--- | :--- |:--- | :--- |
 | T | `GET` | `/api/v3/users/match/allnames/STRING` | -> `[UserSearch]` | retrieve list of `displayName|username|realName` matches|
 | T | `GET` | `/api/v3/users/match/username/STRING` | -> `[String]` | retrieve list of `username` matches only |
 ---
@@ -157,4 +156,6 @@
 | X | `GET` | `/api/v3/client/user/headers/since/DATE` | -> `[UserHeader]` | retrieve updated headers |
 | X | `GET` | `/api/v3/client/user/updates/since/DATE` | -> `[UserInfo]` | retrieve updated users |
 | X | `GET` | `/api/v3/client/usersearch` | -> `[UserSearch]` | retrieve all `UserProfile.userSearch` values |
+
+
 
