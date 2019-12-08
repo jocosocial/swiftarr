@@ -16,7 +16,7 @@ fi
 
 case "$1" in
     up)     echo "starting linux-testing"
-            docker-compose -f scripts/docker-compose-linux-testing.yml up
+            docker-compose -f scripts/docker-compose-linux-testing.yml up --abort-on-container-exit
             ;;
     start)  echo "starting swiftarr test containers"
             docker-compose -f scripts/docker-compose-linux-testing.yml start

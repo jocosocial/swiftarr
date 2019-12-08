@@ -176,9 +176,10 @@ final class EventTests: XCTestCase {
         let shadowCount = events.count
         
         // create today + now events
+        // FIXME: this seems a terrible test, depends entirely on time of day it's run
         var eventData = try app.createEvent(
-            startTime: Date.init(timeInterval: -7200, since: Date()),
-            endTime: Date.init(timeInterval: -3600, since: Date()),
+            startTime: Date.init(timeInterval: 600, since: Date()),
+            endTime: Date.init(timeInterval: 3600, since: Date()),
             title: "Test Event",
             description: "A testaculous test.",
             location: "13th Floor",

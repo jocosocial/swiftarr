@@ -111,8 +111,8 @@ struct EventController: RouteCollection {
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Returns: `[EventData]` containing all events for the current day.
     func eventsTodayHandler(_ req: Request) throws -> Future<[EventData]> {
-        let calendar = Calendar.current
-        let todayStart = calendar.startOfDay(for: Date())
+        // FIXME: is this handling UTC correctly?
+        let todayStart = Calendar.current.startOfDay(for: Date())
         let todayEnd = Date.init(timeInterval: 86400, since: todayStart)
         return Event.query(on: req)
             .filter(\.startTime >= todayStart)
@@ -169,8 +169,8 @@ struct EventController: RouteCollection {
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Returns: `[EventData]` containing all official events for the current day.
     func officialTodayHandler(_ req: Request) throws -> Future<[EventData]> {
-        let calendar = Calendar.current
-        let todayStart = calendar.startOfDay(for: Date())
+        // FIXME: is this handling UTC correctly?
+        let todayStart = Calendar.current.startOfDay(for: Date())
         let todayEnd = Date.init(timeInterval: 86400, since: todayStart)
         return Event.query(on: req)
             .filter(\.eventType != .shadow)
@@ -228,8 +228,8 @@ struct EventController: RouteCollection {
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Returns: `[EventData]` containing all shadow events for the current day.
     func shadowTodayHandler(_ req: Request) throws -> Future<[EventData]> {
-        let calendar = Calendar.current
-        let todayStart = calendar.startOfDay(for: Date())
+        // FIXME: is this handling UTC correctly?
+        let todayStart = Calendar.current.startOfDay(for: Date())
         let todayEnd = Date.init(timeInterval: 86400, since: todayStart)
         return Event.query(on: req)
             .filter(\.eventType == .shadow)
