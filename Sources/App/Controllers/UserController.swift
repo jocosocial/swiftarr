@@ -12,13 +12,9 @@ import SwiftGD
 /// entirely.
 
 struct UserController: RouteCollection, ImageHandler {
+
     // MARK: Properties
-    
-    /// ImageHandler conformance, the base directory for storing profile images.
-    var imageDir: String {
-        return "images/profile"
-    }
-    
+        
     /// The `BarrelType`s that a user may retrieve using endpoints in this controller.
     static let userBarrelTypes: [BarrelType] = [
         .keywordAlert,
@@ -99,6 +95,18 @@ struct UserController: RouteCollection, ImageHandler {
         "zombie"
     ]
     
+    // MARK: ImageHandler Conformance
+    
+    /// The base directory for storing profile images.
+    var imageDir: String {
+        return "images/profile/"
+    }
+    
+    /// The height of profile image thumbnails
+    var thumbnailHeight: Int {
+        return 44
+    }
+
     // MARK: RouteCollection Conformance
     
     /// Required. Registers routes to the incoming router.
