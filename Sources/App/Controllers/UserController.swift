@@ -327,11 +327,51 @@ struct UserController: RouteCollection, ImageHandler {
                 .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
                 .flatMap {
                     (profile) in
+                    let oldImage = profile.userImage
                     profile.userImage = filename
-                    return profile.save(on: req).map {
-                        (_) in
-                        // return as UploadedImageData
-                        return UploadedImageData(filename: filename)
+                    return profile.save(on: req).flatMap {
+                        (savedProfile) in
+                        // create ProfileEdit record
+                        if !oldImage.isEmpty {
+                            let profileEdit = try ProfileEdit(
+                                profileID: savedProfile.requireID(),
+                                profileData: nil,
+                                profileImage: oldImage
+                            )
+                            // remove existing full image
+                            let basePath = DirectoryConfig.detect().workDir.appending(self.imageDir)
+                            let fullPath = basePath.appending("full/")
+                            let fullURL = URL(
+                                fileURLWithPath: fullPath.appending(oldImage).appending(".jpg")
+                            )
+                            try FileManager().removeItem(at: fullURL)
+                            // move thumbnail
+                            let thumbPath = basePath.appending("thumbnail/")
+                            let archivePath = basePath.appending("archive/")
+                            // ensure archive directory exists
+                            if !FileManager().fileExists(atPath: archivePath) {
+                                try FileManager().createDirectory(
+                                    atPath: archivePath,
+                                    withIntermediateDirectories: true
+                                )
+                            }
+                            let thumbURL = URL(
+                                fileURLWithPath: thumbPath.appending(oldImage).appending(".jpg")
+                            )
+                            let archiveURL = URL(
+                                fileURLWithPath: archivePath.appending(oldImage).appending(".jpg")
+                            )
+                            try FileManager().moveItem(at: thumbURL, to: archiveURL)
+                            // save edit record
+                            return profileEdit.save(on: req).map {
+                                (_) in
+                                // return as UploadedImageData
+                                return UploadedImageData(filename: filename)
+                            }
+                        } else {
+                            // return as UploadedImageData
+                            return req.future(UploadedImageData(filename: filename))
+                        }
                     }
             }
         }
