@@ -16,8 +16,8 @@ you're probably developing an API client or maybe even thinking about
 [getting involved](https://github.com/grundoon/swiftarr/blob/master/CONTRIBUTING.md) with `swiftarr` development itself.
 
 `swiftarr` is the back-end engine of Twit-arr, implementing API v3. `swiftarr` is unsurprisingly written entirely in
-Swift, using the asynchronous Vapor 3 framework built on SwiftNIO, and the SwiftGD wrapper for image
-processing. `swiftarr` runs on either macOS or Linux (Ubuntu).
+Swift, using the asynchronous Vapor 3 framework built on SwiftNIO. `swiftarr` runs whereever server-side Swift
+is officially supported, which is currently limited to macOS or Linux (Ubuntu).
 
 --- 
 
@@ -79,6 +79,8 @@ onto them if this offends sensibilities, er, I mean... is desired.
 * more
 * soon™
 
+---
+
 ## Getting Started
 
 ### Requirements
@@ -101,9 +103,7 @@ If running on macOS with Xcode installed, the easiest way to get an instance up 
 [Docker](https://www.docker.com/products/docker-desktop).
 
 1. Install Docker.
-2. Install `libgd`.
-    - On macOS using [Homebrew](https://brew.sh), simply `brew install gd`.
-    - On linux, `apt-get libgd-dev` as root.
+2. Install `libgd`. With [Homebrew](https://brew.sh) installed, simply `brew install gd`.
 3. Install the [Vapor](http://docs.vapor.codes/3.0/install/macos/) toolbox. (I don't actually know if this is necessary
 for just running an instance, and have no way to easily test that at the moment, but it *might* be needed to get the
 correct SSL library and shimming for SwiftNIO.)
@@ -124,7 +124,42 @@ To shut down the Docker containers, `./scripts/instance.sh stop`.
 Yes, that's a bunch the first time through and it does take some time. From here on out though, it's just a matter of
 pulling the latest updates from the repository and regenerating the .xcodeproj file.
 
-(more to come... )
+### Development
+
+Setting up a full macOS development environment is in fact no different than [above](#quickstart-macos). You'll
+just want to use `./scripts/development.sh` instead if you want to run tests (and you *should* be
+writing|updating|running tests if adding any code).
+
+```shell
+cd <swiftarr-directory>
+./scripts/development.sh up
+```
+
+This simply adds two more Docker containers to the mix, running instances of postgres and redis on alternate (+1)
+ports.
+
+### Production Instance
+
+Not on macOS or otherwise just want an instance to test against? Sure, there are several options, and they're all
+full production instances.
+
+#### Docker
+
+soon™
+
+#### Bare Metal
+
+soon™
+
+#### Heroku
+
+soon™
+
+#### AWS
+
+soon™
+
+---
 
 ## Documentation
 
