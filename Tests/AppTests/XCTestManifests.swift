@@ -69,6 +69,7 @@ extension UserTests {
         ("testUserAccessLevelsAreOrdered", testUserAccessLevelsAreOrdered),
         ("testUserAdd", testUserAdd),
         ("testUserCreate", testUserCreate),
+        ("testUserImage", testUserImage),
         ("testUserNotes", testUserNotes),
         ("testUserPassword", testUserPassword),
         ("testUserProfile", testUserProfile),

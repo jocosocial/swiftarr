@@ -759,25 +759,51 @@ final class UserTests: XCTestCase {
     
     func testUserImage() throws {
         // create user
-        let user = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
         var headers = HTTPHeaders()
         headers.basicAuthorization = BasicAuthorization(username: testUsername, password: testPassword)
 
         // test jpg upload
-        let imageFile = "test-image.jpg"
+        var imageFile = "test-image.jpg"
         let directoryConfig = DirectoryConfig.detect()
-        let imagePath = directoryConfig.workDir.appending("seeds/").appending(imageFile)
-        let data = FileManager.default.contents(atPath: imagePath)
-        let imageUploadData = ImageUploadData(filename: imageFile, image: data!)
-        let uploadedImageData = try app.getResult(
+        var imagePath = directoryConfig.workDir.appending("seeds/").appending(imageFile)
+        var data = FileManager.default.contents(atPath: imagePath)
+        var imageUploadData = ImageUploadData(filename: imageFile, image: data!)
+        var uploadedImageData = try app.getResult(
             from: userURI + "image",
             method: .POST,
             headers: headers,
             body: imageUploadData,
             decodeTo: UploadedImageData.self
          )
-//        XCTAssertNotNil(UUID(uploadedImageData.filename), "should be 200 OK")
-        XCTAssertNotNil(uploadedImageData.filename == "Hello", "should be 'Hello'")
-
+        XCTAssertNotNil(UUID(uploadedImageData.filename), "should be UUID string")
+        
+        // test png upload
+        imageFile = "test-image.png"
+        imagePath = directoryConfig.workDir.appending("seeds/").appending(imageFile)
+        data = FileManager.default.contents(atPath: imagePath)
+        imageUploadData = ImageUploadData(filename: imageFile, image: data!)
+        uploadedImageData = try app.getResult(
+            from: userURI + "image",
+            method: .POST,
+            headers: headers,
+            body: imageUploadData,
+            decodeTo: UploadedImageData.self
+         )
+        XCTAssertNotNil(UUID(uploadedImageData.filename), "should be UUID string")
+        
+        // test gif upload
+        imageFile = "test-image.gif"
+        imagePath = directoryConfig.workDir.appending("seeds/").appending(imageFile)
+        data = FileManager.default.contents(atPath: imagePath)
+        imageUploadData = ImageUploadData(filename: imageFile, image: data!)
+        uploadedImageData = try app.getResult(
+            from: userURI + "image",
+            method: .POST,
+            headers: headers,
+            body: imageUploadData,
+            decodeTo: UploadedImageData.self
+         )
+        XCTAssertNotNil(UUID(uploadedImageData.filename), "should be UUID string")
     }
 }

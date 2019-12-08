@@ -327,9 +327,13 @@
 
 <p><br></p>
 
-<p><code>swiftarr</code> is the back-end engine of Twit-arr, implementing API v3. <code>swiftarr</code> is unsurpringly written entirely in
-Swift, using the asynchronous Vapor 3 framework built on SwiftNIO, and the SwiftGD wrapper for image
-processing. <code>swiftarr</code> runs on either macOS or Linux (Ubuntu).</p>
+<p>If you&rsquo;re here for something other than curiosity or to provide <a href="https://github.com/grundoon/swiftarr/issues">feedback</a>,
+you&rsquo;re probably developing an API client or maybe even thinking about
+<a href="https://github.com/grundoon/swiftarr/blob/master/CONTRIBUTING.md">getting involved</a> with <code>swiftarr</code> development itself.</p>
+
+<p><code>swiftarr</code> is the back-end engine of Twit-arr, implementing API v3. <code>swiftarr</code> is unsurprisingly written entirely in
+Swift, using the asynchronous Vapor 3 framework built on SwiftNIO. <code>swiftarr</code> runs whereever server-side Swift
+is officially supported, which is currently limited to macOS or Linux (Ubuntu).</p>
 
 <hr>
 <h2 id='welcome-to-api-v3' class='heading'>Welcome to API v3</h2>
@@ -340,8 +344,8 @@ processing. <code>swiftarr</code> runs on either macOS or Linux (Ubuntu).</p>
 <ul>
 <li>can create unlimited sub-accounts, all tied to one registration code</li>
 <li>can change username</li>
-<li>can block other users (applies to all sub-accounts) throught the platform</li>
-<li>each account can mute public content based on user or keyword</li>
+<li>can block other users (applies to all sub-accounts) throughout the platform</li>
+<li>each individual account can mute public content based on individual account or keyword</li>
 <li>can create unlimited lists of other users – aka: barrels of (sea)monkeys</li>
 </ul></li>
 <li>Authentication
@@ -370,7 +374,7 @@ account is created (the key is 3 words, nothing cryptic)</li>
 <ul>
 <li>all forums belong to a category</li>
 <li>a category can be restricted (<q>official</q>) or not (users can create forums therein)</li>
-<li>categories are created, and forums may be categorized, by Moderators</li>
+<li>categories are created, and forums may be re-categorized, by Moderators</li>
 </ul></li>
 <li>Events
 
@@ -390,6 +394,8 @@ account is created (the key is 3 words, nothing cryptic)</li>
 <ul>
 <li>Dates are UTC and relative to epoch.</li>
 <li>All authentication is done through HTTP headers. See <code><a href="Structs/AuthController.html">AuthController</a></code>.</li>
+<li>All entities are referenced by ID (either UUID or Int). While usernames are unlikely to change often, they should be
+considered ephemeral and only ever be used to <em>attempt</em> to obtain an ID  (<code>api/v3/users/find/username</code>).</li>
 <li>Images are the WIP that got shoved aside to push this out, very stubby at the moment.</li>
 <li>Required HTTP payload structs can be encoded as either JSON or MultiPart.</li>
 <li>Returned data is always JSON.</li>
@@ -417,11 +423,9 @@ onto them if this offends sensibilities, er, I mean&hellip; is desired.</li>
 <li>more</li>
 <li>soon™</li>
 </ul>
-<h2 id='getting-started' class='heading'>Getting Started</h2>
 
-<p>If you&rsquo;re here for something other than curiosity or to provide <a href="https://github.com/grundoon/swiftarr/issues">feedback</a>,
-you&rsquo;re probably either developing an API client or maybe even thinking about
-<a href="https://github.com/grundoon/swiftarr/blob/master/CONTRIBUTING.md">getting involved</a> with <code>swiftarr</code> development itself.</p>
+<hr>
+<h2 id='getting-started' class='heading'>Getting Started</h2>
 <h3 id='requirements' class='heading'>Requirements</h3>
 
 <p>There are five requirements for either running an instance of <code>swiftarr</code> or development itself.</p>
@@ -444,12 +448,7 @@ development. (This is not strictly necessary, but if you walk your own Swift dev
 
 <ol>
 <li>Install Docker.</li>
-<li>Install <code>libgd</code>.
-
-<ul>
-<li>On macOS using <a href="https://brew.sh">Homebrew</a>, simply <code>brew install gd</code>.</li>
-<li>On linux, <code>apt-get libgd-dev</code> as root.</li>
-</ul></li>
+<li>Install <code>libgd</code>. With <a href="https://brew.sh">Homebrew</a> installed, simply <code>brew install gd</code>.</li>
 <li>Install the <a href="http://docs.vapor.codes/3.0/install/macos/">Vapor</a> toolbox. (I don&rsquo;t actually know if this is necessary
 for just running an instance, and have no way to easily test that at the moment, but it <em>might</em> be needed to get the
 correct SSL library and shimming for SwiftNIO.)</li>
@@ -468,8 +467,35 @@ To shut down the Docker containers, <code>./scripts/instance.sh stop</code>.</p>
 
 <p>Yes, that&rsquo;s a bunch the first time through and it does take some time. From here on out though, it&rsquo;s just a matter of
 pulling the latest updates from the repository and regenerating the .xcodeproj file.</p>
+<h3 id='development' class='heading'>Development</h3>
 
-<p>(more to come&hellip; )</p>
+<p>Setting up a full macOS development environment is in fact no different than <a href="#quickstart-macos">above</a>. You&rsquo;ll
+just want to use <code>./scripts/development.sh</code> instead if you want to run tests (and you <em>should</em> be
+writing|updating|running tests if adding any code).</p>
+<pre class="highlight shell"><code><span class="nb">cd</span> &lt;swiftarr-directory&gt;
+./scripts/development.sh up
+</code></pre>
+
+<p>This simply adds two more Docker containers to the mix, running instances of postgres and redis on alternate (+1)
+ports.</p>
+<h3 id='production-instance' class='heading'>Production Instance</h3>
+
+<p>Not on macOS or otherwise just want an instance to test against? Sure, there are several options, and they&rsquo;re all
+full production instances.</p>
+<h4 id='docker' class='heading'>Docker</h4>
+
+<p>soon™</p>
+<h4 id='bare-metal' class='heading'>Bare Metal</h4>
+
+<p>soon™</p>
+<h4 id='heroku' class='heading'>Heroku</h4>
+
+<p>soon™</p>
+<h4 id='aws' class='heading'>AWS</h4>
+
+<p>soon™</p>
+
+<hr>
 <h2 id='documentation' class='heading'>Documentation</h2>
 
 <ul>
@@ -495,7 +521,7 @@ improve upon them!</p></li>
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-12-07)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-12-08)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.12.0</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>
