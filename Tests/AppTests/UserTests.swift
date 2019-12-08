@@ -759,7 +759,7 @@ final class UserTests: XCTestCase {
     
     func testUserImage() throws {
         // create user
-        let user = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
         var headers = HTTPHeaders()
         headers.basicAuthorization = BasicAuthorization(username: testUsername, password: testPassword)
 
