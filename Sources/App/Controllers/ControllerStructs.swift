@@ -248,6 +248,8 @@ struct ForumPostData: Content {
     var text: String
     /// The filename of the image content of the post.
     var image: String
+}
+
 /// Used to upload an image file.
 ///
 /// Required by: `POST /api/v3/user/image`
