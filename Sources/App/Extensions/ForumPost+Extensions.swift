@@ -54,6 +54,7 @@ extension ForumPost {
     /// Converts an `ForumPost` model to a version omitting data that is of no interest to a user.
     func convertToData() -> ForumPostData {
         return ForumPostData(
+            createdAt: self.createdAt ?? Date(),
             text: self.text,
             image: self.image
         )

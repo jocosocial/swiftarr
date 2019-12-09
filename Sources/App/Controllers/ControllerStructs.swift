@@ -244,6 +244,8 @@ struct ForumListData: Content {
 
 /// Used to return the contents of a `ForumPost`.
 struct ForumPostData: Content {
+    /// The creation timestamp of the post.
+    var createdAt: Date
     /// The text content of the post.
     var text: String
     /// The filename of the image content of the post.
