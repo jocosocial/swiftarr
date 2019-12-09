@@ -1,7 +1,7 @@
 import Vapor
 import FluentPostgreSQL
 
-/// A `Migration` that creates an initial set of categories for `Forums`.
+/// A `Migration` that creates an initial set of categories for `Forum`s.
 
 struct Categories: Migration {
     typealias Database = PostgreSQLDatabase

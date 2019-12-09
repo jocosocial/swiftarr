@@ -2,7 +2,7 @@ import Vapor
 import FluentPostgreSQL
 
 /// A `Migration` that imports the event schedule from a `schedule.ics` file
-/// located in the `seeds` subdirectory of the project.
+/// located in the `seeds/` subdirectory of the project.
 struct Events: Migration {
     typealias Database = PostgreSQLDatabase
     
@@ -10,6 +10,7 @@ struct Events: Migration {
     /// `seeds/` subdirectory, converts the lines into elements of an array, hands that off to
     /// a parser and populates the `Event` database with the `[Event]` array returned.
     ///
+    /// - Requires: `schedule.ics` file in seeds subdirectory.
     /// - Parameter conn: A connection to the database, provided automatically.
     /// - Returns: Void.
     static func prepare(on conn: PostgreSQLConnection) -> EventLoopFuture<Void> {

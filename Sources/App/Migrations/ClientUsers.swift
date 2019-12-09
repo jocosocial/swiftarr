@@ -3,7 +3,7 @@ import FluentPostgreSQL
 import Crypto
 
 /// A `Migration` that creates a set of registered client users during startup, from a
-/// `registered-clients.txt` file located in the `seeds` subdirectory of the project. The file
+/// `registered-clients.txt` file located in the `seeds/` subdirectory of the project. The file
 /// must be of the format:
 ///
 ///     clientUsername1:password1:recoveryKey1
@@ -17,10 +17,10 @@ struct ClientUsers: Migration {
     typealias Database = PostgreSQLDatabase
     
     /// Required by `Migration` protocol. Reads either a test or production text file in the
-    /// `seeds/` subdirectory, converts the lines into elements of an arrar, then iterates over
+    /// `seeds/` subdirectory, converts the lines into elements of an array, then iterates over
     /// them to create new `User` models with `UserAccessLevel` of `.client`.
     ///
-    /// - Requires: `registered-clients.txt` file in root directory.
+    /// - Requires: `registered-clients.txt` file in seeds subdirectory.
     /// - Parameter connection: A connection to the database, provided automatically.
     /// - Returns: Void.
     static func prepare(on connection: PostgreSQLConnection) -> Future<Void> {
