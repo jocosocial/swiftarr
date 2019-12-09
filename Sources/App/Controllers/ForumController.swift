@@ -7,8 +7,20 @@ import Redis
 /// The collection of `/api/v3/forum/*` route endpoints and handler functions related
 /// to forums.
 
-struct ForumController: RouteCollection {
+struct ForumController: RouteCollection, ImageHandler {
+
+    // MARK: ImageHandler Conformance
     
+    /// The base directory for storing ForumPost images.
+    var imageDir: String {
+        return "images/forum/"
+    }
+    
+    /// The height of ForumPost image thumbnails.
+    var thumbnailHeight: Int {
+        return 100
+    }
+
     // MARK: RouteCollection Conformance
     
     /// Required. Registers routes to the incoming router.
