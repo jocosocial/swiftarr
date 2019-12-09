@@ -2,7 +2,6 @@ import Vapor
 import Crypto
 import FluentSQL
 import Redis
-import SwiftGD
 
 /// The collection of `/api/v3/user/*` route endpoints and handler functions related
 /// to a user's own data.
@@ -102,7 +101,7 @@ struct UserController: RouteCollection, ImageHandler {
         return "images/profile/"
     }
     
-    /// The height of profile image thumbnails
+    /// The height of profile image thumbnails.
     var thumbnailHeight: Int {
         return 44
     }
@@ -332,6 +331,9 @@ struct UserController: RouteCollection, ImageHandler {
                     profile.userImage = filename
                     return profile.save(on: req).flatMap {
                         (savedProfile) in
+                        // touch user.profileUpdatedAt
+                        user.profileUpdatedAt = savedProfile.updatedAt ?? Date()
+                        _ = user.save(on: req)
                         // create ProfileEdit record
                         if !oldImage.isEmpty {
                             let profileEdit = try ProfileEdit(
