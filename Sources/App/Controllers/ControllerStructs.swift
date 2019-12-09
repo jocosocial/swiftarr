@@ -223,11 +223,13 @@ struct ForumData: Content {
     var title: String
     /// The ID of the forum's creator.
     var creatorID: UUID
+    /// Whether the forum is in read-only state.
+    var isLocked: Bool
     /// The posts in the forum.
     var posts: [ForumPostData]
 }
 
-/// Used to return the ID and title of a `Forum`.
+/// Used to return the ID, title and status of a `Forum`.
 ///
 /// Returned by:
 /// * `GET /api/v3/forum/categories/ID`
@@ -244,11 +246,13 @@ struct ForumListData: Content {
     var postCount: Int
     /// Timestamp of most recent post. Needs to be optional because admin forums may be empty.
     var lastPostAt: Date?
+    /// Whether the forum is in read-only state.
+    var isLocked: Bool
 }
 
 /// Used to return the contents of a `ForumPost`.
 struct ForumPostData: Content {
-    /// The creation timestamp of the post.
+    /// Timestamp of the post's creation.
     var createdAt: Date
     /// The text content of the post.
     var text: String

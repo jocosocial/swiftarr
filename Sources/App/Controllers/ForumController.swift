@@ -186,7 +186,8 @@ struct ForumController: RouteCollection, ImageHandler {
                                             forumID: forum.requireID(),
                                             title: forum.title,
                                             postCount: counts[index],
-                                            lastPostAt: timestamps[index]
+                                            lastPostAt: timestamps[index],
+                                            isLocked: forum.isLocked
                                         )
                                     )
                                 }
@@ -237,7 +238,8 @@ struct ForumController: RouteCollection, ImageHandler {
                                                 forumID: forum.requireID(),
                                                 title: forum.title,
                                                 postCount: counts[index],
-                                                lastPostAt: timestamps[index]
+                                                lastPostAt: timestamps[index],
+                                                isLocked: forum.isLocked
                                             )
                                         )
                                     }
@@ -307,6 +309,7 @@ struct ForumController: RouteCollection, ImageHandler {
                             forumID: savedForum.requireID(),
                             title: savedForum.title,
                             creatorID: savedForum.creatorID,
+                            isLocked: savedForum.isLocked,
                             posts: [post.convertToData()]
                         )
                         return forumData
@@ -427,7 +430,8 @@ struct ForumController: RouteCollection, ImageHandler {
                                     forumID: forum.requireID(),
                                     title: forum.title,
                                     postCount: counts[index],
-                                    lastPostAt: timestamps[index]
+                                    lastPostAt: timestamps[index],
+                                    isLocked: forum.isLocked
                                 )
                             )
                         }
