@@ -20,7 +20,10 @@ custom_categories:
   - name: Models
     children:
     - Barrel
+    - Category
     - Event
+    - Forum
+    - ForumPost
     - RegistrationCode
     - Report
     - Token
@@ -34,6 +37,7 @@ custom_categories:
     - AuthController
     - ClientController
     - EventController
+    - ForumController
     - TestController
     - UserController
     - UsersController
@@ -55,8 +59,10 @@ custom_categories:
   - name: Migrations
     children:
     - AdminUser
+    - Categories
     - ClientUsers
     - Events
+    - Forums
     - RegistrationCodes
     - TestUsers
     
@@ -68,6 +74,7 @@ custom_categories:
     children:
     - BarrelCreateData
     - EventsUpdateData
+    - ForumCreateData
     - ImageUploadData
     - NoteCreateData
     - NoteUpdateData
@@ -86,10 +93,14 @@ custom_categories:
     - BarrelData
     - BarrelListData
     - BlockedUserData
+    - CategoryData
     - CreatedNoteData
     - CreatedUserData
     - CurrentUserData
     - EventData
+    - ForumData
+    - ForumListData
+    - ForumPostData
     - MuteKeywordData
     - MutedUserData
     - SeaMonkey

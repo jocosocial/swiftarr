@@ -152,6 +152,7 @@ struct UserController: RouteCollection, ImageHandler {
         tokenAuthGroup.post("barrels", Barrel.parameter, "remove", String.parameter, use: barrelRemoveHandler)
         tokenAuthGroup.post("barrels", Barrel.parameter, "rename", String.parameter, use: renameBarrelHandler)
         tokenAuthGroup.get("blocks", use: blocksHandler)
+        tokenAuthGroup.get("forums", use: ForumController().ownerHandler)
         tokenAuthGroup.get("mutes", use: mutesHandler)
         tokenAuthGroup.get("mutewords", use: mutewordsHandler)
         tokenAuthGroup.post("mutewords", "add", String.parameter, use: mutewordsAddHandler)

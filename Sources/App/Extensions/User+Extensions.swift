@@ -64,6 +64,11 @@ extension User {
         return children(\.ownerID)
     }
     
+    /// The `Forum`s created by the user.
+    var forums: Children<User, Forum> {
+        return children(\.creatorID)
+    }
+    
     /// The `UserNote`s owned by the user.
     var notes: Children<User, UserNote> {
         return children(\.userID)

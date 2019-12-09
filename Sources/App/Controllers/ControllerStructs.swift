@@ -91,6 +91,22 @@ struct BlockedUserData: Content {
     var seamonkeys: [SeaMonkey]
 }
 
+/// Used to return the ID and title of a `Category`.
+///
+/// Returned by:
+/// * `GET /api/v3/forum/categories`
+/// * `GET /api/v3/forum/categories/admin`
+/// * `GET /api/v3/forum/categories/user`
+///
+/// See `ForumController.categoriesHandler(_:)`, `ForumController.categoriesAdminHandler(_:)`,
+/// `ForumController.categoriesUserHandler(_:)`.
+struct CategoryData: Content {
+    /// The ID of the category.
+    var categoryID: UUID
+    /// The title of the category.
+    var title: String
+}
+
 /// Used to return a newly created `UserNote` for display or further edit.
 ///
 /// Returned by: `POST /api/v3/users/ID/note`
@@ -179,6 +195,59 @@ struct EventsUpdateData: Content {
     var schedule: String
 }
 
+/// Used to create a new `Forum`.
+///
+/// Required by: `POST /api/v3/forum/categories/ID/create`
+///
+/// See `ForumController.forumCreateHandler(_:data:)`.
+struct ForumCreateData: Content {
+    /// The forum's title.
+    var title: String
+    /// The text content of the forum post.
+    var text: String
+    /// The image content of the forum post.
+    var image: Data?
+}
+
+/// Used to return the contents of a `Forum`.
+///
+/// Returned by:
+/// * `POST /api/v3/forum/categories/ID/create`
+/// * `GET /api/v3/forum/ID`
+///
+/// See `ForumController.forumCreateHandler(_:data:)`, `ForumController.forumHandler(_:)`.
+struct ForumData: Content {
+    /// The forum's ID.
+    var forumID: UUID
+    /// The forum's title
+    var title: String
+    /// The ID of the forum's creator.
+    var creatorID: UUID
+    /// The posts in the forum.
+    var posts: [ForumPostData]
+}
+
+/// Used to return the ID and title of a `Forum`.
+///
+/// Returned by:
+/// * `GET /api/v3/forum/categories/ID`
+/// * `GET /api/v3/forum/owner`
+/// * `GET /api/v3/user/forums`
+///
+/// See `ForumController.categoryForumsHandler(_:)`, `ForumController.ownerHandler(_:)`.
+struct ForumListData: Content {
+    /// The forum's ID.
+    var forumID: UUID
+    /// The forum's title.
+    var title: String
+}
+
+/// Used to return the contents of a `ForumPost`.
+struct ForumPostData: Content {
+    /// The text content of the post.
+    var text: String
+    /// The filename of the image content of the post.
+    var image: String
 /// Used to upload an image file.
 ///
 /// Required by: `POST /api/v3/user/image`

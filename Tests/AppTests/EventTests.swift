@@ -37,6 +37,7 @@ final class EventTests: XCTestCase {
     // MARK: - Tests
     // Note: We migrate an "admin" user first during boot, so it is always present as `.first()`.
     
+    /// Ensure that `Events` migration was successful.
     func testEventsMigration() throws {
         let events = try app.getResult(
             from: eventsURI,
@@ -48,6 +49,9 @@ final class EventTests: XCTestCase {
         XCTAssertTrue(events.count > 100, "should be lots")
     }
     
+    /// `GET /api/v3/events`
+    /// `GET /api/v3/events/official`
+    /// `GET /api/v3/events/shadow`
     func testEventsAll() throws {
         var events = try app.getResult(
             from: eventsURI,
@@ -75,6 +79,9 @@ final class EventTests: XCTestCase {
         XCTAssertTrue(shadowCount + officialCount == eventsCount, "should be \(eventsCount)")
     }
     
+    /// `GET /api/v3/events/today`
+    /// `GET /api/v3/events/official/today`
+    /// `GET /api/v3/events/shadow/today`
     func testEventsToday() throws {
         // get baselines
         var events = try app.getResult(
@@ -151,6 +158,9 @@ final class EventTests: XCTestCase {
         XCTAssertTrue(events.count == shadowCount + 1, "should be \(shadowCount + 1)")
     }
     
+    /// `GET /api/v3/events/now`
+    /// `GET /api/v3/events/official/now`
+    /// `GET /api/v3/events/shadow/now`
     func testEventsNow() throws {
         // get baselines
         var events = try app.getResult(
@@ -242,6 +252,7 @@ final class EventTests: XCTestCase {
         XCTAssertTrue(events.count == shadowCount + 1, "should be \(shadowCount + 1)")
     }
     
+    /// `GET /api/v3/events/match/STRING`
     func testEventsMatch() throws {
         // get baseline
         var events = try app.getResult(
@@ -282,6 +293,7 @@ final class EventTests: XCTestCase {
         XCTAssertTrue(events.count == eventsCount + 2, "should be \(eventsCount + 2)")
     }
     
+    /// `POST /api/v3/events/update`
     func testEventsUpdate() throws {
         // create logged in admin
         let token = try app.login(username: "admin", password: testPassword, on: conn)
