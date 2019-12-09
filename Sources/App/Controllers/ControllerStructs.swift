@@ -240,6 +240,10 @@ struct ForumListData: Content {
     var forumID: UUID
     /// The forum's title.
     var title: String
+    /// The number of posts in the forum.
+    var postCount: Int
+    /// Timestamp of most recent post. Needs to be optional because admin forums may be empty.
+    var lastPostAt: Date?
 }
 
 /// Used to return the contents of a `ForumPost`.

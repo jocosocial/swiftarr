@@ -141,8 +141,9 @@ struct ForumController: RouteCollection, ImageHandler {
     
     /// `GET /api/v3/forum/catgories/ID`
     ///
-    /// Retrieve a list of all forums in the specifiec `Category`, sorted by title. If the
-    /// forum is user-created and a user block applies, the forum will not be returned.
+    /// Retrieve a list of all forums in the specifiec `Category`, sorted by title if not an
+    /// admin category. If the forum is user-created and a user block applies, the forum will
+    /// not be returned.
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 404 error if the category ID is not valid.
@@ -156,11 +157,41 @@ struct ForumController: RouteCollection, ImageHandler {
                 return try Forum.query(on: req)
                     .filter(\.categoryID == category.requireID())
                     .all()
-                    .map {
+                    .flatMap {
                         (forums) in
-                        // return as ForumListData
-                        return try forums.map {
-                            try ForumListData(forumID: $0.requireID(), title: $0.title)
+                        // get forum metadata
+                        var forumCounts: [Future<Int>] = []
+                        var forumTimestamps: [Future<Date?>] = []
+                        for forum in forums {
+                            forumCounts.append(try forum.posts.query(on: req).count())
+                            forumTimestamps.append(try forum.posts.query(on: req)
+                                .sort(\.createdAt, .descending)
+                                .first()
+                                .map {
+                                    (post) in
+                                    post?.createdAt
+                                }
+                            )
+                        }
+                        // resolve futures
+                        return forumCounts.flatten(on: req).flatMap {
+                            (counts) in
+                            return forumTimestamps.flatten(on: req).map {
+                                (timestamps) in
+                                // return as ForumListData
+                                var returnListData: [ForumListData] = []
+                                for (index, forum) in forums.enumerated() {
+                                    returnListData.append(
+                                        try ForumListData(
+                                            forumID: forum.requireID(),
+                                            title: forum.title,
+                                            postCount: counts[index],
+                                            lastPostAt: timestamps[index]
+                                        )
+                                    )
+                                }
+                                return returnListData
+                            }
                         }
                 }
             } else {
@@ -177,11 +208,41 @@ struct ForumController: RouteCollection, ImageHandler {
                         .filter(\.creatorID !~ blocked)
                         .sort(\.title, .ascending)
                         .all()
-                        .map {
+                        .flatMap {
                             (forums) in
-                            // return as ForumListData
-                            return try forums.map {
-                                try ForumListData(forumID: $0.requireID(), title: $0.title)
+                            // get forum metadata
+                            var forumCounts: [Future<Int>] = []
+                            var forumTimestamps: [Future<Date?>] = []
+                            for forum in forums {
+                                forumCounts.append(try forum.posts.query(on: req).count())
+                                forumTimestamps.append(try forum.posts.query(on: req)
+                                    .sort(\.createdAt, .descending)
+                                    .first()
+                                    .map {
+                                        (post) in
+                                        post?.createdAt
+                                    }
+                                )
+                            }
+                            // resolve futures
+                            return forumCounts.flatten(on: req).flatMap {
+                                (counts) in
+                                return forumTimestamps.flatten(on: req).map {
+                                    (timestamps) in
+                                    // return as ForumListData
+                                    var returnListData: [ForumListData] = []
+                                    for (index, forum) in forums.enumerated() {
+                                        returnListData.append(
+                                            try ForumListData(
+                                                forumID: forum.requireID(),
+                                                title: forum.title,
+                                                postCount: counts[index],
+                                                lastPostAt: timestamps[index]
+                                            )
+                                        )
+                                    }
+                                    return returnListData
+                                }
                             }
                     }
                 }
@@ -337,11 +398,41 @@ struct ForumController: RouteCollection, ImageHandler {
         return try user.forums.query(on: req)
             .sort(\.title, .ascending)
             .all()
-            .map {
+            .flatMap {
                 (forums) in
-                // return as ForumListData
-                return try forums.map {
-                    try ForumListData(forumID: $0.requireID(), title: $0.title)
+                // get forum metadata
+                var forumCounts: [Future<Int>] = []
+                var forumTimestamps: [Future<Date?>] = []
+                for forum in forums {
+                    forumCounts.append(try forum.posts.query(on: req).count())
+                    forumTimestamps.append(try forum.posts.query(on: req)
+                        .sort(\.createdAt, .descending)
+                        .first()
+                        .map {
+                            (post) in
+                            post?.createdAt
+                        }
+                    )
+                }
+                // resolve futures
+                return forumCounts.flatten(on: req).flatMap {
+                    (counts) in
+                    return forumTimestamps.flatten(on: req).map {
+                        (timestamps) in
+                        // return as ForumListData
+                        var returnListData: [ForumListData] = []
+                        for (index, forum) in forums.enumerated() {
+                            returnListData.append(
+                                try ForumListData(
+                                    forumID: forum.requireID(),
+                                    title: forum.title,
+                                    postCount: counts[index],
+                                    lastPostAt: timestamps[index]
+                                )
+                            )
+                        }
+                        return returnListData
+                    }
                 }
         }
     }
