@@ -528,6 +528,16 @@ extension BarrelCreateData: Validatable, Reflectable {
     }
 }
 
+extension ForumCreateData: Validatable, Reflectable {
+    /// Validates that `.title` and initial post `.text`  both contain values.
+    static func validations() throws -> Validations<ForumCreateData> {
+        var validations = Validations(ForumCreateData.self)
+        try validations.add(\.title, .count(1...))
+        try validations.add(\.text, .count(1...))
+        return validations
+    }
+}
+
 extension UserCreateData: Validatable, Reflectable {
     /// Validates that `.username` is 1 or more characters beginning with an alphanumeric,
     /// and `.password` is least 6 characters in length.
