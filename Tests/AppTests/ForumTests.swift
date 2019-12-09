@@ -156,10 +156,77 @@ final class ForumTests: XCTestCase {
         XCTAssertTrue(forumForums[0].forumID == userForums[0].forumID, "should be same order")
     }
     
-//    /// `POST /api/v3/forum/categories/ID/create`
-//    func testForumCreate() throws {
-//
-//    }
+    /// `POST /api/v3/forum/categories/ID/create`
+    func testForumCreate() throws {
+        // created verified logged in user
+        var token = try app.login(username: "verified", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // get categories
+        let adminCategories = try app.getResult(
+            from: forumURI + "categories/admin",
+            method: .GET,
+            headers: headers,
+            decodeTo: [CategoryData].self
+        )
+        let userCategories = try app.getResult(
+            from: forumURI + "categories/user",
+            method: .GET,
+            headers: headers,
+            decodeTo: [CategoryData].self
+        )
+        
+        // create data
+        let imageFile = "test-image.jpg"
+        let directoryConfig = DirectoryConfig.detect()
+        let imagePath = directoryConfig.workDir.appending("seeds/").appending(imageFile)
+        let data = FileManager.default.contents(atPath: imagePath)
+        let forumCreateData = ForumCreateData(
+            title: "A forum!",
+            text: "A forum post!",
+            image: data
+        )
+        
+        // test user forum
+        var categoryID = userCategories.first?.categoryID
+        var forumData = try app.getResult(
+            from: forumURI + "categories/\(categoryID!)/create",
+            method: .POST,
+            headers: headers,
+            body: forumCreateData,
+            decodeTo: ForumData.self
+        )
+        XCTAssertTrue(forumData.title == forumCreateData.title, "should be \(forumCreateData.title)")
+        XCTAssertFalse(forumData.posts.isEmpty, "should be a post")
+        XCTAssertNotNil(UUID(forumData.posts.first!.image), "should be a UUID")
+        
+        // test disallow admin forum
+        categoryID = adminCategories.first?.categoryID
+        let response = try app.getResponse(
+            from: forumURI + "categories/\(categoryID!)/create",
+            method: .POST,
+            headers: headers,
+            body: forumCreateData
+        )
+        XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
+        XCTAssertTrue(response.http.body.description.contains("in category"), "in category")
+        
+        // test admin forum
+        token = try app.login(username: "moderator", password: testPassword, on: conn)
+        headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        forumData = try app.getResult(
+            from: forumURI + "categories/\(categoryID!)/create",
+            method: .POST,
+            headers: headers,
+            body: forumCreateData,
+            decodeTo: ForumData.self
+        )
+        XCTAssertTrue(forumData.title == forumCreateData.title, "should be \(forumCreateData.title)")
+        XCTAssertFalse(forumData.posts.isEmpty, "should be a post")
+        XCTAssertNotNil(UUID(forumData.posts.first!.image), "should be a UUID")
+    }
     
 //    /// `POST /api/v3/forum/ID/lock`
 //    /// `POST /api/v3/forum/ID/unlock`

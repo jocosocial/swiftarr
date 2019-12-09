@@ -51,7 +51,7 @@ struct ForumController: RouteCollection, ImageHandler {
         sharedAuthGroup.get("categories", Category.parameter, use: categoryForumsHandler)
         
         // endpoints available only when logged in
-//        tokenAuthGroup.post(ForumCreateData.self, at: "categories", Category.parameter, "create", use: forumCreateHandler)
+        tokenAuthGroup.post(ForumCreateData.self, at: "categories", Category.parameter, "create", use: forumCreateHandler)
         tokenAuthGroup.post(Forum.parameter, "lock", use: forumLockHandler)
         tokenAuthGroup.post(Forum.parameter, "rename", String.parameter, use: forumRenameHandler)
         tokenAuthGroup.post(Forum.parameter, "unlock", use: forumUnlockHandler)
@@ -197,9 +197,63 @@ struct ForumController: RouteCollection, ImageHandler {
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
     
-//    func forumCreateHandler(_ req: Request, data: ForumCreateData) throws -> Future<ForumData> {
-//        
-//    }
+    /// `POST /api/v3/forum/categories/ID/create`
+    ///
+    /// Creates a new `Forum` in the specified `Category`, and the first `ForumPost` within
+    /// the newly created forum. Creating a forum in an `.isRestricted` category requires
+    /// administrative access.
+    ///
+    /// - Requires: `ForumCreateData` payload in the HTTP body.
+    /// - Parameters:
+    ///   - req: The incoming `Request`, provided automatically.
+    ///   - data: `ForumCreateData` containing the forum's title and initial post contents.
+    /// - Throws: 403 error if the user is not authorized to create a forum.
+    /// - Returns: `ForumData` containing the new forum's contents.
+    func forumCreateHandler(_ req: Request, data: ForumCreateData) throws -> Future<ForumData> {
+        let user = try req.requireAuthenticated(User.self)
+        // check authorization to create
+        return try req.parameters.next(Category.self).flatMap {
+            (category) in
+            guard !category.isRestricted
+                || user.accessLevel.rawValue >= UserAccessLevel.moderator.rawValue else {
+                    throw Abort(.forbidden, reason: "users cannot create forums in category")
+            }
+            // see `ForumCreateData.validations()`
+            try data.validate()
+            // create forum
+            let forum = try Forum(
+                title: data.title,
+                categoryID: category.requireID(),
+                creatorID: user.requireID(),
+                isLocked: false
+            )
+            return forum.save(on: req).flatMap {
+                (savedForum) in
+                // process image
+                return try self.processImage(data: data.image, forType: .forumPost, on: req).flatMap {
+                    (imageName) in
+                    // create first post
+                    let forumPost = try ForumPost(
+                        forumID: savedForum.requireID(),
+                        authorID: savedForum.creatorID,
+                        text: data.text,
+                        image: imageName
+                    )
+                    // return as ForumData
+                    return forumPost.save(on: req).map {
+                        (post) in
+                        let forumData = try ForumData(
+                            forumID: savedForum.requireID(),
+                            title: savedForum.title,
+                            creatorID: savedForum.creatorID,
+                            posts: [post.convertToData()]
+                        )
+                        return forumData
+                    }
+                }
+            }
+        }
+    }
     
     /// `POST /api/v3/forum/ID/lock`
     ///
