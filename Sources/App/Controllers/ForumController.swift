@@ -44,7 +44,7 @@ struct ForumController: RouteCollection, ImageHandler {
         // endpoints available only when not logged in
         
         // endpoints available whether logged in or out
-//        sharedAuthGroup.get(Forum.parameter, use: forumHandler)
+        sharedAuthGroup.get(Forum.parameter, use: forumHandler)
         sharedAuthGroup.get("categories", use: categoriesHandler)
         sharedAuthGroup.get("categories", "admin", use: categoriesAdminHandler)
         sharedAuthGroup.get("categories", "user", use: categoriesUserHandler)
@@ -52,6 +52,7 @@ struct ForumController: RouteCollection, ImageHandler {
         
         // endpoints available only when logged in
         tokenAuthGroup.post(ForumCreateData.self, at: "categories", Category.parameter, "create", use: forumCreateHandler)
+        tokenAuthGroup.post(PostCreateData.self, at: Forum.parameter, "create", use: postCreateHandler)
         tokenAuthGroup.post(Forum.parameter, "lock", use: forumLockHandler)
         tokenAuthGroup.post(Forum.parameter, "rename", String.parameter, use: forumRenameHandler)
         tokenAuthGroup.post(Forum.parameter, "unlock", use: forumUnlockHandler)
@@ -252,9 +253,62 @@ struct ForumController: RouteCollection, ImageHandler {
         }
     }
     
-//    func forumHandler(_ req: Request) throws -> Future<ForumData> {
-//
-//    }
+    /// `GET /api/v3/forum/ID`
+    ///
+    /// Retrieve a `Forum` with all its `ForumPost`s. Content from blocked or muted users, or containing user's muteWords, is not returned.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 404 error if the forum is not available.
+    /// - Returns: `ForumData` containing the forum's metadata and all posts.
+    func forumHandler(_ req: Request) throws -> Future<ForumData> {
+        let user = try req.requireAuthenticated(User.self)
+        return try req.parameters.next(Forum.self).flatMap {
+            (forum) in
+            // 404 if block applies
+            let cache = try req.keyedCache(for: .redis)
+            let key = try "blocks:\(user.requireID())"
+            let cachedBlocks = cache.get(key, as: [UUID].self)
+            return cachedBlocks.flatMap {
+                (blocks) in
+                let blocked = blocks ?? []
+                guard !blocked.contains(forum.creatorID) else {
+                    throw Abort(.notFound, reason: "forum is unavailable")
+                }
+                
+                // FIXME: need to handle w/mutes endpoint
+                
+                // remove blocks and mutes
+                let mutesKey = try "mutes:\(user.requireID())"
+                let cachedMutes = cache.get(mutesKey, as: [UUID].self)
+                let muteWordsBarrel = try user.barrels.query(on: req)
+                    .filter(\.barrelType == .keywordMute)
+                    .first()
+                return flatMap(cachedMutes, muteWordsBarrel) {
+                    (mutes, barrel) in
+                    let muted = mutes ?? []
+                    let muteWords = barrel?.userInfo["muteWords"] ?? []
+                    return try forum.posts.query(on: req)
+                        .filter(\.authorID !~ blocked)
+                        .filter(\.authorID !~ muted)
+                        .filter(\.text !~ muteWords)
+                        .sort(\.createdAt, .ascending)
+                        .all()
+                        .map {
+                            (posts) in
+                            // return as ForumData
+                            let forumData = try ForumData(
+                                forumID: forum.requireID(),
+                                title: forum.title,
+                                creatorID: forum.creatorID,
+                                isLocked: forum.isLocked,
+                                posts: posts.map { try $0.convertToData() }
+                            )
+                            return forumData
+                    }
+                }
+            }
+        }
+    }
     
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
@@ -438,6 +492,66 @@ struct ForumController: RouteCollection, ImageHandler {
                         return returnListData
                     }
                 }
+        }
+    }
+    
+    /// `POST /api/v3/forum/ID/create`
+    ///
+    /// Create a new `ForumPost` in the specified `Forum`.
+    ///
+    /// - Requires: `PostCreateData` payload in the HTTP body.
+    /// - Parameters:
+    ///   - req: The incoming `Request`, provided automatically.
+    ///   - data: `PostCreateData` containg the post's text and optional image.
+    /// - Throws: 403 error if the forum is locked or user is blocked.
+    /// - Returns: `PostData` containing the post's contents and metadata.
+    func postCreateHandler(_ req: Request, data: PostCreateData) throws -> Future<PostData> {
+        let user = try req.requireAuthenticated(User.self)
+        // ensure user has write access
+        guard user.accessLevel.rawValue >= UserAccessLevel.verified.rawValue else {
+            throw Abort(.forbidden, reason: "user cannot post in forum")
+        }
+        // see `PostCreateData.validations()`
+        try data.validate()
+        // get forum
+        return try req.parameters.next(Forum.self).flatMap {
+            (forum) in
+            guard !forum.isLocked else {
+                throw Abort(.forbidden, reason: "forum is locked read-only")
+            }
+            // ensure user has access to forum
+            let cache = try req.keyedCache(for: .redis)
+            let key = try "blocks:\(user.requireID())"
+            let cachedBlocks = cache.get(key, as: [UUID].self)
+            return cachedBlocks.flatMap {
+                (blocks) in
+                let blocked = blocks ?? []
+                guard !blocked.contains(forum.creatorID) else {
+                    throw Abort(.forbidden, reason: "user cannot post in forum")
+                }
+                // process image
+                return try self.processImage(data: data.image, forType: .forumPost, on: req).flatMap {
+                    (imageName) in
+                    // create post
+                    let forumPost = try ForumPost(
+                        forumID: forum.requireID(),
+                        authorID: user.requireID(),
+                        text: data.text,
+                        image: imageName
+                    )
+                    return forumPost.save(on: req).map {
+                        (savedPost) in
+                        // return as PostData
+                        return try PostData(
+                            postID: savedPost.requireID(),
+                            createdAt: savedPost.createdAt ?? Date(),
+                            authorID: try user.requireID(),
+                            text: savedPost.text,
+                            image: savedPost.image
+                        )
+                    }
+                }
+            }
         }
     }
 }

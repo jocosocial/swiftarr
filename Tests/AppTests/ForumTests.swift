@@ -228,11 +228,127 @@ final class ForumTests: XCTestCase {
         XCTAssertNotNil(UUID(forumData.posts.first!.image), "should be a UUID")
     }
     
-//    /// `POST /api/v3/forum/ID/lock`
-//    /// `POST /api/v3/forum/ID/unlock`
-//    func testForumLock() throws {
-//
-//    }
+    /// `GET /api/v3/forum/ID`
+    /// `POST /api/v3/forum/ID`
+    /// `POST /api/v3/forum/ID/rename/STRING`
+    /// `POST /api/v3/forum/ID/lock`
+    /// `POST /api/v3/forum/ID/unlock`
+    func testForumModify() throws {
+        // create verified logged in user
+        var token = try app.login(username: "verified", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // create user forum
+        let userCategories = try app.getResult(
+            from: forumURI + "categories/user",
+            method: .GET,
+            headers: headers,
+            decodeTo: [CategoryData].self
+        )
+        let forumCreateData = ForumCreateData(
+            title: "A forum!",
+            text: "A forum post!",
+            image: nil
+        )
+        let categoryID = userCategories.first?.categoryID
+        var forumData = try app.getResult(
+            from: forumURI + "categories/\(categoryID!)/create",
+            method: .POST,
+            headers: headers,
+            body: forumCreateData,
+            decodeTo: ForumData.self
+        )
+        XCTAssertTrue(forumData.title == forumCreateData.title, "should be \(forumCreateData.title)")
+        XCTAssertFalse(forumData.isLocked, "should not be locked")
+        
+        // test rename
+        let newTitle = "New%20Name!"
+        var response = try app.getResponse(
+            from: forumURI + "\(forumData.forumID)/rename/\(newTitle)",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+        forumData = try app.getResult(
+            from: forumURI + "\(forumData.forumID)",
+            method: .GET,
+            headers: headers,
+            decodeTo: ForumData.self
+        )
+        XCTAssertTrue(forumData.title == "New Name!", "should be 'New Name!'")
+        
+        // test lock
+        response = try app.getResponse(
+            from: forumURI + "\(forumData.forumID)/lock",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+        forumData = try app.getResult(
+            from: forumURI + "\(forumData.forumID)",
+            method: .GET,
+            headers: headers,
+            decodeTo: ForumData.self
+        )
+        XCTAssertTrue(forumData.isLocked, "should be locked")
+        
+        // test attempt post
+        let verifiedHeaders = headers
+        _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        token = try app.login(username: testUsername, password: testPassword, on: conn)
+        headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        let postCreateData = PostCreateData(text: "Hello!", image: nil)
+        response = try app.getResponse(
+            from: forumURI + "\(forumData.forumID)/create",
+            method: .POST,
+            headers: headers,
+            body: postCreateData
+        )
+        XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
+
+        // test attempt unlock
+        response = try app.getResponse(
+            from: forumURI + "\(forumData.forumID)/unlock",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
+        
+        // test unlock
+        headers = verifiedHeaders
+        response = try app.getResponse(
+            from: forumURI + "\(forumData.forumID)/unlock",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 204, "should be 204 No Content")
+        forumData = try app.getResult(
+            from: forumURI + "\(forumData.forumID)",
+            method: .GET,
+            headers: headers,
+            decodeTo: ForumData.self
+        )
+        XCTAssertFalse(forumData.isLocked, "should be unlocked")
+        
+        // test moderator can lock
+        token = try app.login(username: "moderator", password: testPassword, on: conn)
+        headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        response = try app.getResponse(
+            from: forumURI + "\(forumData.forumID)/lock",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+        response = try app.getResponse(
+            from: forumURI + "\(forumData.forumID)/unlock",
+            method: .POST,
+            headers: verifiedHeaders
+        )
+        XCTAssertTrue(response.http.status.code == 204, "should be 204 No Content")
+    }
     
 //    /// `POST /api/v3/forum/ID/rename/STRING`
 //    func testForumRename() throws {
