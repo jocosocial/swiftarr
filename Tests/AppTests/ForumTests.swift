@@ -101,7 +101,7 @@ final class ForumTests: XCTestCase {
         headers.basicAuthorization = BasicAuthorization(username: testUsername, password: testPassword)
         
         // get admin categories
-        let categories = try app.getResult(
+        var categories = try app.getResult(
             from: forumURI + "categories/admin",
             method: .GET,
             headers: headers,
@@ -118,7 +118,7 @@ final class ForumTests: XCTestCase {
         XCTAssertTrue(response.http.status.code == 404, "should be 404 Not Found")
         
         // test get forums
-        let forums = try app.getResult(
+        var forums = try app.getResult(
             from: forumURI + "categories/\(categories[0].categoryID)",
             method: .GET,
             headers: headers,
@@ -126,6 +126,24 @@ final class ForumTests: XCTestCase {
         )
         XCTAssertTrue(forums.count == 2, "should be 2 forums")
         XCTAssertTrue(forums[1].title == "Twit-arr Feedback", "should be 'Twit-arr Feedback")
+        
+        // get user categories
+        categories = try app.getResult(
+            from: forumURI + "categories/user",
+            method: .GET,
+            headers: headers,
+            decodeTo: [CategoryData].self
+        )
+        XCTAssertTrue(categories[0].title == "Twit-arr Support", "should be 'Twit-arr Support'")
+        
+        // test get user forums for test coverage
+        forums = try app.getResult(
+            from: forumURI + "categories/\(categories[0].categoryID)",
+            method: .GET,
+            headers: headers,
+            decodeTo: [ForumListData].self
+        )
+        XCTAssertTrue(forums.count == 0, "should be no forums")
     }
     
     /// `GET /api/v3/forum/owner`
