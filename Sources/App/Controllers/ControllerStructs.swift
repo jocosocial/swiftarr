@@ -334,18 +334,30 @@ struct NoteUpdateData: Content {
     let note: String
 }
 
-/// Used to create or update a `ForumPost` or `Twarrt`.
+/// Used to update a `ForumPost` or `Twarrt`, and as a property of `PostEdit`.
 ///
 /// Required by:
-/// * `POST /api/v3/forum/ID`
 /// * `POST /api/v3/forum/post/ID`
 ///
-/// See `ForumController.postCreateHandler(_:data:)`, `ForumController.postUpdateHandler(_:data:)`.
+/// See `ForumController.postUpdateHandler(_:data:)`.
 struct PostContentData: Content {
     /// The text of the forum post.
     var text: String
+    /// The filename of an existing image.
+    var image: String
+}
+
+/// Used to create a `ForumPost` or `Twarrt`.
+///
+/// Required by:
+/// * `POST /api/v3/forum/ID`
+///
+/// See `ForumController.postCreateHandler(_:data:)`.
+struct PostCreateData: Content {
+    /// The text of the forum post.
+    var text: String
     /// An optional image in Data format.
-    var image: Data?
+    var imageData: Data?
 }
 
 /// Used to return a `ForumPost`'s data.
@@ -579,6 +591,15 @@ extension PostContentData: Validatable, Reflectable {
     /// Validates that `.text` contains a value.
     static func validations() throws -> Validations<PostContentData> {
         var validations = Validations(PostContentData.self)
+        try validations.add(\.text, .count(1...))
+        return validations
+    }
+}
+
+extension PostCreateData: Validatable, Reflectable {
+    /// Validates that `.text` contains a value.
+    static func validations() throws -> Validations<PostCreateData> {
+        var validations = Validations(PostCreateData.self)
         try validations.add(\.text, .count(1...))
         return validations
     }
