@@ -48,6 +48,15 @@ extension ForumPost {
     }
 }
 
+// MARK: - Children
+
+extension ForumPost {
+    /// The child `ForumEdit` accountability records of the profile.
+    var edits: Children<ForumPost, ForumEdit> {
+        return children(\.postID)
+    }
+}
+
 // MARK: - Functions
 
 extension ForumPost {
