@@ -366,6 +366,20 @@ struct PostData: Content {
     var image: String
 }
 
+/// Used to submit a message with a `Report`.
+///
+/// Required by:
+/// * `POST /api/v3/users/ID/report`
+/// * `POST /api/v3/forum/ID/report`
+/// * `POST /api/v3/forun/post/ID/report`
+///
+/// See `UsersController.reportHandler(_:data:)`, `ForumController.forumReportHandler(_:data:)`
+/// `ForumController.postReportHandler(_:data:)`.
+struct ReportData: Content {
+    /// An optional message from the submitting user.
+    var message: String
+}
+
 /// Returned by `Barrel`s as a unit representing a user.
 struct SeaMonkey: Content {
     /// The user's ID.
@@ -495,17 +509,6 @@ struct UserRecoveryData: Content {
     var username: String
     /// The string to use – any one of: password / registration key / recovery key.
     var recoveryKey: String
-}
-
-/// Used to submit a message with a `Report`.
-///
-/// Required by:
-/// * `POST /api/v3/users/ID/report`
-///
-/// See `UsersController.reportHandler(_:data:)`.
-struct UserReportData: Content {
-    /// An optional message from the submitting user.
-    var message: String
 }
 
 /// Used to broad search for a user based on any of their name fields.
