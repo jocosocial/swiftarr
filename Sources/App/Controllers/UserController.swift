@@ -778,16 +778,7 @@ struct UserController: RouteCollection, ImageHandler {
                     .all()
                     .map {
                         (users) in
-                        var seamonkeys = [SeaMonkey]()
-                        for user in users {
-                            let seamonkey = try SeaMonkey(
-                                userID: user.requireID(),
-                                username: "@\(user.username)"
-                            )
-                            seamonkeys.append(seamonkey)
-                        }
-                        // add SeaMonkeys and return
-                        barrelData.seamonkeys = seamonkeys
+                        barrelData.seamonkeys = try users.map { try $0.convertToSeaMonkey() }
                         return barrelData
                 }
             }
@@ -845,16 +836,7 @@ struct UserController: RouteCollection, ImageHandler {
                 .all()
                 .map {
                     (users) in
-                    var seamonkeys = [SeaMonkey]()
-                    for user in users {
-                        let seamonkey = try SeaMonkey(
-                            userID: user.requireID(),
-                            username: "@\(user.username)"
-                        )
-                        seamonkeys.append(seamonkey)
-                    }
-                    // add SeaMonkeys and return
-                    barrelData.seamonkeys = seamonkeys
+                    barrelData.seamonkeys = try users.map { try $0.convertToSeaMonkey() }
                     return barrelData
             }
         }
@@ -934,16 +916,7 @@ struct UserController: RouteCollection, ImageHandler {
                     .all()
                     .map {
                         (users) in
-                        var seamonkeys = [SeaMonkey]()
-                        for user in users {
-                            let seamonkey = try SeaMonkey(
-                                userID: user.requireID(),
-                                username: "@\(user.username)"
-                            )
-                            seamonkeys.append(seamonkey)
-                        }
-                        // add SeaMonkeys and return
-                        barrelData.seamonkeys = seamonkeys
+                        barrelData.seamonkeys = try users.map { try $0.convertToSeaMonkey() }
                         return barrelData
                 }
             }
@@ -1019,16 +992,7 @@ struct UserController: RouteCollection, ImageHandler {
                         .all()
                         .map {
                             (users) in
-                            var seamonkeys = [SeaMonkey]()
-                            for user in users {
-                                let seamonkey = try SeaMonkey(
-                                    userID: user.requireID(),
-                                    username: "@\(user.username)"
-                                )
-                                seamonkeys.append(seamonkey)
-                            }
-                            // add SeaMonkeys and return
-                            blockedUserData.seamonkeys = seamonkeys
+                            blockedUserData.seamonkeys = try users.map { try $0.convertToSeaMonkey() }
                             return blockedUserData
                     }
             }
@@ -1094,19 +1058,11 @@ struct UserController: RouteCollection, ImageHandler {
                 .all()
                 .map {
                     (users) in
-                    var seamonkeys = [SeaMonkey]()
-                    for user in users {
-                        let seamonkey = try SeaMonkey(
-                            userID: user.requireID(),
-                            username: "@\(user.username)"
-                        )
-                        seamonkeys.append(seamonkey)
-                    }
-                    // return barrel data struct, with 201 response
+                    // return as BarrelData, with 201 response
                     let barrelData = try BarrelData(
                         barrelID: savedBarrel.requireID(),
                         name: savedBarrel.name,
-                        seamonkeys: seamonkeys,
+                        seamonkeys: try users.map { try $0.convertToSeaMonkey() },
                         // sets to nil if the key does not exist
                         stringList: savedBarrel.userInfo["userWords"]
                     )
@@ -1178,16 +1134,7 @@ struct UserController: RouteCollection, ImageHandler {
                     .all()
                     .map {
                         (users) in
-                        var seamonkeys = [SeaMonkey]()
-                        for user in users {
-                            let seamonkey = try SeaMonkey(
-                                userID: user.requireID(),
-                                username: "@\(user.username)"
-                            )
-                            seamonkeys.append(seamonkey)
-                        }
-                        // add SeaMonkeys and return
-                        mutedUserData.seamonkeys = seamonkeys
+                        mutedUserData.seamonkeys = try users.map { try $0.convertToSeaMonkey() }
                         return mutedUserData
                 }
         }
@@ -1435,16 +1382,7 @@ struct UserController: RouteCollection, ImageHandler {
                     .all()
                     .map {
                         (users) in
-                        var seamonkeys = [SeaMonkey]()
-                        for user in users {
-                            let seamonkey = try SeaMonkey(
-                                userID: user.requireID(),
-                                username: "@\(user.username)"
-                            )
-                            seamonkeys.append(seamonkey)
-                        }
-                        // add SeaMonkeys and return
-                        barrelData.seamonkeys = seamonkeys
+                        barrelData.seamonkeys = try users.map { try $0.convertToSeaMonkey() }
                         return barrelData
                 }
             }
