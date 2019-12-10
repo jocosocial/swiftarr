@@ -396,6 +396,8 @@ struct UserController: RouteCollection, ImageHandler {
                 (profile) in
                 // FIXME: this should probably be a default image
                 // ... or could let .isEmpty trigger a default
+                // FIXME: also needs ProfileEdit
+                // FIXME: and a test
                 profile.userImage = ""
                 return profile.save(on: req).transform(to: .noContent)
         }

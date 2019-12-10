@@ -805,5 +805,8 @@ final class UserTests: XCTestCase {
             decodeTo: UploadedImageData.self
          )
         XCTAssertNotNil(UUID(uploadedImageData.filename), "should be UUID string")
+        
+        // test image remove
+        // FIXME: still needed
     }
 }
