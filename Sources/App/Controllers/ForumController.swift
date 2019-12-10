@@ -57,7 +57,7 @@ struct ForumController: RouteCollection, ImageHandler {
         tokenAuthGroup.post(ReportData.self, at: Forum.parameter, "report", use: forumReportHandler)
         tokenAuthGroup.post(Forum.parameter, "unlock", use: forumUnlockHandler)
         tokenAuthGroup.get("owner", use: ownerHandler)
-        tokenAuthGroup.post(PostCreateData.self, at: Forum.parameter, "create", use: postCreateHandler)
+        tokenAuthGroup.post(PostContentData.self, at: Forum.parameter, "create", use: postCreateHandler)
         tokenAuthGroup.post("post", ForumPost.parameter, "delete", use: postDeleteHandler)
         tokenAuthGroup.post(ReportData.self, at: "post", ForumPost.parameter, "report", use: postReportHandler)
     }
@@ -537,7 +537,7 @@ struct ForumController: RouteCollection, ImageHandler {
     ///   - data: `PostCreateData` containg the post's text and optional image.
     /// - Throws: 403 error if the forum is locked or user is blocked.
     /// - Returns: `PostData` containing the post's contents and metadata.
-    func postCreateHandler(_ req: Request, data: PostCreateData) throws -> Future<Response> {
+    func postCreateHandler(_ req: Request, data: PostContentData) throws -> Future<Response> {
         let user = try req.requireAuthenticated(User.self)
         // ensure user has write access
         guard user.accessLevel.rawValue >= UserAccessLevel.verified.rawValue else {
