@@ -343,22 +343,22 @@ final class UsersTests: XCTestCase {
             headers: headers,
             decodeTo: UserInfo.self
         )
-        var userReportData = UserReportData(message: "")
+        var reportData = ReportData(message: "")
         var response = try app.getResponse(
             from: usersURI + "\(userInfo.userID)/report",
             method: .POST,
             headers: headers,
-            body: userReportData
+            body: reportData
         )
         XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
         
         // test no limit
-        userReportData.message = "Ugh."
+        reportData.message = "Ugh."
         response = try app.getResponse(
             from: usersURI + "\(userInfo.userID)/report",
             method: .POST,
             headers: headers,
-            body: userReportData
+            body: reportData
         )
         XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
         
@@ -376,6 +376,6 @@ final class UsersTests: XCTestCase {
         XCTAssertTrue(reports[0].submitterID == user.userID, "should be \(user.userID)")
         XCTAssertTrue(reports[0].reportedID == userInfo.userID.uuidString, "should be \(userInfo.userID.uuidString)")
         XCTAssertFalse(reports[0].isClosed, "should be open")
-        XCTAssertTrue(reports[1].submitterMessage == userReportData.message, "should be \(userReportData.message)")
+        XCTAssertTrue(reports[1].submitterMessage == reportData.message, "should be \(reportData.message)")
     }
 }
