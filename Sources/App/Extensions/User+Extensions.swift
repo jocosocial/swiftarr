@@ -130,6 +130,13 @@ extension User {
                 return user
         }
     }
+    
+    /// Converts a `User` model to a `SeaMonkey` representation.
+    func convertToSeaMonkey() throws -> SeaMonkey {
+        return try SeaMonkey(
+            userID: self.requireID(),
+            username: "@\(self.username)")
+    }
 }
 
 extension Future where T: User {
@@ -140,6 +147,16 @@ extension Future where T: User {
         return self.map {
             (user) in
             return try user.convertToInfo()
+        }
+    }
+    
+    /// Converts a `Future<User>` to a `Future<SeaMonkey>`. Thes extension provides the
+    /// convenience of simply using `user.convertToSeaMonkey()` and allowing the compiler
+    /// to choose the appropriate version for the context.
+    func convertToSeaMonkey() throws -> Future<SeaMonkey> {
+        return self.map {
+            (user) in
+            return try user.convertToSeaMonkey()
         }
     }
 }
