@@ -229,7 +229,7 @@ final class ForumTests: XCTestCase {
     }
     
     /// `GET /api/v3/forum/ID`
-    /// `POST /api/v3/forum/ID`
+    /// `POST /api/v3/forum/ID/create`
     /// `POST /api/v3/forum/ID/rename/STRING`
     /// `POST /api/v3/forum/ID/lock`
     /// `POST /api/v3/forum/ID/unlock`
@@ -350,10 +350,210 @@ final class ForumTests: XCTestCase {
         XCTAssertTrue(response.http.status.code == 204, "should be 204 No Content")
     }
     
-//    /// `POST /api/v3/forum/ID/rename/STRING`
-//    func testForumRename() throws {
-//        
-//    }
+    /// `POST /api/v3/forum/post/ID/delete`
+    func testPostDelete() throws {
+        // create verified logged in user
+        var token = try app.login(username: "verified", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // create user forum
+        let userCategories = try app.getResult(
+            from: forumURI + "categories/user",
+            method: .GET,
+            headers: headers,
+            decodeTo: [CategoryData].self
+        )
+        let forumCreateData = ForumCreateData(
+            title: "A forum!",
+            text: "A forum post!",
+            image: nil
+        )
+        let categoryID = userCategories.first?.categoryID
+        var forumData = try app.getResult(
+            from: forumURI + "categories/\(categoryID!)/create",
+            method: .POST,
+            headers: headers,
+            body: forumCreateData,
+            decodeTo: ForumData.self
+        )
+        
+        // create post
+        let postCreateData = PostCreateData(text: "Hello!", image: nil)
+        var response = try app.getResponse(
+            from: forumURI + "\(forumData.forumID)/create",
+            method: .POST,
+            headers: headers,
+            body: postCreateData
+        )
+        XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+
+        // get post
+        forumData = try app.getResult(
+            from: forumURI + "\(forumData.forumID)",
+            method: .GET,
+            headers: headers,
+            body: forumCreateData,
+            decodeTo: ForumData.self
+        )
+        let postsCount = forumData.posts.count
+        let post = forumData.posts[0]
+        XCTAssertTrue(post.text == "\(forumCreateData.text)", "should be \(forumCreateData.text)")
+        
+        // test attempt delete
+        let verifiedHeaders = headers
+        _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        token = try app.login(username: testUsername, password: testPassword, on: conn)
+        headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        response = try app.getResponse(
+            from: forumURI + "post/\(post.postID)/delete",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
+        
+        // test delete
+        response = try app.getResponse(
+            from: forumURI + "post/\(post.postID)/delete",
+            method: .POST,
+            headers: verifiedHeaders
+        )
+        XCTAssertTrue(response.http.status.code == 204, "should be 204 No Content")
+        forumData = try app.getResult(
+            from: forumURI + "\(forumData.forumID)",
+            method: .GET,
+            headers: headers,
+            body: forumCreateData,
+            decodeTo: ForumData.self
+        )
+        XCTAssertTrue(forumData.posts.count == postsCount - 1, "should be \(postsCount - 1)")
+    }
     
+    func testForumReport() throws {
+        // create verified logged in user
+        var token = try app.login(username: "verified", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // create user forum
+        let userCategories = try app.getResult(
+            from: forumURI + "categories/user",
+            method: .GET,
+            headers: headers,
+            decodeTo: [CategoryData].self
+        )
+        let forumCreateData = ForumCreateData(
+            title: "A forum!",
+            text: "A forum post!",
+            image: nil
+        )
+        let categoryID = userCategories.first?.categoryID
+        let forumData = try app.getResult(
+            from: forumURI + "categories/\(categoryID!)/create",
+            method: .POST,
+            headers: headers,
+            body: forumCreateData,
+            decodeTo: ForumData.self
+        )
+        
+        // test submit
+        var reportData = ReportData(message: "")
+        var response = try app.getResponse(
+            from: forumURI + "\(forumData.forumID)/report",
+            method: .POST,
+            headers: headers,
+            body: reportData
+        )
+        XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+        
+        // test no limit
+        reportData.message = "Ugh."
+        response = try app.getResponse(
+            from: forumURI + "\(forumData.forumID)/report",
+            method: .POST,
+            headers: headers,
+            body: reportData
+        )
+        XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+        
+        // test data
+        token = try app.login(username: "admin", password: testPassword, on: conn)
+        var adminHeaders = HTTPHeaders()
+        adminHeaders.bearerAuthorization = BearerAuthorization(token: token.token)
+        let reports = try app.getResult(
+            from: adminURI + "reports",
+            method: .GET,
+            headers: adminHeaders,
+            decodeTo: [Report].self
+        )
+        XCTAssertTrue(reports.count == 2, "should be 2 reports")
+        XCTAssertFalse(reports[0].isClosed, "should be open")
+        XCTAssertTrue(reports[1].submitterMessage == reportData.message, "should be \(reportData.message)")
+    }
+    
+    func testPostReport() throws {
+        // create verified logged in user
+        var token = try app.login(username: "verified", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // create user forum
+        let userCategories = try app.getResult(
+            from: forumURI + "categories/user",
+            method: .GET,
+            headers: headers,
+            decodeTo: [CategoryData].self
+        )
+        let forumCreateData = ForumCreateData(
+            title: "A forum!",
+            text: "A forum post!",
+            image: nil
+        )
+        let categoryID = userCategories.first?.categoryID
+        let forumData = try app.getResult(
+            from: forumURI + "categories/\(categoryID!)/create",
+            method: .POST,
+            headers: headers,
+            body: forumCreateData,
+            decodeTo: ForumData.self
+        )
+        let post = forumData.posts[0]
+        
+        // test submit
+        var reportData = ReportData(message: "")
+        var response = try app.getResponse(
+            from: forumURI + "post/\(post.postID)/report",
+            method: .POST,
+            headers: headers,
+            body: reportData
+        )
+        XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+        
+        // test limited to 1
+        reportData.message = "Ugh."
+        response = try app.getResponse(
+            from: forumURI + "post/\(post.postID)/report",
+            method: .POST,
+            headers: headers,
+            body: reportData
+        )
+        XCTAssertTrue(response.http.status.code == 409, "should be 409 Conflict")
+        
+        // test data
+        token = try app.login(username: "admin", password: testPassword, on: conn)
+        var adminHeaders = HTTPHeaders()
+        adminHeaders.bearerAuthorization = BearerAuthorization(token: token.token)
+        let reports = try app.getResult(
+            from: adminURI + "reports",
+            method: .GET,
+            headers: adminHeaders,
+            decodeTo: [Report].self
+        )
+        XCTAssertTrue(reports.count == 1, "should be 1 report")
+        XCTAssertFalse(reports[0].isClosed, "should be open")
+        XCTAssertTrue(reports[0].submitterMessage.isEmpty, "should be empty message report")
+    }
+
     // test forum block
 }

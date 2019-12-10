@@ -52,11 +52,14 @@ struct ForumController: RouteCollection, ImageHandler {
         
         // endpoints available only when logged in
         tokenAuthGroup.post(ForumCreateData.self, at: "categories", Category.parameter, "create", use: forumCreateHandler)
-        tokenAuthGroup.post(PostCreateData.self, at: Forum.parameter, "create", use: postCreateHandler)
         tokenAuthGroup.post(Forum.parameter, "lock", use: forumLockHandler)
         tokenAuthGroup.post(Forum.parameter, "rename", String.parameter, use: forumRenameHandler)
+        tokenAuthGroup.post(ReportData.self, at: Forum.parameter, "report", use: forumReportHandler)
         tokenAuthGroup.post(Forum.parameter, "unlock", use: forumUnlockHandler)
         tokenAuthGroup.get("owner", use: ownerHandler)
+        tokenAuthGroup.post(PostCreateData.self, at: Forum.parameter, "create", use: postCreateHandler)
+        tokenAuthGroup.post("post", ForumPost.parameter, "delete", use: postDeleteHandler)
+        tokenAuthGroup.post(ReportData.self, at: "post", ForumPost.parameter, "report", use: postReportHandler)
     }
     
     // MARK: - Open Access Handlers
@@ -420,6 +423,35 @@ struct ForumController: RouteCollection, ImageHandler {
         }
     }
     
+    /// `POST /api/v3/forum/ID/report`
+    ///
+    /// Creates a `Report` regarding the specified `Forum`.
+    ///
+    /// - Note: The accompanying report message is optional on the part of the submitting user,
+    ///   but the `ReportData` is mandatory in order to allow one. If there is no message,
+    ///   send an empty string in the `.message` field.
+    ///
+    /// - Requires: `ReportData` payload in the HTTP body.
+    /// - Parameters:
+    ///   - req: The incoming `Request`, provided automatically.
+    ///   - data: `ReportData` containing an optional accompanying message.
+    /// - Returns: 201 Created on success.
+    func forumReportHandler(_ req: Request, data: ReportData) throws -> Future<HTTPStatus> {
+        let user = try req.requireAuthenticated(User.self)
+        let parent = try user.parentAccount(on: req)
+        let forum = try req.parameters.next(Forum.self)
+        return flatMap(parent, forum) {
+            (parent, forum) in
+            let report = Report(
+                reportType: .forum,
+                reportedID: try forum.requireID().uuidString,
+                submitterID: try parent.requireID(),
+                submitterMessage: data.message
+            )
+            return report.save(on: req).transform(to: .created)
+        }
+    }
+
     /// `POST /api/v3/forum/ID/unlock`
     ///
     /// Remove a read-only lock on the specified `Forum`.
@@ -554,6 +586,65 @@ struct ForumController: RouteCollection, ImageHandler {
                         return response
                     }
                 }
+            }
+        }
+    }
+    
+    /// `POST /api/v3/forum/post/ID/delete`
+    ///
+    /// Delete the specified `ForumPost`.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 403 error if the user is not permitted to delete.
+    /// - Returns: 204 No Content on success.
+    func postDeleteHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        let user = try req.requireAuthenticated(User.self)
+        return try req.parameters.next(ForumPost.self).flatMap {
+            (post) in
+            guard try post.authorID == user.requireID()
+                || user.accessLevel.rawValue >= UserAccessLevel.moderator.rawValue else {
+                    throw Abort(.forbidden, reason: "user is not permitted to delete post")
+            }
+            return post.delete(on: req).transform(to: .noContent)
+        }
+    }
+    
+    /// `POST /api/v3/forum/post/ID/report`
+    ///
+    /// Creates a `Report` regarding the specified `ForumPost`.
+    ///
+    /// - Note: The accompanying report message is optional on the part of the submitting user,
+    ///   but the `ReportData` is mandatory in order to allow one. If there is no message,
+    ///   send an empty string in the `.message` field.
+    ///
+    /// - Requires: `ReportData` payload in the HTTP body.
+    /// - Parameters:
+    ///   - req: The incoming `Request`, provided automatically.
+    ///   - data: `ReportData` containing an optional accompanying message.
+    /// - Throws: 409 error if user has already reported the post.
+    /// - Returns: 201 Created on success.
+    func postReportHandler(_ req: Request, data: ReportData) throws -> Future<HTTPStatus> {
+        let user = try req.requireAuthenticated(User.self)
+        let parent = try user.parentAccount(on: req)
+        let forumPost = try req.parameters.next(ForumPost.self)
+        return flatMap(parent, forumPost) {
+            (parent, post) in
+            return Report.query(on: req)
+                .filter(\.reportedID == String(try post.requireID()))
+                .filter(\.submitterID == (try parent.requireID()))
+                .count()
+                .flatMap {
+                    (count) in
+                    guard count == 0 else {
+                        throw Abort(.conflict, reason: "user has already reported post")
+                    }
+                    let report = Report(
+                        reportType: .forumPost,
+                        reportedID: String(try post.requireID()),
+                        submitterID: try parent.requireID(),
+                        submitterMessage: data.message
+                    )
+                    return report.save(on: req).transform(to: .created)
             }
         }
     }
