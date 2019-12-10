@@ -636,14 +636,20 @@ struct UserController: RouteCollection, ImageHandler {
                 var alertWords = barrel.userInfo["alertWords"] ?? []
                 alertWords.append(parameter)
                 barrel.userInfo.updateValue(alertWords.sorted(), forKey: "alertWords")
-                return barrel.save(on: req).map {
+                return barrel.save(on: req).flatMap {
                     (savedBarrel) in
                     // return sorted list
                     let alertKeywordData = AlertKeywordData(
                         name: savedBarrel.name,
                         keywords: alertWords.sorted()
                     )
-                    return alertKeywordData
+                    // update cache
+                    let cache = try req.keyedCache(for: .redis)
+                    let key = try "alertwords:\(user.requireID())"
+                    return cache.set(key, to: alertKeywordData.keywords).map {
+                        (_) in
+                        return alertKeywordData
+                    }
                 }
         }
     }
@@ -701,14 +707,20 @@ struct UserController: RouteCollection, ImageHandler {
                 }
                 alertWords.remove(at: index)
                 barrel.userInfo.updateValue(alertWords.sorted(), forKey: "alertWords")
-                return barrel.save(on: req).map {
+                return barrel.save(on: req).flatMap {
                     (savedBarrel) in
                     // return sorted list
                     let alertKeywordData = AlertKeywordData(
                         name: savedBarrel.name,
                         keywords: alertWords.sorted()
                     )
-                    return alertKeywordData
+                    // update cache
+                    let cache = try req.keyedCache(for: .redis)
+                    let key = try "alertwords:\(user.requireID())"
+                    return cache.set(key, to: alertKeywordData.keywords).map {
+                        (_) in
+                        return alertKeywordData
+                    }
                 }
         }
     }
@@ -1166,14 +1178,20 @@ struct UserController: RouteCollection, ImageHandler {
                 var muteWords = barrel.userInfo["muteWords"] ?? []
                 muteWords.append(parameter)
                 barrel.userInfo.updateValue(muteWords.sorted(), forKey: "muteWords")
-                return barrel.save(on: req).map {
+                return barrel.save(on: req).flatMap {
                     (savedBarrel) in
                     // return sorted list
                     let muteKeywordData = MuteKeywordData(
                         name: savedBarrel.name,
                         keywords: muteWords.sorted()
                     )
-                    return muteKeywordData
+                    // update cache
+                    let cache = try req.keyedCache(for: .redis)
+                    let key = try "mutewords:\(user.requireID())"
+                    return cache.set(key, to: muteKeywordData.keywords).map {
+                        (_) in
+                        return muteKeywordData
+                    }
                 }
         }
     }
@@ -1231,14 +1249,20 @@ struct UserController: RouteCollection, ImageHandler {
                 }
                 _ = muteWords.remove(at: index)
                 barrel.userInfo.updateValue(muteWords.sorted(), forKey: "muteWords")
-                return barrel.save(on: req).map {
+                return barrel.save(on: req).flatMap {
                     (savedBarrel) in
                     // return sorted list
                     let muteKeywordData = MuteKeywordData(
                         name: savedBarrel.name,
                         keywords: muteWords.sorted()
                     )
-                    return muteKeywordData
+                    // update cache
+                    let cache = try req.keyedCache(for: .redis)
+                    let key = try "mutewords:\(user.requireID())"
+                    return cache.set(key, to: muteKeywordData.keywords).map {
+                        (_) in
+                        return muteKeywordData
+                    }
                 }
         }
     }
