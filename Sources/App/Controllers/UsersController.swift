@@ -46,7 +46,7 @@ struct UsersController: RouteCollection {
         tokenAuthGroup.get("match", "allnames", String.parameter, use: matchAllNamesHandler)
         tokenAuthGroup.get("match", "username", String.parameter, use: matchUsernameHandler)
         tokenAuthGroup.post(User.parameter, "mute", use: muteHandler)
-        tokenAuthGroup.post(NoteCreateData.self, at: User.parameter, "note", use: noteCreateHandler)
+        tokenAuthGroup.post(NoteCreateData.self, at: User.parameter, "note", "create", use: noteCreateHandler)
         tokenAuthGroup.post(User.parameter, "note", "delete", use: noteDeleteHandler)
         tokenAuthGroup.get(User.parameter, "note", use: noteHandler)
         tokenAuthGroup.post(UserReportData.self, at: User.parameter, "report", use: reportHandler)

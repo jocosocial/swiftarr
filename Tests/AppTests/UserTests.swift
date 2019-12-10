@@ -664,14 +664,14 @@ final class UserTests: XCTestCase {
         let note1 = NoteCreateData(note: "had dinner with unverified last night")
         let note2 = NoteCreateData(note: "great scrabble player")
         let createdNoteData1 = try app.getResult(
-            from: usersURI + "\(unverifiedUser.userID)/note",
+            from: usersURI + "\(unverifiedUser.userID)/note/create",
             method: .POST,
             headers: headers,
             body: note1,
             decodeTo: CreatedNoteData.self
         )
         let createdNoteData2 = try app.getResult(
-            from: usersURI + "\(verifiedUser.userID)/note",
+            from: usersURI + "\(verifiedUser.userID)/note/create",
             method: .POST,
             headers: headers,
             body: note2,
@@ -681,7 +681,7 @@ final class UserTests: XCTestCase {
         
         // test note exists
         var response = try app.getResponse(
-            from: usersURI + "\(verifiedUser.userID)/note",
+            from: usersURI + "\(verifiedUser.userID)/note/create",
             method: .POST,
             headers: headers,
             body: note2
