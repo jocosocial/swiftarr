@@ -349,7 +349,7 @@ struct ForumController: RouteCollection, ImageHandler {
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 403 error if the user does not have credentials to modify the forum. 404 error
     ///   if the forum ID is not valid.
-    /// - Returns: 204 No Content on success.
+    /// - Returns: 201 Created on success.
     func forumRenameHandler(_ req: Request) throws -> Future<HTTPStatus> {
         let user = try req.requireAuthenticated(User.self)
         let forumParameter = try req.parameters.next(Forum.self)

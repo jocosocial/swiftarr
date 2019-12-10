@@ -756,7 +756,7 @@ struct UserController: RouteCollection, ImageHandler {
             }
             return barrel.save(on: req).flatMap {
                 (savedBarrel) in
-                // init return struct
+                // return as BarrelData
                 var barrelData = try BarrelData(
                     barrelID: savedBarrel.requireID(),
                     name: savedBarrel.name,
@@ -819,7 +819,7 @@ struct UserController: RouteCollection, ImageHandler {
                     reason: "'\(barrel.barrelType)' barrel cannot be retrieved by this endpoint"
                 )
             }
-            // init return struct
+            // retrun as BarrelData
             var barrelData = try BarrelData(
                 barrelID: barrel.requireID(),
                 name: barrel.name,
@@ -912,7 +912,7 @@ struct UserController: RouteCollection, ImageHandler {
             }
             return barrel.save(on: req).flatMap {
                 (savedBarrel) in
-                // init return struct
+                // return as BarrelData
                 var barrelData = try BarrelData(
                     barrelID: savedBarrel.requireID(),
                     name: savedBarrel.name,
@@ -1002,7 +1002,7 @@ struct UserController: RouteCollection, ImageHandler {
                 .unwrap(or: Abort(.internalServerError, reason: "blocks barrel not found"))
                 .flatMap {
                     (barrel) in
-                    // init return struct
+                    // return as BlockedUserData
                     var blockedUserData = BlockedUserData(
                         name: barrel.name,
                         seamonkeys: []
@@ -1161,7 +1161,7 @@ struct UserController: RouteCollection, ImageHandler {
             .unwrap(or: Abort(.internalServerError, reason: "mutes barrel not found"))
             .flatMap {
                 (barrel) in
-                // init return struct
+                // return as MutedUserData
                 var mutedUserData = MutedUserData(
                     name: barrel.name,
                     seamonkeys: []
@@ -1413,7 +1413,7 @@ struct UserController: RouteCollection, ImageHandler {
             barrel.name = parameter
             return barrel.save(on: req).flatMap {
                 (savedBarrel) in
-                // init return struct
+                // return as BarrelData
                 var barrelData = try BarrelData(
                     barrelID: savedBarrel.requireID(),
                     name: savedBarrel.name,
