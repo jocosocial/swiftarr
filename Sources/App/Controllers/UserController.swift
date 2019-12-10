@@ -481,6 +481,8 @@ struct UserController: RouteCollection, ImageHandler {
                     builder.append("- \(realName)")
                 }
                 profile.userSearch = builder.joined(separator: " ").trimmingCharacters(in: .whitespaces)
+                
+                // FIXME: this is backwards, save the *old* data
 
                 return profile.save(on: req).flatMap {
                     (savedProfile) in
