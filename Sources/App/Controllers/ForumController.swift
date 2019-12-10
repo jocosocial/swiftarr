@@ -541,14 +541,17 @@ struct ForumController: RouteCollection, ImageHandler {
                     )
                     return forumPost.save(on: req).map {
                         (savedPost) in
-                        // return as PostData
-                        return try PostData(
+                        // return as PostData, with 201 status
+                        let postData = try PostData(
                             postID: savedPost.requireID(),
                             createdAt: savedPost.createdAt ?? Date(),
                             authorID: try user.requireID(),
                             text: savedPost.text,
                             image: savedPost.image
                         )
+                        let response = Response(http: HTTPResponse(status: .created), using: req)
+                        try response.content.encode(postData)
+                        return response
                     }
                 }
             }
