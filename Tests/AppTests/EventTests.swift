@@ -296,7 +296,7 @@ final class EventTests: XCTestCase {
     /// `POST /api/v3/events/update`
     func testEventsUpdate() throws {
         // create logged in admin
-        let token = try app.login(username: "admin", password: testPassword, on: conn)
+        var token = try app.login(username: "admin", password: testPassword, on: conn)
         var headers = HTTPHeaders()
         headers.bearerAuthorization = BearerAuthorization(token: token.token)
         
@@ -318,5 +318,17 @@ final class EventTests: XCTestCase {
             decodeTo: [EventData].self
         )
         XCTAssertTrue(events.count == 3, "should be 2 updated events, 1 new")
+        
+        // test not admin
+        token = try app.login(username: "verified", password: testPassword, on: conn)
+        headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        let response = try app.getResponse(
+            from: eventsURI + "update",
+            method: .POST,
+            headers: headers,
+            body: eventsUpdateData
+        )
+        XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
     }
 }
