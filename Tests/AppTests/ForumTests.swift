@@ -572,6 +572,61 @@ final class ForumTests: XCTestCase {
         XCTAssertFalse(reports[0].isClosed, "should be open")
         XCTAssertTrue(reports[0].submitterMessage.isEmpty, "should be empty message report")
     }
-
+    
+    /// `POST /api/v3/forum/post/ID/update`
+    func testPostUpdate() throws {
+        // create verified logged in user
+        var token = try app.login(username: "verified", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // create user forum
+        let userCategories = try app.getResult(
+            from: forumURI + "categories/user",
+            method: .GET,
+            headers: headers,
+            decodeTo: [CategoryData].self
+        )
+        let forumCreateData = ForumCreateData(
+            title: "A forum!",
+            text: "A forum post!",
+            image: nil
+        )
+        let categoryID = userCategories.first?.categoryID
+        let forumData = try app.getResult(
+            from: forumURI + "categories/\(categoryID!)/create",
+            method: .POST,
+            headers: headers,
+            body: forumCreateData,
+            decodeTo: ForumData.self
+        )
+        let post = forumData.posts[0]
+        
+        // test update post
+        let postContentData = PostContentData(text: "Changed post text.", image: post.image)
+        let postData = try app.getResult(
+            from: forumURI + "post/\(post.postID)/update",
+            method: .POST,
+            headers: headers,
+            body: postContentData,
+            decodeTo: PostData.self
+        )
+        XCTAssertTrue(postData.postID == post.postID, "should be \(post.postID)")
+        XCTAssertTrue(postData.text == postContentData.text, "should be '\(postContentData.text)'")
+        
+        // test no access
+        _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        token = try app.login(username: testUsername, password: testPassword, on: conn)
+        headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        let response = try app.getFormResponse(
+            from: forumURI + "post/\(post.postID)/update",
+            method: .POST,
+            headers: headers,
+            body: postContentData
+        )
+        XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
+    }
+    
     // test forum block
 }

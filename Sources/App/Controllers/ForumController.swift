@@ -60,6 +60,7 @@ struct ForumController: RouteCollection, ImageHandler {
         tokenAuthGroup.post(PostCreateData.self, at: Forum.parameter, "create", use: postCreateHandler)
         tokenAuthGroup.post("post", ForumPost.parameter, "delete", use: postDeleteHandler)
         tokenAuthGroup.post(ReportData.self, at: "post", ForumPost.parameter, "report", use: postReportHandler)
+        tokenAuthGroup.post(PostContentData.self, at: "post", ForumPost.parameter, "update", use: postUpateHandler)
     }
     
     // MARK: - Open Access Handlers
@@ -645,6 +646,60 @@ struct ForumController: RouteCollection, ImageHandler {
                         submitterMessage: data.message
                     )
                     return report.save(on: req).transform(to: .created)
+            }
+        }
+    }
+    
+    /// `POST /api/v3/forum/post/ID/update`
+    ///
+    /// Update the specified`ForumPost`.
+    ///
+    /// - Note: This endpoint only changes the `.text` and `.image` *filename* of the post.
+    ///   To change or remove the actual image asoociated with the post, use
+    ///   `POST /api/v3/forum/post/ID/image` or `POST /api/v3/forum/post/ID/image/remove`.
+    ///
+    /// - Requires: `PostContentData` payload in the HTTP body.
+    /// - Parameters:
+    ///   - req: The incoming `Request`, provided automatically.
+    ///   - data: `PostContentData` containing the post's text and image filename.
+    /// - Throws: 403 error if the use is not post owner or is read-only.
+    /// - Returns: `PostData` containing the post's contents and metadata.
+    func postUpateHandler(_ req: Request, data: PostContentData) throws -> Future<Response> {
+        let user = try req.requireAuthenticated(User.self)
+        return try req.parameters.next(ForumPost.self).flatMap {
+            (post) in
+            // ensure user has write access
+            guard try post.authorID == user.requireID(),
+                user.accessLevel.rawValue >= UserAccessLevel.verified.rawValue else {
+                    throw Abort(.forbidden, reason: "user not permitted to edit post")
+            }
+            // see `PostCreateData.validations()`
+            try data.validate()
+            // stash current contents
+            let forumEdit = try ForumEdit(
+                postID: post.requireID(),
+                postContent: PostContentData(text: post.text, image: post.image)
+            )
+            // update if there are changes
+            if post.text != data.text || post.image != data.image {
+                post.text = data.text
+                post.image = data.image
+                return post.save(on: req).flatMap {
+                    (savedPost) in
+                    // save ForumEdit
+                    return forumEdit.save(on: req).map {
+                        (_) in
+                        // return updated post as PostData, with 201 status
+                        let response = Response(http: HTTPResponse(status: .created), using: req)
+                        try response.content.encode(try savedPost.convertToData())
+                        return response
+                    }
+                }
+            } else {
+                // just return post as PostData, with 200 status
+                let response = Response(http: HTTPResponse(status: .ok), using: req)
+                try response.content.encode(try post.convertToData())
+                return req.future(response)
             }
         }
     }
