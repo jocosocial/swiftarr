@@ -505,7 +505,7 @@ struct ForumController: RouteCollection, ImageHandler {
     ///   - data: `PostCreateData` containg the post's text and optional image.
     /// - Throws: 403 error if the forum is locked or user is blocked.
     /// - Returns: `PostData` containing the post's contents and metadata.
-    func postCreateHandler(_ req: Request, data: PostCreateData) throws -> Future<PostData> {
+    func postCreateHandler(_ req: Request, data: PostCreateData) throws -> Future<Response> {
         let user = try req.requireAuthenticated(User.self)
         // ensure user has write access
         guard user.accessLevel.rawValue >= UserAccessLevel.verified.rawValue else {
