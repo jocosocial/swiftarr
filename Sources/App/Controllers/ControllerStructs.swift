@@ -226,7 +226,7 @@ struct ForumData: Content {
     /// Whether the forum is in read-only state.
     var isLocked: Bool
     /// The posts in the forum.
-    var posts: [ForumPostData]
+    var posts: [PostData]
 }
 
 /// Used to return the ID, title and status of a `Forum`.
@@ -248,16 +248,6 @@ struct ForumListData: Content {
     var lastPostAt: Date?
     /// Whether the forum is in read-only state.
     var isLocked: Bool
-}
-
-/// Used to return the contents of a `ForumPost`.
-struct ForumPostData: Content {
-    /// Timestamp of the post's creation.
-    var createdAt: Date
-    /// The text content of the post.
-    var text: String
-    /// The filename of the image content of the post.
-    var image: String
 }
 
 /// Used to upload an image file.
@@ -342,6 +332,38 @@ struct NoteUpdateData: Content {
     let noteID: UUID
     /// The udated text of the note.
     let note: String
+}
+
+/// Used to create a `ForumPost`.
+///
+/// Required by: `POST /api/v3/forum/ID`
+///
+/// See `ForumController.postCreateHandler(_:data:)`.
+struct PostCreateData: Content {
+    /// The text of the forum post.
+    var text: String
+    /// An optional image in Data format.
+    var image: Data?
+}
+
+/// Used to return a `ForumPost`'s data.
+///
+/// Returned by:
+/// * `POST /api/v3/forum/ID`
+/// * `POST /api/v3/forum/post/ID/update`
+///
+/// See `ForumController.postCreateHandler(_:data:)`, `ForumController.postUpdateHandler(_:data:)`.
+struct PostData: Content {
+    /// The ID of the post.
+    var postID: Int
+    /// The timestamp of the post.
+    var createdAt: Date
+    /// The ID of the post's author.
+    var authorID: UUID
+    /// The text of the forum post.
+    var text: String
+    /// The filename of the post's optional image.
+    var image: String
 }
 
 /// Returned by `Barrel`s as a unit representing a user.
@@ -543,6 +565,15 @@ extension ForumCreateData: Validatable, Reflectable {
     static func validations() throws -> Validations<ForumCreateData> {
         var validations = Validations(ForumCreateData.self)
         try validations.add(\.title, .count(1...))
+        try validations.add(\.text, .count(1...))
+        return validations
+    }
+}
+
+extension PostCreateData: Validatable, Reflectable {
+    /// Validates that `.text` contains a value.
+    static func validations() throws -> Validations<PostCreateData> {
+        var validations = Validations(PostCreateData.self)
         try validations.add(\.text, .count(1...))
         return validations
     }
