@@ -134,7 +134,7 @@ final class ForumTests: XCTestCase {
             headers: headers,
             decodeTo: [CategoryData].self
         )
-        XCTAssertTrue(categories[0].title == "Twit-arr Support", "should be 'Twit-arr Support'")
+        XCTAssertTrue(categories[0].title == "Test 1", "should be 'Test 1'")
         
         // test get user forums for test coverage
         forums = try app.getResult(
@@ -317,7 +317,7 @@ final class ForumTests: XCTestCase {
         token = try app.login(username: testUsername, password: testPassword, on: conn)
         headers = HTTPHeaders()
         headers.bearerAuthorization = BearerAuthorization(token: token.token)
-        let postCreateData = PostCreateData(text: "Hello!", image: nil)
+        let postCreateData = PostCreateData(text: "Hello!", imageData: nil)
         response = try app.getResponse(
             from: forumURI + "\(forumData.forumID)/create",
             method: .POST,
@@ -397,7 +397,7 @@ final class ForumTests: XCTestCase {
         )
         
         // create post
-        let postCreateData = PostCreateData(text: "Hello!", image: nil)
+        let postCreateData = PostCreateData(text: "Hello!", imageData: nil)
         var response = try app.getResponse(
             from: forumURI + "\(forumData.forumID)/create",
             method: .POST,
