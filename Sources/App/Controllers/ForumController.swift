@@ -50,6 +50,7 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
         sharedAuthGroup.get("categories", "user", use: categoriesUserHandler)
         sharedAuthGroup.get("categories", Category.parameter, use: categoryForumsHandler)
         sharedAuthGroup.get("post", ForumPost.parameter, use: postHandler)
+        sharedAuthGroup.get("post", ForumPost.parameter, "forum", use: postForumHandler)
         
         // endpoints available only when logged in
         tokenAuthGroup.post(ForumCreateData.self, at: "categories", Category.parameter, "create", use: forumCreateHandler)
@@ -296,6 +297,53 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
                             posts: filteredPosts.map { try $0.convertToData() }
                         )
                         return forumData
+                }
+            }
+        }
+    }
+    
+    /// `GET /api/v3/forum/post/ID/forum`
+    ///
+    /// Retrieve the `ForumData` of the specified `ForumPost`'s parent `Forum`.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: `ForumData` containing the post's parent forum.
+    func postForumHandler(_ req: Request) throws -> Future<ForumData> {
+        let user = try req.requireAuthenticated(User.self)
+        // get post
+        return try req.parameters.next(ForumPost.self).flatMap {
+            (post) in
+            // get forum
+            return post.forum.get(on: req).flatMap {
+                (forum) in
+                // filter posts
+                return try self.getCachedFilters(for: user, on: req).flatMap {
+                    (tuple) in
+                    let blocked = tuple.0
+                    let muted = tuple.1
+                    let mutewords = tuple.2
+                    return try forum.posts.query(on: req)
+                        .filter(\.authorID !~ blocked)
+                        .filter(\.authorID !~ muted)
+                        .sort(\.createdAt, .ascending)
+                        .all()
+                        .map {
+                            (posts) in
+                            // remove muteword posts
+                            let filteredPosts = posts.compactMap {
+                                self.filterMutewords(for: $0, using: mutewords, on: req)
+                            }
+                            // return as ForumData
+                            let forumData = try ForumData(
+                                forumID: forum.requireID(),
+                                title: forum.title,
+                                creatorID: forum.creatorID,
+                                isLocked: forum.isLocked,
+                                posts: filteredPosts.map { try $0.convertToData() }
+                            )
+                            return forumData
+                    }
                 }
             }
         }

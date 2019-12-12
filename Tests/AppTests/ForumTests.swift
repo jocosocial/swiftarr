@@ -684,5 +684,44 @@ final class ForumTests: XCTestCase {
         XCTAssertTrue(response.http.status.code == 404 , "should be 404 Not Found")
     }
     
+    func testPostForum() throws {
+        // create verified logged in user
+        let token = try app.login(username: "verified", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // create user forum
+        let userCategories = try app.getResult(
+            from: forumURI + "categories/user",
+            method: .GET,
+            headers: headers,
+            decodeTo: [CategoryData].self
+        )
+        let forumCreateData = ForumCreateData(
+            title: "A forum!",
+            text: "A forum post!",
+            image: nil
+        )
+        let categoryID = userCategories.first?.categoryID
+        let forumData = try app.getResult(
+            from: forumURI + "categories/\(categoryID!)/create",
+            method: .POST,
+            headers: headers,
+            body: forumCreateData,
+            decodeTo: ForumData.self
+        )
+        let post = forumData.posts[0]
+        
+        // test get forum from post
+        let postForumData = try app.getResult(
+            from: forumURI + "post/\(post.postID)/forum",
+            method: .GET,
+            headers: headers,
+            decodeTo: ForumData.self
+        )
+        XCTAssertTrue(forumData.forumID == postForumData.forumID, "should be same")
+        XCTAssertTrue(forumData.posts[0].postID == postForumData.posts[0].postID, "should be same")
+    }
+    
     // test forum block
 }
