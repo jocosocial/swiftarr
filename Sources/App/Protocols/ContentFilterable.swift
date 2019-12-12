@@ -5,8 +5,7 @@ import Redis
 /// return content that is filterable on a per-user basis.
 
 protocol ContentFilterable {
-    /// Return the cached blocked UUIDs, muted UUIDs and muting keyword String values for content
-    /// filtering.
+    /// Return the cached blocks, mutes and mutewords for the current user.
     func getCachedFilters(for user: User, on req: Request) throws -> Future<([UUID], [UUID], [String])>
 }
 
@@ -33,5 +32,24 @@ extension ContentFilterable {
             let mutedwords = mutewords ?? []
             return (blocked, muted, mutedwords)
         }
+    }
+}
+
+extension ContentFilterable {
+    /// Checks if a `ForumPost` contains any of the provided array of muting strings, returning
+    /// either the original post or `nil` if there is a match.
+    ///
+    /// - Parameters:
+    ///   - post: The `ForumPost` to filter.
+    ///   - mutewords: The list of strings on which to filter the post.
+    ///   - req: The incoming `Request` on whose event loop this needs to run.
+    /// - Returns: The provided post, or `nil` if the post contains a muting string.
+    func filterMutewords(for post: ForumPost, using mutewords: [String], on req: Request) -> ForumPost? {
+        for word in mutewords {
+            if post.text.range(of: word, options: .caseInsensitive) != nil {
+                return nil
+            }
+        }
+        return post
     }
 }
