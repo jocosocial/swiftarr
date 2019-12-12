@@ -1422,6 +1422,7 @@ struct UserController: RouteCollection, ImageHandler {
     /// Updates a user's password to the supplied value, encrypted.
     ///
     /// - Requires: `UserPasswordData` payload in the HTTP body.
+    /// - Parameters:
     ///   - req: The incoming `Request`, provided automatically.
     ///   - data: `UserPasswordData` struct containing the user's desired password.
     /// - Throws: 400 error if the supplied password is not at least 6 characters. 403 error
