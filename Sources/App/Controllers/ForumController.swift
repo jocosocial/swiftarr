@@ -270,6 +270,7 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
         let user = try req.requireAuthenticated(User.self)
         return try req.parameters.next(Forum.self).flatMap {
             (forum) in
+            // filter posts
             return try self.getCachedFilters(for: user, on: req).flatMap {
                 (tuple) in
                 let blocked = tuple.0
@@ -278,18 +279,21 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
                 return try forum.posts.query(on: req)
                     .filter(\.authorID !~ blocked)
                     .filter(\.authorID !~ muted)
-                    .filter(\.text, .notILike, "\(mutewords)")
                     .sort(\.createdAt, .ascending)
                     .all()
                     .map {
                         (posts) in
+                        // remove muteword posts
+                        let filteredPosts = posts.compactMap {
+                            self.filterMutewords(for: $0, using: mutewords, on: req)
+                        }
                         // return as ForumData
                         let forumData = try ForumData(
                             forumID: forum.requireID(),
                             title: forum.title,
                             creatorID: forum.creatorID,
                             isLocked: forum.isLocked,
-                            posts: posts.map { try $0.convertToData() }
+                            posts: filteredPosts.map { try $0.convertToData() }
                         )
                         return forumData
                 }
