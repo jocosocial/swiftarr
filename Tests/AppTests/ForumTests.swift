@@ -628,5 +628,61 @@ final class ForumTests: XCTestCase {
         XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
     }
     
+    /// `GET /api/v3/forum/post/ID`
+    func testContentFilter() throws {
+        // create verified logged in user
+        let token = try app.login(username: "verified", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // create user forum
+        let userCategories = try app.getResult(
+            from: forumURI + "categories/user",
+            method: .GET,
+            headers: headers,
+            decodeTo: [CategoryData].self
+        )
+        let forumCreateData = ForumCreateData(
+            title: "A forum!",
+            text: "A filterable forum post!",
+            image: nil
+        )
+        let categoryID = userCategories.first?.categoryID
+        let forumData = try app.getResult(
+            from: forumURI + "categories/\(categoryID!)/create",
+            method: .POST,
+            headers: headers,
+            body: forumCreateData,
+            decodeTo: ForumData.self
+        )
+        let post = forumData.posts[0]
+        
+        // test unfiltered
+        var response = try app.getResponse(
+            from: forumURI + "post/\(post.postID)",
+            method: .GET,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 200, "shoulb be 200 OK")
+
+        // set muteword
+        let muteKeywordData = try app.getResult(
+            from: userURI + "mutewords/add/filter",
+            method: .POST,
+            headers: headers,
+            decodeTo: MuteKeywordData.self
+        )
+        XCTAssertTrue(muteKeywordData.keywords.count == 1, "should be 1 keyword")
+        XCTAssertTrue(muteKeywordData.keywords[0] == "filter", "should be 'filter'")
+        
+        // test filtered
+        response = try app.getResponse(
+            from: forumURI + "post/\(post.postID)",
+            method: .GET,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 404 , "should be 404 Not Found")
+    }
+    
     // test forum block
 }

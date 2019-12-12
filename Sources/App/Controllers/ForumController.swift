@@ -7,7 +7,7 @@ import Redis
 /// The collection of `/api/v3/forum/*` route endpoints and handler functions related
 /// to forums.
 
-struct ForumController: RouteCollection, ImageHandler {
+struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
 
     // MARK: ImageHandler Conformance
     
@@ -49,6 +49,7 @@ struct ForumController: RouteCollection, ImageHandler {
         sharedAuthGroup.get("categories", "admin", use: categoriesAdminHandler)
         sharedAuthGroup.get("categories", "user", use: categoriesUserHandler)
         sharedAuthGroup.get("categories", Category.parameter, use: categoryForumsHandler)
+        sharedAuthGroup.get("post", ForumPost.parameter, use: postHandler)
         
         // endpoints available only when logged in
         tokenAuthGroup.post(ForumCreateData.self, at: "categories", Category.parameter, "create", use: forumCreateHandler)
@@ -259,7 +260,8 @@ struct ForumController: RouteCollection, ImageHandler {
     
     /// `GET /api/v3/forum/ID`
     ///
-    /// Retrieve a `Forum` with all its `ForumPost`s. Content from blocked or muted users, or containing user's muteWords, is not returned.
+    /// Retrieve a `Forum` with all its `ForumPost`s. Content from blocked or muted users,
+    /// or containing user's muteWords, is not returned.
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 404 error if the forum is not available.
@@ -268,47 +270,67 @@ struct ForumController: RouteCollection, ImageHandler {
         let user = try req.requireAuthenticated(User.self)
         return try req.parameters.next(Forum.self).flatMap {
             (forum) in
-            // 404 if block applies
-            let cache = try req.keyedCache(for: .redis)
-            let key = try "blocks:\(user.requireID())"
-            let cachedBlocks = cache.get(key, as: [UUID].self)
-            return cachedBlocks.flatMap {
-                (blocks) in
-                let blocked = blocks ?? []
-                guard !blocked.contains(forum.creatorID) else {
-                    throw Abort(.notFound, reason: "forum is unavailable")
+            return try self.getCachedFilters(for: user, on: req).flatMap {
+                (tuple) in
+                let blocked = tuple.0
+                let muted = tuple.1
+                let mutewords = tuple.2
+                return try forum.posts.query(on: req)
+                    .filter(\.authorID !~ blocked)
+                    .filter(\.authorID !~ muted)
+                    .filter(\.text, .notILike, "\(mutewords)")
+                    .sort(\.createdAt, .ascending)
+                    .all()
+                    .map {
+                        (posts) in
+                        // return as ForumData
+                        let forumData = try ForumData(
+                            forumID: forum.requireID(),
+                            title: forum.title,
+                            creatorID: forum.creatorID,
+                            isLocked: forum.isLocked,
+                            posts: posts.map { try $0.convertToData() }
+                        )
+                        return forumData
                 }
-                
-                // FIXME: need to handle w/mutes endpoint
-                
-                // remove blocks and mutes
-                let mutesKey = try "mutes:\(user.requireID())"
-                let cachedMutes = cache.get(mutesKey, as: [UUID].self)
-                let muteWordsBarrel = try user.barrels.query(on: req)
-                    .filter(\.barrelType == .keywordMute)
+            }
+        }
+    }
+    
+    /// `GET /api/v3/forum/post/ID`
+    ///
+    /// Retrieve the specified `ForumPost`.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 404 error if the post is not available.
+    /// - Returns: `PostData` containing the specified post.
+    func postHandler(_ req: Request) throws -> Future<PostData> {
+        let user = try req.requireAuthenticated(User.self)
+        return try req.parameters.next(ForumPost.self).flatMap {
+            (post) in
+            // we have post, but need to filter
+            return try self.getCachedFilters(for: user, on: req).flatMap {
+                (tuple) in
+                let blocked = tuple.0
+                let muted = tuple.1
+                let mutewords = tuple.2
+                // NOW we can find (again!) using postgress to filter
+                return try ForumPost.query(on: req)
+                    .filter(\.id == post.requireID())
+                    .filter(\.authorID !~ blocked)
+                    .filter(\.authorID !~ muted)
                     .first()
-                return flatMap(cachedMutes, muteWordsBarrel) {
-                    (mutes, barrel) in
-                    let muted = mutes ?? []
-                    let muteWords = barrel?.userInfo["muteWords"] ?? []
-                    return try forum.posts.query(on: req)
-                        .filter(\.authorID !~ blocked)
-                        .filter(\.authorID !~ muted)
-                        .filter(\.text !~ muteWords)
-                        .sort(\.createdAt, .ascending)
-                        .all()
-                        .map {
-                            (posts) in
-                            // return as ForumData
-                            let forumData = try ForumData(
-                                forumID: forum.requireID(),
-                                title: forum.title,
-                                creatorID: forum.creatorID,
-                                isLocked: forum.isLocked,
-                                posts: posts.map { try $0.convertToData() }
-                            )
-                            return forumData
-                    }
+                    .unwrap(or: Abort(.notFound, reason: "post is not available"))
+                    .map {
+                        (filteredPost) in
+                        // can't pass a string array into postgress
+                        // at least this sets us up for mute tagging at some point
+                        for word in mutewords {
+                            if filteredPost.text.range(of: word, options: .caseInsensitive) != nil {
+                                throw Abort(.notFound, reason: "post is not available")
+                            }
+                        }
+                        return try filteredPost.convertToData()
                 }
             }
         }
