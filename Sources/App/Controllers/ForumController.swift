@@ -375,8 +375,6 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
                     .unwrap(or: Abort(.notFound, reason: "post is not available"))
                     .map {
                         (filteredPost) in
-                        // can't pass a string array into postgress
-                        // at least this sets us up for mute tagging at some point
                         for word in mutewords {
                             if filteredPost.text.range(of: word, options: .caseInsensitive) != nil {
                                 throw Abort(.notFound, reason: "post is not available")
