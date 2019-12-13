@@ -79,8 +79,8 @@ struct TestUsers: Migration {
         }
     }
     
-    /// Required by`Migration` protocol, but no point removing the test users, so
-    /// just return a pre-completed `Future`.
+    /// Required by `Migration` protocol, but this isn't a model update, so just return a
+    /// pre-completed `Future`.
     /// 
     /// - Parameter conn: The database connection.
     /// - Returns: Void.

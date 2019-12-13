@@ -55,8 +55,8 @@ struct RegistrationCodes: Migration {
         }
     }
     
-    /// Required by`Migration` protocol, but these are static so no point removing them,
-    /// just return a pre-completed `Future`.
+    /// Required by `Migration` protocol, but this isn't a model update, so just return a
+    /// pre-completed `Future`.
     /// 
     /// - Parameter conn: The database connection.
     /// - Returns: Void.

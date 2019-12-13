@@ -98,13 +98,13 @@ struct AdminUser: Migration {
         }
     }
     
-    /// Required by`Migration` protocol, but removing the admin would be an exceptionally poor
-    /// idea, so override the default implementation to just return a pre-completed `Future`.
-    /// 
+    /// Required by `Migration` protocol, but this isn't a model update, so just return a
+    /// pre-completed `Future`.
+    ///
     /// - Parameter conn: The database connection.
     /// - Returns: Void.
     static func revert(on conn: PostgreSQLConnection) -> Future<Void> {
-        return Future.done(on: conn)
+        return .done(on: conn)
     }
     
 }

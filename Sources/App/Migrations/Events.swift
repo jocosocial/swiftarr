@@ -42,7 +42,7 @@ struct Events: Migration {
         }
     }
     
-    /// Required by `Migration` protocol, but this is seed data, so just return a
+    /// Required by `Migration` protocol, but this isn't a model update, so just return a
     /// pre-completed `Future`.
     ///
     /// - Parameter conn: The database connection.
