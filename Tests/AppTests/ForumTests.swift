@@ -723,5 +723,88 @@ final class ForumTests: XCTestCase {
         XCTAssertTrue(forumData.posts[0].postID == postForumData.posts[0].postID, "should be same")
     }
     
+    func testPostImage() throws {
+        // create verified logged in user
+        var token = try app.login(username: "verified", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // create user forum
+        let userCategories = try app.getResult(
+            from: forumURI + "categories/user",
+            method: .GET,
+            headers: headers,
+            decodeTo: [CategoryData].self
+        )
+        let forumCreateData = ForumCreateData(
+            title: "A forum!",
+            text: "A forum post!",
+            image: nil
+        )
+        let categoryID = userCategories.first?.categoryID
+        let forumData = try app.getResult(
+            from: forumURI + "categories/\(categoryID!)/create",
+            method: .POST,
+            headers: headers,
+            body: forumCreateData,
+            decodeTo: ForumData.self
+        )
+        let post = forumData.posts[0]
+        
+        // test add image
+        let imageFile = "test-image.jpg"
+        let directoryConfig = DirectoryConfig.detect()
+        let imagePath = directoryConfig.workDir.appending("seeds/").appending(imageFile)
+        let data = FileManager.default.contents(atPath: imagePath)
+        let imageUploadData = ImageUploadData(filename: imageFile, image: data!)
+        var postData = try app.getResult(
+            from: forumURI + "post/\(post.postID)/image",
+            method: .POST,
+            headers: headers,
+            body: imageUploadData,
+            decodeTo: PostData.self
+        )
+        let imageName = postData.image
+        XCTAssertNotNil(UUID(postData.image), "should have an image string")
+        
+        // test replace image
+        postData = try app.getResult(
+            from: forumURI + "post/\(post.postID)/image",
+            method: .POST,
+            headers: headers,
+            body: imageUploadData,
+            decodeTo: PostData.self
+        )
+        XCTAssertNotNil(UUID(postData.image), "should have an image string")
+        XCTAssertNotEqual(postData.image, imageName, "should have a different name")
+        
+        // test remove image
+        postData = try app.getResult(
+            from: forumURI + "post/\(post.postID)/image/remove",
+            method: .POST,
+            headers: headers,
+            decodeTo: PostData.self
+        )
+        XCTAssertTrue(postData.image.isEmpty, "should be no image")
+        
+        // test no access
+        let _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        token = try app.login(username: testUsername, password: testPassword, on: conn)
+        headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        var response = try app.getResponse(
+            from: forumURI + "post/\(post.postID)/image",
+            method: .POST,
+            headers: headers,
+            body: imageUploadData
+        )
+        XCTAssertTrue(response.http.status.code == 403 , "should be 403 Forbidden")
+        response = try app.getResponse(
+            from: forumURI + "post/\(post.postID)/image/remove",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 403 , "should be 403 Forbidden")
+    }
     // test forum block
 }

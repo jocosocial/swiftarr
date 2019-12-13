@@ -363,10 +363,13 @@ struct PostCreateData: Content {
 /// Used to return a `ForumPost`'s data.
 ///
 /// Returned by:
-/// * `POST /api/v3/forum/ID`
+/// * `POST /api/v3/forum/ID/create`
 /// * `POST /api/v3/forum/post/ID/update`
+/// * `POST /api/v3/forum/post/ID/image`
+/// * `POST /api/v3/forum/post/ID/image/remove`
 ///
-/// See `ForumController.postCreateHandler(_:data:)`, `ForumController.postUpdateHandler(_:data:)`.
+/// See `ForumController.postCreateHandler(_:data:)`, `ForumController.postUpdateHandler(_:data:)`,
+/// `ForumController.imageHandler(_:data:)`, `ForumController.imageRemoveHandler(_:)`.
 struct PostData: Content {
     /// The ID of the post.
     var postID: Int

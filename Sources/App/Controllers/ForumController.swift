@@ -61,6 +61,8 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
         tokenAuthGroup.get("owner", use: ownerHandler)
         tokenAuthGroup.post(PostCreateData.self, at: Forum.parameter, "create", use: postCreateHandler)
         tokenAuthGroup.post("post", ForumPost.parameter, "delete", use: postDeleteHandler)
+        tokenAuthGroup.post(ImageUploadData.self, at: "post", ForumPost.parameter, "image", use: imageHandler)
+        tokenAuthGroup.post("post", ForumPost.parameter, "image", "remove", use: imageRemoveHandler)
         tokenAuthGroup.post(ReportData.self, at: "post", ForumPost.parameter, "report", use: postReportHandler)
         tokenAuthGroup.post(PostContentData.self, at: "post", ForumPost.parameter, "update", use: postUpateHandler)
     }
@@ -545,6 +547,103 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
             }
             forum.isLocked = false
             return forum.save(on: req).transform(to: .noContent)
+        }
+    }
+    
+    /// `POST /api/v3/forum/post/ID/image`
+    ///
+    /// Sets the `ForumPost` image to the file uploaded in the HTTP body.
+    ///
+    /// - Requires: `ImageUpdloadData` payload in the HTTP body.
+    /// - Parameters:
+    ///   - req: The incoming `Request`, provided automatically.
+    ///   - data: `ImageUploadData` containg the filename and image file.
+    /// - Throws: 403 error if the user does not have permission to modify the post.
+    /// - Returns: `UploadedImageData` containing the generated image identifier string.
+    func imageHandler(_ req: Request, data: ImageUploadData) throws -> Future<PostData> {
+        let user = try req.requireAuthenticated(User.self)
+        // get post
+        return try req.parameters.next(ForumPost.self).flatMap {
+            (post) in
+            guard try post.authorID == user.requireID()
+                || user.accessLevel.rawValue >= UserAccessLevel.moderator.rawValue else {
+                    throw Abort(.forbidden, reason: "user cannot modify post")
+            }
+            // get generated filename
+            return try self.processImage(data: data.image, forType: .userProfile, on: req).flatMap {
+                (filename) in
+                // replace existing image
+                if !post.image.isEmpty {
+                    // create ForumEdit record
+                    let forumEdit = try ForumEdit(
+                        postID: post.requireID(),
+                        postContent: PostContentData(text: post.text, image: post.image)
+                    )
+                    // archive thumbnail
+                    DispatchQueue.global(qos: .background).async {
+                        self.archiveImage(post.image, from: self.imageDir)
+                    }
+                    return forumEdit.save(on: req).flatMap {
+                        (_) in
+                        // update post
+                        post.image = filename
+                        return post.save(on: req).map {
+                            (savedPost) in
+                            // return as PostData
+                            return try savedPost.convertToData()
+                        }
+                    }
+                }
+                // else add new image
+                post.image = filename
+                return post.save(on: req).map {
+                    (savedPost) in
+                    // return as PostData
+                    return try savedPost.convertToData()
+                }
+            }
+        }
+    }
+    
+    /// `POST /api/v3/forum/post/ID/image/remove`
+    ///
+    /// Removes the image from a `ForumPost`, if there is one. A `ForumEdit` record is created
+    /// if there was actually an image to remove.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 403 error if the user does not have permission to modify the post.
+    /// - Returns: `PostData` containing updated image name.
+    func imageRemoveHandler(_ req: Request) throws -> Future<PostData> {
+        let user = try req.requireAuthenticated(User.self)
+        return try req.parameters.next(ForumPost.self).flatMap {
+            (post) in
+            guard try post.authorID == user.requireID()
+                || user.accessLevel.rawValue >= UserAccessLevel.moderator.rawValue else {
+                    throw Abort(.forbidden, reason: "user cannot modify post")
+            }
+            if !post.image.isEmpty {
+                // create ForumEdit record
+                let forumEdit = try ForumEdit(
+                    postID: post.requireID(),
+                    postContent: PostContentData(text: post.text, image: post.image)
+                )
+                // archive thumbnail
+                DispatchQueue.global(qos: .background).async {
+                    self.archiveImage(post.image, from: self.imageDir)
+                }
+                return forumEdit.save(on: req).flatMap {
+                    (_) in
+                    // remove image filename from post
+                    post.image = ""
+                    return post.save(on: req).map {
+                        (savedPost) in
+                        // return as PostData
+                        return try savedPost.convertToData()
+                    }
+                }
+            }
+            // no existing image, return PostData
+            return req.future(try post.convertToData())
         }
     }
     
