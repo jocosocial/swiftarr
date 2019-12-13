@@ -150,7 +150,7 @@ extension Future where T: User {
         }
     }
     
-    /// Converts a `Future<User>` to a `Future<SeaMonkey>`. Thes extension provides the
+    /// Converts a `Future<User>` to a `Future<SeaMonkey>`. This extension provides the
     /// convenience of simply using `user.convertToSeaMonkey()` and allowing the compiler
     /// to choose the appropriate version for the context.
     func convertToSeaMonkey() throws -> Future<SeaMonkey> {

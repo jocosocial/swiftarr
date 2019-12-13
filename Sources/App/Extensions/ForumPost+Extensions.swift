@@ -74,7 +74,7 @@ extension ForumPost {
 
 extension Future where T: ForumPost {
     /// Converts a `Future<ForumPost>` to a `Future<PostData>`. This extension provides
-    /// the convenience of simply using `event.convertToData()` and allowing the compiler to
+    /// the convenience of simply using `post.convertToData()` and allowing the compiler to
     /// choose the appropriate version for the context.
     func convertToData() -> Future<PostData> {
         return self.map {
