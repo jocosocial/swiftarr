@@ -757,6 +757,8 @@ final class UserTests: XCTestCase {
         XCTAssertTrue(response.http.body.description.contains("does not belong"), "does not belong")
     }
     
+    /// `POST /api/v3/user/image`
+    /// `POST /api/v3/user/image/remove`
     func testUserImage() throws {
         // create user
         _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
@@ -807,6 +809,11 @@ final class UserTests: XCTestCase {
         XCTAssertNotNil(UUID(uploadedImageData.filename), "should be UUID string")
         
         // test image remove
-        // FIXME: still needed
+        let response = try app.getResponse(
+            from: userURI + "image/remove",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 204, "should be 204 No Content")
     }
 }
