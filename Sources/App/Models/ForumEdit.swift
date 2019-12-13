@@ -2,7 +2,7 @@ import Foundation
 import Vapor
 import FluentPostgreSQL
 
-/// When a `ForumPost` is edited, a `PostEdit` is created and associated with the profile.
+/// When a `ForumPost` is edited, a `ForumEdit` is created and associated with the profile.
 ///
 /// This is done for accountability purposes and the data collected is intended to be viewable
 /// only by users with an access level of `.moderator` or above.
