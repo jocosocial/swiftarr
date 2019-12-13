@@ -8,9 +8,9 @@ struct Forums: Migration {
     
     /// Required by `Migration` protocol. Creates an initial set of categories for forums.
     ///
-    /// - Parameter connection: A connection to the database, provided automatically.
+    /// - Parameter conn: A connection to the database, provided automatically.
     /// - Returns: Void.
-    static func prepare(on connection: PostgreSQLConnection) -> EventLoopFuture<Void> {
+    static func prepare(on conn: PostgreSQLConnection) -> EventLoopFuture<Void> {
         // initial set of Twit-arr forums
         var adminForums: [String] = []
         do {
@@ -29,9 +29,9 @@ struct Forums: Migration {
             fatalError("Environment.detect() failed! error: \(error)")
         }
         // get admin, category IDs
-        return User.query(on: connection).first().flatMap {
+        return User.query(on: conn).first().flatMap {
             (admin) in
-            return Category.query(on: connection).first().flatMap {
+            return Category.query(on: conn).first().flatMap {
                 (category) in
                 guard let admin = admin,
                     admin.username == "admin",
@@ -51,9 +51,7 @@ struct Forums: Migration {
                     forums.append(forum)
                 }
                 // save forums
-                return forums.map { $0.save(on: connection) }
-                    .flatten(on: connection)
-                    .transform(to: ())
+                return forums.map { $0.save(on: conn) }.flatten(on: conn).transform(to: ())
             }
         }
     }
@@ -61,9 +59,9 @@ struct Forums: Migration {
     /// Required by`Migration` protocol, but no point removing the forums, so just return
     /// a pre-completed `Future`.
     ///
-    /// - Parameter connection: The database connection.
+    /// - Parameter conn: The database connection.
     /// - Returns: Void.
-    static func revert(on connection: PostgreSQLConnection) -> Future<Void> {
-        return .done(on: connection)
+    static func revert(on conn: PostgreSQLConnection) -> Future<Void> {
+        return .done(on: conn)
     }
 }

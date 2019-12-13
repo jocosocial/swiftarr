@@ -21,9 +21,9 @@ struct ClientUsers: Migration {
     /// them to create new `User` models with `UserAccessLevel` of `.client`.
     ///
     /// - Requires: `registered-clients.txt` file in seeds subdirectory.
-    /// - Parameter connection: A connection to the database, provided automatically.
+    /// - Parameter conn: A connection to the database, provided automatically.
     /// - Returns: Void.
-    static func prepare(on connection: PostgreSQLConnection) -> Future<Void> {
+    static func prepare(on conn: PostgreSQLConnection) -> Future<Void> {
         // get file containing client triplets
         let clientsFile: String
         do {
@@ -72,7 +72,7 @@ struct ClientUsers: Migration {
                 clients.append(user)
             }
             // save clients
-            return clients.map { $0.save(on: connection) }.flatten(on: connection).map {
+            return clients.map { $0.save(on: conn) }.flatten(on: conn).map {
                 (savedUsers) in
                 // add profiles
                 var profiles: [UserProfile] = []
@@ -81,7 +81,7 @@ struct ClientUsers: Migration {
                     let profile = UserProfile(userID: id, username: $0.username)
                     profiles.append(profile)
                 }
-                profiles.map { $0.save(on: connection) }.always(on: connection) { return }
+                profiles.map { $0.save(on: conn) }.always(on: conn) { return }
             }
         } catch let error {
             fatalError("Environment.detect() failed! error: \(error)")
@@ -91,10 +91,10 @@ struct ClientUsers: Migration {
     /// Required by`Migration` protocol, but no point removing the seed client users, so
     /// just return a pre-completed `Future`.
     ///
-    /// - Parameter connection: The database connection.
+    /// - Parameter conn: The database connection.
     /// - Returns: Void.
-    static func revert(on connection: PostgreSQLConnection) -> Future<Void> {
-        return .done(on: connection)
+    static func revert(on conn: PostgreSQLConnection) -> Future<Void> {
+        return .done(on: conn)
     }
 }
 

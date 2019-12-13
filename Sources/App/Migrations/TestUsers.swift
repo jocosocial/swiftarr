@@ -10,9 +10,9 @@ struct TestUsers: Migration {
     
     /// Required by `Migration` protocol. Creates a set of test users at each `.accessLevel`.
     ///
-    /// - Parameter connection: A connection to the database, provided automatically.
+    /// - Parameter conn: A connection to the database, provided automatically.
     /// - Returns: Void.
-    static func prepare(on connection: PostgreSQLConnection) -> Future<Void> {
+    static func prepare(on conn: PostgreSQLConnection) -> Future<Void> {
         let usernames: [String: UserAccessLevel] = [
             "unverified": .unverified,
             "banned": .banned,
@@ -36,7 +36,7 @@ struct TestUsers: Migration {
             )
             users.append(user)
         }
-        return users.map { $0.save(on: connection) }.flatten(on: connection).map {
+        return users.map { $0.save(on: conn) }.flatten(on: conn).map {
             (savedUsers) in
             // create profile and default barrels
             var profiles: [UserProfile] = []
@@ -72,20 +72,20 @@ struct TestUsers: Migration {
                 muteKeywordsBarrel.userInfo.updateValue([], forKey: "muteWords")
                 barrels.append(muteKeywordsBarrel)
                 // save barrels
-                _ = barrels.map { $0.save(on: connection) }
+                _ = barrels.map { $0.save(on: conn) }
             }
             // save profiles
-            profiles.map { $0.save(on: connection) }.always(on: connection) { return }
+            profiles.map { $0.save(on: conn) }.always(on: conn) { return }
         }
     }
     
     /// Required by`Migration` protocol, but no point removing the test users, so
     /// just return a pre-completed `Future`.
     /// 
-    /// - Parameter connection: The database connection.
+    /// - Parameter conn: The database connection.
     /// - Returns: Void.
-    static func revert(on connection: PostgreSQLConnection) -> Future<Void> {
-        return .done(on: connection)
+    static func revert(on conn: PostgreSQLConnection) -> Future<Void> {
+        return .done(on: conn)
     }
 }
 

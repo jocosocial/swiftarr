@@ -8,9 +8,9 @@ struct Categories: Migration {
     
     /// Required by `Migration` protocol. Creates an initial set of categories for forums.
     ///
-    /// - Parameter connection: A connection to the database, provided automatically.
+    /// - Parameter conn: A connection to the database, provided automatically.
     /// - Returns: Void.
-    static func prepare(on connection: PostgreSQLConnection) -> EventLoopFuture<Void> {
+    static func prepare(on conn: PostgreSQLConnection) -> EventLoopFuture<Void> {
         // categories to which users cannot directly add forums
         let adminCategories: [String] = [
             "Twit-arr Support",
@@ -42,17 +42,17 @@ struct Categories: Migration {
             categories.append(category)
         }
         // save categories
-        return categories.map { $0.save(on: connection) }
-            .flatten(on: connection)
+        return categories.map { $0.save(on: conn) }
+            .flatten(on: conn)
             .transform(to: ())
     }
     
     /// Required by`Migration` protocol, but no point removing the categories, so
     /// just return a pre-completed `Future`.
     ///
-    /// - Parameter connection: The database connection.
+    /// - Parameter conn: The database connection.
     /// - Returns: Void.
-    static func revert(on connection: PostgreSQLConnection) -> Future<Void> {
-        return .done(on: connection)
+    static func revert(on conn: PostgreSQLConnection) -> Future<Void> {
+        return .done(on: conn)
     }
 }

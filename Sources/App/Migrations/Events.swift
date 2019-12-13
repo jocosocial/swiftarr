@@ -45,9 +45,9 @@ struct Events: Migration {
     /// Required by `Migration` protocol, but this is seed data, so just return a
     /// pre-completed `Future`.
     ///
-    /// - Parameter connection: The database connection.
+    /// - Parameter conn: The database connection.
     /// - Returns: Void.
-    static func revert(on connection: PostgreSQLConnection) -> Future<Void> {
-        return .done(on: connection)
+    static func revert(on conn: PostgreSQLConnection) -> Future<Void> {
+        return .done(on: conn)
     }
 }
