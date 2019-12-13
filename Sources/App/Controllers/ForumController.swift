@@ -625,37 +625,28 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
                 throw Abort(.forbidden, reason: "forum is locked read-only")
             }
             // ensure user has access to forum
-            let cache = try req.keyedCache(for: .redis)
-            let key = try "blocks:\(user.requireID())"
-            let cachedBlocks = cache.get(key, as: [UUID].self)
-            return cachedBlocks.flatMap {
-                (blocks) in
-                let blocked = blocks ?? []
+            return try self.getCachedFilters(for: user, on: req).flatMap {
+                (tuple) in
+                let blocked = tuple.0
+                // user cannot retrieve block-owned forum, but prevent end-run
                 guard !blocked.contains(forum.creatorID) else {
                     throw Abort(.forbidden, reason: "user cannot post in forum")
                 }
                 // process image
                 return try self.processImage(data: data.imageData, forType: .forumPost, on: req).flatMap {
-                    (imageName) in
+                    (filename) in
                     // create post
                     let forumPost = try ForumPost(
                         forumID: forum.requireID(),
                         authorID: user.requireID(),
                         text: data.text,
-                        image: imageName
+                        image: filename
                     )
                     return forumPost.save(on: req).map {
                         (savedPost) in
                         // return as PostData, with 201 status
-                        let postData = try PostData(
-                            postID: savedPost.requireID(),
-                            createdAt: savedPost.createdAt ?? Date(),
-                            authorID: try user.requireID(),
-                            text: savedPost.text,
-                            image: savedPost.image
-                        )
                         let response = Response(http: HTTPResponse(status: .created), using: req)
-                        try response.content.encode(postData)
+                        try response.content.encode(try savedPost.convertToData())
                         return response
                     }
                 }
