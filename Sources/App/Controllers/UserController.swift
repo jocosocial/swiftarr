@@ -319,61 +319,53 @@ struct UserController: RouteCollection, ImageHandler {
     /// - Returns: `UploadedImageData` containing the generated image identifier string.
     func imageHandler(_ req: Request, data: ImageUploadData) throws -> Future<UploadedImageData> {
         let user = try req.requireAuthenticated(User.self)
+        // get generated filename
         return try processImage(data: data.image, forType: .userProfile, on: req).flatMap {
             (filename) in
-            // save name to profile
+            // get profile
             return try user.profile.query(on: req)
                 .first()
                 .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
                 .flatMap {
                     (profile) in
-                    let oldImage = profile.userImage
+                    // replace existing image
+                    if !profile.userImage.isEmpty {
+                        // create ProfileEdit record
+                        let profileEdit = try ProfileEdit(
+                            profileID: profile.requireID(),
+                            profileData: nil,
+                            profileImage: profile.userImage
+                        )
+                        // archive thumbnail
+                        DispatchQueue.global(qos: .background).async {
+                            self.archiveImage(profile.userImage, from: self.imageDir)
+                        }
+                        return profileEdit.save(on: req).flatMap {
+                            (_) in
+                            // update profile
+                            profile.userImage = filename
+                            return profile.save(on: req).flatMap {
+                                (savedProfile) in
+                                // touch user.profileUpdatedAt
+                                user.profileUpdatedAt = savedProfile.updatedAt ?? Date()
+                                return user.save(on: req).map {
+                                    (_) in
+                                    // return as UploadedImageData
+                                    return UploadedImageData(filename: filename)
+                                }
+                            }
+                        }
+                    }
+                    // else add new image
                     profile.userImage = filename
                     return profile.save(on: req).flatMap {
                         (savedProfile) in
                         // touch user.profileUpdatedAt
                         user.profileUpdatedAt = savedProfile.updatedAt ?? Date()
-                        _ = user.save(on: req)
-                        // create ProfileEdit record
-                        if !oldImage.isEmpty {
-                            let profileEdit = try ProfileEdit(
-                                profileID: savedProfile.requireID(),
-                                profileData: nil,
-                                profileImage: oldImage
-                            )
-                            // remove existing full image
-                            let basePath = DirectoryConfig.detect().workDir.appending(self.imageDir)
-                            let fullPath = basePath.appending("full/")
-                            let fullURL = URL(
-                                fileURLWithPath: fullPath.appending(oldImage).appending(".jpg")
-                            )
-                            try FileManager().removeItem(at: fullURL)
-                            // move thumbnail
-                            let thumbPath = basePath.appending("thumbnail/")
-                            let archivePath = basePath.appending("archive/")
-                            // ensure archive directory exists
-                            if !FileManager().fileExists(atPath: archivePath) {
-                                try FileManager().createDirectory(
-                                    atPath: archivePath,
-                                    withIntermediateDirectories: true
-                                )
-                            }
-                            let thumbURL = URL(
-                                fileURLWithPath: thumbPath.appending(oldImage).appending(".jpg")
-                            )
-                            let archiveURL = URL(
-                                fileURLWithPath: archivePath.appending(oldImage).appending(".jpg")
-                            )
-                            try FileManager().moveItem(at: thumbURL, to: archiveURL)
-                            // save edit record
-                            return profileEdit.save(on: req).map {
-                                (_) in
-                                // return as UploadedImageData
-                                return UploadedImageData(filename: filename)
-                            }
-                        } else {
+                        return user.save(on: req).map {
+                            (_) in
                             // return as UploadedImageData
-                            return req.future(UploadedImageData(filename: filename))
+                            return UploadedImageData(filename: filename)
                         }
                     }
             }
@@ -389,17 +381,37 @@ struct UserController: RouteCollection, ImageHandler {
     /// - Returns: 204 No Content on success.
     func imageRemoveHandler(_ req: Request) throws -> Future<HTTPStatus> {
         let user = try req.requireAuthenticated(User.self)
+        // get profile
         return try user.profile.query(on: req)
             .first()
             .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
             .flatMap {
                 (profile) in
-                // FIXME: this should probably be a default image
-                // ... or could let .isEmpty trigger a default
-                // FIXME: also needs ProfileEdit
-                // FIXME: and a test
-                profile.userImage = ""
-                return profile.save(on: req).transform(to: .noContent)
+                if !profile.userImage.isEmpty {
+                    // create ProfileEdit record
+                    let profileEdit = try ProfileEdit(
+                        profileID: profile.requireID(),
+                        profileData: nil,
+                        profileImage: profile.userImage
+                    )
+                    // archive thumbnail
+                    DispatchQueue.global(qos: .background).async {
+                        return self.archiveImage(profile.userImage, from: self.imageDir)
+                    }
+                    return profileEdit.save(on: req).flatMap {
+                        (_) in
+                        // remove image from profile
+                        profile.userImage = ""
+                        return profile.save(on: req).flatMap {
+                            (savedProfile) in
+                            // touch user.profileUpdatedAt
+                            user.profileUpdatedAt = savedProfile.updatedAt ?? Date()
+                            return user.save(on: req).transform(to: .noContent)
+                        }
+                    }
+                }
+                // no existing image
+                return req.future(.noContent)
         }
     }
     
