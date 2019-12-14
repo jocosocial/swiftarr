@@ -1,11 +1,12 @@
 import Vapor
 import Crypto
 import FluentSQL
+import Fluent
 
 /// The collection of `/api/v3/events/*` route endpoints and handler functions related
 /// to the event schedule.
 
-struct EventController: RouteCollection {
+struct EventController: RouteCollection, ContentFilterable {
     
     // MARK: RouteCollection Conformance
     
@@ -21,6 +22,7 @@ struct EventController: RouteCollection {
         let tokenAuthMiddleware = User.tokenAuthMiddleware()
         
         // set protected route groups
+        let sharedAuthGroup = eventRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware, guardAuthMiddleware])
         let tokenAuthGroup = eventRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
         
         // open access endpoints
@@ -38,6 +40,7 @@ struct EventController: RouteCollection {
         // endpoints available only when not logged in
         
         // endpoints available whether logged in or out
+        sharedAuthGroup.get(Event.parameter, "forum", use: eventForumHandler)
         
         // endpoints available only when logged in
         tokenAuthGroup.post(EventsUpdateData.self, at: "update", use: eventsUpdateHandler)
@@ -240,6 +243,63 @@ struct EventController: RouteCollection {
             .map {
                 (events) in
                 return try events.map { try $0.convertToData() }
+        }
+    }
+    
+    // MARK: - sharedAuthGroup Handlers (logged in or not)
+    // All handlers in this route group require a valid HTTP Basic Authorization
+    // *or* HTTP Bearer Authorization header in the request.
+    
+    /// `GET /api/v3/events/ID/forum`
+    ///
+    /// Retrieve the `Forum` associated with an `Event`, with all its `ForumPost`s. Content from
+    /// blocked or muted users, or containing user's muteWords, is not returned.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: `ForumData` containing the forum's metadata and all posts.
+    func eventForumHandler(_ req: Request) throws -> Future<ForumData> {
+        let user = try req.requireAuthenticated(User.self)
+        // get event
+        return try req.parameters.next(Event.self).flatMap {
+            (event) in
+            // get forum
+            guard let forumID = event.forumID else {
+                throw Abort(.internalServerError, reason: "event has no forum")
+            }
+            return Forum.find(forumID, on: req)
+                .unwrap(or: Abort(.internalServerError, reason: "forum not found"))
+                .flatMap {
+                    (forum) in
+                    // filter posts
+                    return try self.getCachedFilters(for: user, on: req).flatMap {
+                        (tuple) in
+                        let blocked = tuple.0
+                        let muted = tuple.1
+                        let mutewords = tuple.2
+                        return try forum.posts.query(on: req)
+                            .filter(\.authorID !~ blocked)
+                            .filter(\.authorID !~ muted)
+                            .sort(\.createdAt, .ascending)
+                            .all()
+                            .map {
+                                (posts) in
+                                // remove muteword posts
+                                let filteredPosts = posts.compactMap {
+                                    self.filterMutewords(for: $0, using: mutewords, on: req)
+                                }
+                                // return as ForumData
+                                let forumData = try ForumData(
+                                    forumID: forum.requireID(),
+                                    title: forum.title,
+                                    creatorID: forum.creatorID,
+                                    isLocked: forum.isLocked,
+                                    posts: filteredPosts.map { try $0.convertToData() }
+                                )
+                                return forumData
+                        }
+                    }
+            }
         }
     }
     

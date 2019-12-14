@@ -14,6 +14,7 @@ final class EventTests: XCTestCase {
     let adminURI = "/api/v3/admin/"
     let authURI = "/api/v3/auth/"
     let eventsURI = "/api/v3/events/"
+    let forumURI = "/api/v3/forum/"
     let testURI = "/api/v3/test/"
     let userURI = "/api/v3/user/"
     let usersURI = "/api/v3/users/"
@@ -330,5 +331,46 @@ final class EventTests: XCTestCase {
             body: eventsUpdateData
         )
         XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
+    }
+    
+    /// `GET /api/v3/events/ID/forum`
+    func testEventForums() throws {
+        // test with Basic access
+        var headers = HTTPHeaders()
+        let credentials = BasicAuthorization(username: "unverified", password: testPassword)
+        headers.basicAuthorization = credentials
+        
+        let events = try app.getResult(
+            from: eventsURI,
+            method: .GET,
+            headers: headers,
+            decodeTo: [EventData].self
+        )
+        XCTAssertTrue(events.count > 0, "should have events")
+    
+        let adminCategories = try app.getResult(
+            from: forumURI + "categories/admin",
+            method: .GET,
+            headers: headers,
+            decodeTo: [CategoryData].self
+        )
+        XCTAssertTrue(adminCategories.count == 3, "should be 3 categories")
+        
+        let officialForums = try app.getResult(
+            from: forumURI + "categories/\(adminCategories[1].categoryID)",
+            method: .GET,
+            headers: headers,
+            decodeTo: [ForumListData].self
+        )
+        XCTAssertTrue(officialForums.count > 0, "should have official forums")
+        
+        let shadowForums = try app.getResult(
+            from: forumURI + "categories/\(adminCategories[2].categoryID)",
+            method: .GET,
+            headers: headers,
+            decodeTo: [ForumListData].self
+        )
+        XCTAssertTrue(shadowForums.count > 0, "should have shadow forums")
+        XCTAssertEqual(officialForums.count + shadowForums.count, events.count, "should be \(events.count)")
     }
 }
