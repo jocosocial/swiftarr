@@ -48,8 +48,11 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
         sharedAuthGroup.get("categories", "admin", use: categoriesAdminHandler)
         sharedAuthGroup.get("categories", "user", use: categoriesUserHandler)
         sharedAuthGroup.get("categories", Category.parameter, use: categoryForumsHandler)
+        sharedAuthGroup.get("match", String.parameter, use: forumMatchHandler)
         sharedAuthGroup.get("post", ForumPost.parameter, use: postHandler)
         sharedAuthGroup.get("post", ForumPost.parameter, "forum", use: postForumHandler)
+        sharedAuthGroup.get("post", "search", String.parameter, use: postSearchHandler)
+        sharedAuthGroup.get(Forum.parameter, "search", String.parameter, use: forumSearchHandler)
         
         // endpoints available only when logged in
         tokenAuthGroup.post(ForumCreateData.self, at: "categories", Category.parameter, "create", use: forumCreateHandler)
@@ -303,6 +306,112 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
         }
     }
     
+    /// `GET /api/v3/forum/match/STRING`
+    ///
+    /// Retrieve all `Forum`s whose title contains the specified string.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Returns: `[ForumListData]` containing all matching forums.
+    func forumMatchHandler(_ req: Request) throws -> Future<[ForumListData]> {
+        let user = try req.requireAuthenticated(User.self)
+        var search = try req.parameters.next(String.self)
+        // postgres "_" and "%" are wildcards, so escape for literals
+        search = search.replacingOccurrences(of: "_", with: "\\_")
+        search = search.replacingOccurrences(of: "%", with: "\\%")
+        search = search.trimmingCharacters(in: .whitespacesAndNewlines)
+        // remove blocks from results
+        let cache = try req.keyedCache(for: .redis)
+        let key = try "blocks:\(user.requireID())"
+        let cachedBlocks = cache.get(key, as: [UUID].self)
+        return cachedBlocks.flatMap {
+            (blocks) in
+            let blocked = blocks ?? []
+            // get forums
+            return Forum.query(on: req)
+                .filter(\.creatorID !~ blocked)
+                .filter(\.title, .ilike, "%\(search)%")
+                .all()
+                .flatMap {
+                    (forums) in
+                    // get forum metadata
+                    var forumCounts: [Future<Int>] = []
+                    var forumTimestamps: [Future<Date?>] = []
+                    for forum in forums {
+                        forumCounts.append(try forum.posts.query(on: req).count())
+                        forumTimestamps.append(try forum.posts.query(on: req)
+                            .sort(\.createdAt, .descending)
+                            .first()
+                            .map {
+                                (post) in
+                                post?.createdAt
+                            }
+                        )
+                    }
+                    // resolve futures
+                    return forumCounts.flatten(on: req).flatMap {
+                        (counts) in
+                        return forumTimestamps.flatten(on: req).map {
+                            (timestamps) in
+                            // return as ForumListData
+                            var returnListData: [ForumListData] = []
+                            for (index, forum) in forums.enumerated() {
+                                returnListData.append(
+                                    try ForumListData(
+                                        forumID: forum.requireID(),
+                                        title: forum.title,
+                                        postCount: counts[index],
+                                        lastPostAt: timestamps[index],
+                                        isLocked: forum.isLocked
+                                    )
+                                )
+                            }
+                            return returnListData
+                        }
+                    }
+            }
+        }
+    }
+    
+    /// `GET /api/v3/forum/ID/search/STRING`
+    ///
+    /// Retrieve all `ForumPost`s in the specifiec `Forum` that contain the specified string.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Returns: `[PostData]` containing all matching posts in the forum.
+    func forumSearchHandler(_ req: Request) throws -> Future<[PostData]> {
+        let user = try req.requireAuthenticated(User.self)
+        // get forum
+        return try req.parameters.next(Forum.self).flatMap {
+            (forum) in
+            var search = try req.parameters.next(String.self)
+            // postgres "_" and "%" are wildcards, so escape for literals
+            search = search.replacingOccurrences(of: "_", with: "\\_")
+            search = search.replacingOccurrences(of: "%", with: "\\%")
+            search = search.trimmingCharacters(in: .whitespacesAndNewlines)
+            // get cached blocks
+            return try self.getCachedFilters(for: user, on: req).flatMap {
+                (tuple) in
+                let blocked = tuple.0
+                let muted = tuple.1
+                let mutewords = tuple.2
+                // get posts
+                return try forum.posts.query(on: req)
+                    .filter(\.authorID !~ blocked)
+                    .filter(\.authorID !~ muted)
+                    .filter(\.text, .ilike, "%\(search)%")
+                    .all()
+                    .map {
+                        (posts) in
+                        let filteredPosts = posts.compactMap {
+                            self.filterMutewords(for: $0, using: mutewords, on: req)
+                        }
+                        // return as PostData
+                        return try filteredPosts.map { try $0.convertToData() }
+                }
+            }
+        }
+    }
+    
     /// `GET /api/v3/forum/post/ID/forum`
     ///
     /// Retrieve the `ForumData` of the specified `ForumPost`'s parent `Forum`.
@@ -387,6 +496,42 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
         }
     }
     
+    /// `GET /api/v3/forum/post/search/STRING`
+    ///
+    /// Retrieve all `ForumPost`s that contain the specified string.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Returns: `[PostData]` containing all matching posts.
+    func postSearchHandler(_ req: Request) throws -> Future<[PostData]> {
+        let user = try req.requireAuthenticated(User.self)
+        var search = try req.parameters.next(String.self)
+        // postgres "_" and "%" are wildcards, so escape for literals
+        search = search.replacingOccurrences(of: "_", with: "\\_")
+        search = search.replacingOccurrences(of: "%", with: "\\%")
+        search = search.trimmingCharacters(in: .whitespacesAndNewlines)
+        // get cached blocks
+        return try self.getCachedFilters(for: user, on: req).flatMap {
+            (tuple) in
+            let blocked = tuple.0
+            let muted = tuple.1
+            let mutewords = tuple.2
+            // get posts
+            return ForumPost.query(on: req)
+                .filter(\.authorID !~ blocked)
+                .filter(\.authorID !~ muted)
+                .filter(\.text, .ilike, "%\(search)%")
+                .all()
+                .map {
+                    (posts) in
+                    let filteredPosts = posts.compactMap {
+                        self.filterMutewords(for: $0, using: mutewords, on: req)
+                    }
+                    // return as PostData
+                    return try filteredPosts.map { try $0.convertToData() }
+            }
+        }
+    }
+
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.

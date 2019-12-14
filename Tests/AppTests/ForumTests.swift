@@ -684,6 +684,7 @@ final class ForumTests: XCTestCase {
         XCTAssertTrue(response.http.status.code == 404 , "should be 404 Not Found")
     }
     
+    /// `GET /api/v3/forum/post/ID/forum`
     func testPostForum() throws {
         // create verified logged in user
         let token = try app.login(username: "verified", password: testPassword, on: conn)
@@ -723,6 +724,8 @@ final class ForumTests: XCTestCase {
         XCTAssertTrue(forumData.posts[0].postID == postForumData.posts[0].postID, "should be same")
     }
     
+    /// `POST /api/v3/forum/post/ID/image`
+    /// `POST /api/v3/forum/post/ID/image/remove`
     func testPostImage() throws {
         // create verified logged in user
         var token = try app.login(username: "verified", password: testPassword, on: conn)
@@ -806,5 +809,105 @@ final class ForumTests: XCTestCase {
         )
         XCTAssertTrue(response.http.status.code == 403 , "should be 403 Forbidden")
     }
+    
+    /// `GET /api/v3/forum/match/STRING`
+    func testMatchForum() throws {
+        // test with Basic access
+        var headers = HTTPHeaders()
+        let credentials = BasicAuthorization(username: "unverified", password: testPassword)
+        headers.basicAuthorization = credentials
+        
+        let forums = try app.getResult(
+            from: forumURI + "match/concert",
+            method: .GET,
+            headers: headers,
+            decodeTo: [ForumListData].self
+        )
+        XCTAssertTrue(forums.count > 0, "should be some forums")
+        XCTAssertTrue(forums[0].title.lowercased().contains("concert"), "should be true")
+    }
+    
+    /// `GET /api/v3/forum/ID/search/STRING`
+    func testForumSearch() throws {
+        // create verified logged in user
+        let token = try app.login(username: "verified", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // create user forum
+        let userCategories = try app.getResult(
+            from: forumURI + "categories/user",
+            method: .GET,
+            headers: headers,
+            decodeTo: [CategoryData].self
+        )
+        let forumCreateData = ForumCreateData(
+            title: "A forum!",
+            text: "A forum post for FaNcYpAnTs searching!",
+            image: nil
+        )
+        let categoryID = userCategories.first?.categoryID
+        let forumData = try app.getResult(
+            from: forumURI + "categories/\(categoryID!)/create",
+            method: .POST,
+            headers: headers,
+            body: forumCreateData,
+            decodeTo: ForumData.self
+        )
+        let post = forumData.posts[0]
+        
+        // test search
+        let posts = try app.getResult(
+            from: forumURI + "\(forumData.forumID)/search/fancy",
+            method: .GET,
+            headers: headers,
+            decodeTo: [PostData].self
+        )
+        XCTAssertTrue(posts.count > 0, "should be a post")
+        XCTAssertTrue(posts[0].text.lowercased().contains("fancy"), "should contain 'FaNcY'")
+        XCTAssertEqual(posts[0].postID, post.postID, "should be same")
+    }
+    
+    /// `GET /api/v3/forum/post/search/STRING`
+    func testPostSearch() throws {
+        // create verified logged in user
+        let token = try app.login(username: "verified", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // create user forum
+        let userCategories = try app.getResult(
+            from: forumURI + "categories/user",
+            method: .GET,
+            headers: headers,
+            decodeTo: [CategoryData].self
+        )
+        let forumCreateData = ForumCreateData(
+            title: "A forum!",
+            text: "A forum post for FaNcYpAnTs searching!",
+            image: nil
+        )
+        let categoryID = userCategories.first?.categoryID
+        let forumData = try app.getResult(
+            from: forumURI + "categories/\(categoryID!)/create",
+            method: .POST,
+            headers: headers,
+            body: forumCreateData,
+            decodeTo: ForumData.self
+        )
+        let post = forumData.posts[0]
+        
+        // test search
+        let posts = try app.getResult(
+            from: forumURI + "post/search/fancy",
+            method: .GET,
+            headers: headers,
+            decodeTo: [PostData].self
+        )
+        XCTAssertTrue(posts.count > 0, "should be a post")
+        XCTAssertTrue(posts[0].text.lowercased().contains("fancy"), "should contain 'FaNcY'")
+        XCTAssertEqual(posts[0].postID, post.postID, "should be same")
+    }
+
     // test forum block
 }
