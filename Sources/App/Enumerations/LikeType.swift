@@ -1,7 +1,7 @@
 import FluentPostgreSQL
 
 /// The type of "like" reaction that a user can apply to a `ForumPost` or `Twarrt`.
-/// Only positive reactions are provied in `swiftarr`.
+/// Only positive reactions are provided in `swiftarr`.
 
 enum LikeType: String, PostgreSQLRawEnum {
     /// A 😆.
