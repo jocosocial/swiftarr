@@ -31,6 +31,7 @@ struct EventForums: Migration {
                     (events) in
                     // date formatter for titles
                     let dateFormatter = DateFormatter()
+                    dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
                     dateFormatter.dateFormat = "(E, HH:mm)"
                     // create forums
                     var forums: [Forum] = []
