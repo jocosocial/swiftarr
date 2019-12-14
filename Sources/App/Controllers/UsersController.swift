@@ -27,7 +27,6 @@ struct UsersController: RouteCollection {
         let tokenAuthMiddleware = User.tokenAuthMiddleware()
         
         // set protected route groups
-        let basicAuthGroup = usersRoutes.grouped([basicAuthMiddleware, guardAuthMiddleware])
         let sharedAuthGroup = usersRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware, guardAuthMiddleware])
         let tokenAuthGroup = usersRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
         

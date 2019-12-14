@@ -17,13 +17,10 @@ struct ClientController: RouteCollection {
         let clientRoutes = router.grouped("api", "v3", "client")
         
         // instantiate authentication middleware
-        let basicAuthMiddleware = User.basicAuthMiddleware(using: BCryptDigest())
         let guardAuthMiddleware = User.guardAuthMiddleware()
         let tokenAuthMiddleware = User.tokenAuthMiddleware()
         
         // set protected route groups
-        let basicAuthGroup = clientRoutes.grouped([basicAuthMiddleware, guardAuthMiddleware])
-        //        let sharedAuthGroup = clientRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware, guardAuthMiddleware])
         let tokenAuthGroup = clientRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
         
         // open access endpoints

@@ -35,7 +35,6 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
         let tokenAuthMiddleware = User.tokenAuthMiddleware()
         
         // set protected route groups
-        let basicAuthGroup = forumRoutes.grouped([basicAuthMiddleware, guardAuthMiddleware])
         let sharedAuthGroup = forumRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware, guardAuthMiddleware])
         let tokenAuthGroup = forumRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
         
