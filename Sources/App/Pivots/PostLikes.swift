@@ -3,7 +3,7 @@ import Foundation
 
 /// A `Pivot` holding a siblings relation between `User` and `ForumPost`.
 
-final class PostLikesPivot: PostgreSQLUUIDPivot, ModifiablePivot {
+final class PostLikes: PostgreSQLUUIDPivot, ModifiablePivot {
     // MARK: Properties
     
     /// The ID of the pivot.
@@ -12,21 +12,6 @@ final class PostLikesPivot: PostgreSQLUUIDPivot, ModifiablePivot {
     /// The type of like reaction. Needs to be optional to conform to `ModifiablePivot`'s
     /// required `init(_:_:)`.
     var likeType: LikeType?
-    
-    // MARK: ModifiablePivot Conformance
-    
-    /// The associated identifier type for `User`.
-    var userID: User.ID
-    /// The associated identifier type for `ForumPost`.
-    var postID: ForumPost.ID
-    
-    typealias Left = User
-    typealias Right = ForumPost
-    
-    /// Required key for `Pivot` protocol.
-    static let leftIDKey: LeftIDKey = \.userID
-    /// Required key for `Pivot` protocol.
-    static let rightIDKey: RightIDKey = \.postID
     
     // MARK: Initialization
     
@@ -50,4 +35,19 @@ final class PostLikesPivot: PostgreSQLUUIDPivot, ModifiablePivot {
         try self.init(user, post)
         self.likeType = likeType
     }
+    
+    // MARK: ModifiablePivot Conformance
+    
+    /// The associated identifier type for `User`.
+    var userID: User.ID
+    /// The associated identifier type for `ForumPost`.
+    var postID: ForumPost.ID
+    
+    typealias Left = User
+    typealias Right = ForumPost
+    
+    /// Required key for `Pivot` protocol.
+    static let leftIDKey: LeftIDKey = \.userID
+    /// Required key for `Pivot` protocol.
+    static let rightIDKey: RightIDKey = \.postID
 }
