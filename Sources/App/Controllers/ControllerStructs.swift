@@ -182,7 +182,7 @@ struct EventData: Content {
     /// The event category.
     var eventType: String
     /// The event's associated `Forum`.
-    var forum: Int?
+    var forum: UUID?
 }
 
 /// Used to update the `Event` database.
