@@ -161,7 +161,7 @@ final class ForumTests: XCTestCase {
             headers: headers,
             decodeTo: [ForumListData].self
         )
-        XCTAssertTrue(forumForums.count == 2, "should be 2 forums")
+        XCTAssertTrue(forumForums.count == 415, "should be 415 forums")
         
         // test user api
         let userForums = try app.getResult(
