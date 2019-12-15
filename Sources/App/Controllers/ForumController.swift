@@ -65,6 +65,9 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
         tokenAuthGroup.post("post", ForumPost.parameter, "delete", use: postDeleteHandler)
         tokenAuthGroup.post(ImageUploadData.self, at: "post", ForumPost.parameter, "image", use: imageHandler)
         tokenAuthGroup.post("post", ForumPost.parameter, "image", "remove", use: imageRemoveHandler)
+        tokenAuthGroup.post("post", ForumPost.parameter, "laugh", use: laughHandler)
+        tokenAuthGroup.post("post", ForumPost.parameter, "like", use: likeHandler)
+        tokenAuthGroup.post("post", ForumPost.parameter, "love", use: loveHandler)
         tokenAuthGroup.post(ReportData.self, at: "post", ForumPost.parameter, "report", use: postReportHandler)
         tokenAuthGroup.post(PostContentData.self, at: "post", ForumPost.parameter, "update", use: postUpateHandler)
     }
@@ -888,29 +891,207 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
                 || user.accessLevel.rawValue >= UserAccessLevel.moderator.rawValue else {
                     throw Abort(.forbidden, reason: "user cannot modify post")
             }
-            if !post.image.isEmpty {
-                // create ForumEdit record
-                let forumEdit = try ForumEdit(
-                    postID: post.requireID(),
-                    postContent: PostContentData(text: post.text, image: post.image)
-                )
-                // archive thumbnail
-                DispatchQueue.global(qos: .background).async {
-                    self.archiveImage(post.image, from: self.imageDir)
-                }
-                return forumEdit.save(on: req).flatMap {
-                    (_) in
-                    // remove image filename from post
-                    post.image = ""
-                    return post.save(on: req).map {
-                        (savedPost) in
-                        // return as PostData
-                        return try savedPost.convertToData()
+            // get like count
+            return try PostLikes.query(on: req)
+                .filter(\.postID == post.requireID())
+                .count()
+                .flatMap {
+                    (count) in
+                    if !post.image.isEmpty {
+                        // create ForumEdit record
+                        let forumEdit = try ForumEdit(
+                            postID: post.requireID(),
+                            postContent: PostContentData(text: post.text, image: post.image)
+                        )
+                        // archive thumbnail
+                        DispatchQueue.global(qos: .background).async {
+                            self.archiveImage(post.image, from: self.imageDir)
+                        }
+                        return forumEdit.save(on: req).flatMap {
+                            (_) in
+                            // remove image filename from post
+                            post.image = ""
+                            return post.save(on: req).map {
+                                (savedPost) in
+                                // return as PostData
+                                return try savedPost.convertToData(withLike: nil, likeCount: count)
+                            }
+                        }
                     }
-                }
+                    // no existing image, return PostData
+                    return req.future(try post.convertToData(withLike: nil, likeCount: count))
             }
-            // no existing image, return PostData
-            return req.future(try post.convertToData())
+        }
+    }
+    
+    /// `POST /api/v3/forum/post/ID/laugh`
+    ///
+    /// Adds a "laugh" reaction to the specified `ForumPost`. If there is an existing `LikeType`
+    /// reaction by the user, it is replaced.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: `PostData` containing the updated like info.
+    func laughHandler(_ req: Request) throws -> Future<PostData> {
+        let user = try req.requireAuthenticated(User.self)
+        // get post
+        return try req.parameters.next(ForumPost.self).flatMap {
+            (post) in
+            guard try post.authorID != user.requireID() else {
+                throw Abort(.conflict, reason: "user cannot like own post")
+            }
+            // check for existing like
+            return try PostLikes.query(on: req)
+                .filter(\.userID == user.requireID())
+                .filter(\.postID == post.requireID())
+                .first()
+                .flatMap {
+                    (like) in
+                    // re-type if existing like
+                    if let like = like {
+                        like.likeType = .laugh
+                        return like.save(on: req).flatMap {
+                            (savedLike) in
+                            // get likes count
+                            return try PostLikes.query(on: req)
+                                .filter(\.postID == post.requireID())
+                                .count()
+                                .map {
+                                    (count) in
+                                    // return as PostData
+                                    return try post.convertToData(withLike: .laugh, likeCount: count)
+                            }
+                        }
+                    }
+                    // otherwise create like
+                    let postLike = try PostLikes(user, post, likeType: .laugh)
+                    return postLike.save(on: req).flatMap {
+                        (savedLike) in
+                        // get likes count
+                        return try PostLikes.query(on: req)
+                            .filter(\.postID == post.requireID())
+                            .count()
+                            .map {
+                                (count) in
+                                // return as PostData
+                                return try post.convertToData(withLike: .laugh, likeCount: count)
+                        }
+                    }
+            }
+        }
+    }
+    
+    /// `POST /api/v3/forum/post/ID/like`
+    ///
+    /// Adds a "like" reaction to the specified `ForumPost`. If there is an existing `LikeType`
+    /// reaction by the user, it is replaced.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: `PostData` containing the updated like info.
+    func likeHandler(_ req: Request) throws -> Future<PostData> {
+        let user = try req.requireAuthenticated(User.self)
+        // get post
+        return try req.parameters.next(ForumPost.self).flatMap {
+            (post) in
+            guard try post.authorID != user.requireID() else {
+                throw Abort(.conflict, reason: "user cannot like own post")
+            }
+            // check for existing like
+            return try PostLikes.query(on: req)
+                .filter(\.userID == user.requireID())
+                .filter(\.postID == post.requireID())
+                .first()
+                .flatMap {
+                    (like) in
+                    // re-type if existing like
+                    if let like = like {
+                        like.likeType = .like
+                        return like.save(on: req).flatMap {
+                            (savedLike) in
+                            // get likes count
+                            return try PostLikes.query(on: req)
+                                .filter(\.postID == post.requireID())
+                                .count()
+                                .map {
+                                    (count) in
+                                    // return as PostData
+                                    return try post.convertToData(withLike: .like, likeCount: count)
+                            }
+                        }
+                    }
+                    // otherwise create like
+                    let postLike = try PostLikes(user, post, likeType: .like)
+                    return postLike.save(on: req).flatMap {
+                        (savedLike) in
+                        // get likes count
+                        return try PostLikes.query(on: req)
+                            .filter(\.postID == post.requireID())
+                            .count()
+                            .map {
+                                (count) in
+                                // return as PostData
+                                return try post.convertToData(withLike: .like, likeCount: count)
+                        }
+                    }
+            }
+        }
+    }
+    
+    /// `POST /api/v3/forum/post/ID/love`
+    ///
+    /// Adds a "love" reaction to the specified `ForumPost`. If there is an existing `LikeType`
+    /// reaction by the user, it is replaced.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: `PostData` containing the updated like info.
+    func loveHandler(_ req: Request) throws -> Future<PostData> {
+        let user = try req.requireAuthenticated(User.self)
+        // get post
+        return try req.parameters.next(ForumPost.self).flatMap {
+            (post) in
+            guard try post.authorID != user.requireID() else {
+                throw Abort(.conflict, reason: "user cannot like own post")
+            }
+            // check for existing like
+            return try PostLikes.query(on: req)
+                .filter(\.userID == user.requireID())
+                .filter(\.postID == post.requireID())
+                .first()
+                .flatMap {
+                    (like) in
+                    // re-type if existing like
+                    if let like = like {
+                        like.likeType = .love
+                        return like.save(on: req).flatMap {
+                            (savedLike) in
+                            // get likes count
+                            return try PostLikes.query(on: req)
+                                .filter(\.postID == post.requireID())
+                                .count()
+                                .map {
+                                    (count) in
+                                    // return as PostData
+                                    return try post.convertToData(withLike: .love, likeCount: count)
+                            }
+                        }
+                    }
+                    // otherwise create like
+                    let postLike = try PostLikes(user, post, likeType: .love)
+                    return postLike.save(on: req).flatMap {
+                        (savedLike) in
+                        // get likes count
+                        return try PostLikes.query(on: req)
+                            .filter(\.postID == post.requireID())
+                            .count()
+                            .map {
+                                (count) in
+                                // return as PostData
+                                return try post.convertToData(withLike: .love, likeCount: count)
+                        }
+                    }
+            }
         }
     }
     
