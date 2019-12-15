@@ -286,21 +286,40 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
                     .filter(\.authorID !~ muted)
                     .sort(\.createdAt, .ascending)
                     .all()
-                    .map {
+                    .flatMap {
                         (posts) in
                         // remove muteword posts
                         let filteredPosts = posts.compactMap {
                             self.filterMutewords(for: $0, using: mutewords, on: req)
                         }
-                        // return as ForumData
-                        let forumData = try ForumData(
-                            forumID: forum.requireID(),
-                            title: forum.title,
-                            creatorID: forum.creatorID,
-                            isLocked: forum.isLocked,
-                            posts: filteredPosts.map { try $0.convertToData() }
-                        )
-                        return forumData
+                        // convert to PostData
+                        let postsData = try filteredPosts.map {
+                            (filteredPost) -> Future<PostData> in
+                            let userLike = try PostLikes.query(on: req)
+                                .filter(\.postID == filteredPost.requireID())
+                                .filter(\.userID == user.requireID())
+                                .first()
+                            let likeCount = try PostLikes.query(on: req)
+                                .filter(\.postID == filteredPost.requireID())
+                                .count()
+                            return map(userLike, likeCount) {
+                                (resolvedLike, count) in
+                                return try filteredPost.convertToData(
+                                    withLike: resolvedLike?.likeType,
+                                    likeCount: count
+                                )
+                            }
+                        }
+                        return postsData.flatten(on: req).map {
+                            (flattenedPosts) in
+                            return try ForumData(
+                                forumID: forum.requireID(),
+                                title: forum.title,
+                                creatorID: forum.creatorID,
+                                isLocked: forum.isLocked,
+                                posts: flattenedPosts
+                            )
+                        }
                 }
             }
         }
@@ -400,14 +419,32 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
                     .filter(\.authorID !~ muted)
                     .filter(\.text, .ilike, "%\(search)%")
                     .all()
-                    .map {
-                        (posts) in
-                        let filteredPosts = posts.compactMap {
-                            self.filterMutewords(for: $0, using: mutewords, on: req)
-                        }
-                        // return as PostData
-                        return try filteredPosts.map { try $0.convertToData() }
-                }
+                        .flatMap {
+                            (posts) in
+                            // remove muteword posts
+                            let filteredPosts = posts.compactMap {
+                                self.filterMutewords(for: $0, using: mutewords, on: req)
+                            }
+                            // convert to PostData
+                            let postsData = try filteredPosts.map {
+                                (filteredPost) -> Future<PostData> in
+                                let userLike = try PostLikes.query(on: req)
+                                    .filter(\.postID == filteredPost.requireID())
+                                    .filter(\.userID == user.requireID())
+                                    .first()
+                                let likeCount = try PostLikes.query(on: req)
+                                    .filter(\.postID == filteredPost.requireID())
+                                    .count()
+                                return map(userLike, likeCount) {
+                                    (resolvedLike, count) in
+                                    return try filteredPost.convertToData(
+                                        withLike: resolvedLike?.likeType,
+                                        likeCount: count
+                                    )
+                                }
+                            }
+                            return postsData.flatten(on: req)
+                    }
             }
         }
     }
@@ -438,21 +475,40 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
                         .filter(\.authorID !~ muted)
                         .sort(\.createdAt, .ascending)
                         .all()
-                        .map {
+                        .flatMap {
                             (posts) in
                             // remove muteword posts
                             let filteredPosts = posts.compactMap {
                                 self.filterMutewords(for: $0, using: mutewords, on: req)
                             }
-                            // return as ForumData
-                            let forumData = try ForumData(
-                                forumID: forum.requireID(),
-                                title: forum.title,
-                                creatorID: forum.creatorID,
-                                isLocked: forum.isLocked,
-                                posts: filteredPosts.map { try $0.convertToData() }
-                            )
-                            return forumData
+                            // convert to PostData
+                            let postsData = try filteredPosts.map {
+                                (filteredPost) -> Future<PostData> in
+                                let userLike = try PostLikes.query(on: req)
+                                    .filter(\.postID == filteredPost.requireID())
+                                    .filter(\.userID == user.requireID())
+                                    .first()
+                                let likeCount = try PostLikes.query(on: req)
+                                    .filter(\.postID == filteredPost.requireID())
+                                    .count()
+                                return map(userLike, likeCount) {
+                                    (resolvedLike, count) in
+                                    return try filteredPost.convertToData(
+                                        withLike: resolvedLike?.likeType,
+                                        likeCount: count
+                                    )
+                                }
+                            }
+                            return postsData.flatten(on: req).map {
+                                (flattenedPosts) in
+                                return try ForumData(
+                                    forumID: forum.requireID(),
+                                    title: forum.title,
+                                    creatorID: forum.creatorID,
+                                    isLocked: forum.isLocked,
+                                    posts: flattenedPosts
+                                )
+                            }
                     }
                 }
             }
@@ -461,15 +517,15 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
     
     /// `GET /api/v3/forum/post/ID`
     ///
-    /// Retrieve the specified `ForumPost`.
+    /// Retrieve the specified `ForumPost` with full user `LikeType` data.
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 404 error if the post is not available.
-    /// - Returns: `PostData` containing the specified post.
-    func postHandler(_ req: Request) throws -> Future<PostData> {
+    /// - Returns: `PostDetailData` containing the specified post.
+    func postHandler(_ req: Request) throws -> Future<PostDetailData> {
         let user = try req.requireAuthenticated(User.self)
         return try req.parameters.next(ForumPost.self).flatMap {
-            (post) in
+            (postParameter) in
             // we have post, but need to filter
             return try self.getCachedFilters(for: user, on: req).flatMap {
                 (tuple) in
@@ -478,19 +534,58 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
                 let mutewords = tuple.2
                 // NOW we can find (again!) using postgress to filter
                 return try ForumPost.query(on: req)
-                    .filter(\.id == post.requireID())
+                    .filter(\.id == postParameter.requireID())
                     .filter(\.authorID !~ blocked)
                     .filter(\.authorID !~ muted)
                     .first()
                     .unwrap(or: Abort(.notFound, reason: "post is not available"))
-                    .map {
-                        (filteredPost) in
-                        for word in mutewords {
-                            if filteredPost.text.range(of: word, options: .caseInsensitive) != nil {
-                                throw Abort(.notFound, reason: "post is not available")
-                            }
+                    .flatMap {
+                        (existingPost) in
+                        // remove mutewords
+                        let filteredPost = self.filterMutewords(for: existingPost, using: mutewords, on: req)
+                        guard let post = filteredPost else {
+                            throw Abort(.notFound, reason:"post is not available")
                         }
-                        return try filteredPost.convertToData()
+                        // get likes data
+                        return try PostLikes.query(on: req)
+                            .filter(\.postID == post.requireID())
+                            .all()
+                            .flatMap {
+                                (postLikes) in
+                                // get users
+                                let likeUsers: [Future<User>] = postLikes.map {
+                                    (postLike) -> Future<User> in
+                                    return User.find(postLike.userID, on: req)
+                                        .unwrap(or: Abort(.internalServerError, reason: "user not found"))
+                                }
+                                return likeUsers.flatten(on: req).map {
+                                    (users) in
+                                    let seamonkeys = try users.map { try $0.convertToSeaMonkey() }
+                                    // init return struct
+                                    var postDetailData = try PostDetailData(
+                                        postID: post.requireID(),
+                                        createdAt: post.createdAt ?? Date(),
+                                        authorID: post.authorID,
+                                        text: post.text,
+                                        image: post.image,
+                                        laughs: [],
+                                        likes: [],
+                                        loves: []
+                                    )
+                                    for (index, like) in postLikes.enumerated() {
+                                        switch like.likeType {
+                                            case .laugh:
+                                                postDetailData.laughs.append(seamonkeys[index])
+                                            case .like:
+                                                postDetailData.likes.append(seamonkeys[index])
+                                            case .love:
+                                                postDetailData.loves.append(seamonkeys[index])
+                                            default: continue
+                                        }
+                                    }
+                                    return postDetailData
+                                }
+                        }
                 }
             }
         }
@@ -521,13 +616,31 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
                 .filter(\.authorID !~ muted)
                 .filter(\.text, .ilike, "%\(search)%")
                 .all()
-                .map {
+                .flatMap {
                     (posts) in
+                    // remove muteword posts
                     let filteredPosts = posts.compactMap {
                         self.filterMutewords(for: $0, using: mutewords, on: req)
                     }
-                    // return as PostData
-                    return try filteredPosts.map { try $0.convertToData() }
+                    // convert to PostData
+                    let postsData = try filteredPosts.map {
+                        (filteredPost) -> Future<PostData> in
+                        let userLike = try PostLikes.query(on: req)
+                            .filter(\.postID == filteredPost.requireID())
+                            .filter(\.userID == user.requireID())
+                            .first()
+                        let likeCount = try PostLikes.query(on: req)
+                            .filter(\.postID == filteredPost.requireID())
+                            .count()
+                        return map(userLike, likeCount) {
+                            (resolvedLike, count) in
+                            return try filteredPost.convertToData(
+                                withLike: resolvedLike?.likeType,
+                                likeCount: count
+                            )
+                        }
+                    }
+                    return postsData.flatten(on: req)
             }
         }
     }
@@ -586,7 +699,7 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
                             title: savedForum.title,
                             creatorID: savedForum.creatorID,
                             isLocked: savedForum.isLocked,
-                            posts: [post.convertToData()]
+                            posts: [post.convertToData(withLike: nil, likeCount: 0)]
                         )
                         return forumData
                     }
@@ -713,38 +826,48 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
                 || user.accessLevel.rawValue >= UserAccessLevel.moderator.rawValue else {
                     throw Abort(.forbidden, reason: "user cannot modify post")
             }
-            // get generated filename
-            return try self.processImage(data: data.image, forType: .userProfile, on: req).flatMap {
-                (filename) in
-                // replace existing image
-                if !post.image.isEmpty {
-                    // create ForumEdit record
-                    let forumEdit = try ForumEdit(
-                        postID: post.requireID(),
-                        postContent: PostContentData(text: post.text, image: post.image)
-                    )
-                    // archive thumbnail
-                    DispatchQueue.global(qos: .background).async {
-                        self.archiveImage(post.image, from: self.imageDir)
-                    }
-                    return forumEdit.save(on: req).flatMap {
-                        (_) in
-                        // update post
+            // get like count
+            return try PostLikes.query(on: req)
+                .filter(\.postID == post.requireID())
+                .count()
+                .flatMap {
+                    (count) in
+                    // get generated filename
+                    return try self.processImage(data: data.image, forType: .userProfile, on: req).flatMap {
+                        (filename) in
+                        // replace existing image
+                        if !post.image.isEmpty {
+                            // create ForumEdit record
+                            let forumEdit = try ForumEdit(
+                                postID: post.requireID(),
+                                postContent: PostContentData(text: post.text, image: post.image)
+                            )
+                            // archive thumbnail
+                            DispatchQueue.global(qos: .background).async {
+                                self.archiveImage(post.image, from: self.imageDir)
+                            }
+                            return forumEdit.save(on: req).flatMap {
+                                (_) in
+                                // update post
+                                post.image = filename
+                                return post.save(on: req).map {
+                                    (savedPost) in
+                                    // return as PostData
+                                    return try savedPost.convertToData(withLike: nil, likeCount: count)
+                                }
+                            }
+                        }
+                        // else add new image
                         post.image = filename
                         return post.save(on: req).map {
                             (savedPost) in
                             // return as PostData
-                            return try savedPost.convertToData()
+                            return try savedPost.convertToData(withLike: nil, likeCount: count)
                         }
-                    }
-                }
-                // else add new image
-                post.image = filename
-                return post.save(on: req).map {
-                    (savedPost) in
-                    // return as PostData
-                    return try savedPost.convertToData()
-                }
+
+            }
+
+            
             }
         }
     }
@@ -889,7 +1012,7 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
                         (savedPost) in
                         // return as PostData, with 201 status
                         let response = Response(http: HTTPResponse(status: .created), using: req)
-                        try response.content.encode(try savedPost.convertToData())
+                        try response.content.encode(try savedPost.convertToData(withLike: nil, likeCount: 0))
                         return response
                     }
                 }
@@ -979,33 +1102,44 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
                 user.accessLevel.rawValue >= UserAccessLevel.verified.rawValue else {
                     throw Abort(.forbidden, reason: "user not permitted to edit post")
             }
-            // see `PostCreateData.validations()`
-            try data.validate()
-            // stash current contents
-            let forumEdit = try ForumEdit(
-                postID: post.requireID(),
-                postContent: PostContentData(text: post.text, image: post.image)
-            )
-            // update if there are changes
-            if post.text != data.text || post.image != data.image {
-                post.text = data.text
-                post.image = data.image
-                return post.save(on: req).flatMap {
-                    (savedPost) in
-                    // save ForumEdit
-                    return forumEdit.save(on: req).map {
-                        (_) in
-                        // return updated post as PostData, with 201 status
-                        let response = Response(http: HTTPResponse(status: .created), using: req)
-                        try response.content.encode(try savedPost.convertToData())
-                        return response
+            // get like count
+            return try PostLikes.query(on: req)
+                .filter(\.postID == post.requireID())
+                .count()
+                .flatMap {
+                    (count) in
+                    // see `PostCreateData.validations()`
+                    try data.validate()
+                    // stash current contents
+                    let forumEdit = try ForumEdit(
+                        postID: post.requireID(),
+                        postContent: PostContentData(text: post.text, image: post.image)
+                    )
+                    // update if there are changes
+                    if post.text != data.text || post.image != data.image {
+                        post.text = data.text
+                        post.image = data.image
+                        return post.save(on: req).flatMap {
+                            (savedPost) in
+                            // save ForumEdit
+                            return forumEdit.save(on: req).map {
+                                (_) in
+                                // return updated post as PostData, with 201 status
+                                let response = Response(http: HTTPResponse(status: .created), using: req)
+                                try response.content.encode(
+                                    try savedPost.convertToData(withLike: nil, likeCount: count)
+                                )
+                                return response
+                            }
+                        }
+                    } else {
+                        // just return post as PostData, with 200 status
+                        let response = Response(http: HTTPResponse(status: .ok), using: req)
+                        try response.content.encode(
+                            try post.convertToData(withLike: nil, likeCount: count)
+                        )
+                        return req.future(response)
                     }
-                }
-            } else {
-                // just return post as PostData, with 200 status
-                let response = Response(http: HTTPResponse(status: .ok), using: req)
-                try response.content.encode(try post.convertToData())
-                return req.future(response)
             }
         }
     }
