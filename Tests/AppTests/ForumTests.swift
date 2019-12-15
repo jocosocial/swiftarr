@@ -908,6 +908,112 @@ final class ForumTests: XCTestCase {
         XCTAssertTrue(posts[0].text.lowercased().contains("fancy"), "should contain 'FaNcY'")
         XCTAssertEqual(posts[0].postID, post.postID, "should be same")
     }
+    
+    func testPostReactions() throws {
+        // create verified logged in user
+        var token = try app.login(username: "verified", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // create user forum
+        let userCategories = try app.getResult(
+            from: forumURI + "categories/user",
+            method: .GET,
+            headers: headers,
+            decodeTo: [CategoryData].self
+        )
+        let forumCreateData = ForumCreateData(
+            title: "A forum!",
+            text: "A forum post for like testing!",
+            image: nil
+        )
+        let categoryID = userCategories.first?.categoryID
+        let forumData = try app.getResult(
+            from: forumURI + "categories/\(categoryID!)/create",
+            method: .POST,
+            headers: headers,
+            body: forumCreateData,
+            decodeTo: ForumData.self
+        )
+        let post = forumData.posts[0]
+        
+        // test cannot like own post
+        var response = try app.getResponse(
+            from: forumURI + "post/\(post.postID)/laugh",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
+        response = try app.getResponse(
+            from: forumURI + "post/\(post.postID)/like",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
+        response = try app.getResponse(
+            from: forumURI + "post/\(post.postID)/love",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
+        
+        // test like
+        let verifiedHeaders = headers
+        _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        token = try app.login(username: testUsername, password: testPassword, on: conn)
+        headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        var postData = try app.getResult(
+            from: forumURI + "post/\(post.postID)/laugh",
+            method: .POST,
+            headers: headers,
+            decodeTo: PostData.self
+        )
+        XCTAssertTrue(postData.userLike == LikeType.laugh, "should be '.laugh'")
+        
+        // test replaces previous
+        postData = try app.getResult(
+            from: forumURI + "post/\(post.postID)/like",
+            method: .POST,
+            headers: headers,
+            decodeTo: PostData.self
+        )
+        XCTAssertTrue(postData.userLike == LikeType.like, "should be '.like'")
+        
+        // test last of the bunch
+        postData = try app.getResult(
+            from: forumURI + "post/\(post.postID)/love",
+            method: .POST,
+            headers: headers,
+            decodeTo: PostData.self
+        )
+        XCTAssertTrue(postData.userLike == LikeType.love, "should be '.love'")
+        
+        // test unreact
+        postData = try app.getResult(
+            from: forumURI + "post/\(post.postID)/unreact",
+            method: .POST,
+            headers: headers,
+            decodeTo: PostData.self
+        )
+        XCTAssertNil(postData.userLike, "should be no reaction")
+        
+        // test nothing to unreact
+        response = try app.getResponse(
+            from: forumURI + "post/\(post.postID)/unreact",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
 
+        // test owner cannot remove
+        response = try app.getResponse(
+            from: forumURI + "post/\(post.postID)/laugh",
+            method: .POST,
+            headers: verifiedHeaders
+        )
+        XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
+    }
+    
     // test forum block
 }
