@@ -397,7 +397,7 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
     
     /// `GET /api/v3/forum/ID/search/STRING`
     ///
-    /// Retrieve all `ForumPost`s in the specifiec `Forum` that contain the specified string.
+    /// Retrieve all `ForumPost`s in the specified `Forum` that contain the specified string.
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Returns: `[PostData]` containing all matching posts in the forum.
@@ -1316,7 +1316,7 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
     /// - Parameters:
     ///   - req: The incoming `Request`, provided automatically.
     ///   - data: `PostContentData` containing the post's text and image filename.
-    /// - Throws: 403 error if the use is not post owner or is read-only.
+    /// - Throws: 403 error if user is not post owner or has read-only access.
     /// - Returns: `PostData` containing the post's contents and metadata.
     func postUpateHandler(_ req: Request, data: PostContentData) throws -> Future<Response> {
         let user = try req.requireAuthenticated(User.self)
