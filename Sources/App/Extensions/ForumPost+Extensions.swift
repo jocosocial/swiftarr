@@ -39,9 +39,14 @@ extension ForumPost {
     static var deletedAtKey: TimestampKey? { return \.deletedAt }
 }
 
-// MARK: - Parent
+// MARK: - Relations
 
 extension ForumPost {
+    /// The child `ForumEdit` accountability records of the post.
+    var edits: Children<ForumPost, ForumEdit> {
+        return children(\.postID)
+    }
+
     /// The parent `Forum` of the post.
     var forum: Parent<ForumPost, Forum> {
         return parent(\.forumID)

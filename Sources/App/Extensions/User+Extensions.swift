@@ -56,15 +56,15 @@ extension User: TokenAuthenticatable {
     typealias TokenType = Token
 }
 
-// MARK: - Children
+// MARK: - Relations
 
 extension User {
-    /// The `Barrels`s owned by the user.
+    /// The child `Barrels`s owned by the user.
     var barrels: Children<User, Barrel> {
         return children(\.ownerID)
     }
     
-    /// The `Forum`s created by the user.
+    /// The child `Forum`s created by the user.
     var forums: Children<User, Forum> {
         return children(\.creatorID)
     }

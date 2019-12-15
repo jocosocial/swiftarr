@@ -43,21 +43,17 @@ extension UserProfile {
     static var deletedAtKey: TimestampKey? { return \.deletedAt }
 }
 
-// MARK: - Parent
-
-extension UserProfile {
-    /// The parent `User` of the profile.
-    var user: Parent<UserProfile, User> {
-        return parent(\.userID)
-    }
-}
-
-// MARK: - Children
+// MARK: - Relations
 
 extension UserProfile {
     /// The child `ProfileEdit` accountability records of the profile.
     var edits: Children<UserProfile, ProfileEdit> {
         return children(\.profileID)
+    }
+
+    /// The parent `User` of the profile.
+    var user: Parent<UserProfile, User> {
+        return parent(\.userID)
     }
 }
 

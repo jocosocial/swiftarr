@@ -39,7 +39,7 @@ extension Forum {
     static var deletedAtKey: TimestampKey? { return \.deletedAt }
 }
 
-// MARK: - Parents
+// MARK: - Relations
 
 extension Forum {
     /// The parent `Category` of the forum.
@@ -51,12 +51,8 @@ extension Forum {
     var creator: Parent<Forum, User> {
         return parent(\.creatorID)
     }
-}
-
-// MARK: - Children
-
-extension Forum {
-    /// The `ForumPost`s within the forum.
+    
+    /// The child `ForumPost`s within the forum.
     var posts: Children<Forum, ForumPost> {
         return children(\.forumID)
     }

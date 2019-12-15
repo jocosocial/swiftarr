@@ -35,7 +35,7 @@ extension ForumEdit {
     static var createdAtKey: TimestampKey? { return \.createdAt }
 }
 
-// MARK: - Parent
+// MARK: - Relations
 
 extension ForumEdit {
     /// The parent `ForumPost` of the edit.

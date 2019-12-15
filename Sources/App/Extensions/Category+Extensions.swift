@@ -38,7 +38,7 @@ extension Category {
     static var deletedAtKey: TimestampKey? { return \.deletedAt }
 }
 
-// MARK: - Children
+// MARK: - Relations
 
 extension Category {
     /// The `Forum`s belonging to the category.
