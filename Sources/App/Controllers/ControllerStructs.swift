@@ -367,9 +367,17 @@ struct PostCreateData: Content {
 /// * `POST /api/v3/forum/post/ID/update`
 /// * `POST /api/v3/forum/post/ID/image`
 /// * `POST /api/v3/forum/post/ID/image/remove`
+/// * `GET /api/v3/forum/ID/search/STRING`
+/// * `GET /api/v3/forum/post/search/STRING`
+/// * `POST /api/v3/forum/post/ID/laugh`
+/// * `POST /api/v3/forum/post/ID/like`
+/// * `POST /api/v3/forum/post/ID/love`
 ///
 /// See `ForumController.postCreateHandler(_:data:)`, `ForumController.postUpdateHandler(_:data:)`,
-/// `ForumController.imageHandler(_:data:)`, `ForumController.imageRemoveHandler(_:)`.
+/// `ForumController.imageHandler(_:data:)`, `ForumController.imageRemoveHandler(_:)`,
+/// `ForumController.forumSearchHandler(_:)`, `ForumController.postSearchHandler(_:)`
+/// `ForumController.laughHandler(_:)`, `ForumController.likeHandler(_:)`
+/// `ForumController.loveHandler(_:)`.
 struct PostData: Content {
     /// The ID of the post.
     var postID: Int
@@ -381,6 +389,34 @@ struct PostData: Content {
     var text: String
     /// The filename of the post's optional image.
     var image: String
+    /// The current user's "like" reaction on the post.
+    var userLike: LikeType?
+    /// The total number of "like" reactions on the post.
+    var likeCount: Int
+}
+
+/// Used to return a `ForumPost`'s data with full user `LikeType` info.
+///
+/// Returned by: `GET /api/v3/forum/post/ID`
+///
+/// See `ForumController.postHandler(_:)`.
+struct PostDetailData: Content {
+        /// The ID of the post.
+    var postID: Int
+    /// The timestamp of the post.
+    var createdAt: Date
+    /// The ID of the post's author.
+    var authorID: UUID
+    /// The text of the forum post.
+    var text: String
+    /// The filename of the post's optional image.
+    var image: String
+    /// The seamonkeys with "laugh" reactions on the post.
+    var laughs: [SeaMonkey]
+    /// The seamonkeys with "like" reactions on the post.
+    var likes: [SeaMonkey]
+    /// The seamonkeys with "love" reactions on the post.
+    var loves: [SeaMonkey]
 }
 
 /// Used to submit a message with a `Report`.
