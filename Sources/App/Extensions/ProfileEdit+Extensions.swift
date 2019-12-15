@@ -35,7 +35,7 @@ extension ProfileEdit {
     static var createdAtKey: TimestampKey? { return \.createdAt }
 }
 
-// MARK: - Parent
+// MARK: - Relations
 
 extension ProfileEdit {
     /// The parent `UserProfile` of the edit.

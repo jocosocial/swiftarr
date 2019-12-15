@@ -2,7 +2,6 @@ import Vapor
 import Crypto
 import FluentSQL
 import Redis
-import SwiftGD
 
 /// The collection of `/api/v3/user/*` route endpoints and handler functions related
 /// to a user's own data.
@@ -102,7 +101,7 @@ struct UserController: RouteCollection, ImageHandler {
         return "images/profile/"
     }
     
-    /// The height of profile image thumbnails
+    /// The height of profile image thumbnails.
     var thumbnailHeight: Int {
         return 44
     }
@@ -152,6 +151,7 @@ struct UserController: RouteCollection, ImageHandler {
         tokenAuthGroup.post("barrels", Barrel.parameter, "remove", String.parameter, use: barrelRemoveHandler)
         tokenAuthGroup.post("barrels", Barrel.parameter, "rename", String.parameter, use: renameBarrelHandler)
         tokenAuthGroup.get("blocks", use: blocksHandler)
+        tokenAuthGroup.get("forums", use: ForumController().ownerHandler)
         tokenAuthGroup.get("mutes", use: mutesHandler)
         tokenAuthGroup.get("mutewords", use: mutewordsHandler)
         tokenAuthGroup.post("mutewords", "add", String.parameter, use: mutewordsAddHandler)
@@ -319,58 +319,53 @@ struct UserController: RouteCollection, ImageHandler {
     /// - Returns: `UploadedImageData` containing the generated image identifier string.
     func imageHandler(_ req: Request, data: ImageUploadData) throws -> Future<UploadedImageData> {
         let user = try req.requireAuthenticated(User.self)
+        // get generated filename
         return try processImage(data: data.image, forType: .userProfile, on: req).flatMap {
             (filename) in
-            // save name to profile
+            // get profile
             return try user.profile.query(on: req)
                 .first()
                 .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
                 .flatMap {
                     (profile) in
-                    let oldImage = profile.userImage
+                    // replace existing image
+                    if !profile.userImage.isEmpty {
+                        // create ProfileEdit record
+                        let profileEdit = try ProfileEdit(
+                            profileID: profile.requireID(),
+                            profileData: nil,
+                            profileImage: profile.userImage
+                        )
+                        // archive thumbnail
+                        DispatchQueue.global(qos: .background).async {
+                            self.archiveImage(profile.userImage, from: self.imageDir)
+                        }
+                        return profileEdit.save(on: req).flatMap {
+                            (_) in
+                            // update profile
+                            profile.userImage = filename
+                            return profile.save(on: req).flatMap {
+                                (savedProfile) in
+                                // touch user.profileUpdatedAt
+                                user.profileUpdatedAt = savedProfile.updatedAt ?? Date()
+                                return user.save(on: req).map {
+                                    (_) in
+                                    // return as UploadedImageData
+                                    return UploadedImageData(filename: filename)
+                                }
+                            }
+                        }
+                    }
+                    // else add new image
                     profile.userImage = filename
                     return profile.save(on: req).flatMap {
                         (savedProfile) in
-                        // create ProfileEdit record
-                        if !oldImage.isEmpty {
-                            let profileEdit = try ProfileEdit(
-                                profileID: savedProfile.requireID(),
-                                profileData: nil,
-                                profileImage: oldImage
-                            )
-                            // remove existing full image
-                            let basePath = DirectoryConfig.detect().workDir.appending(self.imageDir)
-                            let fullPath = basePath.appending("full/")
-                            let fullURL = URL(
-                                fileURLWithPath: fullPath.appending(oldImage).appending(".jpg")
-                            )
-                            try FileManager().removeItem(at: fullURL)
-                            // move thumbnail
-                            let thumbPath = basePath.appending("thumbnail/")
-                            let archivePath = basePath.appending("archive/")
-                            // ensure archive directory exists
-                            if !FileManager().fileExists(atPath: archivePath) {
-                                try FileManager().createDirectory(
-                                    atPath: archivePath,
-                                    withIntermediateDirectories: true
-                                )
-                            }
-                            let thumbURL = URL(
-                                fileURLWithPath: thumbPath.appending(oldImage).appending(".jpg")
-                            )
-                            let archiveURL = URL(
-                                fileURLWithPath: archivePath.appending(oldImage).appending(".jpg")
-                            )
-                            try FileManager().moveItem(at: thumbURL, to: archiveURL)
-                            // save edit record
-                            return profileEdit.save(on: req).map {
-                                (_) in
-                                // return as UploadedImageData
-                                return UploadedImageData(filename: filename)
-                            }
-                        } else {
+                        // touch user.profileUpdatedAt
+                        user.profileUpdatedAt = savedProfile.updatedAt ?? Date()
+                        return user.save(on: req).map {
+                            (_) in
                             // return as UploadedImageData
-                            return req.future(UploadedImageData(filename: filename))
+                            return UploadedImageData(filename: filename)
                         }
                     }
             }
@@ -386,15 +381,37 @@ struct UserController: RouteCollection, ImageHandler {
     /// - Returns: 204 No Content on success.
     func imageRemoveHandler(_ req: Request) throws -> Future<HTTPStatus> {
         let user = try req.requireAuthenticated(User.self)
+        // get profile
         return try user.profile.query(on: req)
             .first()
             .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
             .flatMap {
                 (profile) in
-                // FIXME: this should probably be a default image
-                // ... or could let .isEmpty trigger a default
-                profile.userImage = ""
-                return profile.save(on: req).transform(to: .noContent)
+                if !profile.userImage.isEmpty {
+                    // create ProfileEdit record
+                    let profileEdit = try ProfileEdit(
+                        profileID: profile.requireID(),
+                        profileData: nil,
+                        profileImage: profile.userImage
+                    )
+                    // archive thumbnail
+                    DispatchQueue.global(qos: .background).async {
+                        return self.archiveImage(profile.userImage, from: self.imageDir)
+                    }
+                    return profileEdit.save(on: req).flatMap {
+                        (_) in
+                        // remove image from profile
+                        profile.userImage = ""
+                        return profile.save(on: req).flatMap {
+                            (savedProfile) in
+                            // touch user.profileUpdatedAt
+                            user.profileUpdatedAt = savedProfile.updatedAt ?? Date()
+                            return user.save(on: req).transform(to: .noContent)
+                        }
+                    }
+                }
+                // no existing image
+                return req.future(.noContent)
         }
     }
     
@@ -476,6 +493,8 @@ struct UserController: RouteCollection, ImageHandler {
                     builder.append("- \(realName)")
                 }
                 profile.userSearch = builder.joined(separator: " ").trimmingCharacters(in: .whitespaces)
+                
+                // FIXME: this is backwards, save the *old* data
 
                 return profile.save(on: req).flatMap {
                     (savedProfile) in
@@ -629,14 +648,20 @@ struct UserController: RouteCollection, ImageHandler {
                 var alertWords = barrel.userInfo["alertWords"] ?? []
                 alertWords.append(parameter)
                 barrel.userInfo.updateValue(alertWords.sorted(), forKey: "alertWords")
-                return barrel.save(on: req).map {
+                return barrel.save(on: req).flatMap {
                     (savedBarrel) in
                     // return sorted list
                     let alertKeywordData = AlertKeywordData(
                         name: savedBarrel.name,
                         keywords: alertWords.sorted()
                     )
-                    return alertKeywordData
+                    // update cache
+                    let cache = try req.keyedCache(for: .redis)
+                    let key = try "alertwords:\(user.requireID())"
+                    return cache.set(key, to: alertKeywordData.keywords).map {
+                        (_) in
+                        return alertKeywordData
+                    }
                 }
         }
     }
@@ -694,14 +719,20 @@ struct UserController: RouteCollection, ImageHandler {
                 }
                 alertWords.remove(at: index)
                 barrel.userInfo.updateValue(alertWords.sorted(), forKey: "alertWords")
-                return barrel.save(on: req).map {
+                return barrel.save(on: req).flatMap {
                     (savedBarrel) in
                     // return sorted list
                     let alertKeywordData = AlertKeywordData(
                         name: savedBarrel.name,
                         keywords: alertWords.sorted()
                     )
-                    return alertKeywordData
+                    // update cache
+                    let cache = try req.keyedCache(for: .redis)
+                    let key = try "alertwords:\(user.requireID())"
+                    return cache.set(key, to: alertKeywordData.keywords).map {
+                        (_) in
+                        return alertKeywordData
+                    }
                 }
         }
     }
@@ -753,7 +784,7 @@ struct UserController: RouteCollection, ImageHandler {
             }
             return barrel.save(on: req).flatMap {
                 (savedBarrel) in
-                // init return struct
+                // return as BarrelData
                 var barrelData = try BarrelData(
                     barrelID: savedBarrel.requireID(),
                     name: savedBarrel.name,
@@ -775,16 +806,7 @@ struct UserController: RouteCollection, ImageHandler {
                     .all()
                     .map {
                         (users) in
-                        var seamonkeys = [SeaMonkey]()
-                        for user in users {
-                            let seamonkey = try SeaMonkey(
-                                userID: user.requireID(),
-                                username: "@\(user.username)"
-                            )
-                            seamonkeys.append(seamonkey)
-                        }
-                        // add SeaMonkeys and return
-                        barrelData.seamonkeys = seamonkeys
+                        barrelData.seamonkeys = try users.map { try $0.convertToSeaMonkey() }
                         return barrelData
                 }
             }
@@ -816,7 +838,7 @@ struct UserController: RouteCollection, ImageHandler {
                     reason: "'\(barrel.barrelType)' barrel cannot be retrieved by this endpoint"
                 )
             }
-            // init return struct
+            // retrun as BarrelData
             var barrelData = try BarrelData(
                 barrelID: barrel.requireID(),
                 name: barrel.name,
@@ -842,16 +864,7 @@ struct UserController: RouteCollection, ImageHandler {
                 .all()
                 .map {
                     (users) in
-                    var seamonkeys = [SeaMonkey]()
-                    for user in users {
-                        let seamonkey = try SeaMonkey(
-                            userID: user.requireID(),
-                            username: "@\(user.username)"
-                        )
-                        seamonkeys.append(seamonkey)
-                    }
-                    // add SeaMonkeys and return
-                    barrelData.seamonkeys = seamonkeys
+                    barrelData.seamonkeys = try users.map { try $0.convertToSeaMonkey() }
                     return barrelData
             }
         }
@@ -909,7 +922,7 @@ struct UserController: RouteCollection, ImageHandler {
             }
             return barrel.save(on: req).flatMap {
                 (savedBarrel) in
-                // init return struct
+                // return as BarrelData
                 var barrelData = try BarrelData(
                     barrelID: savedBarrel.requireID(),
                     name: savedBarrel.name,
@@ -931,16 +944,7 @@ struct UserController: RouteCollection, ImageHandler {
                     .all()
                     .map {
                         (users) in
-                        var seamonkeys = [SeaMonkey]()
-                        for user in users {
-                            let seamonkey = try SeaMonkey(
-                                userID: user.requireID(),
-                                username: "@\(user.username)"
-                            )
-                            seamonkeys.append(seamonkey)
-                        }
-                        // add SeaMonkeys and return
-                        barrelData.seamonkeys = seamonkeys
+                        barrelData.seamonkeys = try users.map { try $0.convertToSeaMonkey() }
                         return barrelData
                 }
             }
@@ -999,7 +1003,7 @@ struct UserController: RouteCollection, ImageHandler {
                 .unwrap(or: Abort(.internalServerError, reason: "blocks barrel not found"))
                 .flatMap {
                     (barrel) in
-                    // init return struct
+                    // return as BlockedUserData
                     var blockedUserData = BlockedUserData(
                         name: barrel.name,
                         seamonkeys: []
@@ -1016,16 +1020,7 @@ struct UserController: RouteCollection, ImageHandler {
                         .all()
                         .map {
                             (users) in
-                            var seamonkeys = [SeaMonkey]()
-                            for user in users {
-                                let seamonkey = try SeaMonkey(
-                                    userID: user.requireID(),
-                                    username: "@\(user.username)"
-                                )
-                                seamonkeys.append(seamonkey)
-                            }
-                            // add SeaMonkeys and return
-                            blockedUserData.seamonkeys = seamonkeys
+                            blockedUserData.seamonkeys = try users.map { try $0.convertToSeaMonkey() }
                             return blockedUserData
                     }
             }
@@ -1091,19 +1086,11 @@ struct UserController: RouteCollection, ImageHandler {
                 .all()
                 .map {
                     (users) in
-                    var seamonkeys = [SeaMonkey]()
-                    for user in users {
-                        let seamonkey = try SeaMonkey(
-                            userID: user.requireID(),
-                            username: "@\(user.username)"
-                        )
-                        seamonkeys.append(seamonkey)
-                    }
-                    // return barrel data struct, with 201 response
+                    // return as BarrelData, with 201 response
                     let barrelData = try BarrelData(
                         barrelID: savedBarrel.requireID(),
                         name: savedBarrel.name,
-                        seamonkeys: seamonkeys,
+                        seamonkeys: try users.map { try $0.convertToSeaMonkey() },
                         // sets to nil if the key does not exist
                         stringList: savedBarrel.userInfo["userWords"]
                     )
@@ -1158,7 +1145,7 @@ struct UserController: RouteCollection, ImageHandler {
             .unwrap(or: Abort(.internalServerError, reason: "mutes barrel not found"))
             .flatMap {
                 (barrel) in
-                // init return struct
+                // return as MutedUserData
                 var mutedUserData = MutedUserData(
                     name: barrel.name,
                     seamonkeys: []
@@ -1175,16 +1162,7 @@ struct UserController: RouteCollection, ImageHandler {
                     .all()
                     .map {
                         (users) in
-                        var seamonkeys = [SeaMonkey]()
-                        for user in users {
-                            let seamonkey = try SeaMonkey(
-                                userID: user.requireID(),
-                                username: "@\(user.username)"
-                            )
-                            seamonkeys.append(seamonkey)
-                        }
-                        // add SeaMonkeys and return
-                        mutedUserData.seamonkeys = seamonkeys
+                        mutedUserData.seamonkeys = try users.map { try $0.convertToSeaMonkey() }
                         return mutedUserData
                 }
         }
@@ -1212,14 +1190,20 @@ struct UserController: RouteCollection, ImageHandler {
                 var muteWords = barrel.userInfo["muteWords"] ?? []
                 muteWords.append(parameter)
                 barrel.userInfo.updateValue(muteWords.sorted(), forKey: "muteWords")
-                return barrel.save(on: req).map {
+                return barrel.save(on: req).flatMap {
                     (savedBarrel) in
                     // return sorted list
                     let muteKeywordData = MuteKeywordData(
                         name: savedBarrel.name,
                         keywords: muteWords.sorted()
                     )
-                    return muteKeywordData
+                    // update cache
+                    let cache = try req.keyedCache(for: .redis)
+                    let key = try "mutewords:\(user.requireID())"
+                    return cache.set(key, to: muteKeywordData.keywords).map {
+                        (_) in
+                        return muteKeywordData
+                    }
                 }
         }
     }
@@ -1277,14 +1261,20 @@ struct UserController: RouteCollection, ImageHandler {
                 }
                 _ = muteWords.remove(at: index)
                 barrel.userInfo.updateValue(muteWords.sorted(), forKey: "muteWords")
-                return barrel.save(on: req).map {
+                return barrel.save(on: req).flatMap {
                     (savedBarrel) in
                     // return sorted list
                     let muteKeywordData = MuteKeywordData(
                         name: savedBarrel.name,
                         keywords: muteWords.sorted()
                     )
-                    return muteKeywordData
+                    // update cache
+                    let cache = try req.keyedCache(for: .redis)
+                    let key = try "mutewords:\(user.requireID())"
+                    return cache.set(key, to: muteKeywordData.keywords).map {
+                        (_) in
+                        return muteKeywordData
+                    }
                 }
         }
     }
@@ -1410,7 +1400,7 @@ struct UserController: RouteCollection, ImageHandler {
             barrel.name = parameter
             return barrel.save(on: req).flatMap {
                 (savedBarrel) in
-                // init return struct
+                // return as BarrelData
                 var barrelData = try BarrelData(
                     barrelID: savedBarrel.requireID(),
                     name: savedBarrel.name,
@@ -1432,16 +1422,7 @@ struct UserController: RouteCollection, ImageHandler {
                     .all()
                     .map {
                         (users) in
-                        var seamonkeys = [SeaMonkey]()
-                        for user in users {
-                            let seamonkey = try SeaMonkey(
-                                userID: user.requireID(),
-                                username: "@\(user.username)"
-                            )
-                            seamonkeys.append(seamonkey)
-                        }
-                        // add SeaMonkeys and return
-                        barrelData.seamonkeys = seamonkeys
+                        barrelData.seamonkeys = try users.map { try $0.convertToSeaMonkey() }
                         return barrelData
                 }
             }
@@ -1453,6 +1434,7 @@ struct UserController: RouteCollection, ImageHandler {
     /// Updates a user's password to the supplied value, encrypted.
     ///
     /// - Requires: `UserPasswordData` payload in the HTTP body.
+    /// - Parameters:
     ///   - req: The incoming `Request`, provided automatically.
     ///   - data: `UserPasswordData` struct containing the user's desired password.
     /// - Throws: 400 error if the supplied password is not at least 6 characters. 403 error

@@ -14,6 +14,7 @@ final class EventTests: XCTestCase {
     let adminURI = "/api/v3/admin/"
     let authURI = "/api/v3/auth/"
     let eventsURI = "/api/v3/events/"
+    let forumURI = "/api/v3/forum/"
     let testURI = "/api/v3/test/"
     let userURI = "/api/v3/user/"
     let usersURI = "/api/v3/users/"
@@ -37,6 +38,7 @@ final class EventTests: XCTestCase {
     // MARK: - Tests
     // Note: We migrate an "admin" user first during boot, so it is always present as `.first()`.
     
+    /// Ensure that `Events` migration was successful.
     func testEventsMigration() throws {
         let events = try app.getResult(
             from: eventsURI,
@@ -48,6 +50,9 @@ final class EventTests: XCTestCase {
         XCTAssertTrue(events.count > 100, "should be lots")
     }
     
+    /// `GET /api/v3/events`
+    /// `GET /api/v3/events/official`
+    /// `GET /api/v3/events/shadow`
     func testEventsAll() throws {
         var events = try app.getResult(
             from: eventsURI,
@@ -75,6 +80,9 @@ final class EventTests: XCTestCase {
         XCTAssertTrue(shadowCount + officialCount == eventsCount, "should be \(eventsCount)")
     }
     
+    /// `GET /api/v3/events/today`
+    /// `GET /api/v3/events/official/today`
+    /// `GET /api/v3/events/shadow/today`
     func testEventsToday() throws {
         // get baselines
         var events = try app.getResult(
@@ -151,6 +159,9 @@ final class EventTests: XCTestCase {
         XCTAssertTrue(events.count == shadowCount + 1, "should be \(shadowCount + 1)")
     }
     
+    /// `GET /api/v3/events/now`
+    /// `GET /api/v3/events/official/now`
+    /// `GET /api/v3/events/shadow/now`
     func testEventsNow() throws {
         // get baselines
         var events = try app.getResult(
@@ -242,6 +253,7 @@ final class EventTests: XCTestCase {
         XCTAssertTrue(events.count == shadowCount + 1, "should be \(shadowCount + 1)")
     }
     
+    /// `GET /api/v3/events/match/STRING`
     func testEventsMatch() throws {
         // get baseline
         var events = try app.getResult(
@@ -282,9 +294,10 @@ final class EventTests: XCTestCase {
         XCTAssertTrue(events.count == eventsCount + 2, "should be \(eventsCount + 2)")
     }
     
+    /// `POST /api/v3/events/update`
     func testEventsUpdate() throws {
         // create logged in admin
-        let token = try app.login(username: "admin", password: testPassword, on: conn)
+        var token = try app.login(username: "admin", password: testPassword, on: conn)
         var headers = HTTPHeaders()
         headers.bearerAuthorization = BearerAuthorization(token: token.token)
         
@@ -306,5 +319,58 @@ final class EventTests: XCTestCase {
             decodeTo: [EventData].self
         )
         XCTAssertTrue(events.count == 3, "should be 2 updated events, 1 new")
+        
+        // test not admin
+        token = try app.login(username: "verified", password: testPassword, on: conn)
+        headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        let response = try app.getResponse(
+            from: eventsURI + "update",
+            method: .POST,
+            headers: headers,
+            body: eventsUpdateData
+        )
+        XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
+    }
+    
+    /// `GET /api/v3/events/ID/forum`
+    func testEventForums() throws {
+        // test with Basic access
+        var headers = HTTPHeaders()
+        let credentials = BasicAuthorization(username: "unverified", password: testPassword)
+        headers.basicAuthorization = credentials
+        
+        let events = try app.getResult(
+            from: eventsURI,
+            method: .GET,
+            headers: headers,
+            decodeTo: [EventData].self
+        )
+        XCTAssertTrue(events.count > 0, "should have events")
+    
+        let adminCategories = try app.getResult(
+            from: forumURI + "categories/admin",
+            method: .GET,
+            headers: headers,
+            decodeTo: [CategoryData].self
+        )
+        XCTAssertTrue(adminCategories.count == 3, "should be 3 categories")
+        
+        let officialForums = try app.getResult(
+            from: forumURI + "categories/\(adminCategories[1].categoryID)",
+            method: .GET,
+            headers: headers,
+            decodeTo: [ForumListData].self
+        )
+        XCTAssertTrue(officialForums.count > 0, "should have official forums")
+        
+        let shadowForums = try app.getResult(
+            from: forumURI + "categories/\(adminCategories[2].categoryID)",
+            method: .GET,
+            headers: headers,
+            decodeTo: [ForumListData].self
+        )
+        XCTAssertTrue(shadowForums.count > 0, "should have shadow forums")
+        XCTAssertEqual(officialForums.count + shadowForums.count, events.count, "should be \(events.count)")
     }
 }

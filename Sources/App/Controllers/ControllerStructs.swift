@@ -91,6 +91,22 @@ struct BlockedUserData: Content {
     var seamonkeys: [SeaMonkey]
 }
 
+/// Used to return the ID and title of a `Category`.
+///
+/// Returned by:
+/// * `GET /api/v3/forum/categories`
+/// * `GET /api/v3/forum/categories/admin`
+/// * `GET /api/v3/forum/categories/user`
+///
+/// See `ForumController.categoriesHandler(_:)`, `ForumController.categoriesAdminHandler(_:)`,
+/// `ForumController.categoriesUserHandler(_:)`.
+struct CategoryData: Content {
+    /// The ID of the category.
+    var categoryID: UUID
+    /// The title of the category.
+    var title: String
+}
+
 /// Used to return a newly created `UserNote` for display or further edit.
 ///
 /// Returned by: `POST /api/v3/users/ID/note`
@@ -166,7 +182,7 @@ struct EventData: Content {
     /// The event category.
     var eventType: String
     /// The event's associated `Forum`.
-    var forum: Int?
+    var forum: UUID?
 }
 
 /// Used to update the `Event` database.
@@ -177,6 +193,65 @@ struct EventData: Content {
 struct EventsUpdateData: Content {
     /// The `.ics` event schedule file.
     var schedule: String
+}
+
+/// Used to create a new `Forum`.
+///
+/// Required by: `POST /api/v3/forum/categories/ID/create`
+///
+/// See `ForumController.forumCreateHandler(_:data:)`.
+struct ForumCreateData: Content {
+    /// The forum's title.
+    var title: String
+    /// The text content of the forum post.
+    var text: String
+    /// The image content of the forum post.
+    var image: Data?
+}
+
+/// Used to return the contents of a `Forum`.
+///
+/// Returned by:
+/// * `POST /api/v3/forum/categories/ID/create`
+/// * `GET /api/v3/forum/ID`
+/// * `GET /api/v3/events/ID/forum`
+///
+/// See `ForumController.forumCreateHandler(_:data:)`, `ForumController.forumHandler(_:)`,
+/// `EventController.eventForumHandler(_:)`.
+struct ForumData: Content {
+    /// The forum's ID.
+    var forumID: UUID
+    /// The forum's title
+    var title: String
+    /// The ID of the forum's creator.
+    var creatorID: UUID
+    /// Whether the forum is in read-only state.
+    var isLocked: Bool
+    /// The posts in the forum.
+    var posts: [PostData]
+}
+
+/// Used to return the ID, title and status of a `Forum`.
+///
+/// Returned by:
+/// * `GET /api/v3/forum/categories/ID`
+/// * `GET /api/v3/forum/owner`
+/// * `GET /api/v3/user/forums`
+/// * `GET /api/v3/forum/match/STRING`
+///
+/// See `ForumController.categoryForumsHandler(_:)`, `ForumController.ownerHandler(_:)`,
+/// `ForumController.forumMatchHandler(_:)`.
+struct ForumListData: Content {
+    /// The forum's ID.
+    var forumID: UUID
+    /// The forum's title.
+    var title: String
+    /// The number of posts in the forum.
+    var postCount: Int
+    /// Timestamp of most recent post. Needs to be optional because admin forums may be empty.
+    var lastPostAt: Date?
+    /// Whether the forum is in read-only state.
+    var isLocked: Bool
 }
 
 /// Used to upload an image file.
@@ -261,6 +336,106 @@ struct NoteUpdateData: Content {
     let noteID: UUID
     /// The udated text of the note.
     let note: String
+}
+
+/// Used to update a `ForumPost` or `Twarrt`, and as a property of `PostEdit`.
+///
+/// Required by:
+/// * `POST /api/v3/forum/post/ID`
+///
+/// See `ForumController.postUpdateHandler(_:data:)`.
+struct PostContentData: Content {
+    /// The text of the forum post.
+    var text: String
+    /// The filename of an existing image.
+    var image: String
+}
+
+/// Used to create a `ForumPost` or `Twarrt`.
+///
+/// Required by:
+/// * `POST /api/v3/forum/ID`
+///
+/// See `ForumController.postCreateHandler(_:data:)`.
+struct PostCreateData: Content {
+    /// The text of the forum post.
+    var text: String
+    /// An optional image in Data format.
+    var imageData: Data?
+}
+
+/// Used to return a `ForumPost`'s data.
+///
+/// Returned by:
+/// * `POST /api/v3/forum/ID/create`
+/// * `POST /api/v3/forum/post/ID/update`
+/// * `POST /api/v3/forum/post/ID/image`
+/// * `POST /api/v3/forum/post/ID/image/remove`
+/// * `GET /api/v3/forum/ID/search/STRING`
+/// * `GET /api/v3/forum/post/search/STRING`
+/// * `POST /api/v3/forum/post/ID/laugh`
+/// * `POST /api/v3/forum/post/ID/like`
+/// * `POST /api/v3/forum/post/ID/love`
+/// * `POST /api/v3/forum/post/ID/unreact`
+///
+/// See `ForumController.postCreateHandler(_:data:)`, `ForumController.postUpdateHandler(_:data:)`,
+/// `ForumController.imageHandler(_:data:)`, `ForumController.imageRemoveHandler(_:)`,
+/// `ForumController.forumSearchHandler(_:)`, `ForumController.postSearchHandler(_:)`
+/// `ForumController.postLaughHandler(_:)`, `ForumController.postLikeHandler(_:)`
+/// `ForumController.postLoveHandler(_:)`, `ForumController.postUnreactHandler(_:)`.
+struct PostData: Content {
+    /// The ID of the post.
+    var postID: Int
+    /// The timestamp of the post.
+    var createdAt: Date
+    /// The ID of the post's author.
+    var authorID: UUID
+    /// The text of the forum post.
+    var text: String
+    /// The filename of the post's optional image.
+    var image: String
+    /// The current user's `LikeType` reaction on the post.
+    var userLike: LikeType?
+    /// The total number of `LikeType` reactions on the post.
+    var likeCount: Int
+}
+
+/// Used to return a `ForumPost`'s data with full user `LikeType` info.
+///
+/// Returned by: `GET /api/v3/forum/post/ID`
+///
+/// See `ForumController.postHandler(_:)`.
+struct PostDetailData: Content {
+        /// The ID of the post.
+    var postID: Int
+    /// The timestamp of the post.
+    var createdAt: Date
+    /// The ID of the post's author.
+    var authorID: UUID
+    /// The text of the forum post.
+    var text: String
+    /// The filename of the post's optional image.
+    var image: String
+    /// The seamonkeys with "laugh" reactions on the post.
+    var laughs: [SeaMonkey]
+    /// The seamonkeys with "like" reactions on the post.
+    var likes: [SeaMonkey]
+    /// The seamonkeys with "love" reactions on the post.
+    var loves: [SeaMonkey]
+}
+
+/// Used to submit a message with a `Report`.
+///
+/// Required by:
+/// * `POST /api/v3/users/ID/report`
+/// * `POST /api/v3/forum/ID/report`
+/// * `POST /api/v3/forun/post/ID/report`
+///
+/// See `UsersController.reportHandler(_:data:)`, `ForumController.forumReportHandler(_:data:)`
+/// `ForumController.postReportHandler(_:data:)`.
+struct ReportData: Content {
+    /// An optional message from the submitting user.
+    var message: String
 }
 
 /// Returned by `Barrel`s as a unit representing a user.
@@ -394,17 +569,6 @@ struct UserRecoveryData: Content {
     var recoveryKey: String
 }
 
-/// Used to submit a message with a `Report`.
-///
-/// Required by:
-/// * `POST /api/v3/users/ID/report`
-///
-/// See `UsersController.reportHandler(_:data:)`.
-struct UserReportData: Content {
-    /// An optional message from the submitting user.
-    var message: String
-}
-
 /// Used to broad search for a user based on any of their name fields.
 ///
 /// Returned by:
@@ -453,6 +617,34 @@ extension BarrelCreateData: Validatable, Reflectable {
                 throw Abort(.badRequest, reason: "'uuidList' and 'stringList' cannot both contain values")
             }
         }
+        return validations
+    }
+}
+
+extension ForumCreateData: Validatable, Reflectable {
+    /// Validates that `.title` and initial post `.text`  both contain values.
+    static func validations() throws -> Validations<ForumCreateData> {
+        var validations = Validations(ForumCreateData.self)
+        try validations.add(\.title, .count(1...))
+        try validations.add(\.text, .count(1...))
+        return validations
+    }
+}
+
+extension PostContentData: Validatable, Reflectable {
+    /// Validates that `.text` contains a value.
+    static func validations() throws -> Validations<PostContentData> {
+        var validations = Validations(PostContentData.self)
+        try validations.add(\.text, .count(1...))
+        return validations
+    }
+}
+
+extension PostCreateData: Validatable, Reflectable {
+    /// Validates that `.text` contains a value.
+    static func validations() throws -> Validations<PostCreateData> {
+        var validations = Validations(PostCreateData.self)
+        try validations.add(\.text, .count(1...))
         return validations
     }
 }

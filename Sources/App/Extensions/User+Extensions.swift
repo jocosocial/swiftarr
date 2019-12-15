@@ -56,15 +56,25 @@ extension User: TokenAuthenticatable {
     typealias TokenType = Token
 }
 
-// MARK: - Children
+// MARK: - Relations
 
 extension User {
-    /// The `Barrels`s owned by the user.
+    /// The child `Barrels`s owned by the user.
     var barrels: Children<User, Barrel> {
         return children(\.ownerID)
     }
     
-    /// The `UserNote`s owned by the user.
+    /// The child `Forum`s created by the user.
+    var forums: Children<User, Forum> {
+        return children(\.creatorID)
+    }
+    
+    /// The sibling `ForumPost`s "liked" by the user.
+    var likes: Siblings<User, ForumPost, PostLikes> {
+        return siblings()
+    }
+    
+    /// The child `UserNote`s owned by the user.
     var notes: Children<User, UserNote> {
         return children(\.userID)
     }
@@ -125,6 +135,13 @@ extension User {
                 return user
         }
     }
+    
+    /// Converts a `User` model to a `SeaMonkey` representation.
+    func convertToSeaMonkey() throws -> SeaMonkey {
+        return try SeaMonkey(
+            userID: self.requireID(),
+            username: "@\(self.username)")
+    }
 }
 
 extension Future where T: User {
@@ -135,6 +152,16 @@ extension Future where T: User {
         return self.map {
             (user) in
             return try user.convertToInfo()
+        }
+    }
+    
+    /// Converts a `Future<User>` to a `Future<SeaMonkey>`. This extension provides the
+    /// convenience of simply using `user.convertToSeaMonkey()` and allowing the compiler
+    /// to choose the appropriate version for the context.
+    func convertToSeaMonkey() throws -> Future<SeaMonkey> {
+        return self.map {
+            (user) in
+            return try user.convertToSeaMonkey()
         }
     }
 }

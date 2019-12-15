@@ -664,14 +664,14 @@ final class UserTests: XCTestCase {
         let note1 = NoteCreateData(note: "had dinner with unverified last night")
         let note2 = NoteCreateData(note: "great scrabble player")
         let createdNoteData1 = try app.getResult(
-            from: usersURI + "\(unverifiedUser.userID)/note",
+            from: usersURI + "\(unverifiedUser.userID)/note/create",
             method: .POST,
             headers: headers,
             body: note1,
             decodeTo: CreatedNoteData.self
         )
         let createdNoteData2 = try app.getResult(
-            from: usersURI + "\(verifiedUser.userID)/note",
+            from: usersURI + "\(verifiedUser.userID)/note/create",
             method: .POST,
             headers: headers,
             body: note2,
@@ -681,7 +681,7 @@ final class UserTests: XCTestCase {
         
         // test note exists
         var response = try app.getResponse(
-            from: usersURI + "\(verifiedUser.userID)/note",
+            from: usersURI + "\(verifiedUser.userID)/note/create",
             method: .POST,
             headers: headers,
             body: note2
@@ -757,6 +757,8 @@ final class UserTests: XCTestCase {
         XCTAssertTrue(response.http.body.description.contains("does not belong"), "does not belong")
     }
     
+    /// `POST /api/v3/user/image`
+    /// `POST /api/v3/user/image/remove`
     func testUserImage() throws {
         // create user
         _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
@@ -805,5 +807,13 @@ final class UserTests: XCTestCase {
             decodeTo: UploadedImageData.self
          )
         XCTAssertNotNil(UUID(uploadedImageData.filename), "should be UUID string")
+        
+        // test image remove
+        let response = try app.getResponse(
+            from: userURI + "image/remove",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 204, "should be 204 No Content")
     }
 }

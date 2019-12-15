@@ -2,7 +2,7 @@ import Vapor
 import FluentPostgreSQL
 
 /// A `Migration` that populates the `RegistrationCode` database from a `registration-codes.txt`
-/// file located in the `seeds` subdirectory of the project.
+/// file located in the `seeds/` subdirectory of the project.
 
 struct RegistrationCodes: Migration {
         typealias Database = PostgreSQLDatabase
@@ -11,7 +11,7 @@ struct RegistrationCodes: Migration {
     /// `seeds/` subdirectory, converts the lines into elements of an array, then iterates over
     /// them to create new `RegistrationCode` models.
     ///
-    /// - Requires: `registration-codes.txt` file in root directory.
+    /// - Requires: `registration-codes.txt` file in seeds subdirectory.
     /// - Parameter conn: A connection to the database, provided automatically.
     /// - Returns: Void
     static func prepare(on conn: PostgreSQLConnection) -> EventLoopFuture<Void> {
@@ -55,12 +55,12 @@ struct RegistrationCodes: Migration {
         }
     }
     
-    /// Required by`Migration` protocol, but these are static so no point removing them,
-    /// just return a pre-completed `Future`.
+    /// Required by `Migration` protocol, but this isn't a model update, so just return a
+    /// pre-completed `Future`.
     /// 
-    /// - Parameter connection: The database connection.
+    /// - Parameter conn: The database connection.
     /// - Returns: Void.
-    static func revert(on connection: PostgreSQLConnection) -> Future<Void> {
-        return .done(on: connection)
+    static func revert(on conn: PostgreSQLConnection) -> Future<Void> {
+        return .done(on: conn)
     }
 }

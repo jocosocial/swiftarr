@@ -20,7 +20,10 @@ custom_categories:
   - name: Models
     children:
     - Barrel
+    - Category
     - Event
+    - Forum
+    - ForumPost
     - RegistrationCode
     - Report
     - Token
@@ -34,6 +37,7 @@ custom_categories:
     - AuthController
     - ClientController
     - EventController
+    - ForumController
     - TestController
     - UserController
     - UsersController
@@ -43,6 +47,7 @@ custom_categories:
     - BarrelType
     - EventType
     - ImageHandlerType
+    - LikeType
     - ReportType
     - UserAccessLevel
 
@@ -55,27 +60,38 @@ custom_categories:
   - name: Migrations
     children:
     - AdminUser
+    - Categories
     - ClientUsers
+    - EventForums
     - Events
+    - Forums
     - RegistrationCodes
     - TestUsers
+
+  - name: Pivots
+    children:
+    - PostLikes
     
   - name: Protocols
     children:
+    - ContentFilterable
     - ImageHandler
     
   - name: Request Structs
     children:
     - BarrelCreateData
     - EventsUpdateData
+    - ForumCreateData
     - ImageUploadData
     - NoteCreateData
     - NoteUpdateData
+    - PostContentData
+    - PostCreateData
+    - ReportData
     - UserCreateData
     - UserPasswordData
     - UserProfileData
     - UserRecoveryData
-    - UserReportData
     - UserUsernameData
     - UserVerifyData
     
@@ -86,10 +102,15 @@ custom_categories:
     - BarrelData
     - BarrelListData
     - BlockedUserData
+    - CategoryData
     - CreatedNoteData
     - CreatedUserData
     - CurrentUserData
     - EventData
+    - ForumData
+    - ForumListData
+    - PostData
+    - PostDetailData
     - MuteKeywordData
     - MutedUserData
     - SeaMonkey
@@ -103,5 +124,6 @@ custom_categories:
   - name: Internal Structs/Classes
     children:
     - EventParser
+    - ForumEdit
     - ProfileEdit
     
