@@ -51,14 +51,10 @@ extension ForumPost {
     var forum: Parent<ForumPost, Forum> {
         return parent(\.forumID)
     }
-}
-
-// MARK: - Children
-
-extension ForumPost {
-    /// The child `ForumEdit` accountability records of the profile.
-    var edits: Children<ForumPost, ForumEdit> {
-        return children(\.postID)
+    
+    /// The sibling `User`s who have "liked" the post.
+    var likes: Siblings<ForumPost, User, PostLikes> {
+        return siblings()
     }
 }
 

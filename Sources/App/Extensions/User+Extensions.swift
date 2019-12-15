@@ -69,7 +69,12 @@ extension User {
         return children(\.creatorID)
     }
     
-    /// The `UserNote`s owned by the user.
+    /// The sibling `ForumPost`s "liked" by the user.
+    var likes: Siblings<User, ForumPost, PostLikes> {
+        return siblings()
+    }
+    
+    /// The child `UserNote`s owned by the user.
     var notes: Children<User, UserNote> {
         return children(\.userID)
     }
