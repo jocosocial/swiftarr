@@ -30,7 +30,7 @@
 
 ||| Endpoint | Requires -> Returns | Use to... |
 | :--- | :--- | :--- | :--- | :--- |
-| T | `POST` | `/api/v3/user/add` | `UserAddData` -> `AddedUserData` | create sub-account |
+| T | `POST` | `/api/v3/user/add` | `UserCreateData` -> `AddedUserData` | create sub-account |
 | S | `POST` | `/api/v3/user/image` | `ImageUploadData` -> `UploadedImageData` | upload profile image |
 | S | `POST` | `/api/v3/user/image/remove` |  -> HTTP Status | remove profile image |
 | T | `POST` | `/api/v3/user/password` | `UserPasswordData` -> HTTP Status | change password |
@@ -43,30 +43,30 @@
 
 ||| Endpoint | Requires -> Returns | Use to... |
 | :--- | :--- | :--- | :--- | :--- |
-| T | `GET` | `/api/v3/user/alertwords` | -> `AlertKeywordData` | retrieve "Alert Keywords" barrel |
-| T | `POST` | `/api/v3/user/alertwords/add/STRING` | -> `AlertKeywordData` | add word to "Alert Keywords" barrel |
-| T | `POST` | `/api/v3/user/alertwords/remove/STRING` | -> `AlertKeywordData` | remove word from "Alert Keywords" barrel |
-| T | `POST` | `/api/v3/user/barrel` | `BarrelCreateData` -> `BarrelData` | create barrel |
-| T | `GET` | `/api/v3/user/barrels` | -> `[BarrelListData]` | retrieve list of all barrels |
-| T | `GET` | `/api/v3/user/barrels/seamonkey` | -> `[BarrelListData]` | retrieve list of user's seamonkey barrels |
-| T | `GET` | `/api/v3/user/barrels/ID` | -> `BarrelData` | retrieve barrel |
-| T | `POST` | `/api/v3/user/barrels/ID/add/STRING` | -> `BarrelData` | add item to barrel |
-| T | `POST` | `/api/v3/user/barrels/ID/delete` | -> HTTP Status | delete barrel |
-| T | `POST` | `/api/v3/user/barrels/ID/rename/STRING` | -> `BarrelData` | rename barrel |
-| T | `POST` | `/api/v3/user/barrels/ID/remove/STRING` | -> `BarrelData` | remove item from barrel |
-| T | `GET` | `/api/v3/user/blocks` | -> `BlockedUserData` | retrieve "Blocked Users" barrel |
-| T | `GET` | `/api/v3/user/mutes` | -> `MutedUserData` | retrieve "Muted Users" barrel |
-| T | `GET` | `/api/v3/user/mutewords` | -> `MuteKeywordData` | retrieve "Muted Keywords" barrel |
-| T | `POST` | `/api/v3/user/mutewords/add/STRING` | -> `MuteKeywordData` | add word to "Muted Keywords" barrel |
-| T | `POST` | `/api/v3/user/mutewords/remove/STRING` | -> `MuteKeywordData` | remove word from "Muted Keywords" barrel |
+| T | `GET` | `/api/v3/user/alertwords` | -> `AlertKeywordData` | retrieve "Alert Keywords" Barrel |
+| T | `POST` | `/api/v3/user/alertwords/add/STRING` | -> `AlertKeywordData` | add word to "Alert Keywords" Barrel |
+| T | `POST` | `/api/v3/user/alertwords/remove/STRING` | -> `AlertKeywordData` | remove word from "Alert Keywords" Barrel |
+| T | `POST` | `/api/v3/user/barrel` | `BarrelCreateData` -> `BarrelData` | create Barrel |
+| T | `GET` | `/api/v3/user/barrels` | -> `[BarrelListData]` | retrieve list of all Barrels |
+| T | `GET` | `/api/v3/user/barrels/seamonkey` | -> `[BarrelListData]` | retrieve list of user's seamonkey Barrels |
+| T | `GET` | `/api/v3/user/barrels/ID` | -> `BarrelData` | retrieve Barrel |
+| T | `POST` | `/api/v3/user/barrels/ID/add/STRING` | -> `BarrelData` | add item to Barrel |
+| T | `POST` | `/api/v3/user/barrels/ID/delete` | -> HTTP Status | delete Barrel |
+| T | `POST` | `/api/v3/user/barrels/ID/rename/STRING` | -> `BarrelData` | rename Barrel |
+| T | `POST` | `/api/v3/user/barrels/ID/remove/STRING` | -> `BarrelData` | remove item from Barrel |
+| T | `GET` | `/api/v3/user/blocks` | -> `BlockedUserData` | retrieve "Blocked Users" Barrel |
+| T | `GET` | `/api/v3/user/mutes` | -> `MutedUserData` | retrieve "Muted Users" Barrel |
+| T | `GET` | `/api/v3/user/mutewords` | -> `MuteKeywordData` | retrieve "Muted Keywords" Barrel |
+| T | `POST` | `/api/v3/user/mutewords/add/STRING` | -> `MuteKeywordData` | add word to "Muted Keywords" Barrel |
+| T | `POST` | `/api/v3/user/mutewords/remove/STRING` | -> `MuteKeywordData` | remove word from "Muted Keywords" Barrel |
 
 * [WIP...]
 
 ||| Endpoint | Requires -> Returns | Use to... |
 | :--- | :--- | :--- | :--- | :--- |
-| T | `GET` | `/api/v3/user/forums` | -> `[ForumData]` | retrieve list of forums owned by user |
-| T | `GET` | `/api/v3/user/notes` | -> `[NoteData]` | retrieve all user notes |
-| T | `POST` | `/api/v3/user/note` | `NoteUpdateData` -> `NoteData` | update user note |
+| T | `GET` | `/api/v3/user/forums` | -> `[ForumListData]` | retrieve list of Forums owned by user |
+| T | `GET` | `/api/v3/user/notes` | -> `[NoteData]` | retrieve all user's UserNotes |
+| T | `POST` | `/api/v3/user/note` | `NoteUpdateData` -> `NoteData` | update UserNote |
 ---
 
 # Users
@@ -81,6 +81,8 @@
 | S | `GET` | `/api/v3/users/ID/profile` | -> `UserProfile.Public` | retrieve user's profile |
 ---
 
+* blocks & mutes
+
 ||| Endpoint | Requires -> Returns | Use to... |
 | :--- | :--- | :--- | :--- | :--- |
 | T | `POST` | `/api/v3/users/ID/block` | -> HTTP Status | block user |
@@ -93,15 +95,15 @@
 
 ||| Endpoint | Requires -> Returns | Use to... |
 | :--- | :--- | :--- |:--- | :--- |
-| T | `POST` | `/api/v3/users/ID/note` | `NoteCreateData` -> `CreatedNoteData` | create user note |
-| T | `GET` | `/api/v3/users/ID/note` | -> `UserNote.Edit` | retrieve user note for edit |
-| T | `POST` | `/api/v3/users/ID/note/delete` | -> HTTP Status | delete user note |
+| T | `POST` | `/api/v3/users/ID/note` | `NoteCreateData` -> `CreatedNoteData` | create UserNote for user |
+| T | `GET` | `/api/v3/users/ID/note` | -> `UserNote.Edit` | retrieve UserNote for edit |
+| T | `POST` | `/api/v3/users/ID/note/delete` | -> HTTP Status | delete UserNote for user |
 
 * search
 
 ||| Endpoint | Requires -> Returns | Use to... |
 | :--- | :--- | :--- |:--- | :--- |
-| T | `GET` | `/api/v3/users/match/allnames/STRING` | -> `[UserSearch]` | retrieve list of `displayName|username|realName` matches|
+| T | `GET` | `/api/v3/users/match/allnames/STRING` | -> `[UserSearch]` | retrieve list of `displayName|username|realName` matches |
 | T | `GET` | `/api/v3/users/match/username/STRING` | -> `[String]` | retrieve list of `username` matches only |
 ---
 
@@ -127,10 +129,57 @@
 | O | `GET` | `/api/v3/events/today` | -> `[EventData]` | retrieve all Events for current day |
 | O | `GET` | `/api/v3/events/official/today` | -> `[EventData]` | retrieve official Events for current day|
 | O | `GET` | `/api/v3/events/shadow/today` | -> `[EventData]` | retrieve shadow Events for current day |
+
+* event forums
+
+||| Endpoint | Requires -> Returns | Use to... |
+| :--- | :--- | :--- | :--- | :--- |
+| S | `GET` | `/api/v3/events/ID/forum` | -> `ForumData` | retrieve the Forum for an Event |
 ---
 
 # Forum
 ---
+
+* categories & forums
+
+||| Endpoint | Requires -> Returns | Use to... |
+| :--- | :--- | :--- | :--- | :--- |
+| S | `GET` | `/api/v3/forum/categories` | -> `[CategoryData]` | retrieve list of Forum categories |
+| S | `GET` | `/api/v3/forum/categories/admin` | -> `[CategoryData]` | retrieve list of admin Forum categories |
+| S | `GET` | `/api/v3/forum/categories/user` | -> `[CategoryData]` | retrieve list of user Forum categories |
+| S | `GET` | `/api/v3/forum/categories/ID` | -> `[ForumListData]` | retrieve list of Forums in Category |
+| T | `POST` | `/api/v3/forum/categories/ID/create` | `ForumCreateData` -> `ForumData` | create Forum in Category |
+| T | `GET` | `/api/v3/forum/owner` | -> `[ForumListData]` | retrieve list of Forums owned by user |
+| S | `GET` | `/api/v3/forum/ID` | -> `ForumData` | retrieve Forum |
+| T | `POST` | `/api/v3/forum/ID/lock` | -> HTTP Status | lock a Forum into read-only state|
+| T | `POST` | `/api/v3/forum/ID/rename/STRING` | -> HTTP Status | rename a Forum |
+| T | `POST` | `/api/v3/forum/ID/report` | `ReportData` -> HTTP Status | report a Forum |
+| T | `POST` | `/api/v3/forum/ID/unlock` | -> HTTP Status | unlock a Forum from read-only state |
+
+* forum posts
+
+||| Endpoint | Requires -> Returns | Use to... |
+| :--- | :--- | :--- | :--- | :--- |
+| T | `POST` | `/api/v3/forum/ID/create` | `PostCreateData` -> `PostData` | create ForumPost in Forum |
+| S | `GET` | `/api/v3/forum/post/ID` | -> `PostDetailData` | retrieve a ForumPost with like details |
+| T | `POST` | `/api/v3/forum/post/ID/delete` | -> HTTP Status | delete a ForumPost |
+| S | `GET` | `/api/v3/forum/post/ID/forum` | -> `ForumData` | retrieve the Forum of a ForumPost |
+| T | `POST` | `/api/v3/forum/post/ID/image` | `ImageUploadData` -> `PostData` | add/replace a ForumPost image |
+| T | `POST` | `/api/v3/forum/post/ID/image/remove` | -> `PostData` | remove a ForumPost image |
+| T | `POST` | `/api/v3/forum/post/ID/laugh` | -> `PostData` | add laugh to a ForumPost |
+| T | `POST` | `/api/v3/forum/post/ID/like` | -> `PostData` | add like to a ForumPost |
+| T | `POST` | `/api/v3/forum/post/ID/love` | -> `PostData` | add love to a ForumPost |
+| T | `POST` | `/api/v3/forum/post/ID/unreact` | -> `PostData` | remove laugh/like/love from a ForumPost |
+| T | `POST` | `/api/v3/forum/post/ID/report` | `ReportData` -> HTTP Status | report a ForumPost |
+| T | `POST` | `/api/v3/forum/post/ID/update` | `PostContentData` -> `PostData` | update a ForumPost |
+
+* search
+
+||| Endpoint | Requires -> Returns | Use to... |
+| :--- | :--- | :--- | :--- | :--- |
+| S | `GET` | `/api/v3/forum/match/STRING` | -> `[ForumListData]` | retrieve list of Forums matching string |
+| S | `GET` | `/api/v3/forum/ID/search/STRING` | -> `[PostData]` | retrieve all ForumPosts containing string in Forum |
+| S | `GET` | `/api/v3/forum/post/search/STRING` | -> `[PostData]` | retrieve all ForumPosts containing string |
 ---
 
 # Twitarr
