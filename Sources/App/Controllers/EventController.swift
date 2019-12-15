@@ -282,21 +282,40 @@ struct EventController: RouteCollection, ContentFilterable {
                             .filter(\.authorID !~ muted)
                             .sort(\.createdAt, .ascending)
                             .all()
-                            .map {
+                            .flatMap {
                                 (posts) in
                                 // remove muteword posts
                                 let filteredPosts = posts.compactMap {
                                     self.filterMutewords(for: $0, using: mutewords, on: req)
                                 }
-                                // return as ForumData
-                                let forumData = try ForumData(
-                                    forumID: forum.requireID(),
-                                    title: forum.title,
-                                    creatorID: forum.creatorID,
-                                    isLocked: forum.isLocked,
-                                    posts: filteredPosts.map { try $0.convertToData() }
-                                )
-                                return forumData
+                                // convert to PostData
+                                let postsData = try filteredPosts.map {
+                                    (filteredPost) -> Future<PostData> in
+                                    let userLike = try PostLikes.query(on: req)
+                                        .filter(\.postID == filteredPost.requireID())
+                                        .filter(\.userID == user.requireID())
+                                        .first()
+                                    let likeCount = try PostLikes.query(on: req)
+                                        .filter(\.postID == filteredPost.requireID())
+                                        .count()
+                                    return map(userLike, likeCount) {
+                                        (resolvedLike, count) in
+                                        return try filteredPost.convertToData(
+                                            withLike: resolvedLike?.likeType,
+                                            likeCount: count
+                                        )
+                                    }
+                                }
+                                return postsData.flatten(on: req).map {
+                                    (flattenedPosts) in
+                                    return try ForumData(
+                                        forumID: forum.requireID(),
+                                        title: forum.title,
+                                        creatorID: forum.creatorID,
+                                        isLocked: forum.isLocked,
+                                        posts: flattenedPosts
+                                    )
+                                }
                         }
                     }
             }

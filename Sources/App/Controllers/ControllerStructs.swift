@@ -214,8 +214,10 @@ struct ForumCreateData: Content {
 /// Returned by:
 /// * `POST /api/v3/forum/categories/ID/create`
 /// * `GET /api/v3/forum/ID`
+/// * `GET /api/v3/events/ID/forum`
 ///
-/// See `ForumController.forumCreateHandler(_:data:)`, `ForumController.forumHandler(_:)`.
+/// See `ForumController.forumCreateHandler(_:data:)`, `ForumController.forumHandler(_:)`,
+/// `EventController.eventForumHandler(_:)`.
 struct ForumData: Content {
     /// The forum's ID.
     var forumID: UUID
@@ -235,8 +237,10 @@ struct ForumData: Content {
 /// * `GET /api/v3/forum/categories/ID`
 /// * `GET /api/v3/forum/owner`
 /// * `GET /api/v3/user/forums`
+/// * `GET /api/v3/forum/match/STRING`
 ///
-/// See `ForumController.categoryForumsHandler(_:)`, `ForumController.ownerHandler(_:)`.
+/// See `ForumController.categoryForumsHandler(_:)`, `ForumController.ownerHandler(_:)`,
+/// `ForumController.forumMatchHandler(_:)`.
 struct ForumListData: Content {
     /// The forum's ID.
     var forumID: UUID
