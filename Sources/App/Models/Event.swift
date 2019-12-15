@@ -32,7 +32,7 @@ final class Event: Codable {
     var uid: String
     
     /// The ID of a forum associated with the event.
-    var forumID: Int?
+    var forumID: UUID?
     
     /// Timestamp of the model's creation, set automatically.
     var createdAt: Date?

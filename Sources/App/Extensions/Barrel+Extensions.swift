@@ -4,7 +4,7 @@ import FluentPostgreSQL
 // model uses UUID as primary key
 extension Barrel: PostgreSQLUUIDModel {}
 
-// model and representations can be passed as HTTP body data
+// model can be passed as HTTP body data
 extension Barrel: Content {}
 
 // model can be used as endpoint parameter

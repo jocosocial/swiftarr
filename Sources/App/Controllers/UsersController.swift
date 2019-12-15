@@ -27,7 +27,6 @@ struct UsersController: RouteCollection {
         let tokenAuthMiddleware = User.tokenAuthMiddleware()
         
         // set protected route groups
-        let basicAuthGroup = usersRoutes.grouped([basicAuthMiddleware, guardAuthMiddleware])
         let sharedAuthGroup = usersRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware, guardAuthMiddleware])
         let tokenAuthGroup = usersRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
         
@@ -46,10 +45,10 @@ struct UsersController: RouteCollection {
         tokenAuthGroup.get("match", "allnames", String.parameter, use: matchAllNamesHandler)
         tokenAuthGroup.get("match", "username", String.parameter, use: matchUsernameHandler)
         tokenAuthGroup.post(User.parameter, "mute", use: muteHandler)
-        tokenAuthGroup.post(NoteCreateData.self, at: User.parameter, "note", use: noteCreateHandler)
+        tokenAuthGroup.post(NoteCreateData.self, at: User.parameter, "note", "create", use: noteCreateHandler)
         tokenAuthGroup.post(User.parameter, "note", "delete", use: noteDeleteHandler)
         tokenAuthGroup.get(User.parameter, "note", use: noteHandler)
-        tokenAuthGroup.post(UserReportData.self, at: User.parameter, "report", use: reportHandler)
+        tokenAuthGroup.post(ReportData.self, at: User.parameter, "report", use: reportHandler)
         tokenAuthGroup.post(User.parameter, "unblock", use: unblockHandler)
         tokenAuthGroup.post(User.parameter, "unmute", use: unmuteHandler)
     }
@@ -590,15 +589,15 @@ struct UsersController: RouteCollection {
     /// Creates a `Report` regarding the specified `User`.
     ///
     /// - Note: The accompanying report message is optional on the part of the submitting user,
-    ///   but the `UserReportData` is mandatory in order to allow one. If there is no message,
+    ///   but the `ReportData` is mandatory in order to allow one. If there is no message,
     ///   send an empty string in the `.message` field.
     ///
-    /// - Requires: `UserReportData` payload in the HTTP body.
+    /// - Requires: `ReportData` payload in the HTTP body.
     /// - Parameters:
     ///   - req: The incoming `Request`, provided automatically.
-    ///   - data: `UserReportData` containing an optional accompanying message.
+    ///   - data: `ReportData` containing an optional accompanying message.
     /// - Returns: 201 Created on success.
-    func reportHandler(_ req: Request, data: UserReportData) throws -> Future<HTTPStatus> {
+    func reportHandler(_ req: Request, data: ReportData) throws -> Future<HTTPStatus> {
         let submitter = try req.requireAuthenticated(User.self)
         let parent = try submitter.parentAccount(on: req)
         let user = try req.parameters.next(User.self)

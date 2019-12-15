@@ -40,7 +40,7 @@ extension UserNote {
     static var updatedAtKey: TimestampKey? { return \.updatedAt}
 }
 
-// MARK: - Parents
+// MARK: - Relations
 
 extension UserNote {
     /// The parent `User` of the note.

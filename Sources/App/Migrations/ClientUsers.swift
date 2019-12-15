@@ -3,7 +3,7 @@ import FluentPostgreSQL
 import Crypto
 
 /// A `Migration` that creates a set of registered client users during startup, from a
-/// `registered-clients.txt` file located in the `seeds` subdirectory of the project. The file
+/// `registered-clients.txt` file located in the `seeds/` subdirectory of the project. The file
 /// must be of the format:
 ///
 ///     clientUsername1:password1:recoveryKey1
@@ -17,13 +17,13 @@ struct ClientUsers: Migration {
     typealias Database = PostgreSQLDatabase
     
     /// Required by `Migration` protocol. Reads either a test or production text file in the
-    /// `seeds/` subdirectory, converts the lines into elements of an arrar, then iterates over
+    /// `seeds/` subdirectory, converts the lines into elements of an array, then iterates over
     /// them to create new `User` models with `UserAccessLevel` of `.client`.
     ///
-    /// - Requires: `registered-clients.txt` file in root directory.
-    /// - Parameter connection: A connection to the database, provided automatically.
+    /// - Requires: `registered-clients.txt` file in seeds subdirectory.
+    /// - Parameter conn: A connection to the database, provided automatically.
     /// - Returns: Void.
-    static func prepare(on connection: PostgreSQLConnection) -> Future<Void> {
+    static func prepare(on conn: PostgreSQLConnection) -> Future<Void> {
         // get file containing client triplets
         let clientsFile: String
         do {
@@ -72,7 +72,7 @@ struct ClientUsers: Migration {
                 clients.append(user)
             }
             // save clients
-            return clients.map { $0.save(on: connection) }.flatten(on: connection).map {
+            return clients.map { $0.save(on: conn) }.flatten(on: conn).map {
                 (savedUsers) in
                 // add profiles
                 var profiles: [UserProfile] = []
@@ -81,20 +81,20 @@ struct ClientUsers: Migration {
                     let profile = UserProfile(userID: id, username: $0.username)
                     profiles.append(profile)
                 }
-                profiles.map { $0.save(on: connection) }.always(on: connection) { return }
+                profiles.map { $0.save(on: conn) }.always(on: conn) { return }
             }
         } catch let error {
             fatalError("Environment.detect() failed! error: \(error)")
         }
     }
     
-    /// Required by`Migration` protocol, but no point removing the seed client users, so
-    /// just return a pre-completed `Future`.
+    /// Required by `Migration` protocol, but this isn't a model update, so just return a
+    /// pre-completed `Future`.
     ///
-    /// - Parameter connection: The database connection.
+    /// - Parameter conn: The database connection.
     /// - Returns: Void.
-    static func revert(on connection: PostgreSQLConnection) -> Future<Void> {
-        return .done(on: connection)
+    static func revert(on conn: PostgreSQLConnection) -> Future<Void> {
+        return .done(on: conn)
     }
 }
 

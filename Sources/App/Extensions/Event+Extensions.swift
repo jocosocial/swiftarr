@@ -41,8 +41,7 @@ extension Event {
 // MARK: - Functions
 
 extension Event {
-    /// Converts an `Event` model to a version omitting data that is of no interest to a
-    ///
+    /// Converts an `Event` model to a version omitting data that is of no interest to a user.
     func convertToData() throws -> EventData {
         return try EventData(
             eventID: self.requireID(),

@@ -16,9 +16,9 @@ struct AdminUser: Migration {
     /// Required by `Migration` protocol. Creates the admin user after a bit of sanity
     /// check caution.
     ///
-    /// - Parameter connection: A connection to the database, provided automatically.
+    /// - Parameter conn: A connection to the database, provided automatically.
     /// - Returns: Void.
-    static func prepare(on connection: PostgreSQLConnection) -> Future<Void> {
+    static func prepare(on conn: PostgreSQLConnection) -> Future<Void> {
         // retrieve password and recovery key from environment, else use defaults
         let password = Environment.get("ADMIN_PASSWORD") ?? "password"
         let recoveryKey = Environment.get("RECOVERY_KEY") ?? "recovery key"
@@ -54,7 +54,7 @@ struct AdminUser: Migration {
             accessLevel: .admin
         )
         // save user
-        return user.save(on: connection).flatMap {
+        return user.save(on: conn).flatMap {
             (savedUser) in
             // ensure we're good to go
             guard let id = savedUser.id else {
@@ -68,43 +68,43 @@ struct AdminUser: Migration {
                 name: "Alert Keywords"
             )
             alertKeywordsBarrel.userInfo.updateValue([], forKey: "alertWords")
-            barrels.append(alertKeywordsBarrel.save(on: connection))
+            barrels.append(alertKeywordsBarrel.save(on: conn))
             let blocksBarrel = Barrel(
                 ownerID: id,
                 barrelType: .userBlock,
                 name: "Blocked Users"
             )
-            barrels.append(blocksBarrel.save(on: connection))
+            barrels.append(blocksBarrel.save(on: conn))
             let mutesBarrel = Barrel(
                 ownerID: id,
                 barrelType: .userMute,
                 name: "Muted Users"
             )
-            barrels.append(mutesBarrel.save(on: connection))
+            barrels.append(mutesBarrel.save(on: conn))
             let muteKeywordsBarrel = Barrel(
                 ownerID: id,
                 barrelType: .keywordMute,
                 name: "Muted Keywords"
             )
             muteKeywordsBarrel.userInfo.updateValue([], forKey: "muteWords")
-            barrels.append(muteKeywordsBarrel.save(on: connection))
+            barrels.append(muteKeywordsBarrel.save(on: conn))
             // resolve futures, return void
-            return barrels.flatten(on: connection).flatMap {
+            return barrels.flatten(on: conn).flatMap {
                 (savedBarrels) in
                 // create associated profile directly
                 let profile = UserProfile(userID: id, username: savedUser.username)
-                return profile.save(on: connection).transform(to: ())
+                return profile.save(on: conn).transform(to: ())
             }
         }
     }
     
-    /// Required by`Migration` protocol, but removing the admin would be an exceptionally poor
-    /// idea, so override the default implementation to just return a pre-completed `Future`.
-    /// 
-    /// - Parameter connection: The database connection.
+    /// Required by `Migration` protocol, but this isn't a model update, so just return a
+    /// pre-completed `Future`.
+    ///
+    /// - Parameter conn: The database connection.
     /// - Returns: Void.
-    static func revert(on connection: PostgreSQLConnection) -> Future<Void> {
-        return Future.done(on: connection)
+    static func revert(on conn: PostgreSQLConnection) -> Future<Void> {
+        return .done(on: conn)
     }
     
 }

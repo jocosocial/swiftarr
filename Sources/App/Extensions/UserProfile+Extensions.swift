@@ -43,21 +43,17 @@ extension UserProfile {
     static var deletedAtKey: TimestampKey? { return \.deletedAt }
 }
 
-// MARK: - Parent
-
-extension UserProfile {
-    /// The parent `User` of the profile.
-    var user: Parent<UserProfile, User> {
-        return parent(\.userID)
-    }
-}
-
-// MARK: - Children
+// MARK: - Relations
 
 extension UserProfile {
     /// The child `ProfileEdit` accountability records of the profile.
     var edits: Children<UserProfile, ProfileEdit> {
         return children(\.profileID)
+    }
+
+    /// The parent `User` of the profile.
+    var user: Parent<UserProfile, User> {
+        return parent(\.userID)
     }
 }
 
@@ -128,8 +124,6 @@ extension UserProfile {
 }
 
 extension Future where T: UserProfile {
-    // MARK: - where T: UserProfile
-
     /// Converts a `Future<UserProfile>` to a `Future<UserHeader>`. This extension
     /// provides the convenience of simply using `profile.convertToHeader()` and allowing the
     /// compiler to choose the appropriate version for the context.
