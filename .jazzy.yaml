@@ -47,6 +47,7 @@ custom_categories:
     - BarrelType
     - EventType
     - ImageHandlerType
+    - LikeType
     - ReportType
     - UserAccessLevel
 
@@ -61,13 +62,19 @@ custom_categories:
     - AdminUser
     - Categories
     - ClientUsers
+    - EventForums
     - Events
     - Forums
     - RegistrationCodes
     - TestUsers
+
+  - name: Pivots
+    children:
+    - PostLikes
     
   - name: Protocols
     children:
+    - ContentFilterable
     - ImageHandler
     
   - name: Request Structs
@@ -78,11 +85,13 @@ custom_categories:
     - ImageUploadData
     - NoteCreateData
     - NoteUpdateData
+    - PostContentData
+    - PostCreateData
+    - ReportData
     - UserCreateData
     - UserPasswordData
     - UserProfileData
     - UserRecoveryData
-    - UserReportData
     - UserUsernameData
     - UserVerifyData
     
@@ -100,7 +109,8 @@ custom_categories:
     - EventData
     - ForumData
     - ForumListData
-    - ForumPostData
+    - PostData
+    - PostDetailData
     - MuteKeywordData
     - MutedUserData
     - SeaMonkey
@@ -114,5 +124,6 @@ custom_categories:
   - name: Internal Structs/Classes
     children:
     - EventParser
+    - ForumEdit
     - ProfileEdit
     
