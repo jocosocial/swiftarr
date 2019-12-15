@@ -160,12 +160,14 @@ struct CurrentUserData: Content {
 /// * `GET /api/v3/events/official/today`
 /// * `GET /api/v3/events/shadow/today`
 /// * `GET /api/v3/events/match/STRING`
+/// * `GET /api/v3/events/favorites`
 ///
 /// See `EventController.eventsHandler(_:)`, `EventController.officialHandler(_:)`,
 /// `EventController.shadowHandler(_:)`, `EventController.eventsNowHandler(_:)`,
 /// `EventController.officialNowHandler(_:)`,`EventController.shadowNowHandler(_:)`,
 /// `EventController.eventsTodayHandler(_:)`, `EventController.officialTodayHandler(_:)`,
-/// `EventController.shadowTodayHandler(_:)`, `EventController.eventsMatchHandler(_:)`.
+/// `EventController.shadowTodayHandler(_:)`, `EventController.eventsMatchHandler(_:)`
+/// `EventController.favoritesHandler(_:)`.
 struct EventData: Content {
     /// The event's ID.
     var eventID: UUID
@@ -183,6 +185,8 @@ struct EventData: Content {
     var eventType: String
     /// The event's associated `Forum`.
     var forum: UUID?
+    /// Whether user has favorited event.
+    var isFavorite: Bool
 }
 
 /// Used to update the `Event` database.
