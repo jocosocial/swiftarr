@@ -376,12 +376,13 @@ struct PostCreateData: Content {
 /// * `POST /api/v3/forum/post/ID/laugh`
 /// * `POST /api/v3/forum/post/ID/like`
 /// * `POST /api/v3/forum/post/ID/love`
+/// * `POST /api/v3/forum/post/ID/unreact`
 ///
 /// See `ForumController.postCreateHandler(_:data:)`, `ForumController.postUpdateHandler(_:data:)`,
 /// `ForumController.imageHandler(_:data:)`, `ForumController.imageRemoveHandler(_:)`,
 /// `ForumController.forumSearchHandler(_:)`, `ForumController.postSearchHandler(_:)`
-/// `ForumController.laughHandler(_:)`, `ForumController.likeHandler(_:)`
-/// `ForumController.loveHandler(_:)`.
+/// `ForumController.postLaughHandler(_:)`, `ForumController.postLikeHandler(_:)`
+/// `ForumController.postLoveHandler(_:)`, `ForumController.postUnreactHandler(_:)`.
 struct PostData: Content {
     /// The ID of the post.
     var postID: Int
@@ -393,9 +394,9 @@ struct PostData: Content {
     var text: String
     /// The filename of the post's optional image.
     var image: String
-    /// The current user's "like" reaction on the post.
+    /// The current user's `LikeType` reaction on the post.
     var userLike: LikeType?
-    /// The total number of "like" reactions on the post.
+    /// The total number of `LikeType` reactions on the post.
     var likeCount: Int
 }
 
