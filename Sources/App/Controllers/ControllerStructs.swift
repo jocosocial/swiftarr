@@ -231,6 +231,8 @@ struct ForumData: Content {
     var creatorID: UUID
     /// Whether the forum is in read-only state.
     var isLocked: Bool
+    /// Whether the user has favorited forum.
+    var isFavorite: Bool
     /// The posts in the forum.
     var posts: [PostData]
 }
@@ -256,6 +258,8 @@ struct ForumListData: Content {
     var lastPostAt: Date?
     /// Whether the forum is in read-only state.
     var isLocked: Bool
+    /// Whether user has favorited forum.
+    var isFavorite: Bool
 }
 
 /// Used to upload an image file.
