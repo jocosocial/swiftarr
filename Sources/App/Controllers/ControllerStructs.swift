@@ -244,9 +244,10 @@ struct ForumData: Content {
 /// * `GET /api/v3/forum/owner`
 /// * `GET /api/v3/user/forums`
 /// * `GET /api/v3/forum/match/STRING`
+/// * `GET /api/v3/forum/favorites`
 ///
 /// See `ForumController.categoryForumsHandler(_:)`, `ForumController.ownerHandler(_:)`,
-/// `ForumController.forumMatchHandler(_:)`.
+/// `ForumController.forumMatchHandler(_:)`, `ForumController.favoritesHandler(_:).
 struct ForumListData: Content {
     /// The forum's ID.
     var forumID: UUID

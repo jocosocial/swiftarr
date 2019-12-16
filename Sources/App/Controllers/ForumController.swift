@@ -653,6 +653,130 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
     
+    /// `POST /api/v3/forum/ID/favorite`
+    ///
+    /// Add the specified `Forum` to the user's tagged forums list.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Returns: 201 Created on success.
+    func favoriteAddHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        let user = try req.requireAuthenticated(User.self)
+        // get forum
+        return try req.parameters.next(Forum.self).flatMap {
+            (forum) in
+            // get user's taggedForum barrel
+            return try Barrel.query(on: req)
+                .filter(\.ownerID == user.requireID())
+                .filter(\.barrelType == .taggedForum)
+                .first()
+                .flatMap {
+                    (forumBarrel) in
+                    // create barrel if needed
+                    let barrel = try forumBarrel ?? Barrel(
+                        ownerID: user.requireID(),
+                        barrelType: .taggedForum
+                    )
+                    // add forum and return 201
+                    barrel.modelUUIDs.append(try forum.requireID())
+                    return barrel.save(on: req).transform(to: .created)
+                }
+        }
+    }
+    
+    /// `POST /api/v3/forum/ID/favorite/remove`
+    ///
+    /// Remove the specified `Forum` from the user's tagged forums list.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 400 error if the forum was not favorited.
+    /// - Returns: 204 No Content on success.
+    func favoriteRemoveHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        let user = try req.requireAuthenticated(User.self)
+        // get forum
+        return try req.parameters.next(Forum.self).flatMap {
+            (forum) in
+            // get user's taggedForum barrel
+            return try Barrel.query(on: req)
+                .filter(\.ownerID == user.requireID())
+                .filter(\.barrelType == .taggedForum)
+                .first()
+                .flatMap {
+                    (forumBarrel) in
+                    guard let barrel = forumBarrel else {
+                        throw Abort(.badRequest, reason: "user has not tagged any forums")
+                    }
+                    // remove event
+                    guard let index = barrel.modelUUIDs.firstIndex(of: try forum.requireID()) else {
+                        throw Abort(.badRequest, reason: "forum was not tagged")
+                    }
+                    barrel.modelUUIDs.remove(at: index)
+                    return barrel.save(on: req).transform(to: .noContent)
+            }
+        }
+    }
+    
+    /// `GET /api/v3/forum/favorites`
+    ///
+    /// Retrieve the `Forum`s in the user's taggedForum barrel, sorted by title.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Returns: `[ForumListData]` containing the user's favorited events.
+    func favoritesHandler(_ req: Request) throws -> Future<[ForumListData]> {
+        let user = try req.requireAuthenticated(User.self)
+        // get user's taggedForum barrel
+        return try self.getTaggedBarrel(for: user, on: req).flatMap {
+            (barrel) in
+            guard let barrel = barrel else {
+                // return empty array
+                return req.future([ForumListData]())
+            }
+            // get forums
+            return Forum.query(on: req)
+                .filter(\.id ~~ barrel.modelUUIDs)
+                .sort(\.title, .ascending)
+                .all()
+                .flatMap {
+                    (forums) in
+                    // get forum metadata
+                    var forumCounts: [Future<Int>] = []
+                    var forumTimestamps: [Future<Date?>] = []
+                    for forum in forums {
+                        forumCounts.append(try forum.posts.query(on: req).count())
+                        forumTimestamps.append(try forum.posts.query(on: req)
+                            .sort(\.createdAt, .descending)
+                            .first()
+                            .map {
+                                (post) in
+                                post?.createdAt
+                            }
+                        )
+                    }
+                    // resolve futures
+                    return forumCounts.flatten(on: req).flatMap {
+                        (counts) in
+                        return forumTimestamps.flatten(on: req).map {
+                            (timestamps) in
+                            // return as ForumListData
+                            var returnListData: [ForumListData] = []
+                            for (index, forum) in forums.enumerated() {
+                                returnListData.append(
+                                    try ForumListData(
+                                        forumID: forum.requireID(),
+                                        title: forum.title,
+                                        postCount: counts[index],
+                                        lastPostAt: timestamps[index],
+                                        isLocked: forum.isLocked,
+                                        isFavorite: true
+                                    )
+                                )
+                            }
+                            return returnListData
+                        }
+                    }
+            }
+        }
+    }
+
     /// `POST /api/v3/forum/categories/ID/create`
     ///
     /// Creates a new `Forum` in the specified `Category`, and the first `ForumPost` within

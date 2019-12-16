@@ -1015,5 +1015,93 @@ final class ForumTests: XCTestCase {
         XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
     }
     
+    func testForumBarrel() throws {
+        // create verified logged in user
+        let token = try app.login(username: "verified", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // get forums
+        let adminCategories = try app.getResult(
+            from: forumURI + "categories/admin",
+            method: .GET,
+            headers: headers,
+            decodeTo: [CategoryData].self
+        )
+        var adminForums = try app.getResult(
+            from: forumURI + "categories/\(adminCategories[0].categoryID)",
+            method: .GET,
+            headers: headers,
+            decodeTo: [ForumListData].self
+        )
+        let userCategories = try app.getResult(
+            from: forumURI + "categories/user",
+            method: .GET,
+            headers: headers,
+            decodeTo: [CategoryData].self
+        )
+        let forumCreateData = ForumCreateData(
+            title: "A forum!",
+            text: "A forum post for like testing!",
+            image: nil
+        )
+         var forumData = try app.getResult(
+            from: forumURI + "categories/\(userCategories[0].categoryID)/create",
+            method: .POST,
+            headers: headers,
+            body: forumCreateData,
+            decodeTo: ForumData.self
+        )
+        
+        // test favorite
+        var response = try app.getResponse(
+            from: forumURI + "\(adminForums[0].forumID)/favorite",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+        response = try app.getResponse(
+            from: forumURI + "\(forumData.forumID)/favorite",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+        adminForums = try app.getResult(
+            from: forumURI + "categories/\(adminCategories[0].categoryID)",
+            method: .GET,
+            headers: headers,
+            decodeTo: [ForumListData].self
+        )
+        XCTAssertTrue(adminForums[0].isFavorite, "should be true")
+        forumData = try app.getResult(
+            from: forumURI + "\(forumData.forumID)",
+            method: .GET,
+            headers: headers,
+            decodeTo: ForumData.self
+        )
+        XCTAssertTrue(forumData.isFavorite, "should be true")
+        var favoriteForums = try app.getResult(
+            from: forumURI + "favorites",
+            method: .GET,
+            headers: headers,
+            decodeTo: [ForumListData].self
+        )
+        XCTAssertTrue(favoriteForums.count == 2, "should be 2 forums")
+        
+        // test remove favorite
+        response = try app.getResponse(
+            from: forumURI + "\(forumData.forumID)/favorite/remove",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 204, "should be 204 No Content")
+        favoriteForums = try app.getResult(
+            from: forumURI + "favorites",
+            method: .GET,
+            headers: headers,
+            decodeTo: [ForumListData].self
+        )
+        XCTAssertTrue(favoriteForums.count == 1, "should be 1 forum")
+    }
     // test forum block
 }
