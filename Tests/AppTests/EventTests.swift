@@ -477,6 +477,9 @@ final class EventTests: XCTestCase {
         XCTAssertEqual(officialForums.count + shadowForums.count, events.count, "should be \(events.count)")
     }
     
+    /// `POST /api/v3/events/ID/favorite`
+    /// `POST /api/v3/events/ID/favorite/remove`
+    /// `GET /api/v3/events/favorites`
     func testEventsBarrel() throws {
         // create verified logged in user
         let token = try app.login(username: "verified", password: testPassword, on: conn)
