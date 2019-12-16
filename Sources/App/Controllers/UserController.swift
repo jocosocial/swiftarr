@@ -134,7 +134,7 @@ struct UserController: RouteCollection, ImageHandler {
         sharedAuthGroup.post(ImageUploadData.self, at: "image", use: imageHandler)
         sharedAuthGroup.post("image", "remove", use: imageRemoveHandler)
         sharedAuthGroup.get("profile", use: profileHandler)
-        sharedAuthGroup.post(UserProfileData.self, at: "profile", use: profileUpdateHandler)
+        sharedAuthGroup.post(ProfileEditData.self, at: "profile", use: profileUpdateHandler)
         sharedAuthGroup.get("whoami", use: whoamiHandler)
         
         // endpoints available only when logged in
@@ -417,7 +417,7 @@ struct UserController: RouteCollection, ImageHandler {
     
     /// `GET /api/v3/user/profile`
     ///
-    /// Retrieves the user's own profile data for editing, as a `UserProfile.Edit` object.
+    /// Retrieves the user's own profile data for editing, as a `UserProfileData` object.
     ///
     /// This endpoint can be reached with either Basic or Bearer authenticaton, so that a user
     /// can customize their profile even if they do not yet have their registration code.
@@ -430,8 +430,8 @@ struct UserController: RouteCollection, ImageHandler {
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 403 error if the user is banned. A 5xx response should be reported as a likely
     ///   bug, please and thank you.
-    /// - Returns: `UserProfile.Edit` containing the editable properties of the profile.
-    func profileHandler(_ req: Request) throws -> Future<UserProfile.Edit> {
+    /// - Returns: `UserProfileData` containing the editable properties of the profile.
+    func profileHandler(_ req: Request) throws -> Future<UserProfileData> {
         let user = try req.requireAuthenticated(User.self)
         // retrieve profile
         return try user.profile.query(on: req)
@@ -439,8 +439,8 @@ struct UserController: RouteCollection, ImageHandler {
             .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
             .map {
                 (profile) in
-                // return .Edit properties only
-                return profile.convertToEdit()
+                // return as UserProfileData
+                return profile.convertToData()
         }
     }
     
@@ -456,13 +456,13 @@ struct UserController: RouteCollection, ImageHandler {
     ///   submitted values all *replace* the existing propety values. Submitting a value of `""`
     ///   resets its respective profile property to `nil`.
     ///
-    /// - Requires: `UserProfileData` payload in the HTTP body.
+    /// - Requires: `ProfileEditData` payload in the HTTP body.
     /// - Parameters:
     ///   - req: The incoming `Request`, provided automatically.
-    ///   - data: `UserProfileData` struct containing the editable properties of the profile.
+    ///   - data: `ProfileEditData` struct containing the editable properties of the profile.
     /// - Throws: 403 error if the user is banned.
-    /// - Returns: `UserProfile.Edit` containing the updated editable properties of the profile.
-    func profileUpdateHandler(_ req: Request, data: UserProfileData) throws -> Future<UserProfile.Edit> {
+    /// - Returns: `UserProfileData` containing the updated editable properties of the profile.
+    func profileUpdateHandler(_ req: Request, data: ProfileEditData) throws -> Future<UserProfileData> {
         let user = try req.requireAuthenticated(User.self)
         // abort if banned, profile might even be deleted
         guard user.accessLevel != .banned else {
@@ -509,8 +509,8 @@ struct UserController: RouteCollection, ImageHandler {
                     )
                     return profileEdit.save(on: req).map {
                         (_) in
-                        // return .Edit properties of updated profile
-                        return savedProfile.convertToEdit()
+                        // return as UserProfileData
+                        return savedProfile.convertToData()
                     }
                 }
         }

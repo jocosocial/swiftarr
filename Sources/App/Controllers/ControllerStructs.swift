@@ -433,6 +433,60 @@ struct PostDetailData: Content {
     var loves: [SeaMonkey]
 }
 
+/// Used to update a user's profile contents.
+///
+/// Required by: `POST /api/v3/user/profile`
+///
+/// See `UserController.profileUpdateHandler(_:data:)`.
+struct ProfileEditData: Content {
+    /// An optional blurb about the user.
+    var about: String
+    /// An optional name for display alongside the username.
+    var displayName: String
+    /// An optional email address.
+    var email: String
+    /// An optional home location (e.g. city).
+    var homeLocation: String
+    /// An optional greeting/message to visitors of the profile.
+    var message: String
+    /// An optional preferred form of address.
+    var preferredPronoun: String
+    /// An optional real name of the user.
+    var realName: String
+    /// An optional ship cabin number.
+    var roomNumber: String
+    /// Whether display of the optional fields' data should be limited to logged in users.
+    var limitAccess: Bool
+}
+
+/// Used to return a user's public profile contents.
+///
+/// Returned by: `GET /api/v3/users/ID/profile`
+///
+/// See `UsersController.profileHandler(_:)`.
+struct ProfilePublicData: Content {
+    /// The profile's ID.
+    var profileID: UUID
+    /// A generated displayName + username string.
+    var displayedName: String
+    /// An optional blurb about the user.
+    var about: String
+    /// An optional email address for the user.
+    var email: String
+    /// An optional home location for the user.
+    var homeLocation: String
+    /// An optional greeting/message to visitors of the profile.
+    var message: String
+    /// An optional preferred pronoun or form of address.
+    var preferredPronoun: String
+    /// An optional real world name of the user.
+    var realName: String
+    /// An optional cabin number for the user.
+    var roomNumber: String
+    /// A UserNote owned by the visiting user, about the profile's user (see `UserNote`).
+    var note: String?
+}
+
 /// Used to submit a message with a `Report`.
 ///
 /// Required by:
@@ -540,12 +594,18 @@ struct UserPasswordData: Content {
     var password: String
 }
 
-/// Used to update a user's profile contents.
+/// Used to display a user's profile contents for editing.
 ///
-/// Required by: `POST /api/v3/user/profile`
+/// Returned by:
+/// * `GET /api/v3/user/profile`
+/// * `POST /api/v3/user/profile`
 ///
-/// See `UserController.profileUpdateHandler(_:data:)`.
+/// See `UserController.profileHandler(_:)`, `UserController.profileUpdateHandler(_:data:)`.
 struct UserProfileData: Content {
+    /// The user's username. [not editable here]
+    let username: String
+    /// A generated displayName + username string. [not editable]
+    var displayedName: String
     /// An optional blurb about the user.
     var about: String
     /// An optional name for display alongside the username.
