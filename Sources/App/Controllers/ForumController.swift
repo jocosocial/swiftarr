@@ -7,8 +7,7 @@ import Redis
 /// The collection of `/api/v3/forum/*` route endpoints and handler functions related
 /// to forums.
 
-struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
-
+struct ForumController: RouteCollection, ImageHandler, ContentFilterable, UserTaggable {
     // MARK: ImageHandler Conformance
     
     /// The base directory for storing ForumPost images.
@@ -19,6 +18,13 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable {
     /// The height of ForumPost image thumbnails.
     var thumbnailHeight: Int {
         return 100
+    }
+    
+    // MARK: UserTaggable Conformance
+    
+    /// The barrel type for `Forum` favoriting.
+    var taggedBarrelType: BarrelType {
+        return .taggedForum
     }
 
     // MARK: RouteCollection Conformance
