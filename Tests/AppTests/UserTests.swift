@@ -541,13 +541,13 @@ final class UserTests: XCTestCase {
             from: userURI + "profile",
             method: .GET,
             headers: headers,
-            decodeTo: UserProfile.Edit.self
+            decodeTo: UserProfileData.self
         )
         XCTAssertTrue(profileEdit.username == testUsername, "should be \(testUsername)")
         XCTAssertTrue(profileEdit.displayName.isEmpty, "should be empty")
         
         // test post edit
-        let userProfileData = UserProfileData(
+        let profileEditData = ProfileEditData(
             about: "I'm a test user.",
             displayName: "Alistair Cookie",
             email: "grundoon@gmail.com",
@@ -562,8 +562,8 @@ final class UserTests: XCTestCase {
             from: userURI + "profile",
             method: .POST,
             headers: headers,
-            body: userProfileData,
-            decodeTo: UserProfile.Edit.self
+            body: profileEditData,
+            decodeTo: UserProfileData.self
         )
         XCTAssertTrue(profileEdit.realName.contains("Cookie"), "should have .realName")
         XCTAssertTrue(profileEdit.displayedName == "Alistair Cookie (@\(testUsername))", "should be")
@@ -573,7 +573,7 @@ final class UserTests: XCTestCase {
             from: usersURI + "\(user.userID)/profile",
             method: .GET,
             headers: headers,
-            decodeTo: UserProfile.Public.self
+            decodeTo: ProfilePublicData.self
         )
         XCTAssertTrue(result.message.contains("must be logged in"), "must be logged in")
 
@@ -584,7 +584,7 @@ final class UserTests: XCTestCase {
             from: usersURI + "\(user.userID)/profile",
             method: .GET,
             headers: headers,
-            decodeTo: UserProfile.Public.self
+            decodeTo: ProfilePublicData.self
         )
         XCTAssertTrue(result.message.contains("Tonight on"), "Tonight on")
         
@@ -600,7 +600,7 @@ final class UserTests: XCTestCase {
             from: userURI + "profile",
             method: .GET,
             headers: headers,
-            decodeTo: UserProfile.Edit.self
+            decodeTo: UserProfileData.self
         )
         XCTAssertTrue(profileEdit.displayedName.contains("(@cookie)"), "should be decorated cookie")
         XCTAssertTrue(profileEdit.preferredPronoun == "Sir", "should be there")
@@ -628,7 +628,7 @@ final class UserTests: XCTestCase {
             from: userURI + "profile",
             method: .POST,
             headers: headers,
-            body: userProfileData
+            body: profileEditData
         )
         XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
         XCTAssertTrue(response.http.body.description.contains("cannot be edited"), "cannot be edited")
@@ -703,7 +703,7 @@ final class UserTests: XCTestCase {
             from: usersURI + "\(unverifiedUser.userID)/profile",
             method: .GET,
             headers: headers,
-            decodeTo: UserProfile.Public.self
+            decodeTo: ProfilePublicData.self
         )
         XCTAssertTrue(profile.note == note1.note, "should have \(note1.note) value")
         

@@ -967,7 +967,7 @@ final class BarrelTests: XCTestCase {
             from: usersURI + "\(userInfo.userID)/profile",
             method: .GET,
             headers: headers,
-            decodeTo: UserProfile.Public.self
+            decodeTo: ProfilePublicData.self
         )
         XCTAssertTrue(profile.displayedName.contains("@\(testUsername)"), "@\(testUsername)")
         
@@ -1095,7 +1095,7 @@ final class BarrelTests: XCTestCase {
             from: usersURI + "\(userInfo.userID)/profile",
             method: .GET,
             headers: headers,
-            decodeTo: UserProfile.Public.self
+            decodeTo: ProfilePublicData.self
         )
         XCTAssertTrue(profile.displayedName.contains("@\(testUsername)"), "@\(testUsername)")
         
