@@ -137,13 +137,28 @@ final class ForumTests: XCTestCase {
         XCTAssertTrue(categories[0].title == "Test 1", "should be 'Test 1'")
         
         // test get user forums for test coverage
+        let token = try app.login(username: testUsername, password: testPassword, on: conn)
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        let forumCreateData = ForumCreateData(
+            title: "A forum!",
+            text: "A forum post!",
+            image: nil
+        )
+        let categoryID = categories.first?.categoryID
+        let _ = try app.getResult(
+            from: forumURI + "categories/\(categoryID!)/create",
+            method: .POST,
+            headers: headers,
+            body: forumCreateData,
+            decodeTo: ForumData.self
+        )
         forums = try app.getResult(
-            from: forumURI + "categories/\(categories[0].categoryID)",
+            from: forumURI + "categories/\(categoryID!)",
             method: .GET,
             headers: headers,
             decodeTo: [ForumListData].self
         )
-        XCTAssertTrue(forums.count == 0, "should be no forums")
+        XCTAssertTrue(forums.count == 1, "should be 1 forum")
     }
     
     /// `GET /api/v3/forum/owner`
@@ -614,6 +629,17 @@ final class ForumTests: XCTestCase {
         XCTAssertTrue(postData.postID == post.postID, "should be \(post.postID)")
         XCTAssertTrue(postData.text == postContentData.text, "should be '\(postContentData.text)'")
         
+        // test no update
+        let postDataAgain = try app.getResult(
+            from: forumURI + "post/\(post.postID)/update",
+            method: .POST,
+            headers: headers,
+            body: postContentData,
+            decodeTo: PostData.self
+        )
+        XCTAssertTrue(postDataAgain.text == postData.text, "should be same")
+        XCTAssertTrue(postDataAgain.image == postData.image, "should be same")
+        
         // test no access
         _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
         token = try app.login(username: testUsername, password: testPassword, on: conn)
@@ -909,6 +935,10 @@ final class ForumTests: XCTestCase {
         XCTAssertEqual(posts[0].postID, post.postID, "should be same")
     }
     
+    /// `POST /api/v3/forum/post/ID/laugh`
+    /// `POST /api/v3/forum/post/ID/like`
+    /// `POST /api/v3/forum/post/ID/love`
+    /// `POST /api/v3/forum/post/ID/unreact`
     func testPostReactions() throws {
         // create verified logged in user
         var token = try app.login(username: "verified", password: testPassword, on: conn)
@@ -973,6 +1003,14 @@ final class ForumTests: XCTestCase {
         
         // test replaces previous
         postData = try app.getResult(
+            from: forumURI + "post/\(post.postID)/laugh",
+            method: .POST,
+            headers: headers,
+            decodeTo: PostData.self
+        )
+        XCTAssertTrue(postData.userLike == LikeType.laugh, "should be '.laugh'")
+
+        postData = try app.getResult(
             from: forumURI + "post/\(post.postID)/like",
             method: .POST,
             headers: headers,
@@ -988,6 +1026,15 @@ final class ForumTests: XCTestCase {
             decodeTo: PostData.self
         )
         XCTAssertTrue(postData.userLike == LikeType.love, "should be '.love'")
+        
+        // test coverage for ID
+        let postDetailData = try app.getResult(
+            from: forumURI + "post/\(post.postID)",
+            method: .GET,
+            headers: headers,
+            decodeTo: PostDetailData.self
+        )
+        XCTAssertTrue(postDetailData.loves.count == 1, "should be 1 love")
         
         // test unreact
         postData = try app.getResult(
@@ -1013,7 +1060,120 @@ final class ForumTests: XCTestCase {
             headers: verifiedHeaders
         )
         XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
+        
+        // test coverage create like/laugh
+        postData = try app.getResult(
+            from: forumURI + "post/\(post.postID)/like",
+            method: .POST,
+            headers: headers,
+            decodeTo: PostData.self
+        )
+        XCTAssertTrue(postData.userLike == LikeType.like, "should be '.like'")
+        postData = try app.getResult(
+            from: forumURI + "post/\(post.postID)/unreact",
+            method: .POST,
+            headers: headers,
+            decodeTo: PostData.self
+        )
+        XCTAssertNil(postData.userLike, "should be no reaction")
+        postData = try app.getResult(
+            from: forumURI + "post/\(post.postID)/love",
+            method: .POST,
+            headers: headers,
+            decodeTo: PostData.self
+        )
+        XCTAssertTrue(postData.userLike == LikeType.love, "should be '.love'")
+
+
     }
     
+    func testForumBarrel() throws {
+        // create verified logged in user
+        let token = try app.login(username: "verified", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // get forums
+        let adminCategories = try app.getResult(
+            from: forumURI + "categories/admin",
+            method: .GET,
+            headers: headers,
+            decodeTo: [CategoryData].self
+        )
+        var adminForums = try app.getResult(
+            from: forumURI + "categories/\(adminCategories[0].categoryID)",
+            method: .GET,
+            headers: headers,
+            decodeTo: [ForumListData].self
+        )
+        let userCategories = try app.getResult(
+            from: forumURI + "categories/user",
+            method: .GET,
+            headers: headers,
+            decodeTo: [CategoryData].self
+        )
+        let forumCreateData = ForumCreateData(
+            title: "A forum!",
+            text: "A forum post for like testing!",
+            image: nil
+        )
+         var forumData = try app.getResult(
+            from: forumURI + "categories/\(userCategories[0].categoryID)/create",
+            method: .POST,
+            headers: headers,
+            body: forumCreateData,
+            decodeTo: ForumData.self
+        )
+        
+        // test favorite
+        var response = try app.getResponse(
+            from: forumURI + "\(adminForums[0].forumID)/favorite",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+        response = try app.getResponse(
+            from: forumURI + "\(forumData.forumID)/favorite",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+        adminForums = try app.getResult(
+            from: forumURI + "categories/\(adminCategories[0].categoryID)",
+            method: .GET,
+            headers: headers,
+            decodeTo: [ForumListData].self
+        )
+        XCTAssertTrue(adminForums[0].isFavorite, "should be true")
+        forumData = try app.getResult(
+            from: forumURI + "\(forumData.forumID)",
+            method: .GET,
+            headers: headers,
+            decodeTo: ForumData.self
+        )
+        XCTAssertTrue(forumData.isFavorite, "should be true")
+        var favoriteForums = try app.getResult(
+            from: forumURI + "favorites",
+            method: .GET,
+            headers: headers,
+            decodeTo: [ForumListData].self
+        )
+        XCTAssertTrue(favoriteForums.count == 2, "should be 2 forums")
+        
+        // test remove favorite
+        response = try app.getResponse(
+            from: forumURI + "\(forumData.forumID)/favorite/remove",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 204, "should be 204 No Content")
+        favoriteForums = try app.getResult(
+            from: forumURI + "favorites",
+            method: .GET,
+            headers: headers,
+            decodeTo: [ForumListData].self
+        )
+        XCTAssertTrue(favoriteForums.count == 1, "should be 1 forum")
+    }
     // test forum block
 }

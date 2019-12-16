@@ -165,7 +165,7 @@ struct UsersController: RouteCollection {
     
     /// `GET /api/v3/users/ID/profile`
     ///
-    /// Retrieves the specified user's profile, as a `UserProfile.Public` object.
+    /// Retrieves the specified user's profile, as a `ProfilePublicData` object.
     ///
     /// This endpoint can be reached with either Basic or Bearer authenticaton. If using Basic
     /// (requesting user is *not* logged in), the data returned may be a limited subset if the
@@ -175,9 +175,9 @@ struct UsersController: RouteCollection {
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 404 error if the profile is not available. A 5xx response should be reported
     ///   as a likely bug, please and thank you.
-    /// - Returns: `UserProfile.Public` containing the displayable properties of the specified
+    /// - Returns: `ProfilePublicData` containing the displayable properties of the specified
     ///   user's profile.
-    func profileHandler(_ req: Request) throws -> Future<UserProfile.Public> {
+    func profileHandler(_ req: Request) throws -> Future<ProfilePublicData> {
         let requester = try req.requireAuthenticated(User.self)
         return try req.parameters.next(User.self).flatMap {
             (user) in
@@ -202,7 +202,7 @@ struct UsersController: RouteCollection {
                     .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
                     .flatMap {
                         (profile) in
-                        let publicProfile = try profile.convertToPublic()
+                        var publicProfile = try profile.convertToPublic()
                         // if auth type is Basic, requester is not logged in, so hide info if
                         // `.limitAccess` is true or requester is .banned
                         if (req.http.headers.basicAuthorization != nil && profile.limitAccess)
@@ -547,7 +547,7 @@ struct UsersController: RouteCollection {
         
     /// `GET /api/v3/users/ID/note`
     ///
-    /// Retrieves an existing `UseerNote` associated with the specified user's profile and
+    /// Retrieves an existing `UserNote` associated with the specified user's profile and
     /// the current user.
     ///
     /// - Note: In order to support the editing of a note in contexts other than when
@@ -559,8 +559,8 @@ struct UsersController: RouteCollection {
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 400 error if there is no existing note on the profile. A 5xx response should
     ///   be reported as a likely bug, please and thank you.
-    /// - Returns: `UserNote.Edit` containing the note's ID and text.
-    func noteHandler(_ req: Request) throws -> Future<UserNote.Edit> {
+    /// - Returns: `NoteEditData` containing the note's ID and text.
+    func noteHandler(_ req: Request) throws -> Future<NoteEditData> {
         // FIXME: account for blocks, banned user
         let requester = try req.requireAuthenticated(User.self)
         return try req.parameters.next(User.self).flatMap {

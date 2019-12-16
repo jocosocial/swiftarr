@@ -17,8 +17,8 @@ struct ProfileEdit: Codable {
     /// The ID of the profile that was edited.
     let profileID: UUID
     
-    /// If this is a profile data update, the submitted `UserProfileData`.
-    var profileData: UserProfileData?
+    /// If this is a profile data update, the submitted `ProfileEditData`.
+    var profileData: ProfileEditData?
 
     /// If this is a profile image update, the image filename.
     var profileImage: String?
@@ -32,11 +32,11 @@ struct ProfileEdit: Codable {
     ///
     /// - Parameters:
     ///   - profileID: The ID of the profile that was edited.
-    ///   - profileData: The submitted `UserProfileData`, else nil.
+    ///   - profileData: The submitted `ProfileEditData`, else nil.
     ///   - profileImage: The name of the submitted image, else nil.
     init(
         profileID: UUID,
-        profileData: UserProfileData? = nil,
+        profileData: ProfileEditData? = nil,
         profileImage: String? = nil
     ) {
         self.profileID = profileID

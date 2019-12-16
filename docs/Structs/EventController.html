@@ -81,22 +81,10 @@
                 <a class="nav-group-task-link" href="../Classes/User.html">User</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/User/Admin.html">– Admin</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/UserNote.html">UserNote</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/UserNote/Edit.html">– Edit</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/UserProfile.html">UserProfile</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/UserProfile/Edit.html">– Edit</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/UserProfile/Public.html">– Public</a>
               </li>
             </ul>
           </li>
@@ -212,6 +200,9 @@
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Protocols/ImageHandler.html">ImageHandler</a>
               </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Protocols/UserTaggable.html">UserTaggable</a>
+              </li>
             </ul>
           </li>
           <li class="nav-group-name">
@@ -242,6 +233,9 @@
                 <a class="nav-group-task-link" href="../Structs/PostCreateData.html">PostCreateData</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ProfileEditData.html">ProfileEditData</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/ReportData.html">ReportData</a>
               </li>
               <li class="nav-group-task">
@@ -249,9 +243,6 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserPasswordData.html">UserPasswordData</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/UserProfileData.html">UserProfileData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserRecoveryData.html">UserRecoveryData</a>
@@ -310,6 +301,9 @@
                 <a class="nav-group-task-link" href="../Structs/PostDetailData.html">PostDetailData</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ProfilePublicData.html">ProfilePublicData</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/MuteKeywordData.html">MuteKeywordData</a>
               </li>
               <li class="nav-group-task">
@@ -332,6 +326,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserInfo.html">UserInfo</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserProfileData.html">UserProfileData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserSearch.html">UserSearch</a>
@@ -369,6 +366,14 @@
               </li>
             </ul>
           </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Other%20Structs.html">Other Structures</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/NoteEditData.html">NoteEditData</a>
+              </li>
+            </ul>
+          </li>
         </ul>
       </nav>
       <article class="main-content">
@@ -378,7 +383,7 @@
             <h1>EventController</h1>
               <div class="declaration">
                 <div class="language">
-                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">EventController</span> <span class="p">:</span> <span class="kt">RouteCollection</span><span class="p">,</span> <span class="kt"><a href="../Protocols/ContentFilterable.html">ContentFilterable</a></span></code></pre>
+                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">EventController</span> <span class="p">:</span> <span class="kt">RouteCollection</span><span class="p">,</span> <span class="kt"><a href="../Protocols/ContentFilterable.html">ContentFilterable</a></span><span class="p">,</span> <span class="kt"><a href="../Protocols/UserTaggable.html">UserTaggable</a></span></code></pre>
 
                 </div>
               </div>
@@ -390,6 +395,49 @@ to the event schedule.</p>
 
         <section class="section">
           <div class="section-content">
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/UserTaggable%20Conformance"></a>
+                <a name="//apple_ref/swift/Section/UserTaggable Conformance" class="dashAnchor"></a>
+                <div class="section-name-container">
+                  <a class="section-name-link" href="#/UserTaggable%20Conformance"></a>
+                  <h3 class="section-name"><p>UserTaggable Conformance</p>
+</h3>
+                </div>
+              </div>
+              <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App15EventControllerV16taggedBarrelTypeAA0eF0Ovp"></a>
+                    <a name="//apple_ref/swift/Property/taggedBarrelType" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15EventControllerV16taggedBarrelTypeAA0eF0Ovp">taggedBarrelType</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The barrel type for <code><a href="../Classes/Event.html">Event</a></code> favoriting.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">taggedBarrelType</span><span class="p">:</span> <span class="kt"><a href="../Enums/BarrelType.html">BarrelType</a></span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L13-L15">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
             <div class="task-group">
               <div class="task-name-container">
                 <a name="/RouteCollection%20Conformance"></a>
@@ -426,7 +474,7 @@ to the event schedule.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L14-L48">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L20-L59">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -494,7 +542,7 @@ to the event schedule.</p>
                         <p><code>[EventData]</code> containing all events.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L58-L66">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L71-L103">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -549,7 +597,7 @@ to the event schedule.</p>
                         <p><code>[EventData]</code> containing all matching events.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L74-L89">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L111-L152">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -604,7 +652,7 @@ to the event schedule.</p>
                         <p><code>[EventData]</code> containing all current events.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L97-L108">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L160-L197">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -659,7 +707,7 @@ to the event schedule.</p>
                         <p><code>[EventData]</code> containing all events for the current day.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L116-L129">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L205-L244">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -714,7 +762,7 @@ to the event schedule.</p>
                         <p><code>[EventData]</code> containing all official events.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L137-L146">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L252-L286">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -769,7 +817,7 @@ to the event schedule.</p>
                         <p><code>[EventData]</code> containing all current official events.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L154-L166">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L294-L333">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -824,7 +872,7 @@ to the event schedule.</p>
                         <p><code>[EventData]</code> containing all official events for the current day.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L174-L188">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L341-L382">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -879,7 +927,7 @@ to the event schedule.</p>
                         <p><code>[EventData]</code> containing all shadow events.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L196-L205">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L390-L424">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -934,7 +982,7 @@ to the event schedule.</p>
                         <p><code>[EventData]</code> containing all current shadow events.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L213-L225">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L432-L471">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -989,7 +1037,7 @@ to the event schedule.</p>
                         <p><code>[EventData]</code> containing all shadow events for the current day.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L233-L247">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L479-L520">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1063,7 +1111,7 @@ blocked or muted users, or containing user&rsquo;s muteWords, is not returned.</
                         <p><code><a href="../Structs/ForumData.html">ForumData</a></code> containing the forum&rsquo;s metadata and all posts.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L261-L323">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L534-L606">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1152,7 +1200,177 @@ blocked or muted users, or containing user&rsquo;s muteWords, is not returned.</
                         <p><code>[EventData]</code> containing the events that were updated or added.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L339-L399">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L622-L682">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App15EventControllerV18favoriteAddHandlery3NIO0B10LoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestCKF"></a>
+                    <a name="//apple_ref/swift/Method/favoriteAddHandler(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15EventControllerV18favoriteAddHandlery3NIO0B10LoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestCKF">favoriteAddHandler(_:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>POST /api/v3/events/ID/favorite</code></p>
+
+<p>Add the specified <code><a href="../Classes/Event.html">Event</a></code> to the user&rsquo;s tagged events list.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">favoriteAddHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">HTTPStatus</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming <code>Request</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>201 Created on success.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L690-L712">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App15EventControllerV21favoriteRemoveHandlery3NIO0B10LoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestCKF"></a>
+                    <a name="//apple_ref/swift/Method/favoriteRemoveHandler(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15EventControllerV21favoriteRemoveHandlery3NIO0B10LoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestCKF">favoriteRemoveHandler(_:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>POST /api/v3/events/ID/favorite/remove</code></p>
+
+<p>Remove the specified <code><a href="../Classes/Event.html">Event</a></code> from the user&rsquo;s tagged events list.</p>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    400 error if the event was not favorited.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">favoriteRemoveHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">HTTPStatus</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming <code>Request</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>204 No Content on success.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L721-L744">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App15EventControllerV16favoritesHandlery3NIO0B10LoopFutureCySayAA0B4DataVGG5Vapor7RequestCKF"></a>
+                    <a name="//apple_ref/swift/Method/favoritesHandler(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15EventControllerV16favoritesHandlery3NIO0B10LoopFutureCySayAA0B4DataVGG5Vapor7RequestCKF">favoritesHandler(_:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>GET /api/v3/events/favorites</code></p>
+
+<p>Retrieve the <code><a href="../Classes/Event.html">Event</a></code>s in the user&rsquo;s taggedEvent barrel, sorted by <code>.startTime</code>.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">favoritesHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="p">[</span><span class="kt"><a href="../Structs/EventData.html">EventData</a></span><span class="p">]</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming <code>Request</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p><code>[EventData]</code> containing the user&rsquo;s favorited events.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L752-L771">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1165,7 +1383,7 @@ blocked or muted users, or containing user&rsquo;s muteWords, is not returned.</
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-12-14)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-12-16)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.13.0</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>

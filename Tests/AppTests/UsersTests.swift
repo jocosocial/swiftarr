@@ -118,7 +118,7 @@ final class UsersTests: XCTestCase {
         XCTAssertTrue(header.displayedName.contains("@\(user.username)"), "@\(user.username)")
         
         // test update
-        let userProfileData = UserProfileData(
+        let profileEditData = ProfileEditData(
             about: "",
             displayName: "Cookie Monster",
             email: "",
@@ -133,7 +133,7 @@ final class UsersTests: XCTestCase {
             from: userURI + "profile",
             method: .POST,
             headers: headers,
-            body: userProfileData
+            body: profileEditData
         )
         header = try app.getResult(
             from: usersURI + "\(user.userID)/header",
@@ -261,7 +261,7 @@ final class UsersTests: XCTestCase {
         XCTAssertTrue(usernames[0].userSearch == "@verified", "should be '@verified'")
 
         // populate
-        let userProfileData = UserProfileData(
+        let profileEditData = ProfileEditData(
             about: "",
             displayName: "%Sir% 😀 Cookie!",
             email: "",
@@ -276,7 +276,7 @@ final class UsersTests: XCTestCase {
             from: userURI + "profile",
             method: .POST,
             headers: headers,
-            body: userProfileData
+            body: profileEditData
         )
         
         // ensure userSearch returns intact

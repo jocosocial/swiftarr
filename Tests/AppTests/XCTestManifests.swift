@@ -50,6 +50,7 @@ extension EventTests {
     static let __allTests__EventTests = [
         ("testEventForums", testEventForums),
         ("testEventsAll", testEventsAll),
+        ("testEventsBarrel", testEventsBarrel),
         ("testEventsMatch", testEventsMatch),
         ("testEventsMigration", testEventsMigration),
         ("testEventsNow", testEventsNow),
@@ -66,6 +67,7 @@ extension ForumTests {
         ("testCategoriesMigration", testCategoriesMigration),
         ("testCategoryTypes", testCategoryTypes),
         ("testContentFilter", testContentFilter),
+        ("testForumBarrel", testForumBarrel),
         ("testForumCategory", testForumCategory),
         ("testForumCreate", testForumCreate),
         ("testForumModify", testForumModify),

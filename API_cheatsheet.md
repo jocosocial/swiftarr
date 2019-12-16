@@ -7,7 +7,6 @@
 
 # Auth
 ---
-
 ||| Endpoint | Requires -> Returns | Use to... |
 | :--- | :--- | :--- | :--- | :--- |
 | B | `POST` | `/api/v3/auth/login` | -> `TokenStringData` | log in |
@@ -34,8 +33,8 @@
 | S | `POST` | `/api/v3/user/image` | `ImageUploadData` -> `UploadedImageData` | upload profile image |
 | S | `POST` | `/api/v3/user/image/remove` |  -> HTTP Status | remove profile image |
 | T | `POST` | `/api/v3/user/password` | `UserPasswordData` -> HTTP Status | change password |
-| S | `GET` | `/api/v3/user/profile` | -> `UserProfile.Edit` | retrieve profile for edit |
-| S | `POST` | `/api/v3/user/profile` | `UserProfileData` -> `UserProfile.Edit` | update profile |
+| S | `GET` | `/api/v3/user/profile` | -> `UserProfileData` | retrieve profile for edit |
+| S | `POST` | `/api/v3/user/profile` | `ProfileEditData` -> `UserProfileData` | update profile |
 | T | `POST` | `/api/v3/user/username` | `UserUsernameData` -> HTTP Status | change username |
 | S | `GET` | `/api/v3/user/whoami` | -> `CurrentUserData` | retrieve username, id, login status |
 
@@ -60,7 +59,7 @@
 | T | `POST` | `/api/v3/user/mutewords/add/STRING` | -> `MuteKeywordData` | add word to "Muted Keywords" Barrel |
 | T | `POST` | `/api/v3/user/mutewords/remove/STRING` | -> `MuteKeywordData` | remove word from "Muted Keywords" Barrel |
 
-* [WIP...]
+* user notes
 
 ||| Endpoint | Requires -> Returns | Use to... |
 | :--- | :--- | :--- | :--- | :--- |
@@ -78,7 +77,7 @@
 | S | `GET` | `/api/v3/users/find/STRING` | -> `UserInfo` | retrieve user info by username |
 | S | `GET` | `/api/v3/users/ID` | -> `UserInfo` | retrieve user info by id |
 | S | `GET` | `/api/v3/users/ID/header` | -> `UserHeader` | retrieve user's header info |
-| S | `GET` | `/api/v3/users/ID/profile` | -> `UserProfile.Public` | retrieve user's profile |
+| S | `GET` | `/api/v3/users/ID/profile` | -> `ProfilePublicData` | retrieve user's profile |
 ---
 
 * blocks & mutes
@@ -127,13 +126,16 @@
 | O | `GET` | `/api/v3/events/official/now` | -> `[EventData]` | retrieve official Events happening now |
 | O | `GET` | `/api/v3/events/shadow/now` | -> `[EventData]` | retrieve shadow Events happening now |
 | O | `GET` | `/api/v3/events/today` | -> `[EventData]` | retrieve all Events for current day |
-| O | `GET` | `/api/v3/events/official/today` | -> `[EventData]` | retrieve official Events for current day|
+| O | `GET` | `/api/v3/events/official/today` | -> `[EventData]` | retrieve official Events for current day |
 | O | `GET` | `/api/v3/events/shadow/today` | -> `[EventData]` | retrieve shadow Events for current day |
 
-* event forums
+* favorites & event forums
 
 ||| Endpoint | Requires -> Returns | Use to... |
 | :--- | :--- | :--- | :--- | :--- |
+| T | `GET` | `/api/v3/events/favorites` | -> `[EventData]` | retrieve list of Events favorited by user |
+| T | `POST` | `/api/v3/events/ID/favorite` | -> HTTP Status | add Event to list of favorites |
+| T | `POST` | `/api/v3/events/ID/favorite/remove` | -> HTTP Status | remove Event from list of favorites |
 | S | `GET` | `/api/v3/events/ID/forum` | -> `ForumData` | retrieve the Forum for an Event |
 ---
 
@@ -149,8 +151,11 @@
 | S | `GET` | `/api/v3/forum/categories/user` | -> `[CategoryData]` | retrieve list of user Forum categories |
 | S | `GET` | `/api/v3/forum/categories/ID` | -> `[ForumListData]` | retrieve list of Forums in Category |
 | T | `POST` | `/api/v3/forum/categories/ID/create` | `ForumCreateData` -> `ForumData` | create Forum in Category |
+| T | `GET` | `/api/v3/forum/favorites` | -> `[ForumListData]` | retrieve list of Forums favorited by user |
 | T | `GET` | `/api/v3/forum/owner` | -> `[ForumListData]` | retrieve list of Forums owned by user |
 | S | `GET` | `/api/v3/forum/ID` | -> `ForumData` | retrieve Forum |
+| T | `POST` | `/api/v3/forum/ID/favorite` | -> HTTP Status | add Forum to list of favorites |
+| T | `POST` | `/api/v3/forum/ID/favorite/remove` | -> HTTP Status | remove Forum from list of favorites |
 | T | `POST` | `/api/v3/forum/ID/lock` | -> HTTP Status | lock a Forum into read-only state|
 | T | `POST` | `/api/v3/forum/ID/rename/STRING` | -> HTTP Status | rename a Forum |
 | T | `POST` | `/api/v3/forum/ID/report` | `ReportData` -> HTTP Status | report a Forum |
@@ -181,6 +186,7 @@
 | S | `GET` | `/api/v3/forum/ID/search/STRING` | -> `[PostData]` | retrieve all ForumPosts containing string in Forum |
 | S | `GET` | `/api/v3/forum/post/search/STRING` | -> `[PostData]` | retrieve all ForumPosts containing string |
 ---
+
 
 # Twitarr
 ---

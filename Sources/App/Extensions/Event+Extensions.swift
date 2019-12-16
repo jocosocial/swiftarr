@@ -42,7 +42,7 @@ extension Event {
 
 extension Event {
     /// Converts an `Event` model to a version omitting data that is of no interest to a user.
-    func convertToData() throws -> EventData {
+    func convertToData(withFavorited tagged: Bool) throws -> EventData {
         return try EventData(
             eventID: self.requireID(),
             title: self.title,
@@ -51,7 +51,8 @@ extension Event {
             endTime: self.endTime,
             location: self.location,
             eventType: self.eventType.label,
-            forum: self.forumID
+            forum: self.forumID,
+            isFavorite: tagged
         )
     }
 }
@@ -60,10 +61,10 @@ extension Future where T: Event {
     /// Converts a `Future<Event>` to a `Future<EventData>`. This extension provides the
     /// convenience of simply using `event.convertToData()` and allowing the compiler to
     /// choose the appropriate version for the context.
-    func convertToData() throws -> Future<EventData> {
+    func convertToData(withFavorited tagged: Bool) throws -> Future<EventData> {
         return self.map {
             (event) in
-            return try event.convertToData()
+            return try event.convertToData(withFavorited: tagged)
         }
     }
 }
