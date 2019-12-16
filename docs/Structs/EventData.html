@@ -81,22 +81,10 @@
                 <a class="nav-group-task-link" href="../Classes/User.html">User</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/User/Admin.html">– Admin</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/UserNote.html">UserNote</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/UserNote/Edit.html">– Edit</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/UserProfile.html">UserProfile</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/UserProfile/Edit.html">– Edit</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/UserProfile/Public.html">– Public</a>
               </li>
             </ul>
           </li>
@@ -212,6 +200,9 @@
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Protocols/ImageHandler.html">ImageHandler</a>
               </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Protocols/UserTaggable.html">UserTaggable</a>
+              </li>
             </ul>
           </li>
           <li class="nav-group-name">
@@ -242,6 +233,9 @@
                 <a class="nav-group-task-link" href="../Structs/PostCreateData.html">PostCreateData</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ProfileEditData.html">ProfileEditData</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/ReportData.html">ReportData</a>
               </li>
               <li class="nav-group-task">
@@ -249,9 +243,6 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserPasswordData.html">UserPasswordData</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/UserProfileData.html">UserProfileData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserRecoveryData.html">UserRecoveryData</a>
@@ -310,6 +301,9 @@
                 <a class="nav-group-task-link" href="../Structs/PostDetailData.html">PostDetailData</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ProfilePublicData.html">ProfilePublicData</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/MuteKeywordData.html">MuteKeywordData</a>
               </li>
               <li class="nav-group-task">
@@ -332,6 +326,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserInfo.html">UserInfo</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserProfileData.html">UserProfileData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserSearch.html">UserSearch</a>
@@ -369,6 +366,14 @@
               </li>
             </ul>
           </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Other%20Structs.html">Other Structures</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/NoteEditData.html">NoteEditData</a>
+              </li>
+            </ul>
+          </li>
         </ul>
       </nav>
       <article class="main-content">
@@ -397,13 +402,15 @@
 <li><code>GET /api/v3/events/official/today</code></li>
 <li><code>GET /api/v3/events/shadow/today</code></li>
 <li><code>GET /api/v3/events/match/STRING</code></li>
+<li><code>GET /api/v3/events/favorites</code></li>
 </ul>
 
 <p>See <code><a href="../Structs/EventController.html#/s:3App15EventControllerV13eventsHandlery3NIO0B10LoopFutureCySayAA0B4DataVGG5Vapor7RequestCKF">EventController.eventsHandler(_:)</a></code>, <code><a href="../Structs/EventController.html#/s:3App15EventControllerV15officialHandlery3NIO0B10LoopFutureCySayAA0B4DataVGG5Vapor7RequestCKF">EventController.officialHandler(_:)</a></code>,
 <code><a href="../Structs/EventController.html#/s:3App15EventControllerV13shadowHandlery3NIO0B10LoopFutureCySayAA0B4DataVGG5Vapor7RequestCKF">EventController.shadowHandler(_:)</a></code>, <code><a href="../Structs/EventController.html#/s:3App15EventControllerV16eventsNowHandlery3NIO0B10LoopFutureCySayAA0B4DataVGG5Vapor7RequestCKF">EventController.eventsNowHandler(_:)</a></code>,
 <code>EventController.officialNowHandler(_:)</code>,<code>EventController.shadowNowHandler(_:)</code>,
 <code><a href="../Structs/EventController.html#/s:3App15EventControllerV18eventsTodayHandlery3NIO0B10LoopFutureCySayAA0B4DataVGG5Vapor7RequestCKF">EventController.eventsTodayHandler(_:)</a></code>, <code><a href="../Structs/EventController.html#/s:3App15EventControllerV20officialTodayHandlery3NIO0B10LoopFutureCySayAA0B4DataVGG5Vapor7RequestCKF">EventController.officialTodayHandler(_:)</a></code>,
-<code><a href="../Structs/EventController.html#/s:3App15EventControllerV18shadowTodayHandlery3NIO0B10LoopFutureCySayAA0B4DataVGG5Vapor7RequestCKF">EventController.shadowTodayHandler(_:)</a></code>, <code><a href="../Structs/EventController.html#/s:3App15EventControllerV18eventsMatchHandlery3NIO0B10LoopFutureCySayAA0B4DataVGG5Vapor7RequestCKF">EventController.eventsMatchHandler(_:)</a></code>.</p>
+<code><a href="../Structs/EventController.html#/s:3App15EventControllerV18shadowTodayHandlery3NIO0B10LoopFutureCySayAA0B4DataVGG5Vapor7RequestCKF">EventController.shadowTodayHandler(_:)</a></code>, <code><a href="../Structs/EventController.html#/s:3App15EventControllerV18eventsMatchHandlery3NIO0B10LoopFutureCySayAA0B4DataVGG5Vapor7RequestCKF">EventController.eventsMatchHandler(_:)</a></code>
+<code><a href="../Structs/EventController.html#/s:3App15EventControllerV16favoritesHandlery3NIO0B10LoopFutureCySayAA0B4DataVGG5Vapor7RequestCKF">EventController.favoritesHandler(_:)</a></code>.</p>
 
           </div>
         </section>
@@ -437,7 +444,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L171">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L173">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -467,7 +474,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L173">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L175">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -497,7 +504,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L175">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L177">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -527,7 +534,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L177">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L179">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -557,7 +564,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L179">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L181">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -587,7 +594,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L181">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L183">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -617,7 +624,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L183">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L185">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -647,7 +654,37 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L185">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L187">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App9EventDataV10isFavoriteSbvp"></a>
+                    <a name="//apple_ref/swift/Property/isFavorite" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App9EventDataV10isFavoriteSbvp">isFavorite</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Whether user has favorited event.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">isFavorite</span><span class="p">:</span> <span class="kt">Bool</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L189">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -660,7 +697,7 @@
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-12-14)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-12-16)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.13.0</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>

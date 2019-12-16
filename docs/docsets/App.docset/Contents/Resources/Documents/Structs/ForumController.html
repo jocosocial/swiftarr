@@ -81,22 +81,10 @@
                 <a class="nav-group-task-link" href="../Classes/User.html">User</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/User/Admin.html">– Admin</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/UserNote.html">UserNote</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/UserNote/Edit.html">– Edit</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/UserProfile.html">UserProfile</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/UserProfile/Edit.html">– Edit</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/UserProfile/Public.html">– Public</a>
               </li>
             </ul>
           </li>
@@ -212,6 +200,9 @@
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Protocols/ImageHandler.html">ImageHandler</a>
               </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Protocols/UserTaggable.html">UserTaggable</a>
+              </li>
             </ul>
           </li>
           <li class="nav-group-name">
@@ -242,6 +233,9 @@
                 <a class="nav-group-task-link" href="../Structs/PostCreateData.html">PostCreateData</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ProfileEditData.html">ProfileEditData</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/ReportData.html">ReportData</a>
               </li>
               <li class="nav-group-task">
@@ -249,9 +243,6 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserPasswordData.html">UserPasswordData</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/UserProfileData.html">UserProfileData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserRecoveryData.html">UserRecoveryData</a>
@@ -310,6 +301,9 @@
                 <a class="nav-group-task-link" href="../Structs/PostDetailData.html">PostDetailData</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ProfilePublicData.html">ProfilePublicData</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/MuteKeywordData.html">MuteKeywordData</a>
               </li>
               <li class="nav-group-task">
@@ -332,6 +326,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserInfo.html">UserInfo</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserProfileData.html">UserProfileData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserSearch.html">UserSearch</a>
@@ -369,6 +366,14 @@
               </li>
             </ul>
           </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Other%20Structs.html">Other Structures</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/NoteEditData.html">NoteEditData</a>
+              </li>
+            </ul>
+          </li>
         </ul>
       </nav>
       <article class="main-content">
@@ -378,7 +383,7 @@
             <h1>ForumController</h1>
               <div class="declaration">
                 <div class="language">
-                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">ForumController</span> <span class="p">:</span> <span class="kt">RouteCollection</span><span class="p">,</span> <span class="kt"><a href="../Protocols/ImageHandler.html">ImageHandler</a></span><span class="p">,</span> <span class="kt"><a href="../Protocols/ContentFilterable.html">ContentFilterable</a></span></code></pre>
+                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">ForumController</span> <span class="p">:</span> <span class="kt">RouteCollection</span><span class="p">,</span> <span class="kt"><a href="../Protocols/ImageHandler.html">ImageHandler</a></span><span class="p">,</span> <span class="kt"><a href="../Protocols/ContentFilterable.html">ContentFilterable</a></span><span class="p">,</span> <span class="kt"><a href="../Protocols/UserTaggable.html">UserTaggable</a></span></code></pre>
 
                 </div>
               </div>
@@ -426,7 +431,7 @@ to forums.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L15-L17">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L14-L16">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -456,7 +461,50 @@ to forums.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L20-L22">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L19-L21">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/UserTaggable%20Conformance"></a>
+                <a name="//apple_ref/swift/Section/UserTaggable Conformance" class="dashAnchor"></a>
+                <div class="section-name-container">
+                  <a class="section-name-link" href="#/UserTaggable%20Conformance"></a>
+                  <h3 class="section-name"><p>UserTaggable Conformance</p>
+</h3>
+                </div>
+              </div>
+              <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App15ForumControllerV16taggedBarrelTypeAA0eF0Ovp"></a>
+                    <a name="//apple_ref/swift/Property/taggedBarrelType" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15ForumControllerV16taggedBarrelTypeAA0eF0Ovp">taggedBarrelType</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The barrel type for <code><a href="../Classes/Forum.html">Forum</a></code> favoriting.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">taggedBarrelType</span><span class="p">:</span> <span class="kt"><a href="../Enums/BarrelType.html">BarrelType</a></span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L26-L28">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -499,7 +547,7 @@ to forums.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L27-L74">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L33-L83">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -568,7 +616,7 @@ and title (for user categories only).</p>
                         <p><code>[CategoryData]</code> containing all category IDs and titles.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L93-L116">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L102-L125">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -623,7 +671,7 @@ and title (for user categories only).</p>
                         <p><code>[CategoryData]</code> containing all administrative categories.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L124-L135">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L133-L144">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -678,7 +726,7 @@ and title (for user categories only).</p>
                         <p><code>[CategoryData]</code> containing all general user categories.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L143-L155">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L152-L164">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -740,7 +788,7 @@ not be returned.</p>
                         <p><code>[ForumListData]</code> containing all category forums.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L166-L268">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L175-L287">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -801,7 +849,7 @@ or containing user&rsquo;s muteWords, is not returned.</p>
                         <p><code><a href="../Structs/ForumData.html">ForumData</a></code> containing the forum&rsquo;s metadata and all posts.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L278-L330">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L297-L355">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -856,7 +904,7 @@ or containing user&rsquo;s muteWords, is not returned.</p>
                         <p><code>[ForumListData]</code> containing all matching forums.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L338-L396">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L363-L427">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -911,7 +959,7 @@ or containing user&rsquo;s muteWords, is not returned.</p>
                         <p><code>[PostData]</code> containing all matching posts in the forum.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L404-L454">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L435-L485">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -971,7 +1019,7 @@ or containing user&rsquo;s muteWords, is not returned.</p>
                         <p><code><a href="../Structs/ForumData.html">ForumData</a></code> containing the post&rsquo;s parent forum.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L463-L520">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L494-L557">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1031,7 +1079,7 @@ or containing user&rsquo;s muteWords, is not returned.</p>
                         <p><code><a href="../Structs/PostDetailData.html">PostDetailData</a></code> containing the specified post.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L529-L596">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L566-L633">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1086,7 +1134,7 @@ or containing user&rsquo;s muteWords, is not returned.</p>
                         <p><code>[PostData]</code> containing all matching posts.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L604-L650">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L641-L687">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1104,6 +1152,176 @@ or containing user&rsquo;s muteWords, is not returned.</p>
                 </div>
               </div>
               <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App15ForumControllerV18favoriteAddHandlery3NIO15EventLoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestCKF"></a>
+                    <a name="//apple_ref/swift/Method/favoriteAddHandler(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15ForumControllerV18favoriteAddHandlery3NIO15EventLoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestCKF">favoriteAddHandler(_:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>POST /api/v3/forum/ID/favorite</code></p>
+
+<p>Add the specified <code><a href="../Classes/Forum.html">Forum</a></code> to the user&rsquo;s tagged forums list.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">favoriteAddHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">HTTPStatus</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming <code>Request</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>201 Created on success.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L699-L721">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App15ForumControllerV21favoriteRemoveHandlery3NIO15EventLoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestCKF"></a>
+                    <a name="//apple_ref/swift/Method/favoriteRemoveHandler(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15ForumControllerV21favoriteRemoveHandlery3NIO15EventLoopFutureCy8NIOHTTP118HTTPResponseStatusOG5Vapor7RequestCKF">favoriteRemoveHandler(_:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>POST /api/v3/forum/ID/favorite/remove</code></p>
+
+<p>Remove the specified <code><a href="../Classes/Forum.html">Forum</a></code> from the user&rsquo;s tagged forums list.</p>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    400 error if the forum was not favorited.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">favoriteRemoveHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt">HTTPStatus</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming <code>Request</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>204 No Content on success.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L730-L753">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App15ForumControllerV16favoritesHandlery3NIO15EventLoopFutureCySayAA0B8ListDataVGG5Vapor7RequestCKF"></a>
+                    <a name="//apple_ref/swift/Method/favoritesHandler(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15ForumControllerV16favoritesHandlery3NIO15EventLoopFutureCySayAA0B8ListDataVGG5Vapor7RequestCKF">favoritesHandler(_:)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>GET /api/v3/forum/favorites</code></p>
+
+<p>Retrieve the <code><a href="../Classes/Forum.html">Forum</a></code>s in the user&rsquo;s taggedForum barrel, sorted by title.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">favoritesHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="p">[</span><span class="kt"><a href="../Structs/ForumListData.html">ForumListData</a></span><span class="p">]</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>req</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The incoming <code>Request</code>, provided automatically.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p><code>[ForumListData]</code> containing the user&rsquo;s favorited events.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L761-L815">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
                 <li class="item">
                   <div>
                     <code>
@@ -1177,7 +1395,7 @@ administrative access.</p>
                         <p><code><a href="../Structs/ForumData.html">ForumData</a></code> containing the new forum&rsquo;s contents.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L668-L713">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L829-L875">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1238,7 +1456,7 @@ if the forum ID is not valid.
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L723-L736">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L885-L898">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1299,7 +1517,7 @@ if the forum ID is not valid.
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L746-L760">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L908-L922">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1377,7 +1595,7 @@ send an empty string in the <code>.message</code> field.</p>
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L775-L789">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L937-L951">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1438,7 +1656,7 @@ if the forum ID is not valid.
                         <p>204 No Content on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L799-L812">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L961-L974">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1514,7 +1732,7 @@ if the forum ID is not valid.
                         <p><code><a href="../Structs/UploadedImageData.html">UploadedImageData</a></code> containing the generated image identifier string.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L824-L877">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L986-L1039">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1575,7 +1793,7 @@ if there was actually an image to remove.</p>
                         <p><code><a href="../Structs/PostData.html">PostData</a></code> containing updated image name.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L887-L926">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1049-L1088">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1631,7 +1849,7 @@ if there was actually an image to remove.</p>
                         <p><code>[ForumListData]</code> containing all forums created by the user.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L935-L978">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1097-L1146">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1707,7 +1925,7 @@ if there was actually an image to remove.</p>
                         <p><code><a href="../Structs/PostData.html">PostData</a></code> containing the post&rsquo;s contents and metadata.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L990-L1032">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1158-L1200">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1767,7 +1985,7 @@ if there was actually an image to remove.</p>
                         <p>204 No Content on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1041-L1051">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1209-L1219">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1849,7 +2067,7 @@ send an empty string in the <code>.message</code> field.</p>
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1067-L1091">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1235-L1259">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1910,7 +2128,7 @@ reaction by the user, it is replaced.</p>
                         <p><code><a href="../Structs/PostData.html">PostData</a></code> containing the updated like info.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1101-L1148">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1269-L1316">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1971,7 +2189,7 @@ reaction by the user, it is replaced.</p>
                         <p><code><a href="../Structs/PostData.html">PostData</a></code> containing the updated like info.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1158-L1205">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1326-L1373">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2032,7 +2250,7 @@ reaction by the user, it is replaced.</p>
                         <p><code><a href="../Structs/PostData.html">PostData</a></code> containing the updated like info.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1215-L1262">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1383-L1430">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2093,7 +2311,7 @@ creator.
                         <p><code><a href="../Structs/PostData.html">PostData</a></code> containing the updated like info.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1272-L1305">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1440-L1473">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2175,7 +2393,7 @@ To change or remove the actual image asoociated with the post, use
                         <p><code><a href="../Structs/PostData.html">PostData</a></code> containing the post&rsquo;s contents and metadata.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1321-L1370">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1489-L1538">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2188,7 +2406,7 @@ To change or remove the actual image asoociated with the post, use
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-12-14)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-12-16)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.13.0</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>

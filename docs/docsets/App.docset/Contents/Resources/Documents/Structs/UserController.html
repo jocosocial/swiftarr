@@ -81,22 +81,10 @@
                 <a class="nav-group-task-link" href="../Classes/User.html">User</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/User/Admin.html">– Admin</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/UserNote.html">UserNote</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/UserNote/Edit.html">– Edit</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/UserProfile.html">UserProfile</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/UserProfile/Edit.html">– Edit</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/UserProfile/Public.html">– Public</a>
               </li>
             </ul>
           </li>
@@ -212,6 +200,9 @@
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Protocols/ImageHandler.html">ImageHandler</a>
               </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Protocols/UserTaggable.html">UserTaggable</a>
+              </li>
             </ul>
           </li>
           <li class="nav-group-name">
@@ -242,6 +233,9 @@
                 <a class="nav-group-task-link" href="../Structs/PostCreateData.html">PostCreateData</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ProfileEditData.html">ProfileEditData</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/ReportData.html">ReportData</a>
               </li>
               <li class="nav-group-task">
@@ -249,9 +243,6 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserPasswordData.html">UserPasswordData</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/UserProfileData.html">UserProfileData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserRecoveryData.html">UserRecoveryData</a>
@@ -310,6 +301,9 @@
                 <a class="nav-group-task-link" href="../Structs/PostDetailData.html">PostDetailData</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ProfilePublicData.html">ProfilePublicData</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/MuteKeywordData.html">MuteKeywordData</a>
               </li>
               <li class="nav-group-task">
@@ -332,6 +326,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserInfo.html">UserInfo</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserProfileData.html">UserProfileData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserSearch.html">UserSearch</a>
@@ -366,6 +363,14 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App6routesyy5Vapor6Router_pKF">routes(_:)</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Other%20Structs.html">Other Structures</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/NoteEditData.html">NoteEditData</a>
               </li>
             </ul>
           </li>
@@ -929,9 +934,9 @@ another user.
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App14UserControllerV14profileHandlery3NIO15EventLoopFutureCyAA0B7ProfileC4EditCG5Vapor7RequestCKF"></a>
+                    <a name="/s:3App14UserControllerV14profileHandlery3NIO15EventLoopFutureCyAA0B11ProfileDataVG5Vapor7RequestCKF"></a>
                     <a name="//apple_ref/swift/Method/profileHandler(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App14UserControllerV14profileHandlery3NIO15EventLoopFutureCyAA0B7ProfileC4EditCG5Vapor7RequestCKF">profileHandler(_:)</a>
+                    <a class="token" href="#/s:3App14UserControllerV14profileHandlery3NIO15EventLoopFutureCyAA0B11ProfileDataVG5Vapor7RequestCKF">profileHandler(_:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -941,7 +946,7 @@ another user.
                       <div class="abstract">
                         <p><code>GET /api/v3/user/profile</code></p>
 
-<p>Retrieves the user&rsquo;s own profile data for editing, as a <code><a href="../Classes/UserProfile/Edit.html">UserProfile.Edit</a></code> object.</p>
+<p>Retrieves the user&rsquo;s own profile data for editing, as a <code><a href="../Structs/UserProfileData.html">UserProfileData</a></code> object.</p>
 
 <p>This endpoint can be reached with either Basic or Bearer authenticaton, so that a user
 can customize their profile even if they do not yet have their registration code.</p>
@@ -964,7 +969,7 @@ bug, please and thank you.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">profileHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Classes/UserProfile.html">UserProfile</a></span><span class="o">.</span><span class="kt">Edit</span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">profileHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Structs/UserProfileData.html">UserProfileData</a></span><span class="o">&gt;</span></code></pre>
 
                         </div>
                       </div>
@@ -989,7 +994,7 @@ bug, please and thank you.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><code><a href="../Classes/UserProfile/Edit.html">UserProfile.Edit</a></code> containing the editable properties of the profile.</p>
+                        <p><code><a href="../Structs/UserProfileData.html">UserProfileData</a></code> containing the editable properties of the profile.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L434-L445">Show on GitHub</a>
@@ -1000,9 +1005,9 @@ bug, please and thank you.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App14UserControllerV20profileUpdateHandler_4data3NIO15EventLoopFutureCyAA0B7ProfileC4EditCG5Vapor7RequestC_AA0bL4DataVtKF"></a>
+                    <a name="/s:3App14UserControllerV20profileUpdateHandler_4data3NIO15EventLoopFutureCyAA0B11ProfileDataVG5Vapor7RequestC_AA0l4EditM0VtKF"></a>
                     <a name="//apple_ref/swift/Method/profileUpdateHandler(_:data:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App14UserControllerV20profileUpdateHandler_4data3NIO15EventLoopFutureCyAA0B7ProfileC4EditCG5Vapor7RequestC_AA0bL4DataVtKF">profileUpdateHandler(_:data:)</a>
+                    <a class="token" href="#/s:3App14UserControllerV20profileUpdateHandler_4data3NIO15EventLoopFutureCyAA0B11ProfileDataVG5Vapor7RequestC_AA0l4EditM0VtKF">profileUpdateHandler(_:data:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -1025,7 +1030,7 @@ resets its respective profile property to <code>nil</code>.</p>
 
 </div><div class="aside aside-requires">
     <p class="aside-title">Requires</p>
-    <p><code><a href="../Structs/UserProfileData.html">UserProfileData</a></code> payload in the HTTP body.</p>
+    <p><code><a href="../Structs/ProfileEditData.html">ProfileEditData</a></code> payload in the HTTP body.</p>
 
 </div><div class="aside aside-throws">
     <p class="aside-title">Throws</p>
@@ -1038,7 +1043,7 @@ resets its respective profile property to <code>nil</code>.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">profileUpdateHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">data</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserProfileData.html">UserProfileData</a></span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Classes/UserProfile.html">UserProfile</a></span><span class="o">.</span><span class="kt">Edit</span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">profileUpdateHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">data</span><span class="p">:</span> <span class="kt"><a href="../Structs/ProfileEditData.html">ProfileEditData</a></span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Structs/UserProfileData.html">UserProfileData</a></span><span class="o">&gt;</span></code></pre>
 
                         </div>
                       </div>
@@ -1066,7 +1071,7 @@ resets its respective profile property to <code>nil</code>.</p>
                               </td>
                               <td>
                                 <div>
-                                  <p><code><a href="../Structs/UserProfileData.html">UserProfileData</a></code> struct containing the editable properties of the profile.</p>
+                                  <p><code><a href="../Structs/ProfileEditData.html">ProfileEditData</a></code> struct containing the editable properties of the profile.</p>
                                 </div>
                               </td>
                             </tr>
@@ -1075,7 +1080,7 @@ resets its respective profile property to <code>nil</code>.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><code><a href="../Classes/UserProfile/Edit.html">UserProfile.Edit</a></code> containing the updated editable properties of the profile.</p>
+                        <p><code><a href="../Structs/UserProfileData.html">UserProfileData</a></code> containing the updated editable properties of the profile.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L465-L517">Show on GitHub</a>
@@ -2682,7 +2687,7 @@ is covered by its parent&rsquo;s block list.</p>
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-12-14)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-12-16)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.13.0</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>

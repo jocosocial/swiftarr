@@ -81,22 +81,10 @@
                 <a class="nav-group-task-link" href="../Classes/User.html">User</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/User/Admin.html">– Admin</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/UserNote.html">UserNote</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/UserNote/Edit.html">– Edit</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/UserProfile.html">UserProfile</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/UserProfile/Edit.html">– Edit</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/UserProfile/Public.html">– Public</a>
               </li>
             </ul>
           </li>
@@ -212,6 +200,9 @@
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Protocols/ImageHandler.html">ImageHandler</a>
               </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Protocols/UserTaggable.html">UserTaggable</a>
+              </li>
             </ul>
           </li>
           <li class="nav-group-name">
@@ -242,6 +233,9 @@
                 <a class="nav-group-task-link" href="../Structs/PostCreateData.html">PostCreateData</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ProfileEditData.html">ProfileEditData</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/ReportData.html">ReportData</a>
               </li>
               <li class="nav-group-task">
@@ -249,9 +243,6 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserPasswordData.html">UserPasswordData</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/UserProfileData.html">UserProfileData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserRecoveryData.html">UserRecoveryData</a>
@@ -310,6 +301,9 @@
                 <a class="nav-group-task-link" href="../Structs/PostDetailData.html">PostDetailData</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ProfilePublicData.html">ProfilePublicData</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/MuteKeywordData.html">MuteKeywordData</a>
               </li>
               <li class="nav-group-task">
@@ -332,6 +326,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserInfo.html">UserInfo</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserProfileData.html">UserProfileData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserSearch.html">UserSearch</a>
@@ -366,6 +363,14 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App6routesyy5Vapor6Router_pKF">routes(_:)</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Other%20Structs.html">Other Structures</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/NoteEditData.html">NoteEditData</a>
               </li>
             </ul>
           </li>
@@ -589,9 +594,9 @@ image filename.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App15UsersControllerV14profileHandlery3NIO15EventLoopFutureCyAA11UserProfileC6PublicCG5Vapor7RequestCKF"></a>
+                    <a name="/s:3App15UsersControllerV14profileHandlery3NIO15EventLoopFutureCyAA17ProfilePublicDataVG5Vapor7RequestCKF"></a>
                     <a name="//apple_ref/swift/Method/profileHandler(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App15UsersControllerV14profileHandlery3NIO15EventLoopFutureCyAA11UserProfileC6PublicCG5Vapor7RequestCKF">profileHandler(_:)</a>
+                    <a class="token" href="#/s:3App15UsersControllerV14profileHandlery3NIO15EventLoopFutureCyAA17ProfilePublicDataVG5Vapor7RequestCKF">profileHandler(_:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -601,7 +606,7 @@ image filename.</p>
                       <div class="abstract">
                         <p><code>GET /api/v3/users/ID/profile</code></p>
 
-<p>Retrieves the specified user&rsquo;s profile, as a <code><a href="../Classes/UserProfile/Public.html">UserProfile.Public</a></code> object.</p>
+<p>Retrieves the specified user&rsquo;s profile, as a <code><a href="../Structs/ProfilePublicData.html">ProfilePublicData</a></code> object.</p>
 
 <p>This endpoint can be reached with either Basic or Bearer authenticaton. If using Basic
 (requesting user is <em>not</em> logged in), the data returned may be a limited subset if the
@@ -619,7 +624,7 @@ as a likely bug, please and thank you.
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">profileHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Classes/UserProfile.html">UserProfile</a></span><span class="o">.</span><span class="kt">Public</span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">profileHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Structs/ProfilePublicData.html">ProfilePublicData</a></span><span class="o">&gt;</span></code></pre>
 
                         </div>
                       </div>
@@ -644,7 +649,7 @@ as a likely bug, please and thank you.
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><code><a href="../Classes/UserProfile/Public.html">UserProfile.Public</a></code> containing the displayable properties of the specified
+                        <p><code><a href="../Structs/ProfilePublicData.html">ProfilePublicData</a></code> containing the displayable properties of the specified
 user&rsquo;s profile.</p>
                       </div>
                       <div class="slightly-smaller">
@@ -1176,9 +1181,9 @@ be reported as a likely bug, please and thank you.
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App15UsersControllerV11noteHandlery3NIO15EventLoopFutureCyAA8UserNoteC4EditCG5Vapor7RequestCKF"></a>
+                    <a name="/s:3App15UsersControllerV11noteHandlery3NIO15EventLoopFutureCyAA12NoteEditDataVG5Vapor7RequestCKF"></a>
                     <a name="//apple_ref/swift/Method/noteHandler(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App15UsersControllerV11noteHandlery3NIO15EventLoopFutureCyAA8UserNoteC4EditCG5Vapor7RequestCKF">noteHandler(_:)</a>
+                    <a class="token" href="#/s:3App15UsersControllerV11noteHandlery3NIO15EventLoopFutureCyAA12NoteEditDataVG5Vapor7RequestCKF">noteHandler(_:)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -1188,7 +1193,7 @@ be reported as a likely bug, please and thank you.
                       <div class="abstract">
                         <p><code>GET /api/v3/users/ID/note</code></p>
 
-<p>Retrieves an existing <code>UseerNote</code> associated with the specified user&rsquo;s profile and
+<p>Retrieves an existing <code><a href="../Classes/UserNote.html">UserNote</a></code> associated with the specified user&rsquo;s profile and
 the current user.</p>
 <div class="aside aside-note">
     <p class="aside-title">Note</p>
@@ -1210,7 +1215,7 @@ be reported as a likely bug, please and thank you.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">noteHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Classes/UserNote.html">UserNote</a></span><span class="o">.</span><span class="kt">Edit</span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">noteHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="kt"><a href="../Structs/NoteEditData.html">NoteEditData</a></span><span class="o">&gt;</span></code></pre>
 
                         </div>
                       </div>
@@ -1235,7 +1240,7 @@ be reported as a likely bug, please and thank you.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><code><a href="../Classes/UserNote/Edit.html">UserNote.Edit</a></code> containing the note&rsquo;s ID and text.</p>
+                        <p><code><a href="../Structs/NoteEditData.html">NoteEditData</a></code> containing the note&rsquo;s ID and text.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L563-L585">Show on GitHub</a>
@@ -1645,7 +1650,7 @@ keyedCache used for filtering.</p>
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-12-14)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-12-16)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.13.0</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>
