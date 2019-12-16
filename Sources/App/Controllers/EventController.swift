@@ -21,22 +21,25 @@ struct EventController: RouteCollection, ContentFilterable {
         let guardAuthMiddleware = User.guardAuthMiddleware()
         let tokenAuthMiddleware = User.tokenAuthMiddleware()
         
+        // set unprotected route group
+        let openAuthGroup = eventRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware])
+
         // set protected route groups
         let sharedAuthGroup = eventRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware, guardAuthMiddleware])
         let tokenAuthGroup = eventRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
         
         // open access endpoints
-        eventRoutes.get(use: eventsHandler)
-        eventRoutes.get("match", String.parameter, use: eventsMatchHandler)
-        eventRoutes.get("now", use: eventsNowHandler)
-        eventRoutes.get("official", use: officialHandler)
-        eventRoutes.get("official", "now", use: officialNowHandler)
-        eventRoutes.get("official", "today", use: officialTodayHandler)
-        eventRoutes.get("shadow", use: shadowHandler)
-        eventRoutes.get("shadow", "now", use: shadowNowHandler)
-        eventRoutes.get("shadow", "today", use: shadowTodayHandler)
-        eventRoutes.get("today", use: eventsTodayHandler)
-        
+        openAuthGroup.get(use: eventsHandler)
+        openAuthGroup.get("match", String.parameter, use: eventsMatchHandler)
+        openAuthGroup.get("now", use: eventsNowHandler)
+        openAuthGroup.get("official", use: officialHandler)
+        openAuthGroup.get("official", "now", use: officialNowHandler)
+        openAuthGroup.get("official", "today", use: officialTodayHandler)
+        openAuthGroup.get("shadow", use: shadowHandler)
+        openAuthGroup.get("shadow", "now", use: shadowNowHandler)
+        openAuthGroup.get("shadow", "today", use: shadowTodayHandler)
+        openAuthGroup.get("today", use: eventsTodayHandler)
+
         // endpoints available only when not logged in
         
         // endpoints available whether logged in or out
@@ -48,7 +51,9 @@ struct EventController: RouteCollection, ContentFilterable {
     }
     
     // MARK: - Open Access Handlers
-    
+    // The handlers in this route group do not require Authorization, but can take advantage
+    // of Authorization headers if they are present.
+
     /// `GET /api/v3/events`
     ///
     /// Retrieve entire event schedule.
