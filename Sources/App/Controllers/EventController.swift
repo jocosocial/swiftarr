@@ -69,12 +69,36 @@ struct EventController: RouteCollection, ContentFilterable, UserTaggable {
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Returns: `[EventData]` containing all events.
     func eventsHandler(_ req: Request) throws -> Future<[EventData]> {
-        return Event.query(on: req)
-            .sort(\.startTime, .ascending)
-            .all()
-            .map {
-                (events) in
-                return try events.map { try $0.convertToData() }
+        // check if we have a user
+        let auth = try req.authenticated(User.self)
+        guard let user = auth else {
+            // return untagged events if not
+            return Event.query(on: req)
+                .sort(\.startTime, .ascending)
+                .all()
+                .map {
+                    (events) in
+                    return try events.map { try $0.convertToData(withFavorited: false) }
+            }
+        }
+        // else tag events
+        return try self.getTaggedBarrel(for: user, on: req).flatMap {
+            (barrel) in
+            let uuids = barrel?.modelUUIDs ?? []
+            return Event.query(on: req)
+                .sort(\.startTime, .ascending)
+                .all()
+                .map {
+                    (events) in
+                    return try events.map {
+                        (event) in
+                        if uuids.contains(try event.requireID()) {
+                            return try event.convertToData(withFavorited: true)
+                        } else {
+                            return try event.convertToData(withFavorited: false)
+                        }
+                    }
+            }
         }
     }
     
@@ -90,14 +114,40 @@ struct EventController: RouteCollection, ContentFilterable, UserTaggable {
         search = search.replacingOccurrences(of: "_", with: "\\_")
         search = search.replacingOccurrences(of: "%", with: "\\%")
         search = search.trimmingCharacters(in: .whitespacesAndNewlines)
-        return Event.query(on: req).group(.or) {
-            (or) in
-            or.filter(\.title, .ilike, "%\(search)%")
-            or.filter(\.info, .ilike, "%\(search)%")
-        }.all()
-            .map {
-                (events) in
-                return try events.map { try $0.convertToData() }
+        // check if we have a user
+        let auth = try req.authenticated(User.self)
+        guard let user = auth else {
+            // return untagged events if not
+            return Event.query(on: req).group(.or) {
+                (or) in
+                or.filter(\.title, .ilike, "%\(search)%")
+                or.filter(\.info, .ilike, "%\(search)%")
+            }.all()
+                .map {
+                    (events) in
+                    return try events.map { try $0.convertToData(withFavorited: false) }
+            }
+        }
+        // else tag events
+        return try self.getTaggedBarrel(for: user, on: req).flatMap {
+            (barrel) in
+            let uuids = barrel?.modelUUIDs ?? []
+            return Event.query(on: req).group(.or) {
+                (or) in
+                or.filter(\.title, .ilike, "%\(search)%")
+                or.filter(\.info, .ilike, "%\(search)%")
+            }.all()
+                .map {
+                    (events) in
+                    return try events.map {
+                        (event) in
+                        if uuids.contains(try event.requireID()) {
+                            return try event.convertToData(withFavorited: true)
+                        } else {
+                            return try event.convertToData(withFavorited: false)
+                        }
+                    }
+            }
         }
     }
     
@@ -109,14 +159,40 @@ struct EventController: RouteCollection, ContentFilterable, UserTaggable {
     /// - Returns: `[EventData]` containing all current events.
     func eventsNowHandler(_ req: Request) throws -> Future<[EventData]> {
         let now = Date()
-        return Event.query(on: req)
-            .filter(\.startTime <= now)
-            .filter(\.endTime > now)
-            .sort(\.startTime, .ascending)
-            .all()
-            .map {
-                (events) in
-                return try events.map { try $0.convertToData() }
+        // check if we have a user
+        let auth = try req.authenticated(User.self)
+        guard let user = auth else {
+            // return untagged events if not
+            return Event.query(on: req)
+                .filter(\.startTime <= now)
+                .filter(\.endTime > now)
+                .sort(\.startTime, .ascending)
+                .all()
+                .map {
+                    (events) in
+                    return try events.map { try $0.convertToData(withFavorited: false) }
+            }
+        }
+        // else tag events
+        return try self.getTaggedBarrel(for: user, on: req).flatMap {
+            (barrel) in
+            let uuids = barrel?.modelUUIDs ?? []
+            return Event.query(on: req)
+                .filter(\.startTime <= now)
+                .filter(\.endTime > now)
+                .sort(\.startTime, .ascending)
+                .all()
+                .map {
+                    (events) in
+                    return try events.map {
+                        (event) in
+                        if uuids.contains(try event.requireID()) {
+                            return try event.convertToData(withFavorited: true)
+                        } else {
+                            return try event.convertToData(withFavorited: false)
+                        }
+                    }
+            }
         }
     }
     
@@ -130,14 +206,40 @@ struct EventController: RouteCollection, ContentFilterable, UserTaggable {
         // FIXME: is this handling UTC correctly?
         let todayStart = Calendar.current.startOfDay(for: Date())
         let todayEnd = Date.init(timeInterval: 86400, since: todayStart)
-        return Event.query(on: req)
-            .filter(\.startTime >= todayStart)
-            .filter(\.startTime < todayEnd)
-            .sort(\.startTime, .ascending)
-            .all()
-            .map {
-                (events) in
-                return try events.map { try $0.convertToData() }
+        // check if we have a user
+        let auth = try req.authenticated(User.self)
+        guard let user = auth else {
+            // return untagged events if not
+            return Event.query(on: req)
+                .filter(\.startTime >= todayStart)
+                .filter(\.startTime < todayEnd)
+                .sort(\.startTime, .ascending)
+                .all()
+                .map {
+                    (events) in
+                    return try events.map { try $0.convertToData(withFavorited: false) }
+            }
+        }
+        // else tag events
+        return try self.getTaggedBarrel(for: user, on: req).flatMap {
+            (barrel) in
+            let uuids = barrel?.modelUUIDs ?? []
+            return Event.query(on: req)
+                .filter(\.startTime >= todayStart)
+                .filter(\.startTime < todayEnd)
+                .sort(\.startTime, .ascending)
+                .all()
+                .map {
+                    (events) in
+                    return try events.map {
+                        (event) in
+                        if uuids.contains(try event.requireID()) {
+                            return try event.convertToData(withFavorited: true)
+                        } else {
+                            return try event.convertToData(withFavorited: false)
+                        }
+                    }
+            }
         }
     }
     
@@ -148,13 +250,38 @@ struct EventController: RouteCollection, ContentFilterable, UserTaggable {
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Returns: `[EventData]` containing all official events.
     func officialHandler(_ req: Request) throws -> Future<[EventData]> {
-        return Event.query(on: req)
-            .filter(\.eventType != .shadow)
-            .sort(\.startTime, .ascending)
-            .all()
-            .map {
-                (events) in
-                return try events.map { try $0.convertToData() }
+        // check if we have a user
+        let auth = try req.authenticated(User.self)
+        guard let user = auth else {
+            // return untagged events if not
+            return Event.query(on: req)
+                .filter(\.eventType != .shadow)
+                .sort(\.startTime, .ascending)
+                .all()
+                .map {
+                    (events) in
+                    return try events.map { try $0.convertToData(withFavorited: false) }
+            }
+        }
+        // else tag events
+        return try self.getTaggedBarrel(for: user, on: req).flatMap {
+            (barrel) in
+            let uuids = barrel?.modelUUIDs ?? []
+            return Event.query(on: req)
+                .filter(\.eventType != .shadow)
+                .sort(\.startTime, .ascending)
+                .all()
+                .map {
+                    (events) in
+                    return try events.map {
+                        (event) in
+                        if uuids.contains(try event.requireID()) {
+                            return try event.convertToData(withFavorited: true)
+                        } else {
+                            return try event.convertToData(withFavorited: false)
+                        }
+                    }
+            }
         }
     }
     
@@ -166,15 +293,42 @@ struct EventController: RouteCollection, ContentFilterable, UserTaggable {
     /// - Returns: `[EventData]` containing all current official events.
     func officialNowHandler(_ req: Request) throws -> Future<[EventData]> {
         let now = Date()
-        return Event.query(on: req)
-            .filter(\.eventType != .shadow)
-            .filter(\.startTime <= now)
-            .filter(\.endTime > now)
-            .sort(\.startTime, .ascending)
-            .all()
-            .map {
-                (events) in
-                return try events.map { try $0.convertToData() }
+        // check if we have a user
+        let auth = try req.authenticated(User.self)
+        guard let user = auth else {
+            // return untagged events if not
+            return Event.query(on: req)
+                .filter(\.eventType != .shadow)
+                .filter(\.startTime <= now)
+                .filter(\.endTime > now)
+                .sort(\.startTime, .ascending)
+                .all()
+                .map {
+                    (events) in
+                    return try events.map { try $0.convertToData(withFavorited: false) }
+            }
+        }
+        // else tag events
+        return try self.getTaggedBarrel(for: user, on: req).flatMap {
+            (barrel) in
+            let uuids = barrel?.modelUUIDs ?? []
+            return Event.query(on: req)
+                .filter(\.eventType != .shadow)
+                .filter(\.startTime <= now)
+                .filter(\.endTime > now)
+                .sort(\.startTime, .ascending)
+                .all()
+                .map {
+                    (events) in
+                    return try events.map {
+                        (event) in
+                        if uuids.contains(try event.requireID()) {
+                            return try event.convertToData(withFavorited: true)
+                        } else {
+                            return try event.convertToData(withFavorited: false)
+                        }
+                    }
+            }
         }
     }
     
@@ -188,15 +342,42 @@ struct EventController: RouteCollection, ContentFilterable, UserTaggable {
         // FIXME: is this handling UTC correctly?
         let todayStart = Calendar.current.startOfDay(for: Date())
         let todayEnd = Date.init(timeInterval: 86400, since: todayStart)
-        return Event.query(on: req)
-            .filter(\.eventType != .shadow)
-            .filter(\.startTime >= todayStart)
-            .filter(\.startTime < todayEnd)
-            .sort(\.startTime, .ascending)
-            .all()
-            .map {
-                (events) in
-                return try events.map { try $0.convertToData() }
+        // check if we have a user
+        let auth = try req.authenticated(User.self)
+        guard let user = auth else {
+            // return untagged events if not
+            return Event.query(on: req)
+                .filter(\.eventType != .shadow)
+                .filter(\.startTime >= todayStart)
+                .filter(\.startTime < todayEnd)
+                .sort(\.startTime, .ascending)
+                .all()
+                .map {
+                    (events) in
+                    return try events.map { try $0.convertToData(withFavorited: false) }
+            }
+        }
+        // else tag events
+        return try self.getTaggedBarrel(for: user, on: req).flatMap {
+            (barrel) in
+            let uuids = barrel?.modelUUIDs ?? []
+            return Event.query(on: req)
+                .filter(\.eventType != .shadow)
+                .filter(\.startTime >= todayStart)
+                .filter(\.startTime < todayEnd)
+                .sort(\.startTime, .ascending)
+                .all()
+                .map {
+                    (events) in
+                    return try events.map {
+                        (event) in
+                        if uuids.contains(try event.requireID()) {
+                            return try event.convertToData(withFavorited: true)
+                        } else {
+                            return try event.convertToData(withFavorited: false)
+                        }
+                    }
+            }
         }
     }
     
@@ -207,13 +388,38 @@ struct EventController: RouteCollection, ContentFilterable, UserTaggable {
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Returns: `[EventData]` containing all shadow events.
     func shadowHandler(_ req: Request) throws -> Future<[EventData]> {
-        return Event.query(on: req)
-            .filter(\.eventType == .shadow)
-            .sort(\.startTime, .ascending)
-            .all()
-            .map {
-                (events) in
-                return try events.map { try $0.convertToData() }
+        // check if we have a user
+        let auth = try req.authenticated(User.self)
+        guard let user = auth else {
+            // return untagged events if not
+            return Event.query(on: req)
+                .filter(\.eventType == .shadow)
+                .sort(\.startTime, .ascending)
+                .all()
+                .map {
+                    (events) in
+                    return try events.map { try $0.convertToData(withFavorited: false) }
+            }
+        }
+        // else tag events
+        return try self.getTaggedBarrel(for: user, on: req).flatMap {
+            (barrel) in
+            let uuids = barrel?.modelUUIDs ?? []
+            return Event.query(on: req)
+                .filter(\.eventType == .shadow)
+                .sort(\.startTime, .ascending)
+                .all()
+                .map {
+                    (events) in
+                    return try events.map {
+                        (event) in
+                        if uuids.contains(try event.requireID()) {
+                            return try event.convertToData(withFavorited: true)
+                        } else {
+                            return try event.convertToData(withFavorited: false)
+                        }
+                    }
+            }
         }
     }
     
@@ -225,15 +431,42 @@ struct EventController: RouteCollection, ContentFilterable, UserTaggable {
     /// - Returns: `[EventData]` containing all current shadow events.
     func shadowNowHandler(_ req: Request) throws -> Future<[EventData]> {
         let now = Date()
-        return Event.query(on: req)
-            .filter(\.eventType == .shadow)
-            .filter(\.startTime <= now)
-            .filter(\.endTime > now)
-            .sort(\.startTime, .ascending)
-            .all()
-            .map {
-                (events) in
-                return try events.map { try $0.convertToData() }
+        // check if we have a user
+        let auth = try req.authenticated(User.self)
+        guard let user = auth else {
+            // return untagged events if not
+            return Event.query(on: req)
+                .filter(\.eventType == .shadow)
+                .filter(\.startTime <= now)
+                .filter(\.endTime > now)
+                .sort(\.startTime, .ascending)
+                .all()
+                .map {
+                    (events) in
+                    return try events.map { try $0.convertToData(withFavorited: false) }
+            }
+        }
+        // else tag events
+        return try self.getTaggedBarrel(for: user, on: req).flatMap {
+            (barrel) in
+            let uuids = barrel?.modelUUIDs ?? []
+            return Event.query(on: req)
+                .filter(\.eventType == .shadow)
+                .filter(\.startTime <= now)
+                .filter(\.endTime > now)
+                .sort(\.startTime, .ascending)
+                .all()
+                .map {
+                    (events) in
+                    return try events.map {
+                        (event) in
+                        if uuids.contains(try event.requireID()) {
+                            return try event.convertToData(withFavorited: true)
+                        } else {
+                            return try event.convertToData(withFavorited: false)
+                        }
+                    }
+            }
         }
     }
     
@@ -247,15 +480,42 @@ struct EventController: RouteCollection, ContentFilterable, UserTaggable {
         // FIXME: is this handling UTC correctly?
         let todayStart = Calendar.current.startOfDay(for: Date())
         let todayEnd = Date.init(timeInterval: 86400, since: todayStart)
-        return Event.query(on: req)
-            .filter(\.eventType == .shadow)
-            .filter(\.startTime >= todayStart)
-            .filter(\.startTime < todayEnd)
-            .sort(\.startTime, .ascending)
-            .all()
-            .map {
-                (events) in
-                return try events.map { try $0.convertToData() }
+        // check if we have a user
+        let auth = try req.authenticated(User.self)
+        guard let user = auth else {
+            // return untagged events if not
+            return Event.query(on: req)
+                .filter(\.eventType == .shadow)
+                .filter(\.startTime >= todayStart)
+                .filter(\.startTime < todayEnd)
+                .sort(\.startTime, .ascending)
+                .all()
+                .map {
+                    (events) in
+                    return try events.map { try $0.convertToData(withFavorited: false) }
+            }
+        }
+        // else tag events
+        return try self.getTaggedBarrel(for: user, on: req).flatMap {
+            (barrel) in
+            let uuids = barrel?.modelUUIDs ?? []
+            return Event.query(on: req)
+                .filter(\.eventType == .shadow)
+                .filter(\.startTime >= todayStart)
+                .filter(\.startTime < todayEnd)
+                .sort(\.startTime, .ascending)
+                .all()
+                .map {
+                    (events) in
+                    return try events.map {
+                        (event) in
+                        if uuids.contains(try event.requireID()) {
+                            return try event.convertToData(withFavorited: true)
+                        } else {
+                            return try event.convertToData(withFavorited: false)
+                        }
+                    }
+            }
         }
     }
     
