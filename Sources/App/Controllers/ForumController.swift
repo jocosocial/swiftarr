@@ -62,6 +62,9 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable, UserTa
         
         // endpoints available only when logged in
         tokenAuthGroup.post(ForumCreateData.self, at: "categories", Category.parameter, "create", use: forumCreateHandler)
+        tokenAuthGroup.post(Forum.parameter, "favorite", use: favoriteAddHandler)
+        tokenAuthGroup.post(Forum.parameter, "favorite", "remove", use: favoriteRemoveHandler)
+        tokenAuthGroup.get("favorites", use: favoritesHandler)
         tokenAuthGroup.post(Forum.parameter, "lock", use: forumLockHandler)
         tokenAuthGroup.post(Forum.parameter, "rename", String.parameter, use: forumRenameHandler)
         tokenAuthGroup.post(ReportData.self, at: Forum.parameter, "report", use: forumReportHandler)
