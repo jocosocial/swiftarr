@@ -43,25 +43,4 @@ final class UserNote: Codable {
         self.profileID = profileID
         self.note = note
     }
-    
-    // MARK: Codable Representations
-    
-    /// Used for editing of a `UserNote`.
-    final class Edit: Codable {
-        /// The note's ID.
-        var noteID: UUID
-        /// The text of the note.
-        var note: String
-        
-        // MARK: Initialization
-        /// Creates a new UserNote.Edit.
-        ///
-        /// - Parameters:
-        ///   - noteID: The note's ID.
-        ///   - note: The text of the note.
-        init(noteID: UUID, note: String) {
-            self.noteID = noteID
-            self.note = note
-        }
-    }
 }

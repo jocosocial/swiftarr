@@ -547,7 +547,7 @@ struct UsersController: RouteCollection {
         
     /// `GET /api/v3/users/ID/note`
     ///
-    /// Retrieves an existing `UseerNote` associated with the specified user's profile and
+    /// Retrieves an existing `UserNote` associated with the specified user's profile and
     /// the current user.
     ///
     /// - Note: In order to support the editing of a note in contexts other than when
@@ -559,8 +559,8 @@ struct UsersController: RouteCollection {
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 400 error if there is no existing note on the profile. A 5xx response should
     ///   be reported as a likely bug, please and thank you.
-    /// - Returns: `UserNote.Edit` containing the note's ID and text.
-    func noteHandler(_ req: Request) throws -> Future<UserNote.Edit> {
+    /// - Returns: `NoteEditData` containing the note's ID and text.
+    func noteHandler(_ req: Request) throws -> Future<NoteEditData> {
         // FIXME: account for blocks, banned user
         let requester = try req.requireAuthenticated(User.self)
         return try req.parameters.next(User.self).flatMap {

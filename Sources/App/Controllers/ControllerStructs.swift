@@ -335,6 +335,18 @@ struct NoteData: Content {
     var note: String
 }
 
+/// Used to obtain the contents of a `UserNote` for edit when viewing the associated profile.
+///
+/// Returned by: `GET /api/v3/users/ID/note`
+///
+/// See `UsersController.noteHandler(_:)`.
+struct NoteEditData: Content {
+    /// The note's ID.
+    var noteID: UUID
+    /// The text of the note.
+    var note: String
+}
+
 /// Used to update a `UserNote` in a non-profile-viewing context.
 ///
 /// Required by: `POST /api/v3/user/note`

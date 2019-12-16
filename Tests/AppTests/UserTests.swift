@@ -694,7 +694,7 @@ final class UserTests: XCTestCase {
             from: usersURI + "\(unverifiedUser.userID)/note",
             method: .GET,
             headers: headers,
-            decodeTo: UserNote.Edit.self
+            decodeTo: NoteEditData.self
         )
         XCTAssertTrue(noteEdit.noteID == createdNoteData1.noteID, "should be same ID")
         
