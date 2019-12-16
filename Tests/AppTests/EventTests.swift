@@ -54,20 +54,21 @@ final class EventTests: XCTestCase {
     /// `GET /api/v3/events/official`
     /// `GET /api/v3/events/shadow`
     func testEventsAll() throws {
+        // test open access
         var events = try app.getResult(
             from: eventsURI,
             method: .GET,
             headers: HTTPHeaders(),
             decodeTo: [EventData].self
         )
-        let eventsCount = events.count
+        var eventsCount = events.count
         events = try app.getResult(
             from: eventsURI + "official",
             method: .GET,
             headers: HTTPHeaders(),
             decodeTo: [EventData].self
         )
-        let officialCount = events.count
+        var officialCount = events.count
         XCTAssertTrue(officialCount < eventsCount, "should be a subset")
         events = try app.getResult(
             from: eventsURI + "shadow",
@@ -75,7 +76,36 @@ final class EventTests: XCTestCase {
             headers: HTTPHeaders(),
             decodeTo: [EventData].self
         )
-        let shadowCount = events.count
+        var shadowCount = events.count
+        XCTAssertTrue(shadowCount < eventsCount, "should be a subset")
+        XCTAssertTrue(shadowCount + officialCount == eventsCount, "should be \(eventsCount)")
+        
+        // test logged in
+        let token = try app.login(username: "verified", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        events = try app.getResult(
+            from: eventsURI,
+            method: .GET,
+            headers: HTTPHeaders(),
+            decodeTo: [EventData].self
+        )
+        eventsCount = events.count
+        events = try app.getResult(
+            from: eventsURI + "official",
+            method: .GET,
+            headers: HTTPHeaders(),
+            decodeTo: [EventData].self
+        )
+        officialCount = events.count
+        XCTAssertTrue(officialCount < eventsCount, "should be a subset")
+        events = try app.getResult(
+            from: eventsURI + "shadow",
+            method: .GET,
+            headers: HTTPHeaders(),
+            decodeTo: [EventData].self
+        )
+        shadowCount = events.count
         XCTAssertTrue(shadowCount < eventsCount, "should be a subset")
         XCTAssertTrue(shadowCount + officialCount == eventsCount, "should be \(eventsCount)")
     }
@@ -135,7 +165,7 @@ final class EventTests: XCTestCase {
         )
         XCTAssertTrue(eventData.title == "Pool Event", "should be 'Pool Event'")
         
-        // test
+        // test open access
         events = try app.getResult(
             from: eventsURI + "today",
             method: .GET,
@@ -154,6 +184,32 @@ final class EventTests: XCTestCase {
             from: eventsURI + "shadow/today",
             method: .GET,
             headers: HTTPHeaders(),
+            decodeTo: [EventData].self
+        )
+        XCTAssertTrue(events.count == shadowCount + 1, "should be \(shadowCount + 1)")
+        
+        // test logged in
+        let token = try app.login(username: "verified", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        events = try app.getResult(
+            from: eventsURI + "today",
+            method: .GET,
+            headers: headers,
+            decodeTo: [EventData].self
+        )
+        XCTAssertTrue(events.count == eventsCount + 2, "should be \(eventsCount + 2)")
+        events = try app.getResult(
+            from: eventsURI + "official/today",
+            method: .GET,
+            headers: headers,
+            decodeTo: [EventData].self
+        )
+        XCTAssertTrue(events.count == officialCount + 1, "should be \(officialCount + 1)")
+        events = try app.getResult(
+            from: eventsURI + "shadow/today",
+            method: .GET,
+            headers: headers,
             decodeTo: [EventData].self
         )
         XCTAssertTrue(events.count == shadowCount + 1, "should be \(shadowCount + 1)")
@@ -222,7 +278,7 @@ final class EventTests: XCTestCase {
         )
         XCTAssertTrue(eventData.title == "Not Pool Event", "should be 'Not Pool Event'")
 
-        // test
+        // test open access
         events = try app.getResult(
             from: eventsURI + "today",
             method: .GET,
@@ -251,6 +307,39 @@ final class EventTests: XCTestCase {
             decodeTo: [EventData].self
         )
         XCTAssertTrue(events.count == shadowCount + 1, "should be \(shadowCount + 1)")
+        
+        // test logged in
+        let token = try app.login(username: "verified", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        events = try app.getResult(
+            from: eventsURI + "today",
+            method: .GET,
+            headers: headers,
+            decodeTo: [EventData].self
+        )
+        XCTAssertTrue(events.count == eventsCount + 3, "should be \(eventsCount + 3)")
+        events = try app.getResult(
+            from: eventsURI + "now",
+            method: .GET,
+            headers: headers,
+            decodeTo: [EventData].self
+        )
+        XCTAssertTrue(events.count == eventsCount + 2, "should be \(eventsCount + 2)")
+        events = try app.getResult(
+            from: eventsURI + "official/now",
+            method: .GET,
+            headers: headers,
+            decodeTo: [EventData].self
+        )
+        XCTAssertTrue(events.count == officialCount + 1, "should be \(officialCount + 1)")
+        events = try app.getResult(
+            from: eventsURI + "shadow/now",
+            method: .GET,
+            headers: headers,
+            decodeTo: [EventData].self
+        )
+        XCTAssertTrue(events.count == shadowCount + 1, "should be \(shadowCount + 1)")
     }
     
     /// `GET /api/v3/events/match/STRING`
@@ -264,7 +353,7 @@ final class EventTests: XCTestCase {
         )
         let eventsCount = events.count
 
-        // test
+        // create events
         _ = try app.createEvent(
             startTime: Date.init(timeInterval: -7200, since: Date()),
             endTime: Date.init(timeInterval: -3600, since: Date()),
@@ -285,10 +374,24 @@ final class EventTests: XCTestCase {
             uid: "qwerty",
             on: conn
         )
+        
+        // test open access
         events = try app.getResult(
             from: eventsURI + "match/test",
             method: .GET,
             headers: HTTPHeaders(),
+            decodeTo: [EventData].self
+        )
+        XCTAssertTrue(events.count == eventsCount + 2, "should be \(eventsCount + 2)")
+        
+        // test logged in
+        let token = try app.login(username: "verified", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        events = try app.getResult(
+            from: eventsURI + "match/test",
+            method: .GET,
+            headers: headers,
             decodeTo: [EventData].self
         )
         XCTAssertTrue(events.count == eventsCount + 2, "should be \(eventsCount + 2)")
