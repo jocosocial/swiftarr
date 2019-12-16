@@ -6,7 +6,13 @@ import Fluent
 /// The collection of `/api/v3/events/*` route endpoints and handler functions related
 /// to the event schedule.
 
-struct EventController: RouteCollection, ContentFilterable {
+struct EventController: RouteCollection, ContentFilterable, UserTaggable {
+    // MARK: UserTaggable Conformance
+    
+    /// The barrel type for `Event` favoriting.
+    var taggedBarrelType: BarrelType {
+        return .taggedEvent
+    }
     
     // MARK: RouteCollection Conformance
     
