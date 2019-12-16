@@ -533,65 +533,75 @@ struct EventController: RouteCollection, ContentFilterable, UserTaggable {
     /// - Returns: `ForumData` containing the forum's metadata and all posts.
     func eventForumHandler(_ req: Request) throws -> Future<ForumData> {
         let user = try req.requireAuthenticated(User.self)
-        // get event
-        return try req.parameters.next(Event.self).flatMap {
-            (event) in
-            // get forum
-            guard let forumID = event.forumID else {
-                throw Abort(.internalServerError, reason: "event has no forum")
-            }
-            return Forum.find(forumID, on: req)
-                .unwrap(or: Abort(.internalServerError, reason: "forum not found"))
-                .flatMap {
-                    (forum) in
-                    // filter posts
-                    return try self.getCachedFilters(for: user, on: req).flatMap {
-                        (tuple) in
-                        let blocked = tuple.0
-                        let muted = tuple.1
-                        let mutewords = tuple.2
-                        return try forum.posts.query(on: req)
-                            .filter(\.authorID !~ blocked)
-                            .filter(\.authorID !~ muted)
-                            .sort(\.createdAt, .ascending)
-                            .all()
-                            .flatMap {
-                                (posts) in
-                                // remove muteword posts
-                                let filteredPosts = posts.compactMap {
-                                    self.filterMutewords(for: $0, using: mutewords, on: req)
-                                }
-                                // convert to PostData
-                                let postsData = try filteredPosts.map {
-                                    (filteredPost) -> Future<PostData> in
-                                    let userLike = try PostLikes.query(on: req)
-                                        .filter(\.postID == filteredPost.requireID())
-                                        .filter(\.userID == user.requireID())
-                                        .first()
-                                    let likeCount = try PostLikes.query(on: req)
-                                        .filter(\.postID == filteredPost.requireID())
-                                        .count()
-                                    return map(userLike, likeCount) {
-                                        (resolvedLike, count) in
-                                        return try filteredPost.convertToData(
-                                            withLike: resolvedLike?.likeType,
-                                            likeCount: count
-                                        )
-                                    }
-                                }
-                                return postsData.flatten(on: req).map {
-                                    (flattenedPosts) in
-                                    return try ForumData(
-                                        forumID: forum.requireID(),
-                                        title: forum.title,
-                                        creatorID: forum.creatorID,
-                                        isLocked: forum.isLocked,
-                                        posts: flattenedPosts
-                                    )
-                                }
-                        }
+        // get user's taggedForum barrel
+        return try Barrel.query(on: req)
+            .filter(\.ownerID == user.requireID())
+            .filter(\.barrelType == .taggedForum)
+            .first()
+            .flatMap {
+                (barrel) in
+                // get event
+                return try req.parameters.next(Event.self).flatMap {
+                    (event) in
+                    // get forum
+                    guard let forumID = event.forumID else {
+                        throw Abort(.internalServerError, reason: "event has no forum")
                     }
-            }
+                    return Forum.find(forumID, on: req)
+                        .unwrap(or: Abort(.internalServerError, reason: "forum not found"))
+                        .flatMap {
+                            (forum) in
+                            // filter posts
+                            return try self.getCachedFilters(for: user, on: req).flatMap {
+                                (tuple) in
+                                let blocked = tuple.0
+                                let muted = tuple.1
+                                let mutewords = tuple.2
+                                return try forum.posts.query(on: req)
+                                    .filter(\.authorID !~ blocked)
+                                    .filter(\.authorID !~ muted)
+                                    .sort(\.createdAt, .ascending)
+                                    .all()
+                                    .flatMap {
+                                        (posts) in
+                                        // remove muteword posts
+                                        let filteredPosts = posts.compactMap {
+                                            self.filterMutewords(for: $0, using: mutewords, on: req)
+                                        }
+                                        // convert to PostData
+                                        let postsData = try filteredPosts.map {
+                                            (filteredPost) -> Future<PostData> in
+                                            let userLike = try PostLikes.query(on: req)
+                                                .filter(\.postID == filteredPost.requireID())
+                                                .filter(\.userID == user.requireID())
+                                                .first()
+                                            let likeCount = try PostLikes.query(on: req)
+                                                .filter(\.postID == filteredPost.requireID())
+                                                .count()
+                                            return map(userLike, likeCount) {
+                                                (resolvedLike, count) in
+                                                return try filteredPost.convertToData(
+                                                    withLike: resolvedLike?.likeType,
+                                                    likeCount: count
+                                                )
+                                            }
+                                        }
+                                        return postsData.flatten(on: req).map {
+                                            (flattenedPosts) in
+                                            return try ForumData(
+                                                forumID: forum.requireID(),
+                                                title: forum.title,
+                                                creatorID: forum.creatorID,
+                                                isLocked: forum.isLocked,
+                                                isFavorite: barrel?.modelUUIDs
+                                                    .contains(try forum.requireID()) ?? false,
+                                                posts: flattenedPosts
+                                            )
+                                        }
+                                }
+                            }
+                    }
+                }
         }
     }
     
