@@ -160,12 +160,14 @@ struct CurrentUserData: Content {
 /// * `GET /api/v3/events/official/today`
 /// * `GET /api/v3/events/shadow/today`
 /// * `GET /api/v3/events/match/STRING`
+/// * `GET /api/v3/events/favorites`
 ///
 /// See `EventController.eventsHandler(_:)`, `EventController.officialHandler(_:)`,
 /// `EventController.shadowHandler(_:)`, `EventController.eventsNowHandler(_:)`,
 /// `EventController.officialNowHandler(_:)`,`EventController.shadowNowHandler(_:)`,
 /// `EventController.eventsTodayHandler(_:)`, `EventController.officialTodayHandler(_:)`,
-/// `EventController.shadowTodayHandler(_:)`, `EventController.eventsMatchHandler(_:)`.
+/// `EventController.shadowTodayHandler(_:)`, `EventController.eventsMatchHandler(_:)`
+/// `EventController.favoritesHandler(_:)`.
 struct EventData: Content {
     /// The event's ID.
     var eventID: UUID
@@ -183,6 +185,8 @@ struct EventData: Content {
     var eventType: String
     /// The event's associated `Forum`.
     var forum: UUID?
+    /// Whether user has favorited event.
+    var isFavorite: Bool
 }
 
 /// Used to update the `Event` database.
@@ -227,6 +231,8 @@ struct ForumData: Content {
     var creatorID: UUID
     /// Whether the forum is in read-only state.
     var isLocked: Bool
+    /// Whether the user has favorited forum.
+    var isFavorite: Bool
     /// The posts in the forum.
     var posts: [PostData]
 }
@@ -238,9 +244,10 @@ struct ForumData: Content {
 /// * `GET /api/v3/forum/owner`
 /// * `GET /api/v3/user/forums`
 /// * `GET /api/v3/forum/match/STRING`
+/// * `GET /api/v3/forum/favorites`
 ///
 /// See `ForumController.categoryForumsHandler(_:)`, `ForumController.ownerHandler(_:)`,
-/// `ForumController.forumMatchHandler(_:)`.
+/// `ForumController.forumMatchHandler(_:)`, `ForumController.favoritesHandler(_:).
 struct ForumListData: Content {
     /// The forum's ID.
     var forumID: UUID
@@ -252,6 +259,8 @@ struct ForumListData: Content {
     var lastPostAt: Date?
     /// Whether the forum is in read-only state.
     var isLocked: Bool
+    /// Whether user has favorited forum.
+    var isFavorite: Bool
 }
 
 /// Used to upload an image file.
@@ -322,6 +331,18 @@ struct NoteData: Content {
     let profileID: UUID
     /// The .displayName of the profile's user.
     var profileUser: String
+    /// The text of the note.
+    var note: String
+}
+
+/// Used to obtain the contents of a `UserNote` for edit when viewing the associated profile.
+///
+/// Returned by: `GET /api/v3/users/ID/note`
+///
+/// See `UsersController.noteHandler(_:)`.
+struct NoteEditData: Content {
+    /// The note's ID.
+    var noteID: UUID
     /// The text of the note.
     var note: String
 }
@@ -422,6 +443,60 @@ struct PostDetailData: Content {
     var likes: [SeaMonkey]
     /// The seamonkeys with "love" reactions on the post.
     var loves: [SeaMonkey]
+}
+
+/// Used to update a user's profile contents.
+///
+/// Required by: `POST /api/v3/user/profile`
+///
+/// See `UserController.profileUpdateHandler(_:data:)`.
+struct ProfileEditData: Content {
+    /// An optional blurb about the user.
+    var about: String
+    /// An optional name for display alongside the username.
+    var displayName: String
+    /// An optional email address.
+    var email: String
+    /// An optional home location (e.g. city).
+    var homeLocation: String
+    /// An optional greeting/message to visitors of the profile.
+    var message: String
+    /// An optional preferred form of address.
+    var preferredPronoun: String
+    /// An optional real name of the user.
+    var realName: String
+    /// An optional ship cabin number.
+    var roomNumber: String
+    /// Whether display of the optional fields' data should be limited to logged in users.
+    var limitAccess: Bool
+}
+
+/// Used to return a user's public profile contents.
+///
+/// Returned by: `GET /api/v3/users/ID/profile`
+///
+/// See `UsersController.profileHandler(_:)`.
+struct ProfilePublicData: Content {
+    /// The profile's ID.
+    var profileID: UUID
+    /// A generated displayName + username string.
+    var displayedName: String
+    /// An optional blurb about the user.
+    var about: String
+    /// An optional email address for the user.
+    var email: String
+    /// An optional home location for the user.
+    var homeLocation: String
+    /// An optional greeting/message to visitors of the profile.
+    var message: String
+    /// An optional preferred pronoun or form of address.
+    var preferredPronoun: String
+    /// An optional real world name of the user.
+    var realName: String
+    /// An optional cabin number for the user.
+    var roomNumber: String
+    /// A UserNote owned by the visiting user, about the profile's user (see `UserNote`).
+    var note: String?
 }
 
 /// Used to submit a message with a `Report`.
@@ -531,12 +606,18 @@ struct UserPasswordData: Content {
     var password: String
 }
 
-/// Used to update a user's profile contents.
+/// Used to display a user's profile contents for editing.
 ///
-/// Required by: `POST /api/v3/user/profile`
+/// Returned by:
+/// * `GET /api/v3/user/profile`
+/// * `POST /api/v3/user/profile`
 ///
-/// See `UserController.profileUpdateHandler(_:data:)`.
+/// See `UserController.profileHandler(_:)`, `UserController.profileUpdateHandler(_:data:)`.
 struct UserProfileData: Content {
+    /// The user's username. [not editable here]
+    let username: String
+    /// A generated displayName + username string. [not editable]
+    var displayedName: String
     /// An optional blurb about the user.
     var about: String
     /// An optional name for display alongside the username.

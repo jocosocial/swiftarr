@@ -9,6 +9,10 @@ enum BarrelType: String, PostgreSQLRawEnum, Comparable {
     case keywordMute
     /// A generic barrel of seamonkeys.
     case seamonkey
+    /// A user's barrel of tagged events.
+    case taggedEvent
+    /// A user's barrel of tagged forums.
+    case taggedForum
     /// A user's barrel of blocked seamonkeys.
     case userBlock
     /// A user's barrel of muted seamonkeys.

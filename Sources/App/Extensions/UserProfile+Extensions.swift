@@ -4,10 +4,8 @@ import FluentPostgreSQL
 // model uses UUID as primary key
 extension UserProfile: PostgreSQLUUIDModel {}
 
-// model and representations can be passed as HTTP body data
+// model can be passed as HTTP body data
 extension UserProfile: Content {}
-extension UserProfile.Edit: Content {}
-extension UserProfile.Public: Content {}
 
 // model can be used as endpoint parameter
 extension UserProfile: Parameter {}
@@ -63,9 +61,10 @@ extension UserProfile {
     /// Converts a `UserProfile` model to a version intended for editing by the owning
     /// user. `.username` and `.displayedName` are provided for client display convenience
     /// only and may not be edited.
-    func convertToEdit() -> UserProfile.Edit {
-        return UserProfile.Edit(
+    func convertToData() -> UserProfileData {
+        var userProfileData = UserProfileData(
             username: self.username,
+            displayedName: "",
             about: self.about ?? "",
             displayName: self.displayName ?? "",
             email: self.email ?? "",
@@ -76,6 +75,12 @@ extension UserProfile {
             roomNumber: self.roomNumber ?? "",
             limitAccess: self.limitAccess
         )
+        if userProfileData.displayName.isEmpty {
+            userProfileData.displayedName = "@\(self.username)"
+        } else {
+            userProfileData.displayedName = userProfileData.displayName + " (@\(self.username))"
+        }
+        return userProfileData
     }
     
     /// Converts a `UserProfile` model to a version intended for content headers. Only the ID,
@@ -98,19 +103,26 @@ extension UserProfile {
     /// sensitive and unneeded data are omitted and the `.username` and `.displayName` properties
     /// are massaged into the more familiar "Display Name (@username)" or "@username" (if
     /// `.displayName` is empty) format as seen in posted content headers.
-    func convertToPublic() throws -> UserProfile.Public {
-        return UserProfile.Public(
+    func convertToPublic() throws -> ProfilePublicData {
+        var profilePublicData = ProfilePublicData(
             profileID: try self.requireID(),
-            username: self.username,
+            displayedName: "",
             about: self.about ?? "",
-            displayName: self.displayName ?? "",
             email: self.email ?? "",
             homeLocation: self.homeLocation ?? "",
             message: self.message ?? "",
             preferredPronoun: self.preferredPronoun ?? "",
             realName: self.realName ?? "",
-            roomNumber: self.roomNumber ?? ""
+            roomNumber: self.roomNumber ?? "",
+            note: nil
         )
+        let displayName = self.displayName ?? ""
+        if displayName.isEmpty {
+            profilePublicData.displayedName = "@\(self.username)"
+        } else {
+            profilePublicData.displayedName = displayName + " (@\(self.username))"
+        }
+        return profilePublicData
     }
     
     /// Converts a `UserProfile` model to a version intended for multi-field search. Only the ID

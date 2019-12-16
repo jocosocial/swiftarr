@@ -76,6 +76,7 @@ custom_categories:
     children:
     - ContentFilterable
     - ImageHandler
+    - UserTaggable
     
   - name: Request Structs
     children:
@@ -87,10 +88,10 @@ custom_categories:
     - NoteUpdateData
     - PostContentData
     - PostCreateData
+    - ProfileEditData
     - ReportData
     - UserCreateData
     - UserPasswordData
-    - UserProfileData
     - UserRecoveryData
     - UserUsernameData
     - UserVerifyData
@@ -111,6 +112,7 @@ custom_categories:
     - ForumListData
     - PostData
     - PostDetailData
+    - ProfilePublicData
     - MuteKeywordData
     - MutedUserData
     - SeaMonkey
@@ -119,6 +121,7 @@ custom_categories:
     - UploadedImageData
     - UserHeader
     - UserInfo
+    - UserProfileData
     - UserSearch
     
   - name: Internal Structs/Classes

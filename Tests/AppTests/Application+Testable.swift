@@ -73,7 +73,8 @@ extension Application {
             endTime: savedEvent.endTime,
             location: savedEvent.location,
             eventType: savedEvent.eventType.label,
-            forum: nil
+            forum: nil,
+            isFavorite: false
         )
         return eventData
     }

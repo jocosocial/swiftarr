@@ -7,7 +7,7 @@ enum EventType: String, PostgreSQLRawEnum {
     case gaming
     /// An official but uncategorized event.
     case general
-    /// A live podcase event.
+    /// A live podcast event.
     case livePodcast
     /// A main concert event.
     case mainConcert
@@ -26,7 +26,7 @@ enum EventType: String, PostgreSQLRawEnum {
     /// A workshop event.
     case workshop
     
-    /// Consumer-friendly case names.
+    /// `.label` returns consumer-friendly case names.
     var label: String {
         switch self {
             case .gaming: return "Gaming"

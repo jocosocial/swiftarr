@@ -165,7 +165,7 @@ final class ClientTests: XCTestCase {
         
         // create update
         var currentDate = Date()
-        let userProfileData = UserProfileData(
+        let profileEditData = ProfileEditData(
             about: "",
             displayName: "Client User",
             email: "",
@@ -180,7 +180,7 @@ final class ClientTests: XCTestCase {
             from: userURI + "profile",
             method: .POST,
             headers: headers,
-            body: userProfileData
+            body: profileEditData
         )
         XCTAssertTrue(response.http.status.code == 200, "should be 200 OK")
         
@@ -340,7 +340,7 @@ final class ClientTests: XCTestCase {
 
         // create update
         var currentDate = Date()
-        let userProfileData = UserProfileData(
+        let profileEditData = ProfileEditData(
             about: "",
             displayName: "Client User",
             email: "",
@@ -355,7 +355,7 @@ final class ClientTests: XCTestCase {
             from: userURI + "profile",
             method: .POST,
             headers: headers,
-            body: userProfileData
+            body: profileEditData
         )
         XCTAssertTrue(response.http.status.code == 200, "should be 200 OK")
 

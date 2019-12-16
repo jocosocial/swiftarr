@@ -4,9 +4,8 @@ import FluentPostgreSQL
 // model uses UUID as primary key
 extension UserNote: PostgreSQLUUIDModel {}
 
-// model and representations can be passed as HTTP body data
+// model can be passed as HTTP body data
 extension UserNote: Content {}
-extension UserNote.Edit: Content {}
 
 // model can be used as endpoint parameter
 extension UserNote: Parameter {}
@@ -60,8 +59,8 @@ extension UserNote {
     /// Converts a `UserNote` model to a version intended for editing by the owning
     /// user. Essentially just the text, and the note's ID so that the edit can be directly
     /// submitted for update.
-    func convertToEdit() throws -> UserNote.Edit {
-        return try UserNote.Edit(
+    func convertToEdit() throws -> NoteEditData {
+        return try NoteEditData(
             noteID: self.requireID(),
             note: self.note
         )
