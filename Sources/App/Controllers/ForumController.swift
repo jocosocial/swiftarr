@@ -174,64 +174,16 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable, UserTa
     /// - Returns: `[ForumListData]` containing all category forums.
     func categoryForumsHandler(_ req: Request) throws -> Future<[ForumListData]> {
         let user = try req.requireAuthenticated(User.self)
-        return try req.parameters.next(Category.self).flatMap {
-            (category) in
-            if category.isRestricted {
-                // don't sort admin categories
-                return try Forum.query(on: req)
-                    .filter(\.categoryID == category.requireID())
-                    .all()
-                    .flatMap {
-                        (forums) in
-                        // get forum metadata
-                        var forumCounts: [Future<Int>] = []
-                        var forumTimestamps: [Future<Date?>] = []
-                        for forum in forums {
-                            forumCounts.append(try forum.posts.query(on: req).count())
-                            forumTimestamps.append(try forum.posts.query(on: req)
-                                .sort(\.createdAt, .descending)
-                                .first()
-                                .map {
-                                    (post) in
-                                    post?.createdAt
-                                }
-                            )
-                        }
-                        // resolve futures
-                        return forumCounts.flatten(on: req).flatMap {
-                            (counts) in
-                            return forumTimestamps.flatten(on: req).map {
-                                (timestamps) in
-                                // return as ForumListData
-                                var returnListData: [ForumListData] = []
-                                for (index, forum) in forums.enumerated() {
-                                    returnListData.append(
-                                        try ForumListData(
-                                            forumID: forum.requireID(),
-                                            title: forum.title,
-                                            postCount: counts[index],
-                                            lastPostAt: timestamps[index],
-                                            isLocked: forum.isLocked
-                                        )
-                                    )
-                                }
-                                return returnListData
-                            }
-                        }
-                }
-            } else {
-                // remove blocks from results
-                let cache = try req.keyedCache(for: .redis)
-                let key = try "blocks:\(user.requireID())"
-                let cachedBlocks = cache.get(key, as: [UUID].self)
-                return cachedBlocks.flatMap {
-                    (blocks) in
-                    let blocked = blocks ?? []
-                    // sort user categories
+        // get user's taggedForum barrel
+        return try self.getTaggedBarrel(for: user, on: req).flatMap {
+            (barrel) in
+            // get category
+            return try req.parameters.next(Category.self).flatMap {
+                (category) in
+                if category.isRestricted {
+                    // don't sort admin categories
                     return try Forum.query(on: req)
                         .filter(\.categoryID == category.requireID())
-                        .filter(\.creatorID !~ blocked)
-                        .sort(\.title, .ascending)
                         .all()
                         .flatMap {
                             (forums) in
@@ -263,13 +215,71 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable, UserTa
                                                 title: forum.title,
                                                 postCount: counts[index],
                                                 lastPostAt: timestamps[index],
-                                                isLocked: forum.isLocked
+                                                isLocked: forum.isLocked,
+                                                isFavorite: barrel?.modelUUIDs
+                                                    .contains(try forum.requireID()) ?? false
                                             )
                                         )
                                     }
                                     return returnListData
                                 }
                             }
+                    }
+                } else {
+                    // remove blocks from results
+                    let cache = try req.keyedCache(for: .redis)
+                    let key = try "blocks:\(user.requireID())"
+                    let cachedBlocks = cache.get(key, as: [UUID].self)
+                    return cachedBlocks.flatMap {
+                        (blocks) in
+                        let blocked = blocks ?? []
+                        // sort user categories
+                        return try Forum.query(on: req)
+                            .filter(\.categoryID == category.requireID())
+                            .filter(\.creatorID !~ blocked)
+                            .sort(\.title, .ascending)
+                            .all()
+                            .flatMap {
+                                (forums) in
+                                // get forum metadata
+                                var forumCounts: [Future<Int>] = []
+                                var forumTimestamps: [Future<Date?>] = []
+                                for forum in forums {
+                                    forumCounts.append(try forum.posts.query(on: req).count())
+                                    forumTimestamps.append(try forum.posts.query(on: req)
+                                        .sort(\.createdAt, .descending)
+                                        .first()
+                                        .map {
+                                            (post) in
+                                            post?.createdAt
+                                        }
+                                    )
+                                }
+                                // resolve futures
+                                return forumCounts.flatten(on: req).flatMap {
+                                    (counts) in
+                                    return forumTimestamps.flatten(on: req).map {
+                                        (timestamps) in
+                                        // return as ForumListData
+                                        var returnListData: [ForumListData] = []
+                                        for (index, forum) in forums.enumerated() {
+                                            returnListData.append(
+                                                try ForumListData(
+                                                    forumID: forum.requireID(),
+                                                    title: forum.title,
+                                                    postCount: counts[index],
+                                                    lastPostAt: timestamps[index],
+                                                    isLocked: forum.isLocked,
+                                                    isFavorite: barrel?.modelUUIDs
+                                                        .contains(try forum.requireID()) ?? false
+                                                )
+                                            )
+                                        }
+                                        return returnListData
+                                    }
+                                }
+                        }
+                        
                     }
                 }
             }
@@ -286,53 +296,59 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable, UserTa
     /// - Returns: `ForumData` containing the forum's metadata and all posts.
     func forumHandler(_ req: Request) throws -> Future<ForumData> {
         let user = try req.requireAuthenticated(User.self)
-        return try req.parameters.next(Forum.self).flatMap {
-            (forum) in
-            // filter posts
-            return try self.getCachedFilters(for: user, on: req).flatMap {
-                (tuple) in
-                let blocked = tuple.0
-                let muted = tuple.1
-                let mutewords = tuple.2
-                return try forum.posts.query(on: req)
-                    .filter(\.authorID !~ blocked)
-                    .filter(\.authorID !~ muted)
-                    .sort(\.createdAt, .ascending)
-                    .all()
-                    .flatMap {
-                        (posts) in
-                        // remove muteword posts
-                        let filteredPosts = posts.compactMap {
-                            self.filterMutewords(for: $0, using: mutewords, on: req)
-                        }
-                        // convert to PostData
-                        let postsData = try filteredPosts.map {
-                            (filteredPost) -> Future<PostData> in
-                            let userLike = try PostLikes.query(on: req)
-                                .filter(\.postID == filteredPost.requireID())
-                                .filter(\.userID == user.requireID())
-                                .first()
-                            let likeCount = try PostLikes.query(on: req)
-                                .filter(\.postID == filteredPost.requireID())
-                                .count()
-                            return map(userLike, likeCount) {
-                                (resolvedLike, count) in
-                                return try filteredPost.convertToData(
-                                    withLike: resolvedLike?.likeType,
-                                    likeCount: count
+        // get user's taggedForum barrel
+        return try self.getTaggedBarrel(for: user, on: req).flatMap {
+            (barrel) in
+            // get forum
+            return try req.parameters.next(Forum.self).flatMap {
+                (forum) in
+                // filter posts
+                return try self.getCachedFilters(for: user, on: req).flatMap {
+                    (tuple) in
+                    let blocked = tuple.0
+                    let muted = tuple.1
+                    let mutewords = tuple.2
+                    return try forum.posts.query(on: req)
+                        .filter(\.authorID !~ blocked)
+                        .filter(\.authorID !~ muted)
+                        .sort(\.createdAt, .ascending)
+                        .all()
+                        .flatMap {
+                            (posts) in
+                            // remove muteword posts
+                            let filteredPosts = posts.compactMap {
+                                self.filterMutewords(for: $0, using: mutewords, on: req)
+                            }
+                            // convert to PostData
+                            let postsData = try filteredPosts.map {
+                                (filteredPost) -> Future<PostData> in
+                                let userLike = try PostLikes.query(on: req)
+                                    .filter(\.postID == filteredPost.requireID())
+                                    .filter(\.userID == user.requireID())
+                                    .first()
+                                let likeCount = try PostLikes.query(on: req)
+                                    .filter(\.postID == filteredPost.requireID())
+                                    .count()
+                                return map(userLike, likeCount) {
+                                    (resolvedLike, count) in
+                                    return try filteredPost.convertToData(
+                                        withLike: resolvedLike?.likeType,
+                                        likeCount: count
+                                    )
+                                }
+                            }
+                            return postsData.flatten(on: req).map {
+                                (flattenedPosts) in
+                                return try ForumData(
+                                    forumID: forum.requireID(),
+                                    title: forum.title,
+                                    creatorID: forum.creatorID,
+                                    isLocked: forum.isLocked,
+                                    isFavorite: barrel?.modelUUIDs.contains(try forum.requireID()) ?? false,
+                                    posts: flattenedPosts
                                 )
                             }
-                        }
-                        return postsData.flatten(on: req).map {
-                            (flattenedPosts) in
-                            return try ForumData(
-                                forumID: forum.requireID(),
-                                title: forum.title,
-                                creatorID: forum.creatorID,
-                                isLocked: forum.isLocked,
-                                posts: flattenedPosts
-                            )
-                        }
+                    }
                 }
             }
         }
@@ -358,48 +374,54 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable, UserTa
         return cachedBlocks.flatMap {
             (blocks) in
             let blocked = blocks ?? []
-            // get forums
-            return Forum.query(on: req)
-                .filter(\.creatorID !~ blocked)
-                .filter(\.title, .ilike, "%\(search)%")
-                .all()
-                .flatMap {
-                    (forums) in
-                    // get forum metadata
-                    var forumCounts: [Future<Int>] = []
-                    var forumTimestamps: [Future<Date?>] = []
-                    for forum in forums {
-                        forumCounts.append(try forum.posts.query(on: req).count())
-                        forumTimestamps.append(try forum.posts.query(on: req)
-                            .sort(\.createdAt, .descending)
-                            .first()
-                            .map {
-                                (post) in
-                                post?.createdAt
-                            }
-                        )
-                    }
-                    // resolve futures
-                    return forumCounts.flatten(on: req).flatMap {
-                        (counts) in
-                        return forumTimestamps.flatten(on: req).map {
-                            (timestamps) in
-                            // return as ForumListData
-                            var returnListData: [ForumListData] = []
-                            for (index, forum) in forums.enumerated() {
-                                returnListData.append(
-                                    try ForumListData(
-                                        forumID: forum.requireID(),
-                                        title: forum.title,
-                                        postCount: counts[index],
-                                        lastPostAt: timestamps[index],
-                                        isLocked: forum.isLocked
+            // get user's taggedForum barrel
+            return try self.getTaggedBarrel(for: user, on: req).flatMap {
+                (barrel) in
+                // get forums
+                return Forum.query(on: req)
+                    .filter(\.creatorID !~ blocked)
+                    .filter(\.title, .ilike, "%\(search)%")
+                    .all()
+                    .flatMap {
+                        (forums) in
+                        // get forum metadata
+                        var forumCounts: [Future<Int>] = []
+                        var forumTimestamps: [Future<Date?>] = []
+                        for forum in forums {
+                            forumCounts.append(try forum.posts.query(on: req).count())
+                            forumTimestamps.append(try forum.posts.query(on: req)
+                                .sort(\.createdAt, .descending)
+                                .first()
+                                .map {
+                                    (post) in
+                                    post?.createdAt
+                                }
+                            )
+                        }
+                        // resolve futures
+                        return forumCounts.flatten(on: req).flatMap {
+                            (counts) in
+                            return forumTimestamps.flatten(on: req).map {
+                                (timestamps) in
+                                // return as ForumListData
+                                var returnListData: [ForumListData] = []
+                                for (index, forum) in forums.enumerated() {
+                                    returnListData.append(
+                                        try ForumListData(
+                                            forumID: forum.requireID(),
+                                            title: forum.title,
+                                            postCount: counts[index],
+                                            lastPostAt: timestamps[index],
+                                            isLocked: forum.isLocked,
+                                            isFavorite: barrel?.modelUUIDs
+                                                .contains(try forum.requireID()) ?? false
                                     )
                                 )
                             }
                             return returnListData
                         }
                     }
+                }
             }
         }
     }
@@ -471,57 +493,63 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable, UserTa
     /// - Returns: `ForumData` containing the post's parent forum.
     func postForumHandler(_ req: Request) throws -> Future<ForumData> {
         let user = try req.requireAuthenticated(User.self)
-        // get post
-        return try req.parameters.next(ForumPost.self).flatMap {
-            (post) in
-            // get forum
-            return post.forum.get(on: req).flatMap {
-                (forum) in
-                // filter posts
-                return try self.getCachedFilters(for: user, on: req).flatMap {
-                    (tuple) in
-                    let blocked = tuple.0
-                    let muted = tuple.1
-                    let mutewords = tuple.2
-                    return try forum.posts.query(on: req)
-                        .filter(\.authorID !~ blocked)
-                        .filter(\.authorID !~ muted)
-                        .sort(\.createdAt, .ascending)
-                        .all()
-                        .flatMap {
-                            (posts) in
-                            // remove muteword posts
-                            let filteredPosts = posts.compactMap {
-                                self.filterMutewords(for: $0, using: mutewords, on: req)
-                            }
-                            // convert to PostData
-                            let postsData = try filteredPosts.map {
-                                (filteredPost) -> Future<PostData> in
-                                let userLike = try PostLikes.query(on: req)
-                                    .filter(\.postID == filteredPost.requireID())
-                                    .filter(\.userID == user.requireID())
-                                    .first()
-                                let likeCount = try PostLikes.query(on: req)
-                                    .filter(\.postID == filteredPost.requireID())
-                                    .count()
-                                return map(userLike, likeCount) {
-                                    (resolvedLike, count) in
-                                    return try filteredPost.convertToData(
-                                        withLike: resolvedLike?.likeType,
-                                        likeCount: count
+        // get user's taggedForum barrel
+        return try self.getTaggedBarrel(for: user, on: req).flatMap {
+            (barrel) in
+            // get post
+            return try req.parameters.next(ForumPost.self).flatMap {
+                (post) in
+                // get forum
+                return post.forum.get(on: req).flatMap {
+                    (forum) in
+                    // filter posts
+                    return try self.getCachedFilters(for: user, on: req).flatMap {
+                        (tuple) in
+                        let blocked = tuple.0
+                        let muted = tuple.1
+                        let mutewords = tuple.2
+                        return try forum.posts.query(on: req)
+                            .filter(\.authorID !~ blocked)
+                            .filter(\.authorID !~ muted)
+                            .sort(\.createdAt, .ascending)
+                            .all()
+                            .flatMap {
+                                (posts) in
+                                // remove muteword posts
+                                let filteredPosts = posts.compactMap {
+                                    self.filterMutewords(for: $0, using: mutewords, on: req)
+                                }
+                                // convert to PostData
+                                let postsData = try filteredPosts.map {
+                                    (filteredPost) -> Future<PostData> in
+                                    let userLike = try PostLikes.query(on: req)
+                                        .filter(\.postID == filteredPost.requireID())
+                                        .filter(\.userID == user.requireID())
+                                        .first()
+                                    let likeCount = try PostLikes.query(on: req)
+                                        .filter(\.postID == filteredPost.requireID())
+                                        .count()
+                                    return map(userLike, likeCount) {
+                                        (resolvedLike, count) in
+                                        return try filteredPost.convertToData(
+                                            withLike: resolvedLike?.likeType,
+                                            likeCount: count
+                                        )
+                                    }
+                                }
+                                return postsData.flatten(on: req).map {
+                                    (flattenedPosts) in
+                                    return try ForumData(
+                                        forumID: forum.requireID(),
+                                        title: forum.title,
+                                        creatorID: forum.creatorID,
+                                        isLocked: forum.isLocked,
+                                        isFavorite: barrel?.modelUUIDs
+                                            .contains(try forum.requireID()) ?? false,
+                                        posts: flattenedPosts
                                     )
                                 }
-                            }
-                            return postsData.flatten(on: req).map {
-                                (flattenedPosts) in
-                                return try ForumData(
-                                    forumID: forum.requireID(),
-                                    title: forum.title,
-                                    creatorID: forum.creatorID,
-                                    isLocked: forum.isLocked,
-                                    posts: flattenedPosts
-                                )
-                            }
+                        }
                     }
                 }
             }
@@ -836,6 +864,7 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable, UserTa
                             title: savedForum.title,
                             creatorID: savedForum.creatorID,
                             isLocked: savedForum.isLocked,
+                            isFavorite: false,
                             posts: [post.convertToData(withLike: nil, likeCount: 0)]
                         )
                         return forumData
@@ -1067,46 +1096,52 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable, UserTa
     /// - Returns: `[ForumListData]` containing all forums created by the user.
     func ownerHandler(_ req: Request) throws-> Future<[ForumListData]> {
         let user = try req.requireAuthenticated(User.self)
-        return try user.forums.query(on: req)
-            .sort(\.title, .ascending)
-            .all()
-            .flatMap {
-                (forums) in
-                // get forum metadata
-                var forumCounts: [Future<Int>] = []
-                var forumTimestamps: [Future<Date?>] = []
-                for forum in forums {
-                    forumCounts.append(try forum.posts.query(on: req).count())
-                    forumTimestamps.append(try forum.posts.query(on: req)
-                        .sort(\.createdAt, .descending)
-                        .first()
-                        .map {
-                            (post) in
-                            post?.createdAt
-                        }
-                    )
-                }
-                // resolve futures
-                return forumCounts.flatten(on: req).flatMap {
-                    (counts) in
-                    return forumTimestamps.flatten(on: req).map {
-                        (timestamps) in
-                        // return as ForumListData
-                        var returnListData: [ForumListData] = []
-                        for (index, forum) in forums.enumerated() {
-                            returnListData.append(
-                                try ForumListData(
-                                    forumID: forum.requireID(),
-                                    title: forum.title,
-                                    postCount: counts[index],
-                                    lastPostAt: timestamps[index],
-                                    isLocked: forum.isLocked
-                                )
-                            )
-                        }
-                        return returnListData
+        // get user's taggedForum barrel
+        return try self.getTaggedBarrel(for: user, on: req).flatMap {
+            (barrel) in
+            return try user.forums.query(on: req)
+                .sort(\.title, .ascending)
+                .all()
+                .flatMap {
+                    (forums) in
+                    // get forum metadata
+                    var forumCounts: [Future<Int>] = []
+                    var forumTimestamps: [Future<Date?>] = []
+                    for forum in forums {
+                        forumCounts.append(try forum.posts.query(on: req).count())
+                        forumTimestamps.append(try forum.posts.query(on: req)
+                            .sort(\.createdAt, .descending)
+                            .first()
+                            .map {
+                                (post) in
+                                post?.createdAt
+                            }
+                        )
                     }
-                }
+                    // resolve futures
+                    return forumCounts.flatten(on: req).flatMap {
+                        (counts) in
+                        return forumTimestamps.flatten(on: req).map {
+                            (timestamps) in
+                            // return as ForumListData
+                            var returnListData: [ForumListData] = []
+                            for (index, forum) in forums.enumerated() {
+                                returnListData.append(
+                                    try ForumListData(
+                                        forumID: forum.requireID(),
+                                        title: forum.title,
+                                        postCount: counts[index],
+                                        lastPostAt: timestamps[index],
+                                        isLocked: forum.isLocked,
+                                        isFavorite: barrel?.modelUUIDs
+                                            .contains(try forum.requireID()) ?? false
+                                    )
+                                )
+                            }
+                            return returnListData
+                        }
+                    }
+            }
         }
     }
     
@@ -1262,7 +1297,7 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable, UserTa
                             }
                         }
                     }
-                    // otherwise create like
+                    // otherwise create laugh
                     let postLike = try PostLikes(user, post, likeType: .laugh)
                     return postLike.save(on: req).flatMap {
                         (savedLike) in
@@ -1376,7 +1411,7 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable, UserTa
                             }
                         }
                     }
-                    // otherwise create like
+                    // otherwise create love
                     let postLike = try PostLikes(user, post, likeType: .love)
                     return postLike.save(on: req).flatMap {
                         (savedLike) in
