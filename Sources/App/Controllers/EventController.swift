@@ -52,8 +52,10 @@ struct EventController: RouteCollection, ContentFilterable, UserTaggable {
         sharedAuthGroup.get(Event.parameter, "forum", use: eventForumHandler)
         
         // endpoints available only when logged in
+        tokenAuthGroup.post(Event.parameter, "favorite", use: favoriteAddHandler)
+        tokenAuthGroup.post(Event.parameter, "favorite", "remove", use: favoriteRemoveHandler)
+        tokenAuthGroup.get("favorites", use: favoritesHandler)
         tokenAuthGroup.post(EventsUpdateData.self, at: "update", use: eventsUpdateHandler)
-    
     }
     
     // MARK: - Open Access Handlers
@@ -403,8 +405,97 @@ struct EventController: RouteCollection, ContentFilterable, UserTaggable {
                 // resolve futures, return as EventData
                 return updatedEvents.flatten(on: req).map {
                     (returnEvents) in
-                    return try returnEvents.map { try $0.convertToData() }
+                    return try returnEvents.map { try $0.convertToData(withFavorited: false) }
                 }
+            }
+        }
+    }
+    
+    /// `POST /api/v3/events/ID/favorite`
+    ///
+    /// Add the specified `Event` to the user's tagged events list.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Returns: 201 Created on success.
+    func favoriteAddHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        let user = try req.requireAuthenticated(User.self)
+        // get event
+        return try req.parameters.next(Event.self).flatMap {
+            (event) in
+            // get user's taggedEvent barrel
+            return try Barrel.query(on: req)
+                .filter(\.ownerID == user.requireID())
+                .filter(\.barrelType == .taggedEvent)
+                .first()
+                .flatMap {
+                    (eventBarrel) in
+                    // create barrel if needed
+                    let barrel = try eventBarrel ?? Barrel(
+                        ownerID: user.requireID(),
+                        barrelType: .taggedEvent
+                    )
+                    // add event and return 201
+                    barrel.modelUUIDs.append(try event.requireID())
+                    return barrel.save(on: req).transform(to: .created)
+                }
+        }
+    }
+    
+    /// `POST /api/v3/events/ID/favorite/remove`
+    ///
+    /// Remove the specified `Event` from the user's tagged events list.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 400 error if the event was not favorited.
+    /// - Returns: 204 No Content on success.
+    func favoriteRemoveHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        let user = try req.requireAuthenticated(User.self)
+        // get event
+        return try req.parameters.next(Event.self).flatMap {
+            (event) in
+            // get user's taggedEvent barrel
+            return try Barrel.query(on: req)
+                .filter(\.ownerID == user.requireID())
+                .filter(\.barrelType == .taggedEvent)
+                .first()
+                .flatMap {
+                    (eventBarrel) in
+                    guard let barrel = eventBarrel else {
+                        throw Abort(.badRequest, reason: "user has not tagged any events")
+                    }
+                    // remove event
+                    guard let index = barrel.modelUUIDs.firstIndex(of: try event.requireID()) else {
+                        throw Abort(.badRequest, reason: "event was not tagged")
+                    }
+                    barrel.modelUUIDs.remove(at: index)
+                    return barrel.save(on: req).transform(to: .noContent)
+            }
+        }
+    }
+    
+    /// `GET /api/v3/events/favorites`
+    ///
+    /// Retrieve the `Event`s in the user's taggedEvent barrel, sorted by `.startTime`.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Returns: `[EventData]` containing the user's favorited events.
+    func favoritesHandler(_ req: Request) throws -> Future<[EventData]> {
+        let user = try req.requireAuthenticated(User.self)
+        // get user's taggedEvent barrel
+        return try self.getTaggedBarrel(for: user, on: req).flatMap {
+            (barrel) in
+            guard let barrel = barrel else {
+                // return empty array
+                return req.future([EventData]())
+            }
+            // get events
+            return Event.query(on: req)
+                .filter(\.id ~~ barrel.modelUUIDs)
+                .sort(\.startTime, .ascending)
+                .all()
+                .map {
+                    (events) in
+                    return try events.map { try $0.convertToData(withFavorited: true) }
             }
         }
     }

@@ -373,4 +373,75 @@ final class EventTests: XCTestCase {
         XCTAssertTrue(shadowForums.count > 0, "should have shadow forums")
         XCTAssertEqual(officialForums.count + shadowForums.count, events.count, "should be \(events.count)")
     }
+    
+    func testEventsBarrel() throws {
+        // create verified logged in user
+        let token = try app.login(username: "verified", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // get events
+        var officialEvents = try app.getResult(
+            from: eventsURI + "official",
+            method: .GET,
+            headers: headers,
+            decodeTo: [EventData].self
+        )
+        var shadowEvents = try app.getResult(
+            from: eventsURI + "shadow",
+            method: .GET,
+            headers: headers,
+            decodeTo: [EventData].self
+        )
+        
+        // test favorite
+        var response = try app.getResponse(
+            from: eventsURI + "\(officialEvents[0].eventID)/favorite",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+        response = try app.getResponse(
+            from: eventsURI + "\(shadowEvents[0].eventID)/favorite",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+        officialEvents = try app.getResult(
+            from: eventsURI + "official",
+            method: .GET,
+            headers: headers,
+            decodeTo: [EventData].self
+        )
+        XCTAssertTrue(officialEvents[0].isFavorite, "should be favorited")
+        shadowEvents = try app.getResult(
+            from: eventsURI + "shadow",
+            method: .GET,
+            headers: headers,
+            decodeTo: [EventData].self
+        )
+        XCTAssertTrue(shadowEvents[0].isFavorite, "should be favorited")
+        var favoriteEvents = try app.getResult(
+            from: eventsURI + "favorites",
+            method: .GET,
+            headers: headers,
+            decodeTo: [EventData].self
+        )
+        XCTAssertTrue(favoriteEvents.count == 2, "should be 2 events")
+        
+        // test remove favorite
+        response = try app.getResponse(
+            from: eventsURI + "\(shadowEvents[0].eventID)/favorite/remove",
+            method: .POST,
+            headers: headers
+        )
+        XCTAssertTrue(response.http.status.code == 204, "should be 204 No Content")
+        favoriteEvents = try app.getResult(
+            from: eventsURI + "favorites",
+            method: .GET,
+            headers: headers,
+            decodeTo: [EventData].self
+        )
+        XCTAssertTrue(favoriteEvents.count == 1, "should be 1 event")
+    }
 }
