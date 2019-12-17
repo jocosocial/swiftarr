@@ -15,7 +15,7 @@ final class PostLikes: PostgreSQLUUIDPivot, ModifiablePivot {
     
     // MARK: Initialization
     
-    /// Initializes a new PostLikesPivot.
+    /// Initializes a new PostLikes pivot.
     ///
     /// - Parameters:
     ///   - user: The left hand `User` model.
