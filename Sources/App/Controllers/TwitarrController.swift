@@ -37,6 +37,7 @@ struct Twitarr: RouteCollection, ImageHandler, ContentFilterable {
         let tokenAuthGroup = twitarrRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
         
         // endpoints available whether logged in or not
+        sharedAuthGroup.get(Twarrt.parameter, use: twarrtHandler)
         
         // endpoints only available when logged in
         tokenAuthGroup.post(PostCreateData.self, at: "create", use: twarrtCreateHandler)
@@ -54,6 +55,85 @@ struct Twitarr: RouteCollection, ImageHandler, ContentFilterable {
     // MARK: - sharedAuthGroup Handlers (logged in or not)
     // All handlers in this route group require a valid HTTP Basic Authorization
     // *or* HTTP Bearer Authorization header in the request.
+    
+    /// `GET /api/v3/twitarr/ID`
+    ///
+    /// Retrieve the specfied `Twarrt` with full user `LikeType` data.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 404 error if the twarrt is not available.
+    /// - Returns: `PostDetaildata` containing the specified twarrt.
+    func twarrtHandler(_ req: Request) throws -> Future<PostDetailData> {
+        let user = try req.requireAuthenticated(User.self)
+        return try req.parameters.next(Twarrt.self).flatMap {
+            (twarrtParameter) in
+            // we have twarrt, but need to filter
+            return try self.getCachedFilters(for: user, on: req).flatMap {
+                (tuple) in
+                let blocked = tuple.0
+                let muted = tuple.1
+                let mutewords = tuple.2
+                // NOW we can find (again!), using postgres to filter
+                return try Twarrt.query(on: req)
+                    .filter(\.id == twarrtParameter.requireID())
+                    .filter(\.authorID !~ blocked)
+                    .filter(\.authorID !~ muted)
+                    .first()
+                    .unwrap(or: Abort(.notFound, reason: "twarrt is not available"))
+                    .flatMap {
+                        (existingTwarrt) in
+                        // remove mutewords
+                        let filteredTwarrt = self.filterMutewords(for: existingTwarrt, using: mutewords, on: req)
+                        guard let twarrt = filteredTwarrt else {
+                            throw Abort(.notFound, reason: "twarrt is not available")
+                        }
+                        // get likes data
+                        return try TwarrtLikes.query(on: req)
+                            .filter(\.twarrtID == twarrt.requireID())
+                            .all()
+                            .flatMap {
+                                (twarrtLikes) in
+                                // get users
+                                let likeUsers: [Future<User>] = twarrtLikes.map {
+                                    (twarrtLike) -> Future<User> in
+                                    return User.find(twarrtLike.userID, on: req)
+                                        .unwrap(or: Abort(.internalServerError, reason: "user not found"))
+                                }
+                                return likeUsers.flatten(on: req).map {
+                                    (users) in
+                                    let seamonkeys = try users.map {
+                                        try $0.convertToSeaMonkey()
+                                    }
+                                    // init return struct
+                                    var twarrtDetailData = try PostDetailData(
+                                        postID: twarrt.requireID(),
+                                        createdAt: twarrt.createdAt ?? Date(),
+                                        authorID: twarrt.authorID,
+                                        text: twarrt.text,
+                                        image: twarrt.image,
+                                        laughs: [],
+                                        likes: [],
+                                        loves: []
+                                    )
+                                    // sort seamonkeys into like types
+                                    for (index, like) in twarrtLikes.enumerated() {
+                                        switch like.likeType {
+                                            case .laugh:
+                                                twarrtDetailData.laughs.append(seamonkeys[index])
+                                            case .like:
+                                                twarrtDetailData.likes.append(seamonkeys[index])
+                                            case .love:
+                                                twarrtDetailData.loves.append(seamonkeys[index])
+                                            default: continue
+                                        }
+                                    }
+                                    return twarrtDetailData
+                                }
+                        }
+                }
+            }
+        }
+    }
     
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
