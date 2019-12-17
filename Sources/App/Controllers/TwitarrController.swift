@@ -38,9 +38,8 @@ struct Twitarr: RouteCollection, ImageHandler, ContentFilterable {
         
         // endpoints available whether logged in or not
         
-        
         // endpoints only available when logged in
-        
+        tokenAuthGrouo.post(PostCreateData.self, at: "create", use: twarrtCreateHandler)
     }
     
     // MARK: - sharedAuthGroup Handlers (logged in or not)
@@ -51,4 +50,30 @@ struct Twitarr: RouteCollection, ImageHandler, ContentFilterable {
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
     
+    func twarrtCreateHandler(_ req: Request, data: PostCreateData) throws -> Future<Response> {
+        let user = try req.requireAuthenticated(User.self)
+        // ensure user has write access
+        guard user.accessLevel.rawValue >= UserAccessLevel.verified.rawValue else {
+            throw Abort(.forbidden, reason: "user cannot post to twitarr")
+        }
+        // see `PostCreateData.validations()`
+        try data.validate()
+        // process image
+        return try self.processImage(data: data.imageData, forType: .twarrt, on: req).flatMap {
+            (filename) in
+            // create twarrt
+            let twarrt = try Twarrt(
+                authorID: user.requireID(),
+                text: data.text,
+                image: filename
+            )
+            return twarrt.save(on: req).map {
+                (savedTwarrt) in
+                // return as PostData with 201 status
+                let response = Response(http: HTTPResponse(status: .created), using: req)
+                try response.content.encode(try savedTwarrt.convertToData(withLike: nil, likeCount: 0))
+                return response
+            }
+        }
+    }
 }
