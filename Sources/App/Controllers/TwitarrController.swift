@@ -50,12 +50,17 @@ struct Twitarr: RouteCollection, ImageHandler, ContentFilterable {
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
     
+    /// `POST /api/v3/twitarr/create`
+    ///
+    /// Create a new `Twarrt` in the twitarr stream.
+    ///
+    /// - Requires: `PostCreateData` payload in the HTTP body.
+    /// - Parameters:
+    ///   - req: The incoming `Request`, provided automatically.
+    ///   - data: `PostCreateData` containing the twarrt's text and optional image.
+    /// - Returns: `PostData` containing the twarrt's contents and metadata.
     func twarrtCreateHandler(_ req: Request, data: PostCreateData) throws -> Future<Response> {
         let user = try req.requireAuthenticated(User.self)
-        // ensure user has write access
-        guard user.accessLevel.rawValue >= UserAccessLevel.verified.rawValue else {
-            throw Abort(.forbidden, reason: "user cannot post to twitarr")
-        }
         // see `PostCreateData.validations()`
         try data.validate()
         // process image
@@ -74,6 +79,25 @@ struct Twitarr: RouteCollection, ImageHandler, ContentFilterable {
                 try response.content.encode(try savedTwarrt.convertToData(withLike: nil, likeCount: 0))
                 return response
             }
+        }
+    }
+    
+    /// `POST /api/v3/twitarr/ID/delete`
+    ///
+    /// Delete the specified `Twarrt`.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 403 error if the user is not permitted to delete.
+    /// - Returns: 204 No COntent on success.
+    func twarrtDeleteHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        let user = try req.requireAuthenticated(User.self)
+        return try req.parameters.next(Twarrt.self).flatMap {
+            (twarrt) in
+            guard try twarrt.authorID == user.requireID()
+                || user.accessLevel.rawValue >= UserAccessLevel.moderator.rawValue else {
+                    throw Abort(.forbidden, reason: "user is not permitted to delete twarrt")
+            }
+            return twarrt.delete(on: req).transform(to: .noContent)
         }
     }
 }
