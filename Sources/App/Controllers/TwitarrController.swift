@@ -6,7 +6,7 @@ import Fluent
 /// The collection of `/api/v3/twitarr/*` route endpoint and handler functions related
 /// to the twit-arr stream.
 
-struct Twitarr: RouteCollection, ImageHandler {
+struct Twitarr: RouteCollection, ImageHandler, ContentFilterable {
     // MARK: ImageHandler Conformance
     
     /// The base directory for storing Twarrt images.
