@@ -34,7 +34,7 @@ struct Twitarr: RouteCollection, ImageHandler, ContentFilterable {
         
         // set protected route groups
         let sharedAuthGroup = twitarrRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware, guardAuthMiddleware])
-        let tokenAuthGrouo = twitarrRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
+        let tokenAuthGroup = twitarrRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
         
         // endpoints available whether logged in or not
         
