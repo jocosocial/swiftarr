@@ -601,7 +601,9 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable, UserTa
                                 }
                                 return likeUsers.flatten(on: req).map {
                                     (users) in
-                                    let seamonkeys = try users.map { try $0.convertToSeaMonkey() }
+                                    let seamonkeys = try users.map {
+                                        try $0.convertToSeaMonkey()
+                                    }
                                     // init return struct
                                     var postDetailData = try PostDetailData(
                                         postID: post.requireID(),
@@ -613,6 +615,7 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable, UserTa
                                         likes: [],
                                         loves: []
                                     )
+                                    // sort seamonkeys into like types
                                     for (index, like) in postLikes.enumerated() {
                                         switch like.likeType {
                                             case .laugh:
