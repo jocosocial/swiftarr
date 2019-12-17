@@ -379,13 +379,13 @@ struct PostContentData: Content {
 ///
 /// See `ForumController.postCreateHandler(_:data:)`.
 struct PostCreateData: Content {
-    /// The text of the forum post.
+    /// The text of the forum post or twarrt.
     var text: String
     /// An optional image in Data format.
     var imageData: Data?
 }
 
-/// Used to return a `ForumPost`'s data.
+/// Used to return a `ForumPost`'s or `Twarrt`'s data.
 ///
 /// Returned by:
 /// * `POST /api/v3/forum/ID/create`
@@ -405,43 +405,43 @@ struct PostCreateData: Content {
 /// `ForumController.postLaughHandler(_:)`, `ForumController.postLikeHandler(_:)`
 /// `ForumController.postLoveHandler(_:)`, `ForumController.postUnreactHandler(_:)`.
 struct PostData: Content {
-    /// The ID of the post.
+    /// The ID of the post/twarrt.
     var postID: Int
-    /// The timestamp of the post.
+    /// The timestamp of the post/twarrt.
     var createdAt: Date
-    /// The ID of the post's author.
+    /// The ID of the post/twarrt's author.
     var authorID: UUID
-    /// The text of the forum post.
+    /// The text of the forum post or twarrt.
     var text: String
-    /// The filename of the post's optional image.
+    /// The filename of the post/twarrt's optional image.
     var image: String
-    /// The current user's `LikeType` reaction on the post.
+    /// The current user's `LikeType` reaction on the post/twarrt.
     var userLike: LikeType?
-    /// The total number of `LikeType` reactions on the post.
+    /// The total number of `LikeType` reactions on the post/twarrt.
     var likeCount: Int
 }
 
-/// Used to return a `ForumPost`'s data with full user `LikeType` info.
+/// Used to return a `ForumPost`'s or `Twarrt`'s data with full user `LikeType` info.
 ///
 /// Returned by: `GET /api/v3/forum/post/ID`
 ///
 /// See `ForumController.postHandler(_:)`.
 struct PostDetailData: Content {
-        /// The ID of the post.
+    /// The ID of the post/twarrt.
     var postID: Int
-    /// The timestamp of the post.
+    /// The timestamp of the post/twarrt.
     var createdAt: Date
-    /// The ID of the post's author.
+    /// The ID of the post/twarrt's author.
     var authorID: UUID
-    /// The text of the forum post.
+    /// The text of the forum post or twarrt.
     var text: String
-    /// The filename of the post's optional image.
+    /// The filename of the post/twarrt's optional image.
     var image: String
-    /// The seamonkeys with "laugh" reactions on the post.
+    /// The seamonkeys with "laugh" reactions on the post/twarrt.
     var laughs: [SeaMonkey]
-    /// The seamonkeys with "like" reactions on the post.
+    /// The seamonkeys with "like" reactions on the post/twarrt.
     var likes: [SeaMonkey]
-    /// The seamonkeys with "love" reactions on the post.
+    /// The seamonkeys with "love" reactions on the post/twarrt.
     var loves: [SeaMonkey]
 }
 
