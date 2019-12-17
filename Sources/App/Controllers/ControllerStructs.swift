@@ -375,9 +375,10 @@ struct PostContentData: Content {
 /// Used to create a `ForumPost` or `Twarrt`.
 ///
 /// Required by:
-/// * `POST /api/v3/forum/ID`
+/// * `POST /api/v3/forum/ID/create`
+/// * `POST /api/v3/twitarr/create`
 ///
-/// See `ForumController.postCreateHandler(_:data:)`.
+/// See `ForumController.postCreateHandler(_:data:)`, `TwitarrController.twarrtCreateHandler(_:data:)`.
 struct PostCreateData: Content {
     /// The text of the forum post or twarrt.
     var text: String
@@ -398,12 +399,15 @@ struct PostCreateData: Content {
 /// * `POST /api/v3/forum/post/ID/like`
 /// * `POST /api/v3/forum/post/ID/love`
 /// * `POST /api/v3/forum/post/ID/unreact`
+/// * `POST /api/v3/twitarr/create`
+/// * `POST /api/v3/twitarr/ID/update`
 ///
 /// See `ForumController.postCreateHandler(_:data:)`, `ForumController.postUpdateHandler(_:data:)`,
 /// `ForumController.imageHandler(_:data:)`, `ForumController.imageRemoveHandler(_:)`,
 /// `ForumController.forumSearchHandler(_:)`, `ForumController.postSearchHandler(_:)`
 /// `ForumController.postLaughHandler(_:)`, `ForumController.postLikeHandler(_:)`
-/// `ForumController.postLoveHandler(_:)`, `ForumController.postUnreactHandler(_:)`.
+/// `ForumController.postLoveHandler(_:)`, `ForumController.postUnreactHandler(_:)`
+/// `TwitarrController.twarrtCreateHandler(_:data:)`, `TwitarrController.twarrtUpdateHandler(_:data:)`.
 struct PostData: Content {
     /// The ID of the post/twarrt.
     var postID: Int

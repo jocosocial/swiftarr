@@ -40,6 +40,8 @@ struct Twitarr: RouteCollection, ImageHandler, ContentFilterable {
         
         // endpoints only available when logged in
         tokenAuthGrouo.post(PostCreateData.self, at: "create", use: twarrtCreateHandler)
+        tokenAuthGrouo.post(Twarrt.parameter, "delete", use: twarrtDeleteHandler)
+        tokenAuthGrouo.post(PostContentData.self, at: Twarrt.parameter, "update", use: twarrtUpdateHandler)
     }
     
     // MARK: - sharedAuthGroup Handlers (logged in or not)
@@ -98,6 +100,71 @@ struct Twitarr: RouteCollection, ImageHandler, ContentFilterable {
                     throw Abort(.forbidden, reason: "user is not permitted to delete twarrt")
             }
             return twarrt.delete(on: req).transform(to: .noContent)
+        }
+    }
+    
+    /// `POST /api/v3/twitarr/ID/update`
+    ///
+    /// Update the specified `Twarrt`.
+    ///
+    /// - Note: This endpoint only changes the `.text` and `.image` *filename* of the twarrt.
+    ///   To change or remove the actual image associated with the twarrt, use
+    ///   `POST /api/v3/twitarr/ID/image`  or `POST /api/v3/twitarr/ID/image/remove`.
+    ///
+    /// - Requires: `PostCOntentData` payload in the HTTP body.
+    /// - Parameters:
+    ///   - req: The incoming `Request`, provided automatically.
+    ///   - data: `PostCOntentData` containing the twarrt's text and image filename.
+    /// - Throws: 403 error if user is not post owner or has read-only access.
+    /// - Returns: `PostData` containing the twarrt's contents and metadata.
+    func twarrtUpdateHandler(_ req: Request, data: PostContentData) throws -> Future<Response> {
+        let user = try req.requireAuthenticated(User.self)
+        return try req.parameters.next(Twarrt.self).flatMap {
+            (twarrt) in
+            // ensure user has write access
+            guard try twarrt.authorID == user.requireID(),
+                user.accessLevel.rawValue >= UserAccessLevel.verified.rawValue else {
+                    throw Abort(.forbidden, reason: "user not permitted to edit twarrt")
+            }
+            // get like count
+            return try TwarrtLikes.query(on: req)
+                .filter(\.twarrtID == twarrt.requireID())
+                .count()
+                .flatMap {
+                    (count) in
+                    // see `PostCreateData.validation()`
+                    try data.validate()
+                    // stash current contents
+                    let twarrtEdit = try TwarrtEdit(
+                        twarrtID: twarrt.requireID(),
+                        twarrtContent: PostContentData(text: twarrt.text, image: twarrt.image)
+                    )
+                    // update if there are changes
+                    if twarrt.text != data.text || twarrt.image != data.image {
+                        twarrt.text = data.text
+                        twarrt.image = data.image
+                        return twarrt.save(on: req).flatMap {
+                            (savedTwarrt) in
+                            // save TwarrtEdit
+                            return twarrtEdit.save(on: req).map {
+                                (_) in
+                                // return updated twarrt as PostData, with 201 status
+                                let response = Response(http: HTTPResponse(status: .created), using: req)
+                                try response.content.encode(
+                                    try savedTwarrt.convertToData(withLike: nil, likeCount: count)
+                                )
+                                return response
+                            }
+                        }
+                    } else {
+                        // just return as PostData, with 200 status
+                        let response = Response(http: HTTPResponse(status: .ok), using: req)
+                        try response.content.encode(
+                            try twarrt.convertToData(withLike: nil, likeCount: count)
+                        )
+                        return req.future(response)
+                    }
+            }
         }
     }
 }
