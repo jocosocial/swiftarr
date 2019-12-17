@@ -41,6 +41,8 @@ struct Twitarr: RouteCollection, ImageHandler, ContentFilterable {
         // endpoints only available when logged in
         tokenAuthGrouo.post(PostCreateData.self, at: "create", use: twarrtCreateHandler)
         tokenAuthGrouo.post(Twarrt.parameter, "delete", use: twarrtDeleteHandler)
+        tokenAuthGrouo.post(ImageUploadData.self, at: Twarrt.parameter, "image", use: imageHandler)
+        tokenAuthGrouo.post(Twarrt.parameter, "image", "remove", use: imageRemoveHandler)
         tokenAuthGrouo.post(PostContentData.self, at: Twarrt.parameter, "update", use: twarrtUpdateHandler)
     }
     
@@ -51,6 +53,117 @@ struct Twitarr: RouteCollection, ImageHandler, ContentFilterable {
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
+    
+    /// `POST /api/v3/twitarr/ID/image`
+    ///
+    /// Sets the `Twarrt` image to the file uploaded in the HTTP body.
+    ///
+    /// - Requires: `ImageUploadData` payload in the HTTP body.
+    /// - Parameters:
+    ///   - req: The incoming `Request`, provided automatically.
+    ///   - data: `ImageUploadData` containing the filename and image file.
+    /// - Throws: 403 error if user does not have permission to modify the twarrt.
+    /// - Returns: `PostData` containing the updated image value.
+    func imageHandler(_ req: Request, data: ImageUploadData) throws -> Future<PostData> {
+        let user = try req.requireAuthenticated(User.self)
+        // get twarrt
+        return try req.parameters.next(Twarrt.self).flatMap {
+            (twarrt) in
+            guard try twarrt.authorID == user.requireID()
+                || user.accessLevel.rawValue >= UserAccessLevel.moderator.rawValue else {
+                    throw Abort(.forbidden, reason: "user cannot modify twarrt")
+            }
+            // get like count
+            return try TwarrtLikes.query(on: req)
+                .filter(\.twarrtID == twarrt.requireID())
+                .count()
+                .flatMap {
+                    (count) in
+                    // get generated filename
+                    return try self.processImage(data: data.image, forType: .twarrt, on: req).flatMap {
+                        (filename) in
+                        // replace existing image
+                        if !twarrt.image.isEmpty {
+                            // create TwarrtEdit record
+                            let twarrtEdit = try TwarrtEdit(
+                                twarrtID: twarrt.requireID(),
+                                twarrtContent: PostContentData(text: twarrt.text, image: twarrt.image)
+                            )
+                            // archive thumbnail
+                            DispatchQueue.global(qos: .background).async {
+                                self.archiveImage(twarrt.image, from: self.imageDir)
+                            }
+                            return twarrtEdit.save(on: req).flatMap {
+                                (_) in
+                                // update twarrt
+                                twarrt.image = filename
+                                return twarrt.save(on: req).map {
+                                    (savedTwarrt) in
+                                    // return as PostData
+                                    return try savedTwarrt.convertToData(withLike: nil, likeCount: count)
+                                }
+                            }
+                        }
+                        // else add new image
+                        twarrt.image = filename
+                        return twarrt.save(on: req).map {
+                            (savedTwarrt) in
+                            // return as PostData
+                            return try savedTwarrt.convertToData(withLike: nil, likeCount: count)
+                        }
+                    }
+            }
+        }
+    }
+    
+    /// `POST /api/v3/twitarr/ID/image/remove`
+    ///
+    /// Remove the image from a `Twarrt`, if there is one. A `TwarrtEdit` record is created
+    /// if there was an image to remove.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 403 error if the user does not have permission to modify the twarrt.
+    /// - Returns: `PostData` containing the updated image name.
+    func imageRemoveHandler(_ req: Request) throws -> Future<PostData> {
+        let user = try req.requireAuthenticated(User.self)
+        return try req.parameters.next(Twarrt.self).flatMap {
+            (twarrt) in
+            guard try twarrt.authorID == user.requireID()
+                || user.accessLevel.rawValue == UserAccessLevel.moderator.rawValue else {
+                    throw Abort(.forbidden, reason: "user cannot modify twarrt")
+            }
+            // get like count
+            return try TwarrtLikes.query(on: req)
+                .filter(\.twarrtID == twarrt.requireID())
+                .count()
+                .flatMap {
+                    (count) in
+                    if !twarrt.image.isEmpty {
+                        // create TwarrtEdit record
+                        let twarrtEdit = try TwarrtEdit(
+                            twarrtID: twarrt.requireID(),
+                            twarrtContent: PostContentData(text: twarrt.text, image: twarrt.image)
+                        )
+                        // archive thumbnail
+                        DispatchQueue.global(qos: .background).async {
+                            self.archiveImage(twarrt.image, from: self.imageDir)
+                        }
+                        return twarrtEdit.save(on: req).flatMap {
+                            (_) in
+                            // remove image filename from twarrt
+                            twarrt.image = ""
+                            return twarrt.save(on: req).map {
+                                (savedTwarrt) in
+                                // return as PostData
+                                return try savedTwarrt.convertToData(withLike: nil, likeCount: count)
+                            }
+                        }
+                    }
+                    // no existing image, return PostData
+                    return req.future(try twarrt.convertToData(withLike: nil, likeCount: count))
+            }
+        }
+    }
     
     /// `POST /api/v3/twitarr/create`
     ///
@@ -97,7 +210,7 @@ struct Twitarr: RouteCollection, ImageHandler, ContentFilterable {
             (twarrt) in
             guard try twarrt.authorID == user.requireID()
                 || user.accessLevel.rawValue >= UserAccessLevel.moderator.rawValue else {
-                    throw Abort(.forbidden, reason: "user is not permitted to delete twarrt")
+                    throw Abort(.forbidden, reason: "user cannot delete twarrt")
             }
             return twarrt.delete(on: req).transform(to: .noContent)
         }
@@ -124,7 +237,7 @@ struct Twitarr: RouteCollection, ImageHandler, ContentFilterable {
             // ensure user has write access
             guard try twarrt.authorID == user.requireID(),
                 user.accessLevel.rawValue >= UserAccessLevel.verified.rawValue else {
-                    throw Abort(.forbidden, reason: "user not permitted to edit twarrt")
+                    throw Abort(.forbidden, reason: "user cannot modify twarrt")
             }
             // get like count
             return try TwarrtLikes.query(on: req)

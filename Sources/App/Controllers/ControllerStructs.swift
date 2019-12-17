@@ -401,13 +401,16 @@ struct PostCreateData: Content {
 /// * `POST /api/v3/forum/post/ID/unreact`
 /// * `POST /api/v3/twitarr/create`
 /// * `POST /api/v3/twitarr/ID/update`
+/// * `POST /api/v3/twitarr/ID/image`
+/// * `POST /api/v3/twitarr/ID/image/remove`
 ///
 /// See `ForumController.postCreateHandler(_:data:)`, `ForumController.postUpdateHandler(_:data:)`,
 /// `ForumController.imageHandler(_:data:)`, `ForumController.imageRemoveHandler(_:)`,
 /// `ForumController.forumSearchHandler(_:)`, `ForumController.postSearchHandler(_:)`
 /// `ForumController.postLaughHandler(_:)`, `ForumController.postLikeHandler(_:)`
 /// `ForumController.postLoveHandler(_:)`, `ForumController.postUnreactHandler(_:)`
-/// `TwitarrController.twarrtCreateHandler(_:data:)`, `TwitarrController.twarrtUpdateHandler(_:data:)`.
+/// `TwitarrController.twarrtCreateHandler(_:data:)`, `TwitarrController.twarrtUpdateHandler(_:data:)`
+/// `TwitarrController. imageHandler(_:data:)`, `TwitarrController.imageRemoveHandler(_:)`.
 struct PostData: Content {
     /// The ID of the post/twarrt.
     var postID: Int
