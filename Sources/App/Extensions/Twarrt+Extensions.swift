@@ -26,6 +26,11 @@ extension Twarrt {
 // MARK: - Relations
 
 extension Twarrt {
+    /// The child `TwarrtEdit` accountability records of the twarrt.
+    var edits: Children<Twarrt, TwarrtEdit> {
+        return children(\.twarrtID)
+    }
+    
     /// The sibling `User`s who have "liked" the twarrt.
     var likes: Siblings<Twarrt, User, TwarrtLikes> {
         return siblings()
