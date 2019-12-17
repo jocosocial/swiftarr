@@ -982,7 +982,7 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable, UserTa
     ///   - req: The incoming `Request`, provided automatically.
     ///   - data: `ImageUploadData` containg the filename and image file.
     /// - Throws: 403 error if the user does not have permission to modify the post.
-    /// - Returns: `UploadedImageData` containing the generated image identifier string.
+    /// - Returns: `PostData` containing the updated image value.
     func imageHandler(_ req: Request, data: ImageUploadData) throws -> Future<PostData> {
         let user = try req.requireAuthenticated(User.self)
         // get post
@@ -1041,7 +1041,7 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable, UserTa
     /// `POST /api/v3/forum/post/ID/image/remove`
     ///
     /// Removes the image from a `ForumPost`, if there is one. A `ForumEdit` record is created
-    /// if there was actually an image to remove.
+    /// if there was an image to remove.
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 403 error if the user does not have permission to modify the post.
@@ -1212,7 +1212,7 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable, UserTa
             (post) in
             guard try post.authorID == user.requireID()
                 || user.accessLevel.rawValue >= UserAccessLevel.moderator.rawValue else {
-                    throw Abort(.forbidden, reason: "user is not permitted to delete post")
+                    throw Abort(.forbidden, reason: "user cannot delete post")
             }
             return post.delete(on: req).transform(to: .noContent)
         }
@@ -1474,7 +1474,7 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable, UserTa
 
     /// `POST /api/v3/forum/post/ID/update`
     ///
-    /// Update the specified`ForumPost`.
+    /// Update the specified `ForumPost`.
     ///
     /// - Note: This endpoint only changes the `.text` and `.image` *filename* of the post.
     ///   To change or remove the actual image asoociated with the post, use
@@ -1493,7 +1493,7 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable, UserTa
             // ensure user has write access
             guard try post.authorID == user.requireID(),
                 user.accessLevel.rawValue >= UserAccessLevel.verified.rawValue else {
-                    throw Abort(.forbidden, reason: "user not permitted to edit post")
+                    throw Abort(.forbidden, reason: "user cannot modify post")
             }
             // get like count
             return try PostLikes.query(on: req)
