@@ -1,4 +1,3 @@
-import Foundation
 import Vapor
 import FluentPostgreSQL
 
@@ -22,7 +21,7 @@ struct ForumEdit: Codable {
      /// Timestamp of the model's creation, set automatically.
      var createdAt: Date?
 
-    /// MARK: Initialization
+    // MARK: Initialization
     
     /// Initializes a new ForumEdit.
     ///
