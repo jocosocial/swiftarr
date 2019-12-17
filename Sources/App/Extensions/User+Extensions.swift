@@ -68,19 +68,24 @@ extension User {
         return children(\.creatorID)
     }
     
-    /// The sibling `ForumPost`s "liked" by the user.
-    var likes: Siblings<User, ForumPost, PostLikes> {
-        return siblings()
-    }
-    
     /// The child `UserNote`s owned by the user.
     var notes: Children<User, UserNote> {
         return children(\.userID)
     }
 
+    /// The sibling `ForumPost`s "liked" by the user.
+    var postLikes: Siblings<User, ForumPost, PostLikes> {
+        return siblings()
+    }
+    
     /// The child `UserProfile` of the user.
     var profile: Children<User, UserProfile> {
         return children(\.userID)
+    }
+    
+    /// The sibling `Twarrt`s "liked" by the user.
+    var twarrtLikes: Siblings<User, Twarrt, TwarrtLikes> {
+        return siblings()
     }
 }
 

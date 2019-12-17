@@ -25,4 +25,11 @@ extension Twarrt {
 
 // MARK: - Relations
 
+extension Twarrt {
+    /// The sibling `User`s who have "liked" the twarrt.
+    var likes: Siblings<Twarrt, User, TwarrtLikes> {
+        return siblings()
+    }
+}
+
 // MARK: - Functions
