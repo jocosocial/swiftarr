@@ -39,12 +39,16 @@ struct Twitarr: RouteCollection, ImageHandler, ContentFilterable {
         // endpoints available whether logged in or not
         
         // endpoints only available when logged in
-        tokenAuthGrouo.post(PostCreateData.self, at: "create", use: twarrtCreateHandler)
-        tokenAuthGrouo.post(Twarrt.parameter, "delete", use: twarrtDeleteHandler)
-        tokenAuthGrouo.post(ImageUploadData.self, at: Twarrt.parameter, "image", use: imageHandler)
-        tokenAuthGrouo.post(Twarrt.parameter, "image", "remove", use: imageRemoveHandler)
-        tokenAuthGrouo.post(ReportData.self, at: Twarrt.parameter, "report", use: twarrtReportHandler)
-        tokenAuthGrouo.post(PostContentData.self, at: Twarrt.parameter, "update", use: twarrtUpdateHandler)
+        tokenAuthGroup.post(PostCreateData.self, at: "create", use: twarrtCreateHandler)
+        tokenAuthGroup.post(Twarrt.parameter, "delete", use: twarrtDeleteHandler)
+        tokenAuthGroup.post(ImageUploadData.self, at: Twarrt.parameter, "image", use: imageHandler)
+        tokenAuthGroup.post(Twarrt.parameter, "image", "remove", use: imageRemoveHandler)
+        tokenAuthGroup.post(Twarrt.parameter, "laugh", use: twarrtLaughHandler)
+        tokenAuthGroup.post(Twarrt.parameter, "like", use: twarrtLikeHandler)
+        tokenAuthGroup.post(Twarrt.parameter, "love", use: twarrtLoveHandler)
+        tokenAuthGroup.post(ReportData.self, at: Twarrt.parameter, "report", use: twarrtReportHandler)
+        tokenAuthGroup.post(Twarrt.parameter, "unreact", use: twarrtUnreactHandler)
+        tokenAuthGroup.post(PostContentData.self, at: Twarrt.parameter, "update", use: twarrtUpdateHandler)
     }
     
     // MARK: - sharedAuthGroup Handlers (logged in or not)
@@ -252,6 +256,217 @@ struct Twitarr: RouteCollection, ImageHandler, ContentFilterable {
                         submitterMessage: data.message
                     )
                     return report.save(on: req).transform(to: .created)
+            }
+        }
+    }
+    
+    /// `POST /api/v3/twitarr/ID/laugh`
+    ///
+    /// Add a "laugh" reaction to the specified `Twarrt`. If there is an existing `LikeType` reaction by the user, it is replaced.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 403 error if user is the twarrt's creator.
+    /// - Returns: `PostData` containing the updated like info.
+    func twarrtLaughHandler(_ req: Request) throws -> Future<PostData> {
+        let user = try req.requireAuthenticated(User.self)
+        // get twarrt
+        return try req.parameters.next(Twarrt.self).flatMap {
+            (twarrt) in
+            guard try twarrt.authorID != user.requireID() else {
+                throw Abort(.forbidden, reason: "user cannot like own twarrt")
+            }
+            // check for existing like
+            return try TwarrtLikes.query(on: req)
+                .filter(\.userID == user.requireID())
+                .filter(\.twarrtID == twarrt.requireID())
+                .first()
+                .flatMap {
+                    (like) in
+                    // re-type if existing like
+                    if let like = like {
+                        like.likeType = .laugh
+                        return like.save(on: req).flatMap {
+                            (savedLike) in
+                            // get likes count
+                            return try TwarrtLikes.query(on: req)
+                                .filter(\.twarrtID == twarrt.requireID())
+                                .count()
+                                .map {
+                                    (count) in
+                                    // return as PostData
+                                    return try twarrt.convertToData(withLike: .laugh, likeCount: count)
+                            }
+                        }
+                    }
+                    // otherwise create laugh
+                    let twarrtLike = try TwarrtLikes(user, twarrt, likeType: .laugh)
+                    return twarrtLike.save(on: req).flatMap {
+                        (savedLike) in
+                        // get likes count
+                        return try TwarrtLikes.query(on: req)
+                            .filter(\.twarrtID == twarrt.requireID())
+                            .count()
+                            .map {
+                                (count) in
+                                // return as PostData
+                                return try twarrt.convertToData(withLike: .laugh, likeCount: count)
+                        }
+                    }
+            }
+        }
+    }
+    
+    /// `POST /api/v3/twitarr/ID/like`
+    ///
+    /// Add a "like" reaction to the specified `Twarrt`. If there is an existing `LikeType` reaction by the user, it is replaced.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 403 error if user is the twarrt's creator.
+    /// - Returns: `PostData` containing the updated like info.
+    func twarrtLikeHandler(_ req: Request) throws -> Future<PostData> {
+        let user = try req.requireAuthenticated(User.self)
+        // get twarrt
+        return try req.parameters.next(Twarrt.self).flatMap {
+            (twarrt) in
+            guard try twarrt.authorID != user.requireID() else {
+                throw Abort(.forbidden, reason: "user cannot like own twarrt")
+            }
+            // check for existing like
+            return try TwarrtLikes.query(on: req)
+                .filter(\.userID == user.requireID())
+                .filter(\.twarrtID == twarrt.requireID())
+                .first()
+                .flatMap {
+                    (like) in
+                    // re-type if existing like
+                    if let like = like {
+                        like.likeType = .like
+                        return like.save(on: req).flatMap {
+                            (savedLike) in
+                            // get likes count
+                            return try TwarrtLikes.query(on: req)
+                                .filter(\.twarrtID == twarrt.requireID())
+                                .count()
+                                .map {
+                                    (count) in
+                                    // return as PostData
+                                    return try twarrt.convertToData(withLike: .like, likeCount: count)
+                            }
+                        }
+                    }
+                    // otherwise create like
+                    let twarrtLike = try TwarrtLikes(user, twarrt, likeType: .like)
+                    return twarrtLike.save(on: req).flatMap {
+                        (savedLike) in
+                        // get likes count
+                        return try TwarrtLikes.query(on: req)
+                            .filter(\.twarrtID == twarrt.requireID())
+                            .count()
+                            .map {
+                                (count) in
+                                // return as PostData
+                                return try twarrt.convertToData(withLike: .like, likeCount: count)
+                        }
+                    }
+            }
+        }
+    }
+    
+    /// `POST /api/v3/twitarr/ID/love`
+    ///
+    /// Add a "love" reaction to the specified `Twarrt`. If there is an existing `LikeType` reaction by the user, it is replaced.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 403 error if user is the twarrt's creator.
+    /// - Returns: `PostData` containing the updated like info.
+    func twarrtLoveHandler(_ req: Request) throws -> Future<PostData> {
+        let user = try req.requireAuthenticated(User.self)
+        // get twarrt
+        return try req.parameters.next(Twarrt.self).flatMap {
+            (twarrt) in
+            guard try twarrt.authorID != user.requireID() else {
+                throw Abort(.forbidden, reason: "user cannot like own twarrt")
+            }
+            // check for existing like
+            return try TwarrtLikes.query(on: req)
+                .filter(\.userID == user.requireID())
+                .filter(\.twarrtID == twarrt.requireID())
+                .first()
+                .flatMap {
+                    (like) in
+                    // re-type if existing like
+                    if let like = like {
+                        like.likeType = .love
+                        return like.save(on: req).flatMap {
+                            (savedLike) in
+                            // get likes count
+                            return try TwarrtLikes.query(on: req)
+                                .filter(\.twarrtID == twarrt.requireID())
+                                .count()
+                                .map {
+                                    (count) in
+                                    // return as PostData
+                                    return try twarrt.convertToData(withLike: .love, likeCount: count)
+                            }
+                        }
+                    }
+                    // otherwise create love
+                    let twarrtLike = try TwarrtLikes(user, twarrt, likeType: .love)
+                    return twarrtLike.save(on: req).flatMap {
+                        (savedLike) in
+                        // get likes count
+                        return try TwarrtLikes.query(on: req)
+                            .filter(\.twarrtID == twarrt.requireID())
+                            .count()
+                            .map {
+                                (count) in
+                                // return as PostData
+                                return try twarrt.convertToData(withLike: .love, likeCount: count)
+                        }
+                    }
+            }
+        }
+    }
+    
+    /// `POST /api/v3/twitarr/ID/unreact`
+    ///
+    /// Remove a `LikeType` reaction from the specified `Twarrt`.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 400 error it there was no existing reaction. 403 error if user is the twarrt's
+    ///   creator.
+    /// - Returns: `PostData` containing the updated like info.
+    func twarrtUnreactHandler(_ req: Request) throws -> Future<PostData> {
+        let user = try req.requireAuthenticated(User.self)
+        // get twarrt
+        return try req.parameters.next(Twarrt.self).flatMap {
+            (twarrt) in
+            guard try twarrt.authorID != user.requireID() else {
+                throw Abort(.forbidden, reason: "user cannot like own post")
+            }
+            // check for existing like
+            return try TwarrtLikes.query(on: req)
+                .filter(\.userID == user.requireID())
+                .filter(\.twarrtID == twarrt.requireID())
+                .first()
+                .flatMap {
+                    (like) in
+                    guard like != nil else {
+                        throw Abort(.badRequest, reason: "user does not have a reaction on the twarrt")
+                    }
+                    // remove pivot
+                    return twarrt.likes.detach(user, on: req).flatMap {
+                        (_) in
+                        // get likes count
+                        return try TwarrtLikes.query(on: req)
+                            .filter(\.twarrtID == twarrt.requireID())
+                            .count()
+                            .map {
+                                (count) in
+                                // return as PostData
+                                return try twarrt.convertToData(withLike: nil, likeCount: count)
+                        }
+                    }
             }
         }
     }
