@@ -43,6 +43,7 @@ struct Twitarr: RouteCollection, ImageHandler, ContentFilterable {
         tokenAuthGrouo.post(Twarrt.parameter, "delete", use: twarrtDeleteHandler)
         tokenAuthGrouo.post(ImageUploadData.self, at: Twarrt.parameter, "image", use: imageHandler)
         tokenAuthGrouo.post(Twarrt.parameter, "image", "remove", use: imageRemoveHandler)
+        tokenAuthGrouo.post(ReportData.self, at: Twarrt.parameter, "report", use: twarrtReportHandler)
         tokenAuthGrouo.post(PostContentData.self, at: Twarrt.parameter, "update", use: twarrtUpdateHandler)
     }
     
@@ -213,6 +214,45 @@ struct Twitarr: RouteCollection, ImageHandler, ContentFilterable {
                     throw Abort(.forbidden, reason: "user cannot delete twarrt")
             }
             return twarrt.delete(on: req).transform(to: .noContent)
+        }
+    }
+    
+    /// `POST /api/v3/twitarr/ID/report`
+    ///
+    /// Create a `Report` regarding the specified `Twarrt`.
+    ///
+    /// - Note: The accompanying report message is optional on the part of the submitting user,
+    ///   but the `ReportData` is mandatory in order to allow one. If there is no message,
+    ///   sent an empty string in the `.message` field.
+    ///
+    /// - Requires: `ReportData` payload in the HTTP body.
+    /// - Parameters:
+    ///   - req: The incoming `Request`, provided automatically.
+    ///   - data: `ReportData` containing an optional accompanying message.
+    /// - Returns: 201 Created on success.
+    func twarrtReportHandler(_ req: Request, data: ReportData) throws -> Future<HTTPStatus> {
+        let user = try req.requireAuthenticated(User.self)
+        let parent = try user.parentAccount(on: req)
+        let twarrt = try req.parameters.next(Twarrt.self)
+        return flatMap(parent, twarrt) {
+            (parent, twarrt) in
+            return try Report.query(on: req)
+                .filter(\.reportedID == String(twarrt.requireID()))
+                .filter(\.submitterID == parent.requireID())
+                .count()
+                .flatMap {
+                    (count) in
+                    guard count == 0 else {
+                        throw Abort(.conflict, reason: "user has already reported twarrt")
+                    }
+                    let report = try Report(
+                        reportType: .twarrt,
+                        reportedID: String(twarrt.requireID()),
+                        submitterID: parent.requireID(),
+                        submitterMessage: data.message
+                    )
+                    return report.save(on: req).transform(to: .created)
+            }
         }
     }
     
