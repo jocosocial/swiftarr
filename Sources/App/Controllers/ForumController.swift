@@ -1220,7 +1220,7 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable, UserTa
     
     /// `POST /api/v3/forum/post/ID/report`
     ///
-    /// Creates a `Report` regarding the specified `ForumPost`.
+    /// Create a `Report` regarding the specified `ForumPost`.
     ///
     /// - Note: The accompanying report message is optional on the part of the submitting user,
     ///   but the `ReportData` is mandatory in order to allow one. If there is no message,
@@ -1238,9 +1238,9 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable, UserTa
         let forumPost = try req.parameters.next(ForumPost.self)
         return flatMap(parent, forumPost) {
             (parent, post) in
-            return Report.query(on: req)
-                .filter(\.reportedID == String(try post.requireID()))
-                .filter(\.submitterID == (try parent.requireID()))
+            return try Report.query(on: req)
+                .filter(\.reportedID == String(post.requireID()))
+                .filter(\.submitterID == parent.requireID())
                 .count()
                 .flatMap {
                     (count) in
