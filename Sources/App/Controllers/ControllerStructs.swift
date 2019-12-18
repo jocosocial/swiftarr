@@ -403,6 +403,7 @@ struct PostCreateData: Content {
 /// * `GET /api/v3/forum/likes`
 /// * `GET /api/v3/forum/mentions`
 /// * `GET /api/v3/forum/posts`
+/// * `GET /api/v3/forum/post/hashtag/#STRING`
 ///
 /// See `ForumController.postCreateHandler(_:data:)`, `ForumController.postUpdateHandler(_:data:)`,
 /// `ForumController.imageHandler(_:data:)`, `ForumController.imageRemoveHandler(_:)`,
@@ -410,7 +411,8 @@ struct PostCreateData: Content {
 /// `ForumController.postLaughHandler(_:)`, `ForumController.postLikeHandler(_:)`
 /// `ForumController.postLoveHandler(_:)`, `ForumController.postUnreactHandler(_:)`,
 /// `ForumController.bookmarksHandler(_:)`, `ForumCOntroller.likesHandler(_:)`,
-/// `ForumController.mentionsHandler(_:)`, `ForumController.postsHandler(_:)`.
+/// `ForumController.mentionsHandler(_:)`, `ForumController.postsHandler(_:)`,
+/// `ForumController.postHashtagHandler(_:)`.
 struct PostData: Content {
     /// The ID of the post.
     var postID: Int
@@ -565,13 +567,19 @@ struct TokenStringData: Content {
 /// * `GET /api/v3/twitarr/likes`
 /// * `GET /api/v3/twitarr/mentions`
 /// * `GET /api/v3/twitarr/twarrts`
+/// * `GET /api/v3/twitarr/barrel/ID`
+/// * `GET /api/v3/twitarr/hashtag/#STRING`
+/// * `GET /api/v3/twitarr/search/STRING`
+/// * `GET /api/v3/twitarr/user/ID`
 ///
 /// See `TwitarrController.twarrtCreateHandler(_:data:)`, `TwitarrController.twarrtUpdateHandler(_:data:)`
 /// `TwitarrController. imageHandler(_:data:)`, `TwitarrController.imageRemoveHandler(_:)`
 /// `TwitarrController.twarrtLaughHandler(_:)`, `TwitarrController.twarrtLikeHandler(_:)`,
 /// `TwitarrController.twarrtLoveHandler(_:)`, `TwitarrController.twarrtUnreactHandler(_:)`,
 /// `TwitarrController.bookmarksHandler(_:)`, `TwitarrController.likesHandler(_:)`,
-/// `TwitarrController.mentionsHandler(_:)`, `TwitarrController.twarrtsHandler(_:)`.
+/// `TwitarrController.mentionsHandler(_:)`, `TwitarrController.twarrtsHandler(_:)`
+/// `TwitarrController.twarrtsBarrelHandler(_:)`, `TwitarrController.twarrtsHashtagHandler(_:)`,
+/// `TwitarrController.twarrtsSearchHandler(_:)`, `TwitarrController.twarrtsUserHandler(_:)`.
 struct TwarrtData: Content {
     /// The ID of the twarrt.
     var postID: Int
