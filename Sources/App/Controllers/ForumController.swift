@@ -47,10 +47,8 @@ struct ForumController: RouteCollection {
         tokenAuthGroup.post(Forum.parameter, "favorite", use: favoriteAddHandler)
         tokenAuthGroup.post(Forum.parameter, "favorite", "remove", use: favoriteRemoveHandler)
         tokenAuthGroup.get("favorites", use: favoritesHandler)
+        tokenAuthGroup.get("likes", use: likesHandler)
         tokenAuthGroup.post(Forum.parameter, "lock", use: forumLockHandler)
-        tokenAuthGroup.post(Forum.parameter, "rename", String.parameter, use: forumRenameHandler)
-        tokenAuthGroup.post(ReportData.self, at: Forum.parameter, "report", use: forumReportHandler)
-        tokenAuthGroup.post(Forum.parameter, "unlock", use: forumUnlockHandler)
         tokenAuthGroup.get("owner", use: ownerHandler)
         tokenAuthGroup.post("post", ForumPost.parameter, "bookmark", use: bookmarkAddHandler)
         tokenAuthGroup.post("post", ForumPost.parameter, "bookmark", "remove", use: bookmarkRemoveHandler)
@@ -64,6 +62,10 @@ struct ForumController: RouteCollection {
         tokenAuthGroup.post(ReportData.self, at: "post", ForumPost.parameter, "report", use: postReportHandler)
         tokenAuthGroup.post("post", ForumPost.parameter, "unreact", use: postUnreactHandler)
         tokenAuthGroup.post(PostContentData.self, at: "post", ForumPost.parameter, "update", use: postUpateHandler)
+        tokenAuthGroup.post(Forum.parameter, "rename", String.parameter, use: forumRenameHandler)
+        tokenAuthGroup.post(ReportData.self, at: Forum.parameter, "report", use: forumReportHandler)
+        tokenAuthGroup.post(Forum.parameter, "unlock", use: forumUnlockHandler)
+
     }
     
     // MARK: - Open Access Handlers
@@ -1244,6 +1246,56 @@ struct ForumController: RouteCollection {
                             )
                         )
                 }
+            }
+        }
+    }
+    
+    /// `GET /api/v3/forum/likes`
+    ///
+    /// Retrieve all `ForumPost`s the user has liked.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Returns: `[PostData]` containing all liked posts.
+    func likesHandler(_ req: Request) throws -> Future<[PostData]> {
+        let user = try req.requireAuthenticated(User.self)
+        // respect blocks
+        let cache = try req.keyedCache(for: .redis)
+        let key = try "blocks:\(user.requireID())"
+        let cachedBlocks = cache.get(key, as: [UUID].self)
+        return cachedBlocks.flatMap {
+            (blocks) in
+            let blocked = blocks ?? []
+            // get liked posts
+            return try user.postLikes.query(on: req)
+                .filter(\.authorID !~ blocked)
+                .all()
+                .flatMap {
+                    (posts) in
+                    // convert to PostData
+                    let postsData = try posts.map {
+                        (post) -> Future<PostData> in
+                        let bookmarked = try self.isBookmarked(
+                            idValue: post.requireID(),
+                            byUser: user,
+                            on: req
+                        )
+                        let userLike = try PostLikes.query(on: req)
+                            .filter(\.postID == post.requireID())
+                            .filter(\.userID == user.requireID())
+                            .first()
+                        let likeCount = try PostLikes.query(on: req)
+                            .filter(\.postID == post.requireID())
+                            .count()
+                        return map(bookmarked, userLike, likeCount) {
+                            (bookmarked, userLike, count) in
+                            return try post.convertToData(
+                                bookmarked: bookmarked,
+                                userLike: userLike?.likeType,
+                                likeCount: count
+                            )
+                        }
+                    }
+                    return postsData.flatten(on: req)
             }
         }
     }
