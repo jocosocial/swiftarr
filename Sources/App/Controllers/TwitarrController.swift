@@ -201,8 +201,8 @@ struct TwitarrController: RouteCollection {
     ///   - req: The incoming `Request`, provided automatically.
     ///   - data: `ImageUploadData` containing the filename and image file.
     /// - Throws: 403 error if user does not have permission to modify the twarrt.
-    /// - Returns: `PostData` containing the updated image value.
-    func imageHandler(_ req: Request, data: ImageUploadData) throws -> Future<PostData> {
+    /// - Returns: `TwarrtData` containing the updated image value.
+    func imageHandler(_ req: Request, data: ImageUploadData) throws -> Future<TwarrtData> {
         let user = try req.requireAuthenticated(User.self)
         // get twarrt
         return try req.parameters.next(Twarrt.self).flatMap {
@@ -244,7 +244,7 @@ struct TwitarrController: RouteCollection {
                                     twarrt.image = filename
                                     return twarrt.save(on: req).map {
                                         (savedTwarrt) in
-                                        // return as PostData
+                                        // return as TwartData
                                         return try savedTwarrt.convertToData(
                                             bookmarked: bookmarked,
                                             userLike: nil,
@@ -265,7 +265,7 @@ struct TwitarrController: RouteCollection {
                             (bookmarked) in
                             return twarrt.save(on: req).map {
                                 (savedTwarrt) in
-                                // return as PostData
+                                // return as TwarrtData
                                 return try savedTwarrt.convertToData(
                                     bookmarked: bookmarked,
                                     userLike: nil,
@@ -285,8 +285,8 @@ struct TwitarrController: RouteCollection {
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 403 error if the user does not have permission to modify the twarrt.
-    /// - Returns: `PostData` containing the updated image name.
-    func imageRemoveHandler(_ req: Request) throws -> Future<PostData> {
+    /// - Returns: `TwarrtData` containing the updated image name.
+    func imageRemoveHandler(_ req: Request) throws -> Future<TwarrtData> {
         let user = try req.requireAuthenticated(User.self)
         return try req.parameters.next(Twarrt.self).flatMap {
             (twarrt) in
@@ -319,7 +319,7 @@ struct TwitarrController: RouteCollection {
                                 twarrt.image = ""
                                 return twarrt.save(on: req).map {
                                     (savedTwarrt) in
-                                    // return as PostData
+                                    // return as TwarrtData
                                     return try savedTwarrt.convertToData(
                                         bookmarked: bookmarked,
                                         userLike: nil,
@@ -328,7 +328,7 @@ struct TwitarrController: RouteCollection {
                                 }
                             }
                         }
-                        // no existing image, return PostData
+                        // no existing image, return TwarrtData
                         return req.future(
                             try twarrt.convertToData(
                                 bookmarked: bookmarked,
@@ -349,7 +349,7 @@ struct TwitarrController: RouteCollection {
     /// - Parameters:
     ///   - req: The incoming `Request`, provided automatically.
     ///   - data: `PostCreateData` containing the twarrt's text and optional image.
-    /// - Returns: `PostData` containing the twarrt's contents and metadata.
+    /// - Returns: `TwarrtData` containing the twarrt's contents and metadata.
     func twarrtCreateHandler(_ req: Request, data: PostCreateData) throws -> Future<Response> {
         let user = try req.requireAuthenticated(User.self)
         // see `PostCreateData.validations()`
@@ -365,7 +365,7 @@ struct TwitarrController: RouteCollection {
             )
             return twarrt.save(on: req).map {
                 (savedTwarrt) in
-                // return as PostData with 201 status
+                // return as TwarrtData with 201 status
                 let response = Response(http: HTTPResponse(status: .created), using: req)
                 try response.content.encode(
                     try savedTwarrt.convertToData(bookmarked: false, userLike: nil, likeCount: 0)
@@ -439,8 +439,8 @@ struct TwitarrController: RouteCollection {
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 403 error if user is the twarrt's creator.
-    /// - Returns: `PostData` containing the updated like info.
-    func twarrtLaughHandler(_ req: Request) throws -> Future<PostData> {
+    /// - Returns: `TwarrtData` containing the updated like info.
+    func twarrtLaughHandler(_ req: Request) throws -> Future<TwarrtData> {
         let user = try req.requireAuthenticated(User.self)
         // get twarrt
         return try req.parameters.next(Twarrt.self).flatMap {
@@ -469,7 +469,7 @@ struct TwitarrController: RouteCollection {
                                     .count()
                                     .map {
                                         (count) in
-                                        // return as PostData
+                                        // return as TwarrtData
                                         return try twarrt.convertToData(
                                             bookmarked: bookmarked,
                                             userLike: .laugh,
@@ -488,7 +488,7 @@ struct TwitarrController: RouteCollection {
                                 .count()
                                 .map {
                                     (count) in
-                                    // return as PostData
+                                    // return as TwarrtData
                                     return try twarrt.convertToData(
                                         bookmarked: bookmarked,
                                         userLike: .laugh,
@@ -506,8 +506,8 @@ struct TwitarrController: RouteCollection {
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 403 error if user is the twarrt's creator.
-    /// - Returns: `PostData` containing the updated like info.
-    func twarrtLikeHandler(_ req: Request) throws -> Future<PostData> {
+    /// - Returns: `TwarrtData` containing the updated like info.
+    func twarrtLikeHandler(_ req: Request) throws -> Future<TwarrtData> {
         let user = try req.requireAuthenticated(User.self)
         // get twarrt
         return try req.parameters.next(Twarrt.self).flatMap {
@@ -536,7 +536,7 @@ struct TwitarrController: RouteCollection {
                                     .count()
                                     .map {
                                         (count) in
-                                        // return as PostData
+                                        // return as TwarrtData
                                         return try twarrt.convertToData(
                                             bookmarked: bookmarked,
                                             userLike: .like,
@@ -555,7 +555,7 @@ struct TwitarrController: RouteCollection {
                                 .count()
                                 .map {
                                     (count) in
-                                    // return as PostData
+                                    // return as TwarrtData
                                     return try twarrt.convertToData(
                                         bookmarked: bookmarked,
                                         userLike: .like,
@@ -574,8 +574,8 @@ struct TwitarrController: RouteCollection {
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 403 error if user is the twarrt's creator.
-    /// - Returns: `PostData` containing the updated like info.
-    func twarrtLoveHandler(_ req: Request) throws -> Future<PostData> {
+    /// - Returns: `TwarrtData` containing the updated like info.
+    func twarrtLoveHandler(_ req: Request) throws -> Future<TwarrtData> {
         let user = try req.requireAuthenticated(User.self)
         // get twarrt
         return try req.parameters.next(Twarrt.self).flatMap {
@@ -604,7 +604,7 @@ struct TwitarrController: RouteCollection {
                                     .count()
                                     .map {
                                         (count) in
-                                        // return as PostData
+                                        // return as TwarrtData
                                         return try twarrt.convertToData(
                                             bookmarked: bookmarked,
                                             userLike: .love,
@@ -623,7 +623,7 @@ struct TwitarrController: RouteCollection {
                                 .count()
                                 .map {
                                     (count) in
-                                    // return as PostData
+                                    // return as TwarrtData
                                     return try twarrt.convertToData(
                                         bookmarked: bookmarked,
                                         userLike: .love,
@@ -643,8 +643,8 @@ struct TwitarrController: RouteCollection {
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 400 error it there was no existing reaction. 403 error if user is the twarrt's
     ///   creator.
-    /// - Returns: `PostData` containing the updated like info.
-    func twarrtUnreactHandler(_ req: Request) throws -> Future<PostData> {
+    /// - Returns: `TwarrtData` containing the updated like info.
+    func twarrtUnreactHandler(_ req: Request) throws -> Future<TwarrtData> {
         let user = try req.requireAuthenticated(User.self)
         // get twarrt
         return try req.parameters.next(Twarrt.self).flatMap {
@@ -674,7 +674,7 @@ struct TwitarrController: RouteCollection {
                                 .count()
                                 .map {
                                     (count) in
-                                    // return as PostData
+                                    // return as TwarrtData
                                     return try twarrt.convertToData(
                                         bookmarked: bookmarked,
                                         userLike: nil,
@@ -700,7 +700,7 @@ struct TwitarrController: RouteCollection {
     ///   - req: The incoming `Request`, provided automatically.
     ///   - data: `PostCOntentData` containing the twarrt's text and image filename.
     /// - Throws: 403 error if user is not post owner or has read-only access.
-    /// - Returns: `PostData` containing the twarrt's contents and metadata.
+    /// - Returns: `TwarrtData` containing the twarrt's contents and metadata.
     func twarrtUpdateHandler(_ req: Request, data: PostContentData) throws -> Future<Response> {
         let user = try req.requireAuthenticated(User.self)
         return try req.parameters.next(Twarrt.self).flatMap {
@@ -735,7 +735,7 @@ struct TwitarrController: RouteCollection {
                                 // save TwarrtEdit
                                 return twarrtEdit.save(on: req).map {
                                     (_) in
-                                    // return updated twarrt as PostData, with 201 status
+                                    // return updated twarrt as TwarrtData, with 201 status
                                     let response = Response(http: HTTPResponse(status: .created), using: req)
                                     try response.content.encode(
                                         try savedTwarrt.convertToData(
@@ -748,7 +748,7 @@ struct TwitarrController: RouteCollection {
                                 }
                             }
                         } else {
-                            // just return as PostData, with 200 status
+                            // just return as TwarrtData, with 200 status
                             let response = Response(http: HTTPResponse(status: .ok), using: req)
                             try response.content.encode(
                                 try twarrt.convertToData(

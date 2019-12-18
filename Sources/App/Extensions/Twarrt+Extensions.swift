@@ -40,14 +40,15 @@ extension Twarrt {
 // MARK: - Functions
 
 extension Twarrt {
-    /// Converts a `Twarrt` model to a version omitting data that is of no interest to a user.
-    func convertToData(bookmarked: Bool, userLike: LikeType?, likeCount: Int) throws -> PostData {
-        return try PostData(
+    /// Converts a `Twarrt` model to a version omitting data that is not for public consumption.
+    func convertToData(bookmarked: Bool, userLike: LikeType?, likeCount: Int) throws -> TwarrtData {
+        return try TwarrtData(
             postID: self.requireID(),
             createdAt: self.createdAt ?? Date(),
             authorID: self.authorID,
             text: self.text,
             image: self.image,
+            replyToID: self.replyToID,
             isBookmarked: bookmarked,
             userLike: userLike,
             likeCount: likeCount
@@ -56,10 +57,10 @@ extension Twarrt {
 }
 
 extension Future where T: Twarrt {
-    /// Converts a `Future<Twarrt>` to a `Future<PostData>`. This extension provides
+    /// Converts a `Future<Twarrt>` to a `Future<TwarrtData>`. This extension provides
     /// the convenience of simply using `twarrt.convertToData()` and allowing the compiler to
     /// choose the appropriate version for the context.
-    func convertToData(bookmarked: Bool, userLike: LikeType?, likeCount: Int) -> Future<PostData> {
+    func convertToData(bookmarked: Bool, userLike: LikeType?, likeCount: Int) -> Future<TwarrtData> {
         return self.map {
             (twarrt) in
             return try twarrt.convertToData(
