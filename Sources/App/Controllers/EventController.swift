@@ -564,6 +564,11 @@ struct EventController: RouteCollection {
                                         // convert to PostData
                                         let postsData = try filteredPosts.map {
                                             (filteredPost) -> Future<PostData> in
+                                            let bookmarked = try self.isBookmarked(
+                                                idValue: filteredPost.requireID(),
+                                                byUser: user,
+                                                on: req
+                                            )
                                             let userLike = try PostLikes.query(on: req)
                                                 .filter(\.postID == filteredPost.requireID())
                                                 .filter(\.userID == user.requireID())
@@ -571,10 +576,11 @@ struct EventController: RouteCollection {
                                             let likeCount = try PostLikes.query(on: req)
                                                 .filter(\.postID == filteredPost.requireID())
                                                 .count()
-                                            return map(userLike, likeCount) {
-                                                (resolvedLike, count) in
+                                            return map(bookmarked, userLike, likeCount) {
+                                                (bookmarked, userLike, count) in
                                                 return try filteredPost.convertToData(
-                                                    withLike: resolvedLike?.likeType,
+                                                    bookmarked: bookmarked,
+                                                    userLike: userLike?.likeType,
                                                     likeCount: count
                                                 )
                                             }
