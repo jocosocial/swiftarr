@@ -37,6 +37,7 @@ struct TwitarrController: RouteCollection {
         tokenAuthGroup.post(Twarrt.parameter, "image", "remove", use: imageRemoveHandler)
         tokenAuthGroup.post(Twarrt.parameter, "laugh", use: twarrtLaughHandler)
         tokenAuthGroup.post(Twarrt.parameter, "like", use: twarrtLikeHandler)
+        tokenAuthGroup.get("likes", use: likesHandler)
         tokenAuthGroup.post(Twarrt.parameter, "love", use: twarrtLoveHandler)
         tokenAuthGroup.post(ReportData.self, at: Twarrt.parameter, "report", use: twarrtReportHandler)
         tokenAuthGroup.post(Twarrt.parameter, "unreact", use: twarrtUnreactHandler)
@@ -392,6 +393,56 @@ struct TwitarrController: RouteCollection {
                             )
                         )
                 }
+            }
+        }
+    }
+    
+    /// `GET /api/v3/twitarr/likes`
+    ///
+    /// Retrieve all `Twarrt`s the user has liked.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Returns: `[TwarrtData]` containing all liked posts.
+    func likesHandler(_ req: Request) throws -> Future<[TwarrtData]> {
+        let user = try req.requireAuthenticated(User.self)
+        // respect blocks
+        let cache = try req.keyedCache(for: .redis)
+        let key = try "blocks:\(user.requireID())"
+        let cachedBlocks = cache.get(key, as: [UUID].self)
+        return cachedBlocks.flatMap {
+            (blocks) in
+            let blocked = blocks ?? []
+            // get liked twarrts
+            return try user.twarrtLikes.query(on: req)
+                .filter(\.authorID !~ blocked)
+                .all()
+                .flatMap {
+                    (twarrts) in
+                    // convert to TwarrtData
+                    let twarrtsData = try twarrts.map {
+                        (twarrt) -> Future<TwarrtData> in
+                        let bookmarked = try self.isBookmarked(
+                            idValue: twarrt.requireID(),
+                            byUser: user,
+                            on: req
+                        )
+                        let userLike = try TwarrtLikes.query(on: req)
+                            .filter(\.twarrtID == twarrt.requireID())
+                            .filter(\.userID == user.requireID())
+                            .first()
+                        let likeCount = try TwarrtLikes.query(on: req)
+                            .filter(\.twarrtID == twarrt.requireID())
+                            .count()
+                        return map(bookmarked, userLike, likeCount) {
+                            (bookmarked, userLike, count) in
+                            return try twarrt.convertToData(
+                                bookmarked: bookmarked,
+                                userLike: userLike?.likeType,
+                                likeCount: count
+                            )
+                        }
+                    }
+                    return twarrtsData.flatten(on: req)
             }
         }
     }
