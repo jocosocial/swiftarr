@@ -386,7 +386,7 @@ struct PostCreateData: Content {
     var imageData: Data?
 }
 
-/// Used to return a `ForumPost`'s or `Twarrt`'s data.
+/// Used to return a `ForumPost`'s data.
 ///
 /// Returned by:
 /// * `POST /api/v3/forum/ID/create`
@@ -399,40 +399,28 @@ struct PostCreateData: Content {
 /// * `POST /api/v3/forum/post/ID/like`
 /// * `POST /api/v3/forum/post/ID/love`
 /// * `POST /api/v3/forum/post/ID/unreact`
-/// * `POST /api/v3/twitarr/create`
-/// * `POST /api/v3/twitarr/ID/update`
-/// * `POST /api/v3/twitarr/ID/image`
-/// * `POST /api/v3/twitarr/ID/image/remove`
-/// * `POST /api/v3/twitarr/ID/laugh`
-/// * `POST /api/v3/twitarr/ID/like`
-/// * `POST /api/v3/twitarr/ID/love`
-/// * `POST /api/v3/twitarr/ID/unreact`
 ///
 /// See `ForumController.postCreateHandler(_:data:)`, `ForumController.postUpdateHandler(_:data:)`,
 /// `ForumController.imageHandler(_:data:)`, `ForumController.imageRemoveHandler(_:)`,
 /// `ForumController.forumSearchHandler(_:)`, `ForumController.postSearchHandler(_:)`
 /// `ForumController.postLaughHandler(_:)`, `ForumController.postLikeHandler(_:)`
-/// `ForumController.postLoveHandler(_:)`, `ForumController.postUnreactHandler(_:)`
-/// `TwitarrController.twarrtCreateHandler(_:data:)`, `TwitarrController.twarrtUpdateHandler(_:data:)`
-/// `TwitarrController. imageHandler(_:data:)`, `TwitarrController.imageRemoveHandler(_:)`
-/// `TwitarrController.twarrtLaughHandler(_:)`, `TwitarrController.twarrtLikeHandler(_:)`,
-/// `TwitarrController.twarrtLoveHandler(_:)`, `TwitarrController.twarrtUnreactHandler(_:)`.
+/// `ForumController.postLoveHandler(_:)`, `ForumController.postUnreactHandler(_:)`.
 struct PostData: Content {
-    /// The ID of the post/twarrt.
+    /// The ID of the post.
     var postID: Int
-    /// The timestamp of the post/twarrt.
+    /// The timestamp of the post.
     var createdAt: Date
-    /// The ID of the post/twarrt's author.
+    /// The ID of the post's author.
     var authorID: UUID
-    /// The text of the forum post or twarrt.
+    /// The text of the post.
     var text: String
-    /// The filename of the post/twarrt's optional image.
+    /// The filename of the post's optional image.
     var image: String
-    /// Whether the current user has bookmarked the post/twarrt.
+    /// Whether the current user has bookmarked the post.
     var isBookmarked: Bool
-    /// The current user's `LikeType` reaction on the post/twarrt.
+    /// The current user's `LikeType` reaction on the post.
     var userLike: LikeType?
-    /// The total number of `LikeType` reactions on the post/twarrt.
+    /// The total number of `LikeType` reactions on the post.
     var likeCount: Int
 }
 
@@ -552,6 +540,44 @@ struct TokenStringData: Content {
         self.token = token.token
     }
 }
+
+/// Used to return a `Twarrt`'s data.
+///
+/// Returned by:
+/// * `POST /api/v3/twitarr/create`
+/// * `POST /api/v3/twitarr/ID/update`
+/// * `POST /api/v3/twitarr/ID/image`
+/// * `POST /api/v3/twitarr/ID/image/remove`
+/// * `POST /api/v3/twitarr/ID/laugh`
+/// * `POST /api/v3/twitarr/ID/like`
+/// * `POST /api/v3/twitarr/ID/love`
+/// * `POST /api/v3/twitarr/ID/unreact`
+///
+/// See `TwitarrController.twarrtCreateHandler(_:data:)`, `TwitarrController.twarrtUpdateHandler(_:data:)`
+/// `TwitarrController. imageHandler(_:data:)`, `TwitarrController.imageRemoveHandler(_:)`
+/// `TwitarrController.twarrtLaughHandler(_:)`, `TwitarrController.twarrtLikeHandler(_:)`,
+/// `TwitarrController.twarrtLoveHandler(_:)`, `TwitarrController.twarrtUnreactHandler(_:)`.
+struct TwarrtData: Content {
+    /// The ID of the twarrt.
+    var postID: Int
+    /// The timestamp of the twarrt.
+    var createdAt: Date
+    /// The ID of the twarrt's author.
+    var authorID: UUID
+    /// The text of the twarrt.
+    var text: String
+    /// The filename of the twarrt's optional image.
+    var image: String
+    /// The ID of the twarrt to which this twarrt is a reply.
+    var replyToID: Int?
+    /// Whether the current user has bookmarked the twarrt.
+    var isBookmarked: Bool
+    /// The current user's `LikeType` reaction on the twarrt.
+    var userLike: LikeType?
+    /// The total number of `LikeType` reactions on the twarrt.
+    var likeCount: Int
+}
+
 
 /// Used to return a filename for an uploaded image.
 ///
