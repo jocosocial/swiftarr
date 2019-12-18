@@ -401,13 +401,16 @@ struct PostCreateData: Content {
 /// * `POST /api/v3/forum/post/ID/unreact`
 /// * `GET /api/v3/forum/bookmarks`
 /// * `GET /api/v3/forum/likes`
+/// * `GET /api/v3/forum/mentions`
+/// * `GET /api/v3/forum/posts`
 ///
 /// See `ForumController.postCreateHandler(_:data:)`, `ForumController.postUpdateHandler(_:data:)`,
 /// `ForumController.imageHandler(_:data:)`, `ForumController.imageRemoveHandler(_:)`,
 /// `ForumController.forumSearchHandler(_:)`, `ForumController.postSearchHandler(_:)`
 /// `ForumController.postLaughHandler(_:)`, `ForumController.postLikeHandler(_:)`
 /// `ForumController.postLoveHandler(_:)`, `ForumController.postUnreactHandler(_:)`,
-/// `ForumController.bookmarksHandler(_:)`, `ForumCOntroller.likesHandler(_:)`.
+/// `ForumController.bookmarksHandler(_:)`, `ForumCOntroller.likesHandler(_:)`,
+/// `ForumController.mentionsHandler(_:)`, `ForumController.postsHandler(_:)`.
 struct PostData: Content {
     /// The ID of the post.
     var postID: Int

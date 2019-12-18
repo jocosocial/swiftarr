@@ -1300,6 +1300,58 @@ struct ForumController: RouteCollection {
         }
     }
     
+    /// `GET /api/v3/forum/mentions`
+    ///
+    /// Retrieve all `ForumPost`s whose content mentions the user.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Returns: `[PostData]` containing all posts containing mentions.
+    func mentionsHandler(_ req: Request) throws -> Future<[PostData]> {
+        let user = try req.requireAuthenticated(User.self)
+        // respect blocks
+        let cache = try req.keyedCache(for: .redis)
+        let key = try "blocks:\(user.requireID())"
+        let cachedBlocks = cache.get(key, as: [UUID].self)
+        return cachedBlocks.flatMap {
+            (blocks) in
+            let blocked = blocks ?? []
+            // get mention posts
+            return ForumPost.query(on: req)
+                .filter(\.authorID !~ blocked)
+                .filter(\.text, .ilike, "%@\(user.username) %")
+                .sort(\.createdAt, .ascending)
+                .all()
+                .flatMap {
+                    (posts) in
+                    // convert to PostData
+                    let postsData = try posts.map {
+                        (post) -> Future<PostData> in
+                        let bookmarked = try self.isBookmarked(
+                            idValue: post.requireID(),
+                            byUser: user,
+                            on: req
+                        )
+                        let userLike = try PostLikes.query(on: req)
+                            .filter(\.postID == post.requireID())
+                            .filter(\.userID == user.requireID())
+                            .first()
+                        let likeCount = try PostLikes.query(on: req)
+                            .filter(\.postID == post.requireID())
+                            .count()
+                        return map(bookmarked, userLike, likeCount) {
+                            (bookmarked, userLike, count) in
+                            return try post.convertToData(
+                                bookmarked: bookmarked,
+                                userLike: userLike?.likeType,
+                                likeCount: count
+                            )
+                        }
+                    }
+                    return postsData.flatten(on: req)
+            }
+        }
+    }
+    
     /// `GET /api/v3/forum/owner`
     /// `GET /api/v3/user/forums`
     ///
@@ -1676,6 +1728,44 @@ struct ForumController: RouteCollection {
                         }
                 }
             }
+        }
+    }
+    
+    /// `GET /api/v3/forum/posts`
+    ///
+    /// Retrieve all `ForumPost`s authored by the user.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Returns: `[PostData]` containing all posts authored by the user.
+    func postsHandler(_ req: Request) throws -> Future<[PostData]> {
+        let user = try req.requireAuthenticated(User.self)
+        // get posts
+        return try user.posts.query(on: req)
+            .sort(\.createdAt, .ascending)
+            .all()
+            .flatMap {
+                (posts) in
+                // convert to PostData
+                let postsData = try posts.map {
+                    (post) -> Future<PostData> in
+                    let bookmarked = try self.isBookmarked(
+                        idValue: post.requireID(),
+                        byUser: user,
+                        on: req
+                    )
+                    let likeCount = try PostLikes.query(on: req)
+                        .filter(\.postID == post.requireID())
+                        .count()
+                    return map(bookmarked, likeCount) {
+                        (bookmarked, count) in
+                        return try post.convertToData(
+                            bookmarked: bookmarked,
+                            userLike: nil,
+                            likeCount: count
+                        )
+                    }
+                }
+                return postsData.flatten(on: req)
         }
     }
     
