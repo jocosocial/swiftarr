@@ -87,6 +87,11 @@ extension User {
     var twarrtLikes: Siblings<User, Twarrt, TwarrtLikes> {
         return siblings()
     }
+    
+    /// The child `Twarrt`s created by the user.
+    var twarrts: Children<User, Twarrt> {
+        return children(\.authorID)
+    }
 }
 
 // MARK: - Functions

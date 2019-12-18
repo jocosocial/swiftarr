@@ -26,6 +26,11 @@ extension Twarrt {
 // MARK: - Relations
 
 extension Twarrt {
+    /// The parent `User` who authored the twarrt.
+    var author: Parent<Twarrt, User> {
+        return parent(\.authorID)
+    }
+    
     /// The child `TwarrtEdit` accountability records of the twarrt.
     var edits: Children<Twarrt, TwarrtEdit> {
         return children(\.twarrtID)
