@@ -591,48 +591,52 @@ struct ForumController: RouteCollection {
                         guard let post = filteredPost else {
                             throw Abort(.notFound, reason:"post is not available")
                         }
-                        // get likes data
-                        return try PostLikes.query(on: req)
-                            .filter(\.postID == post.requireID())
-                            .all()
-                            .flatMap {
-                                (postLikes) in
-                                // get users
-                                let likeUsers: [Future<User>] = postLikes.map {
-                                    (postLike) -> Future<User> in
-                                    return User.find(postLike.userID, on: req)
-                                        .unwrap(or: Abort(.internalServerError, reason: "user not found"))
-                                }
-                                return likeUsers.flatten(on: req).map {
-                                    (users) in
-                                    let seamonkeys = try users.map {
-                                        try $0.convertToSeaMonkey()
+                        return try self.isBookmarked(idValue: post.requireID(), byUser: user, on: req).flatMap {
+                            (bookmarked) in
+                            // get likes data
+                            return try PostLikes.query(on: req)
+                                .filter(\.postID == post.requireID())
+                                .all()
+                                .flatMap {
+                                    (postLikes) in
+                                    // get users
+                                    let likeUsers: [Future<User>] = postLikes.map {
+                                        (postLike) -> Future<User> in
+                                        return User.find(postLike.userID, on: req)
+                                            .unwrap(or: Abort(.internalServerError, reason: "user not found"))
                                     }
-                                    // init return struct
-                                    var postDetailData = try PostDetailData(
-                                        postID: post.requireID(),
-                                        createdAt: post.createdAt ?? Date(),
-                                        authorID: post.authorID,
-                                        text: post.text,
-                                        image: post.image,
-                                        laughs: [],
-                                        likes: [],
-                                        loves: []
-                                    )
-                                    // sort seamonkeys into like types
-                                    for (index, like) in postLikes.enumerated() {
-                                        switch like.likeType {
-                                            case .laugh:
-                                                postDetailData.laughs.append(seamonkeys[index])
-                                            case .like:
-                                                postDetailData.likes.append(seamonkeys[index])
-                                            case .love:
-                                                postDetailData.loves.append(seamonkeys[index])
-                                            default: continue
+                                    return likeUsers.flatten(on: req).map {
+                                        (users) in
+                                        let seamonkeys = try users.map {
+                                            try $0.convertToSeaMonkey()
                                         }
+                                        // init return struct
+                                        var postDetailData = try PostDetailData(
+                                            postID: post.requireID(),
+                                            createdAt: post.createdAt ?? Date(),
+                                            authorID: post.authorID,
+                                            text: post.text,
+                                            image: post.image,
+                                            isBookmarked: bookmarked,
+                                            laughs: [],
+                                            likes: [],
+                                            loves: []
+                                        )
+                                        // sort seamonkeys into like types
+                                        for (index, like) in postLikes.enumerated() {
+                                            switch like.likeType {
+                                                case .laugh:
+                                                    postDetailData.laughs.append(seamonkeys[index])
+                                                case .like:
+                                                    postDetailData.likes.append(seamonkeys[index])
+                                                case .love:
+                                                    postDetailData.loves.append(seamonkeys[index])
+                                                default: continue
+                                            }
+                                        }
+                                        return postDetailData
                                     }
-                                    return postDetailData
-                                }
+                            }
                         }
                 }
             }

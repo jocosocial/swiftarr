@@ -54,8 +54,8 @@ struct TwitarrController: RouteCollection {
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 404 error if the twarrt is not available.
-    /// - Returns: `PostDetaildata` containing the specified twarrt.
-    func twarrtHandler(_ req: Request) throws -> Future<PostDetailData> {
+    /// - Returns: `TwarrtDetaildata` containing the specified twarrt.
+    func twarrtHandler(_ req: Request) throws -> Future<TwarrtDetailData> {
         let user = try req.requireAuthenticated(User.self)
         return try req.parameters.next(Twarrt.self).flatMap {
             (twarrtParameter) in
@@ -79,48 +79,53 @@ struct TwitarrController: RouteCollection {
                         guard let twarrt = filteredTwarrt else {
                             throw Abort(.notFound, reason: "twarrt is not available")
                         }
-                        // get likes data
-                        return try TwarrtLikes.query(on: req)
-                            .filter(\.twarrtID == twarrt.requireID())
-                            .all()
-                            .flatMap {
-                                (twarrtLikes) in
-                                // get users
-                                let likeUsers: [Future<User>] = twarrtLikes.map {
-                                    (twarrtLike) -> Future<User> in
-                                    return User.find(twarrtLike.userID, on: req)
-                                        .unwrap(or: Abort(.internalServerError, reason: "user not found"))
-                                }
-                                return likeUsers.flatten(on: req).map {
-                                    (users) in
-                                    let seamonkeys = try users.map {
-                                        try $0.convertToSeaMonkey()
+                        return try self.isBookmarked(idValue: twarrt.requireID(), byUser: user, on: req).flatMap {
+                            (bookmarked) in
+                            // get likes data
+                            return try TwarrtLikes.query(on: req)
+                                .filter(\.twarrtID == twarrt.requireID())
+                                .all()
+                                .flatMap {
+                                    (twarrtLikes) in
+                                    // get users
+                                    let likeUsers: [Future<User>] = twarrtLikes.map {
+                                        (twarrtLike) -> Future<User> in
+                                        return User.find(twarrtLike.userID, on: req)
+                                            .unwrap(or: Abort(.internalServerError, reason: "user not found"))
                                     }
-                                    // init return struct
-                                    var twarrtDetailData = try PostDetailData(
-                                        postID: twarrt.requireID(),
-                                        createdAt: twarrt.createdAt ?? Date(),
-                                        authorID: twarrt.authorID,
-                                        text: twarrt.text,
-                                        image: twarrt.image,
-                                        laughs: [],
-                                        likes: [],
-                                        loves: []
-                                    )
-                                    // sort seamonkeys into like types
-                                    for (index, like) in twarrtLikes.enumerated() {
-                                        switch like.likeType {
-                                            case .laugh:
-                                                twarrtDetailData.laughs.append(seamonkeys[index])
-                                            case .like:
-                                                twarrtDetailData.likes.append(seamonkeys[index])
-                                            case .love:
-                                                twarrtDetailData.loves.append(seamonkeys[index])
-                                            default: continue
+                                    return likeUsers.flatten(on: req).map {
+                                        (users) in
+                                        let seamonkeys = try users.map {
+                                            try $0.convertToSeaMonkey()
                                         }
+                                        // init return struct
+                                        var twarrtDetailData = try TwarrtDetailData(
+                                            postID: twarrt.requireID(),
+                                            createdAt: twarrt.createdAt ?? Date(),
+                                            authorID: twarrt.authorID,
+                                            text: twarrt.text,
+                                            image: twarrt.image,
+                                            replyToID: twarrt.replyToID,
+                                            isBookmarked: bookmarked,
+                                            laughs: [],
+                                            likes: [],
+                                            loves: []
+                                        )
+                                        // sort seamonkeys into like types
+                                        for (index, like) in twarrtLikes.enumerated() {
+                                            switch like.likeType {
+                                                case .laugh:
+                                                    twarrtDetailData.laughs.append(seamonkeys[index])
+                                                case .like:
+                                                    twarrtDetailData.likes.append(seamonkeys[index])
+                                                case .love:
+                                                    twarrtDetailData.loves.append(seamonkeys[index])
+                                                default: continue
+                                            }
+                                        }
+                                        return twarrtDetailData
                                     }
-                                    return twarrtDetailData
-                                }
+                            }
                         }
                 }
             }
