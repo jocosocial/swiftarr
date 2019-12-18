@@ -447,6 +447,95 @@ struct TwitarrController: RouteCollection {
         }
     }
     
+    /// `GET /api/v3/twitarr/mentions`
+    ///
+    /// Retrieve all `Twarrt`s whose content mentions the user.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Returns: `[TwarrtData]` containing all twarrts containing mentions.
+    func mentionsHandler(_ req: Request) throws -> Future<[TwarrtData]> {
+        let user = try req.requireAuthenticated(User.self)
+        // respect blocks
+        let cache = try req.keyedCache(for: .redis)
+        let key = try "blocks:\(user.requireID())"
+        let cachedBlocks = cache.get(key, as: [UUID].self)
+        return cachedBlocks.flatMap {
+            (blocks) in
+            let blocked = blocks ?? []
+            // get mention twarrts
+            return try Twarrt.query(on: req)
+                .filter(\.authorID !~ blocked)
+                .filter(\.text, .ilike, "%@\(user.username) %")
+                .all()
+                .flatMap {
+                    (twarrts) in
+                    // convert to TwarrtData
+                    let twarrtsData = try twarrts.map {
+                        (twarrt) -> Future<TwarrtData> in
+                        let bookmarked = try self.isBookmarked(
+                            idValue: twarrt.requireID(),
+                            byUser: user,
+                            on: req
+                        )
+                        let userLike = try TwarrtLikes.query(on: req)
+                            .filter(\.twarrtID == twarrt.requireID())
+                            .filter(\.userID == user.requireID())
+                            .first()
+                        let likeCount = try TwarrtLikes.query(on: req)
+                            .filter(\.twarrtID == twarrt.requireID())
+                            .count()
+                        return map(bookmarked, userLike, likeCount) {
+                            (bookmarked, userLike, count) in
+                            return try twarrt.convertToData(
+                                bookmarked: bookmarked,
+                                userLike: userLike?.likeType,
+                                likeCount: count
+                            )
+                        }
+                    }
+                    return twarrtsData.flatten(on: req)
+            }
+        }
+    }
+    
+    /// `GET /api/v3/twitarr/twarrts`
+    ///
+    /// Retrieve all `Twarrt`s authored by the user.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Returns: `[TwarrtData]` containing all twarrts containing mentions.
+    func twarrtsHandler(_ req: Request) throws -> Future<[TwarrtData]> {
+        let user = try req.requireAuthenticated(User.self)
+        // get twarrts
+        return try user.twarrts.query(on: req)
+            .sort(\.createdAt, .ascending)
+            .all()
+            .flatMap {
+                (twarrts) in
+                // convert to TwarrtData
+                let twarrtsData = try twarrts.map {
+                    (twarrt) -> Future<TwarrtData> in
+                    let bookmarked = try self.isBookmarked(
+                        idValue: twarrt.requireID(),
+                        byUser: user,
+                        on: req
+                    )
+                    let likeCount = try TwarrtLikes.query(on: req)
+                        .filter(\.twarrtID == twarrt.requireID())
+                        .count()
+                    return map(bookmarked, likeCount) {
+                        (bookmarked, count) in
+                        return try twarrt.convertToData(
+                            bookmarked: bookmarked,
+                            userLike: nil,
+                            likeCount: count
+                        )
+                    }
+                }
+                return twarrtsData.flatten(on: req)
+        }
+    }
+    
     /// `POST /api/v3/twitarr/create`
     ///
     /// Create a new `Twarrt` in the twitarr stream.

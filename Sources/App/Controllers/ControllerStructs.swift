@@ -557,12 +557,15 @@ struct TokenStringData: Content {
 /// * `POST /api/v3/twitarr/ID/unreact`
 /// * `GET /api/v3/twitarr/bookmarks`
 /// * `GET /api/v3/twitarr/likes`
+/// * `GET /api/v3/twitarr/mentions`
+/// * `GET /api/v3/twitarr/twarrts`
 ///
 /// See `TwitarrController.twarrtCreateHandler(_:data:)`, `TwitarrController.twarrtUpdateHandler(_:data:)`
 /// `TwitarrController. imageHandler(_:data:)`, `TwitarrController.imageRemoveHandler(_:)`
 /// `TwitarrController.twarrtLaughHandler(_:)`, `TwitarrController.twarrtLikeHandler(_:)`,
 /// `TwitarrController.twarrtLoveHandler(_:)`, `TwitarrController.twarrtUnreactHandler(_:)`,
-/// `TwitarrController.bookmarksHandler(_:)`, `TwitarrController.likesHandler(_:)`.
+/// `TwitarrController.bookmarksHandler(_:)`, `TwitarrController.likesHandler(_:)`,
+/// `TwitarrController.mentionsHandler(_:)`, `TwitarrController.twarrtsHandler(_:)`.
 struct TwarrtData: Content {
     /// The ID of the twarrt.
     var postID: Int
