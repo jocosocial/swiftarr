@@ -19,6 +19,15 @@ final class Twarrt: Codable {
     /// The filename of any image content of the twarrt.
     var image: String
     
+    /// The ID of the twarrt being replied to.
+    var replyToID: Int?
+    
+    /// Whether the twarrt is in quarantine, unable to be replied to directly.
+    var isQuarantined: Bool
+    
+    /// Whether the twarrt has been reviewed as non-violating content by the Moderator team.
+    var isReviewed: Bool
+    
     /// Timestamp of the model's creation, set automatically.
     var createdAt: Date?
     
@@ -39,10 +48,16 @@ final class Twarrt: Codable {
     init(
         authorID: UUID,
         text: String,
-        image: String = ""
+        image: String = "",
+        replyToID: Int? = nil,
+        isQuarantined: Bool = false,
+        isReviewed: Bool = false
     ) {
         self.authorID = authorID
         self.text = text
         self.image = image
+        self.replyToID = replyToID
+        self.isQuarantined = isQuarantined
+        self.isReviewed = isReviewed
     }
 }
