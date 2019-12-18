@@ -29,6 +29,8 @@ struct TwitarrController: RouteCollection {
         
         // endpoints only available when logged in
         tokenAuthGroup.post(PostCreateData.self, at: "create", use: twarrtCreateHandler)
+        tokenAuthGroup.post(Twarrt.parameter, "bookmark", use: bookmarkAddHandler)
+        tokenAuthGroup.post(Twarrt.parameter, "bookmark", "remove", use: bookmarkRemoveHandler)
         tokenAuthGroup.post(Twarrt.parameter, "delete", use: twarrtDeleteHandler)
         tokenAuthGroup.post(ImageUploadData.self, at: Twarrt.parameter, "image", use: imageHandler)
         tokenAuthGroup.post(Twarrt.parameter, "image", "remove", use: imageRemoveHandler)
@@ -126,6 +128,69 @@ struct TwitarrController: RouteCollection {
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
+    
+    /// `POST /api/v3/twitarr/ID/bookmark`
+    ///
+    /// Add a bookmark of the specified `Twarrt`.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 400 error if the twarrt is already bookmarked.
+    /// - Returns: 201 Created on success.
+    func bookmarkAddHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        let user = try req.requireAuthenticated(User.self)
+        // get twarrt
+        return try req.parameters.next(Twarrt.self).flatMap {
+            (twarrt) in
+            // get user's bookmarkedTwarrt barrel
+            return try self.getBookmarkBarrel(for: user, on: req).flatMap {
+                (bookmarkBarrel) in
+                // create barrel if needed
+                let barrel = try bookmarkBarrel ?? Barrel(
+                    ownerID: user.requireID(),
+                    barrelType: .bookmarkedTwarrt
+                )
+                // ensure bookmark doesn't exist
+                var bookmarks = barrel.userInfo["bookmarks"] ?? []
+                let twarrtID = String(try twarrt.requireID())
+                guard !bookmarks.contains(twarrtID) else {
+                    throw Abort(.badRequest, reason: "twarrt already bookmarked")
+                }
+                // add twarrt and return 201
+                bookmarks.append(String(try twarrt.requireID()))
+                barrel.userInfo["bookmarks"] = bookmarks
+                return barrel.save(on: req).transform(to: .created)
+            }
+        }
+    }
+    
+    /// `POST /api/v3/twitarr/ID/bookmark/remove`
+    ///
+    /// Remove a bookmark of the specified `Twarrt`.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 400 error if the user has not bookmarked any twarrts.
+    func bookmarkRemoveHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        let user = try req.requireAuthenticated(User.self)
+        // get twarrt
+        return try req.parameters.next(Twarrt.self).flatMap {
+            (twarrt) in
+            // get user's bookmarkedTwarrt barrel
+            return try self.getBookmarkBarrel(for: user, on: req).flatMap {
+                (barrel) in
+                guard let barrel = barrel else {
+                    throw Abort(.badRequest, reason: "user has not bookmarked any twarrts")
+                }
+                var bookmarks = barrel.userInfo["bookmarks"] ?? []
+                // remove twarrt and return 204
+                let twarrtID = String(try twarrt.requireID())
+                if let index = bookmarks.firstIndex(of: twarrtID) {
+                    bookmarks.remove(at: index)
+                }
+                barrel.userInfo["bookmarks"] = bookmarks
+                return barrel.save(on: req).transform(to: .noContent)
+            }
+        }
+    }
     
     /// `POST /api/v3/twitarr/ID/image`
     ///
