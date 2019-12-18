@@ -26,6 +26,10 @@ struct TwitarrController: RouteCollection {
         
         // endpoints available whether logged in or not
         sharedAuthGroup.get(Twarrt.parameter, use: twarrtHandler)
+        sharedAuthGroup.get("barrel", Barrel.parameter, use: twarrtsBarrelHandler)
+        sharedAuthGroup.get("hashtag", String.parameter, use: twarrtsHashtagHandler)
+        sharedAuthGroup.get("search", String.parameter, use: twarrtsSearchHandler)
+        sharedAuthGroup.get("user", User.parameter, use: twarrtsUserHandler)
         
         // endpoints only available when logged in
         tokenAuthGroup.post(Twarrt.parameter, "bookmark", use: bookmarkAddHandler)
@@ -47,6 +51,70 @@ struct TwitarrController: RouteCollection {
     // MARK: - sharedAuthGroup Handlers (logged in or not)
     // All handlers in this route group require a valid HTTP Basic Authorization
     // *or* HTTP Bearer Authorization header in the request.
+    
+    /// `GET /api/v3/twitarr/barrel/ID`
+    ///
+    /// Retrieve all `Twarrt`s posted by users in the specified `.seamonkey` type `Barrel`.
+    ///
+    /// - Note: The barrel does not need to be owned by the requesting user, though all blocks
+    ///   and mutes of the requesting user are applied regardless.
+    ///
+    /// - Requires: A specified `Barrel` of `BarrelType.seamonkey`.
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 400 error if the barrel is not a barrel of seamonkeys.
+    /// - Returns: `[TwarrtData]` containing all twarrts posted by the barrel seamonkeys.
+    func twarrtsBarrelHandler(_ req: Request) throws -> Future<[TwarrtData]> {
+        let user = try req.requireAuthenticated(User.self)
+        // get seamonkey barrel
+        return try req.parameters.next(Barrel.self).flatMap {
+            (barrel) in
+            // ensure .seamonkey type
+            guard barrel.barrelType == .seamonkey else {
+                throw Abort(.badRequest, reason: "barrel is not a seamonkey barrel")
+            }
+            // get filters
+            return try self.getCachedFilters(for: user, on: req).flatMap {
+                (tuple) in
+                let blocked = tuple.0
+                let muted = tuple.1
+                let mutewords = tuple.2
+                // get twarrts
+                return Twarrt.query(on: req)
+                    .filter(\.authorID ~~ barrel.modelUUIDs)
+                    .filter(\.authorID !~ blocked)
+                    .filter(\.authorID !~ muted)
+                    .sort(\.createdAt, .descending)
+                    .all()
+                    .flatMap {
+                        (twarrts) in
+                        // filter mutewords
+                        let filteredTwarrts = twarrts.compactMap {
+                            self.filterMutewords(for: $0, using: mutewords, on: req)
+                        }
+                        // convert to TwarrtData
+                        let twarrtsData = try filteredTwarrts.map {
+                            (twarrt) -> Future<TwarrtData> in
+                            let userLike = try TwarrtLikes.query(on: req)
+                                .filter(\.twarrtID == twarrt.requireID())
+                                .filter(\.userID == user.requireID())
+                                .first()
+                            let likeCount = try TwarrtLikes.query(on: req)
+                                .filter(\.twarrtID == twarrt.requireID())
+                                .count()
+                            return map(userLike, likeCount) {
+                                (userLike, count) in
+                                return try twarrt.convertToData(
+                                    bookmarked: true,
+                                    userLike: userLike?.likeType,
+                                    likeCount: count
+                                )
+                            }
+                        }
+                        return twarrtsData.flatten(on: req)
+                }
+            }
+        }
+    }
     
     /// `GET /api/v3/twitarr/ID`
     ///
@@ -127,6 +195,195 @@ struct TwitarrController: RouteCollection {
                                     }
                             }
                         }
+                }
+            }
+        }
+    }
+    
+    /// `GET /api/v3/twitarr/hashtag/#STRING`
+    ///
+    /// Retrieve all `Twarrt`s that contain the exact specified hashtag.
+    ///
+    /// - Note: By "exact" we mean the string cannot be a substring of another hashtag (there
+    ///   must be a trailing space), but the match is not case-sensitive. For example, `#joco`
+    ///   will not match `#joco2020` or `#joco#2020`, but will match `#JoCo`. Use the more
+    ///   generic `GET /api/v3/twitarr/search/STRING` endpoint with the same `#joco` parameter
+    ///   if you want that type of substring matching behavior.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 400 error if the specified string is not a hashtag.
+    /// - Returns: `[TwarrtData]` containing all matching twarrts.
+    func twarrtsHashtagHandler(_ req: Request) throws -> Future<[TwarrtData]> {
+        let user = try req.requireAuthenticated(User.self)
+        var hashtag = try req.parameters.next(String.self)
+        // ensure it's a hashtag
+        guard hashtag.hasPrefix("#") else {
+            throw Abort(.badRequest, reason: "hashtag parameter must start with '#'")
+        }
+        // postgres "_" and "%" are wildcards, so escape for literals
+        hashtag = hashtag.replacingOccurrences(of: "_", with: "\\_")
+        hashtag = hashtag.replacingOccurrences(of: "%", with: "\\%")
+        hashtag = hashtag.trimmingCharacters(in: .whitespacesAndNewlines)
+        // get cached blocks
+        return try self.getCachedFilters(for: user, on: req).flatMap {
+            (tuple) in
+            let blocked = tuple.0
+            let muted = tuple.1
+            let mutewords = tuple.2
+            // get twarrts
+            return Twarrt.query(on: req)
+                .filter(\.authorID !~ blocked)
+                .filter(\.authorID !~ muted)
+                .filter(\.text, .ilike, "%\(hashtag) %")
+                .all()
+                .flatMap {
+                    (twarrts) in
+                    // remove muteword twarrts
+                    let filteredTwarrts = twarrts.compactMap {
+                        self.filterMutewords(for: $0, using: mutewords, on: req)
+                    }
+                    // convert to TwarrtData
+                    let twarrtsData = try filteredTwarrts.map {
+                        (twarrt) -> Future<TwarrtData> in
+                        let bookmarked = try self.isBookmarked(
+                            idValue: twarrt.requireID(),
+                            byUser: user,
+                            on: req
+                        )
+                        let userLike = try TwarrtLikes.query(on: req)
+                            .filter(\.twarrtID == twarrt.requireID())
+                            .filter(\.userID == user.requireID())
+                            .first()
+                        let likeCount = try TwarrtLikes.query(on: req)
+                            .filter(\.twarrtID == twarrt.requireID())
+                            .count()
+                        return map(bookmarked, userLike, likeCount) {
+                            (bookmarked, userLike, count) in
+                            return try twarrt.convertToData(
+                                bookmarked: bookmarked,
+                                userLike: userLike?.likeType,
+                                likeCount: count
+                            )
+                        }
+                    }
+                    return twarrtsData.flatten(on: req)
+            }
+        }
+    }
+    
+    /// `GET /api/v3/twitarr/search/STRING`
+    ///
+    /// Retrieve all `Twarrt`s that contain the specified string.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Returns: `[TwarrtData]` containing all matching twarrts.
+    func twarrtsSearchHandler(_ req: Request) throws -> Future<[TwarrtData]> {
+        let user = try req.requireAuthenticated(User.self)
+        var search = try req.parameters.next(String.self)
+        // postgres "_" and "%" are wildcards, so escape for literals
+        search = search.replacingOccurrences(of: "_", with: "\\_")
+        search = search.replacingOccurrences(of: "%", with: "\\%")
+        search = search.trimmingCharacters(in: .whitespacesAndNewlines)
+        // get cached blocks
+        return try self.getCachedFilters(for: user, on: req).flatMap {
+            (tuple) in
+            let blocked = tuple.0
+            let muted = tuple.1
+            let mutewords = tuple.2
+            // get twarrts
+            return Twarrt.query(on: req)
+                .filter(\.authorID !~ blocked)
+                .filter(\.authorID !~ muted)
+                .filter(\.text, .ilike, "%\(search)%")
+                .all()
+                .flatMap {
+                    (twarrts) in
+                    // remove muteword twarrts
+                    let filteredTwarrts = twarrts.compactMap {
+                        self.filterMutewords(for: $0, using: mutewords, on: req)
+                    }
+                    // convert to TwarrtData
+                    let twarrtsData = try filteredTwarrts.map {
+                        (twarrt) -> Future<TwarrtData> in
+                        let bookmarked = try self.isBookmarked(
+                            idValue: twarrt.requireID(),
+                            byUser: user,
+                            on: req
+                        )
+                        let userLike = try TwarrtLikes.query(on: req)
+                            .filter(\.twarrtID == twarrt.requireID())
+                            .filter(\.userID == user.requireID())
+                            .first()
+                        let likeCount = try TwarrtLikes.query(on: req)
+                            .filter(\.twarrtID == twarrt.requireID())
+                            .count()
+                        return map(bookmarked, userLike, likeCount) {
+                            (bookmarked, userLike, count) in
+                            return try twarrt.convertToData(
+                                bookmarked: bookmarked,
+                                userLike: userLike?.likeType,
+                                likeCount: count
+                            )
+                        }
+                    }
+                    return twarrtsData.flatten(on: req)
+            }
+        }
+    }
+    
+    /// `GET /api/v3/twitarr/user/ID`
+    ///
+    /// Retrieve all `Twarrt`s posted by the specified `User`.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Returns: `[TwarrtData]` containing all specified user's twarrts.
+    func twarrtsUserHandler(_ req: Request) throws -> Future<[TwarrtData]> {
+        let requester = try req.requireAuthenticated(User.self)
+        return try req.parameters.next(User.self).flatMap {
+            (user) in
+            // get cached blocks
+            return try self.getCachedFilters(for: requester, on: req).flatMap {
+                (tuple) in
+                let blocked = tuple.0
+                let muted = tuple.1
+                let mutewords = tuple.2
+                // get twarrts
+                return try Twarrt.query(on: req)
+                    .filter(\.authorID !~ blocked)
+                    .filter(\.authorID !~ muted)
+                    .filter(\.authorID == user.requireID())
+                    .all()
+                    .flatMap {
+                        (twarrts) in
+                        // remove muteword twarrts
+                        let filteredTwarrts = twarrts.compactMap {
+                            self.filterMutewords(for: $0, using: mutewords, on: req)
+                        }
+                        // convert to TwarrtData
+                        let twarrtsData = try filteredTwarrts.map {
+                            (twarrt) -> Future<TwarrtData> in
+                            let bookmarked = try self.isBookmarked(
+                                idValue: twarrt.requireID(),
+                                byUser: requester,
+                                on: req
+                            )
+                            let userLike = try TwarrtLikes.query(on: req)
+                                .filter(\.twarrtID == twarrt.requireID())
+                                .filter(\.userID == user.requireID())
+                                .first()
+                            let likeCount = try TwarrtLikes.query(on: req)
+                                .filter(\.twarrtID == twarrt.requireID())
+                                .count()
+                            return map(bookmarked, userLike, likeCount) {
+                                (bookmarked, userLike, count) in
+                                return try twarrt.convertToData(
+                                    bookmarked: bookmarked,
+                                    userLike: userLike?.likeType,
+                                    likeCount: count
+                                )
+                            }
+                        }
+                        return twarrtsData.flatten(on: req)
                 }
             }
         }
