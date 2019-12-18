@@ -28,9 +28,10 @@ struct TwitarrController: RouteCollection {
         sharedAuthGroup.get(Twarrt.parameter, use: twarrtHandler)
         
         // endpoints only available when logged in
-        tokenAuthGroup.post(PostCreateData.self, at: "create", use: twarrtCreateHandler)
         tokenAuthGroup.post(Twarrt.parameter, "bookmark", use: bookmarkAddHandler)
         tokenAuthGroup.post(Twarrt.parameter, "bookmark", "remove", use: bookmarkRemoveHandler)
+        tokenAuthGroup.get("bookmarks", use: bookmarksHandler)
+        tokenAuthGroup.post(PostCreateData.self, at: "create", use: twarrtCreateHandler)
         tokenAuthGroup.post(Twarrt.parameter, "delete", use: twarrtDeleteHandler)
         tokenAuthGroup.post(ImageUploadData.self, at: Twarrt.parameter, "image", use: imageHandler)
         tokenAuthGroup.post(Twarrt.parameter, "image", "remove", use: imageRemoveHandler)
@@ -188,6 +189,59 @@ struct TwitarrController: RouteCollection {
                 }
                 barrel.userInfo["bookmarks"] = bookmarks
                 return barrel.save(on: req).transform(to: .noContent)
+            }
+        }
+    }
+    
+    /// `GET /api/v3/twitarr/bookmarks`
+    ///
+    /// Retrieve all `Twarrt`s the user has bookmarked, sorted by creation timestamp.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Returns: `[TwarrtData]` containing all bookmarked posts.
+    func bookmarksHandler(_ req: Request) throws -> Future<[TwarrtData]> {
+        let user = try req.requireAuthenticated(User.self)
+        // get bookmarkedTwarrt barrel
+        return try self.getBookmarkBarrel(for: user, on: req).flatMap {
+            (barrel) in
+            let bookmarkStrings = barrel?.userInfo["bookmarks"] ?? []
+            // convert to IDs
+            let bookmarks = bookmarkStrings.compactMap { Int($0) }
+            // get filters
+            return try self.getCachedFilters(for: user, on: req).flatMap {
+                (tuple) in
+                let blocked = tuple.0
+                let muted = tuple.1
+                // get twarrts, don't filter mutewords
+                return Twarrt.query(on: req)
+                    .filter(\.id ~~ bookmarks)
+                    .filter(\.authorID !~ blocked)
+                    .filter(\.authorID !~ muted)
+                    .sort(\.createdAt, .ascending)
+                    .all()
+                    .flatMap {
+                        (twarrts) in
+                        // convert to TwarrtData
+                        let twarrtsData = try twarrts.map {
+                            (twarrt) -> Future<TwarrtData> in
+                            let userLike = try TwarrtLikes.query(on: req)
+                                .filter(\.twarrtID == twarrt.requireID())
+                                .filter(\.userID == user.requireID())
+                                .first()
+                            let likeCount = try TwarrtLikes.query(on: req)
+                                .filter(\.twarrtID == twarrt.requireID())
+                                .count()
+                            return map(userLike, likeCount) {
+                                (userLike, count) in
+                                return try twarrt.convertToData(
+                                    bookmarked: true,
+                                    userLike: userLike?.likeType,
+                                    likeCount: count
+                                )
+                            }
+                        }
+                        return twarrtsData.flatten(on: req)
+                }
             }
         }
     }
