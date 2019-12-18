@@ -7,26 +7,7 @@ import Redis
 /// The collection of `/api/v3/forum/*` route endpoints and handler functions related
 /// to forums.
 
-struct ForumController: RouteCollection, ImageHandler, ContentFilterable, UserTaggable {
-    // MARK: ImageHandler Conformance
-    
-    /// The base directory for storing ForumPost images.
-    var imageDir: String {
-        return "images/forum/"
-    }
-    
-    /// The height of ForumPost image thumbnails.
-    var thumbnailHeight: Int {
-        return 100
-    }
-    
-    // MARK: UserTaggable Conformance
-    
-    /// The barrel type for `Forum` favoriting.
-    var taggedBarrelType: BarrelType {
-        return .taggedForum
-    }
-
+struct ForumController: RouteCollection {
     // MARK: RouteCollection Conformance
     
     /// Required. Registers routes to the incoming router.
@@ -1538,5 +1519,37 @@ struct ForumController: RouteCollection, ImageHandler, ContentFilterable, UserTa
                     }
             }
         }
+    }
+}
+
+// posts can be filtered by author and content
+extension ForumController: ContentFilterable {}
+
+// posts can contain images
+extension ForumController: ImageHandler {
+    /// The base directory for storing ForumPost images.
+    var imageDir: String {
+        return "images/forum/"
+    }
+    
+    /// The height of ForumPost image thumbnails.
+    var thumbnailHeight: Int {
+        return 100
+    }
+}
+
+// posts can be bookmarked
+extension ForumController: UserBookmarkable {
+    /// The barrel type for `ForumPost` bookmarking.
+    var bookmarkBarrelType: BarrelType {
+        return .bookmarkedPost
+    }
+}
+
+// posts can be favorited
+extension ForumController: UserTaggable {
+    /// The barrel type for `Forum` favoriting.
+    var favoriteBarrelType: BarrelType {
+        return .taggedForum
     }
 }

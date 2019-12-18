@@ -6,19 +6,7 @@ import Fluent
 /// The collection of `/api/v3/twitarr/*` route endpoint and handler functions related
 /// to the twit-arr stream.
 
-struct Twitarr: RouteCollection, ImageHandler, ContentFilterable {
-    // MARK: ImageHandler Conformance
-    
-    /// The base directory for storing Twarrt images.
-    var imageDir: String {
-        return "images/twitarr/"
-    }
-    
-    // The height of Twarrt image thumbnails.
-    var thumbnailHeight: Int {
-        return 100
-    }
-    
+struct TwitarrController: RouteCollection {
     // MARK: RouteCollection Conformance
     
     /// Required. Resisters routes to the incoming router.
@@ -614,5 +602,29 @@ struct Twitarr: RouteCollection, ImageHandler, ContentFilterable {
                     }
             }
         }
+    }
+}
+
+// twarrts can be filtered by author and content
+extension TwitarrController: ContentFilterable {}
+
+// twarrts can contain images
+extension TwitarrController: ImageHandler {
+    /// The base directory for storing Twarrt images.
+    var imageDir: String {
+        return "images/twitarr/"
+    }
+    
+    /// The height of Twarrt image thumbnails.
+    var thumbnailHeight: Int {
+        return 100
+    }
+}
+
+// twarrts can be bookmarked
+extension TwitarrController: UserBookmarkable {
+    /// The barrel type for `Twarrt` bookmarking.
+    var bookmarkBarrelType: BarrelType {
+        return .bookmarkedTwarrt
     }
 }

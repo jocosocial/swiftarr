@@ -6,14 +6,7 @@ import Fluent
 /// The collection of `/api/v3/events/*` route endpoints and handler functions related
 /// to the event schedule.
 
-struct EventController: RouteCollection, ContentFilterable, UserTaggable {
-    // MARK: UserTaggable Conformance
-    
-    /// The barrel type for `Event` favoriting.
-    var taggedBarrelType: BarrelType {
-        return .taggedEvent
-    }
-    
+struct EventController: RouteCollection {
     // MARK: RouteCollection Conformance
     
     /// Required. Registers routes to the incoming router.
@@ -768,5 +761,24 @@ struct EventController: RouteCollection, ContentFilterable, UserTaggable {
                     return try events.map { try $0.convertToData(withFavorited: true) }
             }
         }
+    }
+}
+
+// events can be filtered by creator
+extension EventController: ContentFilterable {}
+
+// event forum posts can be bookmarked
+extension EventController: UserBookmarkable {
+    /// The barrel type for event `ForumPost` bookmarking.
+    var bookmarkBarrelType: BarrelType {
+        return .bookmarkedPost
+    }
+}
+
+// events can be favorited
+extension EventController: UserTaggable {
+    /// The barrel type for `Event` favoriting.
+    var favoriteBarrelType: BarrelType {
+        return .taggedEvent
     }
 }
