@@ -403,6 +403,10 @@ struct PostCreateData: Content {
 /// * `POST /api/v3/twitarr/ID/update`
 /// * `POST /api/v3/twitarr/ID/image`
 /// * `POST /api/v3/twitarr/ID/image/remove`
+/// * `POST /api/v3/twitarr/ID/laugh`
+/// * `POST /api/v3/twitarr/ID/like`
+/// * `POST /api/v3/twitarr/ID/love`
+/// * `POST /api/v3/twitarr/ID/unreact`
 ///
 /// See `ForumController.postCreateHandler(_:data:)`, `ForumController.postUpdateHandler(_:data:)`,
 /// `ForumController.imageHandler(_:data:)`, `ForumController.imageRemoveHandler(_:)`,
@@ -410,7 +414,9 @@ struct PostCreateData: Content {
 /// `ForumController.postLaughHandler(_:)`, `ForumController.postLikeHandler(_:)`
 /// `ForumController.postLoveHandler(_:)`, `ForumController.postUnreactHandler(_:)`
 /// `TwitarrController.twarrtCreateHandler(_:data:)`, `TwitarrController.twarrtUpdateHandler(_:data:)`
-/// `TwitarrController. imageHandler(_:data:)`, `TwitarrController.imageRemoveHandler(_:)`.
+/// `TwitarrController. imageHandler(_:data:)`, `TwitarrController.imageRemoveHandler(_:)`
+/// `TwitarrController.twarrtLaughHandler(_:)`, `TwitarrController.twarrtLikeHandler(_:)`,
+/// `TwitarrController.twarrtLoveHandler(_:)`, `TwitarrController.twarrtUnreactHandler(_:)`.
 struct PostData: Content {
     /// The ID of the post/twarrt.
     var postID: Int
@@ -422,6 +428,8 @@ struct PostData: Content {
     var text: String
     /// The filename of the post/twarrt's optional image.
     var image: String
+    /// Whether the current user has bookmarked the post/twarrt.
+    var isBookmarked: Bool
     /// The current user's `LikeType` reaction on the post/twarrt.
     var userLike: LikeType?
     /// The total number of `LikeType` reactions on the post/twarrt.
