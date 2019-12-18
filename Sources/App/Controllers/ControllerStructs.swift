@@ -399,12 +399,14 @@ struct PostCreateData: Content {
 /// * `POST /api/v3/forum/post/ID/like`
 /// * `POST /api/v3/forum/post/ID/love`
 /// * `POST /api/v3/forum/post/ID/unreact`
+/// * `GET /api/v3/forum/bookmarks`
 ///
 /// See `ForumController.postCreateHandler(_:data:)`, `ForumController.postUpdateHandler(_:data:)`,
 /// `ForumController.imageHandler(_:data:)`, `ForumController.imageRemoveHandler(_:)`,
 /// `ForumController.forumSearchHandler(_:)`, `ForumController.postSearchHandler(_:)`
 /// `ForumController.postLaughHandler(_:)`, `ForumController.postLikeHandler(_:)`
-/// `ForumController.postLoveHandler(_:)`, `ForumController.postUnreactHandler(_:)`.
+/// `ForumController.postLoveHandler(_:)`, `ForumController.postUnreactHandler(_:)`,
+/// `ForumController.bookmarksHandler(_:)`.
 struct PostData: Content {
     /// The ID of the post.
     var postID: Int
@@ -552,11 +554,13 @@ struct TokenStringData: Content {
 /// * `POST /api/v3/twitarr/ID/like`
 /// * `POST /api/v3/twitarr/ID/love`
 /// * `POST /api/v3/twitarr/ID/unreact`
+/// * `GET /api/v3/twitarr/bookmarks`
 ///
 /// See `TwitarrController.twarrtCreateHandler(_:data:)`, `TwitarrController.twarrtUpdateHandler(_:data:)`
 /// `TwitarrController. imageHandler(_:data:)`, `TwitarrController.imageRemoveHandler(_:)`
 /// `TwitarrController.twarrtLaughHandler(_:)`, `TwitarrController.twarrtLikeHandler(_:)`,
-/// `TwitarrController.twarrtLoveHandler(_:)`, `TwitarrController.twarrtUnreactHandler(_:)`.
+/// `TwitarrController.twarrtLoveHandler(_:)`, `TwitarrController.twarrtUnreactHandler(_:)`,
+/// `TwitarrController.bookmarksHandler(_:)`.
 struct TwarrtData: Content {
     /// The ID of the twarrt.
     var postID: Int
