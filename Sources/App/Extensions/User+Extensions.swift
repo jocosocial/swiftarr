@@ -78,6 +78,11 @@ extension User {
         return siblings()
     }
     
+    /// The child `ForumPost`s created by the user.
+    var posts: Children<User, ForumPost> {
+        return children(\.authorID)
+    }
+    
     /// The child `UserProfile` of the user.
     var profile: Children<User, UserProfile> {
         return children(\.userID)

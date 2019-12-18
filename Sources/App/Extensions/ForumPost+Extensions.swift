@@ -42,6 +42,11 @@ extension ForumPost {
 // MARK: - Relations
 
 extension ForumPost {
+    /// The parent `User`  who authored the post.
+    var author: Parent<ForumPost, User> {
+        return parent(\.authorID)
+    }
+    
     /// The child `ForumEdit` accountability records of the post.
     var edits: Children<ForumPost, ForumEdit> {
         return children(\.postID)
