@@ -430,27 +430,30 @@ struct PostData: Content {
     var likeCount: Int
 }
 
-/// Used to return a `ForumPost`'s or `Twarrt`'s data with full user `LikeType` info.
+/// Used to return a `ForumPost`'s data with full user `LikeType` info.
 ///
 /// Returned by: `GET /api/v3/forum/post/ID`
 ///
 /// See `ForumController.postHandler(_:)`.
+// FIXME: needs bookmark, userLike too?
 struct PostDetailData: Content {
-    /// The ID of the post/twarrt.
+    /// The ID of the post.
     var postID: Int
-    /// The timestamp of the post/twarrt.
+    /// The timestamp of the post.
     var createdAt: Date
-    /// The ID of the post/twarrt's author.
+    /// The ID of the post's author.
     var authorID: UUID
-    /// The text of the forum post or twarrt.
+    /// The text of the forum post.
     var text: String
-    /// The filename of the post/twarrt's optional image.
+    /// The filename of the post's optional image.
     var image: String
-    /// The seamonkeys with "laugh" reactions on the post/twarrt.
+    /// Whether the current user has bookmarked the post.
+    var isBookmarked: Bool
+    /// The seamonkeys with "laugh" reactions on the post.
     var laughs: [SeaMonkey]
-    /// The seamonkeys with "like" reactions on the post/twarrt.
+    /// The seamonkeys with "like" reactions on the post.
     var likes: [SeaMonkey]
-    /// The seamonkeys with "love" reactions on the post/twarrt.
+    /// The seamonkeys with "love" reactions on the post.
     var loves: [SeaMonkey]
 }
 
@@ -590,6 +593,34 @@ struct TwarrtData: Content {
     var likeCount: Int
 }
 
+/// Used to return a `Twarrt`'s data with full user `LikeType` info.
+///
+/// Returned by: `GET /api/v3/twitarr/ID`
+///
+/// See `TwitarrController.twarrtHandler(_:)`.
+// FIXME: needs bookmark, userLike too?
+struct TwarrtDetailData: Content {
+    /// The ID of the post/twarrt.
+    var postID: Int
+    /// The timestamp of the post/twarrt.
+    var createdAt: Date
+    /// The ID of the post/twarrt's author.
+    var authorID: UUID
+    /// The text of the forum post or twarrt.
+    var text: String
+    /// The filename of the post/twarrt's optional image.
+    var image: String
+    /// The ID of the twarrt to which this twarrt is a reply.
+    var replyToID: Int?
+    /// Whether the current user has bookmarked the post.
+    var isBookmarked: Bool
+    /// The seamonkeys with "laugh" reactions on the post/twarrt.
+    var laughs: [SeaMonkey]
+    /// The seamonkeys with "like" reactions on the post/twarrt.
+    var likes: [SeaMonkey]
+    /// The seamonkeys with "love" reactions on the post/twarrt.
+    var loves: [SeaMonkey]
+}
 
 /// Used to return a filename for an uploaded image.
 ///
