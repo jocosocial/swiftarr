@@ -643,6 +643,77 @@ struct ForumController: RouteCollection {
         }
     }
     
+    /// `GET /api/v3/forum/post/hashtag/#STRING`
+    ///
+    /// Retrieve all `ForumPost`s that contain the exact specified hashtag.
+    ///
+    /// - Note: By "exact" we mean the string cannot be a substring of another hashtag (there
+    ///   must be a trailing space), but the match is not case-sensitive. For example, `#joco`
+    ///   will not match `#joco2020` or `#joco#2020`, but will match `#JoCo`. Use the more
+    ///   generic `GET /api/v3/forum/post/search/STRING` endpoint with the same `#joco`
+    ///   parameter if you want that type of substring matching behavior.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 400 error if the specified string is not a hashtag.
+    /// - Returns: `[PostData]` containing all matching posts.
+    func postHashtagHandler(_ req: Request) throws -> Future<[PostData]> {
+        let user = try req.requireAuthenticated(User.self)
+        var hashtag = try req.parameters.next(String.self)
+        // ensure it's a hashtag
+        guard hashtag.hasPrefix("#") else {
+            throw Abort(.badRequest, reason: "hashtag parameter must start with '#'")
+        }
+        // postgres "_" and "%" are wildcards, so escape for literals
+        hashtag = hashtag.replacingOccurrences(of: "_", with: "\\_")
+        hashtag = hashtag.replacingOccurrences(of: "%", with: "\\%")
+        hashtag = hashtag.trimmingCharacters(in: .whitespacesAndNewlines)
+        // get cached blocks
+        return try self.getCachedFilters(for: user, on: req).flatMap {
+            (tuple) in
+            let blocked = tuple.0
+            let muted = tuple.1
+            let mutewords = tuple.2
+            // get posts
+            return ForumPost.query(on: req)
+                .filter(\.authorID !~ blocked)
+                .filter(\.authorID !~ muted)
+                .filter(\.text, .ilike, "%\(hashtag) %")
+                .all()
+                .flatMap {
+                    (posts) in
+                    // remove muteword posts
+                    let filteredPosts = posts.compactMap {
+                        self.filterMutewords(for: $0, using: mutewords, on: req)
+                    }
+                    // convert to TwarrtData
+                    let postsData = try filteredPosts.map {
+                        (post) -> Future<PostData> in
+                        let bookmarked = try self.isBookmarked(
+                            idValue: post.requireID(),
+                            byUser: user,
+                            on: req
+                        )
+                        let userLike = try PostLikes.query(on: req)
+                            .filter(\.postID == post.requireID())
+                            .filter(\.userID == user.requireID())
+                            .first()
+                        let likeCount = try PostLikes.query(on: req)
+                            .filter(\.postID == post.requireID())
+                            .count()
+                        return map(bookmarked, userLike, likeCount) {
+                            (bookmarked, userLike, count) in
+                            return try post.convertToData(
+                                bookmarked: bookmarked,
+                                userLike: userLike?.likeType,
+                                likeCount: count
+                            )
+                        }
+                    }
+                    return postsData.flatten(on: req)
+            }
+        }
+    }
+    
     /// `GET /api/v3/forum/post/search/STRING`
     ///
     /// Retrieve all `ForumPost`s that contain the specified string.
