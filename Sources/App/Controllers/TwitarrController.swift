@@ -233,21 +233,45 @@ struct TwitarrController: RouteCollection {
                             }
                             return twarrtEdit.save(on: req).flatMap {
                                 (_) in
-                                // update twarrt
-                                twarrt.image = filename
-                                return twarrt.save(on: req).map {
-                                    (savedTwarrt) in
-                                    // return as PostData
-                                    return try savedTwarrt.convertToData(withLike: nil, likeCount: count)
+                                // get isBookmarked state
+                                return try self.isBookmarked(
+                                    idValue: twarrt.requireID(),
+                                    byUser: user,
+                                    on: req
+                                ).flatMap {
+                                    (bookmarked) in
+                                    // update twarrt
+                                    twarrt.image = filename
+                                    return twarrt.save(on: req).map {
+                                        (savedTwarrt) in
+                                        // return as PostData
+                                        return try savedTwarrt.convertToData(
+                                            bookmarked: bookmarked,
+                                            userLike: nil,
+                                            likeCount: count
+                                        )
+                                    }
                                 }
                             }
                         }
                         // else add new image
                         twarrt.image = filename
-                        return twarrt.save(on: req).map {
-                            (savedTwarrt) in
-                            // return as PostData
-                            return try savedTwarrt.convertToData(withLike: nil, likeCount: count)
+                        // get isBookmarked state
+                        return try self.isBookmarked(
+                            idValue: twarrt.requireID(),
+                            byUser: user,
+                            on: req
+                        ).flatMap {
+                            (bookmarked) in
+                            return twarrt.save(on: req).map {
+                                (savedTwarrt) in
+                                // return as PostData
+                                return try savedTwarrt.convertToData(
+                                    bookmarked: bookmarked,
+                                    userLike: nil,
+                                    likeCount: count
+                                )
+                            }
                         }
                     }
             }
@@ -270,35 +294,49 @@ struct TwitarrController: RouteCollection {
                 || user.accessLevel.rawValue == UserAccessLevel.moderator.rawValue else {
                     throw Abort(.forbidden, reason: "user cannot modify twarrt")
             }
-            // get like count
-            return try TwarrtLikes.query(on: req)
-                .filter(\.twarrtID == twarrt.requireID())
-                .count()
-                .flatMap {
-                    (count) in
-                    if !twarrt.image.isEmpty {
-                        // create TwarrtEdit record
-                        let twarrtEdit = try TwarrtEdit(
-                            twarrtID: twarrt.requireID(),
-                            twarrtContent: PostContentData(text: twarrt.text, image: twarrt.image)
-                        )
-                        // archive thumbnail
-                        DispatchQueue.global(qos: .background).async {
-                            self.archiveImage(twarrt.image, from: self.imageDir)
-                        }
-                        return twarrtEdit.save(on: req).flatMap {
-                            (_) in
-                            // remove image filename from twarrt
-                            twarrt.image = ""
-                            return twarrt.save(on: req).map {
-                                (savedTwarrt) in
-                                // return as PostData
-                                return try savedTwarrt.convertToData(withLike: nil, likeCount: count)
+            // get isBookmarked state
+            return try self.isBookmarked(idValue: twarrt.requireID(), byUser: user, on: req).flatMap {
+                (bookmarked) in
+                // get like count
+                return try TwarrtLikes.query(on: req)
+                    .filter(\.twarrtID == twarrt.requireID())
+                    .count()
+                    .flatMap {
+                        (count) in
+                        if !twarrt.image.isEmpty {
+                            // create TwarrtEdit record
+                            let twarrtEdit = try TwarrtEdit(
+                                twarrtID: twarrt.requireID(),
+                                twarrtContent: PostContentData(text: twarrt.text, image: twarrt.image)
+                            )
+                            // archive thumbnail
+                            DispatchQueue.global(qos: .background).async {
+                                self.archiveImage(twarrt.image, from: self.imageDir)
+                            }
+                            return twarrtEdit.save(on: req).flatMap {
+                                (_) in
+                                // remove image filename from twarrt
+                                twarrt.image = ""
+                                return twarrt.save(on: req).map {
+                                    (savedTwarrt) in
+                                    // return as PostData
+                                    return try savedTwarrt.convertToData(
+                                        bookmarked: bookmarked,
+                                        userLike: nil,
+                                        likeCount: count
+                                    )
+                                }
                             }
                         }
-                    }
-                    // no existing image, return PostData
-                    return req.future(try twarrt.convertToData(withLike: nil, likeCount: count))
+                        // no existing image, return PostData
+                        return req.future(
+                            try twarrt.convertToData(
+                                bookmarked: bookmarked,
+                                userLike: nil,
+                                likeCount: count
+                            )
+                        )
+                }
             }
         }
     }
@@ -329,7 +367,9 @@ struct TwitarrController: RouteCollection {
                 (savedTwarrt) in
                 // return as PostData with 201 status
                 let response = Response(http: HTTPResponse(status: .created), using: req)
-                try response.content.encode(try savedTwarrt.convertToData(withLike: nil, likeCount: 0))
+                try response.content.encode(
+                    try savedTwarrt.convertToData(bookmarked: false, userLike: nil, likeCount: 0)
+                )
                 return response
             }
         }
@@ -408,17 +448,39 @@ struct TwitarrController: RouteCollection {
             guard try twarrt.authorID != user.requireID() else {
                 throw Abort(.forbidden, reason: "user cannot like own twarrt")
             }
-            // check for existing like
-            return try TwarrtLikes.query(on: req)
-                .filter(\.userID == user.requireID())
-                .filter(\.twarrtID == twarrt.requireID())
-                .first()
-                .flatMap {
-                    (like) in
-                    // re-type if existing like
-                    if let like = like {
-                        like.likeType = .laugh
-                        return like.save(on: req).flatMap {
+            // get isBookmarked state
+            return try self.isBookmarked(idValue: twarrt.requireID(), byUser: user, on: req).flatMap {
+                (bookmarked) in
+                // check for existing like
+                return try TwarrtLikes.query(on: req)
+                    .filter(\.userID == user.requireID())
+                    .filter(\.twarrtID == twarrt.requireID())
+                    .first()
+                    .flatMap {
+                        (like) in
+                        // re-type if existing like
+                        if let like = like {
+                            like.likeType = .laugh
+                            return like.save(on: req).flatMap {
+                                (savedLike) in
+                                // get likes count
+                                return try TwarrtLikes.query(on: req)
+                                    .filter(\.twarrtID == twarrt.requireID())
+                                    .count()
+                                    .map {
+                                        (count) in
+                                        // return as PostData
+                                        return try twarrt.convertToData(
+                                            bookmarked: bookmarked,
+                                            userLike: .laugh,
+                                            likeCount: count
+                                        )
+                                }
+                            }
+                        }
+                        // otherwise create laugh
+                        let twarrtLike = try TwarrtLikes(user, twarrt, likeType: .laugh)
+                        return twarrtLike.save(on: req).flatMap {
                             (savedLike) in
                             // get likes count
                             return try TwarrtLikes.query(on: req)
@@ -427,24 +489,13 @@ struct TwitarrController: RouteCollection {
                                 .map {
                                     (count) in
                                     // return as PostData
-                                    return try twarrt.convertToData(withLike: .laugh, likeCount: count)
+                                    return try twarrt.convertToData(
+                                        bookmarked: bookmarked,
+                                        userLike: .laugh,
+                                        likeCount: count)
                             }
                         }
-                    }
-                    // otherwise create laugh
-                    let twarrtLike = try TwarrtLikes(user, twarrt, likeType: .laugh)
-                    return twarrtLike.save(on: req).flatMap {
-                        (savedLike) in
-                        // get likes count
-                        return try TwarrtLikes.query(on: req)
-                            .filter(\.twarrtID == twarrt.requireID())
-                            .count()
-                            .map {
-                                (count) in
-                                // return as PostData
-                                return try twarrt.convertToData(withLike: .laugh, likeCount: count)
-                        }
-                    }
+                }
             }
         }
     }
@@ -464,17 +515,39 @@ struct TwitarrController: RouteCollection {
             guard try twarrt.authorID != user.requireID() else {
                 throw Abort(.forbidden, reason: "user cannot like own twarrt")
             }
-            // check for existing like
-            return try TwarrtLikes.query(on: req)
-                .filter(\.userID == user.requireID())
-                .filter(\.twarrtID == twarrt.requireID())
-                .first()
-                .flatMap {
-                    (like) in
-                    // re-type if existing like
-                    if let like = like {
-                        like.likeType = .like
-                        return like.save(on: req).flatMap {
+            // get isBookmarked state
+            return try self.isBookmarked(idValue: twarrt.requireID(), byUser: user, on: req).flatMap {
+                (bookmarked) in
+                // check for existing like
+                return try TwarrtLikes.query(on: req)
+                    .filter(\.userID == user.requireID())
+                    .filter(\.twarrtID == twarrt.requireID())
+                    .first()
+                    .flatMap {
+                        (like) in
+                        // re-type if existing like
+                        if let like = like {
+                            like.likeType = .like
+                            return like.save(on: req).flatMap {
+                                (savedLike) in
+                                // get likes count
+                                return try TwarrtLikes.query(on: req)
+                                    .filter(\.twarrtID == twarrt.requireID())
+                                    .count()
+                                    .map {
+                                        (count) in
+                                        // return as PostData
+                                        return try twarrt.convertToData(
+                                            bookmarked: bookmarked,
+                                            userLike: .like,
+                                            likeCount: count
+                                        )
+                                }
+                            }
+                        }
+                        // otherwise create like
+                        let twarrtLike = try TwarrtLikes(user, twarrt, likeType: .like)
+                        return twarrtLike.save(on: req).flatMap {
                             (savedLike) in
                             // get likes count
                             return try TwarrtLikes.query(on: req)
@@ -483,24 +556,14 @@ struct TwitarrController: RouteCollection {
                                 .map {
                                     (count) in
                                     // return as PostData
-                                    return try twarrt.convertToData(withLike: .like, likeCount: count)
+                                    return try twarrt.convertToData(
+                                        bookmarked: bookmarked,
+                                        userLike: .like,
+                                        likeCount: count
+                                    )
                             }
                         }
-                    }
-                    // otherwise create like
-                    let twarrtLike = try TwarrtLikes(user, twarrt, likeType: .like)
-                    return twarrtLike.save(on: req).flatMap {
-                        (savedLike) in
-                        // get likes count
-                        return try TwarrtLikes.query(on: req)
-                            .filter(\.twarrtID == twarrt.requireID())
-                            .count()
-                            .map {
-                                (count) in
-                                // return as PostData
-                                return try twarrt.convertToData(withLike: .like, likeCount: count)
-                        }
-                    }
+                }
             }
         }
     }
@@ -520,17 +583,39 @@ struct TwitarrController: RouteCollection {
             guard try twarrt.authorID != user.requireID() else {
                 throw Abort(.forbidden, reason: "user cannot like own twarrt")
             }
-            // check for existing like
-            return try TwarrtLikes.query(on: req)
-                .filter(\.userID == user.requireID())
-                .filter(\.twarrtID == twarrt.requireID())
-                .first()
-                .flatMap {
-                    (like) in
-                    // re-type if existing like
-                    if let like = like {
-                        like.likeType = .love
-                        return like.save(on: req).flatMap {
+            // get isBookmarked state
+            return try self.isBookmarked(idValue: twarrt.requireID(), byUser: user, on: req).flatMap {
+                (bookmarked) in
+                // check for existing like
+                return try TwarrtLikes.query(on: req)
+                    .filter(\.userID == user.requireID())
+                    .filter(\.twarrtID == twarrt.requireID())
+                    .first()
+                    .flatMap {
+                        (like) in
+                        // re-type if existing like
+                        if let like = like {
+                            like.likeType = .love
+                            return like.save(on: req).flatMap {
+                                (savedLike) in
+                                // get likes count
+                                return try TwarrtLikes.query(on: req)
+                                    .filter(\.twarrtID == twarrt.requireID())
+                                    .count()
+                                    .map {
+                                        (count) in
+                                        // return as PostData
+                                        return try twarrt.convertToData(
+                                            bookmarked: bookmarked,
+                                            userLike: .love,
+                                            likeCount: count
+                                        )
+                                }
+                            }
+                        }
+                        // otherwise create love
+                        let twarrtLike = try TwarrtLikes(user, twarrt, likeType: .love)
+                        return twarrtLike.save(on: req).flatMap {
                             (savedLike) in
                             // get likes count
                             return try TwarrtLikes.query(on: req)
@@ -539,24 +624,14 @@ struct TwitarrController: RouteCollection {
                                 .map {
                                     (count) in
                                     // return as PostData
-                                    return try twarrt.convertToData(withLike: .love, likeCount: count)
+                                    return try twarrt.convertToData(
+                                        bookmarked: bookmarked,
+                                        userLike: .love,
+                                        likeCount: count
+                                    )
                             }
                         }
-                    }
-                    // otherwise create love
-                    let twarrtLike = try TwarrtLikes(user, twarrt, likeType: .love)
-                    return twarrtLike.save(on: req).flatMap {
-                        (savedLike) in
-                        // get likes count
-                        return try TwarrtLikes.query(on: req)
-                            .filter(\.twarrtID == twarrt.requireID())
-                            .count()
-                            .map {
-                                (count) in
-                                // return as PostData
-                                return try twarrt.convertToData(withLike: .love, likeCount: count)
-                        }
-                    }
+                }
             }
         }
     }
@@ -577,29 +652,37 @@ struct TwitarrController: RouteCollection {
             guard try twarrt.authorID != user.requireID() else {
                 throw Abort(.forbidden, reason: "user cannot like own post")
             }
-            // check for existing like
-            return try TwarrtLikes.query(on: req)
-                .filter(\.userID == user.requireID())
-                .filter(\.twarrtID == twarrt.requireID())
-                .first()
-                .flatMap {
-                    (like) in
-                    guard like != nil else {
-                        throw Abort(.badRequest, reason: "user does not have a reaction on the twarrt")
-                    }
-                    // remove pivot
-                    return twarrt.likes.detach(user, on: req).flatMap {
-                        (_) in
-                        // get likes count
-                        return try TwarrtLikes.query(on: req)
-                            .filter(\.twarrtID == twarrt.requireID())
-                            .count()
-                            .map {
-                                (count) in
-                                // return as PostData
-                                return try twarrt.convertToData(withLike: nil, likeCount: count)
+            // get isBookmarked state
+            return try self.isBookmarked(idValue: twarrt.requireID(), byUser: user, on: req).flatMap {
+                (bookmarked) in
+                // check for existing like
+                return try TwarrtLikes.query(on: req)
+                    .filter(\.userID == user.requireID())
+                    .filter(\.twarrtID == twarrt.requireID())
+                    .first()
+                    .flatMap {
+                        (like) in
+                        guard like != nil else {
+                            throw Abort(.badRequest, reason: "user does not have a reaction on the twarrt")
                         }
-                    }
+                        // remove pivot
+                        return twarrt.likes.detach(user, on: req).flatMap {
+                            (_) in
+                            // get likes count
+                            return try TwarrtLikes.query(on: req)
+                                .filter(\.twarrtID == twarrt.requireID())
+                                .count()
+                                .map {
+                                    (count) in
+                                    // return as PostData
+                                    return try twarrt.convertToData(
+                                        bookmarked: bookmarked,
+                                        userLike: nil,
+                                        likeCount: count
+                                    )
+                            }
+                        }
+                }
             }
         }
     }
@@ -627,44 +710,56 @@ struct TwitarrController: RouteCollection {
                 user.accessLevel.rawValue >= UserAccessLevel.verified.rawValue else {
                     throw Abort(.forbidden, reason: "user cannot modify twarrt")
             }
-            // get like count
-            return try TwarrtLikes.query(on: req)
-                .filter(\.twarrtID == twarrt.requireID())
-                .count()
-                .flatMap {
-                    (count) in
-                    // see `PostCreateData.validation()`
-                    try data.validate()
-                    // stash current contents
-                    let twarrtEdit = try TwarrtEdit(
-                        twarrtID: twarrt.requireID(),
-                        twarrtContent: PostContentData(text: twarrt.text, image: twarrt.image)
-                    )
-                    // update if there are changes
-                    if twarrt.text != data.text || twarrt.image != data.image {
-                        twarrt.text = data.text
-                        twarrt.image = data.image
-                        return twarrt.save(on: req).flatMap {
-                            (savedTwarrt) in
-                            // save TwarrtEdit
-                            return twarrtEdit.save(on: req).map {
-                                (_) in
-                                // return updated twarrt as PostData, with 201 status
-                                let response = Response(http: HTTPResponse(status: .created), using: req)
-                                try response.content.encode(
-                                    try savedTwarrt.convertToData(withLike: nil, likeCount: count)
-                                )
-                                return response
-                            }
-                        }
-                    } else {
-                        // just return as PostData, with 200 status
-                        let response = Response(http: HTTPResponse(status: .ok), using: req)
-                        try response.content.encode(
-                            try twarrt.convertToData(withLike: nil, likeCount: count)
+            // get isBookmarked state
+            return try self.isBookmarked(idValue: twarrt.requireID(), byUser: user, on: req).flatMap {
+                (bookmarked) in
+                // get like count
+                return try TwarrtLikes.query(on: req)
+                    .filter(\.twarrtID == twarrt.requireID())
+                    .count()
+                    .flatMap {
+                        (count) in
+                        // see `PostCreateData.validation()`
+                        try data.validate()
+                        // stash current contents
+                        let twarrtEdit = try TwarrtEdit(
+                            twarrtID: twarrt.requireID(),
+                            twarrtContent: PostContentData(text: twarrt.text, image: twarrt.image)
                         )
-                        return req.future(response)
-                    }
+                        // update if there are changes
+                        if twarrt.text != data.text || twarrt.image != data.image {
+                            twarrt.text = data.text
+                            twarrt.image = data.image
+                            return twarrt.save(on: req).flatMap {
+                                (savedTwarrt) in
+                                // save TwarrtEdit
+                                return twarrtEdit.save(on: req).map {
+                                    (_) in
+                                    // return updated twarrt as PostData, with 201 status
+                                    let response = Response(http: HTTPResponse(status: .created), using: req)
+                                    try response.content.encode(
+                                        try savedTwarrt.convertToData(
+                                            bookmarked: bookmarked,
+                                            userLike: nil,
+                                            likeCount: count
+                                        )
+                                    )
+                                    return response
+                                }
+                            }
+                        } else {
+                            // just return as PostData, with 200 status
+                            let response = Response(http: HTTPResponse(status: .ok), using: req)
+                            try response.content.encode(
+                                try twarrt.convertToData(
+                                    bookmarked: bookmarked,
+                                    userLike: nil,
+                                    likeCount: count
+                                )
+                            )
+                            return req.future(response)
+                        }
+                }
             }
         }
     }
