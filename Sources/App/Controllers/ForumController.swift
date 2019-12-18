@@ -38,6 +38,7 @@ struct ForumController: RouteCollection {
         sharedAuthGroup.get("match", String.parameter, use: forumMatchHandler)
         sharedAuthGroup.get("post", ForumPost.parameter, use: postHandler)
         sharedAuthGroup.get("post", ForumPost.parameter, "forum", use: postForumHandler)
+        sharedAuthGroup.get("post", "hashtag", String.parameter, use: postHashtagHandler)
         sharedAuthGroup.get("post", "search", String.parameter, use: postSearchHandler)
         sharedAuthGroup.get(Forum.parameter, "search", String.parameter, use: forumSearchHandler)
         
