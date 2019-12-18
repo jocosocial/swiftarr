@@ -42,6 +42,7 @@ struct ForumController: RouteCollection {
         sharedAuthGroup.get(Forum.parameter, "search", String.parameter, use: forumSearchHandler)
         
         // endpoints available only when logged in
+        tokenAuthGroup.get("bookmarks", use: bookmarksHandler)
         tokenAuthGroup.post(ForumCreateData.self, at: "categories", Category.parameter, "create", use: forumCreateHandler)
         tokenAuthGroup.post(Forum.parameter, "favorite", use: favoriteAddHandler)
         tokenAuthGroup.post(Forum.parameter, "favorite", "remove", use: favoriteRemoveHandler)
@@ -759,6 +760,59 @@ struct ForumController: RouteCollection {
                 }
                 barrel.userInfo["bookmarks"] = bookmarks
                 return barrel.save(on: req).transform(to: .noContent)
+            }
+        }
+    }
+    
+    /// `GET /api/v3/forum/bookmarks`
+    ///
+    /// Retrieve all `ForumPost`s the user has bookmarked, sorted by creation timestamp.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Returns: `[PostData]` containing all bookmarked posts.
+    func bookmarksHandler(_ req: Request) throws -> Future<[PostData]> {
+        let user = try req.requireAuthenticated(User.self)
+        // get bookmarkedPost barrel
+        return try self.getBookmarkBarrel(for: user, on: req).flatMap {
+            (barrel) in
+            let bookmarkStrings = barrel?.userInfo["bookmarks"] ?? []
+            // convert to IDs
+            let bookmarks = bookmarkStrings.compactMap { Int($0) }
+            // get filters
+            return try self.getCachedFilters(for: user, on: req).flatMap {
+                (tuple) in
+                let blocked = tuple.0
+                let muted = tuple.1
+                // get posts, don't filter mutewords
+                return ForumPost.query(on: req)
+                    .filter(\.id ~~ bookmarks)
+                    .filter(\.authorID !~ blocked)
+                    .filter(\.authorID !~ muted)
+                    .sort(\.createdAt, .ascending)
+                    .all()
+                    .flatMap {
+                        (posts) in
+                        // convert to PostData
+                        let postsData = try posts.map {
+                            (post) -> Future<PostData> in
+                            let userLike = try PostLikes.query(on: req)
+                                .filter(\.postID == post.requireID())
+                                .filter(\.userID == user.requireID())
+                                .first()
+                            let likeCount = try PostLikes.query(on: req)
+                                .filter(\.postID == post.requireID())
+                                .count()
+                            return map(userLike, likeCount) {
+                                (userLike, count) in
+                                return try post.convertToData(
+                                    bookmarked: true,
+                                    userLike: userLike?.likeType,
+                                    likeCount: count
+                                )
+                            }
+                        }
+                        return postsData.flatten(on: req)
+                }
             }
         }
     }
