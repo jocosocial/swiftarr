@@ -449,7 +449,7 @@ struct TwitarrController: RouteCollection {
     
     /// `GET /api/v3/twitarr/mentions`
     ///
-    /// Retrieve all `Twarrt`s whose content mentions the user.
+    /// Retrieve all `Twarrt`s whose content mentions the user, in descending timestamp order.
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Returns: `[TwarrtData]` containing all twarrts containing mentions.
@@ -463,9 +463,10 @@ struct TwitarrController: RouteCollection {
             (blocks) in
             let blocked = blocks ?? []
             // get mention twarrts
-            return try Twarrt.query(on: req)
+            return Twarrt.query(on: req)
                 .filter(\.authorID !~ blocked)
                 .filter(\.text, .ilike, "%@\(user.username) %")
+                .sort(\.createdAt, .descending)
                 .all()
                 .flatMap {
                     (twarrts) in
