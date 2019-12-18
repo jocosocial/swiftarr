@@ -778,16 +778,17 @@ struct ForumController: RouteCollection {
             let bookmarkStrings = barrel?.userInfo["bookmarks"] ?? []
             // convert to IDs
             let bookmarks = bookmarkStrings.compactMap { Int($0) }
-            // get filters
-            return try self.getCachedFilters(for: user, on: req).flatMap {
-                (tuple) in
-                let blocked = tuple.0
-                let muted = tuple.1
-                // get posts, don't filter mutewords
+            // filter blocks only
+            let cache = try req.keyedCache(for: .redis)
+            let key = try "blocks:\(user.requireID())"
+            let cachedBlocks = cache.get(key, as: [UUID].self)
+            return cachedBlocks.flatMap {
+                (blocks) in
+                let blocked = blocks ?? []
+                // get twarrts
                 return ForumPost.query(on: req)
                     .filter(\.id ~~ bookmarks)
                     .filter(\.authorID !~ blocked)
-                    .filter(\.authorID !~ muted)
                     .sort(\.createdAt, .ascending)
                     .all()
                     .flatMap {
