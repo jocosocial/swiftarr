@@ -305,6 +305,11 @@ struct ForumController: RouteCollection {
                             // convert to PostData
                             let postsData = try filteredPosts.map {
                                 (filteredPost) -> Future<PostData> in
+                                let bookmarked = try self.isBookmarked(
+                                    idValue: filteredPost.requireID(),
+                                    byUser: user,
+                                    on: req
+                                )
                                 let userLike = try PostLikes.query(on: req)
                                     .filter(\.postID == filteredPost.requireID())
                                     .filter(\.userID == user.requireID())
@@ -312,10 +317,11 @@ struct ForumController: RouteCollection {
                                 let likeCount = try PostLikes.query(on: req)
                                     .filter(\.postID == filteredPost.requireID())
                                     .count()
-                                return map(userLike, likeCount) {
-                                    (resolvedLike, count) in
+                                return map(bookmarked, userLike, likeCount) {
+                                    (bookmarked, userLike, count) in
                                     return try filteredPost.convertToData(
-                                        withLike: resolvedLike?.likeType,
+                                        bookmarked: bookmarked,
+                                        userLike: userLike?.likeType,
                                         likeCount: count
                                     )
                                 }
@@ -398,12 +404,12 @@ struct ForumController: RouteCollection {
                                             isLocked: forum.isLocked,
                                             isFavorite: barrel?.modelUUIDs
                                                 .contains(try forum.requireID()) ?? false
+                                        )
                                     )
-                                )
+                                }
+                                return returnListData
                             }
-                            return returnListData
                         }
-                    }
                 }
             }
         }
@@ -437,32 +443,38 @@ struct ForumController: RouteCollection {
                     .filter(\.authorID !~ muted)
                     .filter(\.text, .ilike, "%\(search)%")
                     .all()
-                        .flatMap {
-                            (posts) in
-                            // remove muteword posts
-                            let filteredPosts = posts.compactMap {
-                                self.filterMutewords(for: $0, using: mutewords, on: req)
+                    .flatMap {
+                        (posts) in
+                        // remove muteword posts
+                        let filteredPosts = posts.compactMap {
+                            self.filterMutewords(for: $0, using: mutewords, on: req)
+                        }
+                        // convert to PostData
+                        let postsData = try filteredPosts.map {
+                            (filteredPost) -> Future<PostData> in
+                            let bookmarked = try self.isBookmarked(
+                                idValue: filteredPost.requireID(),
+                                byUser: user,
+                                on: req
+                            )
+                            let userLike = try PostLikes.query(on: req)
+                                .filter(\.postID == filteredPost.requireID())
+                                .filter(\.userID == user.requireID())
+                                .first()
+                            let likeCount = try PostLikes.query(on: req)
+                                .filter(\.postID == filteredPost.requireID())
+                                .count()
+                            return map(bookmarked, userLike, likeCount) {
+                                (bookmarked, userLike, count) in
+                                return try filteredPost.convertToData(
+                                    bookmarked: bookmarked,
+                                    userLike: userLike?.likeType,
+                                    likeCount: count
+                                )
                             }
-                            // convert to PostData
-                            let postsData = try filteredPosts.map {
-                                (filteredPost) -> Future<PostData> in
-                                let userLike = try PostLikes.query(on: req)
-                                    .filter(\.postID == filteredPost.requireID())
-                                    .filter(\.userID == user.requireID())
-                                    .first()
-                                let likeCount = try PostLikes.query(on: req)
-                                    .filter(\.postID == filteredPost.requireID())
-                                    .count()
-                                return map(userLike, likeCount) {
-                                    (resolvedLike, count) in
-                                    return try filteredPost.convertToData(
-                                        withLike: resolvedLike?.likeType,
-                                        likeCount: count
-                                    )
-                                }
-                            }
-                            return postsData.flatten(on: req)
-                    }
+                        }
+                        return postsData.flatten(on: req)
+                }
             }
         }
     }
@@ -505,6 +517,11 @@ struct ForumController: RouteCollection {
                                 // convert to PostData
                                 let postsData = try filteredPosts.map {
                                     (filteredPost) -> Future<PostData> in
+                                    let bookmarked = try self.isBookmarked(
+                                        idValue: filteredPost.requireID(),
+                                        byUser: user,
+                                        on: req
+                                    )
                                     let userLike = try PostLikes.query(on: req)
                                         .filter(\.postID == filteredPost.requireID())
                                         .filter(\.userID == user.requireID())
@@ -512,10 +529,11 @@ struct ForumController: RouteCollection {
                                     let likeCount = try PostLikes.query(on: req)
                                         .filter(\.postID == filteredPost.requireID())
                                         .count()
-                                    return map(userLike, likeCount) {
-                                        (resolvedLike, count) in
+                                    return map(bookmarked, userLike, likeCount) {
+                                        (bookmarked, userLike, count) in
                                         return try filteredPost.convertToData(
-                                            withLike: resolvedLike?.likeType,
+                                            bookmarked: bookmarked,
+                                            userLike: userLike?.likeType,
                                             likeCount: count
                                         )
                                     }
@@ -652,6 +670,11 @@ struct ForumController: RouteCollection {
                     // convert to PostData
                     let postsData = try filteredPosts.map {
                         (filteredPost) -> Future<PostData> in
+                        let bookmarked = try self.isBookmarked(
+                            idValue: filteredPost.requireID(),
+                            byUser: user,
+                            on: req
+                        )
                         let userLike = try PostLikes.query(on: req)
                             .filter(\.postID == filteredPost.requireID())
                             .filter(\.userID == user.requireID())
@@ -659,10 +682,11 @@ struct ForumController: RouteCollection {
                         let likeCount = try PostLikes.query(on: req)
                             .filter(\.postID == filteredPost.requireID())
                             .count()
-                        return map(userLike, likeCount) {
-                            (resolvedLike, count) in
+                        return map(bookmarked, userLike, likeCount) {
+                            (bookmarked, userLike, count) in
                             return try filteredPost.convertToData(
-                                withLike: resolvedLike?.likeType,
+                                bookmarked: bookmarked,
+                                userLike: userLike?.likeType,
                                 likeCount: count
                             )
                         }
@@ -671,7 +695,7 @@ struct ForumController: RouteCollection {
             }
         }
     }
-
+    
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
@@ -765,7 +789,7 @@ struct ForumController: RouteCollection {
                     // add forum and return 201
                     barrel.modelUUIDs.append(try forum.requireID())
                     return barrel.save(on: req).transform(to: .created)
-                }
+            }
         }
     }
     
@@ -862,7 +886,7 @@ struct ForumController: RouteCollection {
             }
         }
     }
-
+    
     /// `POST /api/v3/forum/categories/ID/create`
     ///
     /// Creates a new `Forum` in the specified `Category`, and the first `ForumPost` within
@@ -914,7 +938,7 @@ struct ForumController: RouteCollection {
                             creatorID: savedForum.creatorID,
                             isLocked: savedForum.isLocked,
                             isFavorite: false,
-                            posts: [post.convertToData(withLike: nil, likeCount: 0)]
+                            posts: [post.convertToData(bookmarked: false, userLike: nil, likeCount: 0)]
                         )
                         return forumData
                     }
@@ -945,7 +969,7 @@ struct ForumController: RouteCollection {
             return forum.save(on: req).transform(to: .created)
         }
     }
-
+    
     /// `POST /api/v3/forum/ID/unlock`
     ///
     /// Rename the specified `Forum` to the specified title string.
@@ -998,7 +1022,7 @@ struct ForumController: RouteCollection {
             return report.save(on: req).transform(to: .created)
         }
     }
-
+    
     /// `POST /api/v3/forum/ID/unlock`
     ///
     /// Remove a read-only lock on the specified `Forum`.
@@ -1041,48 +1065,59 @@ struct ForumController: RouteCollection {
                 || user.accessLevel.rawValue >= UserAccessLevel.moderator.rawValue else {
                     throw Abort(.forbidden, reason: "user cannot modify post")
             }
-            // get like count
-            return try PostLikes.query(on: req)
-                .filter(\.postID == post.requireID())
-                .count()
-                .flatMap {
-                    (count) in
-                    // get generated filename
-                    return try self.processImage(data: data.image, forType: .userProfile, on: req).flatMap {
-                        (filename) in
-                        // replace existing image
-                        if !post.image.isEmpty {
-                            // create ForumEdit record
-                            let forumEdit = try ForumEdit(
-                                postID: post.requireID(),
-                                postContent: PostContentData(text: post.text, image: post.image)
-                            )
-                            // archive thumbnail
-                            DispatchQueue.global(qos: .background).async {
-                                self.archiveImage(post.image, from: self.imageDir)
-                            }
-                            return forumEdit.save(on: req).flatMap {
-                                (_) in
-                                // update post
-                                post.image = filename
-                                return post.save(on: req).map {
-                                    (savedPost) in
-                                    // return as PostData
-                                    return try savedPost.convertToData(withLike: nil, likeCount: count)
+            // get isBookmarked state
+            return try self.isBookmarked(idValue: post.requireID(), byUser: user, on: req).flatMap {
+                (bookmarked) in
+                // get like count
+                return try PostLikes.query(on: req)
+                    .filter(\.postID == post.requireID())
+                    .count()
+                    .flatMap {
+                        (count) in
+                        // get generated filename
+                        return try self.processImage(data: data.image, forType: .userProfile, on: req).flatMap {
+                            (filename) in
+                            // replace existing image
+                            if !post.image.isEmpty {
+                                // create ForumEdit record
+                                let forumEdit = try ForumEdit(
+                                    postID: post.requireID(),
+                                    postContent: PostContentData(text: post.text, image: post.image)
+                                )
+                                // archive thumbnail
+                                DispatchQueue.global(qos: .background).async {
+                                    self.archiveImage(post.image, from: self.imageDir)
+                                }
+                                return forumEdit.save(on: req).flatMap {
+                                    (_) in
+                                    // update post
+                                    post.image = filename
+                                    return post.save(on: req).map {
+                                        (savedPost) in
+                                        // return as PostData
+                                        return try savedPost.convertToData(
+                                            bookmarked: bookmarked,
+                                            userLike: nil,
+                                            likeCount: count
+                                        )
+                                    }
                                 }
                             }
+                            // else add new image
+                            post.image = filename
+                            return post.save(on: req).map {
+                                (savedPost) in
+                                // return as PostData
+                                return try savedPost.convertToData(
+                                    bookmarked: bookmarked,
+                                    userLike: nil,
+                                    likeCount: count
+                                )
+                            }
+                            
                         }
-                        // else add new image
-                        post.image = filename
-                        return post.save(on: req).map {
-                            (savedPost) in
-                            // return as PostData
-                            return try savedPost.convertToData(withLike: nil, likeCount: count)
-                        }
-
-            }
-
-            
+                }
+                
             }
         }
     }
@@ -1103,35 +1138,49 @@ struct ForumController: RouteCollection {
                 || user.accessLevel.rawValue >= UserAccessLevel.moderator.rawValue else {
                     throw Abort(.forbidden, reason: "user cannot modify post")
             }
-            // get like count
-            return try PostLikes.query(on: req)
-                .filter(\.postID == post.requireID())
-                .count()
-                .flatMap {
-                    (count) in
-                    if !post.image.isEmpty {
-                        // create ForumEdit record
-                        let forumEdit = try ForumEdit(
-                            postID: post.requireID(),
-                            postContent: PostContentData(text: post.text, image: post.image)
-                        )
-                        // archive thumbnail
-                        DispatchQueue.global(qos: .background).async {
-                            self.archiveImage(post.image, from: self.imageDir)
-                        }
-                        return forumEdit.save(on: req).flatMap {
-                            (_) in
-                            // remove image filename from post
-                            post.image = ""
-                            return post.save(on: req).map {
-                                (savedPost) in
-                                // return as PostData
-                                return try savedPost.convertToData(withLike: nil, likeCount: count)
+            // get isBookmarked state
+            return try self.isBookmarked(idValue: post.requireID(), byUser: user, on: req).flatMap {
+                (bookmarked) in
+                // get like count
+                return try PostLikes.query(on: req)
+                    .filter(\.postID == post.requireID())
+                    .count()
+                    .flatMap {
+                        (count) in
+                        if !post.image.isEmpty {
+                            // create ForumEdit record
+                            let forumEdit = try ForumEdit(
+                                postID: post.requireID(),
+                                postContent: PostContentData(text: post.text, image: post.image)
+                            )
+                            // archive thumbnail
+                            DispatchQueue.global(qos: .background).async {
+                                self.archiveImage(post.image, from: self.imageDir)
+                            }
+                            return forumEdit.save(on: req).flatMap {
+                                (_) in
+                                // remove image filename from post
+                                post.image = ""
+                                return post.save(on: req).map {
+                                    (savedPost) in
+                                    // return as PostData
+                                    return try savedPost.convertToData(
+                                        bookmarked: bookmarked,
+                                        userLike: nil,
+                                        likeCount: count
+                                    )
+                                }
                             }
                         }
-                    }
-                    // no existing image, return PostData
-                    return req.future(try post.convertToData(withLike: nil, likeCount: count))
+                        // no existing image, return PostData
+                        return req.future(
+                            try post.convertToData(
+                                bookmarked: bookmarked,
+                                userLike: nil,
+                                likeCount: count
+                            )
+                        )
+                }
             }
         }
     }
@@ -1240,7 +1289,8 @@ struct ForumController: RouteCollection {
                         (savedPost) in
                         // return as PostData, with 201 status
                         let response = Response(http: HTTPResponse(status: .created), using: req)
-                        try response.content.encode(try savedPost.convertToData(withLike: nil, likeCount: 0))
+                        try response.content.encode(
+                            try savedPost.convertToData(bookmarked: false, userLike: nil, likeCount: 0))
                         return response
                     }
                 }
@@ -1323,17 +1373,39 @@ struct ForumController: RouteCollection {
             guard try post.authorID != user.requireID() else {
                 throw Abort(.forbidden, reason: "user cannot like own post")
             }
-            // check for existing like
-            return try PostLikes.query(on: req)
-                .filter(\.userID == user.requireID())
-                .filter(\.postID == post.requireID())
-                .first()
-                .flatMap {
-                    (like) in
-                    // re-type if existing like
-                    if let like = like {
-                        like.likeType = .laugh
-                        return like.save(on: req).flatMap {
+            // get isBookmarked state
+            return try self.isBookmarked(idValue: post.requireID(), byUser: user, on: req).flatMap {
+                (bookmarked) in
+                // check for existing like
+                return try PostLikes.query(on: req)
+                    .filter(\.userID == user.requireID())
+                    .filter(\.postID == post.requireID())
+                    .first()
+                    .flatMap {
+                        (like) in
+                        // re-type if existing like
+                        if let like = like {
+                            like.likeType = .laugh
+                            return like.save(on: req).flatMap {
+                                (savedLike) in
+                                // get likes count
+                                return try PostLikes.query(on: req)
+                                    .filter(\.postID == post.requireID())
+                                    .count()
+                                    .map {
+                                        (count) in
+                                        // return as PostData
+                                        return try post.convertToData(
+                                            bookmarked: bookmarked,
+                                            userLike: .laugh,
+                                            likeCount: count
+                                        )
+                                }
+                            }
+                        }
+                        // otherwise create laugh
+                        let postLike = try PostLikes(user, post, likeType: .laugh)
+                        return postLike.save(on: req).flatMap {
                             (savedLike) in
                             // get likes count
                             return try PostLikes.query(on: req)
@@ -1342,24 +1414,14 @@ struct ForumController: RouteCollection {
                                 .map {
                                     (count) in
                                     // return as PostData
-                                    return try post.convertToData(withLike: .laugh, likeCount: count)
+                                    return try post.convertToData(
+                                        bookmarked: bookmarked,
+                                        userLike: .laugh,
+                                        likeCount: count
+                                    )
                             }
                         }
-                    }
-                    // otherwise create laugh
-                    let postLike = try PostLikes(user, post, likeType: .laugh)
-                    return postLike.save(on: req).flatMap {
-                        (savedLike) in
-                        // get likes count
-                        return try PostLikes.query(on: req)
-                            .filter(\.postID == post.requireID())
-                            .count()
-                            .map {
-                                (count) in
-                                // return as PostData
-                                return try post.convertToData(withLike: .laugh, likeCount: count)
-                        }
-                    }
+                }
             }
         }
     }
@@ -1380,17 +1442,39 @@ struct ForumController: RouteCollection {
             guard try post.authorID != user.requireID() else {
                 throw Abort(.forbidden, reason: "user cannot like own post")
             }
-            // check for existing like
-            return try PostLikes.query(on: req)
-                .filter(\.userID == user.requireID())
-                .filter(\.postID == post.requireID())
-                .first()
-                .flatMap {
-                    (like) in
-                    // re-type if existing like
-                    if let like = like {
-                        like.likeType = .like
-                        return like.save(on: req).flatMap {
+            // get isBookmarked state
+            return try self.isBookmarked(idValue: post.requireID(), byUser: user, on: req).flatMap {
+                (bookmarked) in
+                // check for existing like
+                return try PostLikes.query(on: req)
+                    .filter(\.userID == user.requireID())
+                    .filter(\.postID == post.requireID())
+                    .first()
+                    .flatMap {
+                        (like) in
+                        // re-type if existing like
+                        if let like = like {
+                            like.likeType = .like
+                            return like.save(on: req).flatMap {
+                                (savedLike) in
+                                // get likes count
+                                return try PostLikes.query(on: req)
+                                    .filter(\.postID == post.requireID())
+                                    .count()
+                                    .map {
+                                        (count) in
+                                        // return as PostData
+                                        return try post.convertToData(
+                                            bookmarked: bookmarked,
+                                            userLike: .like,
+                                            likeCount: count
+                                        )
+                                }
+                            }
+                        }
+                        // otherwise create like
+                        let postLike = try PostLikes(user, post, likeType: .like)
+                        return postLike.save(on: req).flatMap {
                             (savedLike) in
                             // get likes count
                             return try PostLikes.query(on: req)
@@ -1399,24 +1483,14 @@ struct ForumController: RouteCollection {
                                 .map {
                                     (count) in
                                     // return as PostData
-                                    return try post.convertToData(withLike: .like, likeCount: count)
+                                    return try post.convertToData(
+                                        bookmarked: bookmarked,
+                                        userLike: .like,
+                                        likeCount: count
+                                    )
                             }
                         }
-                    }
-                    // otherwise create like
-                    let postLike = try PostLikes(user, post, likeType: .like)
-                    return postLike.save(on: req).flatMap {
-                        (savedLike) in
-                        // get likes count
-                        return try PostLikes.query(on: req)
-                            .filter(\.postID == post.requireID())
-                            .count()
-                            .map {
-                                (count) in
-                                // return as PostData
-                                return try post.convertToData(withLike: .like, likeCount: count)
-                        }
-                    }
+                }
             }
         }
     }
@@ -1437,17 +1511,39 @@ struct ForumController: RouteCollection {
             guard try post.authorID != user.requireID() else {
                 throw Abort(.forbidden, reason: "user cannot like own post")
             }
-            // check for existing like
-            return try PostLikes.query(on: req)
-                .filter(\.userID == user.requireID())
-                .filter(\.postID == post.requireID())
-                .first()
-                .flatMap {
-                    (like) in
-                    // re-type if existing like
-                    if let like = like {
-                        like.likeType = .love
-                        return like.save(on: req).flatMap {
+            // get isBookmarked state
+            return try self.isBookmarked(idValue: post.requireID(), byUser: user, on: req).flatMap {
+                (bookmarked) in
+                // check for existing like
+                return try PostLikes.query(on: req)
+                    .filter(\.userID == user.requireID())
+                    .filter(\.postID == post.requireID())
+                    .first()
+                    .flatMap {
+                        (like) in
+                        // re-type if existing like
+                        if let like = like {
+                            like.likeType = .love
+                            return like.save(on: req).flatMap {
+                                (savedLike) in
+                                // get likes count
+                                return try PostLikes.query(on: req)
+                                    .filter(\.postID == post.requireID())
+                                    .count()
+                                    .map {
+                                        (count) in
+                                        // return as PostData
+                                        return try post.convertToData(
+                                            bookmarked: bookmarked,
+                                            userLike: .love,
+                                            likeCount: count
+                                        )
+                                }
+                            }
+                        }
+                        // otherwise create love
+                        let postLike = try PostLikes(user, post, likeType: .love)
+                        return postLike.save(on: req).flatMap {
                             (savedLike) in
                             // get likes count
                             return try PostLikes.query(on: req)
@@ -1456,24 +1552,14 @@ struct ForumController: RouteCollection {
                                 .map {
                                     (count) in
                                     // return as PostData
-                                    return try post.convertToData(withLike: .love, likeCount: count)
+                                    return try post.convertToData(
+                                        bookmarked: bookmarked,
+                                        userLike: .love,
+                                        likeCount: count
+                                    )
                             }
                         }
-                    }
-                    // otherwise create love
-                    let postLike = try PostLikes(user, post, likeType: .love)
-                    return postLike.save(on: req).flatMap {
-                        (savedLike) in
-                        // get likes count
-                        return try PostLikes.query(on: req)
-                            .filter(\.postID == post.requireID())
-                            .count()
-                            .map {
-                                (count) in
-                                // return as PostData
-                                return try post.convertToData(withLike: .love, likeCount: count)
-                        }
-                    }
+                }
             }
         }
     }
@@ -1494,33 +1580,41 @@ struct ForumController: RouteCollection {
             guard try post.authorID != user.requireID() else {
                 throw Abort(.forbidden, reason: "user cannot like own post")
             }
-            // check for existing like
-            return try PostLikes.query(on: req)
-                .filter(\.userID == user.requireID())
-                .filter(\.postID == post.requireID())
-                .first()
-                .flatMap {
-                    (like) in
-                    guard like != nil else {
-                        throw Abort(.badRequest, reason: "user does not have a reaction on the post")
-                    }
-                    // remove pivot
-                    return post.likes.detach(user, on: req).flatMap {
-                        (_) in
-                        // get likes count
-                        return try PostLikes.query(on: req)
-                            .filter(\.postID == post.requireID())
-                            .count()
-                            .map {
-                                (count) in
-                                // return as PostData
-                                return try post.convertToData(withLike: nil, likeCount: count)
+            // get isBookmarked state
+            return try self.isBookmarked(idValue: post.requireID(), byUser: user, on: req).flatMap {
+                (bookmarked) in
+                // check for existing like
+                return try PostLikes.query(on: req)
+                    .filter(\.userID == user.requireID())
+                    .filter(\.postID == post.requireID())
+                    .first()
+                    .flatMap {
+                        (like) in
+                        guard like != nil else {
+                            throw Abort(.badRequest, reason: "user does not have a reaction on the post")
                         }
-                    }
+                        // remove pivot
+                        return post.likes.detach(user, on: req).flatMap {
+                            (_) in
+                            // get likes count
+                            return try PostLikes.query(on: req)
+                                .filter(\.postID == post.requireID())
+                                .count()
+                                .map {
+                                    (count) in
+                                    // return as PostData
+                                    return try post.convertToData(
+                                        bookmarked: bookmarked,
+                                        userLike: nil,
+                                        likeCount: count
+                                    )
+                            }
+                        }
+                }
             }
         }
     }
-
+    
     /// `POST /api/v3/forum/post/ID/update`
     ///
     /// Update the specified `ForumPost`.
@@ -1544,44 +1638,56 @@ struct ForumController: RouteCollection {
                 user.accessLevel.rawValue >= UserAccessLevel.verified.rawValue else {
                     throw Abort(.forbidden, reason: "user cannot modify post")
             }
-            // get like count
-            return try PostLikes.query(on: req)
-                .filter(\.postID == post.requireID())
-                .count()
-                .flatMap {
-                    (count) in
-                    // see `PostCreateData.validations()`
-                    try data.validate()
-                    // stash current contents
-                    let forumEdit = try ForumEdit(
-                        postID: post.requireID(),
-                        postContent: PostContentData(text: post.text, image: post.image)
-                    )
-                    // update if there are changes
-                    if post.text != data.text || post.image != data.image {
-                        post.text = data.text
-                        post.image = data.image
-                        return post.save(on: req).flatMap {
-                            (savedPost) in
-                            // save ForumEdit
-                            return forumEdit.save(on: req).map {
-                                (_) in
-                                // return updated post as PostData, with 201 status
-                                let response = Response(http: HTTPResponse(status: .created), using: req)
-                                try response.content.encode(
-                                    try savedPost.convertToData(withLike: nil, likeCount: count)
-                                )
-                                return response
-                            }
-                        }
-                    } else {
-                        // just return post as PostData, with 200 status
-                        let response = Response(http: HTTPResponse(status: .ok), using: req)
-                        try response.content.encode(
-                            try post.convertToData(withLike: nil, likeCount: count)
+            // get isBookmarked state
+            return try self.isBookmarked(idValue: post.requireID(), byUser: user, on: req).flatMap {
+                (bookmarked) in
+                // get like count
+                return try PostLikes.query(on: req)
+                    .filter(\.postID == post.requireID())
+                    .count()
+                    .flatMap {
+                        (count) in
+                        // see `PostCreateData.validations()`
+                        try data.validate()
+                        // stash current contents
+                        let forumEdit = try ForumEdit(
+                            postID: post.requireID(),
+                            postContent: PostContentData(text: post.text, image: post.image)
                         )
-                        return req.future(response)
-                    }
+                        // update if there are changes
+                        if post.text != data.text || post.image != data.image {
+                            post.text = data.text
+                            post.image = data.image
+                            return post.save(on: req).flatMap {
+                                (savedPost) in
+                                // save ForumEdit
+                                return forumEdit.save(on: req).map {
+                                    (_) in
+                                    // return updated post as PostData, with 201 status
+                                    let response = Response(http: HTTPResponse(status: .created), using: req)
+                                    try response.content.encode(
+                                        try savedPost.convertToData(
+                                            bookmarked: bookmarked,
+                                            userLike: nil,
+                                            likeCount: count
+                                        )
+                                    )
+                                    return response
+                                }
+                            }
+                        } else {
+                            // just return post as PostData, with 200 status
+                            let response = Response(http: HTTPResponse(status: .ok), using: req)
+                            try response.content.encode(
+                                try post.convertToData(
+                                    bookmarked: bookmarked,
+                                    userLike: nil,
+                                    likeCount: count
+                                )
+                            )
+                            return req.future(response)
+                        }
+                }
             }
         }
     }
