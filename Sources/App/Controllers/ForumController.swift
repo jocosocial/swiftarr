@@ -51,6 +51,8 @@ struct ForumController: RouteCollection {
         tokenAuthGroup.post(ReportData.self, at: Forum.parameter, "report", use: forumReportHandler)
         tokenAuthGroup.post(Forum.parameter, "unlock", use: forumUnlockHandler)
         tokenAuthGroup.get("owner", use: ownerHandler)
+        tokenAuthGroup.post("post", ForumPost.parameter, "bookmark", use: bookmarkAddHandler)
+        tokenAuthGroup.post("post", ForumPost.parameter, "bookmark", "remove", use: bookmarkRemoveHandler)
         tokenAuthGroup.post(PostCreateData.self, at: Forum.parameter, "create", use: postCreateHandler)
         tokenAuthGroup.post("post", ForumPost.parameter, "delete", use: postDeleteHandler)
         tokenAuthGroup.post(ImageUploadData.self, at: "post", ForumPost.parameter, "image", use: imageHandler)
@@ -673,6 +675,69 @@ struct ForumController: RouteCollection {
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
+    
+    /// `POST /api/v3/forum/post/ID/bookmark`
+    ///
+    /// Add a bookmark of the specified `ForumPost`.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 400 error if the post is already bookmarked.
+    /// - Returns: 201 Created on success.
+    func bookmarkAddHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        let user = try req.requireAuthenticated(User.self)
+        // get post
+        return try req.parameters.next(ForumPost.self).flatMap {
+            (post) in
+            // get user's bookmarkedPost barrel
+            return try self.getBookmarkBarrel(for: user, on: req).flatMap {
+                (bookmarkBarrel) in
+                // create barrel if needed
+                let barrel = try bookmarkBarrel ?? Barrel(
+                    ownerID: user.requireID(),
+                    barrelType: .bookmarkedTwarrt
+                )
+                // ensure bookmark doesn't exist
+                var bookmarks = barrel.userInfo["bookmarks"] ?? []
+                let postID = String(try post.requireID())
+                guard !bookmarks.contains(postID) else {
+                    throw Abort(.badRequest, reason: "post already bookmarked")
+                }
+                // add post and return 201
+                bookmarks.append(String(try post.requireID()))
+                barrel.userInfo["bookmarks"] = bookmarks
+                return barrel.save(on: req).transform(to: .created)
+            }
+        }
+    }
+    
+    /// `POST /api/v3/forum/post/ID/bookmark/remove`
+    ///
+    /// Remove a bookmark of the specified `ForumPost`.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 400 error if the user has not bookmarked any posts.
+    func bookmarkRemoveHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        let user = try req.requireAuthenticated(User.self)
+        // get post
+        return try req.parameters.next(ForumPost.self).flatMap {
+            (post) in
+            // get user's bookmarkedPost barrel
+            return try self.getBookmarkBarrel(for: user, on: req).flatMap {
+                (barrel) in
+                guard let barrel = barrel else {
+                    throw Abort(.badRequest, reason: "user has not bookmarked any posts")
+                }
+                var bookmarks = barrel.userInfo["bookmarks"] ?? []
+                // remove post and return 204
+                let postID = String(try post.requireID())
+                if let index = bookmarks.firstIndex(of: postID) {
+                    bookmarks.remove(at: index)
+                }
+                barrel.userInfo["bookmarks"] = bookmarks
+                return barrel.save(on: req).transform(to: .noContent)
+            }
+        }
+    }
     
     /// `POST /api/v3/forum/ID/favorite`
     ///
