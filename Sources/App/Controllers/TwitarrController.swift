@@ -43,6 +43,7 @@ struct TwitarrController: RouteCollection {
         tokenAuthGroup.post(Twarrt.parameter, "like", use: twarrtLikeHandler)
         tokenAuthGroup.get("likes", use: likesHandler)
         tokenAuthGroup.post(Twarrt.parameter, "love", use: twarrtLoveHandler)
+        tokenAuthGroup.post(PostCreateData.self, at: Twarrt.parameter, "reply", use: replyHandler)
         tokenAuthGroup.post(ReportData.self, at: Twarrt.parameter, "report", use: twarrtReportHandler)
         tokenAuthGroup.post(Twarrt.parameter, "unreact", use: twarrtUnreactHandler)
         tokenAuthGroup.post(PostContentData.self, at: Twarrt.parameter, "update", use: twarrtUpdateHandler)
@@ -766,6 +767,83 @@ struct TwitarrController: RouteCollection {
         }
     }
     
+    /// `POST /api/v3/twitarr/ID/reply`
+    ///
+    /// Create a `Twarrt` as a reply to an existing twarrt. If the replyTo twarrt is in
+    /// quarantine, the post is rejected.
+    ///
+    /// - Requires: `PostCreateData` payload in the HTTP body.
+    /// - Parameters:
+    ///   - req: The incoming `Request`, provided automatically.
+    ///   - data: `PostCreateData` containing the twarrt's text and optional image.
+    /// - Throws: 400 error if the replyTo twarrt is in quarantine.
+    /// - Returns: `TwarrtData` containing the twarrt's contents and metadata.
+    func replyHandler(_ req: Request, data: PostCreateData) throws -> Future<Response> {
+        let user = try req.requireAuthenticated(User.self)
+        // get replyTo twarrt
+        return try req.parameters.next(Twarrt.self).flatMap {
+            (replyTo) in
+            guard !replyTo.isQuarantined else {
+                throw Abort(.badRequest, reason: "moderator-bot: twarrt cannot be replied to")
+            }
+            // see `PostCreateData.validations()`
+            try data.validate()
+            // process image
+            return try self.processImage(data: data.imageData, forType: .twarrt, on: req).flatMap {
+                (filename) in
+                // create twarrt
+                let twarrt = try Twarrt(
+                    authorID: user.requireID(),
+                    text: data.text,
+                    image: filename,
+                    replyToID: replyTo.requireID()
+                )
+                return twarrt.save(on: req).map {
+                    (savedTwarrt) in
+                    // return as TwarrtData with 201 status
+                    let response = Response(http: HTTPResponse(status: .created), using: req)
+                    try response.content.encode(
+                    try savedTwarrt.convertToData(bookmarked: false, userLike: nil, likeCount: 0))
+                    return response
+                }
+            }
+        }
+    }
+        
+    /// `POST /api/v3/twitarr/create`
+    ///
+    /// Create a new `Twarrt` in the twitarr stream.
+    ///
+    /// - Requires: `PostCreateData` payload in the HTTP body.
+    /// - Parameters:
+    ///   - req: The incoming `Request`, provided automatically.
+    ///   - data: `PostCreateData` containing the twarrt's text and optional image.
+    /// - Returns: `TwarrtData` containing the twarrt's contents and metadata.
+    func twarrtCreateHandler(_ req: Request, data: PostCreateData) throws -> Future<Response> {
+        let user = try req.requireAuthenticated(User.self)
+        // see `PostCreateData.validations()`
+        try data.validate()
+        // process image
+        return try self.processImage(data: data.imageData, forType: .twarrt, on: req).flatMap {
+            (filename) in
+            // create twarrt
+            let twarrt = try Twarrt(
+                authorID: user.requireID(),
+                text: data.text,
+                image: filename
+            )
+            return twarrt.save(on: req).map {
+                (savedTwarrt) in
+                // return as TwarrtData with 201 status
+                let response = Response(http: HTTPResponse(status: .created), using: req)
+                try response.content.encode(
+                    try savedTwarrt.convertToData(bookmarked: false, userLike: nil, likeCount: 0)
+                )
+                return response
+            }
+        }
+    }
+    
     /// `GET /api/v3/twitarr/twarrts`
     ///
     /// Retrieve all `Twarrt`s authored by the user.
@@ -801,40 +879,6 @@ struct TwitarrController: RouteCollection {
                     }
                 }
                 return twarrtsData.flatten(on: req)
-        }
-    }
-    
-    /// `POST /api/v3/twitarr/create`
-    ///
-    /// Create a new `Twarrt` in the twitarr stream.
-    ///
-    /// - Requires: `PostCreateData` payload in the HTTP body.
-    /// - Parameters:
-    ///   - req: The incoming `Request`, provided automatically.
-    ///   - data: `PostCreateData` containing the twarrt's text and optional image.
-    /// - Returns: `TwarrtData` containing the twarrt's contents and metadata.
-    func twarrtCreateHandler(_ req: Request, data: PostCreateData) throws -> Future<Response> {
-        let user = try req.requireAuthenticated(User.self)
-        // see `PostCreateData.validations()`
-        try data.validate()
-        // process image
-        return try self.processImage(data: data.imageData, forType: .twarrt, on: req).flatMap {
-            (filename) in
-            // create twarrt
-            let twarrt = try Twarrt(
-                authorID: user.requireID(),
-                text: data.text,
-                image: filename
-            )
-            return twarrt.save(on: req).map {
-                (savedTwarrt) in
-                // return as TwarrtData with 201 status
-                let response = Response(http: HTTPResponse(status: .created), using: req)
-                try response.content.encode(
-                    try savedTwarrt.convertToData(bookmarked: false, userLike: nil, likeCount: 0)
-                )
-                return response
-            }
         }
     }
     
