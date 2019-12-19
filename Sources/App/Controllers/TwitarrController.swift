@@ -25,6 +25,7 @@ struct TwitarrController: RouteCollection {
         let tokenAuthGroup = twitarrRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
         
         // endpoints available whether logged in or not
+        sharedAuthGroup.get("", use: twarrtsHandler)
         sharedAuthGroup.get(Twarrt.parameter, use: twarrtHandler)
         sharedAuthGroup.get("barrel", Barrel.parameter, use: twarrtsBarrelHandler)
         sharedAuthGroup.get("hashtag", String.parameter, use: twarrtsHashtagHandler)
@@ -203,6 +204,106 @@ struct TwitarrController: RouteCollection {
                             }
                         }
                 }
+            }
+        }
+    }
+    
+    func twarrtsHandler(_ req: Request) throws -> Future<[TwarrtData]> {
+        let user = try req.requireAuthenticated(User.self)
+        // get query parameters
+        let limit = req.query[Int.self, at: "limit"] ?? 50
+        let afterID = req.query[Int.self, at: "after"]
+        let beforeID = req.query[Int.self, at: "before"]
+        let afterDate = req.query[Date.self, at: "afterdate"]
+        let beforeDate = req.query[Date.self, at: "beforedate"]
+        let from = req.query[String.self, at: "from"]?.lowercased() ?? "last"
+        // get cached blocks
+        return try self.getCachedFilters(for: user, on: req).flatMap {
+            (tuple) in
+            let blocked = tuple.0
+            let muted = tuple.1
+            let mutewords = tuple.2
+            // get twarrts
+            var futureTwarrts: Future<[Twarrt]>
+            switch (afterID, beforeID, afterDate, beforeDate, from) {
+                case (.some(let twarrtID), _, _, _, _):
+                    futureTwarrts = Twarrt.query(on: req)
+                        .filter(\.authorID !~ blocked)
+                        .filter(\.authorID !~ muted)
+                        .filter(\.id > twarrtID)
+                        .sort(\.id, .ascending)
+                        .range(...limit)
+                        .all()
+                case (_, .some(let twarrtID), _, _, _):
+                    futureTwarrts = Twarrt.query(on: req)
+                        .filter(\.authorID !~ blocked)
+                        .filter(\.authorID !~ muted)
+                        .filter(\.id < twarrtID)
+                        .sort(\.id, .descending)
+                        .range(...limit)
+                        .all()
+                case (_, _, .some(let twarrtDate), _, _):
+                    futureTwarrts = Twarrt.query(on: req)
+                        .filter(\.authorID !~ blocked)
+                        .filter(\.authorID !~ muted)
+                        .filter(\.createdAt > twarrtDate)
+                        .sort(\.createdAt, .ascending)
+                        .range(...limit)
+                        .all()
+                case (_, _, _, .some(let twarrtDate), _):
+                    futureTwarrts = Twarrt.query(on: req)
+                        .filter(\.authorID !~ blocked)
+                        .filter(\.authorID !~ muted)
+                        .filter(\.createdAt < twarrtDate)
+                        .sort(\.createdAt, .descending)
+                        .range(...limit)
+                        .all()
+                case (_, _, _, _, "first"):
+                    futureTwarrts = Twarrt.query(on: req)
+                        .filter(\.authorID !~ blocked)
+                        .filter(\.authorID !~ muted)
+                        .sort(\.id, .ascending)
+                        .range(...limit)
+                        .all()
+                default:
+                    futureTwarrts = Twarrt.query(on: req)
+                        .filter(\.authorID !~ blocked)
+                        .filter(\.authorID !~ muted)
+                        .sort(\.id, .descending)
+                        .range(...limit)
+                        .all()
+            }
+            return futureTwarrts.flatMap {
+                (twarrts) in
+                // remove muteword twarrts
+                let filteredTwarrts = twarrts.compactMap {
+                    self.filterMutewords(for: $0, using: mutewords, on: req)
+                }
+                // convert to TwarrtData
+                let twarrtsData = try filteredTwarrts.map {
+                    (twarrt) -> Future<TwarrtData> in
+                    let bookmarked = try self.isBookmarked(
+                        idValue: twarrt.requireID(),
+                        byUser: user,
+                        on: req
+                    )
+                    let userLike = try TwarrtLikes.query(on: req)
+                        .filter(\.twarrtID == twarrt.requireID())
+                        .filter(\.userID == user.requireID())
+                        .first()
+                    let likeCount = try TwarrtLikes.query(on: req)
+                        .filter(\.twarrtID == twarrt.requireID())
+                        .count()
+                    return map(bookmarked, userLike, likeCount) {
+                        (bookmarked, userLike, count) in
+                        return try twarrt.convertToData(
+                            bookmarked: bookmarked,
+                            userLike: userLike?.likeType,
+                            likeCount: count
+                        )
+                    }
+                }
+                return twarrtsData.flatten(on: req)
             }
         }
     }
