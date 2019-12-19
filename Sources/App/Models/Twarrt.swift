@@ -19,7 +19,7 @@ final class Twarrt: Codable {
     /// The filename of any image content of the twarrt.
     var image: String
     
-    /// The ID of the twarrt being replied to.
+    /// The ID of the twarrt being replied to, if any.
     var replyToID: Int?
     
     /// Whether the twarrt is in quarantine, unable to be replied to directly.
@@ -45,19 +45,18 @@ final class Twarrt: Codable {
     ///   - authorID: The ID of the author of the twarrt.
     ///   - text: The text content of the twarrt.
     ///   - image: The filename of any image content of the twarrt.
+    ///   - replyToID: The ID of the twarrt being replied to, if any.
     init(
         authorID: UUID,
         text: String,
         image: String = "",
-        replyToID: Int? = nil,
-        isQuarantined: Bool = false,
-        isReviewed: Bool = false
+        replyToID: Int? = nil
     ) {
         self.authorID = authorID
         self.text = text
         self.image = image
         self.replyToID = replyToID
-        self.isQuarantined = isQuarantined
-        self.isReviewed = isReviewed
+        self.isQuarantined = false
+        self.isReviewed = false
     }
 }

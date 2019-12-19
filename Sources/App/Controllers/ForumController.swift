@@ -616,8 +616,9 @@ struct ForumController: RouteCollection {
                                             postID: post.requireID(),
                                             createdAt: post.createdAt ?? Date(),
                                             authorID: post.authorID,
-                                            text: post.text,
-                                            image: post.image,
+                                            text: post.isQuarantined ?
+                                                "This post is under moderator review." : post.text,
+                                            image: post.isQuarantined ? "" : post.image,
                                             isBookmarked: bookmarked,
                                             laughs: [],
                                             likes: [],

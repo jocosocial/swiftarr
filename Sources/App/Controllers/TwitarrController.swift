@@ -143,7 +143,11 @@ struct TwitarrController: RouteCollection {
                     .flatMap {
                         (existingTwarrt) in
                         // remove mutewords
-                        let filteredTwarrt = self.filterMutewords(for: existingTwarrt, using: mutewords, on: req)
+                        let filteredTwarrt = self.filterMutewords(
+                            for: existingTwarrt,
+                            using: mutewords,
+                            on: req
+                        )
                         guard let twarrt = filteredTwarrt else {
                             throw Abort(.notFound, reason: "twarrt is not available")
                         }
@@ -171,7 +175,8 @@ struct TwitarrController: RouteCollection {
                                             postID: twarrt.requireID(),
                                             createdAt: twarrt.createdAt ?? Date(),
                                             authorID: twarrt.authorID,
-                                            text: twarrt.text,
+                                            text: twarrt.isQuarantined ?
+                                                "This twarrt is under moderator review." : twarrt.text,
                                             image: twarrt.image,
                                             replyToID: twarrt.replyToID,
                                             isBookmarked: bookmarked,

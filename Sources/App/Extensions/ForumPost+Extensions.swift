@@ -72,8 +72,8 @@ extension ForumPost {
             postID: self.requireID(),
             createdAt: self.createdAt ?? Date(),
             authorID: self.authorID,
-            text: self.text,
-            image: self.image,
+            text: self.isQuarantined ? "This post is under moderator review." : self.text,
+            image: self.isQuarantined ? "" : self.image,
             isBookmarked: bookmarked,
             userLike: userLike,
             likeCount: likeCount
