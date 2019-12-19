@@ -47,6 +47,7 @@ struct TwitarrController: RouteCollection {
         tokenAuthGroup.post(ReportData.self, at: Twarrt.parameter, "report", use: twarrtReportHandler)
         tokenAuthGroup.post(Twarrt.parameter, "unreact", use: twarrtUnreactHandler)
         tokenAuthGroup.post(PostContentData.self, at: Twarrt.parameter, "update", use: twarrtUpdateHandler)
+        tokenAuthGroup.get("user", use: userHandler)
     }
     
     // MARK: - sharedAuthGroup Handlers (logged in or not)
@@ -844,44 +845,6 @@ struct TwitarrController: RouteCollection {
         }
     }
     
-    /// `GET /api/v3/twitarr/twarrts`
-    ///
-    /// Retrieve all `Twarrt`s authored by the user.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[TwarrtData]` containing all twarrts containing mentions.
-    func twarrtsHandler(_ req: Request) throws -> Future<[TwarrtData]> {
-        let user = try req.requireAuthenticated(User.self)
-        // get twarrts
-        return try user.twarrts.query(on: req)
-            .sort(\.createdAt, .ascending)
-            .all()
-            .flatMap {
-                (twarrts) in
-                // convert to TwarrtData
-                let twarrtsData = try twarrts.map {
-                    (twarrt) -> Future<TwarrtData> in
-                    let bookmarked = try self.isBookmarked(
-                        idValue: twarrt.requireID(),
-                        byUser: user,
-                        on: req
-                    )
-                    let likeCount = try TwarrtLikes.query(on: req)
-                        .filter(\.twarrtID == twarrt.requireID())
-                        .count()
-                    return map(bookmarked, likeCount) {
-                        (bookmarked, count) in
-                        return try twarrt.convertToData(
-                            bookmarked: bookmarked,
-                            userLike: nil,
-                            likeCount: count
-                        )
-                    }
-                }
-                return twarrtsData.flatten(on: req)
-        }
-    }
-    
     /// `POST /api/v3/twitarr/ID/delete`
     ///
     /// Delete the specified `Twarrt`.
@@ -1270,6 +1233,45 @@ struct TwitarrController: RouteCollection {
             }
         }
     }
+    
+    /// `GET /api/v3/twitarr/user`
+    ///
+    /// Retrieve all `Twarrt`s authored by the user.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Returns: `[TwarrtData]` containing all twarrts containing mentions.
+    func userHandler(_ req: Request) throws -> Future<[TwarrtData]> {
+        let user = try req.requireAuthenticated(User.self)
+        // get twarrts
+        return try user.twarrts.query(on: req)
+            .sort(\.createdAt, .ascending)
+            .all()
+            .flatMap {
+                (twarrts) in
+                // convert to TwarrtData
+                let twarrtsData = try twarrts.map {
+                    (twarrt) -> Future<TwarrtData> in
+                    let bookmarked = try self.isBookmarked(
+                        idValue: twarrt.requireID(),
+                        byUser: user,
+                        on: req
+                    )
+                    let likeCount = try TwarrtLikes.query(on: req)
+                        .filter(\.twarrtID == twarrt.requireID())
+                        .count()
+                    return map(bookmarked, likeCount) {
+                        (bookmarked, count) in
+                        return try twarrt.convertToData(
+                            bookmarked: bookmarked,
+                            userLike: nil,
+                            likeCount: count
+                        )
+                    }
+                }
+                return twarrtsData.flatten(on: req)
+        }
+    }
+
 }
 
 // twarrts can be filtered by author and content
