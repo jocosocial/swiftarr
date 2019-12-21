@@ -1161,7 +1161,23 @@ struct ForumController: RouteCollection {
                 submitterID: try parent.requireID(),
                 submitterMessage: data.message
             )
-            return report.save(on: req).transform(to: .created)
+            return report.save(on: req).flatMap {
+                (_) in
+                // lock if threshold is met
+                return try Report.query(on: req)
+                    .filter(\.reportedID == String(forum.requireID()))
+                    .count()
+                    .flatMap {
+                        (reportCount) in
+                        // FIXME: should use a settable constant, and separate lock from user's
+//                        if reportCount >= 3 && !forum.isReviewed {
+                        if reportCount >= 3 {
+                            forum.isLocked = true
+                            return forum.save(on: req).transform(to: .created)
+                        }
+                        return req.future(.created)
+                }
+            }
         }
     }
     
@@ -1596,7 +1612,22 @@ struct ForumController: RouteCollection {
                         submitterID: try parent.requireID(),
                         submitterMessage: data.message
                     )
-                    return report.save(on: req).transform(to: .created)
+                    return report.save(on: req).flatMap {
+                        (_) in
+                        // quarantine if threshold is met
+                        return try Report.query(on: req)
+                            .filter(\.reportedID == String(post.requireID()))
+                            .count()
+                            .flatMap {
+                                (reportCount) in
+                                // FIXME: should use a settable constant
+                                if reportCount >= 3 && !post.isReviewed {
+                                    post.isQuarantined = true
+                                    return post.save(on: req).transform(to: .created)
+                                }
+                                return req.future(.created)
+                        }
+                    }
             }
         }
     }
