@@ -609,7 +609,22 @@ struct UsersController: RouteCollection {
                 submitterID: try parent.requireID(),
                 submitterMessage: data.message
             )
-            return report.save(on: req).transform(to: .created)
+            return report.save(on: req).flatMap {
+                (_) in
+                // quarantine if threshold is met
+                return try Report.query(on: req)
+                    .filter(\.reportedID == String(user.requireID()))
+                    .count()
+                    .flatMap {
+                        (reportCount) in
+                        // FIXME: should use a settable constant, and moderator notification
+                        if reportCount >= 5 {
+                            user.accessLevel = .quarantined
+                            return user.save(on: req).transform(to: .created)
+                        }
+                        return req.future(.created)
+                }
+            }
         }
     }
     
