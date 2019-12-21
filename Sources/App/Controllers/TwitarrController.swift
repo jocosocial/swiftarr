@@ -43,6 +43,7 @@ struct TwitarrController: RouteCollection {
         tokenAuthGroup.post(Twarrt.parameter, "laugh", use: twarrtLaughHandler)
         tokenAuthGroup.post(Twarrt.parameter, "like", use: twarrtLikeHandler)
         tokenAuthGroup.get("likes", use: likesHandler)
+        tokenAuthGroup.get("mentions", use: mentionsHandler)
         tokenAuthGroup.post(Twarrt.parameter, "love", use: twarrtLoveHandler)
         tokenAuthGroup.post(PostCreateData.self, at: Twarrt.parameter, "reply", use: replyHandler)
         tokenAuthGroup.post(ReportData.self, at: Twarrt.parameter, "report", use: twarrtReportHandler)
@@ -313,7 +314,7 @@ struct TwitarrController: RouteCollection {
     /// Retrieve all `Twarrt`s that contain the exact specified hashtag.
     ///
     /// - Note: By "exact" we mean the string cannot be a substring of another hashtag (there
-    ///   must be a trailing space), but the match is not case-sensitive. For example, `#joco`
+    ///   must be a preceeding space), but the match is not case-sensitive. For example, `#joco`
     ///   will not match `#joco2020` or `#joco#2020`, but will match `#JoCo`. Use the more
     ///   generic `GET /api/v3/twitarr/search/STRING` endpoint with the same `#joco` parameter
     ///   if you want that type of substring matching behavior.
@@ -342,7 +343,7 @@ struct TwitarrController: RouteCollection {
             return Twarrt.query(on: req)
                 .filter(\.authorID !~ blocked)
                 .filter(\.authorID !~ muted)
-                .filter(\.text, .ilike, "%\(hashtag) %")
+                .filter(\.text, .ilike, "%\(hashtag)%")
                 .all()
                 .flatMap {
                     (twarrts) in
@@ -350,8 +351,15 @@ struct TwitarrController: RouteCollection {
                     let filteredTwarrts = twarrts.compactMap {
                         self.filterMutewords(for: $0, using: mutewords, on: req)
                     }
+                    // get exact hashtag
+                    let matches = filteredTwarrts.compactMap {
+                        (filteredTwarrt) -> Twarrt? in
+                        let text = filteredTwarrt.text.lowercased()
+                        let words = text.components(separatedBy: .whitespacesAndNewlines + .contentSeparators)
+                        return words.contains(hashtag) ? filteredTwarrt : nil
+                    }
                     // convert to TwarrtData
-                    let twarrtsData = try filteredTwarrts.map {
+                    let twarrtsData = try matches.map {
                         (twarrt) -> Future<TwarrtData> in
                         let bookmarked = try self.isBookmarked(
                             idValue: twarrt.requireID(),
@@ -825,6 +833,9 @@ struct TwitarrController: RouteCollection {
     /// - Returns: `[TwarrtData]` containing all twarrts containing mentions.
     func mentionsHandler(_ req: Request) throws -> Future<[TwarrtData]> {
         let user = try req.requireAuthenticated(User.self)
+        // get query parameters
+        let afterID = req.query[Int.self, at: "after"]
+        let afterDate = req.query[String.self, at: "afterdate"]
         // respect blocks
         let cache = try req.keyedCache(for: .redis)
         let key = try "blocks:\(user.requireID())"
@@ -833,15 +844,43 @@ struct TwitarrController: RouteCollection {
             (blocks) in
             let blocked = blocks ?? []
             // get mention twarrts
-            return Twarrt.query(on: req)
-                .filter(\.authorID !~ blocked)
-                .filter(\.text, .ilike, "%@\(user.username) %")
-                .sort(\.createdAt, .descending)
-                .all()
-                .flatMap {
-                    (twarrts) in
+            var futureTwarrts: Future<[Twarrt]>
+            switch (afterID, afterDate) {
+                case (.some(let twarrtID), _):
+                    futureTwarrts = Twarrt.query(on: req)
+                        .filter(\.authorID !~ blocked)
+                        .filter(\.text, .ilike, "%@\(user.username)%")
+                        .filter(\.id > twarrtID)
+                        .sort(\.id, .descending)
+                        .all()
+                case (_, .some(let twarrtDate)):
+                    guard let date = TwitarrController.dateFromParameter(string: twarrtDate) else {
+                        throw Abort(.badRequest, reason: "not a recognized date format")
+                    }
+                    futureTwarrts = Twarrt.query(on: req)
+                        .filter(\.authorID !~ blocked)
+                        .filter(\.text, .ilike, "%@\(user.username)%")
+                        .filter(\.createdAt > date)
+                        .sort(\.createdAt, .descending)
+                        .all()
+                default:
+                    futureTwarrts = Twarrt.query(on: req)
+                        .filter(\.authorID !~ blocked)
+                        .filter(\.text, .ilike, "%@\(user.username)%")
+                        .sort(\.createdAt, .descending)
+                        .all()
+            }
+            return futureTwarrts.flatMap {
+                (twarrts) in
+                // get exact username
+                let matches = twarrts.compactMap {
+                    (twarrt) -> Twarrt? in
+                    let text = twarrt.text.lowercased()
+                    let words = text.components(separatedBy: .whitespacesAndNewlines + .contentSeparators)
+                    return words.contains("@\(user.username)") ? twarrt : nil
+                }
                     // convert to TwarrtData
-                    let twarrtsData = try twarrts.map {
+                    let twarrtsData = try matches.map {
                         (twarrt) -> Future<TwarrtData> in
                         let bookmarked = try self.isBookmarked(
                             idValue: twarrt.requireID(),
