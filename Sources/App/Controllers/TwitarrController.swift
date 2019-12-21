@@ -1006,7 +1006,8 @@ struct TwitarrController: RouteCollection {
     
     /// `POST /api/v3/twitarr/ID/report`
     ///
-    /// Create a `Report` regarding the specified `Twarrt`.
+    /// Create a `Report` regarding the specified `Twarrt`. If the twarrt has reached the report
+    /// threshold for auto-quarantining, it is quarantined.
     ///
     /// - Note: The accompanying report message is optional on the part of the submitting user,
     ///   but the `ReportData` is mandatory in order to allow one. If there is no message,
@@ -1038,7 +1039,22 @@ struct TwitarrController: RouteCollection {
                         submitterID: parent.requireID(),
                         submitterMessage: data.message
                     )
-                    return report.save(on: req).transform(to: .created)
+                    return report.save(on: req).flatMap {
+                        (_) in
+                        // quarantine if threshold is met
+                        return try Report.query(on: req)
+                            .filter(\.reportedID == String(twarrt.requireID()))
+                            .count()
+                            .flatMap {
+                                (reportCount) in
+                                // FIXME: should use a settable constant
+                                if reportCount >= 3 && !twarrt.isReviewed {
+                                    twarrt.isQuarantined = true
+                                    return twarrt.save(on: req).transform(to: .created)
+                                }
+                                return req.future(.created)
+                        }
+                    }
             }
         }
     }
