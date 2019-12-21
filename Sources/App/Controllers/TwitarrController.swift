@@ -1017,6 +1017,7 @@ struct TwitarrController: RouteCollection {
     /// - Parameters:
     ///   - req: The incoming `Request`, provided automatically.
     ///   - data: `ReportData` containing an optional accompanying message.
+    /// - Throws: 400 error if user has already submitted report.
     /// - Returns: 201 Created on success.
     func twarrtReportHandler(_ req: Request, data: ReportData) throws -> Future<HTTPStatus> {
         let user = try req.requireAuthenticated(User.self)
@@ -1031,7 +1032,7 @@ struct TwitarrController: RouteCollection {
                 .flatMap {
                     (count) in
                     guard count == 0 else {
-                        throw Abort(.conflict, reason: "user has already reported twarrt")
+                        throw Abort(.badRequest, reason: "user has already reported twarrt")
                     }
                     let report = try Report(
                         reportType: .twarrt,
