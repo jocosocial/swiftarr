@@ -10,14 +10,9 @@ final class ForumTests: XCTestCase {
     // set properties
     let testUsername = "grundoon"
     let testPassword = "password"
-    let testVerification = "ABC ABC"
     let adminURI = "/api/v3/admin/"
-    let authURI = "/api/v3/auth/"
-    let eventsURI = "/api/v3/events/"
     let forumURI = "/api/v3/forum/"
-    let testURI = "/api/v3/test/"
     let userURI = "/api/v3/user/"
-    let usersURI = "/api/v3/users/"
     var app: Application!
     var conn: PostgreSQLConnection!
     
