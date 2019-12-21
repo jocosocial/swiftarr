@@ -830,11 +830,11 @@ extension UserCreateData: Validatable, Reflectable {
     /// and `.password` is least 6 characters in length.
     static func validations() throws -> Validations<UserCreateData> {
         var validations = Validations(UserCreateData.self)
-        try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics + .separators))
+        try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics + .usernamSeparators))
         validations.add("username must start with an alphanumeric") {
             (data) in
             guard let first = data.username.unicodeScalars.first,
-                !CharacterSet.separators.contains(first) else {
+                !CharacterSet.usernamSeparators.contains(first) else {
                     throw Abort(.badRequest, reason: "username must start with an alphanumeric")
             }
         }
@@ -869,11 +869,11 @@ extension UserUsernameData: Validatable, Reflectable {
     /// alphanumeric.
     static func validations() throws -> Validations<UserUsernameData> {
         var validations = Validations(UserUsernameData.self)
-        try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics + .separators))
+        try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics + .usernamSeparators))
         validations.add("username must start with an alphanumeric") {
             (data) in
             guard let first = data.username.unicodeScalars.first,
-                !CharacterSet.separators.contains(first) else {
+                !CharacterSet.usernamSeparators.contains(first) else {
                     throw Abort(.badRequest, reason: "username must start with an alphanumeric")
             }
         }
@@ -888,15 +888,5 @@ extension UserVerifyData: Validatable, Reflectable {
         var validations = Validations(UserVerifyData.self)
         try validations.add(\.verification, .count(6...7) && .characterSet(.alphanumerics + .whitespaces))
         return validations
-    }
-}
-
-extension CharacterSet {
-    /// Defines a character set containing characters other than alphanumerics that are allowed
-    /// in a username.
-    static var separators: CharacterSet {
-        var separatorChars: CharacterSet = .init()
-        separatorChars.insert(charactersIn: "-.+_")
-        return separatorChars
     }
 }
