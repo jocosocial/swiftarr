@@ -1321,11 +1321,11 @@ struct TwitarrController: RouteCollection {
     ///   To change or remove the actual image associated with the twarrt, use
     ///   `POST /api/v3/twitarr/ID/image`  or `POST /api/v3/twitarr/ID/image/remove`.
     ///
-    /// - Requires: `PostCOntentData` payload in the HTTP body.
+    /// - Requires: `PostContentData` payload in the HTTP body.
     /// - Parameters:
     ///   - req: The incoming `Request`, provided automatically.
-    ///   - data: `PostCOntentData` containing the twarrt's text and image filename.
-    /// - Throws: 403 error if user is not post owner or has read-only access.
+    ///   - data: `PostContentData` containing the twarrt's text and image filename.
+    /// - Throws: 403 error if user is not twarrt owner or has read-only access.
     /// - Returns: `TwarrtData` containing the twarrt's contents and metadata.
     func twarrtUpdateHandler(_ req: Request, data: PostContentData) throws -> Future<Response> {
         let user = try req.requireAuthenticated(User.self)
