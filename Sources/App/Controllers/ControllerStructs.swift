@@ -432,12 +432,12 @@ struct PostData: Content {
     var likeCount: Int
 }
 
+// FIXME: needs bookmark, userLike too?
 /// Used to return a `ForumPost`'s data with full user `LikeType` info.
 ///
 /// Returned by: `GET /api/v3/forum/post/ID`
 ///
 /// See `ForumController.postHandler(_:)`.
-// FIXME: needs bookmark, userLike too?
 struct PostDetailData: Content {
     /// The ID of the post.
     var postID: Int
@@ -604,12 +604,12 @@ struct TwarrtData: Content {
     var likeCount: Int
 }
 
+// FIXME: needs bookmark, userLike too?
 /// Used to return a `Twarrt`'s data with full user `LikeType` info.
 ///
 /// Returned by: `GET /api/v3/twitarr/ID`
 ///
 /// See `TwitarrController.twarrtHandler(_:)`.
-// FIXME: needs bookmark, userLike too?
 struct TwarrtDetailData: Content {
     /// The ID of the post/twarrt.
     var postID: Int
