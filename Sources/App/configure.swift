@@ -29,6 +29,17 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     middlewares.use(ErrorMiddleware.self) // catches errors and converts to HTTP response
     services.register(middlewares)
     
+    // use iso8601 for dates
+    var contentConfig = ContentConfig.default()
+    let jsonEncoder = JSONEncoder()
+    if #available(OSX 10.12, *) {
+        jsonEncoder.dateEncodingStrategy = .iso8601
+    } else {
+        // Fallback on earlier versions
+    }
+    contentConfig.use(encoder: jsonEncoder, for: .json)
+    services.register(contentConfig)
+    
     // configure PostgreSQL connection
     // note: environment variable nomenclature is vapor.cloud compatible
     let postgresConfig: PostgreSQLDatabaseConfig
@@ -110,6 +121,9 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     migrations.add(model: ForumPost.self, database: .psql)
     migrations.add(model: ForumEdit.self, database: .psql)
     migrations.add(model: PostLikes.self, database: .psql)
+    migrations.add(model: Twarrt.self, database: .psql)
+    migrations.add(model: TwarrtEdit.self, database: .psql)
+    migrations.add(model: TwarrtLikes.self, database: .psql)
     migrations.add(migration: AdminUser.self, database: .psql)
     migrations.add(migration: ClientUsers.self, database: .psql)
     migrations.add(migration: RegistrationCodes.self, database: .psql)
