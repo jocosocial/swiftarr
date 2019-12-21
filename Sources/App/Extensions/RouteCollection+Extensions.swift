@@ -37,7 +37,7 @@ extension RouteCollection {
 extension CharacterSet {
     /// Defines a character set containing characters other than alphanumerics that are allowed
     /// in a username.
-    static var usernamSeparators: CharacterSet {
+    static var usernameSeparators: CharacterSet {
         var separatorChars: CharacterSet = .init()
         separatorChars.insert(charactersIn: "-.+_")
         return separatorChars

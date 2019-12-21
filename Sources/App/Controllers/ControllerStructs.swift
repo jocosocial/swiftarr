@@ -830,11 +830,11 @@ extension UserCreateData: Validatable, Reflectable {
     /// and `.password` is least 6 characters in length.
     static func validations() throws -> Validations<UserCreateData> {
         var validations = Validations(UserCreateData.self)
-        try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics + .usernamSeparators))
+        try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics + .usernameSeparators))
         validations.add("username must start with an alphanumeric") {
             (data) in
             guard let first = data.username.unicodeScalars.first,
-                !CharacterSet.usernamSeparators.contains(first) else {
+                !CharacterSet.usernameSeparators.contains(first) else {
                     throw Abort(.badRequest, reason: "username must start with an alphanumeric")
             }
         }
@@ -869,11 +869,11 @@ extension UserUsernameData: Validatable, Reflectable {
     /// alphanumeric.
     static func validations() throws -> Validations<UserUsernameData> {
         var validations = Validations(UserUsernameData.self)
-        try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics + .usernamSeparators))
+        try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics + .usernameSeparators))
         validations.add("username must start with an alphanumeric") {
             (data) in
             guard let first = data.username.unicodeScalars.first,
-                !CharacterSet.usernamSeparators.contains(first) else {
+                !CharacterSet.usernameSeparators.contains(first) else {
                     throw Abort(.badRequest, reason: "username must start with an alphanumeric")
             }
         }
