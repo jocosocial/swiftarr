@@ -51,3 +51,8 @@ final class TwarrtLikes: PostgreSQLUUIDPivot, ModifiablePivot {
     /// Required key for `Pivot` protocol.
     static let rightIDKey: RightIDKey = \.twarrtID
 }
+
+extension TwarrtLikes {
+    // postgres needs a unique name
+    static var entity = "TwarrtLikes"
+}
