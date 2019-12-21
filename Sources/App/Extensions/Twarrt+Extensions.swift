@@ -48,7 +48,7 @@ extension Twarrt {
     /// Converts a `Twarrt` model to a version omitting data that is not for public consumption.
     func convertToData(bookmarked: Bool, userLike: LikeType?, likeCount: Int) throws -> TwarrtData {
         return try TwarrtData(
-            postID: self.requireID(),
+            twarrtID: self.requireID(),
             createdAt: self.createdAt ?? Date(),
             authorID: self.authorID,
             text: self.isQuarantined ? "This twarrt is under moderator review." : self.text,

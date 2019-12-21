@@ -585,7 +585,7 @@ struct TokenStringData: Content {
 /// `TwitarrController.twarrtsUserHandler(_:)`, `TwitarrController.userHandler(_:)`.
 struct TwarrtData: Content {
     /// The ID of the twarrt.
-    var postID: Int
+    var twarrtID: Int
     /// The timestamp of the twarrt.
     var createdAt: Date
     /// The ID of the twarrt's author.
