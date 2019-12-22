@@ -238,7 +238,7 @@ struct TwitarrController: RouteCollection {
                         .filter(\.authorID !~ muted)
                         .filter(\.id > twarrtID)
                         .sort(\.id, .ascending)
-                        .range(...limit)
+                        .range(..<limit)
                         .all()
                 case (_, .some(let twarrtID), _, _, _):
                     futureTwarrts = Twarrt.query(on: req)
@@ -246,7 +246,7 @@ struct TwitarrController: RouteCollection {
                         .filter(\.authorID !~ muted)
                         .filter(\.id < twarrtID)
                         .sort(\.id, .descending)
-                        .range(...limit)
+                        .range(..<limit)
                         .all()
                 case (_, _, .some(let twarrtDate), _, _):
                     futureTwarrts = Twarrt.query(on: req)
@@ -254,7 +254,7 @@ struct TwitarrController: RouteCollection {
                         .filter(\.authorID !~ muted)
                         .filter(\.createdAt > twarrtDate)
                         .sort(\.createdAt, .ascending)
-                        .range(...limit)
+                        .range(..<limit)
                         .all()
                 case (_, _, _, .some(let twarrtDate), _):
                     futureTwarrts = Twarrt.query(on: req)
@@ -262,21 +262,21 @@ struct TwitarrController: RouteCollection {
                         .filter(\.authorID !~ muted)
                         .filter(\.createdAt < twarrtDate)
                         .sort(\.createdAt, .descending)
-                        .range(...limit)
+                        .range(..<limit)
                         .all()
                 case (_, _, _, _, "first"):
                     futureTwarrts = Twarrt.query(on: req)
                         .filter(\.authorID !~ blocked)
                         .filter(\.authorID !~ muted)
                         .sort(\.id, .ascending)
-                        .range(...limit)
+                        .range(..<limit)
                         .all()
                 default:
                     futureTwarrts = Twarrt.query(on: req)
                         .filter(\.authorID !~ blocked)
                         .filter(\.authorID !~ muted)
                         .sort(\.id, .descending)
-                        .range(...limit)
+                        .range(..<limit)
                         .all()
             }
             return futureTwarrts.flatMap {
