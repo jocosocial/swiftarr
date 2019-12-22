@@ -127,6 +127,7 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     migrations.add(model: Twarrt.self, database: .psql)
     migrations.add(model: TwarrtEdit.self, database: .psql)
     migrations.add(model: TwarrtLikes.self, database: .psql)
+    migrations.add(model: FezPost.self, database: .psql)
     migrations.add(migration: AdminUser.self, database: .psql)
     migrations.add(migration: ClientUsers.self, database: .psql)
     migrations.add(migration: RegistrationCodes.self, database: .psql)
