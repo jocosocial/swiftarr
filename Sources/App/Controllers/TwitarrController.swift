@@ -288,8 +288,24 @@ struct TwitarrController: RouteCollection {
             }
             return futureTwarrts.flatMap {
                 (twarrts) in
+                // correct to descending order
+                var sortedTwarrts: [Twarrt]
+                switch (afterID, beforeID, afterDate, beforeDate, from) {
+                    case (.some(afterID), _, _, _, _):
+                        sortedTwarrts = twarrts.reversed()
+                    case (_, .some(beforeID), _, _, _):
+                        sortedTwarrts = twarrts
+                    case (_, _, .some(afterDate), _, _):
+                        sortedTwarrts = twarrts.reversed()
+                    case (_, _, _, .some(beforeDate), _):
+                        sortedTwarrts = twarrts
+                    case (_, _, _, _, "first"):
+                        sortedTwarrts = twarrts.reversed()
+                    default:
+                        sortedTwarrts = twarrts
+                }
                 // remove muteword twarrts
-                let filteredTwarrts = twarrts.compactMap {
+                let filteredTwarrts = sortedTwarrts.compactMap {
                     self.filterMutewords(for: $0, using: mutewords, on: req)
                 }
                 // convert to TwarrtData
@@ -356,6 +372,7 @@ struct TwitarrController: RouteCollection {
                 .filter(\.authorID !~ blocked)
                 .filter(\.authorID !~ muted)
                 .filter(\.text, .ilike, "%\(hashtag)%")
+                .sort(\.id, .descending)
                 .all()
                 .flatMap {
                     (twarrts) in
@@ -423,6 +440,7 @@ struct TwitarrController: RouteCollection {
                 .filter(\.authorID !~ blocked)
                 .filter(\.authorID !~ muted)
                 .filter(\.text, .ilike, "%\(search)%")
+                .sort(\.id, .descending)
                 .all()
                 .flatMap {
                     (twarrts) in
@@ -480,6 +498,7 @@ struct TwitarrController: RouteCollection {
                     .filter(\.authorID !~ blocked)
                     .filter(\.authorID !~ muted)
                     .filter(\.authorID == user.requireID())
+                    .sort(\.id, .descending)
                     .all()
                     .flatMap {
                         (twarrts) in
@@ -586,7 +605,7 @@ struct TwitarrController: RouteCollection {
     
     /// `GET /api/v3/twitarr/bookmarks`
     ///
-    /// Retrieve all `Twarrt`s the user has bookmarked, sorted by creation timestamp.
+    /// Retrieve all `Twarrt`s the user has bookmarked.
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Returns: `[TwarrtData]` containing all bookmarked posts.
@@ -609,7 +628,7 @@ struct TwitarrController: RouteCollection {
                 return Twarrt.query(on: req)
                     .filter(\.id ~~ bookmarks)
                     .filter(\.authorID !~ blocked)
-                    .sort(\.createdAt, .ascending)
+                    .sort(\.id, .descending)
                     .all()
                     .flatMap {
                         (twarrts) in
