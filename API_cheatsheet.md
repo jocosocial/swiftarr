@@ -78,7 +78,6 @@
 | S | `GET` | `/api/v3/users/ID` | -> `UserInfo` | retrieve user info by id |
 | S | `GET` | `/api/v3/users/ID/header` | -> `UserHeader` | retrieve user's header info |
 | S | `GET` | `/api/v3/users/ID/profile` | -> `ProfilePublicData` | retrieve user's profile |
----
 
 * blocks & mutes
 
@@ -167,6 +166,8 @@
 | :--- | :--- | :--- | :--- | :--- |
 | T | `POST` | `/api/v3/forum/ID/create` | `PostCreateData` -> `PostData` | create ForumPost in Forum |
 | S | `GET` | `/api/v3/forum/post/ID` | -> `PostDetailData` | retrieve a ForumPost with like details |
+| T | `POST` | `/api/v3/forum/post/ID/bookmark` | -> HTTP Status | add bookmark to a ForumPost |
+| T | `POST` | `/api/v3/forum/post/ID/bookmark/remove` | -> HTTP Status | remove bookmark from a ForumPost |
 | T | `POST` | `/api/v3/forum/post/ID/delete` | -> HTTP Status | delete a ForumPost |
 | S | `GET` | `/api/v3/forum/post/ID/forum` | -> `ForumData` | retrieve the Forum of a ForumPost |
 | T | `POST` | `/api/v3/forum/post/ID/image` | `ImageUploadData` -> `PostData` | add/replace a ForumPost image |
@@ -174,9 +175,18 @@
 | T | `POST` | `/api/v3/forum/post/ID/laugh` | -> `PostData` | add laugh to a ForumPost |
 | T | `POST` | `/api/v3/forum/post/ID/like` | -> `PostData` | add like to a ForumPost |
 | T | `POST` | `/api/v3/forum/post/ID/love` | -> `PostData` | add love to a ForumPost |
-| T | `POST` | `/api/v3/forum/post/ID/unreact` | -> `PostData` | remove laugh/like/love from a ForumPost |
 | T | `POST` | `/api/v3/forum/post/ID/report` | `ReportData` -> HTTP Status | report a ForumPost |
+| T | `POST` | `/api/v3/forum/post/ID/unreact` | -> `PostData` | remove laugh/like/love from a ForumPost |
 | T | `POST` | `/api/v3/forum/post/ID/update` | `PostContentData` -> `PostData` | update a ForumPost |
+
+* forum post filters
+
+||| Endpoint | Requires -> Returns | Use to... |
+| :--- | :--- | :--- | :--- | :--- |
+| T | `GET` | `/api/v3/forum/bookmarks` | -> `[PostData]` | retrieve all ForumPosts bookmarked by user |
+| T | `GET` | `/api/v3/forum/likes` | -> `[PostData]` | retrieve all ForumPosts liked by user |
+| T | `GET` | `/api/v3/forum/mentions` | -> `[PostData]` | retrieve all ForumPosts mentioning user |
+| T | `GET` | `/api/v3/forum/posts` | -> `[PostData]` | retrieve all ForumPosts posted by user|
 
 * search
 
@@ -184,12 +194,58 @@
 | :--- | :--- | :--- | :--- | :--- |
 | S | `GET` | `/api/v3/forum/match/STRING` | -> `[ForumListData]` | retrieve list of Forums matching string |
 | S | `GET` | `/api/v3/forum/ID/search/STRING` | -> `[PostData]` | retrieve all ForumPosts containing string in Forum |
+| S | `GET` | `/api/v3/forum/post/hashtag/#STRING` | -> `[PostData]` | retrieve all ForumPosts containing exact #hashtag |
 | S | `GET` | `/api/v3/forum/post/search/STRING` | -> `[PostData]` | retrieve all ForumPosts containing string |
 ---
 
-
 # Twitarr
 ---
+
+* retrieving
+
+||| Endpoint | Requires -> Returns | Use to... |
+| :--- | :--- | :--- | :--- | :--- |
+| T | `GET` | `/api/v3/twitarr` | -> `[TwarrtData]` | retrieve last 50 Twarrts (default = `?limit=50&from=last`) |
+| T | `GET` | `/api/v3/twitarr?limit=INT` | `1...200` -> `[TwarrtData]` | number to retrieve |
+| T | `GET` | `/api/v3/twitarr?after=ID` | `twarrt.ID` -> `[TwarrtData]`| ascending after ID |
+| T | `GET` | `/api/v3/twitarr?afterdate=DATE` | `date` -> `[TwarrtData]` | ascending after date |
+| T | `GET` | `/api/v3/twitarr?before=ID` | `twarrt.ID` -> `[TwarrtData]`| descending before ID |
+| T | `GET` | `/api/v3/twitarr?beforedate=DATE` | `date` -> `[TwarrtData]` | descending before date |
+| T | `GET` | `/api/v3/twitarr?from=STRING` | `first|last` -> `[TwarrtData]` | ascending from `first`, descending from `last` |
+| T | `GET` | `/api/v3/twitarr/ID` | -> `TwarrtDetailData` | retrieve a Twarrt with like details |
+
+* posting
+
+||| Endpoint | Requires -> Returns | Use to... |
+| :--- | :--- | :--- | :--- | :--- |
+| T | `POST` | `/api/v3/twitarr/create` | `PostCreateData` -> `TwarrtData` | create Twarrt |
+| T | `POST` | `/api/v3/twitarr/ID/bookmark` | -> HTTP Status | add bookmark to a Twarrt |
+| T | `POST` | `/api/v3/twitarr/ID/bookmark/remove` | -> HTTP Status | remove bookmark to a Twarrt |
+| T | `POST` | `/api/v3/twitarr/ID/delete` | -> HTTP Status | delete a Twarrt |
+| T | `POST` | `/api/v3/twitarr/ID/image` | `ImageUploadData` -> `TwarrtData` | add/replace a Twarrt image |
+| T | `POST` | `/api/v3/twitarr/ID/image/remove` | -> `TwarrtData` | remove a Twarrt image |
+| T | `POST` | `/api/v3/twitarr/ID/laugh` | -> `TwarrtData` | add laugh to a Twarrt |
+| T | `POST` | `/api/v3/twitarr/ID/like` | -> `TwarrtData` | add like to a Twarrt |
+| T | `POST` | `/api/v3/twitarr/ID/love` | -> `TwarrtData` | add love to a Twarrt |
+| T | `POST` | `/api/v3/twitarr/ID/reply` | `PostCreateData` -> `TwarrtData` | create Twarrt as reply to a Twarrt |
+| T | `POST` | `/api/v3/twitarr/ID/report` | `ReportData` -> HTTP Status | report a Twarrt |
+| T | `POST` | `/api/v3/twitarr/ID/unreact` | -> `TwarrtData` | remove laugh/like/love from a Twarrt |
+| T | `POST` | `/api/v3/twitarr/ID/update` | `PostContentData` -> `TwarrtData` | update a Twarrt |
+
+* filters
+
+||| Endpoint | Requires -> Returns | Use to... |
+| :--- | :--- | :--- | :--- | :--- |
+| T | `GET` | `/api/v3/twittar/barrel/ID` | -> `[TwarrtData]` | retrieve all Twarrts posted by barrel SeaMonkeys |
+| T | `GET` | `/api/v3/twitarr/bookmarks` | -> `[TwarrtData]` | retrieve all Twarrts bookmarked by user |
+| T | `GET` | `/api/v3/twitarr/hashtag/#STRING` | -> `[TwarrtData]` | retrieve all Twarrts containing exact #hashtag |
+| T | `GET` | `/api/v3/twitarr/likes` | -> `[TwarrtData]` | retrieve all Twarrts liked by user |
+| T | `GET` | `/api/v3/twitarr/mentions` | -> `[TwarrtData]` | retrieve all Twarrts mentioning user |
+| T | `GET` | `/api/v3/twitarr/mentions?after=ID` | `twarrt.ID` -> `[TwarrtData]` | retrieve Twarrts mentioning user after specified ID |
+| T | `GET` | `/api/v3/twitarr/mentions?afterdate=DATE` | `date` -> `[TwarrtData]` | retrieve Twarrts mentioning user after specified date |
+| T | `GET` | `/api/v3/twitarr/search/STRING` | -> `[TwarrtData]` | retrieve all Twarrts containing string |
+| T | `GET` | `/api/v3/twitarr/user` | -> `[TwarrtData]` | retrieve all Twarrts posted by user|
+| T | `GET` | `/api/v3/twitarr/user/ID` | -> `[TwarrtData]` | retrieve all Twarrts posted by specified user |
 ---
 
 # Moderator
@@ -198,9 +254,6 @@
 
 # Admin
 ---
-||| Endpoint | Requires -> Returns | Use to... |
-| :--- | :--- | :--- | :--- | :--- |
-| T | `POST` | `/api/v3/events/update` | `EventsUpdateData` -> `[EventData]` | update the schedule |
 ---
 
 
@@ -211,6 +264,3 @@
 | X | `GET` | `/api/v3/client/user/headers/since/DATE` | -> `[UserHeader]` | retrieve updated headers |
 | X | `GET` | `/api/v3/client/user/updates/since/DATE` | -> `[UserInfo]` | retrieve updated users |
 | X | `GET` | `/api/v3/client/usersearch` | -> `[UserSearch]` | retrieve all `UserProfile.userSearch` values |
-
-
-

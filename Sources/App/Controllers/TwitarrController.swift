@@ -209,6 +209,41 @@ struct TwitarrController: RouteCollection {
         }
     }
     
+    /// `GET /api/v3/twitarr`
+    ///
+    /// Retrieve an array of `Twarrt`s. This query supports several optional query parameters.
+    ///
+    /// * `?limit=INT` - the maximum number of twarrts to retrieve: 1-200, default is 50
+    /// * `?after=ID` - the ID of the twarrt *after* which the retrieval should start (newer)
+    /// * `?before=ID` - the ID of the twarrt *before* which the retrieval should start (older)
+    /// * `?afterdate=DATE` - the timestamp *after* which the retrieval should start (newer)
+    /// * `?beforedate=DATE` - the timestamp *before* which the retrieval should start (older)
+    /// * `?from=STRING` - retrieve starting from "first" or "last"
+    ///
+    /// - Important: All parameters other than `limit` are **mutually exclusive**. If
+    ///   additional conflicting parameters are sent, the first one listed in the order above
+    ///   takes precedence (probably).
+    ///
+    /// A query without additional parameters defaults to `?limit=50&from=last`, the 50 most
+    /// recent twarrts.
+    ///
+    /// `DATE` values can be either `TimeInterval` values (Doubles) since epoch, or ISO8601
+    /// string representations including milliseconds ("yyyy-MM-dd'T'HH:mm:ss.SSSXXXXX"). The
+    /// numeric value method is recommended.
+    ///
+    /// - Note: It is *highly* recommended that clients use `after=ID` or `before=ID` where
+    ///   possible. `Twarrt` ID's are Int values and thus unambiguous. `DATE` values are
+    ///   accurate only within 1 millisecond and are therefore prone to rounding errors. To
+    ///   ensure that all twarrts of interest are returned when sending a date based on the
+    ///   value found in a twarrt's timestamp, it is recommended that 1 millisecond be added
+    ///   (if retrieving older) or subtracted (if retrieving newer) from that value for the
+    ///   query. You will almost certainly receive the original anchor twarrt again, but it will
+    ///   also ensure that any others possibly created within the same millisecond will not be
+    ///   omitted.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 400 error if a date parameter was supplied and is in an unknown format.
+    /// - Returns: `[TwarrtData]` containing the requested twarrts.
     func twarrtsHandler(_ req: Request) throws -> Future<[TwarrtData]> {
         let user = try req.requireAuthenticated(User.self)
         // get query parameters
