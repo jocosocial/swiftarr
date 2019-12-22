@@ -375,11 +375,12 @@ struct PostContentData: Content {
 /// Used to create a `ForumPost` or `Twarrt`.
 ///
 /// Required by:
-/// * `POST /api/v3/forum/ID`
+/// * `POST /api/v3/forum/ID/create`
+/// * `POST /api/v3/twitarr/create`
 ///
-/// See `ForumController.postCreateHandler(_:data:)`.
+/// See `ForumController.postCreateHandler(_:data:)`, `TwitarrController.twarrtCreateHandler(_:data:)`.
 struct PostCreateData: Content {
-    /// The text of the forum post.
+    /// The text of the forum post or twarrt.
     var text: String
     /// An optional image in Data format.
     var imageData: Data?
@@ -398,13 +399,46 @@ struct PostCreateData: Content {
 /// * `POST /api/v3/forum/post/ID/like`
 /// * `POST /api/v3/forum/post/ID/love`
 /// * `POST /api/v3/forum/post/ID/unreact`
+/// * `GET /api/v3/forum/bookmarks`
+/// * `GET /api/v3/forum/likes`
+/// * `GET /api/v3/forum/mentions`
+/// * `GET /api/v3/forum/posts`
+/// * `GET /api/v3/forum/post/hashtag/#STRING`
 ///
 /// See `ForumController.postCreateHandler(_:data:)`, `ForumController.postUpdateHandler(_:data:)`,
 /// `ForumController.imageHandler(_:data:)`, `ForumController.imageRemoveHandler(_:)`,
 /// `ForumController.forumSearchHandler(_:)`, `ForumController.postSearchHandler(_:)`
 /// `ForumController.postLaughHandler(_:)`, `ForumController.postLikeHandler(_:)`
-/// `ForumController.postLoveHandler(_:)`, `ForumController.postUnreactHandler(_:)`.
+/// `ForumController.postLoveHandler(_:)`, `ForumController.postUnreactHandler(_:)`,
+/// `ForumController.bookmarksHandler(_:)`, `ForumCOntroller.likesHandler(_:)`,
+/// `ForumController.mentionsHandler(_:)`, `ForumController.postsHandler(_:)`,
+/// `ForumController.postHashtagHandler(_:)`.
 struct PostData: Content {
+    /// The ID of the post.
+    var postID: Int
+    /// The timestamp of the post.
+    var createdAt: Date
+    /// The ID of the post's author.
+    var authorID: UUID
+    /// The text of the post.
+    var text: String
+    /// The filename of the post's optional image.
+    var image: String
+    /// Whether the current user has bookmarked the post.
+    var isBookmarked: Bool
+    /// The current user's `LikeType` reaction on the post.
+    var userLike: LikeType?
+    /// The total number of `LikeType` reactions on the post.
+    var likeCount: Int
+}
+
+// FIXME: needs bookmark, userLike too?
+/// Used to return a `ForumPost`'s data with full user `LikeType` info.
+///
+/// Returned by: `GET /api/v3/forum/post/ID`
+///
+/// See `ForumController.postHandler(_:)`.
+struct PostDetailData: Content {
     /// The ID of the post.
     var postID: Int
     /// The timestamp of the post.
@@ -415,28 +449,8 @@ struct PostData: Content {
     var text: String
     /// The filename of the post's optional image.
     var image: String
-    /// The current user's `LikeType` reaction on the post.
-    var userLike: LikeType?
-    /// The total number of `LikeType` reactions on the post.
-    var likeCount: Int
-}
-
-/// Used to return a `ForumPost`'s data with full user `LikeType` info.
-///
-/// Returned by: `GET /api/v3/forum/post/ID`
-///
-/// See `ForumController.postHandler(_:)`.
-struct PostDetailData: Content {
-        /// The ID of the post.
-    var postID: Int
-    /// The timestamp of the post.
-    var createdAt: Date
-    /// The ID of the post's author.
-    var authorID: UUID
-    /// The text of the forum post.
-    var text: String
-    /// The filename of the post's optional image.
-    var image: String
+    /// Whether the current user has bookmarked the post.
+    var isBookmarked: Bool
     /// The seamonkeys with "laugh" reactions on the post.
     var laughs: [SeaMonkey]
     /// The seamonkeys with "like" reactions on the post.
@@ -536,6 +550,87 @@ struct TokenStringData: Content {
     init(token: Token) {
         self.token = token.token
     }
+}
+
+/// Used to return a `Twarrt`'s data.
+///
+/// Returned by:
+/// * `POST /api/v3/twitarr/create`
+/// * `POST /api/v3/twitarr/ID/update`
+/// * `POST /api/v3/twitarr/ID/image`
+/// * `POST /api/v3/twitarr/ID/image/remove`
+/// * `POST /api/v3/twitarr/ID/laugh`
+/// * `POST /api/v3/twitarr/ID/like`
+/// * `POST /api/v3/twitarr/ID/love`
+/// * `POST /api/v3/twitarr/ID/unreact`
+/// * `POST /api/v3/twitarr/ID/reply`
+/// * `GET /api/v3/twitarr/bookmarks`
+/// * `GET /api/v3/twitarr/likes`
+/// * `GET /api/v3/twitarr/mentions`
+/// * `GET /api/v3/twitarr/`
+/// * `GET /api/v3/twitarr/barrel/ID`
+/// * `GET /api/v3/twitarr/hashtag/#STRING`
+/// * `GET /api/v3/twitarr/search/STRING`
+/// * `GET /api/v3/twitarr/user`
+/// * `GET /api/v3/twitarr/user/ID`
+///
+/// See `TwitarrController.twarrtCreateHandler(_:data:)`, `TwitarrController.twarrtUpdateHandler(_:data:)`
+/// `TwitarrController. imageHandler(_:data:)`, `TwitarrController.imageRemoveHandler(_:)`
+/// `TwitarrController.twarrtLaughHandler(_:)`, `TwitarrController.twarrtLikeHandler(_:)`,
+/// `TwitarrController.twarrtLoveHandler(_:)`, `TwitarrController.twarrtUnreactHandler(_:)`,
+/// `TwitarrController.replyHandler(_:data:)`, `TwitarrController.bookmarksHandler(_:)`,
+/// `TwitarrController.likesHandler(_:)`, `TwitarrController.mentionsHandler(_:)`,
+/// `TwitarrController.twarrtsHandler(_:)`, `TwitarrController.twarrtsBarrelHandler(_:)`,
+/// `TwitarrController.twarrtsHashtagHandler(_:)`, `TwitarrController.twarrtsSearchHandler(_:)`,
+/// `TwitarrController.twarrtsUserHandler(_:)`, `TwitarrController.userHandler(_:)`.
+struct TwarrtData: Content {
+    /// The ID of the twarrt.
+    var twarrtID: Int
+    /// The timestamp of the twarrt.
+    var createdAt: Date
+    /// The ID of the twarrt's author.
+    var authorID: UUID
+    /// The text of the twarrt.
+    var text: String
+    /// The filename of the twarrt's optional image.
+    var image: String
+    /// The ID of the twarrt to which this twarrt is a reply.
+    var replyToID: Int?
+    /// Whether the current user has bookmarked the twarrt.
+    var isBookmarked: Bool
+    /// The current user's `LikeType` reaction on the twarrt.
+    var userLike: LikeType?
+    /// The total number of `LikeType` reactions on the twarrt.
+    var likeCount: Int
+}
+
+// FIXME: needs bookmark, userLike too?
+/// Used to return a `Twarrt`'s data with full user `LikeType` info.
+///
+/// Returned by: `GET /api/v3/twitarr/ID`
+///
+/// See `TwitarrController.twarrtHandler(_:)`.
+struct TwarrtDetailData: Content {
+    /// The ID of the post/twarrt.
+    var postID: Int
+    /// The timestamp of the post/twarrt.
+    var createdAt: Date
+    /// The ID of the post/twarrt's author.
+    var authorID: UUID
+    /// The text of the forum post or twarrt.
+    var text: String
+    /// The filename of the post/twarrt's optional image.
+    var image: String
+    /// The ID of the twarrt to which this twarrt is a reply.
+    var replyToID: Int?
+    /// Whether the current user has bookmarked the post.
+    var isBookmarked: Bool
+    /// The seamonkeys with "laugh" reactions on the post/twarrt.
+    var laughs: [SeaMonkey]
+    /// The seamonkeys with "like" reactions on the post/twarrt.
+    var likes: [SeaMonkey]
+    /// The seamonkeys with "love" reactions on the post/twarrt.
+    var loves: [SeaMonkey]
 }
 
 /// Used to return a filename for an uploaded image.
@@ -735,11 +830,11 @@ extension UserCreateData: Validatable, Reflectable {
     /// and `.password` is least 6 characters in length.
     static func validations() throws -> Validations<UserCreateData> {
         var validations = Validations(UserCreateData.self)
-        try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics + .separators))
+        try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics + .usernameSeparators))
         validations.add("username must start with an alphanumeric") {
             (data) in
             guard let first = data.username.unicodeScalars.first,
-                !CharacterSet.separators.contains(first) else {
+                !CharacterSet.usernameSeparators.contains(first) else {
                     throw Abort(.badRequest, reason: "username must start with an alphanumeric")
             }
         }
@@ -774,11 +869,11 @@ extension UserUsernameData: Validatable, Reflectable {
     /// alphanumeric.
     static func validations() throws -> Validations<UserUsernameData> {
         var validations = Validations(UserUsernameData.self)
-        try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics + .separators))
+        try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics + .usernameSeparators))
         validations.add("username must start with an alphanumeric") {
             (data) in
             guard let first = data.username.unicodeScalars.first,
-                !CharacterSet.separators.contains(first) else {
+                !CharacterSet.usernameSeparators.contains(first) else {
                     throw Abort(.badRequest, reason: "username must start with an alphanumeric")
             }
         }
@@ -793,15 +888,5 @@ extension UserVerifyData: Validatable, Reflectable {
         var validations = Validations(UserVerifyData.self)
         try validations.add(\.verification, .count(6...7) && .characterSet(.alphanumerics + .whitespaces))
         return validations
-    }
-}
-
-extension CharacterSet {
-    /// Defines a character set containing characters other than alphanumerics that are allowed
-    /// in a username.
-    static var separators: CharacterSet {
-        var separatorChars: CharacterSet = .init()
-        separatorChars.insert(charactersIn: "-.+_")
-        return separatorChars
     }
 }

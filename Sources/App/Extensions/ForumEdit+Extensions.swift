@@ -39,7 +39,7 @@ extension ForumEdit {
 
 extension ForumEdit {
     /// The parent `ForumPost` of the edit.
-    var profile: Parent<ForumEdit, ForumPost> {
+    var post: Parent<ForumEdit, ForumPost> {
         return parent(\.postID)
     }
 }

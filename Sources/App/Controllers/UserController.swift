@@ -10,7 +10,7 @@ import Redis
 /// cleaner collection, since use of `User.parameter` in the paths here can be avoided
 /// entirely.
 
-struct UserController: RouteCollection, ImageHandler {
+struct UserController: RouteCollection {
 
     // MARK: Properties
         
@@ -94,18 +94,6 @@ struct UserController: RouteCollection, ImageHandler {
         "zombie"
     ]
     
-    // MARK: ImageHandler Conformance
-    
-    /// The base directory for storing profile images.
-    var imageDir: String {
-        return "images/profile/"
-    }
-    
-    /// The height of profile image thumbnails.
-    var thumbnailHeight: Int {
-        return 44
-    }
-
     // MARK: RouteCollection Conformance
     
     /// Required. Registers routes to the incoming router.
@@ -1604,5 +1592,17 @@ struct UserController: RouteCollection, ImageHandler {
         }
         let recoveryKey = word1 + " " + word2 + " " + word3
         return req.future(recoveryKey)
+    }
+}
+
+extension UserController: ImageHandler {
+    /// The base directory for storing profile images.
+    var imageDir: String {
+        return "images/profile/"
+    }
+    
+    /// The height of profile image thumbnails.
+    var thumbnailHeight: Int {
+        return 44
     }
 }

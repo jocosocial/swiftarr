@@ -15,7 +15,7 @@ final class PostLikes: PostgreSQLUUIDPivot, ModifiablePivot {
     
     // MARK: Initialization
     
-    /// Initializes a new PostLikesPivot.
+    /// Initializes a new PostLikes pivot.
     ///
     /// - Parameters:
     ///   - user: The left hand `User` model.
@@ -50,4 +50,9 @@ final class PostLikes: PostgreSQLUUIDPivot, ModifiablePivot {
     static let leftIDKey: LeftIDKey = \.userID
     /// Required key for `Pivot` protocol.
     static let rightIDKey: RightIDKey = \.postID
+}
+
+extension PostLikes {
+    // postgres needs a unique name
+    static var entity = "PostLikes"
 }

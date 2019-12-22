@@ -17,6 +17,18 @@ hide_documentation_coverage: no
 min_acl: private
 
 custom_categories:
+  - name: Controllers
+    children:
+    - AdminController
+    - AuthController
+    - ClientController
+    - EventController
+    - ForumController
+    - TestController
+    - TwitarrController
+    - UserController
+    - UsersController
+
   - name: Models
     children:
     - Barrel
@@ -27,21 +39,11 @@ custom_categories:
     - RegistrationCode
     - Report
     - Token
+    - Twarrt
     - User
     - UserNote
     - UserProfile
     
-  - name: Controllers
-    children:
-    - AdminController
-    - AuthController
-    - ClientController
-    - EventController
-    - ForumController
-    - TestController
-    - UserController
-    - UsersController
-
   - name: Enumerations
     children:
     - BarrelType
@@ -51,33 +53,6 @@ custom_categories:
     - ReportType
     - UserAccessLevel
 
-  - name: Extensions
-    children:
-    - CharacterSet
-    - Future
-    - RouteCollection
-    
-  - name: Migrations
-    children:
-    - AdminUser
-    - Categories
-    - ClientUsers
-    - EventForums
-    - Events
-    - Forums
-    - RegistrationCodes
-    - TestUsers
-
-  - name: Pivots
-    children:
-    - PostLikes
-    
-  - name: Protocols
-    children:
-    - ContentFilterable
-    - ImageHandler
-    - UserTaggable
-    
   - name: Request Structs
     children:
     - BarrelCreateData
@@ -110,23 +85,62 @@ custom_categories:
     - EventData
     - ForumData
     - ForumListData
+    - MuteKeywordData
+    - MutedUserData
+    - NoteData
+    - NoteEditData
     - PostData
     - PostDetailData
     - ProfilePublicData
-    - MuteKeywordData
-    - MutedUserData
     - SeaMonkey
-    - NoteData
     - TokenStringData
+    - TwarrtData
+    - TwarrtDetailData
     - UploadedImageData
     - UserHeader
     - UserInfo
     - UserProfileData
     - UserSearch
     
+  - name: Extensions
+    children:
+    - CharacterSet
+    - Date
+    - Formatter
+    - Future
+    - ISO8601DateFormatter
+    - JSONDecoder
+    - JSONEncoder
+    - RouteCollection
+    - String
+    
+  - name: Migrations
+    children:
+    - AdminUser
+    - Categories
+    - ClientUsers
+    - EventForums
+    - Events
+    - Forums
+    - RegistrationCodes
+    - TestUsers
+
+  - name: Pivots
+    children:
+    - PostLikes
+    - TwarrtLikes
+    
+  - name: Protocols
+    children:
+    - ContentFilterable
+    - ImageHandler
+    - UserBookmarkable
+    - UserTaggable
+    
   - name: Internal Structs/Classes
     children:
     - EventParser
     - ForumEdit
     - ProfileEdit
+    - TwarrtEdit
     

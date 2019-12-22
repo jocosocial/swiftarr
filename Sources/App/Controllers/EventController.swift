@@ -6,14 +6,7 @@ import Fluent
 /// The collection of `/api/v3/events/*` route endpoints and handler functions related
 /// to the event schedule.
 
-struct EventController: RouteCollection, ContentFilterable, UserTaggable {
-    // MARK: UserTaggable Conformance
-    
-    /// The barrel type for `Event` favoriting.
-    var taggedBarrelType: BarrelType {
-        return .taggedEvent
-    }
-    
+struct EventController: RouteCollection {
     // MARK: RouteCollection Conformance
     
     /// Required. Registers routes to the incoming router.
@@ -571,6 +564,11 @@ struct EventController: RouteCollection, ContentFilterable, UserTaggable {
                                         // convert to PostData
                                         let postsData = try filteredPosts.map {
                                             (filteredPost) -> Future<PostData> in
+                                            let bookmarked = try self.isBookmarked(
+                                                idValue: filteredPost.requireID(),
+                                                byUser: user,
+                                                on: req
+                                            )
                                             let userLike = try PostLikes.query(on: req)
                                                 .filter(\.postID == filteredPost.requireID())
                                                 .filter(\.userID == user.requireID())
@@ -578,10 +576,11 @@ struct EventController: RouteCollection, ContentFilterable, UserTaggable {
                                             let likeCount = try PostLikes.query(on: req)
                                                 .filter(\.postID == filteredPost.requireID())
                                                 .count()
-                                            return map(userLike, likeCount) {
-                                                (resolvedLike, count) in
+                                            return map(bookmarked, userLike, likeCount) {
+                                                (bookmarked, userLike, count) in
                                                 return try filteredPost.convertToData(
-                                                    withLike: resolvedLike?.likeType,
+                                                    bookmarked: bookmarked,
+                                                    userLike: userLike?.likeType,
                                                     likeCount: count
                                                 )
                                             }
@@ -768,5 +767,24 @@ struct EventController: RouteCollection, ContentFilterable, UserTaggable {
                     return try events.map { try $0.convertToData(withFavorited: true) }
             }
         }
+    }
+}
+
+// events can be filtered by creator
+extension EventController: ContentFilterable {}
+
+// event forum posts can be bookmarked
+extension EventController: UserBookmarkable {
+    /// The barrel type for event `ForumPost` bookmarking.
+    var bookmarkBarrelType: BarrelType {
+        return .bookmarkedPost
+    }
+}
+
+// events can be favorited
+extension EventController: UserTaggable {
+    /// The barrel type for `Event` favoriting.
+    var favoriteBarrelType: BarrelType {
+        return .taggedEvent
     }
 }
