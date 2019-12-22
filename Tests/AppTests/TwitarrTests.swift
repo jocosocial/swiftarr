@@ -717,7 +717,153 @@ final class TwitarrTests: XCTestCase {
         XCTAssertTrue(twarrtDetailData.text.contains("moderator review"), "moderator review")
     }
 
-    // test reply
-    // test report
     // test twarrts
+    func testRetrieve() throws {
+        // create logged in user
+        let token = try app.login(username: "verified", password: testPassword, on: conn)
+        var headers = HTTPHeaders()
+        headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // create twarrts (with pauses because we only have ms accuracy)
+        var postCreateData = PostCreateData(text: "This is twarrt 1.", imageData: nil)
+        let _ = try app.getResult(
+            from: twitarrURI + "create",
+            method: .POST,
+            headers: headers,
+            body: postCreateData,
+            decodeTo: TwarrtData.self
+        )
+        postCreateData.text = "This is twarrt 2."
+        let _ = try app.getResult(
+            from: twitarrURI + "create",
+            method: .POST,
+            headers: headers,
+            body: postCreateData,
+            decodeTo: TwarrtData.self
+        )
+        postCreateData.text = "This is twarrt 3."
+        let _ = try app.getResult(
+            from: twitarrURI + "create",
+            method: .POST,
+            headers: headers,
+            body: postCreateData,
+            decodeTo: TwarrtData.self
+        )
+        sleep(1)
+        postCreateData.text = "This is twarrt 4."
+        let middleTwarrt = try app.getResult(
+            from: twitarrURI + "create",
+            method: .POST,
+            headers: headers,
+            body: postCreateData,
+            decodeTo: TwarrtData.self
+        )
+        postCreateData.text = "This is twarrt 5."
+        let _ = try app.getResult(
+            from: twitarrURI + "create",
+            method: .POST,
+            headers: headers,
+            body: postCreateData,
+            decodeTo: TwarrtData.self
+        )
+        postCreateData.text = "This is twarrt 6."
+        let _ = try app.getResult(
+            from: twitarrURI + "create",
+            method: .POST,
+            headers: headers,
+            body: postCreateData,
+            decodeTo: TwarrtData.self
+        )
+        postCreateData.text = "This is twarrt 7."
+        let _ = try app.getResult(
+            from: twitarrURI + "create",
+            method: .POST,
+            headers: headers,
+            body: postCreateData,
+            decodeTo: TwarrtData.self
+        )
+        
+        // test get all
+        var twarrts = try app.getResult(
+            from: twitarrURI,
+            method: .GET,
+            headers: headers,
+            decodeTo: [TwarrtData].self
+        )
+        XCTAssertTrue(twarrts.count == 7, "should be 7 twarrts")
+        
+        // test get 5
+        twarrts = try app.getResult(
+            from: twitarrURI + "?limit=5",
+            method: .GET,
+            headers: headers,
+            decodeTo: [TwarrtData].self
+        )
+        XCTAssertTrue(twarrts.count == 5, "should be 5 twarrts")
+        XCTAssertTrue(twarrts.last!.text.contains("3"), "twarrt 3")
+        
+        // test get 5 from last
+        twarrts = try app.getResult(
+            from: twitarrURI + "?limit=5&from=last",
+            method: .GET,
+            headers: headers,
+            decodeTo: [TwarrtData].self
+        )
+        XCTAssertTrue(twarrts.count == 5, "should be 5 twarrts")
+        XCTAssertTrue(twarrts.last!.text.contains("3"), "twarrt 3")
+        
+        // test get 5 from first
+        twarrts = try app.getResult(
+            from: twitarrURI + "?limit=5&from=first",
+            method: .GET,
+            headers: headers,
+            decodeTo: [TwarrtData].self
+        )
+        XCTAssertTrue(twarrts.count == 5, "should be 5 twarrts")
+        XCTAssertTrue(twarrts.last!.text.contains("1"), "twarrt 1")
+
+        // test get 3 after middle ID
+        twarrts = try app.getResult(
+            from: twitarrURI + "?limit=3&after=\(middleTwarrt.twarrtID)",
+            method: .GET,
+            headers: headers,
+            decodeTo: [TwarrtData].self
+        )
+        XCTAssertTrue(twarrts.count == 3, "should be 3 twarrts")
+        XCTAssertTrue(twarrts.last!.text.contains("5"), "twarrt 5")
+
+        // test get 3 before middle ID
+        twarrts = try app.getResult(
+            from: twitarrURI + "?limit=3&before=\(middleTwarrt.twarrtID)",
+            method: .GET,
+            headers: headers,
+            decodeTo: [TwarrtData].self
+        )
+        XCTAssertTrue(twarrts.count == 3, "should be 3 twarrts")
+        XCTAssertTrue(twarrts.last!.text.contains("1"), "twarrt 1")
+        
+        // test get 3 after middle date
+        var date = middleTwarrt.createdAt.timeIntervalSince1970.advanced(by: 0.001)
+        twarrts = try app.getResult(
+            from: twitarrURI + "?limit=3&afterdate=\(date)",
+            method: .GET,
+            headers: headers,
+            decodeTo: [TwarrtData].self
+        )
+        XCTAssertTrue(twarrts.count == 3, "should be 3 twarrts")
+        XCTAssertTrue(twarrts.last!.text.contains("5"), "twarrt 5")
+
+        // test get 3 before middle date
+        date = middleTwarrt.createdAt.timeIntervalSince1970.advanced(by: -0.001)
+        twarrts = try app.getResult(
+            from: twitarrURI + "?limit=3&beforedate=\(date)",
+            method: .GET,
+            headers: headers,
+            decodeTo: [TwarrtData].self
+        )
+        XCTAssertTrue(twarrts.count == 3, "should be 3 twarrts")
+        XCTAssertTrue(twarrts.last!.text.contains("1"), "twarrt 1")
+    }
+    
+    // test threads
 }
