@@ -22,6 +22,12 @@ final class ForumPost: Codable {
     /// The filename of any image content of the post.
     var image: String
     
+    /// Whether the post is in quarantine.
+    var isQuarantined: Bool
+    
+    /// Whether the post has been reviewed as non-violating content by the Moderator team.
+    var isReviewed: Bool
+
     /// Timestamp of the model's creation, set automatically.
     var createdAt: Date?
     
@@ -50,5 +56,7 @@ final class ForumPost: Codable {
         self.authorID = authorID
         self.text = text
         self.image = image
+        self.isQuarantined = false
+        self.isReviewed = false
     }
 }

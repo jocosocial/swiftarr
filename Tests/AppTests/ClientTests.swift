@@ -194,10 +194,10 @@ final class ClientTests: XCTestCase {
         )
         XCTAssertTrue(users.count == 1, "should be 1 updated account")
 
-        // test updates with 8601 string
+        // test updates with iso8601ms string
         var isoString = ""
-        if #available(OSX 10.12, *) {
-            isoString = ISO8601DateFormatter().string(from: currentDate)
+        if #available(OSX 10.13, *) {
+            isoString = currentDate.iso8601ms
         } else {
             // Fallback on earlier versions
         }
@@ -359,11 +359,10 @@ final class ClientTests: XCTestCase {
         )
         XCTAssertTrue(response.http.status.code == 200, "should be 200 OK")
 
-        // test headers with 8601 string
-        sleep(1)
+        // test headers with iso8601ms string
         var isoString = ""
-        if #available(OSX 10.12, *) {
-            isoString = ISO8601DateFormatter().string(from: currentDate)
+        if #available(OSX 10.13, *) {
+            isoString = currentDate.iso8601ms
         } else {
             // Fallback on earlier versions
         }

@@ -45,8 +45,14 @@ account is created (the key is 3 words, nothing cryptic)
     - all forums belong to a category
     - a category can be restricted ("official") or not (users can create forums therein)
     - categories are created, and forums may be re-categorized, by Moderators
+    - forum posts can be reacted to with the same laugh/like/love options as twitarr twarrts
+    - forum posts can be bookmarked (this is private to the bookmarking user)
+    - forum posts can filtered by boomarks, liked posts
 * Events
     - each event on the schedule can have an "official" associated forum
+* Twitarr
+    - twarrts can be bookmarked (this is private to the bookmarking user)
+    - can be filtered by a user's seamonkey barrels (lists of users), bookmarks, liked twarrts
 * More
     - soon™
 
@@ -178,3 +184,4 @@ improve upon them!
 The `docs/` are generated using the awesome [`jazzy`](https://github.com/realm/jazzy).
 
 The [Vapor](https://vapor.codes) framework has its own [API documentation](https://api.vapor.codes).
+

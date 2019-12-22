@@ -52,4 +52,22 @@ extension ContentFilterable {
         }
         return post
     }
+    
+    /// Checks if a `Twarrt` contains any of the provided array of muting strings, returning
+    /// either the original twarrt or `nil` if there is a match.
+    ///
+    /// - Parameters:
+    ///   - post: The `ForumPost` to filter.
+    ///   - mutewords: The list of strings on which to filter the post.
+    ///   - req: The incoming `Request` on whose event loop this needs to run.
+    /// - Returns: The provided post, or `nil` if the post contains a muting string.
+    func filterMutewords(for twarrt: Twarrt, using mutewords: [String], on req: Request) -> Twarrt? {
+        for word in mutewords {
+            if twarrt.text.range(of: word, options: .caseInsensitive) != nil {
+                return nil
+            }
+        }
+        return twarrt
+    }
+
 }

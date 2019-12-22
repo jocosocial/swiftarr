@@ -16,13 +16,18 @@ extension RouteCollection {
         if let timeInterval = TimeInterval(string) {
             date = Date(timeIntervalSince1970: timeInterval)
         } else {
-            if #available(OSX 10.12, *) {
-                if let dateFromISO8601 = ISO8601DateFormatter().date(from: string) {
-                    date = dateFromISO8601
+            if #available(OSX 10.13, *) {
+                if let msDate = string.iso8601ms {
+                    date = msDate
+//                if let dateFromISO8601ms = ISO8601DateFormatter().date(from: string) {
+//                    date = dateFromISO8601ms
                 }
             } else {
                 let dateFormatter = DateFormatter()
-                dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+                dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSXXXXX"
+//                dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+                dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+                dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
                 if let dateFromDateFormatter = dateFormatter.date(from: string) {
                     date = dateFromDateFormatter
                 }
@@ -31,4 +36,3 @@ extension RouteCollection {
         return date
     }
 }
-

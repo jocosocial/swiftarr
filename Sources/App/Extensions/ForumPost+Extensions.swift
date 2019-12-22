@@ -42,6 +42,11 @@ extension ForumPost {
 // MARK: - Relations
 
 extension ForumPost {
+    /// The parent `User`  who authored the post.
+    var author: Parent<ForumPost, User> {
+        return parent(\.authorID)
+    }
+    
     /// The child `ForumEdit` accountability records of the post.
     var edits: Children<ForumPost, ForumEdit> {
         return children(\.postID)
@@ -62,13 +67,14 @@ extension ForumPost {
 
 extension ForumPost {
     /// Converts an `ForumPost` model to a version omitting data that is of no interest to a user.
-    func convertToData(withLike userLike: LikeType?, likeCount: Int) throws -> PostData {
+    func convertToData(bookmarked: Bool, userLike: LikeType?, likeCount: Int) throws -> PostData {
         return try PostData(
             postID: self.requireID(),
             createdAt: self.createdAt ?? Date(),
             authorID: self.authorID,
-            text: self.text,
-            image: self.image,
+            text: self.isQuarantined ? "This post is under moderator review." : self.text,
+            image: self.isQuarantined ? "" : self.image,
+            isBookmarked: bookmarked,
             userLike: userLike,
             likeCount: likeCount
         )
@@ -79,10 +85,14 @@ extension Future where T: ForumPost {
     /// Converts a `Future<ForumPost>` to a `Future<PostData>`. This extension provides
     /// the convenience of simply using `post.convertToData()` and allowing the compiler to
     /// choose the appropriate version for the context.
-    func convertToData(withLike userLike: LikeType?, likeCount: Int) -> Future<PostData> {
+    func convertToData(bookmarked: Bool, userLike: LikeType?, likeCount: Int) -> Future<PostData> {
         return self.map {
             (forumPost) in
-            return try forumPost.convertToData(withLike: userLike, likeCount: likeCount)
+            return try forumPost.convertToData(
+                bookmarked: bookmarked,
+                userLike: userLike,
+                likeCount: likeCount
+            )
         }
     }
 }

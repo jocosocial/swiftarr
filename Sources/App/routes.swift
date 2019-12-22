@@ -25,6 +25,9 @@ public func routes(_ router: Router) throws {
     let testController = TestController()
     try router.register(collection: testController)
     
+    let twitarrController = TwitarrController()
+    try router.register(collection: twitarrController)
+    
     let userController = UserController()
     try router.register(collection: userController)
     

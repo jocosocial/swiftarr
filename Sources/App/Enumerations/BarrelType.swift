@@ -3,6 +3,10 @@ import FluentPostgreSQL
 /// The type of `Barrel`.
 
 enum BarrelType: String, PostgreSQLRawEnum, Comparable {
+    /// A user's barrel of bookmarked posts.
+    case bookmarkedPost
+    /// A user's barrel of bookmarked twarrts.
+    case bookmarkedTwarrt
     /// A user's barrel of alert keywords.
     case keywordAlert
     /// A user's barrel of muting keywords.
