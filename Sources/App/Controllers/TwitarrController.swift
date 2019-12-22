@@ -249,18 +249,25 @@ struct TwitarrController: RouteCollection {
                         .range(..<limit)
                         .all()
                 case (_, _, .some(let twarrtDate), _, _):
+                    guard let date = TwitarrController.dateFromParameter(string: twarrtDate) else {
+                        throw Abort(.badRequest, reason: "not a recognized date format")
+                    }
+                    print(date.timeIntervalSince1970)
                     futureTwarrts = Twarrt.query(on: req)
                         .filter(\.authorID !~ blocked)
                         .filter(\.authorID !~ muted)
-                        .filter(\.createdAt > twarrtDate)
+                        .filter(\.createdAt > date)
                         .sort(\.createdAt, .ascending)
                         .range(..<limit)
                         .all()
                 case (_, _, _, .some(let twarrtDate), _):
+                    guard let date = TwitarrController.dateFromParameter(string: twarrtDate) else {
+                        throw Abort(.badRequest, reason: "not a recognized date format")
+                    }
                     futureTwarrts = Twarrt.query(on: req)
                         .filter(\.authorID !~ blocked)
                         .filter(\.authorID !~ muted)
-                        .filter(\.createdAt < twarrtDate)
+                        .filter(\.createdAt < date)
                         .sort(\.createdAt, .descending)
                         .range(..<limit)
                         .all()
