@@ -36,3 +36,30 @@ extension FezPost {
     /// Required key for `\.deletedAt` soft delete functionality.
     static var deletedAtKey: TimestampKey? { return \.deletedAt }
 }
+
+// MARK: - Functions
+
+extension FezPost {
+    /// Converts a `FezPost` model to a version omitting data that is not for public
+    /// consumption.
+    func convertToData() throws -> FezPostData {
+        return try FezPostData(
+            postID: self.requireID(),
+            authorID: self.authorID,
+            text: self.text,
+            image: self.image
+        )
+    }
+}
+
+extension Future where T: FezPost {
+    /// Convers a `Future<FezPost>` to a `Futured<FezPostData>`. This extension provides
+    /// the convenience of simply using `post.convertToData)` and allowing the compiler to
+    /// choose the appropriate version for the context.
+    func convertToData() -> Future<FezPostData> {
+        return self.map {
+            (fezPost) in
+            return try fezPost.convertToData()
+        }
+    }
+}
