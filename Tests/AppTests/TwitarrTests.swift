@@ -620,6 +620,102 @@ final class TwitarrTests: XCTestCase {
         )
         XCTAssertTrue(twarrts.count == 1, "should be 1 twarrt")
     }
+    
+    /// `POST /api/v3/twitarr/ID/reply`
+    /// `POST /api/v3/twitarr/ID/report`
+    func testReplyQuarantine() throws {
+        // need 4 logged in users
+        let _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        var token = try app.login(username: testUsername, password: testPassword, on: conn)
+        var userHeaders = HTTPHeaders()
+        userHeaders.bearerAuthorization = BearerAuthorization(token: token.token)
+        let _ = try app.createUser(username: "reporter1", password: testPassword, on: conn)
+        token = try app.login(username: "reporter1", password: testPassword, on: conn)
+        var reporter1Headers = HTTPHeaders()
+        reporter1Headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        let _ = try app.createUser(username: "reporter2", password: testPassword, on: conn)
+        token = try app.login(username: "reporter2", password: testPassword, on: conn)
+        var reporter2Headers = HTTPHeaders()
+        reporter2Headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        let _ = try app.createUser(username: "reporter3", password: testPassword, on: conn)
+        token = try app.login(username: "reporter3", password: testPassword, on: conn)
+        var reporter3Headers = HTTPHeaders()
+        reporter3Headers.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // test reply
+        let postCreateData = PostCreateData(text: "Well hello there.", imageData: nil)
+        let twarrtData = try app.getResult(
+            from: twitarrURI + "create",
+            method: .POST,
+            headers: userHeaders,
+            body: postCreateData,
+            decodeTo: TwarrtData.self
+        )
+        XCTAssertNil(twarrtData.replyToID, "should be no replyToID")
+        let replyData = try app.getResult(
+            from: twitarrURI + "\(twarrtData.twarrtID)/reply",
+            method: .POST,
+            headers: userHeaders,
+            body: postCreateData,
+            decodeTo: TwarrtData.self
+        )
+        XCTAssertTrue(replyData.replyToID == twarrtData.twarrtID, "should be \(twarrtData.twarrtID)")
+        
+        // send report
+        let reportData = ReportData(message: "I am a message.")
+        var response = try app.getResponse(
+            from: twitarrURI + "\(twarrtData.twarrtID)/report",
+            method: .POST,
+            headers: reporter1Headers,
+            body: reportData
+        )
+        XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+        
+        // test duplicate
+        response = try app.getResponse(
+            from: twitarrURI + "\(twarrtData.twarrtID)/report",
+            method: .POST,
+            headers: reporter1Headers,
+            body: reportData
+        )
+        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
+        XCTAssertTrue(response.http.body.description.contains("has already"), "has already")
+        
+        // send more reports
+        response = try app.getResponse(
+            from: twitarrURI + "\(twarrtData.twarrtID)/report",
+            method: .POST,
+            headers: reporter2Headers,
+            body: reportData
+        )
+        XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+        response = try app.getResponse(
+            from: twitarrURI + "\(twarrtData.twarrtID)/report",
+            method: .POST,
+            headers: reporter3Headers,
+            body: reportData
+        )
+        XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+        
+        // test quarantined reply
+        response = try app.getResponse(
+            from: twitarrURI + "\(twarrtData.twarrtID)/reply",
+            method: .POST,
+            headers: userHeaders,
+            body: postCreateData
+        )
+        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
+        XCTAssertTrue(response.http.body.description.contains("moderator-bot"), "moderator-bot")
+        
+        // test quarantined twarrt
+        let twarrtDetailData = try app.getResult(
+            from: twitarrURI + "\(twarrtData.twarrtID)",
+            method: .GET,
+            headers: userHeaders,
+            decodeTo: TwarrtDetailData.self
+        )
+        XCTAssertTrue(twarrtDetailData.text.contains("moderator review"), "moderator review")
+    }
 
     // test reply
     // test report
