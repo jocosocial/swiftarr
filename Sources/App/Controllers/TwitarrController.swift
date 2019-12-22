@@ -215,8 +215,8 @@ struct TwitarrController: RouteCollection {
         let limit = req.query[Int.self, at: "limit"] ?? 50
         let afterID = req.query[Int.self, at: "after"]
         let beforeID = req.query[Int.self, at: "before"]
-        let afterDate = req.query[Date.self, at: "afterdate"]
-        let beforeDate = req.query[Date.self, at: "beforedate"]
+        let afterDate = req.query[String.self, at: "afterdate"]
+        let beforeDate = req.query[String.self, at: "beforedate"]
         let from = req.query[String.self, at: "from"]?.lowercased() ?? "last"
         // get cached blocks
         return try self.getCachedFilters(for: user, on: req).flatMap {
