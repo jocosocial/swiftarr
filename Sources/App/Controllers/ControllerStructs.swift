@@ -199,6 +199,25 @@ struct EventsUpdateData: Content {
     var schedule: String
 }
 
+/// Used to return a `FezPost`'s data.
+///
+/// Returned by:
+/// * `GET /api/v3/fez/ID`
+/// * `POST /api/v3/fez/ID/post`
+/// * `POST /api/v3/fez/ID/post/ID/delete`
+///
+/// See: 
+struct FezPostData: Content {
+    /// The ID of the fez post.
+    var postID: Int
+    /// The ID of the fez post's author.
+    var authorID: UUID
+    /// The text content of the fez post.
+    var text: String
+    /// The image content of the fez post.
+    var image: String
+}
+
 /// Used to create a new `Forum`.
 ///
 /// Required by: `POST /api/v3/forum/categories/ID/create`
