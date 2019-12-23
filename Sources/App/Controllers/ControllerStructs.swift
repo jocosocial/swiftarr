@@ -205,6 +205,8 @@ struct EventsUpdateData: Content {
 ///
 /// See: `FezController.createHandler(_:data:)`.
 struct FezCreateData: Content {
+    /// The `FezType` .label of the fez.
+    var fezType: String
     /// The title for the FriendlyFez.
     var title: String
     /// A description of the fez.
@@ -228,12 +230,12 @@ struct FezCreateData: Content {
 ///
 /// See `FezController.createHandler(_:data:)`.
 struct FezData: Content {
+    /// The `FezType` .label of the fez.
+    var fezType: String
     /// The title of the fez.
     var title: String
     /// A description of the fez.
     var info: String
-    /// The category of the fez.
-    var fezType: FezType
     /// The starting time of the fez.
     var startTime: String
     /// The ending time of the fez.
