@@ -25,6 +25,7 @@ struct FezController: RouteCollection {
         let tokenAuthGroup = fezRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
         
         // endpoints available whether logged in or not
+        sharedAuthGroup.get("types", use: typesHandler)
         
         // endpoints available only when logged in
         tokenAuthGroup.post(FezCreateData.self, at: "create", use: createHandler)
@@ -33,6 +34,16 @@ struct FezController: RouteCollection {
     // MARK: - sharedAuthGroup Handlers (logged in or not)
     // All handlers in this route group require a valid HTTP Basic Authorization
     // *or* HTTP Bearer Authorization header in the request.
+    
+    /// `/GET /api/v3/fez/types`
+    ///
+    /// Retrieve a list of all values for `FezType` as strings.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Returns: `[String]` containing the `.label` value for each type.
+    func typesHandler(_ req: Request) throws -> Future<[String]> {
+        return req.future(FezType.AllCases.init().map { $0.label })
+    }
     
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
