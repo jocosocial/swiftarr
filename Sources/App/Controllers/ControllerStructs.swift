@@ -199,6 +199,53 @@ struct EventsUpdateData: Content {
     var schedule: String
 }
 
+/// Used to create a `FriendlyFez`.
+///
+/// Required by: `POST /api/v3/fez/create`
+///
+/// See: `FezController.createHandler(_:data:)`.
+struct FezCreateData: Content {
+    /// The title for the FriendlyFez.
+    var title: String
+    /// A description of the fez.
+    var info: String
+    /// The starting time for the fez, a date as string.
+    var startTime: String
+    /// The ending time for the fez, a date as string.
+    var endTime: String
+    /// The location for the fez.
+    var location: String
+    /// The minimum number of seamonkeys needed for the fez.
+    var minCapacity: Int
+    /// The maximum number of seamonkeys for the fez.
+    var maxCapacity: Int
+}
+
+/// Used to return a `FrienlyFez`'s data.
+///
+/// Returned by:
+/// * `POST /api/v3/fez/create`
+///
+/// See `FezController.createHandler(_:data:)`.
+struct FezData: Content {
+    /// The title of the fez.
+    var title: String
+    /// A description of the fez.
+    var info: String
+    /// The category of the fez.
+    var fezType: FezType
+    /// The starting time of the fez.
+    var startTime: String
+    /// The ending time of the fez.
+    var endTime: String
+    /// The location for the fez.
+    var location: String
+    /// The seamonkeys participating in the fez.
+    var seamonkeys: [SeaMonkey]
+    /// The seamonkeys on a waiting list for the fez.
+    var waitingList: [SeaMonkey]?
+}
+
 /// Used to return a `FezPost`'s data.
 ///
 /// Returned by:
@@ -206,7 +253,7 @@ struct EventsUpdateData: Content {
 /// * `POST /api/v3/fez/ID/post`
 /// * `POST /api/v3/fez/ID/post/ID/delete`
 ///
-/// See: 
+/// See: `FezController.createHandler(_:data:)`.
 struct FezPostData: Content {
     /// The ID of the fez post.
     var postID: Int
@@ -810,6 +857,27 @@ extension BarrelCreateData: Validatable, Reflectable {
             (data) in
             guard data.uuidList == nil || data.stringList == nil else {
                 throw Abort(.badRequest, reason: "'uuidList' and 'stringList' cannot both contain values")
+            }
+        }
+        return validations
+    }
+}
+
+extension FezCreateData: Validatable, Reflectable {
+    /// Validates that `.title`, `.info`, `.location` have values of at least 2
+    /// characters, that `.startTime` and `.endTime` have date values.
+    static func validations() throws -> Validations<FezCreateData> {
+        var validations = Validations(FezCreateData.self)
+        try validations.add(\.title, .count(2...))
+        try validations.add(\.info, .count(2...))
+        try validations.add(\.location, .count(2...))
+        validations.add(".startTime and .endTime must contain dates or nothing") {
+            (data) in
+            guard (Double(data.startTime) != nil) || data.startTime.isEmpty else {
+                throw Abort(.badRequest, reason: "'startTime' must be either a numeric date or empty")
+            }
+            guard (Double(data.endTime) != nil) || data.endTime.isEmpty else {
+                throw Abort(.badRequest, reason: "'endTime' must be either a numeric date or empty")
             }
         }
         return validations
