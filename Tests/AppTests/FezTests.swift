@@ -102,10 +102,11 @@ final class FezTests: XCTestCase {
     
     /// `POST /api/v3/fez/ID/join`
     /// `GET /api/v3/fez/joined`
-    /// `POST /api/v3/fez/ID/unjoine`
+    /// `GET /api/v3/fez/owner`
+    /// `POST /api/v3/fez/ID/unjoin`
     func testJoin() throws {
         // need 3 logged in users
-        let _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        let user = try app.createUser(username: testUsername, password: testPassword, on: conn)
         var token = try app.login(username: testUsername, password: testPassword, on: conn)
         var userHeaders = HTTPHeaders()
         userHeaders.bearerAuthorization = BearerAuthorization(token: token.token)
@@ -187,6 +188,30 @@ final class FezTests: XCTestCase {
             decodeTo: [FezData].self
         )
         XCTAssertTrue(joined.count == 2, "should be 2 fezzes")
+        
+        // test owner
+        let whoami = try app.getResult(
+            from: userURI + "whoami",
+            method: .GET,
+            headers: verifiedHeaders,
+            decodeTo: CurrentUserData.self
+        )
+        var owned = try app.getResult(
+            from: fezURI + "owner",
+            method: .GET,
+            headers: verifiedHeaders,
+            decodeTo: [FezData].self
+        )
+        XCTAssertTrue(owned.count == 1, "should be 1 fez")
+        XCTAssertTrue(owned[0].ownerID == whoami.userID, "should be \(whoami.userID)")
+        owned = try app.getResult(
+            from: fezURI + "owner",
+            method: .GET,
+            headers: userHeaders,
+            decodeTo: [FezData].self
+        )
+        XCTAssertTrue(owned.count == 1, "should be 1 fez")
+        XCTAssertTrue(owned[0].ownerID == user.userID, "should be \(user.userID)")
         
         // test unjoin
         fezData = try app.getResult(

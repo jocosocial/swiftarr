@@ -31,6 +31,7 @@ struct FezController: RouteCollection {
         tokenAuthGroup.post(FezCreateData.self, at: "create", use: createHandler)
         tokenAuthGroup.post(Barrel.parameter, "join", use: joinHandler)
         tokenAuthGroup.get("joined", use: joinedHandler)
+        tokenAuthGroup.get("owner", use: ownerHandler)
         tokenAuthGroup.post(Barrel.parameter, "unjoin", use: unjoinHandler)
     }
     
@@ -341,6 +342,89 @@ struct FezController: RouteCollection {
                     }
                     return fezzesData.flatten(on: req)
                 }
+        }
+    }
+    
+    /// `GET /api/v3/fez/owner`
+    ///
+    /// Retrieve the FriendlyFez barrels created by the user.
+    ///
+    /// - Note: There is no block filtering on this endpoint. In theory, a block could only
+    ///   apply if it were set *after* the fez had been joined by the second party. The
+    ///   owner of the fez has the ability to remove users if desired, and the fez itself is no
+    ///   longer visible to the non-owning party.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: `[FezData]` containing all the fezzes created by the user.
+    func ownerHandler(_ req: Request) throws -> Future<[FezData]> {
+        let user = try req.requireAuthenticated(User.self)
+        // get owned fez barrels
+        return try Barrel.query(on: req)
+            .filter(\.ownerID == user.requireID())
+            .filter(\.barrelType == .friendlyFez)
+            .all()
+            .flatMap {
+                (barrels) in
+                // convert to FezData
+                let fezzesData = try barrels.map {
+                    (barrel) -> Future<FezData> in
+                    // ensure we have a capacity value
+                    guard let maxString = barrel.userInfo["maxCapacity"]?[0],
+                        let maxMonkeys = Int(maxString) else {
+                            throw Abort(.internalServerError, reason: "maxCapacity not found")
+                    }
+                    // init return struct
+                    var fezData = try FezData(
+                        fezID: barrel.requireID(),
+                        ownerID: barrel.ownerID,
+                        fezType: barrel.userInfo["fezType"]?[0] ?? "",
+                        title: barrel.name,
+                        info: barrel.userInfo["info"]?[0] ?? "",
+                        startTime: self.fezTimeString(from: barrel.userInfo["startTime"]?[0] ?? ""),
+                        endTime: self.fezTimeString(from: barrel.userInfo["endTime"]?[0] ?? ""),
+                        location: barrel.userInfo["location"]?[0] ?? "",
+                        seamonkeys: [],
+                        waitingList: []
+                    )
+                    // convert UUIDs to users
+                    var futureSeamonkeys = [Future<User?>]()
+                    for uuid in barrel.modelUUIDs {
+                        futureSeamonkeys.append(User.find(uuid, on: req))
+                    }
+                    // resolve futures
+                    return futureSeamonkeys.flatten(on: req).map {
+                        (seamonkeys) in
+                        // convert valid users to seamonkeys
+                        let valids = try seamonkeys.compactMap { try $0?.convertToSeaMonkey() }
+                        // populate fezData
+                        switch (valids.count, maxMonkeys)  {
+                            // unlimited slots
+                            case (_, let max) where max == 0:
+                                fezData.seamonkeys = valids
+                            // open slots
+                            case (let count, let max) where count < max:
+                                fezData.seamonkeys = valids
+                                // add empty slot fezzes
+                                while fezData.seamonkeys.count < max {
+                                    let fezMonkey = SeaMonkey(
+                                        userID: Settings.shared.friendlyFezID,
+                                        username: "AvailableSlot"
+                                    )
+                                    fezData.seamonkeys.append(fezMonkey)
+                            }
+                            // full + waiting list
+                            case (let count, let max) where count > max:
+                                fezData.seamonkeys = Array(valids[valids.startIndex..<max])
+                                fezData.waitingList = Array(valids[max..<valids.endIndex])
+                            // exactly full
+                            default:
+                                fezData.seamonkeys = valids
+                        }
+                        return fezData
+                    }
+                }
+                return fezzesData.flatten(on: req)
         }
     }
     
