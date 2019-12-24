@@ -225,7 +225,7 @@ struct FezContentData: Content {
     var maxCapacity: Int
 }
 
-/// Used to return a `FrienlyFez`'s data.
+/// Used to return a FriendlyFez `Barrel`'s data.
 ///
 /// Returned by:
 /// * `POST /api/v3/fez/create`
@@ -266,6 +266,40 @@ struct FezData: Content {
     var waitingList: [SeaMonkey]
 }
 
+/// Used to return a FriendlyFez `Barrel`'s data with discussion posts.
+///
+/// Returned by:
+/// * `GET /api/v3/fez/ID`
+/// * `POST /api/v3/fez/ID/post`
+/// * `POST /api/v3/fex/ID/post/ID/delete`
+///
+/// See `FezController.fezHandler(_:)`, `FezController.postAddHandler(_:data:)`,
+/// `FezController.postDeleteHandler(_:)`.
+struct FezDetailData: Content {
+    /// The ID of the fez.
+    var fezID: UUID
+    /// The ID of the fez's owner.
+    var ownerID: UUID
+    /// The `FezType` .label of the fez.
+    var fezType: String
+    /// The title of the fez.
+    var title: String
+    /// A description of the fez.
+    var info: String
+    /// The starting time of the fez.
+    var startTime: String
+    /// The ending time of the fez.
+    var endTime: String
+    /// The location for the fez.
+    var location: String
+    /// The seamonkeys participating in the fez.
+    var seamonkeys: [SeaMonkey]
+    /// The seamonkeys on a waiting list for the fez.
+    var waitingList: [SeaMonkey]
+    /// The FezPosts in the fez discussion.
+    var posts: [FezPostData]
+}
+
 /// Used to return a `FezPost`'s data.
 ///
 /// Returned by:
@@ -273,7 +307,8 @@ struct FezData: Content {
 /// * `POST /api/v3/fez/ID/post`
 /// * `POST /api/v3/fez/ID/post/ID/delete`
 ///
-/// See: `FezController.createHandler(_:data:)`.
+/// See: `FezController.fezHandler(_:)`, `FezController.postAddHandler(_:data:)`,
+/// `FezController.postDeleteHandler(_:)`.
 struct FezPostData: Content {
     /// The ID of the fez post.
     var postID: Int
