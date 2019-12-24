@@ -246,6 +246,7 @@ final class FezTests: XCTestCase {
         XCTAssertTrue(response.http.status.code == 404, "should be 404 Not Found")
     }
     
+    /// `GET /api/v3/fez/open`
     func testOpen() throws {
         // need 2 logged in users
         let user = try app.createUser(username: testUsername, password: testPassword, on: conn)
@@ -336,6 +337,10 @@ final class FezTests: XCTestCase {
         XCTAssertTrue(open.count == 1, "should be 1 fez")
     }
     
+    /// `POST /api/v3/fez/ID/user/ID/add`
+    /// `POST /api/v3/fez/ID/user/ID/remove`
+    /// `POST /api/v3/fez/ID/update`
+    /// `POST /api/v3/fez/ID/candcel`
     func testOwnerModify() throws {
         // need 2 users
         let user = try app.createUser(username: testUsername, password: testPassword, on: conn)
@@ -485,5 +490,62 @@ final class FezTests: XCTestCase {
             headers: userHeaders
         )
         XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
+    }
+    
+    /// `GET /api/v3/fez/ID`
+    /// `POST /api/v3/fez/ID/post`
+    /// `POST /api/v3/fez/ID/post/ID/delete`
+    func testPosts() throws {
+        // need 2 users
+        let user = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        var token = try app.login(username: testUsername, password: testPassword, on: conn)
+        var userHeaders = HTTPHeaders()
+        userHeaders.bearerAuthorization = BearerAuthorization(token: token.token)
+        token = try app.login(username: "verified", password: testPassword, on: conn)
+        var verifiedHeaders = HTTPHeaders()
+        verifiedHeaders.bearerAuthorization = BearerAuthorization(token: token.token)
+        let whoami = try app.getResult(
+            from: userURI + "whoami",
+            method: .GET,
+            headers: verifiedHeaders,
+            decodeTo: CurrentUserData.self
+        )
+        
+        // create fez
+        let types = try app.getResult(
+            from: fezURI + "types",
+            method: .GET,
+            headers: verifiedHeaders,
+            decodeTo: [String].self
+        )
+        let startTime = Date().timeIntervalSince1970
+        let endTime = startTime.advanced(by: 3600)
+        let fezContentData = FezContentData(
+            fezType: types[0],
+            title: "A Title!",
+            info: "Some info.",
+            startTime: String(startTime),
+            endTime: String(endTime),
+            location: "Lido Pool",
+            minCapacity: 0,
+            maxCapacity: 2
+        )
+        var fezData = try app.getResult(
+            from: fezURI + "create",
+            method: .POST,
+            headers: verifiedHeaders,
+            body: fezContentData,
+            decodeTo: FezData.self
+        )
+        XCTAssertTrue(fezData.seamonkeys[0].username == "@verified", "should be '@verified'")
+        
+        // test fez detail
+        var fezDetailData = try app.getResult(
+            from: fezURI + "\(fezData.fezID)",
+            method: .GET,
+            headers: verifiedHeaders,
+            decodeTo: FezDetailData.self
+        )
+        XCTAssertTrue(fezDetailData.posts.count == 0, "should be no posts")
     }
 }
