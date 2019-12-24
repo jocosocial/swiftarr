@@ -245,4 +245,94 @@ final class FezTests: XCTestCase {
         )
         XCTAssertTrue(response.http.status.code == 404, "should be 404 Not Found")
     }
+    
+    func testOpen() throws {
+        // need 2 logged in users
+        let user = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        var token = try app.login(username: testUsername, password: testPassword, on: conn)
+        var userHeaders = HTTPHeaders()
+        userHeaders.bearerAuthorization = BearerAuthorization(token: token.token)
+        token = try app.login(username: "verified", password: testPassword, on: conn)
+        var verifiedHeaders = HTTPHeaders()
+        verifiedHeaders.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // create fezzes
+        let types = try app.getResult(
+            from: fezURI + "types",
+            method: .GET,
+            headers: userHeaders,
+            decodeTo: [String].self
+        )
+        let startTime = Date().timeIntervalSince1970
+        let endTime = startTime.advanced(by: 3600)
+        let fezCreateData = FezCreateData(
+            fezType: types[0],
+            title: "A Title!",
+            info: "Some info.",
+            startTime: String(startTime),
+            endTime: String(endTime),
+            location: "Lido Pool",
+            minCapacity: 0,
+            maxCapacity: 2
+        )
+        let fezData1 = try app.getResult(
+            from: fezURI + "create",
+            method: .POST,
+            headers: userHeaders,
+            body: fezCreateData,
+            decodeTo: FezData.self
+        )
+        let fezData2 = try app.getResult(
+            from: fezURI + "create",
+            method: .POST,
+            headers: userHeaders,
+            body: fezCreateData,
+            decodeTo: FezData.self
+        )
+        
+        // test open
+        var open = try app.getResult(
+            from: fezURI + "open",
+            method: .GET,
+            headers: userHeaders,
+            decodeTo: [FezData].self
+        )
+        XCTAssertTrue(open.count == 2, "should be 2 fezzes")
+        _ = try app.getResponse(
+            from: fezURI + "\(fezData1.fezID)/join",
+            method: .POST,
+            headers: verifiedHeaders
+        )
+        open = try app.getResult(
+            from: fezURI + "open",
+            method: .GET,
+            headers: userHeaders,
+            decodeTo: [FezData].self
+        )
+        XCTAssertTrue(open.count == 1, "should be 1 fez")
+        _ = try app.getResponse(
+            from: fezURI + "\(fezData2.fezID)/join",
+            method: .POST,
+            headers: verifiedHeaders
+        )
+        open = try app.getResult(
+            from: fezURI + "open",
+            method: .GET,
+            headers: userHeaders,
+            decodeTo: [FezData].self
+        )
+        XCTAssertTrue(open.count == 0, "should be no fez")
+        _ = try app.getResponse(
+            from: fezURI + "\(fezData1.fezID)/unjoin",
+            method: .POST,
+            headers: verifiedHeaders
+        )
+        open = try app.getResult(
+            from: fezURI + "open",
+            method: .GET,
+            headers: userHeaders,
+            decodeTo: [FezData].self
+        )
+        XCTAssertTrue(open.count == 1, "should be 1 fez")
+    }
 }
