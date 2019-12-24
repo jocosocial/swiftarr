@@ -232,10 +232,13 @@ struct FezCreateData: Content {
 /// * `GET /api/v3/fez/joined`
 /// * `GET /api/v3/fez/open`
 /// * `GET /api/v3/fez/owner`
+/// * `POST /api/v3/fez/ID/user/ID/add`
+/// * `POST /api/v3/fez/ID/user/ID/remove`
 ///
 /// See `FezController.createHandler(_:data:)`, `FezController.joinHandler(_:)`,
 /// `FezController.unjoinHandler(_:)`, `FezController.joinedHandler(_:)`
-/// `FezController.openhandler(_:)`, `FezController.ownerHandler(_:)`.
+/// `FezController.openhandler(_:)`, `FezController.ownerHandler(_:)`,
+/// `FezController.userAddHandler(_:)`, `FezController.userRemoveHandler(_:)`.
 struct FezData: Content {
     /// The ID of the fez.
     var fezID: UUID

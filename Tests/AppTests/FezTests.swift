@@ -335,4 +335,61 @@ final class FezTests: XCTestCase {
         )
         XCTAssertTrue(open.count == 1, "should be 1 fez")
     }
+    
+    func testOwnerModify() throws {
+        // need 2 users
+        let user = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        let token = try app.login(username: "verified", password: testPassword, on: conn)
+        var verifiedHeaders = HTTPHeaders()
+        verifiedHeaders.bearerAuthorization = BearerAuthorization(token: token.token)
+        
+        // create fez
+        let types = try app.getResult(
+            from: fezURI + "types",
+            method: .GET,
+            headers: verifiedHeaders,
+            decodeTo: [String].self
+        )
+        let startTime = Date().timeIntervalSince1970
+        let endTime = startTime.advanced(by: 3600)
+        let fezCreateData = FezCreateData(
+            fezType: types[0],
+            title: "A Title!",
+            info: "Some info.",
+            startTime: String(startTime),
+            endTime: String(endTime),
+            location: "Lido Pool",
+            minCapacity: 0,
+            maxCapacity: 2
+        )
+        var fezData = try app.getResult(
+            from: fezURI + "create",
+            method: .POST,
+            headers: verifiedHeaders,
+            body: fezCreateData,
+            decodeTo: FezData.self
+        )
+        XCTAssertTrue(fezData.seamonkeys[0].username == "@verified", "should be '@verified'")
+        
+        // add user
+        fezData = try app.getResult(
+            from: fezURI + "\(fezData.fezID)/user/\(user.userID)/add",
+            method: .POST,
+            headers: verifiedHeaders,
+            decodeTo: FezData.self
+        )
+        XCTAssertTrue(fezData.seamonkeys.count == 2, "should be 2 seamonkeys")
+        XCTAssertTrue(fezData.seamonkeys[1].username == "@\(testUsername)", "should be '@\(testUsername)'")
+        
+        // remove user
+        fezData = try app.getResult(
+            from: fezURI + "\(fezData.fezID)/user/\(user.userID)/remove",
+            method: .POST,
+            headers: verifiedHeaders,
+            decodeTo: FezData.self
+        )
+        XCTAssertTrue(fezData.seamonkeys[1].username == "AvailableSlot", "should be 'AvailableSlot'")
+        XCTAssertTrue(fezData.seamonkeys[0].username == "@verified", "should be '@verified'")
+
+    }
 }
