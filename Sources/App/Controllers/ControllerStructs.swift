@@ -230,6 +230,8 @@ struct FezCreateData: Content {
 ///
 /// See `FezController.createHandler(_:data:)`.
 struct FezData: Content {
+    /// The ID of the fez.
+    var fezID: UUID
     /// The `FezType` .label of the fez.
     var fezType: String
     /// The title of the fez.
@@ -245,7 +247,7 @@ struct FezData: Content {
     /// The seamonkeys participating in the fez.
     var seamonkeys: [SeaMonkey]
     /// The seamonkeys on a waiting list for the fez.
-    var waitingList: [SeaMonkey]?
+    var waitingList: [SeaMonkey]
 }
 
 /// Used to return a `FezPost`'s data.
