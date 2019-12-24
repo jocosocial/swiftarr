@@ -464,5 +464,26 @@ final class FezTests: XCTestCase {
             body: fezContentData
         )
         XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
+        
+        // test cancel
+        fezData = try app.getResult(
+            from: fezURI + "\(fezData.fezID)/cancel",
+            method: .POST,
+            headers: verifiedHeaders,
+            decodeTo: FezData.self
+        )
+        XCTAssertTrue(fezData.title.hasPrefix("[CANCELLED]"), "should be cancelled")
+        XCTAssertTrue(fezData.info.hasPrefix("[CANCELLED]"), "should be cancelled")
+        XCTAssertTrue(fezData.startTime == "[CANCELLED]", "should be cancelled")
+        XCTAssertTrue(fezData.endTime == "[CANCELLED]", "should be cancelled")
+        XCTAssertTrue(fezData.location.hasPrefix("[CANCELLED]"), "should be cancelled")
+        
+        // test not owner
+        response = try app.getResponse(
+            from: fezURI + "\(fezData.fezID)/cancel",
+            method: .POST,
+            headers: userHeaders
+        )
+        XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
     }
 }
