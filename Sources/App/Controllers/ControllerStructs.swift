@@ -227,8 +227,11 @@ struct FezCreateData: Content {
 ///
 /// Returned by:
 /// * `POST /api/v3/fez/create`
+/// * `POST /api/v3/fez/ID/join`
+/// * `POST /api/v3/fez/ID/unjoin`
 ///
-/// See `FezController.createHandler(_:data:)`.
+/// See `FezController.createHandler(_:data:)`, `FezController.joinHandler(_:)`,
+/// `FezController.unjoinHandler(_:)`.
 struct FezData: Content {
     /// The ID of the fez.
     var fezID: UUID

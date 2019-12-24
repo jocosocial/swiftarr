@@ -29,6 +29,8 @@ struct FezController: RouteCollection {
         
         // endpoints available only when logged in
         tokenAuthGroup.post(FezCreateData.self, at: "create", use: createHandler)
+        tokenAuthGroup.post(Barrel.parameter, "join", use: joinHandler)
+        tokenAuthGroup.post(Barrel.parameter, "unjoin", use: unjoinHandler)
     }
     
     // MARK: - sharedAuthGroup Handlers (logged in or not)
@@ -124,6 +126,218 @@ struct FezController: RouteCollection {
             let response = Response(http: HTTPResponse(status: .created), using: req)
             try response.content.encode(fezData)
             return response
+        }
+    }
+    
+    /// `POST /api/v3/fez/ID/join`
+    ///
+    /// Add the current user to the `FriendlyFez`. If the `.maxCapacity` of the fez has been
+    /// reached, the user is added to the waiting list.
+    ///
+    /// - Note: A user cannot join a fez that is owned by a blocked or blocking user. If any
+    ///   current participating or waitList user is in the user's blocks, their identity is
+    ///   replaced by a placeholder in the returned data. It is the user's responsibility to
+    ///   examine the participant list for conflicts prior to joining or attending.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 400 error if the supplied ID is not a fez barrel or user is already in fez.
+    ///   404 error if a block between the user and fez owner applies. A 5xx response should be
+    ///   reported as a likely bug, please and thank you.
+    /// - Returns: `FezData` containing the updated fez data.
+    func joinHandler(_ req: Request) throws -> Future<Response> {
+        let user = try req.requireAuthenticated(User.self)
+        // get barrel
+        return try req.parameters.next(Barrel.self).flatMap {
+            (barrel) in
+            guard barrel.barrelType == .friendlyFez else {
+                throw Abort(.badRequest, reason: "barrel is not type .friendlyFez")
+            }
+            // respect blocks
+            let cache = try req.keyedCache(for: .redis)
+            let key = try "blocks:\(user.requireID())"
+            let blocks = cache.get(key, as: [UUID].self)
+            return blocks.flatMap {
+                (blocks) in
+                let blocked = blocks ?? []
+                guard !blocked.contains(barrel.ownerID) else {
+                    throw Abort(.notFound, reason: "fez barrel is not available")
+                }
+                // ensure we have a capacity value
+                guard let maxString = barrel.userInfo["maxCapacity"]?[0],
+                    let maxMonkeys = Int(maxString) else {
+                        throw Abort(.internalServerError, reason: "maxCapacity not found")
+                }
+                // add user
+                try barrel.modelUUIDs.append(user.requireID())
+                return barrel.save(on: req).flatMap {
+                    (savedBarrel) in
+                    // return as FezData
+                    var fezData = try FezData(
+                        fezID: savedBarrel.requireID(),
+                        fezType: savedBarrel.userInfo["fezType"]?[0] ?? "",
+                        title: savedBarrel.name,
+                        info: savedBarrel.userInfo["info"]?[0] ?? "",
+                        startTime: self.fezTimeString(from: savedBarrel.userInfo["startTime"]?[0] ?? ""),
+                        endTime: self.fezTimeString(from: savedBarrel.userInfo["endTime"]?[0] ?? ""),
+                        location: savedBarrel.userInfo["location"]?[0] ?? "",
+                        seamonkeys: [],
+                        waitingList: []
+                    )
+                    // convert UUIDs to users
+                    var futureSeamonkeys = [Future<User?>]()
+                    for uuid in barrel.modelUUIDs {
+                        futureSeamonkeys.append(User.find(uuid, on: req))
+                    }
+                    // resolve futures
+                    return futureSeamonkeys.flatten(on: req).map {
+                        (seamonkeys) in
+                        // convert valid users to seamonkeys
+                        let valids = try seamonkeys.compactMap { try $0?.convertToSeaMonkey() }
+                        // masquerade blocked users
+                        for (index, seamonkey) in valids.enumerated() {
+                            if blocked.contains(seamonkey.userID) {
+                                let blockedMonkey = SeaMonkey(
+                                    userID: Settings.shared.blockedUserID,
+                                    username: "BlockedUser"
+                                )
+                                fezData.seamonkeys.remove(at: index)
+                                fezData.seamonkeys.insert(blockedMonkey, at: index)
+                            }
+                        }
+                        // populate fezData
+                        switch (valids.count, maxMonkeys)  {
+                            // unlimited slots
+                            case (_, let max) where max == 0:
+                                fezData.seamonkeys = valids
+                            // open slots
+                            case (let count, let max) where count < max:
+                                fezData.seamonkeys = valids
+                                // add empty slot fezzes
+                                while fezData.seamonkeys.count < max {
+                                    let fezMonkey = SeaMonkey(
+                                        userID: Settings.shared.friendlyFezID,
+                                        username: "AvailableSlot"
+                                    )
+                                    fezData.seamonkeys.append(fezMonkey)
+                            }
+                            // full + waiting list
+                            case (let count, let max) where count > max:
+                                fezData.seamonkeys = Array(valids[valids.startIndex..<max])
+                                fezData.waitingList = Array(valids[max..<valids.endIndex])
+                            // exactly full
+                            default:
+                                fezData.seamonkeys = valids
+                        }
+                        // return with 201 status
+                        let response = Response(http: HTTPResponse(status: .created), using: req)
+                        try response.content.encode(fezData)
+                        return response
+                    }
+                }
+            }
+        }
+    }
+    
+    /// `POST /api/v3/fez/ID/unjoin`
+    ///
+    /// Remove the current user from the `FriendlyFez`. If the `.maxCapacity` of the fez had
+    /// previously been reached, the first user from the waiting list, if any, is moved to the
+    /// participant list.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 400 error if the supplied ID is not a fez barrel. A 5xx response should be
+    ///   reported as a likely bug, please and thank you.
+    /// - Returns: `FezData` containing the updated fez data.
+    func unjoinHandler(_ req: Request) throws -> Future<Response> {
+        let user = try req.requireAuthenticated(User.self)
+        // get barrel
+        return try req.parameters.next(Barrel.self).flatMap {
+            (barrel) in
+            guard barrel.barrelType == .friendlyFez else {
+                throw Abort(.badRequest, reason: "barrel is not type .friendlyFez")
+            }
+            // get blocks to respect later
+            let cache = try req.keyedCache(for: .redis)
+            let key = try "blocks:\(user.requireID())"
+            let blocks = cache.get(key, as: [UUID].self)
+            return blocks.flatMap {
+                (blocks) in
+                let blocked = blocks ?? []
+                // ensure we have a capacity value
+                guard let maxString = barrel.userInfo["maxCapacity"]?[0],
+                    let maxMonkeys = Int(maxString) else {
+                        throw Abort(.internalServerError, reason: "maxCapacity not found")
+                }
+                // remove user
+                if let index = barrel.modelUUIDs.firstIndex(of: try user.requireID()) {
+                    barrel.modelUUIDs.remove(at: index)
+                }
+                return barrel.save(on: req).flatMap {
+                    (savedBarrel) in
+                    // return as FezData
+                    var fezData = try FezData(
+                        fezID: savedBarrel.requireID(),
+                        fezType: savedBarrel.userInfo["fezType"]?[0] ?? "",
+                        title: savedBarrel.name,
+                        info: savedBarrel.userInfo["info"]?[0] ?? "",
+                        startTime: self.fezTimeString(from: savedBarrel.userInfo["startTime"]?[0] ?? ""),
+                        endTime: self.fezTimeString(from: savedBarrel.userInfo["endTime"]?[0] ?? ""),
+                        location: savedBarrel.userInfo["location"]?[0] ?? "",
+                        seamonkeys: [],
+                        waitingList: []
+                    )
+                    // convert UUIDs to users
+                    var futureSeamonkeys = [Future<User?>]()
+                    for uuid in barrel.modelUUIDs {
+                        futureSeamonkeys.append(User.find(uuid, on: req))
+                    }
+                    // resolve futures
+                    return futureSeamonkeys.flatten(on: req).map {
+                        (seamonkeys) in
+                        // convert valid users to seamonkeys
+                        let valids = try seamonkeys.compactMap { try $0?.convertToSeaMonkey() }
+                        // masquerade blocked users
+                        for (index, seamonkey) in valids.enumerated() {
+                            if blocked.contains(seamonkey.userID) {
+                                let blockedMonkey = SeaMonkey(
+                                    userID: Settings.shared.blockedUserID,
+                                    username: "BlockedUser"
+                                )
+                                fezData.seamonkeys.remove(at: index)
+                                fezData.seamonkeys.insert(blockedMonkey, at: index)
+                            }
+                        }
+                        // populate fezData
+                        switch (valids.count, maxMonkeys)  {
+                            // unlimited slots
+                            case (_, let max) where max == 0:
+                                fezData.seamonkeys = valids
+                            // open slots
+                            case (let count, let max) where count < max:
+                                fezData.seamonkeys = valids
+                                // add empty slot fezzes
+                                while fezData.seamonkeys.count < max {
+                                    let fezMonkey = SeaMonkey(
+                                        userID: Settings.shared.friendlyFezID,
+                                        username: "AvailableSlot"
+                                    )
+                                    fezData.seamonkeys.append(fezMonkey)
+                            }
+                            // full + waiting list
+                            case (let count, let max) where count > max:
+                                fezData.seamonkeys = Array(valids[valids.startIndex..<max])
+                                fezData.waitingList = Array(valids[max..<valids.endIndex])
+                            // exactly full
+                            default:
+                                fezData.seamonkeys = valids
+                        }
+                        // return with 204 status
+                        let response = Response(http: HTTPResponse(status: .noContent), using: req)
+                        try response.content.encode(fezData)
+                        return response
+                    }
+                }
+            }
         }
     }
 }
