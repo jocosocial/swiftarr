@@ -236,6 +236,8 @@ struct FezCreateData: Content {
 struct FezData: Content {
     /// The ID of the fez.
     var fezID: UUID
+    /// The ID of the fez's owner.
+    var ownerID: UUID
     /// The `FezType` .label of the fez.
     var fezType: String
     /// The title of the fez.

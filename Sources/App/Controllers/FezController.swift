@@ -104,6 +104,7 @@ struct FezController: RouteCollection {
             // return as FezData
             var fezData = try FezData(
                 fezID: savedBarrel.requireID(),
+                ownerID: user.requireID(),
                 fezType: data.fezType,
                 title: data.title,
                 info: data.info,
@@ -175,6 +176,7 @@ struct FezController: RouteCollection {
                     // return as FezData
                     var fezData = try FezData(
                         fezID: savedBarrel.requireID(),
+                        ownerID: savedBarrel.ownerID,
                         fezType: savedBarrel.userInfo["fezType"]?[0] ?? "",
                         title: savedBarrel.name,
                         info: savedBarrel.userInfo["info"]?[0] ?? "",
@@ -279,6 +281,7 @@ struct FezController: RouteCollection {
                         // init return struct
                         var fezData = try FezData(
                             fezID: barrel.requireID(),
+                            ownerID: barrel.ownerID,
                             fezType: barrel.userInfo["fezType"]?[0] ?? "",
                             title: barrel.name,
                             info: barrel.userInfo["info"]?[0] ?? "",
@@ -380,6 +383,7 @@ struct FezController: RouteCollection {
                     // return as FezData
                     var fezData = try FezData(
                         fezID: savedBarrel.requireID(),
+                        ownerID: savedBarrel.ownerID,
                         fezType: savedBarrel.userInfo["fezType"]?[0] ?? "",
                         title: savedBarrel.name,
                         info: savedBarrel.userInfo["info"]?[0] ?? "",
