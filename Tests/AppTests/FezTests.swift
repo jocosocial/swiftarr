@@ -339,9 +339,18 @@ final class FezTests: XCTestCase {
     func testOwnerModify() throws {
         // need 2 users
         let user = try app.createUser(username: testUsername, password: testPassword, on: conn)
-        let token = try app.login(username: "verified", password: testPassword, on: conn)
+        var token = try app.login(username: testUsername, password: testPassword, on: conn)
+        var userHeaders = HTTPHeaders()
+        userHeaders.bearerAuthorization = BearerAuthorization(token: token.token)
+        token = try app.login(username: "verified", password: testPassword, on: conn)
         var verifiedHeaders = HTTPHeaders()
         verifiedHeaders.bearerAuthorization = BearerAuthorization(token: token.token)
+        let whoami = try app.getResult(
+            from: userURI + "whoami",
+            method: .GET,
+            headers: verifiedHeaders,
+            decodeTo: CurrentUserData.self
+        )
         
         // create fez
         let types = try app.getResult(
@@ -371,7 +380,7 @@ final class FezTests: XCTestCase {
         )
         XCTAssertTrue(fezData.seamonkeys[0].username == "@verified", "should be '@verified'")
         
-        // add user
+        // test add user
         fezData = try app.getResult(
             from: fezURI + "\(fezData.fezID)/user/\(user.userID)/add",
             method: .POST,
@@ -381,7 +390,23 @@ final class FezTests: XCTestCase {
         XCTAssertTrue(fezData.seamonkeys.count == 2, "should be 2 seamonkeys")
         XCTAssertTrue(fezData.seamonkeys[1].username == "@\(testUsername)", "should be '@\(testUsername)'")
         
-        // remove user
+        // test can't add twice
+        var response = try app.getResponse(
+            from: fezURI + "\(fezData.fezID)/user/\(user.userID)/add",
+            method: .POST,
+            headers: verifiedHeaders
+        )
+        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
+        
+        // test not owner
+        response = try app.getResponse(
+            from: fezURI + "\(fezData.fezID)/user/\(whoami.userID)/add",
+            method: .POST,
+            headers: userHeaders
+        )
+        XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
+
+        // test remove user
         fezData = try app.getResult(
             from: fezURI + "\(fezData.fezID)/user/\(user.userID)/remove",
             method: .POST,
@@ -390,6 +415,22 @@ final class FezTests: XCTestCase {
         )
         XCTAssertTrue(fezData.seamonkeys[1].username == "AvailableSlot", "should be 'AvailableSlot'")
         XCTAssertTrue(fezData.seamonkeys[0].username == "@verified", "should be '@verified'")
+        
+        // test can't remove twice
+        response = try app.getResponse(
+            from: fezURI + "\(fezData.fezID)/user/\(user.userID)/remove",
+            method: .POST,
+            headers: verifiedHeaders
+        )
+        XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
+        
+        // test not owner
+        response = try app.getResponse(
+            from: fezURI + "\(fezData.fezID)/user/\(whoami.userID)/remove",
+            method: .POST,
+            headers: userHeaders
+        )
+        XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
 
     }
 }
