@@ -28,12 +28,13 @@ struct FezController: RouteCollection {
         sharedAuthGroup.get("types", use: typesHandler)
         
         // endpoints available only when logged in
-        tokenAuthGroup.post(FezCreateData.self, at: "create", use: createHandler)
+        tokenAuthGroup.post(FezContentData.self, at: "create", use: createHandler)
         tokenAuthGroup.post(Barrel.parameter, "join", use: joinHandler)
         tokenAuthGroup.get("joined", use: joinedHandler)
         tokenAuthGroup.get("open", use: openHandler)
         tokenAuthGroup.get("owner", use: ownerHandler)
         tokenAuthGroup.post(Barrel.parameter, "unjoin", use: unjoinHandler)
+        tokenAuthGroup.post(FezContentData.self, at: Barrel.parameter, "update", use: updateHandler)
         tokenAuthGroup.post(Barrel.parameter, "user", User.parameter, "add", use: userAddHandler)
         tokenAuthGroup.post(Barrel.parameter, "user", User.parameter, "remove", use: userRemoveHandler)
     }
@@ -76,13 +77,13 @@ struct FezController: RouteCollection {
     /// A value of 0 in either the `.minCapacity` or `.maxCapacity` fields indicates an undefined
     /// limit: "there is no minimum", "there is no maximum".
     ///
-    /// - Requires: `FezCreateData` payload in the HTTP body.
+    /// - Requires: `FezContentData` payload in the HTTP body.
     /// - Parameters:
     ///   - req: The incoming `Request`, provided automatically.
-    ///   - data: `FezCreateData` containing the fez data.
+    ///   - data: `FezContentData` containing the fez data.
     /// - Throws: 400 error if the supplied data does not validate.
     /// - Returns: `FezData` containing the newly created fez.
-    func createHandler(_ req: Request, data: FezCreateData) throws -> Future<Response> {
+    func createHandler(_ req: Request, data: FezContentData) throws -> Future<Response> {
         let user = try req.requireAuthenticated(User.self)
         // see `FezCreateData.validations()`
         try data.validate()
@@ -100,7 +101,6 @@ struct FezController: RouteCollection {
                 "location": [data.location],
                 "minCapacity": [String(data.minCapacity)],
                 "maxCapacity": [String(data.maxCapacity)],
-                "waitList": []
             ]
         )
         return barrel.save(on: req).map {
@@ -641,6 +641,103 @@ struct FezController: RouteCollection {
                         try response.content.encode(fezData)
                         return response
                     }
+                }
+            }
+        }
+    }
+    
+    /// `POST /api/v3/fez/ID/update`
+    ///
+    /// Update the specified FriendlyFez with the supplied data.
+    ///
+    /// - Note: All fields in the supplied `FezContentData` must be filled, just as if the fez
+    ///   were being created from scratch. If there is demand, using a set of more efficient
+    ///   endpoints instead of this single monolith can be considered.
+    ///
+    /// - Requires: `FezContentData` payload in the HTTP body.
+    /// - Parameters:
+    ///   - req: The incoming `Request`, provided automatically.
+    ///   - data: `FezContentData` containing the new fez parameters.
+    /// - Throws: 400 error if the data is not valid. 403 error if user is not fez owner.
+    ///   A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: `FezData` containing the updated fez info.
+    func updateHandler(_ req: Request, data: FezContentData) throws -> Future<FezData> {
+        let user = try req.requireAuthenticated(User.self)
+        // get barrel
+        return try req.parameters.next(Barrel.self).flatMap {
+            (barrel) in
+            guard barrel.barrelType == .friendlyFez else {
+                throw Abort(.badRequest, reason: "barrel is not type .friendlyFez")
+            }
+            guard try barrel.ownerID == user.requireID() else {
+                throw Abort(.forbidden, reason: "user does not own fez")
+            }
+            // see FezContentData.validations()
+            try data.validate()
+            // update barrel
+            barrel.userInfo["fezType"] = [data.fezType]
+            barrel.name = data.title
+            barrel.userInfo["info"] = [data.info]
+            barrel.userInfo["startTime"] = [data.startTime]
+            barrel.userInfo["endTime"] = [data.endTime]
+            barrel.userInfo["location"] = [data.location]
+            barrel.userInfo["minCapacity"] = [String(data.minCapacity)]
+            barrel.userInfo["maxCapacity"] = [String(data.maxCapacity)]
+            return barrel.save(on: req).flatMap {
+                (savedBarrel) in
+                // return as  FezData
+                var fezData = try FezData(
+                    fezID: savedBarrel.requireID(),
+                    ownerID: savedBarrel.ownerID,
+                    fezType: savedBarrel.userInfo["fezType"]?[0] ?? "",
+                    title: savedBarrel.name,
+                    info: savedBarrel.userInfo["info"]?[0] ?? "",
+                    startTime: self.fezTimeString(from: savedBarrel.userInfo["startTime"]?[0] ?? ""),
+                    endTime: self.fezTimeString(from: savedBarrel.userInfo["endTime"]?[0] ?? ""),
+                    location: savedBarrel.userInfo["location"]?[0] ?? "",
+                    seamonkeys: [],
+                    waitingList: []
+                )
+                // ensure we have a capacity value
+                guard let maxString = savedBarrel.userInfo["maxCapacity"]?[0],
+                    let maxMonkeys = Int(maxString) else {
+                        throw Abort(.internalServerError, reason: "maxCapacity not found")
+                }
+                // convert UUIDs to users
+                var futureSeamonkeys = [Future<User?>]()
+                for uuid in savedBarrel.modelUUIDs {
+                    futureSeamonkeys.append(User.find(uuid, on: req))
+                }
+                // resolve futures
+                return futureSeamonkeys.flatten(on: req).map {
+                    (seamonkeys) in
+                    // convert valid users to seamonkeys
+                    let valids = try seamonkeys.compactMap { try $0?.convertToSeaMonkey() }
+                    // populate fezData
+                    switch (valids.count, maxMonkeys)  {
+                        // unlimited slots
+                        case (_, let max) where max == 0:
+                            fezData.seamonkeys = valids
+                        // open slots
+                        case (let count, let max) where count < max:
+                            fezData.seamonkeys = valids
+                            // add empty slot fezzes
+                            while fezData.seamonkeys.count < max {
+                                let fezMonkey = SeaMonkey(
+                                    userID: Settings.shared.friendlyFezID,
+                                    username: "AvailableSlot"
+                                )
+                                fezData.seamonkeys.append(fezMonkey)
+                        }
+                        // full + waiting list
+                        case (let count, let max) where count > max:
+                            fezData.seamonkeys = Array(valids[valids.startIndex..<max])
+                            fezData.waitingList = Array(valids[max..<valids.endIndex])
+                        // exactly full
+                        default:
+                            fezData.seamonkeys = valids
+                    }
+                    return fezData
                 }
             }
         }

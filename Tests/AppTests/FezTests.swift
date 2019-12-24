@@ -56,7 +56,7 @@ final class FezTests: XCTestCase {
         // test fez with times
         let startTime = Date().timeIntervalSince1970
         let endTime = startTime.advanced(by: 3600)
-        var fezCreateData = FezCreateData(
+        var fezContentData = FezContentData(
             fezType: types[0],
             title: "A Title!",
             info: "Some info.",
@@ -70,32 +70,32 @@ final class FezTests: XCTestCase {
             from: fezURI + "create",
             method: .POST,
             headers: headers,
-            body: fezCreateData,
+            body: fezContentData,
             decodeTo: FezData.self
         )
         XCTAssertTrue(fezData.seamonkeys[0].username == "@verified", "should be 'verified'")
         
         // test with no times
-        fezCreateData.startTime = ""
-        fezCreateData.endTime = ""
+        fezContentData.startTime = ""
+        fezContentData.endTime = ""
         fezData = try app.getResult(
             from: fezURI + "create",
             method: .POST,
             headers: headers,
-            body: fezCreateData,
+            body: fezContentData,
             decodeTo: FezData.self
         )
         XCTAssertTrue(fezData.startTime == "TBD", "should be 'TBD'")
         XCTAssertTrue(fezData.endTime == "TBD", "should be 'TBD'")
         
         // test with invalid times
-        fezCreateData.startTime = "abc"
-        fezCreateData.endTime = "def"
+        fezContentData.startTime = "abc"
+        fezContentData.endTime = "def"
         let response = try app.getResponse(
             from: fezURI + "create",
             method: .POST,
             headers: headers,
-            body: fezCreateData
+            body: fezContentData
         )
         XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
     }
@@ -126,7 +126,7 @@ final class FezTests: XCTestCase {
         )
         let startTime = Date().timeIntervalSince1970
         let endTime = startTime.advanced(by: 3600)
-        let fezCreateData = FezCreateData(
+        let fezContentData = FezContentData(
             fezType: types[0],
             title: "A Title!",
             info: "Some info.",
@@ -140,7 +140,7 @@ final class FezTests: XCTestCase {
             from: fezURI + "create",
             method: .POST,
             headers: userHeaders,
-            body: fezCreateData,
+            body: fezContentData,
             decodeTo: FezData.self
         )
         XCTAssertTrue(fezData.seamonkeys[0].username == "@\(testUsername)", "should be \(testUsername)")
@@ -178,7 +178,7 @@ final class FezTests: XCTestCase {
             from: fezURI + "create",
             method: .POST,
             headers: verifiedHeaders,
-            body: fezCreateData
+            body: fezContentData
         )
         XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
         joined = try app.getResult(
@@ -265,7 +265,7 @@ final class FezTests: XCTestCase {
         )
         let startTime = Date().timeIntervalSince1970
         let endTime = startTime.advanced(by: 3600)
-        let fezCreateData = FezCreateData(
+        let fezContentData = FezContentData(
             fezType: types[0],
             title: "A Title!",
             info: "Some info.",
@@ -279,14 +279,14 @@ final class FezTests: XCTestCase {
             from: fezURI + "create",
             method: .POST,
             headers: userHeaders,
-            body: fezCreateData,
+            body: fezContentData,
             decodeTo: FezData.self
         )
         let fezData2 = try app.getResult(
             from: fezURI + "create",
             method: .POST,
             headers: userHeaders,
-            body: fezCreateData,
+            body: fezContentData,
             decodeTo: FezData.self
         )
         
@@ -361,7 +361,7 @@ final class FezTests: XCTestCase {
         )
         let startTime = Date().timeIntervalSince1970
         let endTime = startTime.advanced(by: 3600)
-        let fezCreateData = FezCreateData(
+        var fezContentData = FezContentData(
             fezType: types[0],
             title: "A Title!",
             info: "Some info.",
@@ -375,7 +375,7 @@ final class FezTests: XCTestCase {
             from: fezURI + "create",
             method: .POST,
             headers: verifiedHeaders,
-            body: fezCreateData,
+            body: fezContentData,
             decodeTo: FezData.self
         )
         XCTAssertTrue(fezData.seamonkeys[0].username == "@verified", "should be '@verified'")
@@ -431,6 +431,38 @@ final class FezTests: XCTestCase {
             headers: userHeaders
         )
         XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
-
+        
+        // test update
+        fezContentData.fezType = types[1]
+        fezContentData.title = "A new title!"
+        fezContentData.info = "This is an updated description."
+        fezContentData.startTime = String(startTime.advanced(by: 7200))
+        fezContentData.endTime = ""
+        fezContentData.location = "SeaView Pool"
+        fezContentData.minCapacity = 0
+        fezContentData.maxCapacity = 10
+        fezData = try app.getResult(
+            from: fezURI + "\(fezData.fezID)/update",
+            method: .POST,
+            headers: verifiedHeaders,
+            body: fezContentData,
+            decodeTo: FezData.self
+        )
+        XCTAssert(fezData.fezType == fezContentData.fezType, "should be \(fezContentData.fezType)")
+        XCTAssert(fezData.title == fezContentData.title, "should be \(fezContentData.title)")
+        XCTAssert(fezData.info == fezContentData.info, "should be \(fezContentData.info)")
+        XCTAssert(fezData.endTime == "TBD", "should be 'TBD')")
+        XCTAssert(fezData.location == fezContentData.location, "should be \(fezContentData.location)")
+        XCTAssert(fezData.seamonkeys.count == 10, "should be \(fezContentData.maxCapacity)")
+        XCTAssert(fezData.waitingList.count == 0, "should be no waitList")
+        
+        // test not owner
+        response = try app.getResponse(
+            from: fezURI + "\(fezData.fezID)/update",
+            method: .POST,
+            headers: userHeaders,
+            body: fezContentData
+        )
+        XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
     }
 }

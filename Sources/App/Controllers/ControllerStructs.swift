@@ -199,12 +199,14 @@ struct EventsUpdateData: Content {
     var schedule: String
 }
 
-/// Used to create a `FriendlyFez`.
+/// Used to create or update a `FriendlyFez`.
 ///
-/// Required by: `POST /api/v3/fez/create`
+/// Required by:
+/// * `POST /api/v3/fez/create`
+/// * `POST /api/v3/fez/ID/update`
 ///
-/// See: `FezController.createHandler(_:data:)`.
-struct FezCreateData: Content {
+/// See: `FezController.createHandler(_:data:)`, `FezController.updateHandler(_:data:)`.
+struct FezContentData: Content {
     /// The `FezType` .label of the fez.
     var fezType: String
     /// The title for the FriendlyFez.
@@ -879,11 +881,11 @@ extension BarrelCreateData: Validatable, Reflectable {
     }
 }
 
-extension FezCreateData: Validatable, Reflectable {
+extension FezContentData: Validatable, Reflectable {
     /// Validates that `.title`, `.info`, `.location` have values of at least 2
     /// characters, that `.startTime` and `.endTime` have date values.
-    static func validations() throws -> Validations<FezCreateData> {
-        var validations = Validations(FezCreateData.self)
+    static func validations() throws -> Validations<FezContentData> {
+        var validations = Validations(FezContentData.self)
         try validations.add(\.title, .count(2...))
         try validations.add(\.info, .count(2...))
         try validations.add(\.location, .count(2...))
