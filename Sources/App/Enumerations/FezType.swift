@@ -2,7 +2,7 @@ import FluentPostgreSQL
 
 /// The type of `FriendlyFez`.
 
-enum FezType: String, PostgreSQLRawEnum {
+enum FezType: String, CaseIterable, PostgreSQLRawEnum {
     /// Some type of activity.
     case activity
     /// A dining LFG.
