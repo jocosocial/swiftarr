@@ -42,7 +42,7 @@ struct FezController: RouteCollection {
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Returns: `[String]` containing the `.label` value for each type.
     func typesHandler(_ req: Request) throws -> Future<[String]> {
-        return req.future(FezType.AllCases.init().map { $0.label })
+        return req.future(FezType.allCases.map { $0.label })
     }
     
     // MARK: - tokenAuthGroup Handlers (logged in)
