@@ -36,6 +36,8 @@ final class FezTests: XCTestCase {
     // MARK: - Tests
     // Note: We migrate an "admin" user first during boot, so it is always present as `.first()`.
     
+    /// `GET /api/v3/fez/types`
+    /// `POST /api/v3/fez/create`
     func testCreate() throws {
         // get logged in user
         let token = try app.login(username: "verified", password: testPassword, on: conn)
@@ -98,6 +100,9 @@ final class FezTests: XCTestCase {
         XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
     }
     
+    /// `POST /api/v3/fez/ID/join`
+    /// `GET /api/v3/fez/joined`
+    /// `POST /api/v3/fez/ID/unjoine`
     func testJoin() throws {
         // need 3 logged in users
         let _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
@@ -160,6 +165,29 @@ final class FezTests: XCTestCase {
         XCTAssertTrue(fezData.waitingList.count == 1, "should be 1 waiting")
         XCTAssertTrue(fezData.waitingList[0].username == "@moderator", "should be '@moderator'")
 
+        // test joined
+        var joined = try app.getResult(
+            from: fezURI + "joined",
+            method: .GET,
+            headers: verifiedHeaders,
+            decodeTo: [FezData].self
+        )
+        XCTAssertTrue(joined.count == 1, "should be 1 fez")
+        var response = try app.getResponse(
+            from: fezURI + "create",
+            method: .POST,
+            headers: verifiedHeaders,
+            body: fezCreateData
+        )
+        XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
+        joined = try app.getResult(
+            from: fezURI + "joined",
+            method: .GET,
+            headers: verifiedHeaders,
+            decodeTo: [FezData].self
+        )
+        XCTAssertTrue(joined.count == 2, "should be 2 fezzes")
+        
         // test unjoin
         fezData = try app.getResult(
             from: fezURI + "\(fezData.fezID)/unjoin",
@@ -179,7 +207,7 @@ final class FezTests: XCTestCase {
             headers: userHeaders,
             decodeTo: UserInfo.self
         )
-        var response = try app.getResponse(
+        response = try app.getResponse(
             from: usersURI + "\(verifiedInfo.userID)/block",
             method: .POST,
             headers: userHeaders

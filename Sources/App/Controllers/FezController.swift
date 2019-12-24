@@ -30,6 +30,7 @@ struct FezController: RouteCollection {
         // endpoints available only when logged in
         tokenAuthGroup.post(FezCreateData.self, at: "create", use: createHandler)
         tokenAuthGroup.post(Barrel.parameter, "join", use: joinHandler)
+        tokenAuthGroup.get("joined", use: joinedHandler)
         tokenAuthGroup.post(Barrel.parameter, "unjoin", use: unjoinHandler)
     }
     
@@ -235,6 +236,108 @@ struct FezController: RouteCollection {
                     }
                 }
             }
+        }
+    }
+    
+    /// `GET /api/v3/fez/joined`
+    ///
+    /// Retrieve all the FriendlyFez barrels that the user has joined.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: `[FezData]` containing all the fezzes joined by the user.
+    func joinedHandler(_ req: Request) throws -> Future<[FezData]> {
+        let user = try req.requireAuthenticated(User.self)
+        // get fez barrels
+        return Barrel.query(on: req)
+            .filter(\.barrelType == .friendlyFez)
+            .all()
+            .flatMap {
+                (barrels) in
+                // get blocks to respect later
+                let cache = try req.keyedCache(for: .redis)
+                let key = try "blocks:\(user.requireID())"
+                let blocks = cache.get(key, as: [UUID].self)
+                return blocks.flatMap {
+                    (blocks) in
+                    let blocked = blocks ?? []
+                    // get user's barrels
+                    var userBarrels = [Barrel]()
+                    for barrel in barrels {
+                        if barrel.modelUUIDs.contains(try user.requireID()) {
+                            userBarrels.append(barrel)
+                        }
+                    }
+                    // convert to FezData
+                    let fezzesData = try userBarrels.map {
+                        (barrel) -> Future<FezData> in
+                        // ensure we have a capacity value
+                        guard let maxString = barrel.userInfo["maxCapacity"]?[0],
+                            let maxMonkeys = Int(maxString) else {
+                                throw Abort(.internalServerError, reason: "maxCapacity not found")
+                        }
+                        // init return struct
+                        var fezData = try FezData(
+                            fezID: barrel.requireID(),
+                            fezType: barrel.userInfo["fezType"]?[0] ?? "",
+                            title: barrel.name,
+                            info: barrel.userInfo["info"]?[0] ?? "",
+                            startTime: self.fezTimeString(from: barrel.userInfo["startTime"]?[0] ?? ""),
+                            endTime: self.fezTimeString(from: barrel.userInfo["endTime"]?[0] ?? ""),
+                            location: barrel.userInfo["location"]?[0] ?? "",
+                            seamonkeys: [],
+                            waitingList: []
+                        )
+                        // convert UUIDs to users
+                        var futureSeamonkeys = [Future<User?>]()
+                        for uuid in barrel.modelUUIDs {
+                            futureSeamonkeys.append(User.find(uuid, on: req))
+                        }
+                        // resolve futures
+                        return futureSeamonkeys.flatten(on: req).map {
+                            (seamonkeys) in
+                            // convert valid users to seamonkeys
+                            let valids = try seamonkeys.compactMap { try $0?.convertToSeaMonkey() }
+                            // masquerade blocked users
+                            for (index, seamonkey) in valids.enumerated() {
+                                if blocked.contains(seamonkey.userID) {
+                                    let blockedMonkey = SeaMonkey(
+                                        userID: Settings.shared.blockedUserID,
+                                        username: "BlockedUser"
+                                    )
+                                    fezData.seamonkeys.remove(at: index)
+                                    fezData.seamonkeys.insert(blockedMonkey, at: index)
+                                }
+                            }
+                            // populate fezData
+                            switch (valids.count, maxMonkeys)  {
+                                // unlimited slots
+                                case (_, let max) where max == 0:
+                                    fezData.seamonkeys = valids
+                                // open slots
+                                case (let count, let max) where count < max:
+                                    fezData.seamonkeys = valids
+                                    // add empty slot fezzes
+                                    while fezData.seamonkeys.count < max {
+                                        let fezMonkey = SeaMonkey(
+                                            userID: Settings.shared.friendlyFezID,
+                                            username: "AvailableSlot"
+                                        )
+                                        fezData.seamonkeys.append(fezMonkey)
+                                }
+                                // full + waiting list
+                                case (let count, let max) where count > max:
+                                    fezData.seamonkeys = Array(valids[valids.startIndex..<max])
+                                    fezData.waitingList = Array(valids[max..<valids.endIndex])
+                                // exactly full
+                                default:
+                                    fezData.seamonkeys = valids
+                            }
+                            return fezData
+                        }
+                    }
+                    return fezzesData.flatten(on: req)
+                }
         }
     }
     
