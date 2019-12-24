@@ -378,7 +378,7 @@ struct FezController: RouteCollection {
                         let startTime = FezController.dateFromParameter(
                             string: barrel.userInfo["startTime"]?[0] ?? "") ?? Date()
                         // if open slots and started no more than 1 hour ago
-                        if currentCount < maxCount
+                        if (currentCount < maxCount || maxCount == 0)
                             && startTime > Date().addingTimeInterval(-3600) {
                             openBarrels.append(barrel)
                         }
