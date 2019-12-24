@@ -253,10 +253,9 @@ struct TwitarrController: RouteCollection {
         let afterDate = req.query[String.self, at: "afterdate"]
         let beforeDate = req.query[String.self, at: "beforedate"]
         let from = req.query[String.self, at: "from"]?.lowercased() ?? "last"
-        // FIXME: this value should be a settable constant
-        // enforce maximum of 200
-        if limit > 200 {
-            limit = 200
+        // enforce maximum allowed
+        if limit > Settings.shared.maximumTwarrts {
+            limit = Settings.shared.maximumTwarrts
         }
         // get cached blocks
         return try self.getCachedFilters(for: user, on: req).flatMap {
@@ -1114,8 +1113,8 @@ struct TwitarrController: RouteCollection {
                             .count()
                             .flatMap {
                                 (reportCount) in
-                                // FIXME: should use a settable constant
-                                if reportCount >= 3 && !twarrt.isReviewed {
+                                if reportCount >= Settings.shared.postAutoQuarantineThreshold
+                                    && !twarrt.isReviewed {
                                     twarrt.isQuarantined = true
                                     return twarrt.save(on: req).transform(to: .created)
                                 }

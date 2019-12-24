@@ -617,8 +617,8 @@ struct UsersController: RouteCollection {
                     .count()
                     .flatMap {
                         (reportCount) in
-                        // FIXME: should use a settable constant, and moderator notification
-                        if reportCount >= 5 {
+                        // FIXME: moderator notification
+                        if reportCount >= Settings.shared.userAutoQuarantineThreshold {
                             user.accessLevel = .quarantined
                             return user.save(on: req).transform(to: .created)
                         }

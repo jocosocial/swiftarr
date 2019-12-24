@@ -67,7 +67,6 @@ struct ClientController: RouteCollection {
     ///   is missing or invalid. 403 error if user is not a registered client.
     /// - Returns: `[UserHeader]` array of all updated users.
     func userHeadersHandler(_ req: Request) throws -> Future<[UserHeader]> {
-        // FIXME: account for blocks
         let client = try req.requireAuthenticated(User.self)
         // must be registered client
         guard client.accessLevel == .client else {
@@ -126,7 +125,6 @@ struct ClientController: RouteCollection {
     /// - Returns: `[UserSearch]` containing the ID and `.userSearch` string values
     ///   of all users, sorted by username.
     func userSearchHandler(_ req: Request) throws -> Future<[UserSearch]> {
-        // FIXME: account for blocks
         let client = try req.requireAuthenticated(User.self)
         // must be registered client
         guard client.accessLevel == .client else {
@@ -184,8 +182,7 @@ struct ClientController: RouteCollection {
     ///   is missing or invalid. 403 error if user is not a registered client.
     /// - Returns: `[UserInfo]` containing all updated users.
     func userUpdatesHandler(_ req: Request) throws -> Future<[UserInfo]> {
-        // FIXME: account for blocks
-        let client = try req.requireAuthenticated(User.self)
+         let client = try req.requireAuthenticated(User.self)
         // must be registered client
         guard client.accessLevel == .client else {
             throw Abort(.forbidden, reason: "registered clients only")

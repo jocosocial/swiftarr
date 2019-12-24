@@ -1169,9 +1169,8 @@ struct ForumController: RouteCollection {
                     .count()
                     .flatMap {
                         (reportCount) in
-                        // FIXME: should use a settable constant, and separate lock from user's
-//                        if reportCount >= 3 && !forum.isReviewed {
-                        if reportCount >= 3 {
+                        // FIXME: use separate lock from user's
+                        if reportCount >= Settings.shared.forumAutoQuarantineThreshold {
                             forum.isLocked = true
                             return forum.save(on: req).transform(to: .created)
                         }
@@ -1620,8 +1619,8 @@ struct ForumController: RouteCollection {
                             .count()
                             .flatMap {
                                 (reportCount) in
-                                // FIXME: should use a settable constant
-                                if reportCount >= 3 && !post.isReviewed {
+                                if reportCount >= Settings.shared.postAutoQuarantineThreshold
+                                    && !post.isReviewed {
                                     post.isQuarantined = true
                                     return post.save(on: req).transform(to: .created)
                                 }
