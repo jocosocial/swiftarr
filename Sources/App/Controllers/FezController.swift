@@ -99,7 +99,8 @@ struct FezController: RouteCollection {
         return barrel.save(on: req).map {
             (savedBarrel) in
             // return as FezData
-            let fezData = try FezData(
+            var fezData = try FezData(
+                fezID: savedBarrel.requireID(),
                 fezType: data.fezType,
                 title: data.title,
                 info: data.info,
@@ -109,6 +110,16 @@ struct FezController: RouteCollection {
                 seamonkeys: [user.convertToSeaMonkey()],
                 waitingList: []
             )
+            // add empty slot fezzes
+            if data.maxCapacity > 0 {
+                while fezData.seamonkeys.count < data.maxCapacity {
+                    let fezMonkey = SeaMonkey(
+                        userID: Settings.shared.friendlyFezID,
+                        username: "AvailableSlot"
+                    )
+                    fezData.seamonkeys.append(fezMonkey)
+                }
+            }
             // with 201 status
             let response = Response(http: HTTPResponse(status: .created), using: req)
             try response.content.encode(fezData)
