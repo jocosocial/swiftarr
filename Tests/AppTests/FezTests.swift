@@ -494,22 +494,16 @@ final class FezTests: XCTestCase {
     
     /// `GET /api/v3/fez/ID`
     /// `POST /api/v3/fez/ID/post`
-    /// `POST /api/v3/fez/ID/post/ID/delete`
+    /// `POST /api/v3/fez/post/ID/delete`
     func testPosts() throws {
         // need 2 users
-        let user = try app.createUser(username: testUsername, password: testPassword, on: conn)
+        let _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
         var token = try app.login(username: testUsername, password: testPassword, on: conn)
         var userHeaders = HTTPHeaders()
         userHeaders.bearerAuthorization = BearerAuthorization(token: token.token)
         token = try app.login(username: "verified", password: testPassword, on: conn)
         var verifiedHeaders = HTTPHeaders()
         verifiedHeaders.bearerAuthorization = BearerAuthorization(token: token.token)
-        let whoami = try app.getResult(
-            from: userURI + "whoami",
-            method: .GET,
-            headers: verifiedHeaders,
-            decodeTo: CurrentUserData.self
-        )
         
         // create fez
         let types = try app.getResult(
@@ -543,6 +537,34 @@ final class FezTests: XCTestCase {
         var fezDetailData = try app.getResult(
             from: fezURI + "\(fezData.fezID)",
             method: .GET,
+            headers: verifiedHeaders,
+            decodeTo: FezDetailData.self
+        )
+        XCTAssertTrue(fezDetailData.posts.count == 0, "should be no posts")
+        
+        // test post
+        let postCreateData = PostCreateData(text: "Hello.", imageData: nil)
+        fezDetailData = try app.getResult(
+            from: fezURI + "\(fezData.fezID)/post",
+            method: .POST,
+            headers: verifiedHeaders,
+            body: postCreateData,
+            decodeTo: FezDetailData.self
+        )
+        XCTAssertTrue(fezDetailData.posts.count == 1, "should be 1 post")
+        
+        // test can't delete post
+        let response = try app.getResponse(
+            from: fezURI + "post/\(fezDetailData.posts[0].postID)/delete",
+            method: .POST,
+            headers: userHeaders
+        )
+        XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
+        
+        // test delete post
+        fezDetailData = try app.getResult(
+            from: fezURI + "post/\(fezDetailData.posts[0].postID)/delete",
+            method: .POST,
             headers: verifiedHeaders,
             decodeTo: FezDetailData.self
         )

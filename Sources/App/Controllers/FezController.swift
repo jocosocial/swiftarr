@@ -35,6 +35,8 @@ struct FezController: RouteCollection {
         tokenAuthGroup.post(FezContentData.self, at: "create", use: createHandler)
         tokenAuthGroup.post(Barrel.parameter, "join", use: joinHandler)
         tokenAuthGroup.get("owner", use: ownerHandler)
+        tokenAuthGroup.post(PostCreateData.self, at: Barrel.parameter, "post", use: postAddHandler)
+        tokenAuthGroup.post("post", FezPost.parameter, "delete", use: postDeleteHandler)
         tokenAuthGroup.post(Barrel.parameter, "unjoin", use: unjoinHandler)
         tokenAuthGroup.post(FezContentData.self, at: Barrel.parameter, "update", use: updateHandler)
         tokenAuthGroup.post(Barrel.parameter, "user", User.parameter, "add", use: userAddHandler)
@@ -432,6 +434,9 @@ struct FezController: RouteCollection {
     ///
     /// Retrieve the specified FriendlyFez with all fez discussion `FezPost`s.
     ///
+    /// - Note: Posts are subject to block and mute user filtering, but mutewords are ignored
+    ///   in order to not suppress potentially important information.
+    ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 404 error if a block between the user and fez owner applies. A 5xx response
     ///   should be reported as a likely bug, please and thank you.
@@ -444,13 +449,11 @@ struct FezController: RouteCollection {
             guard barrel.barrelType == .friendlyFez else {
                 throw Abort(.badRequest, reason: "barrel is not type .friendlyFez")
             }
-            // respect blocks
-            let cache = try req.keyedCache(for: .redis)
-            let key = try "blocks:\(user.requireID())"
-            let blocks = cache.get(key, as: [UUID].self)
-            return blocks.flatMap {
-                (blocks) in
-                let blocked = blocks ?? []
+            // get blocks
+            return try self.getCachedFilters(for: user, on: req).flatMap {
+                (tuple) in
+                let blocked = tuple.0
+                let muted = tuple.1
                 guard !blocked.contains(barrel.ownerID) else {
                     throw Abort(.notFound, reason: "fez barrel is not available")
                 }
@@ -522,6 +525,7 @@ struct FezController: RouteCollection {
                     return try FezPost.query(on: req)
                         .filter(\.fezID == barrel.requireID())
                         .filter(\.authorID !~ blocked)
+                        .filter(\.authorID !~ muted)
                         .sort(\.createdAt, .ascending)
                         .all()
                         .map {
@@ -728,6 +732,251 @@ struct FezController: RouteCollection {
         }
     }
     
+    /// `POST /api/v3/fez/ID/post`
+    ///
+    /// Add a `FezPost` to the specified FriendlyFez `Barrel`.
+    ///
+    /// - Requires: `PostCreateData` payload in the HTTP body.
+    /// - Parameters:
+    ///   - req: The incoming `Request`, provided automatically
+    ///   - data: `PostCreateData` containing the post's contents and optional image.
+    /// - Throws: 404 error if the fez is not available. A 5xx response should be reported
+    ///   as a likely bug, please and thank you.
+    /// - Returns: `FezDetailData` containing the updated fez discussion.
+    func postAddHandler(_ req: Request, data: PostCreateData) throws -> Future<Response> {
+        let user = try req.requireAuthenticated(User.self)
+        // see PostContentData.validations()
+        try data.validate()
+        // get fez
+        return try req.parameters.next(Barrel.self).flatMap {
+            (barrel) in
+            guard barrel.barrelType == .friendlyFez else {
+                throw Abort(.badRequest, reason: "barrel is not type .friendlyFez")
+            }
+            // process image
+            return try self.processImage(data: data.imageData, forType: .forumPost, on: req).flatMap {
+                (filename) in
+                // create post
+                let post = try FezPost(
+                    fezID: barrel.requireID(),
+                    authorID: user.requireID(),
+                    text: data.text,
+                    image: filename
+                )
+                return post.save(on: req).flatMap {
+                    (_) in
+                    // get blocks
+                    return try self.getCachedFilters(for: user, on: req).flatMap {
+                        (tuple) in
+                        let blocked = tuple.0
+                        let muted = tuple.1
+                        guard !blocked.contains(barrel.ownerID) else {
+                            throw Abort(.notFound, reason: "fez barrel is not available")
+                        }
+                        // ensure we have a capacity value
+                        guard let maxString = barrel.userInfo["maxCapacity"]?[0],
+                            let maxMonkeys = Int(maxString) else {
+                                throw Abort(.internalServerError, reason: "maxCapacity not found")
+                        }
+                        // return as FezDetailData
+                        var fezDetailData = try FezDetailData(
+                            fezID: barrel.requireID(),
+                            ownerID: barrel.ownerID,
+                            fezType: barrel.userInfo["fezType"]?[0] ?? "",
+                            title: barrel.name,
+                            info: barrel.userInfo["info"]?[0] ?? "",
+                            startTime: self.fezTimeString(from: barrel.userInfo["startTime"]?[0] ?? ""),
+                            endTime: self.fezTimeString(from: barrel.userInfo["endTime"]?[0] ?? ""),
+                            location: barrel.userInfo["location"]?[0] ?? "",
+                            seamonkeys: [],
+                            waitingList: [],
+                            posts: []
+                        )
+                        // convert UUIDs to users
+                        var futureSeamonkeys = [Future<User?>]()
+                        for uuid in barrel.modelUUIDs {
+                            futureSeamonkeys.append(User.find(uuid, on: req))
+                        }
+                        // resolve futures
+                        return futureSeamonkeys.flatten(on: req).flatMap {
+                            (seamonkeys) in
+                            // convert valid users to seamonkeys
+                            let valids = try seamonkeys.compactMap { try $0?.convertToSeaMonkey() }
+                            // masquerade blocked users
+                            for (index, seamonkey) in valids.enumerated() {
+                                if blocked.contains(seamonkey.userID) {
+                                    let blockedMonkey = SeaMonkey(
+                                        userID: Settings.shared.blockedUserID,
+                                        username: "BlockedUser"
+                                    )
+                                    fezDetailData.seamonkeys.remove(at: index)
+                                    fezDetailData.seamonkeys.insert(blockedMonkey, at: index)
+                                }
+                            }
+                            // populate fezDetailData
+                            switch (valids.count, maxMonkeys)  {
+                                // unlimited slots
+                                case (_, let max) where max == 0:
+                                    fezDetailData.seamonkeys = valids
+                                // open slots
+                                case (let count, let max) where count < max:
+                                    fezDetailData.seamonkeys = valids
+                                    // add empty slot fezzes
+                                    while fezDetailData.seamonkeys.count < max {
+                                        let fezMonkey = SeaMonkey(
+                                            userID: Settings.shared.friendlyFezID,
+                                            username: "AvailableSlot"
+                                        )
+                                        fezDetailData.seamonkeys.append(fezMonkey)
+                                }
+                                // full + waiting list
+                                case (let count, let max) where count > max:
+                                    fezDetailData.seamonkeys = Array(valids[valids.startIndex..<max])
+                                    fezDetailData.waitingList = Array(valids[max..<valids.endIndex])
+                                // exactly full
+                                default:
+                                    fezDetailData.seamonkeys = valids
+                            }
+                            // get posts
+                            return try FezPost.query(on: req)
+                                .filter(\.fezID == barrel.requireID())
+                                .filter(\.authorID !~ blocked)
+                                .filter(\.authorID !~ muted)
+                                .sort(\.createdAt, .ascending)
+                                .all()
+                                .map {
+                                    (posts) in
+                                    // add as FezPostData
+                                    fezDetailData.posts = try posts.map { try $0.convertToData() }
+                                    let response = Response(http: HTTPResponse(status: .created), using: req)
+                                    try response.content.encode(fezDetailData)
+                                    return response
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    /// `POST /api/v3/fez/post/ID/delete`
+    ///
+    /// Delete a `FezPost`.
+    ///
+    /// - Parameters: req: The incoming `Request`, provided automatically
+    /// - Throws: 403 error if user is not the post author. 404 error if the fez is not
+    ///   available. A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: `FezDetailData` containing the updated fez discussion.
+    func postDeleteHandler(_ req: Request) throws -> Future<Response> {
+        let user = try req.requireAuthenticated(User.self)
+        // get post
+        return try req.parameters.next(FezPost.self).flatMap {
+            (post) in
+            // get barrel
+            return Barrel.find(post.fezID, on: req)
+                .unwrap(or: Abort(.internalServerError, reason: "fez not found"))
+                .flatMap {
+                    (barrel) in
+                    // delete post
+                    guard try post.authorID == user.requireID() else {
+                        throw Abort(.forbidden, reason: "user cannot delete post")
+                    }
+                    return post.delete(on: req).flatMap {
+                        (_) in
+                        // get blocks
+                        return try self.getCachedFilters(for: user, on: req).flatMap {
+                            (tuple) in
+                            let blocked = tuple.0
+                            let muted = tuple.1
+                            guard !blocked.contains(barrel.ownerID) else {
+                                throw Abort(.notFound, reason: "fez barrel is not available")
+                            }
+                            // ensure we have a capacity value
+                            guard let maxString = barrel.userInfo["maxCapacity"]?[0],
+                                let maxMonkeys = Int(maxString) else {
+                                    throw Abort(.internalServerError, reason: "maxCapacity not found")
+                            }
+                            // return as FezDetailData
+                            var fezDetailData = try FezDetailData(
+                                fezID: barrel.requireID(),
+                                ownerID: barrel.ownerID,
+                                fezType: barrel.userInfo["fezType"]?[0] ?? "",
+                                title: barrel.name,
+                                info: barrel.userInfo["info"]?[0] ?? "",
+                                startTime: self.fezTimeString(from: barrel.userInfo["startTime"]?[0] ?? ""),
+                                endTime: self.fezTimeString(from: barrel.userInfo["endTime"]?[0] ?? ""),
+                                location: barrel.userInfo["location"]?[0] ?? "",
+                                seamonkeys: [],
+                                waitingList: [],
+                                posts: []
+                            )
+                            // convert UUIDs to users
+                            var futureSeamonkeys = [Future<User?>]()
+                            for uuid in barrel.modelUUIDs {
+                                futureSeamonkeys.append(User.find(uuid, on: req))
+                            }
+                            // resolve futures
+                            return futureSeamonkeys.flatten(on: req).flatMap {
+                                (seamonkeys) in
+                                // convert valid users to seamonkeys
+                                let valids = try seamonkeys.compactMap { try $0?.convertToSeaMonkey() }
+                                // masquerade blocked users
+                                for (index, seamonkey) in valids.enumerated() {
+                                    if blocked.contains(seamonkey.userID) {
+                                        let blockedMonkey = SeaMonkey(
+                                            userID: Settings.shared.blockedUserID,
+                                            username: "BlockedUser"
+                                        )
+                                        fezDetailData.seamonkeys.remove(at: index)
+                                        fezDetailData.seamonkeys.insert(blockedMonkey, at: index)
+                                    }
+                                }
+                                // populate fezDetailData
+                                switch (valids.count, maxMonkeys)  {
+                                    // unlimited slots
+                                    case (_, let max) where max == 0:
+                                        fezDetailData.seamonkeys = valids
+                                    // open slots
+                                    case (let count, let max) where count < max:
+                                        fezDetailData.seamonkeys = valids
+                                        // add empty slot fezzes
+                                        while fezDetailData.seamonkeys.count < max {
+                                            let fezMonkey = SeaMonkey(
+                                                userID: Settings.shared.friendlyFezID,
+                                                username: "AvailableSlot"
+                                            )
+                                            fezDetailData.seamonkeys.append(fezMonkey)
+                                    }
+                                    // full + waiting list
+                                    case (let count, let max) where count > max:
+                                        fezDetailData.seamonkeys = Array(valids[valids.startIndex..<max])
+                                        fezDetailData.waitingList = Array(valids[max..<valids.endIndex])
+                                    // exactly full
+                                    default:
+                                        fezDetailData.seamonkeys = valids
+                                }
+                                // get posts
+                                return try FezPost.query(on: req)
+                                    .filter(\.fezID == barrel.requireID())
+                                    .filter(\.authorID !~ blocked)
+                                    .filter(\.authorID !~ muted)
+                                    .sort(\.createdAt, .ascending)
+                                    .all()
+                                    .map {
+                                        (posts) in
+                                        // add as FezPostData
+                                        fezDetailData.posts = try posts.map { try $0.convertToData() }
+                                        let response = Response(http: HTTPResponse(status: .created), using: req)
+                                        try response.content.encode(fezDetailData)
+                                        return response
+                                }
+                            }
+                        }
+                    }
+            }
+        }
+    }
+
     /// `POST /api/v3/fez/ID/unjoin`
     ///
     /// Remove the current user from the FriendlyFez. If the `.maxCapacity` of the fez had
@@ -1111,6 +1360,22 @@ struct FezController: RouteCollection {
         }
     }
 
+}
+
+// posts can be filtered by author and content
+extension FezController: ContentFilterable {}
+
+// posts can contain images
+extension FezController: ImageHandler {
+    /// The base directory for storing FezPost images.
+    var imageDir: String {
+        return "images/fez/"
+    }
+    
+    /// The height of FezPost image thumbnails.
+    var thumbnailHeight: Int {
+        return 100
+    }
 }
 
 // MARK: - Helper Functions
