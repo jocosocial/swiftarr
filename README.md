@@ -53,6 +53,12 @@ account is created (the key is 3 words, nothing cryptic)
 * Twitarr
     - twarrts can be bookmarked (this is private to the bookmarking user)
     - can be filtered by a user's seamonkey barrels (lists of users), bookmarks, liked twarrts
+* FriendlyFez / LFG
+    - users can create Looking For Group requests for... gaming, dining companions, meetups, activities, anything?
+    - fezzes can have a maximum capacity, with a waiting list, or an open-ended number of participants
+    - a fez can have specific start and/or end times, or can be "TBD"
+    - fezzes can have fez-specific (not a Forum) FezPost discussions
+    - fezzes respect user blocks for the creator, FezPosts respect both blocks and mutes
 * More
     - soon™
 

@@ -66,6 +66,9 @@
                 <a class="nav-group-task-link" href="Structs/EventController.html">EventController</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/FezController.html">FezController</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/ForumController.html">ForumController</a>
               </li>
               <li class="nav-group-task">
@@ -93,6 +96,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Classes/Event.html">Event</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/FezPost.html">FezPost</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Classes/Forum.html">Forum</a>
@@ -133,6 +139,9 @@
                 <a class="nav-group-task-link" href="Enums/EventType.html">EventType</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Enums/FezType.html">FezType</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Enums/ImageHandlerType.html">ImageHandlerType</a>
               </li>
               <li class="nav-group-task">
@@ -154,6 +163,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/EventsUpdateData.html">EventsUpdateData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/FezContentData.html">FezContentData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/ForumCreateData.html">ForumCreateData</a>
@@ -228,6 +240,15 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/EventData.html">EventData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/FezData.html">FezData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/FezDetailData.html">FezDetailData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/FezPostData.html">FezPostData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/ForumData.html">ForumData</a>
@@ -391,6 +412,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/ProfileEdit.html">ProfileEdit</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/Settings.html">Settings</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/TwarrtEdit.html">TwarrtEdit</a>
@@ -565,6 +589,42 @@ belong to a single <code>Category</code>. A category is classified as one of two
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/Event.swift#L7-L76">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App7FezPostC"></a>
+                    <a name="//apple_ref/swift/Class/FezPost" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App7FezPostC">FezPost</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>An individual post within a <code>FriendlyFez</code> discussion. A FezPost must contain
+either text content or image content, or both.</p>
+
+                        <a href="Classes/FezPost.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">FezPost</span> <span class="p">:</span> <span class="kt">Codable</span></code></pre>
+<pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">FezPost</span><span class="p">:</span> <span class="kt">PostgreSQLModel</span></code></pre>
+<pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">FezPost</span><span class="p">:</span> <span class="kt">Content</span></code></pre>
+<pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">FezPost</span><span class="p">:</span> <span class="kt">Parameter</span></code></pre>
+<pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">FezPost</span><span class="p">:</span> <span class="kt">Migration</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Models/FezPost.swift#L7-L54">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -947,7 +1007,7 @@ the <code>.userID</code>, <code>.username</code> and <code>.userSearch</code> fi
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-12-21)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-12-24)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.13.0</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>
