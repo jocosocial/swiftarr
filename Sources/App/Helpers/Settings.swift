@@ -82,6 +82,7 @@ final class Settings {
 
     /// Internal storage.
     fileprivate var _blockedUserID: UUID = UUID()
+    /// Internal storage.
     fileprivate var _friendlyFezID: UUID = UUID()
     
     /// Internal storage.
