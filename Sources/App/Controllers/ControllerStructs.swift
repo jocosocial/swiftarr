@@ -199,6 +199,127 @@ struct EventsUpdateData: Content {
     var schedule: String
 }
 
+/// Used to create or update a `FriendlyFez`.
+///
+/// Required by:
+/// * `POST /api/v3/fez/create`
+/// * `POST /api/v3/fez/ID/update`
+///
+/// See: `FezController.createHandler(_:data:)`, `FezController.updateHandler(_:data:)`.
+struct FezContentData: Content {
+    /// The `FezType` .label of the fez.
+    var fezType: String
+    /// The title for the FriendlyFez.
+    var title: String
+    /// A description of the fez.
+    var info: String
+    /// The starting time for the fez, a date as string.
+    var startTime: String
+    /// The ending time for the fez, a date as string.
+    var endTime: String
+    /// The location for the fez.
+    var location: String
+    /// The minimum number of seamonkeys needed for the fez.
+    var minCapacity: Int
+    /// The maximum number of seamonkeys for the fez.
+    var maxCapacity: Int
+}
+
+/// Used to return a FriendlyFez `Barrel`'s data.
+///
+/// Returned by:
+/// * `POST /api/v3/fez/create`
+/// * `POST /api/v3/fez/ID/join`
+/// * `POST /api/v3/fez/ID/unjoin`
+/// * `GET /api/v3/fez/joined`
+/// * `GET /api/v3/fez/open`
+/// * `GET /api/v3/fez/owner`
+/// * `POST /api/v3/fez/ID/user/ID/add`
+/// * `POST /api/v3/fez/ID/user/ID/remove`
+/// * `POST /api/v3/fez/ID/cancel`
+///
+/// See `FezController.createHandler(_:data:)`, `FezController.joinHandler(_:)`,
+/// `FezController.unjoinHandler(_:)`, `FezController.joinedHandler(_:)`
+/// `FezController.openhandler(_:)`, `FezController.ownerHandler(_:)`,
+/// `FezController.userAddHandler(_:)`, `FezController.userRemoveHandler(_:)`,
+/// `FezController.cancelHandler(_:)`.
+struct FezData: Content {
+    /// The ID of the fez.
+    var fezID: UUID
+    /// The ID of the fez's owner.
+    var ownerID: UUID
+    /// The `FezType` .label of the fez.
+    var fezType: String
+    /// The title of the fez.
+    var title: String
+    /// A description of the fez.
+    var info: String
+    /// The starting time of the fez.
+    var startTime: String
+    /// The ending time of the fez.
+    var endTime: String
+    /// The location for the fez.
+    var location: String
+    /// The seamonkeys participating in the fez.
+    var seamonkeys: [SeaMonkey]
+    /// The seamonkeys on a waiting list for the fez.
+    var waitingList: [SeaMonkey]
+}
+
+/// Used to return a FriendlyFez `Barrel`'s data with discussion posts.
+///
+/// Returned by:
+/// * `GET /api/v3/fez/ID`
+/// * `POST /api/v3/fez/ID/post`
+/// * `POST /api/v3/fex/ID/post/ID/delete`
+///
+/// See `FezController.fezHandler(_:)`, `FezController.postAddHandler(_:data:)`,
+/// `FezController.postDeleteHandler(_:)`.
+struct FezDetailData: Content {
+    /// The ID of the fez.
+    var fezID: UUID
+    /// The ID of the fez's owner.
+    var ownerID: UUID
+    /// The `FezType` .label of the fez.
+    var fezType: String
+    /// The title of the fez.
+    var title: String
+    /// A description of the fez.
+    var info: String
+    /// The starting time of the fez.
+    var startTime: String
+    /// The ending time of the fez.
+    var endTime: String
+    /// The location for the fez.
+    var location: String
+    /// The seamonkeys participating in the fez.
+    var seamonkeys: [SeaMonkey]
+    /// The seamonkeys on a waiting list for the fez.
+    var waitingList: [SeaMonkey]
+    /// The FezPosts in the fez discussion.
+    var posts: [FezPostData]
+}
+
+/// Used to return a `FezPost`'s data.
+///
+/// Returned by:
+/// * `GET /api/v3/fez/ID`
+/// * `POST /api/v3/fez/ID/post`
+/// * `POST /api/v3/fez/ID/post/ID/delete`
+///
+/// See: `FezController.fezHandler(_:)`, `FezController.postAddHandler(_:data:)`,
+/// `FezController.postDeleteHandler(_:)`.
+struct FezPostData: Content {
+    /// The ID of the fez post.
+    var postID: Int
+    /// The ID of the fez post's author.
+    var authorID: UUID
+    /// The text content of the fez post.
+    var text: String
+    /// The image content of the fez post.
+    var image: String
+}
+
 /// Used to create a new `Forum`.
 ///
 /// Required by: `POST /api/v3/forum/categories/ID/create`
@@ -791,6 +912,27 @@ extension BarrelCreateData: Validatable, Reflectable {
             (data) in
             guard data.uuidList == nil || data.stringList == nil else {
                 throw Abort(.badRequest, reason: "'uuidList' and 'stringList' cannot both contain values")
+            }
+        }
+        return validations
+    }
+}
+
+extension FezContentData: Validatable, Reflectable {
+    /// Validates that `.title`, `.info`, `.location` have values of at least 2
+    /// characters, that `.startTime` and `.endTime` have date values.
+    static func validations() throws -> Validations<FezContentData> {
+        var validations = Validations(FezContentData.self)
+        try validations.add(\.title, .count(2...))
+        try validations.add(\.info, .count(2...))
+        try validations.add(\.location, .count(2...))
+        validations.add(".startTime and .endTime must contain dates or nothing") {
+            (data) in
+            guard (Double(data.startTime) != nil) || data.startTime.isEmpty else {
+                throw Abort(.badRequest, reason: "'startTime' must be either a numeric date or empty")
+            }
+            guard (Double(data.endTime) != nil) || data.endTime.isEmpty else {
+                throw Abort(.badRequest, reason: "'endTime' must be either a numeric date or empty")
             }
         }
         return validations

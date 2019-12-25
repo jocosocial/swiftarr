@@ -7,6 +7,8 @@ enum BarrelType: String, PostgreSQLRawEnum, Comparable {
     case bookmarkedPost
     /// A user's barrel of bookmarked twarrts.
     case bookmarkedTwarrt
+    /// A `FriendlyFez` event barrel.
+    case friendlyFez
     /// A user's barrel of alert keywords.
     case keywordAlert
     /// A user's barrel of muting keywords.

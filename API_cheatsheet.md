@@ -12,6 +12,7 @@
 | B | `POST` | `/api/v3/auth/login` | -> `TokenStringData` | log in |
 | T |  `POST` | `/api/v3/auth/logout` | -> HTTP Status | log out |
 | O | `POST` | `/api/v3/auth/recovery` | `UserRecoveryData` -> `TokenStringData` | recover lost password |
+
 ---
 
 # User
@@ -66,6 +67,7 @@
 | T | `GET` | `/api/v3/user/forums` | -> `[ForumListData]` | retrieve list of Forums owned by user |
 | T | `GET` | `/api/v3/user/notes` | -> `[NoteData]` | retrieve all user's UserNotes |
 | T | `POST` | `/api/v3/user/note` | `NoteUpdateData` -> `NoteData` | update UserNote |
+
 ---
 
 # Users
@@ -103,6 +105,7 @@
 | :--- | :--- | :--- |:--- | :--- |
 | T | `GET` | `/api/v3/users/match/allnames/STRING` | -> `[UserSearch]` | retrieve list of `displayName|username|realName` matches |
 | T | `GET` | `/api/v3/users/match/username/STRING` | -> `[String]` | retrieve list of `username` matches only |
+
 ---
 
 # Events
@@ -136,6 +139,7 @@
 | T | `POST` | `/api/v3/events/ID/favorite` | -> HTTP Status | add Event to list of favorites |
 | T | `POST` | `/api/v3/events/ID/favorite/remove` | -> HTTP Status | remove Event from list of favorites |
 | S | `GET` | `/api/v3/events/ID/forum` | -> `ForumData` | retrieve the Forum for an Event |
+
 ---
 
 # Forum
@@ -196,6 +200,7 @@
 | S | `GET` | `/api/v3/forum/ID/search/STRING` | -> `[PostData]` | retrieve all ForumPosts containing string in Forum |
 | S | `GET` | `/api/v3/forum/post/hashtag/#STRING` | -> `[PostData]` | retrieve all ForumPosts containing exact #hashtag |
 | S | `GET` | `/api/v3/forum/post/search/STRING` | -> `[PostData]` | retrieve all ForumPosts containing string |
+
 ---
 
 # Twitarr
@@ -246,6 +251,36 @@
 | T | `GET` | `/api/v3/twitarr/search/STRING` | -> `[TwarrtData]` | retrieve all Twarrts containing string |
 | T | `GET` | `/api/v3/twitarr/user` | -> `[TwarrtData]` | retrieve all Twarrts posted by user|
 | T | `GET` | `/api/v3/twitarr/user/ID` | -> `[TwarrtData]` | retrieve all Twarrts posted by specified user |
+
+---
+
+# FriendlyFez / LFG
+---
+
+* fezzes
+
+||| Endpoint | Requires -> Returns | Use to... |
+| :--- | :--- | :--- | :--- | :--- |
+| T | `POST` | `/api/v3/fez/create` | `FezCreateData` -> `FezData` | create FriendlyFez |
+| S | `GET` | `/api/v3/fez/joined` | -> `[FezData]` | retrieve all FriendlyFezzes joined by user |
+| S | `GET` | `/api/v3/fez/open` | -> `[FezData]` | retrieve all FriendlyFezzes with open slots |
+| T | `GET` | `/api/v3/fez/owner` | -> `[FezData]` | retrieve all FriendlyFezzes owned by user |
+| S | `GET` | `/api/v3/fez/types` | -> `[String]` | retrieve all available FezType labels |
+| T | `GET` | `/api/v3/fez/ID` | -> `FezDetailData`| retrieve FriendlyFez with FezPosts |
+| T | `POST` | `/api/v3/fez/ID/cancel` | -> `FezData` | cancel FriendlyFez |
+| T | `POST` | `/api/v3/fez/ID/join` | -> `FezData` | join FriendlyFez |
+| T | `POST` | `/api/v3/fez/ID/unjoin` | -> `FezData` | unjoin FriendlyFez |
+| T | `POST` | `/api/v3/fez/ID/update` | `FezContentData` -> `FezData` | update FriendlyFez |
+| T | `POST` | `/api/v3/fez/ID/user/ID/add` | -> `FezData` | add specfied user to FriendlyFez |
+| T | `POST` | `/api/v3/fez/ID/user/ID/remove` | -> `FezData` | remove specified user from FriendlyFez |
+
+* posting
+
+||| Endpoint | Requires -> Returns | Use to... |
+| :--- | :--- | :--- | :--- | :--- |
+| T | `POST` | `/api/v3/fez/ID/post` | `PostContentData` -> `FezDetailData` | create a FezPost in FriendlyFez |
+| T | `POST` | `/api/v3/fez/post/ID/delete` | -> `FezDetailData` | delete a FezPost |
+
 ---
 
 # Moderator
@@ -254,8 +289,12 @@
 
 # Admin
 ---
----
 
+||| Endpoint | Requires -> Returns | Use to... |
+| :--- | :--- | :--- | :--- | :--- |
+| T | `POST` | `/api/v3/events/update` | `EventsUpdateData` -> `[EventData]` | update the schedule (admin only) |
+
+---
 
 # Client
 ---

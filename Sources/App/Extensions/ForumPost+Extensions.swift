@@ -66,7 +66,8 @@ extension ForumPost {
 // MARK: - Functions
 
 extension ForumPost {
-    /// Converts an `ForumPost` model to a version omitting data that is of no interest to a user.
+    /// Converts an `ForumPost` model to a version omitting data that not for public
+    /// consumption.
     func convertToData(bookmarked: Bool, userLike: LikeType?, likeCount: Int) throws -> PostData {
         return try PostData(
             postID: self.requireID(),

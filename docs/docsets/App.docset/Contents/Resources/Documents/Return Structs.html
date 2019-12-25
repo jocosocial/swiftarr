@@ -66,6 +66,9 @@
                 <a class="nav-group-task-link" href="Structs/EventController.html">EventController</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/FezController.html">FezController</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/ForumController.html">ForumController</a>
               </li>
               <li class="nav-group-task">
@@ -93,6 +96,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Classes/Event.html">Event</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/FezPost.html">FezPost</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Classes/Forum.html">Forum</a>
@@ -133,6 +139,9 @@
                 <a class="nav-group-task-link" href="Enums/EventType.html">EventType</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Enums/FezType.html">FezType</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Enums/ImageHandlerType.html">ImageHandlerType</a>
               </li>
               <li class="nav-group-task">
@@ -154,6 +163,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/EventsUpdateData.html">EventsUpdateData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/FezContentData.html">FezContentData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/ForumCreateData.html">ForumCreateData</a>
@@ -228,6 +240,15 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/EventData.html">EventData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/FezData.html">FezData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/FezDetailData.html">FezDetailData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/FezPostData.html">FezPostData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/ForumData.html">ForumData</a>
@@ -391,6 +412,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/ProfileEdit.html">ProfileEdit</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/Settings.html">Settings</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/TwarrtEdit.html">TwarrtEdit</a>
@@ -830,6 +854,141 @@
                 <li class="item">
                   <div>
                     <code>
+                    <a name="/s:3App7FezDataV"></a>
+                    <a name="//apple_ref/swift/Struct/FezData" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App7FezDataV">FezData</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Used to return a FriendlyFez <code><a href="Classes/Barrel.html">Barrel</a></code>&lsquo;s data.</p>
+
+<p>Returned by:</p>
+
+<ul>
+<li><code>POST /api/v3/fez/create</code></li>
+<li><code>POST /api/v3/fez/ID/join</code></li>
+<li><code>POST /api/v3/fez/ID/unjoin</code></li>
+<li><code>GET /api/v3/fez/joined</code></li>
+<li><code>GET /api/v3/fez/open</code></li>
+<li><code>GET /api/v3/fez/owner</code></li>
+<li><code>POST /api/v3/fez/ID/user/ID/add</code></li>
+<li><code>POST /api/v3/fez/ID/user/ID/remove</code></li>
+<li><code>POST /api/v3/fez/ID/cancel</code></li>
+</ul>
+
+<p>See <code><a href="Structs/FezController.html#/s:3App13FezControllerV13createHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA0B11ContentDataVtKF">FezController.createHandler(_:data:)</a></code>, <code><a href="Structs/FezController.html#/s:3App13FezControllerV11joinHandlery3NIO15EventLoopFutureCy5Vapor8ResponseCGAH7RequestCKF">FezController.joinHandler(_:)</a></code>,
+<code><a href="Structs/FezController.html#/s:3App13FezControllerV13unjoinHandlery3NIO15EventLoopFutureCy5Vapor8ResponseCGAH7RequestCKF">FezController.unjoinHandler(_:)</a></code>, <code><a href="Structs/FezController.html#/s:3App13FezControllerV13joinedHandlery3NIO15EventLoopFutureCySayAA0B4DataVGG5Vapor7RequestCKF">FezController.joinedHandler(_:)</a></code>
+<code>FezController.openhandler(_:)</code>, <code><a href="Structs/FezController.html#/s:3App13FezControllerV12ownerHandlery3NIO15EventLoopFutureCySayAA0B4DataVGG5Vapor7RequestCKF">FezController.ownerHandler(_:)</a></code>,
+<code><a href="Structs/FezController.html#/s:3App13FezControllerV14userAddHandlery3NIO15EventLoopFutureCy5Vapor8ResponseCGAH7RequestCKF">FezController.userAddHandler(_:)</a></code>, <code><a href="Structs/FezController.html#/s:3App13FezControllerV17userRemoveHandlery3NIO15EventLoopFutureCy5Vapor8ResponseCGAH7RequestCKF">FezController.userRemoveHandler(_:)</a></code>,
+<code><a href="Structs/FezController.html#/s:3App13FezControllerV13cancelHandlery3NIO15EventLoopFutureCyAA0B4DataVG5Vapor7RequestCKF">FezController.cancelHandler(_:)</a></code>.</p>
+
+                        <a href="Structs/FezData.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">FezData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L246-L267">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App13FezDetailDataV"></a>
+                    <a name="//apple_ref/swift/Struct/FezDetailData" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App13FezDetailDataV">FezDetailData</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Used to return a FriendlyFez <code><a href="Classes/Barrel.html">Barrel</a></code>&lsquo;s data with discussion posts.</p>
+
+<p>Returned by:</p>
+
+<ul>
+<li><code>GET /api/v3/fez/ID</code></li>
+<li><code>POST /api/v3/fez/ID/post</code></li>
+<li><code>POST /api/v3/fex/ID/post/ID/delete</code></li>
+</ul>
+
+<p>See <code><a href="Structs/FezController.html#/s:3App13FezControllerV10fezHandlery3NIO15EventLoopFutureCyAA0B10DetailDataVG5Vapor7RequestCKF">FezController.fezHandler(_:)</a></code>, <code><a href="Structs/FezController.html#/s:3App13FezControllerV14postAddHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA14PostCreateDataVtKF">FezController.postAddHandler(_:data:)</a></code>,
+<code><a href="Structs/FezController.html#/s:3App13FezControllerV17postDeleteHandlery3NIO15EventLoopFutureCy5Vapor8ResponseCGAH7RequestCKF">FezController.postDeleteHandler(_:)</a></code>.</p>
+
+                        <a href="Structs/FezDetailData.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">FezDetailData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L278-L301">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App11FezPostDataV"></a>
+                    <a name="//apple_ref/swift/Struct/FezPostData" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App11FezPostDataV">FezPostData</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Used to return a <code><a href="Classes/FezPost.html">FezPost</a></code>&lsquo;s data.</p>
+
+<p>Returned by:</p>
+
+<ul>
+<li><code>GET /api/v3/fez/ID</code></li>
+<li><code>POST /api/v3/fez/ID/post</code></li>
+<li><code>POST /api/v3/fez/ID/post/ID/delete</code></li>
+</ul>
+
+<p>See: <code><a href="Structs/FezController.html#/s:3App13FezControllerV10fezHandlery3NIO15EventLoopFutureCyAA0B10DetailDataVG5Vapor7RequestCKF">FezController.fezHandler(_:)</a></code>, <code><a href="Structs/FezController.html#/s:3App13FezControllerV14postAddHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA14PostCreateDataVtKF">FezController.postAddHandler(_:data:)</a></code>,
+<code><a href="Structs/FezController.html#/s:3App13FezControllerV17postDeleteHandlery3NIO15EventLoopFutureCy5Vapor8ResponseCGAH7RequestCKF">FezController.postDeleteHandler(_:)</a></code>.</p>
+
+                        <a href="Structs/FezPostData.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">FezPostData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L312-L321">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
                     <a name="/s:3App9ForumDataV"></a>
                     <a name="//apple_ref/swift/Struct/ForumData" class="dashAnchor"></a>
                     <a class="token" href="#/s:3App9ForumDataV">ForumData</a>
@@ -864,7 +1023,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L225-L238">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L346-L359">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -908,7 +1067,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L251-L264">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L372-L385">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -950,7 +1109,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L287-L292">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L408-L413">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -985,7 +1144,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L299-L304">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L420-L425">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1025,7 +1184,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L323-L336">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L444-L457">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1060,7 +1219,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L343-L348">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L464-L469">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1120,7 +1279,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L416-L433">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L537-L554">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1155,7 +1314,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L441-L460">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L562-L581">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1190,7 +1349,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L493-L514">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L614-L635">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1221,7 +1380,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L531-L536">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L652-L657">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1261,7 +1420,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L545-L553">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L666-L674">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1325,7 +1484,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L586-L605">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L707-L726">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1360,7 +1519,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L613-L634">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L734-L755">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1395,7 +1554,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L641-L644">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L762-L765">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1435,7 +1594,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L667-L674">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L788-L795">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1477,7 +1636,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L685-L692">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L806-L813">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1517,7 +1676,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L711-L734">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L832-L855">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1557,7 +1716,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L755-L760">Show on GitHub</a>
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L876-L881">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1570,7 +1729,7 @@
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-12-21)</p>
+      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-12-24)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.13.0</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
     </section>
   </body>

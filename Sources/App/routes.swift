@@ -19,6 +19,9 @@ public func routes(_ router: Router) throws {
     let eventController = EventController()
     try router.register(collection: eventController)
     
+    let fezController = FezController()
+    try router.register(collection: fezController)
+    
     let forumController = ForumController()
     try router.register(collection: forumController)
     
