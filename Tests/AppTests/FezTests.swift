@@ -524,7 +524,7 @@ final class FezTests: XCTestCase {
             minCapacity: 0,
             maxCapacity: 2
         )
-        var fezData = try app.getResult(
+        let fezData = try app.getResult(
             from: fezURI + "create",
             method: .POST,
             headers: verifiedHeaders,
