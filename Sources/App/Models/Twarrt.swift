@@ -5,6 +5,7 @@ import FluentPostgreSQL
 /// content or image content, or both.
 
 final class Twarrt: Codable {
+     typealias Database = PostgreSQLDatabase
     // MARK: Properties
     
     /// The twarrt's ID.

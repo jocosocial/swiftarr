@@ -24,8 +24,8 @@
         "repositoryURL": "https://github.com/vapor/core.git",
         "state": {
           "branch": null,
-          "revision": "10d33362a47fab03a067e78fb0791341d9c634fa",
-          "version": "3.9.3"
+          "revision": "1782c550512dc5a43d0bca405e28fc386d932bbf",
+          "version": "3.10.0"
         }
       },
       {
@@ -33,8 +33,8 @@
         "repositoryURL": "https://github.com/vapor/crypto.git",
         "state": {
           "branch": null,
-          "revision": "df8eb7d8ae51787b3a0628aa3975e67666da936c",
-          "version": "3.3.3"
+          "revision": "105c2f875588bf40dd24c00cef3644bf8e327770",
+          "version": "3.4.1"
         }
       },
       {
@@ -60,8 +60,8 @@
         "repositoryURL": "https://github.com/vapor/fluent-postgresql.git",
         "state": {
           "branch": null,
-          "revision": "8e3eb9d24d54ac58c8d04c194ad6b24f0b1b667e",
-          "version": "1.0.0"
+          "revision": "a3d6587a64ff95cc3d5830d2d08dbe0638753716",
+          "version": "1.0.1"
         }
       },
       {
@@ -78,8 +78,8 @@
         "repositoryURL": "https://github.com/vapor/http.git",
         "state": {
           "branch": null,
-          "revision": "3808ed0401379b6e9f4a053f03090ea9d658caa9",
-          "version": "3.2.1"
+          "revision": "0464b715a4b59f54078bcf7a4b424767b03db5a5",
+          "version": "3.4.0"
         }
       },
       {
@@ -87,8 +87,8 @@
         "repositoryURL": "https://github.com/vapor/multipart.git",
         "state": {
           "branch": null,
-          "revision": "f063180d0b84832accd33194e06ed3c41f8609ac",
-          "version": "3.1.1"
+          "revision": "fb216c5a8ef07dcd90aec8a4155e86c831acce97",
+          "version": "3.1.3"
         }
       },
       {
@@ -96,8 +96,8 @@
         "repositoryURL": "https://github.com/vapor/postgresql.git",
         "state": {
           "branch": null,
-          "revision": "69ccf32e9164b207f9a773edac5433fe68ae3e5b",
-          "version": "1.5.0"
+          "revision": "489537a4bd59afb9e162e9c7d423623a748b5ec0",
+          "version": "1.6.0"
         }
       },
       {
@@ -141,8 +141,8 @@
         "repositoryURL": "https://github.com/vapor/sqlite.git",
         "state": {
           "branch": null,
-          "revision": "314d9cd21165bcf14215e336a23ff8214f40e411",
-          "version": "3.2.1"
+          "revision": "b1e52b989539c5e3703d84b3560c41fa422668df",
+          "version": "3.3.0"
         }
       },
       {
@@ -150,8 +150,8 @@
         "repositoryURL": "https://github.com/apple/swift-nio.git",
         "state": {
           "branch": null,
-          "revision": "ba7970fe396e8198b84c6c1b44b38a1d4e2eb6bd",
-          "version": "1.14.1"
+          "revision": "8da5c5a4e6c5084c296b9f39dc54f00be146e0fa",
+          "version": "1.14.2"
         }
       },
       {
@@ -185,7 +185,7 @@
         "package": "SwiftGD",
         "repositoryURL": "https://github.com/twostraws/SwiftGD.git",
         "state": {
-          "branch": "master",
+          "branch": "main",
           "revision": "32ba5360e5a7f79926261cf46e68ea6d305f5df2",
           "version": null
         }
@@ -195,8 +195,8 @@
         "repositoryURL": "https://github.com/vapor/template-kit.git",
         "state": {
           "branch": null,
-          "revision": "51405c83e95e8adb09565278a5e9b959c605e56c",
-          "version": "1.4.0"
+          "revision": "4370aa99c01fc19cc8272b67bf7204b2d2063680",
+          "version": "1.5.0"
         }
       },
       {
@@ -204,8 +204,8 @@
         "repositoryURL": "https://github.com/vapor/url-encoded-form.git",
         "state": {
           "branch": null,
-          "revision": "82d8d63bdb76b6dd8febe916c639ab8608dbbaed",
-          "version": "1.0.6"
+          "revision": "20f68fbe7fac006d4d0617ea4edcba033227359e",
+          "version": "1.1.0"
         }
       },
       {
@@ -222,8 +222,8 @@
         "repositoryURL": "https://github.com/vapor/vapor.git",
         "state": {
           "branch": null,
-          "revision": "92a58a9a84e4330500b99fe355a94d29f67abe58",
-          "version": "3.3.1"
+          "revision": "642f3d4d1f0eafad651c85524d0d1c698b55399f",
+          "version": "3.3.3"
         }
       },
       {

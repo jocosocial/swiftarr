@@ -4,6 +4,7 @@ import Foundation
 /// A `Pivot` holding a sibllings relation between `User` and `Twarrt`.
 
 final class TwarrtLikes: PostgreSQLUUIDPivot, ModifiablePivot {
+     typealias Database = PostgreSQLDatabase
     // MARK: Properties
     
     /// The ID of the pivot.

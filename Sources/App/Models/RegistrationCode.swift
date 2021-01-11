@@ -13,6 +13,7 @@ import FluentPostgreSQL
 /// startup.
 
 final class RegistrationCode: Codable {
+     typealias Database = PostgreSQLDatabase
     // MARK: Properties
     
     /// The registration code's ID, provisioned automatically.

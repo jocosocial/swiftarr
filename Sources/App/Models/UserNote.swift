@@ -10,6 +10,7 @@ import FluentPostgreSQL
 /// their own viewer-specific `UserNote` text.
 
 final class UserNote: Codable {
+     typealias Database = PostgreSQLDatabase
     // MARK: Properties
     
     /// The note's ID, provisioned automatically.

@@ -5,6 +5,7 @@ import FluentPostgreSQL
 /// either text content or image content, or both.
 
 final class FezPost: Codable {
+     typealias Database = PostgreSQLDatabase
     // MARK: Properties
     
     /// The post's ID.

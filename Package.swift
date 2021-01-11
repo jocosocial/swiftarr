@@ -11,14 +11,15 @@ let package = Package(
         .package(url: "https://github.com/vapor/fluent-postgresql.git", from: "1.0.0"),
         .package(url: "https://github.com/vapor/auth.git", from: "2.0.0"),
         .package(url: "https://github.com/vapor/redis.git", from: "3.0.0"),
-        .package(url: "https://github.com/twostraws/SwiftGD.git", .branch("master"))
+        .package(url: "https://github.com/twostraws/SwiftGD.git", .branch("main")),
     ],
     targets: [
         .target(name: "App", dependencies: ["FluentPostgreSQL",
                                             "Vapor",
                                             "Authentication",
                                             "Redis",
-                                            "SwiftGD"]),
+                                            "SwiftGD",
+                                            ]),
         .target(name: "Run", dependencies: ["App"]),
         .testTarget(name: "AppTests", dependencies: ["App"])
     ]

@@ -5,7 +5,8 @@ import FluentPostgreSQL
 /// An `Event` on the official schedule, imported from sched.com's `.ics` format.
 
 final class Event: Codable {
-    // MARK: Properties
+	typealias Database = PostgreSQLDatabase
+	// MARK: Properties
     
     /// The event's ID.
     var id: UUID?

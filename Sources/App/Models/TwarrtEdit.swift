@@ -8,6 +8,7 @@ import FluentPostgreSQL
 /// only by users with an access level of `.moderator` or above.
 
 struct TwarrtEdit: Codable {
+     typealias Database = PostgreSQLDatabase
     // MARK: Properties
     
     /// The edit's ID.

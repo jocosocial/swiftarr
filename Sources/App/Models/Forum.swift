@@ -9,6 +9,7 @@ import FluentPostgreSQL
 ///   read-only and is distinct from a forum's removal by soft-deletion.
 
 final class Forum: Codable {
+     typealias Database = PostgreSQLDatabase
     // MARK: Properties
     
     /// The forum's ID.

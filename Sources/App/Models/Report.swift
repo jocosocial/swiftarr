@@ -15,6 +15,7 @@ import FluentPostgreSQL
 /// either a UUID or an integer based ID, which is determined via the `.reportType`.
 
 struct Report: Codable {
+     typealias Database = PostgreSQLDatabase
     // MARK: Properties
     
     /// The report's ID.

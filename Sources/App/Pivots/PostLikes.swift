@@ -4,6 +4,7 @@ import Foundation
 /// A `Pivot` holding a siblings relation between `User` and `ForumPost`.
 
 final class PostLikes: PostgreSQLUUIDPivot, ModifiablePivot {
+     typealias Database = PostgreSQLDatabase
     // MARK: Properties
     
     /// The ID of the pivot.

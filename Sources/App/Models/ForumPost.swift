@@ -5,6 +5,7 @@ import FluentPostgreSQL
 /// content or image content, or both.
 
 final class ForumPost: Codable {
+     typealias Database = PostgreSQLDatabase
     // MARK: Properties
     
     /// The post's ID.

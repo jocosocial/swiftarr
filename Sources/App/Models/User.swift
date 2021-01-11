@@ -18,6 +18,7 @@ import Authentication
 ///  otherwise modified.
 
 final class User: Codable {
+    typealias Database = PostgreSQLDatabase
     // MARK: Properties
     
     /// The user's ID, provisioned automatically.

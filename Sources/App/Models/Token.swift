@@ -12,7 +12,9 @@ import Authentication
 /// done internally on the API server through this model.
 
 final class Token: Codable {
-    // MARK: Properties
+     typealias Database = PostgreSQLDatabase
+
+   // MARK: Properties
     
     /// The Token's ID, provisioned automatically.
     var id: UUID?

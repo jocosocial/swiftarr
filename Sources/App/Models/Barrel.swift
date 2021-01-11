@@ -37,6 +37,7 @@ import FluentPostgreSQL
 ///   Not pretty, but workable for our purposes.
 
 final class Barrel: Codable {
+     typealias Database = PostgreSQLDatabase
     // MARK: Properties
     
     /// The barrel's ID.

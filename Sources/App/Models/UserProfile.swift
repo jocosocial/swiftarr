@@ -7,6 +7,8 @@ import FluentPostgreSQL
 /// the `.userID`, `.username` and `.userSearch` fields are populated upon initialization.
 
 final class UserProfile: Codable {
+    typealias Database = PostgreSQLDatabase
+
     // MARK: Properties
     
     /// The profile's ID, provisioned automatically.

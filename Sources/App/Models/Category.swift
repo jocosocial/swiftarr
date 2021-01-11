@@ -6,6 +6,7 @@ import FluentPostgreSQL
 /// (an administratively controlled set of forums) or "user" (users can create forums).
 
 final class Category: Codable {
+     typealias Database = PostgreSQLDatabase
     // MARK: Properties
     
     /// The category's ID.
