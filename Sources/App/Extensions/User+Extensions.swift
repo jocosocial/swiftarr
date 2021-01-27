@@ -1,107 +1,68 @@
 import Vapor
-import FluentPostgreSQL
-import Authentication
+import Fluent
 
-// model uses UUID as primary key
-extension User: PostgreSQLUUIDModel {}
-
-// model can be passed as HTTP body data
-extension User: Content {}
-
-// model can be used as endpoint parameter
-extension User: Parameter {}
-
-// MARK: - Custom Migration
-
-extension User: Migration {
-    /// Required by `Migration` protocol. Creates the table, with unique constraint on `.username`.
-    ///
-    /// - Parameter connection: A connection to the database, provided automatically.
-    /// - Returns: Void.
-    static func prepare(on connection: PostgreSQLConnection) -> Future<Void> {
-        return Database.create(self, on: connection) {
-            builder in
-            try addProperties(to: builder)
-            // username must be unique
-            builder.unique(on: \.username)
-        }
-    }
-}
-
-// MARK: - Timestamping Conformance
-
-extension User {
-    /// Required key for `\.createdAt` functionality.
-    static var createdAtKey: TimestampKey? { return \.createdAt }
-    /// Required key for `\.updatedAt` functionality.
-    static var updatedAtKey: TimestampKey? { return \.updatedAt }
-    /// Required key for `\.deletedAt` soft delete functionality.
-    static var deletedAtKey: TimestampKey? { return \.deletedAt }
-}
 
 // MARK: - BasicAuthenticatable Conformance
 
-extension User: BasicAuthenticatable {
+extension User: ModelAuthenticatable {
     /// Required username key for HTTP Basic Authorization.
-    static let usernameKey: UsernameKey = \User.username
+    static let usernameKey = \User.$username
     /// Required password key for HTTP Basic Authorization.
-    static let passwordKey: PasswordKey = \User.password
+    static let passwordHashKey = \User.$password
+
+	func verify(password: String) throws -> Bool {
+		try Bcrypt.verify(password, created: self.password)
+	}
 }
 
-// MARK: - TokenAuthenticatable Conformance
-
-extension User: TokenAuthenticatable {
-    /// Required typealias, using `Token` class for HTTP Bearer Authorization.
-    typealias TokenType = Token
-}
-
-// MARK: - Relations
-
-extension User {
-    /// The child `Barrels`s owned by the user.
-    var barrels: Children<User, Barrel> {
-        return children(\.ownerID)
-    }
-    
-    /// The child `Forum`s created by the user.
-    var forums: Children<User, Forum> {
-        return children(\.creatorID)
-    }
-    
-    /// The child `UserNote`s owned by the user.
-    var notes: Children<User, UserNote> {
-        return children(\.userID)
-    }
-
-    /// The sibling `ForumPost`s "liked" by the user.
-    var postLikes: Siblings<User, ForumPost, PostLikes> {
-        return siblings()
-    }
-    
-    /// The child `ForumPost`s created by the user.
-    var posts: Children<User, ForumPost> {
-        return children(\.authorID)
-    }
-    
-    /// The child `UserProfile` of the user.
-    var profile: Children<User, UserProfile> {
-        return children(\.userID)
-    }
-    
-    /// The sibling `Twarrt`s "liked" by the user.
-    var twarrtLikes: Siblings<User, Twarrt, TwarrtLikes> {
-        return siblings()
-    }
-    
-    /// The child `Twarrt`s created by the user.
-    var twarrts: Children<User, Twarrt> {
-        return children(\.authorID)
-    }
-}
 
 // MARK: - Functions
 
 extension User {
+
+    /// Returns the `Barrel` of the given thype for the request's `User`, or nil
+    /// if none exists.
+    ///
+    /// - Parameters:
+    ///   - user: The user who owns the barrel.
+    ///   - req: The incoming `Request`, on whose event loop this must run.
+    /// - Returns: `Barrel` of the required type, or `nil`.
+    func getBookmarkBarrel(of type: BarrelType, on req: Request) -> EventLoopFuture<Barrel?> {
+    	do {
+			return try Barrel.query(on: req.db)
+				.filter(\.$ownerID, .equal, self.requireID())
+				.filter(\.$barrelType, .equal, type)
+				.first()
+		}
+		catch {
+			return req.eventLoop.makeFailedFuture(error)
+		}
+    }
+	
+    /// Returns whether a bookmarks barrel contains the provided integer ID value.
+    ///
+    /// - Parameters:
+    ///   - value: The Int ID value being queried.
+    ///   - req: The incoming `Request`, on whose event loop this must run.
+    /// - Returns: `Bool` true if the barrel contains the value, else false.
+    func hasBookmarked(_ object: UserBookmarkable, on req: Request) -> EventLoopFuture<Bool> {
+    	do {
+			return try Barrel.query(on: req.db)
+				.filter(\.$ownerID, .equal, self.requireID())
+				.filter(\.$barrelType, .equal, object.bookmarkBarrelType)
+				.first()
+				.flatMapThrowing { (barrel) in
+					guard let barrel = barrel else {
+						return false 
+					}
+					return try barrel.userInfo["bookmarks"]?.contains(object.bookmarkIDString()) ?? false
+				}
+		}
+		catch {
+			return req.eventLoop.makeFailedFuture(error)
+		}
+    }
+    
     /// Returns a list of IDs of all accounts associated with the `User`. If user is a primary
     /// account (has no `.parentID`) it returns itself plus any sub-accounts. If user is a
     /// sub-account, it determines its parent, then returns the parent and all sub-accounts.
@@ -109,17 +70,18 @@ extension User {
     /// - Parameter req: The incoming request `Container`, which provides the `EventLoop` on
     ///   which the query must be run.
     /// - Returns: `[UUID]` containing all the user's associated IDs.
-    func allAccountIDs(on req: Request) -> Future<[UUID]> {
-        let parent = self.parentID != nil ? self.parentID : self.id
-        return User.query(on: req).group(.or) {
-            (or) in
-            or.filter(\.id == parent)
-            or.filter(\.parentID == parent)
+    func allAccountIDs(on req: Request) -> EventLoopFuture<[UUID]> {
+    	let parID = self.parent?.id ?? self.id
+    	guard let parent = parID else {
+    		return req.eventLoop.makeSucceededFuture([])
+    	}
+		return User.query(on: req.db).group(.or) { (or) in
+            or.filter(\.$id == parent)
+            or.filter(\.$parent.$id == parent)
         }.all()
-            .map {
-                (users) in
+            .flatMapThrowing { (users) in
                 return try users.map { try $0.requireID() }
-        }
+        	}
     }
     
     /// Converts a `User` model to a version that is publicly viewable. Only the ID, username
@@ -137,17 +99,12 @@ extension User {
     ///
     /// - Parameter req: The incoming request `Container`, which provides reference to the
     ///   sending user.
-    func parentAccount(on req: Request) throws -> Future<User> {
-        let parentID = self.parentID != nil ? self.parentID : self.id
-        guard let userID = parentID else {
-            throw Abort(.internalServerError, reason: "parent ID not found")
-        }
-        return User.find(userID, on: req)
-            .unwrap(or: Abort(.internalServerError, reason: "parent not found"))
-            .map {
-                (user) in
-                return user
-        }
+    func parentAccount(on req: Request) throws -> EventLoopFuture<User> {
+    	if self.$parent.value == nil {
+    		return req.eventLoop.makeSucceededFuture(self)
+    	}
+    	return self.$parent.load(on: req.db).map { self.parent }
+				.unwrap(or: Abort(.internalServerError, reason: "parent not found"))
     }
     
     /// Converts a `User` model to a `SeaMonkey` representation.
@@ -158,12 +115,12 @@ extension User {
     }
 }
 
-extension Future where T: User {
-    /// Converts a `Future<User>` to a `Future<UserInfo>`. This extension provides the
+extension EventLoopFuture where Value: User {
+    /// Converts a `EventLoopFuture<User>` to a `EventLoopFuture<UserInfo>`. This extension provides the
     /// convenience of simply using `user.convertToInfo()` and allowing the compiler to
     /// choose the appropriate version for the context.
-    func convertToInfo() throws -> Future<UserInfo> {
-        return self.map {
+    func convertToInfo() throws -> EventLoopFuture<UserInfo> {
+        return self.flatMapThrowing {
             (user) in
             return try user.convertToInfo()
         }
@@ -172,10 +129,28 @@ extension Future where T: User {
     /// Converts a `Future<User>` to a `Future<SeaMonkey>`. This extension provides the
     /// convenience of simply using `user.convertToSeaMonkey()` and allowing the compiler
     /// to choose the appropriate version for the context.
-    func convertToSeaMonkey() throws -> Future<SeaMonkey> {
-        return self.map {
+    func convertToSeaMonkey() throws -> EventLoopFuture<SeaMonkey> {
+        return self.flatMapThrowing {
             (user) in
             return try user.convertToSeaMonkey()
         }
     }
+}
+
+// users can be reported
+extension User: Reportable {
+    /// The report type for `User` reports.
+	var reportType: ReportType {
+        return .user
+    }
+    
+	func checkAutoQuarantine(reportCount: Int, on req: Request) -> EventLoopFuture<Void> {
+		// quarantine if threshold is met
+		// FIXME: moderator notification
+		if reportCount >= Settings.shared.userAutoQuarantineThreshold {
+			self.accessLevel = .quarantined
+			return self.save(on: req.db)
+		}
+		return req.eventLoop.future()
+	}
 }

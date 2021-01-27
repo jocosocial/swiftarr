@@ -12,10 +12,10 @@ struct TestController: RouteCollection {
     // MARK: RouteCollection Conformance
     
     /// Required. Registers routes to the incoming router.
-    func boot(router: Router) throws {
+    func boot(routes: RoutesBuilder) throws {
         
         // convenience route group for all /api/v3/users endpoints
-        let testRoutes = router.grouped("api", "v3", "test")
+        let testRoutes = routes.grouped("api", "v3", "test")
         
         // instantiate authentication middleware
 //        let basicAuthMiddleware = User.basicAuthMiddleware(using: BCryptDigest())
@@ -48,8 +48,8 @@ struct TestController: RouteCollection {
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Returns: An array of at most the first 10 `User` models in the database.
-    func getUsersHandler(_ req: Request) throws -> Future<[User]> {
-        return User.query(on: req).range(...10).all()
+    func getUsersHandler(_ req: Request) throws -> EventLoopFuture<[User]> {
+        return User.query(on: req.db).range(...10).all()
     }
     
     /// `GET /api/v3/test/getprofiles`
@@ -58,8 +58,8 @@ struct TestController: RouteCollection {
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Returns: An array of at most the first 10 `UserProfile` models in the databases.
-    func getProfilesHandler(_ req: Request) throws -> Future<[UserProfile]> {
-        return UserProfile.query(on: req).range(...10).all()
+    func getProfilesHandler(_ req: Request) throws -> EventLoopFuture<[UserProfile]> {
+        return UserProfile.query(on: req.db).range(...10).all()
     }
     
     /// `GET /api/v3/test/getregistrationcodes`
@@ -69,16 +69,21 @@ struct TestController: RouteCollection {
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Returns: An array of the `RegistrationCoe` models in the databases.
-    func getRegistrationCodesHandler(_ req: Request) throws -> Future<[RegistrationCode]> {
-        return RegistrationCode.query(on: req).all().flatMap {
+    func getRegistrationCodesHandler(_ req: Request) throws -> EventLoopFuture<[RegistrationCode]> {
+        return RegistrationCode.query(on: req.db).all().flatMap {
             (registrationCodes) in
-            // do not return real codes in production
-            if (try Environment.detect().isRelease) {
-                for code in registrationCodes {
-                    code.code = "NOPE"
-                }
-            }
-            return req.future(registrationCodes)
+            do {
+				// do not return real codes in production
+				if (try Environment.detect().isRelease) {
+					for code in registrationCodes {
+						code.code = "NOPE"
+					}
+				}
+				return req.eventLoop.future(registrationCodes)
+			} 
+			catch {
+				return req.eventLoop.makeFailedFuture(error)
+			}
         }
     }
 

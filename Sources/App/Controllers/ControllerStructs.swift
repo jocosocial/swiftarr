@@ -243,7 +243,7 @@ struct FezContentData: Content {
 /// `FezController.openhandler(_:)`, `FezController.ownerHandler(_:)`,
 /// `FezController.userAddHandler(_:)`, `FezController.userRemoveHandler(_:)`,
 /// `FezController.cancelHandler(_:)`.
-struct FezData: Content {
+struct FezData: Content, ResponseEncodable {
     /// The ID of the fez.
     var fezID: UUID
     /// The ID of the fez's owner.
@@ -709,8 +709,8 @@ struct TwarrtData: Content {
     var twarrtID: Int
     /// The timestamp of the twarrt.
     var createdAt: Date
-    /// The ID of the twarrt's author.
-    var authorID: UUID
+    /// The twarrt's author.
+    var author: UserHeader
     /// The text of the twarrt.
     var text: String
     /// The filename of the twarrt's optional image.
@@ -788,9 +788,11 @@ struct UserCreateData: Content {
 struct UserHeader: Content {
     /// The user's ID.
     var userID: UUID
+    /// The user's username.
+    var username: String
+    /// The user's displayName.
+    var displayName: String?
     /// The user's displayName + username.
-    var displayedName: String
-    /// The filename of the user's profile image.
     var userImage: String
 }
 
@@ -902,133 +904,115 @@ struct UserVerifyData: Content {
 
 // MARK: - Validation
 
-extension BarrelCreateData: Validatable, Reflectable {
+extension BarrelCreateData: Validatable {
     /// Validates that `.name` contains a value, and that only one of `.uuidList` or
     /// `.stringList` contains values.
-    static func validations() throws -> Validations<BarrelCreateData> {
-        var validations = Validations(BarrelCreateData.self)
-        try validations.add(\.name, .count(1...))
-        validations.add("'uuidList' and 'stringList' cannot both contain values") {
-            (data) in
-            guard data.uuidList == nil || data.stringList == nil else {
-                throw Abort(.badRequest, reason: "'uuidList' and 'stringList' cannot both contain values")
-            }
-        }
-        return validations
+    static func validations(_ validations: inout Validations) {
+        validations.add("name", as: String.self, is: .count(1...))
+        // FIXME: Removing several complex validations from this file, as Vapor/Validation doesn't seem
+        // to support them anymore.
+//		validations.add("'uuidList' and 'stringList' cannot both contain values") {
+//			(data) in
+//			guard data.uuidList == nil || data.stringList == nil else {
+//				throw Abort(.badRequest, reason: "'uuidList' and 'stringList' cannot both contain values")
+//			}
+//		}
     }
 }
 
-extension FezContentData: Validatable, Reflectable {
+extension FezContentData: Validatable {
     /// Validates that `.title`, `.info`, `.location` have values of at least 2
     /// characters, that `.startTime` and `.endTime` have date values.
-    static func validations() throws -> Validations<FezContentData> {
-        var validations = Validations(FezContentData.self)
-        try validations.add(\.title, .count(2...))
-        try validations.add(\.info, .count(2...))
-        try validations.add(\.location, .count(2...))
-        validations.add(".startTime and .endTime must contain dates or nothing") {
-            (data) in
-            guard (Double(data.startTime) != nil) || data.startTime.isEmpty else {
-                throw Abort(.badRequest, reason: "'startTime' must be either a numeric date or empty")
-            }
-            guard (Double(data.endTime) != nil) || data.endTime.isEmpty else {
-                throw Abort(.badRequest, reason: "'endTime' must be either a numeric date or empty")
-            }
-        }
-        return validations
+    static func validations(_ validations: inout Validations) {
+        validations.add("title", as: String.self, is: .count(2...))
+        validations.add("info", as: String.self, is: .count(2...))
+        validations.add("location", as: String.self, is: .count(2...))
+//		validations.add(".startTime and .endTime must contain dates or nothing") {
+//			(data) in
+//			guard (Double(data.startTime) != nil) || data.startTime.isEmpty else {
+//				throw Abort(.badRequest, reason: "'startTime' must be either a numeric date or empty")
+//			}
+//			guard (Double(data.endTime) != nil) || data.endTime.isEmpty else {
+//				throw Abort(.badRequest, reason: "'endTime' must be either a numeric date or empty")
+//			}
+//        }
     }
 }
 
-extension ForumCreateData: Validatable, Reflectable {
+extension ForumCreateData: Validatable {
     /// Validates that `.title` and initial post `.text`  both contain values.
-    static func validations() throws -> Validations<ForumCreateData> {
-        var validations = Validations(ForumCreateData.self)
-        try validations.add(\.title, .count(1...))
-        try validations.add(\.text, .count(1...))
-        return validations
+    static func validations(_ validations: inout Validations) {
+        validations.add("title", as: String.self, is: .count(1...))
+        validations.add("text", as: String.self, is: .count(1...))
     }
 }
 
-extension PostContentData: Validatable, Reflectable {
+extension PostContentData: Validatable {
     /// Validates that `.text` contains a value.
-    static func validations() throws -> Validations<PostContentData> {
-        var validations = Validations(PostContentData.self)
-        try validations.add(\.text, .count(1...))
-        return validations
+    static func validations(_ validations: inout Validations) {
+        validations.add("text", as: String.self, is: .count(1...))
     }
 }
 
-extension PostCreateData: Validatable, Reflectable {
+extension PostCreateData: Validatable {
     /// Validates that `.text` contains a value.
-    static func validations() throws -> Validations<PostCreateData> {
-        var validations = Validations(PostCreateData.self)
-        try validations.add(\.text, .count(1...))
-        return validations
+    static func validations(_ validations: inout Validations) {
+        validations.add("text", as: String.self, is: .count(1...))
     }
 }
 
-extension UserCreateData: Validatable, Reflectable {
+extension UserCreateData: Validatable {
     /// Validates that `.username` is 1 or more characters beginning with an alphanumeric,
     /// and `.password` is least 6 characters in length.
-    static func validations() throws -> Validations<UserCreateData> {
-        var validations = Validations(UserCreateData.self)
-        try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics + .usernameSeparators))
-        validations.add("username must start with an alphanumeric") {
-            (data) in
-            guard let first = data.username.unicodeScalars.first,
-                !CharacterSet.usernameSeparators.contains(first) else {
-                    throw Abort(.badRequest, reason: "username must start with an alphanumeric")
-            }
-        }
-        try validations.add(\.password, .count(6...))
-        return validations
+    static func validations(_ validations: inout Validations) {
+        validations.add("username", as: String.self, is: .count(1...) && .characterSet(.alphanumerics + .usernameSeparators))
+//        validations.add("username must start with an alphanumeric") {
+//            (data) in
+//            guard let first = data.username.unicodeScalars.first,
+//                !CharacterSet.usernameSeparators.contains(first) else {
+//                    return// Abort(.badRequest, reason: "username must start with an alphanumeric")
+//            }
+//        }
+		validations.add("password", as: String.self, is: .count(6...))
     }
 }
 
-extension UserPasswordData: Validatable, Reflectable {
+extension UserPasswordData: Validatable {
     /// Validates that the new password is at least 6 characters in length.
-    static func validations() throws -> Validations<UserPasswordData> {
-        var validations = Validations(UserPasswordData.self)
-        try validations.add(\.password, .count(6...))
-        return validations
+    static func validations(_ validations: inout Validations) {
+        validations.add("password", as: String.self, is: .count(6...))
     }
 }
 
-extension UserRecoveryData: Validatable, Reflectable {
+extension UserRecoveryData: Validatable {
     /// Validates that `.username` is 1 or more alphanumeric characters,
     /// and `.recoveryCode` is at least 6 character in length (minimum for
     /// both registration codes and passwords).
-    static func validations() throws -> Validations<UserRecoveryData> {
-        var validations = Validations(UserRecoveryData.self)
-        try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics))
-        try validations.add(\.recoveryKey, .count(6...))
-        return validations
+    static func validations(_ validations: inout Validations) {
+        validations.add("username", as: String.self, is: .count(1...) && .characterSet(.alphanumerics))
+        validations.add("recoveryKey", as: String.self, is: .count(6...))
     }
 }
 
-extension UserUsernameData: Validatable, Reflectable {
+extension UserUsernameData: Validatable {
     /// Validates that the new username is 1 or more characters and begins with an
     /// alphanumeric.
-    static func validations() throws -> Validations<UserUsernameData> {
-        var validations = Validations(UserUsernameData.self)
-        try validations.add(\.username, .count(1...) && .characterSet(.alphanumerics + .usernameSeparators))
-        validations.add("username must start with an alphanumeric") {
-            (data) in
-            guard let first = data.username.unicodeScalars.first,
-                !CharacterSet.usernameSeparators.contains(first) else {
-                    throw Abort(.badRequest, reason: "username must start with an alphanumeric")
-            }
-        }
-        return validations
+    static func validations(_ validations: inout Validations) {
+        validations.add("username", as: String.self, is: .count(1...) && .characterSet(.alphanumerics + .usernameSeparators))
+//        validations.add("username must start with an alphanumeric") {
+//            (data) in
+//            guard let first = data.username.unicodeScalars.first,
+//                !CharacterSet.usernameSeparators.contains(first) else {
+//                    throw Abort(.badRequest, reason: "username must start with an alphanumeric")
+//            }
+//        }
     }
 }
 
-extension UserVerifyData: Validatable, Reflectable {
+extension UserVerifyData: Validatable {
     /// Validates that a `.verification` registration code is either 6 or 7 alphanumeric
     /// characters in length (allows for inclusion or exclusion of the space).
-    static func validations() throws -> Validations<UserVerifyData> {
-        var validations = Validations(UserVerifyData.self)
-        try validations.add(\.verification, .count(6...7) && .characterSet(.alphanumerics + .whitespaces))
-        return validations
+    static func validations(_ validations: inout Validations) {
+        validations.add("verification", as: String.self, is: .count(6...7) && .characterSet(.alphanumerics + .whitespaces))
     }
 }

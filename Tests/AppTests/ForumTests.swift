@@ -1,7 +1,7 @@
 @testable import App
 import Vapor
 import XCTest
-import FluentPostgreSQL
+
 
 final class ForumTests: XCTestCase {
     
@@ -207,8 +207,8 @@ final class ForumTests: XCTestCase {
         
         // create data
         let imageFile = "test-image.jpg"
-        let directoryConfig = DirectoryConfig.detect()
-        let imagePath = directoryConfig.workDir.appending("seeds/").appending(imageFile)
+        let directoryConfig = DirectoryConfiguration.detect()
+        let imagePath = directoryConfig.workingDirectory.appending("seeds/").appending(imageFile)
         let data = FileManager.default.contents(atPath: imagePath)
         let forumCreateData = ForumCreateData(
             title: "A forum!",
@@ -777,8 +777,8 @@ final class ForumTests: XCTestCase {
         
         // test add image
         let imageFile = "test-image.jpg"
-        let directoryConfig = DirectoryConfig.detect()
-        let imagePath = directoryConfig.workDir.appending("seeds/").appending(imageFile)
+        let directoryConfig = DirectoryConfiguration.detect()
+        let imagePath = directoryConfig.workingDirectory.appending("seeds/").appending(imageFile)
         let data = FileManager.default.contents(atPath: imagePath)
         let imageUploadData = ImageUploadData(filename: imageFile, image: data!)
         var postData = try app.getResult(

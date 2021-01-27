@@ -1,6 +1,7 @@
 import Foundation
 import Vapor
-import FluentPostgreSQL
+import Fluent
+
 
 /// Parser for a sched.com `.ics` file, based on https://jococruise2019.sched.com export.
 
@@ -22,8 +23,9 @@ final class EventParser {
     ///   - icsArray: Array of strings from a sched.com `.ics` export.
     ///   - connection: The connection to a database.
     /// - Returns: `[Event]` containing the events.
-    func parse(_ icsArray: [String], on connection: PostgreSQLConnection) -> Future<[Event]> {
-        var events: [Event] = []
+    func parse(_ dataString: String) -> [Event] {
+		let icsArray = dataString.components(separatedBy: .newlines)
+		var events: [Event] = []
         var eventComponents: [String] = []
         var inEvent: Bool = false
         var isComplete: Bool = false
@@ -54,7 +56,7 @@ final class EventParser {
             // else still gathering components
             eventComponents.append(element)
         }
-        return connection.future(events)
+        return events
     }
     
     /// Creates an `Event` from an array of the raw lines appearing between `BEGIN:VEVENT` and

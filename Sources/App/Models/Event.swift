@@ -1,51 +1,58 @@
 import Foundation
 import Vapor
-import FluentPostgreSQL
+import Fluent
+
 
 /// An `Event` on the official schedule, imported from sched.com's `.ics` format.
 
-final class Event: Codable {
-	typealias Database = PostgreSQLDatabase
+final class Event: Model {
+	static let schema = "events"
+	
 	// MARK: Properties
     
     /// The event's ID.
-    var id: UUID?
-    
-    /// The start time of the event. (sched.com "DTSTART")
-    var startTime: Date
-    
-    /// The end time of the event. (sched.com "DTEND")
-    var endTime: Date
-    
-    /// The title of the event. (sched.com "SUMMARY")
-    var title: String
-    
-    /// A description of the event. (sched.com "DESCRIPTION")
-    var info: String
-    
-    /// The location of the event. (sched.com "LOCATION")
-    var location: String
-    
-    /// The type of event. (sched.com "CATEGORIES")
-    var eventType: EventType
+    @ID(key: .id) var id: UUID?
     
     /// The event's official identifier. (sched.com "UID")
-    var uid: String
+    @Field(key: "uid") var uid: String
     
-    /// The ID of a forum associated with the event.
-    var forumID: UUID?
+    /// The start time of the event. (sched.com "DTSTART")
+    @Field(key: "startTime") var startTime: Date
+    
+    /// The end time of the event. (sched.com "DTEND")
+    @Field(key: "endTime") var endTime: Date
+    
+    /// The title of the event. (sched.com "SUMMARY")
+    @Field(key: "title") var title: String
+    
+    /// A description of the event. (sched.com "DESCRIPTION")
+    @Field(key: "info") var info: String
+    
+    /// The location of the event. (sched.com "LOCATION")
+    @Field(key: "location") var location: String
+    
+    /// The type of event. (sched.com "CATEGORIES")
+    @Field(key: "eventType") var eventType: EventType
     
     /// Timestamp of the model's creation, set automatically.
-    var createdAt: Date?
+    @Timestamp(key: "created_at", on: .create) var createdAt: Date?
     
     /// Timestamp of the model's last update, set automatically.
-    var updatedAt: Date?
+    @Timestamp(key: "updated_at", on: .update) var updatedAt: Date?
     
     /// Timestamp of the model's soft-deletion, set automatically.
-    var deletedAt: Date?
+    @Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
     
-    // MARK: Initialization
+ 	// MARK: Relations
+
+    /// The ID of a forum associated with the event.
+    @OptionalParent(key: "forum_id") var forum: Forum?
     
+	// MARK: Initialization
+    
+    // Used by Fluent
+ 	init() { }
+ 	
     /// Initializes a new Event.
     ///
     /// - Parameters:
@@ -72,6 +79,7 @@ final class Event: Codable {
         self.location = location
         self.eventType = eventType
         self.uid = uid
-        self.forumID = nil
+        self.$forum.id = nil
+        self.$forum.value = nil
     }
 }

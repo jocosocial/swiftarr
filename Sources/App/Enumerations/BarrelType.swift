@@ -1,8 +1,6 @@
-import FluentPostgreSQL
-
 /// The type of `Barrel`.
 
-enum BarrelType: String, PostgreSQLRawEnum, Comparable {
+enum BarrelType: String, Codable, Comparable {
     /// A user's barrel of bookmarked posts.
     case bookmarkedPost
     /// A user's barrel of bookmarked twarrts.

@@ -1,62 +1,77 @@
 import Vapor
-import FluentPostgreSQL
+import Fluent
+
 
 /// An individual post within the Twit-arr stream. A Twarrt must contain either text
 /// content or image content, or both.
 
-final class Twarrt: Codable {
-     typealias Database = PostgreSQLDatabase
-    // MARK: Properties
+final class Twarrt: Model {
+	static let schema = "twarrts"
+	
+	// MARK: Properties
     
     /// The twarrt's ID.
-    var id: Int?
-    
-    /// The ID of the twarrt's author.
-    var authorID: UUID
+    @ID(custom: "id") var id: Int?
     
     /// The text content of the twarrt.
-    var text: String
+    @Field(key: "text") var text: String
     
     /// The filename of any image content of the twarrt.
-    var image: String
-    
-    /// The ID of the twarrt being replied to, if any.
-    var replyToID: Int?
+    @Field(key: "image") var image: String
     
     /// Whether the twarrt is in quarantine, unable to be replied to directly.
-    var isQuarantined: Bool
+    @Field(key: "isQuarantined") var isQuarantined: Bool
     
     /// Whether the twarrt has been reviewed as non-violating content by the Moderator team.
-    var isReviewed: Bool
+    @Field(key: "isReviewed") var isReviewed: Bool
     
     /// Timestamp of the model's creation, set automatically.
-    var createdAt: Date?
+	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
     
     /// Timestamp of the model's last update, set automatically.
-    var updatedAt: Date?
+    @Timestamp(key: "updated_at", on: .update) var updatedAt: Date?
     
     /// Timestamp of the model's soft-deletion, set automatically.
-    var deletedAt: Date?
+    @Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
     
-    // MARK: Initialization
+	// MARK: Relations
+	
+    /// The ID of the twarrt's author.
+    @Parent(key: "author") var author: User
+
+    /// The twarrt being replied to, if any.
+    @OptionalParent(key: "reply_to") var replyTo: Twarrt?
     
+    /// The child `TwarrtEdit` accountability records of the twarrt.
+	@Children(for: \.$twarrt) var edits: [TwarrtEdit]
+	
+    /// The sibling `User`s who have "liked" the twarrt.
+	@Siblings(through: TwarrtLikes.self, from: \.$twarrt, to: \.$user) var likes: [User]
+	
+	// MARK: Initialization
+    
+    // Used by Fluent
+ 	init() { }
+ 	
     /// Initialized a new Twarrt.
     ///
     /// - Parameters:
-    ///   - authorID: The ID of the author of the twarrt.
+    ///   - author: The author of the twarrt.
     ///   - text: The text content of the twarrt.
     ///   - image: The filename of any image content of the twarrt.
-    ///   - replyToID: The ID of the twarrt being replied to, if any.
+    ///   - replyTo: The twarrt being replied to, if any.
     init(
-        authorID: UUID,
+        author: User,
         text: String,
         image: String = "",
-        replyToID: Int? = nil
-    ) {
-        self.authorID = authorID
+        replyTo: Twarrt? = nil
+    ) throws {
+        self.$author.id = try author.requireID()
+        self.$author.value = author
         self.text = text
         self.image = image
-        self.replyToID = replyToID
+        self.$replyTo.id = replyTo?.id
+        self.$replyTo.value = replyTo
         self.isQuarantined = false
         self.isReviewed = false
     }

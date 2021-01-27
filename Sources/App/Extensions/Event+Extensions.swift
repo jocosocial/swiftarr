@@ -1,42 +1,5 @@
 import Vapor
-import FluentPostgreSQL
-
-// model uses UUID as primary key
-extension Event: PostgreSQLUUIDModel {}
-
-// model can be passed as HTTP body data
-extension Event: Content {}
-
-// model can be used as endpoint parameter
-extension Event: Parameter {}
-
-// MARK: - Custom Migration
-
-extension Event: Migration {
-    /// Required by `Migration` protocol. Creates the table, with unique  constraint on `.uid`.
-    ///
-    /// - Parameter connection: The connection to the database, usually the Request.
-    /// - Returns: Void.
-    static func prepare(on connection: PostgreSQLConnection) -> Future<Void> {
-        return Database.create(self, on: connection) {
-            (builder) in
-            try addProperties(to: builder)
-            // uid must be unique
-            builder.unique(on: \.uid)
-        }
-    }
-}
-
-// MARK: - Timestamping Conformance
-
-extension Event {
-    /// Required key for `\.createdAt` functionality.
-    static var createdAtKey: TimestampKey? { return \.createdAt }
-    /// Required key for `\.updatedAt` functionality.
-    static var updatedAtKey: TimestampKey? { return \.updatedAt }
-    /// Required key for `\.deletedAt` soft delete functionality.
-    static var deletedAtKey: TimestampKey? { return \.deletedAt }
-}
+import Fluent
 
 // MARK: - Functions
 
@@ -51,20 +14,74 @@ extension Event {
             endTime: self.endTime,
             location: self.location,
             eventType: self.eventType.label,
-            forum: self.forumID,
+            forum: self.forum?.id,
             isFavorite: tagged
         )
     }
 }
 
-extension Future where T: Event {
+extension EventLoopFuture where Value: Event {
     /// Converts a `Future<Event>` to a `Future<EventData>`. This extension provides the
     /// convenience of simply using `event.convertToData()` and allowing the compiler to
     /// choose the appropriate version for the context.
-    func convertToData(withFavorited tagged: Bool) throws -> Future<EventData> {
-        return self.map {
+    func convertToData(withFavorited tagged: Bool) throws -> EventLoopFuture<EventData> {
+        return self.flatMapThrowing {
             (event) in
             return try event.convertToData(withFavorited: tagged)
         }
     }
+}
+
+// events can be bookmarked
+extension Event: UserBookmarkable {
+    /// The barrel type for `Event` bookmarking.
+	var bookmarkBarrelType: BarrelType {
+        return .taggedEvent
+    }
+    
+    func bookmarkIDString() throws -> String {
+    	return try String(self.requireID())
+    }
+}
+
+// events can be filtered by creator
+extension Event: ContentFilterable {
+
+    /// Checks if a `Event` contains any of the provided array of muting strings, returning true if it does
+    ///
+    /// - Parameters:
+    ///   - mutewords: The list of strings on which to filter the post.
+    /// - Returns: TRUE if the post contains a muting string.
+    func containsMutewords(using mutewords: [String]) -> Bool {
+        for word in mutewords {
+            if self.title.range(of: word, options: .caseInsensitive) != nil ||
+            		self.info.range(of: word, options: .caseInsensitive) != nil ||
+            		self.location.range(of: word, options: .caseInsensitive) != nil {
+                return true
+            }
+        }
+        return false
+    }
+    
+    /// Checks if a `Event` contains any of the provided array of muting strings, returning
+    /// either the original twarrt or `nil` if there is a match.
+    ///
+    /// - Parameters:
+    ///   - post: The `Event` to filter.
+    ///   - mutewords: The list of strings on which to filter the post.
+    ///   - req: The incoming `Request` on whose event loop this needs to run.
+    /// - Returns: The provided post, or `nil` if the post contains a muting string.
+    func filterMutewords(using mutewords: [String]?) -> Event? {
+        if let mutewords = mutewords {
+			for word in mutewords {
+				if self.title.range(of: word, options: .caseInsensitive) != nil ||
+						self.info.range(of: word, options: .caseInsensitive) != nil ||
+						self.location.range(of: word, options: .caseInsensitive) != nil {
+					return nil
+				}
+			}
+		}
+        return self
+    }
+
 }

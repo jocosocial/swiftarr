@@ -1,39 +1,39 @@
 import Vapor
 
 /// Register your application's routes here.
-public func routes(_ router: Router) throws {
+public func routes(_ app: Application) throws {
     // Basic "It works" example
-    router.get { req in
+    app.get { req in
         return "It works!"
     }
     
     let adminController = AdminController()
-    try router.register(collection: adminController)
+    try app.register(collection: adminController)
     
     let authController = AuthController()
-    try router.register(collection: authController)
+    try app.register(collection: authController)
     
     let clientController = ClientController()
-    try router.register(collection: clientController)
+    try app.register(collection: clientController)
     
     let eventController = EventController()
-    try router.register(collection: eventController)
+    try app.register(collection: eventController)
     
     let fezController = FezController()
-    try router.register(collection: fezController)
+    try app.register(collection: fezController)
     
     let forumController = ForumController()
-    try router.register(collection: forumController)
+    try app.register(collection: forumController)
     
     let testController = TestController()
-    try router.register(collection: testController)
+    try app.register(collection: testController)
     
     let twitarrController = TwitarrController()
-    try router.register(collection: twitarrController)
+    try app.register(collection: twitarrController)
     
     let userController = UserController()
-    try router.register(collection: userController)
+    try app.register(collection: userController)
     
     let usersController = UsersController()
-    try router.register(collection: usersController)
+    try app.register(collection: usersController)
 }

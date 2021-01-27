@@ -1,7 +1,7 @@
 import Foundation
 import Vapor
-import FluentPostgreSQL
-import Authentication
+import Fluent
+
 
 /// All accounts are of class `User`.
 ///
@@ -17,55 +17,87 @@ import Authentication
 /// `.deletedAt` are all maintained automatically by the model protocols and should never be
 ///  otherwise modified.
 
-final class User: Codable {
-    typealias Database = PostgreSQLDatabase
-    // MARK: Properties
+final class User: Model, Content {
+	static let schema = "users"
+	
+   // MARK: Properties
     
     /// The user's ID, provisioned automatically.
-    var id: UUID?
+ 	@ID(key: .id) var id: UUID?
     
     /// The user's publicly viewable username.
-    var username: String
+    @Field(key: "username") var username: String
     
     /// The user's password, encrypted to BCrypt hash value.
-    var password: String
+    @Field(key: "password") var password: String
     
     /// The user's recovery key, encrypted to BCrypt hash value.
-    var recoveryKey: String
+    @Field(key: "recoveryKey") var recoveryKey: String
     
     /// The registration code (or other identifier) used to activate the user
     /// for full read-write access.
-    var verification: String?
-    
-    /// If a sub-account, the ID of the User to which this user is associated,
-    /// provisioned by `UsersController` handlers during creation.
-    var parentID: UUID?
+    @OptionalField(key: "verification") var verification: String?
     
     /// The user's `UserAccessLevel`, set to `.unverified` at time of creation,
     /// or to the parent's access level if a sub-account.
-    var accessLevel: UserAccessLevel
+    @Field(key: "accessLevel") var accessLevel: UserAccessLevel
     
     /// Number of successive failed attempts at password recovery.
-    var recoveryAttempts: Int
+    @Field(key: "recoveryAttempts") var recoveryAttempts: Int
     
     /// Cumulative number of reports submitted on user's posts.
-    var reports: Int
+    @Field(key: "reports") var reports: Int
     
     /// Timestamp of the model's creation, set automatically.
-    var createdAt: Date?
+	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
     
     /// Timestamp of the model's last update, set automatically.
-    var updatedAt: Date?
+    @Timestamp(key: "updated_at", on: .update) var updatedAt: Date?
     
     /// Timestamp of the model's soft-deletion, set automatically.
-    var deletedAt: Date?
+    @Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
     
     /// Timestamp of the child UserProfile's last update.
-    var profileUpdatedAt: Date
+    @Field(key: "profileUpdatedAt") var profileUpdatedAt: Date
     
+	// MARK: Relations
+
+    /// If a sub-account, the ID of the User to which this user is associated,
+    /// provisioned by `UsersController` handlers during creation.
+    @OptionalParent(key: "parent") var parent: User?
+    
+    /// The child `Barrels`s owned by the user.
+// FIXME: how to handle this
+//	@Children(for: \$.) var barrels: [Barrel]
+
+	/// The child `Forum`s created by the user.
+	@Children(for: \.$creator) var forums: [Forum]
+    
+    /// The child `UserNote`s owned by the user.
+	@Children(for: \.$author) var notes: [UserNote]
+	
+    /// The sibling `ForumPost`s "liked" by the user.
+    @Siblings(through: PostLikes.self, from: \.$user, to: \.$post) var postLikes: [ForumPost]
+
+    /// The child `ForumPost`s created by the user.
+	@Children(for: \.$author) var posts: [ForumPost]
+	
+    /// The child `UserProfile` of the user.
+	@Children(for: \.$user) var profile: [UserProfile]		// Actually 1:1
+//	@Parent(key: "user_profile") var profile: UserProfile
+    
+    /// The sibling `Twarrt`s "liked" by the user.
+    @Siblings(through: TwarrtLikes.self, from: \.$user, to: \.$twarrt) var twarrtLikes: [Twarrt]
+
+    /// The child `Twarrt`s created by the user.
+	@Children(for: \.$author) var twarrts: [Twarrt]
+
     // MARK: Initialization
     
-    /// Initializes a new User.
+    // Used by Fluent
+ 	init() { }
+ 	
+	/// Initializes a new User.
     ///
     /// - Parameters:
     ///   - username: The user's username, unadorned (e.g. "grundoon", not "@grundoon").
@@ -75,20 +107,19 @@ final class User: Codable {
     ///     the actual key.
     ///   - verification: A token of known identity, such as a provided code or a verified email
     ///     address. `nil` if not yet verified.
-    ///   - parentID: If a sub-account, the `id` of the master acount, otherwise `nil`.
+    ///   - parent: If a sub-account, the `id` of the master acount, otherwise `nil`.
     ///   - accessLevel: The user's access level (see `UserAccessLevel`).
     ///   - recoveryAttempts: The number of successive failed attempts at password recovery,
     ///     initially 0.
     ///   - reports: The total number of reports made on the user's posts, initially 0.
     ///   - profileUpdatedAt: The timestamp of the associated profile's last update, initially
     ///     epoch.
-    
     init(
         username: String,
         password: String,
         recoveryKey: String,
         verification: String? = nil,
-        parentID: UUID? = nil,
+        parent: User? = nil,
         accessLevel: UserAccessLevel,
         recoveryAttempts: Int = 0,
         reports: Int = 0,
@@ -98,7 +129,8 @@ final class User: Codable {
         self.password = password
         self.recoveryKey = recoveryKey
         self.verification = verification
-        self.parentID = parentID
+        self.$parent.id = parent?.id
+        self.$parent.value = parent
         self.accessLevel = accessLevel
         self.recoveryAttempts = recoveryAttempts
         self.reports = reports

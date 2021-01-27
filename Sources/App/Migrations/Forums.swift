@@ -1,16 +1,16 @@
 import Vapor
-import FluentPostgreSQL
+import Fluent
+
 
 /// A `Migration` that creates an initial set of Twit-arr official `Forum`s.
 
-struct Forums: Migration {
-    typealias Database = PostgreSQLDatabase
+struct CreateForums: Migration {
     
     /// Required by `Migration` protocol. Creates an initial set of categories for forums.
     ///
-    /// - Parameter conn: A connection to the database, provided automatically.
+    /// - Parameter database: A connection to the database, provided automatically.
     /// - Returns: Void.
-    static func prepare(on conn: PostgreSQLConnection) -> EventLoopFuture<Void> {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
         // initial set of Twit-arr forums
         var adminForums: [String] = []
         do {
@@ -29,29 +29,27 @@ struct Forums: Migration {
             fatalError("Environment.detect() failed! error: \(error)")
         }
         // get admin, category IDs
-        return User.query(on: conn).first().flatMap {
-            (admin) in
-            return Category.query(on: conn).first().flatMap {
-                (category) in
-                guard let admin = admin,
-                    admin.username == "admin",
-                    let category = category,
-                    category.title == "Twit-arr Support" else {
-                        fatalError("could not get IDs")
-                }
-                // create forums
-                var forums: [Forum] = []
-                for adminForum in adminForums {
-                    let forum = try Forum(
-                        title: adminForum,
-                        categoryID: category.requireID(),
-                        creatorID: admin.requireID(),
-                        isLocked: false
-                    )
-                    forums.append(forum)
-                }
-                // save forums
-                return forums.map { $0.save(on: conn) }.flatten(on: conn).transform(to: ())
+        return User.query(on: database).first().flatMap { (admin) in
+            return Category.query(on: database).first().throwingFlatMap { (category) in
+				guard let admin = admin,
+					admin.username == "admin",
+					let category = category,
+					category.title == "Twit-arr Support" else {
+						fatalError("could not get IDs")
+				}
+				// create forums
+				var forums: [Forum] = []
+				for adminForum in adminForums {
+					let forum = try Forum(
+						title: adminForum,
+						category: category,
+						creator: admin,
+						isLocked: false
+					)
+					forums.append(forum)
+				}
+				// save forums
+				return forums.map { $0.save(on: database) }.flatten(on: database.eventLoop).transform(to: ())
             }
         }
     }
@@ -61,7 +59,7 @@ struct Forums: Migration {
     ///
     /// - Parameter conn: The database connection.
     /// - Returns: Void.
-    static func revert(on conn: PostgreSQLConnection) -> Future<Void> {
-        return .done(on: conn)
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("forums").delete()
     }
 }

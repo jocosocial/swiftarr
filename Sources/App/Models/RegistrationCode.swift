@@ -1,6 +1,7 @@
 import Foundation
 import Vapor
-import FluentPostgreSQL
+import Fluent
+
 
 /// A `RegistrationCode` associates a specific pre-generated code with a specific `User`
 /// account, as well as tracks when the association occurred.
@@ -12,33 +13,40 @@ import FluentPostgreSQL
 /// Twit-arr admins prior to the event, and they are loaded by a `Migration` during system
 /// startup.
 
-final class RegistrationCode: Codable {
-     typealias Database = PostgreSQLDatabase
-    // MARK: Properties
+final class RegistrationCode: Model, Content {
+ 	static let schema = "registrationcodes"
+ 	
+	// MARK: Properties
     
     /// The registration code's ID, provisioned automatically.
-    var id: UUID?
-    
-    /// The ID of the User to which this code is associated, if any.
-    var userID: UUID?
+    @ID(key: .id) var id: UUID?
     
     /// The registration code, normalized to lowercase without spaces.
-    var code: String
+    @Field(key: "code") var code: String
     
     /// Timestamp of the model's last update, set automatically.
     /// Used to track when the code was assigned.
-    var updatedAt: Date?
+    @Timestamp(key: "updated_at", on: .update) var updatedAt: Date?
 
+	// MARK: Relations
+    
+    /// The User to which this code is associated, if any.
+    @OptionalParent(key: "user") var user: User?
+    
     // MARK: Initialization
     
+    // Used by Fluent
+ 	init() { }
+ 	
     /// Initializes a new RegistrationCode.
     ///
     /// - Parameters:
-    ///   - userID: The ID of the User to which the code is associated, `nil` if not yet
+    ///   - user: The `User` to which the code is associated, `nil` if not yet
     ///   assigned.
     ///   - code: The registration code string.
-    init(userID: UUID? = nil, code: String) {
-        self.userID = userID
+    init(user: User? = nil, code: String) {
+        self.$user.id = user?.id
+        self.$user.value = user
         self.code = code
     }
 }

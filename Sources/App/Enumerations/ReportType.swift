@@ -1,8 +1,7 @@
-import FluentPostgreSQL
 
 /// The type of entity being reported in a `Report`.
 
-enum ReportType: String, PostgreSQLRawEnum {
+enum ReportType: String, Codable {
     /// An entire `Forum`.
     case forum
     /// An individual `ForumPost`.

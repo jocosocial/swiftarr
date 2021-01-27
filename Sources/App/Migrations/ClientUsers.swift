@@ -1,5 +1,5 @@
 import Vapor
-import FluentPostgreSQL
+import Fluent
 import Crypto
 
 /// A `Migration` that creates a set of registered client users during startup, from a
@@ -13,9 +13,7 @@ import Crypto
 /// - Note: Each API client that wishes to make use of `ClientController` endpoints **must**
 ///  provide a client `username:password:recovery key` triplet prior to production startup.
 
-struct ClientUsers: Migration {
-    typealias Database = PostgreSQLDatabase
-    
+struct CreateClientUsers: Migration {    
     /// Required by `Migration` protocol. Reads either a test or production text file in the
     /// `seeds/` subdirectory, converts the lines into elements of an array, then iterates over
     /// them to create new `User` models with `UserAccessLevel` of `.client`.
@@ -23,7 +21,7 @@ struct ClientUsers: Migration {
     /// - Requires: `registered-clients.txt` file in seeds subdirectory.
     /// - Parameter conn: A connection to the database, provided automatically.
     /// - Returns: Void.
-    static func prepare(on conn: PostgreSQLConnection) -> Future<Void> {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
         // get file containing client triplets
         let clientsFile: String
         do {
@@ -33,8 +31,8 @@ struct ClientUsers: Migration {
             } else {
                 clientsFile = "test-registered-clients.txt"
             }
-            let directoryConfig = DirectoryConfig.detect()
-            let clientsPath = directoryConfig.workDir.appending("seeds/").appending(clientsFile)
+            let directoryConfig = DirectoryConfiguration.detect()
+            let clientsPath = directoryConfig.workingDirectory.appending("seeds/").appending(clientsFile)
             // read file as string
             guard let data = FileManager.default.contents(atPath: clientsPath),
                 let dataString = String(bytes: data, encoding: .utf8) else {
@@ -57,8 +55,8 @@ struct ClientUsers: Migration {
                 }
                 // normalize recoveryKey, then encrypt
                 let normalizedKey = triad[2].lowercased().replacingOccurrences(of: " ", with: "")
-                let password = try? BCrypt.hash(triad[1].trimmingCharacters(in: .whitespaces))
-                let recovery = try? BCrypt.hash(normalizedKey)
+                let password = try? Bcrypt.hash(triad[1].trimmingCharacters(in: .whitespaces))
+                let recovery = try? Bcrypt.hash(normalizedKey)
                 guard let passwordHash = password,
                     let recoveryHash = recovery else {
                         fatalError("could not create client users: password hash failed")
@@ -72,16 +70,16 @@ struct ClientUsers: Migration {
                 clients.append(user)
             }
             // save clients
-            return clients.map { $0.save(on: conn) }.flatten(on: conn).map {
+            return clients.map { $0.save(on: database) }.flatten(on: database.eventLoop).throwingFlatMap {
                 (savedUsers) in
                 // add profiles
                 var profiles: [UserProfile] = []
-                savedUsers.forEach {
-                    guard let id = $0.id else { fatalError("user has no id") }
-                    let profile = UserProfile(userID: id, username: $0.username)
+				try clients.forEach {
+                    guard $0.id != nil else { fatalError("user has no id") }
+                    let profile = try UserProfile(user: $0, username: $0.username)
                     profiles.append(profile)
                 }
-                profiles.map { $0.save(on: conn) }.always(on: conn) { return }
+                return profiles.map { $0.save(on: database) }.flatten(on: database.eventLoop)
             }
         } catch let error {
             fatalError("Environment.detect() failed! error: \(error)")
@@ -93,8 +91,8 @@ struct ClientUsers: Migration {
     ///
     /// - Parameter conn: The database connection.
     /// - Returns: Void.
-    static func revert(on conn: PostgreSQLConnection) -> Future<Void> {
-        return .done(on: conn)
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("users").delete()
     }
 }
 

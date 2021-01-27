@@ -3,6 +3,7 @@ import Crypto
 import FluentSQL
 import Fluent
 import Redis
+import RediStack
 
 /// The collection of `/api/v3/user/*` route endpoints and handler functions related
 /// to a user's own data.
@@ -16,15 +17,15 @@ struct UsersController: RouteCollection {
     // MARK: RouteCollection Conformance
     
     /// Required. Registers routes to the incoming router.
-    func boot(router: Router) throws {
+    func boot(routes: RoutesBuilder) throws {
         
         // convenience route group for all /api/v3/users endpoints
-        let usersRoutes = router.grouped("api", "v3", "users")
+        let usersRoutes = routes.grouped("api", "v3", "users")
         
         // instantiate authentication middleware
-        let basicAuthMiddleware = User.basicAuthMiddleware(using: BCryptDigest())
-        let guardAuthMiddleware = User.guardAuthMiddleware()
-        let tokenAuthMiddleware = User.tokenAuthMiddleware()
+        let basicAuthMiddleware = User.authenticator()
+        let guardAuthMiddleware = User.guardMiddleware()
+        let tokenAuthMiddleware = Token.authenticator()
         
         // set protected route groups
         let sharedAuthGroup = usersRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware, guardAuthMiddleware])
@@ -35,22 +36,22 @@ struct UsersController: RouteCollection {
         // endpoints available only when not logged in
         
         // endpoints available whether logged in or out
-        sharedAuthGroup.get("find", String.parameter, use: findHandler)
-        sharedAuthGroup.get(User.parameter, "header", use: headerHandler)
-        sharedAuthGroup.get(User.parameter, "profile", use: profileHandler)
-        sharedAuthGroup.get(User.parameter, use: userHandler)
+        sharedAuthGroup.get("find", ":userSearchString", use: findHandler)
+        sharedAuthGroup.get(":user_id", "header", use: headerHandler)
+        sharedAuthGroup.get(":user_id", "profile", use: profileHandler)
+        sharedAuthGroup.get(":user_id", use: userHandler)
 
         // endpoints available only when logged in
-        tokenAuthGroup.post(User.parameter, "block", use: blockHandler)
-        tokenAuthGroup.get("match", "allnames", String.parameter, use: matchAllNamesHandler)
-        tokenAuthGroup.get("match", "username", String.parameter, use: matchUsernameHandler)
-        tokenAuthGroup.post(User.parameter, "mute", use: muteHandler)
-        tokenAuthGroup.post(NoteCreateData.self, at: User.parameter, "note", "create", use: noteCreateHandler)
-        tokenAuthGroup.post(User.parameter, "note", "delete", use: noteDeleteHandler)
-        tokenAuthGroup.get(User.parameter, "note", use: noteHandler)
-        tokenAuthGroup.post(ReportData.self, at: User.parameter, "report", use: reportHandler)
-        tokenAuthGroup.post(User.parameter, "unblock", use: unblockHandler)
-        tokenAuthGroup.post(User.parameter, "unmute", use: unmuteHandler)
+        tokenAuthGroup.post(":user_id", "block", use: blockHandler)
+        tokenAuthGroup.get("match", "allnames", ":search_string", use: matchAllNamesHandler)
+        tokenAuthGroup.get("match", "username", ":search_string", use: matchUsernameHandler)
+        tokenAuthGroup.post(":user_id", "mute", use: muteHandler)
+        tokenAuthGroup.post(":user_id", "note", "create", use: noteCreateHandler)
+        tokenAuthGroup.post(":user_id", "note", "delete", use: noteDeleteHandler)
+        tokenAuthGroup.get(":user_id", "note", use: noteHandler)
+        tokenAuthGroup.post(":user_id", "report", use: reportHandler)
+        tokenAuthGroup.post(":user_id", "unblock", use: unblockHandler)
+        tokenAuthGroup.post(":user_id", "unmute", use: unmuteHandler)
     }
     
     // MARK: - Open Access Handlers
@@ -79,48 +80,30 @@ struct UsersController: RouteCollection {
     /// - Throws: 404 error if no match is found.
     /// - Returns: `UserInfo` containing the user's ID, username and timestamp of last
     ///   profile update.
-    func findHandler(_ req: Request) throws -> Future<UserInfo> {
-        let requester = try req.requireAuthenticated(User.self)
-        let parameter = try req.parameters.next(String.self)
+    func findHandler(_ req: Request) throws -> EventLoopFuture<UserInfo> {
+        let requester = try req.auth.require(User.self)
+        let requesterID = try requester.requireID()
+        let parameter = req.parameters.get("userSearchString") ?? "<missing>"
         // try converting to UUID
         let userID = UUID(uuidString: parameter)
-        return User.query(on: req).group(.or) {
+        return User.query(on: req.db).group(.or) {
             (or) in
             // search ID if a UUID
             if let userID = userID {
-                or.filter(\.id == userID)
+                or.filter(\.$id == userID)
             }
             // search as username
-            or.filter(\.username == parameter)
+            or.filter(\.$username == parameter)
         }.first()
             .unwrap(or: Abort(.notFound, reason: "no user found for identifier '\(parameter)'"))
-            .flatMap {
-                (user) in
-                // 404 if blocked
-                let cache = try req.keyedCache(for: .redis)
-                let key = try "blocks:\(requester.requireID())"
-                let cachedBlocks = cache.get(key, as: [UUID].self)
-                return cachedBlocks.flatMap {
-                    (blocks) in
-                    let blocked = blocks ?? []
-                    if blocked.contains(try user.requireID()) {
-                        throw Abort(.notFound, reason: "no user found for identifier '\(parameter)'")
-                    }
-                    return try user.profile.query(on: req)
-                        .first()
-                        .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
-                        .map {
-                            (profile) in
-                            // return as UserInfo
-                            let userInfo = UserInfo(
-                                userID: profile.userID,
-                                username: profile.username,
-                                updatedAt: profile.updatedAt ?? Date()
-                            )
-                            return userInfo
-                    }
-                }
-        }
+            .flatMapThrowing { (user) in
+				// 404 if blocked
+				let blocked = req.userCache.getBlocks(requesterID)
+				if blocked.contains(try user.requireID()) {
+					throw Abort(.notFound, reason: "no user found for identifier '\(parameter)'")
+				}
+				return try user.convertToInfo()
+        	}
     }
     
     /// `GET /api/v3/users/ID/header`
@@ -137,30 +120,22 @@ struct UsersController: RouteCollection {
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `UserHeader` containing the user's ID, `.displayedName` and profile
     ///   image filename.
-    func headerHandler(_ req: Request) throws -> Future<UserHeader> {
-        let requester = try req.requireAuthenticated(User.self)
-        return try req.parameters.next(User.self).flatMap {
-            (user) in
-            // 404 if blocked
-            let cache = try req.keyedCache(for: .redis)
-            let key = try "blocks:\(requester.requireID())"
-            let cachedBlocks = cache.get(key, as: [UUID].self)
-            return cachedBlocks.flatMap {
-                (blocks) in
-                let blocked = blocks ?? []
-                if blocked.contains(try user.requireID()) {
-                    throw Abort(.notFound, reason: "user is not available")
-                }
-                return try user.profile.query(on: req)
-                    .first()
-                    .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
-                    .map {
-                        (profile) in
-                        // return as UserHeader
-                        return try profile.convertToHeader()
-                }
-            }
-        }
+    func headerHandler(_ req: Request) throws -> EventLoopFuture<UserHeader> {
+        let requester = try req.auth.require(User.self)
+        return User.findFromParameter("user_id", on: req).throwingFlatMap { (user) in
+			// 404 if blocked
+        	let blocks = try req.userCache.getBlocks(requester)
+			if blocks.contains(try user.requireID()) {
+				throw Abort(.notFound, reason: "user is not available")
+			}
+			return user.$profile.query(on: req.db)
+				.first()
+				.unwrap(or: Abort(.internalServerError, reason: "profile not found"))
+				.flatMapThrowing { (profile) in
+					// return as UserHeader
+					return try profile.convertToHeader()
+			}
+		}
     }
     
     /// `GET /api/v3/users/ID/profile`
@@ -177,58 +152,49 @@ struct UsersController: RouteCollection {
     ///   as a likely bug, please and thank you.
     /// - Returns: `ProfilePublicData` containing the displayable properties of the specified
     ///   user's profile.
-    func profileHandler(_ req: Request) throws -> Future<ProfilePublicData> {
-        let requester = try req.requireAuthenticated(User.self)
-        return try req.parameters.next(User.self).flatMap {
-            (user) in
-            // 404 if blocked
-            let cache = try req.keyedCache(for: .redis)
-            let key = try "blocks:\(requester.requireID())"
-            let cachedBlocks = cache.get(key, as: [UUID].self)
-            return cachedBlocks.flatMap {
-                (blocks) in
-                let blocked = blocks ?? []
-                if blocked.contains(try user.requireID()) {
-                    throw Abort(.notFound, reason: "profile is not available")
-                }
-                // a .banned profile is only available to .moderator or above
-                if user.accessLevel == .banned
-                    && requester.accessLevel.rawValue < UserAccessLevel.moderator.rawValue {
-                    throw Abort(.notFound, reason: "profile is not available")
-                }
-                // get profile and convert to .Public
-                return try user.profile.query(on: req)
-                    .first()
-                    .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
-                    .flatMap {
-                        (profile) in
-                        var publicProfile = try profile.convertToPublic()
-                        // if auth type is Basic, requester is not logged in, so hide info if
-                        // `.limitAccess` is true or requester is .banned
-                        if (req.http.headers.basicAuthorization != nil && profile.limitAccess)
-                            || requester.accessLevel == .banned {
-                            publicProfile.about = ""
-                            publicProfile.email = ""
-                            publicProfile.homeLocation = ""
-                            publicProfile.message = "You must be logged in to view this user's Profile details."
-                            publicProfile.preferredPronoun = ""
-                            publicProfile.realName = ""
-                            publicProfile.roomNumber = ""
-                        }
-                        // include UserNote if any, then return
-                        return try requester.notes.query(on: req)
-                            .filter(\.profileID == profile.requireID())
-                            .first()
-                            .map {
-                                (note) in
-                                if let note = note {
-                                    publicProfile.note = note.note
-                                }
-                                return publicProfile
-                        }
-                }
-            }
-        }
+    func profileHandler(_ req: Request) throws -> EventLoopFuture<ProfilePublicData> {
+        let requester = try req.auth.require(User.self)
+        return User.findFromParameter("user_id", on: req)
+			.throwingFlatMap { (user) in
+				// 404 if blocked
+        		let blocked = try req.userCache.getBlocks(requester)
+				if blocked.contains(try user.requireID()) {
+					throw Abort(.notFound, reason: "profile is not available")
+				}
+				// a .banned profile is only available to .moderator or above
+				if user.accessLevel == .banned && !requester.accessLevel.hasAccess(.moderator) {
+					throw Abort(.notFound, reason: "profile is not available")
+				}
+				// get profile and convert to .Public
+				return user.$profile.query(on: req.db)
+					.first()
+					.unwrap(or: Abort(.internalServerError, reason: "profile not found"))
+					.throwingFlatMap { (profile) in
+						var publicProfile = try profile.convertToPublic()
+						// if auth type is Basic, requester is not logged in, so hide info if
+						// `.limitAccess` is true or requester is .banned
+						if (req.headers.basicAuthorization != nil && profile.limitAccess)
+							|| requester.accessLevel == .banned {
+							publicProfile.about = ""
+							publicProfile.email = ""
+							publicProfile.homeLocation = ""
+							publicProfile.message = "You must be logged in to view this user's Profile details."
+							publicProfile.preferredPronoun = ""
+							publicProfile.realName = ""
+							publicProfile.roomNumber = ""
+						}
+						// include UserNote if any, then return
+						return try requester.$notes.query(on: req.db)
+							.filter(\.$profile.$id == profile.requireID())
+							.first()
+							.map { (note) in
+								if let note = note {
+									publicProfile.note = note.note
+								}
+								return publicProfile
+						}
+				}
+		}
     }
     
     /// `GET /api/v3/users/ID`
@@ -248,22 +214,18 @@ struct UsersController: RouteCollection {
     /// - Throws: 404 error if no match is found.
     /// - Returns: `UserInfo` containing the user's ID, username and timestamp of last
     ///   profile update.
-    func userHandler(_ req: Request) throws -> Future<UserInfo> {
-        let requester = try req.requireAuthenticated(User.self)
-        let parameter = try req.parameters.next(User.self)
-        // 404 if blocked
-        let cache = try req.keyedCache(for: .redis)
-        let key = try "blocks:\(requester.requireID())"
-        let cachedBlocks = cache.get(key, as: [UUID].self)
-        return map(parameter, cachedBlocks) {
-            (user, blocks) in
-            let blocked = blocks ?? []
-            if blocked.contains(try user.requireID()) {
-                throw Abort(.notFound, reason: "user is not available")
-            }
-            // return as UserInfo
-            return try user.convertToInfo()
-        }
+    func userHandler(_ req: Request) throws -> EventLoopFuture<UserInfo> {
+        let requester = try req.auth.require(User.self)
+        return User.findFromParameter("user_id", on: req)
+        	.flatMapThrowing { (user) in
+      			 // 404 if blocked
+        		let blocked = try req.userCache.getBlocks(requester)
+				if blocked.contains(try user.requireID()) {
+					throw Abort(.notFound, reason: "user is not available")
+				}
+				// return as UserInfo
+				return try user.convertToInfo()
+			}
     }
     
     // MARK: - tokenAuthGroup Handlers (logged in)
@@ -290,27 +252,35 @@ struct UsersController: RouteCollection {
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: 201 Created on success.
-    func blockHandler(_ req: Request) throws -> Future<HTTPStatus> {
-        let requester = try req.requireAuthenticated(User.self)
-        return try req.parameters.next(User.self).flatMap {
-            (user) in
-            // get requester block barrel
-            return try Barrel.query(on: req)
-                .filter(\.ownerID == requester.requireID())
-                .filter(\.barrelType == .userBlock)
-                .first()
-                .unwrap(or: Abort(.internalServerError, reason: "userBlock barrel not found"))
-                .flatMap {
-                    (barrel) in
-                    // add blocked user to barrel
-                    barrel.modelUUIDs.append(try user.requireID())
-                    return barrel.save(on: req).flatMap {
-                        (_) in
-                        // update cache and return 201
-                        return try self.setBlocksCache(by: requester, of: user, on: req).transform(to: .created)
-                    }
-            }
-        }
+    func blockHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+        let requester = try req.auth.require(User.self)
+		// get requester block barrel
+        let blockBarrel = try Barrel.query(on: req.db)
+					.filter(\.$ownerID == requester.requireID())
+					.filter(\.$barrelType == .userBlock)
+					.first()
+					.unwrap(or: Abort(.internalServerError, reason: "userBlock barrel not found"))
+        return User.findFromParameter("user_id", on: req)
+        	.and(blockBarrel)
+            .flatMap { (user, barrel) in
+				do {
+					// add blocked user to barrel
+					barrel.modelUUIDs.append(try user.requireID())
+					return barrel.save(on: req.db).flatMap { (_) in
+						do {
+							// update cache and return 201
+							return try self.setBlocksCache(by: requester, of: user, on: req)
+								.transform(to: .created)
+						}
+						catch {
+							return req.eventLoop.makeFailedFuture(error)
+						}
+					}
+				}
+				catch {
+					return req.eventLoop.makeFailedFuture(error)
+				}
+			}
     }
     
     /// `GET /api/v3/users/match/allnames/STRING`
@@ -335,9 +305,11 @@ struct UsersController: RouteCollection {
     /// - Throws: 403 error if the search term is not permitted.
     /// - Returns: `[UserSearch]` containing the ID and profile.userSearch string
     ///   values of all matching users.
-    func matchAllNamesHandler(_ req: Request) throws -> Future<[UserSearch]> {
-        let requester = try req.requireAuthenticated(User.self)
-        var search = try req.parameters.next(String.self)
+    func matchAllNamesHandler(_ req: Request) throws -> EventLoopFuture<[UserSearch]> {
+        let requester = try req.auth.require(User.self)
+		guard var search = req.parameters.get("search_string") else {
+            throw Abort(.badRequest, reason: "No user search string in request.")
+        }
         // postgres "_" and "%" are wildcards, so escape for literals
         search = search.replacingOccurrences(of: "_", with: "\\_")
         search = search.replacingOccurrences(of: "%", with: "\\%")
@@ -347,23 +319,16 @@ struct UsersController: RouteCollection {
             throw Abort(.forbidden, reason: "'\(search)' is not a permitted search string")
         }
         // remove blocks from results
-        let cache = try req.keyedCache(for: .redis)
-        let key = try "blocks:\(requester.requireID())"
-        let cachedBlocks = cache.get(key, as: [UUID].self)
-        return cachedBlocks.flatMap {
-            (blocks) in
-            let blocked = blocks ?? []
-            return UserProfile.query(on: req)
-                .filter(\.userSearch, .ilike, "%\(search)%")
-                .filter(\.userID !~ blocked)
-                .sort(\.username, .ascending)
-                .all()
-                .map {
-                    (profiles) in
-                    // return as UserSearch
-                    return try profiles.map { try $0.convertToSearch() }
-            }
-        }
+        let blocked = try req.userCache.getBlocks(requester)
+		return UserProfile.query(on: req.db)
+			.filter(\.$userSearch, .custom("ILIKE"), "%\(search)%")
+			.filter(\.$user.$id !~ blocked)
+			.sort(\.$username, .ascending)
+			.all()
+			.flatMapThrowing { (profiles) in
+				// return as UserSearch
+				return try profiles.map { try $0.convertToSearch() }
+		}
     }
 
     /// `GET /api/v3/users/match/username/STRING`
@@ -378,29 +343,25 @@ struct UsersController: RouteCollection {
     ///
     /// - Parameter req: he incoming request `Container`, provided automatically.
     /// - Returns: `[String]` containng all matching usernames as "@username" strings.
-    func matchUsernameHandler(_ req: Request) throws -> Future<[String]> {
-        let requester = try req.requireAuthenticated(User.self)
-        var search = try req.parameters.next(String.self)
+    func matchUsernameHandler(_ req: Request) throws -> EventLoopFuture<[String]> {
+        let requester = try req.auth.require(User.self)
+		guard var search = req.parameters.get("search_string") else {
+            throw Abort(.badRequest, reason: "No user search string in request.")
+        }
         // postgres "_" is wildcard, so escape for literal
         search = search.replacingOccurrences(of: "_", with: "\\_")
         // remove blocks from results
-        let cache = try req.keyedCache(for: .redis)
-        let key = try "blocks:\(requester.requireID())"
-        let cachedBlocks = cache.get(key, as: [UUID].self)
-        return cachedBlocks.flatMap {
-            (blocks) in
-            let blocked = blocks ?? []
-            return UserProfile.query(on: req)
-                .filter(\.username, .ilike, "%\(search)%")
-                .filter(\.userID !~ blocked)
-                .sort(\.username, .ascending)
-                .all()
-                .map {
-                    (profiles) in
-                    // return @username only
-                    return profiles.map { "@\($0.username)" }
-        }
-    }
+        let blocked = try req.userCache.getBlocks(requester)
+		return UserProfile.query(on: req.db)
+			.filter(\.$username, .custom("ILIKE"), "%\(search)%")
+			.filter(\.$user.$id !~ blocked)
+			.sort(\.$username, .ascending)
+			.all()
+			.map {
+				(profiles) in
+				// return @username only
+				return profiles.map { "@\($0.username)" }
+			}
     }
     
     /// `POST /api/v3/users/ID/mute`
@@ -420,29 +381,30 @@ struct UsersController: RouteCollection {
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: 201 Created on success.
-    func muteHandler(_ req: Request) throws -> Future<HTTPStatus> {
-        let requester = try req.requireAuthenticated(User.self)
-        return try req.parameters.next(User.self).flatMap {
-            (user) in
-            // get requester mute barrel
-            return try Barrel.query(on: req)
-                .filter(\.ownerID == requester.requireID())
-                .filter(\.barrelType == .userMute)
-                .first()
-                .unwrap(or: Abort(.internalServerError, reason: "userMute barrel not found"))
-                .flatMap {
-                    (barrel) in
-                    // add to barrel
-                    barrel.modelUUIDs.append(try user.requireID())
-                    return barrel.save(on: req).flatMap {
-                        (savedBarrel) in
-                        // update cache, return 201
-                        let cache = try req.keyedCache(for: .redis)
-                        let key = try "mutes:\(requester.requireID())"
-                        return cache.set(key, to: savedBarrel.modelUUIDs).transform(to: .created)
-                    }
-            }
+    func muteHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+		let requester = try req.auth.require(User.self)
+        let requesterID = try requester.requireID()
+		guard let parameter = req.parameters.get("user_id"), let userID = UUID(parameter) else {
+            throw Abort(.badRequest, reason: "No user ID in request.")
         }
+		return User.find(userID, on: req.db)
+			.unwrap(or: Abort(.notFound, reason: "no user found for identifier '\(parameter)'"))
+			.flatMap { (user) in
+				// get requester mute barrel
+				return Barrel.query(on: req.db)
+					.filter(\.$ownerID == requesterID)
+					.filter(\.$barrelType == .userMute)
+					.first()
+					.unwrap(or: Abort(.internalServerError, reason: "userMute barrel not found"))
+					.flatMap { (barrel) in
+						// add to barrel
+						barrel.modelUUIDs.append(userID)
+						return barrel.save(on: req.db).flatMap { _ in
+							// update cache, return 201
+							return req.userCache.updateUser(requesterID).transform(to: .created)
+						}
+					}
+			}
     }
 
     /// `POST /api/v3/users/ID/note`
@@ -465,50 +427,59 @@ struct UsersController: RouteCollection {
     ///   note on the profile. A 5xx response should be reported as a likely bug, please and
     ///   thank you.
     /// - Returns: `CreatedNoteData` containing the newly created note's ID and text.
-    func noteCreateHandler(_ req: Request, data: NoteCreateData) throws -> Future<Response> {
+    func noteCreateHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         // FIXME: account for banned user
-        let requester = try req.requireAuthenticated(User.self)
-        return try req.parameters.next(User.self).flatMap {
+        let requester = try req.auth.require(User.self)
+		guard let parameter = req.parameters.get("user_id"), let userID = UUID(parameter) else {
+            throw Abort(.badRequest, reason: "No user ID in request.")
+        }
+        let data = try req.content.decode(NoteCreateData.self)        
+        return User.find(userID, on: req.db)
+			.unwrap(or: Abort(.notFound, reason: "no user found for identifier '\(parameter)'"))
+			.flatMap {
             (user) in
             // profile shouldn't be visible, but just in case
             guard user.accessLevel != .banned else {
-                throw Abort(.badRequest, reason: "notes are unavailable for profile")
+                return req.eventLoop.makeFailedFuture(Abort(.badRequest, reason: "notes are unavailable for profile"))
             }
             // get user profile
-            return try user.profile.query(on: req)
+            return user.$profile.query(on: req.db)
                 .first()
                 .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
-                .flatMap {
-                    (profile) in
-                    // check for existing note
-                    return try requester.notes.query(on: req)
-                        .filter(\.profileID == profile.requireID())
-                        .first()
-                        .flatMap {
-                            (existingNote) in
-                            guard existingNote == nil else {
-                                throw Abort(.conflict, reason: "note already exists for this profile")
-                            }
-                            // create note
-                            let note = try UserNote(
-                                userID: requester.requireID(),
-                                profileID: profile.requireID(),
-                                note: data.note
-                            )
-                            // return note's data with 201 response
-                            return note.save(on: req).map {
-                                (savedNote) in
-                                let createdNoteData = try CreatedNoteData(
-                                    noteID: savedNote.requireID(),
-                                    note: savedNote.note
-                                )
-                                let response = Response(http: HTTPResponse(status: .created), using: req)
-                                try response.content.encode(createdNoteData)
-                                return response
-                            }
-                    }
-            }
-        }
+                .flatMap { (profile) in
+                	do {
+						// check for existing note
+						return try requester.$notes.query(on: req.db)
+							.filter(\.$profile.$id == profile.requireID())
+							.first()
+							.flatMap { (existingNote) in
+								do {
+									guard existingNote == nil else {
+										throw Abort(.conflict, reason: "note already exists for this profile")
+									}
+									// create note
+									let note = try UserNote(author: requester, profile: profile, note: data.note)
+									// return note's data with 201 response
+									return note.save(on: req.db).flatMapThrowing { _ in
+										let createdNoteData = try CreatedNoteData(
+											noteID: note.requireID(),
+											note: note.note
+										)
+										let response = Response(status: .created)
+										try response.content.encode(createdNoteData)
+										return response
+									}
+								}
+								catch {
+									return req.eventLoop.makeFailedFuture(error)
+								}
+							}
+					}
+					catch {
+						return req.eventLoop.makeFailedFuture(error)
+					}
+				}
+       		}
     }
     
     /// `POST /api/v3/users/ID/note/delete`
@@ -520,29 +491,37 @@ struct UsersController: RouteCollection {
     /// - Throws: 400 error if there is no existing note on the profile. A 5xx response should
     ///   be reported as a likely bug, please and thank you.
     /// - Returns: 204 No Content on success.
-    func noteDeleteHandler(_ req: Request) throws -> Future<HTTPStatus> {
+    func noteDeleteHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         // FIXME: account for blocks, banned user
-        let requester = try req.requireAuthenticated(User.self)
-        return try req.parameters.next(User.self).flatMap {
-            (user) in
+        let requester = try req.auth.require(User.self)
+		guard let parameter = req.parameters.get("user_id"), let userID = UUID(parameter) else {
+            throw Abort(.badRequest, reason: "No user ID in request.")
+        }
+        return User.find(userID, on: req.db)
+			.unwrap(or: Abort(.notFound, reason: "no user found for identifier '\(parameter)'"))
+			.flatMap { (user) in
             // get user profile
-            return try user.profile.query(on: req)
+            return user.$profile.query(on: req.db)
                 .first()
                 .unwrap(or: Abort(.internalServerError, reason: "profile not found, note not deleted"))
-                .flatMap {
-                    (profile) in
-                    // delete note if found
-                    return try requester.notes.query(on: req)
-                        .filter(\.profileID == profile.requireID())
-                        .first()
-                        .unwrap(or: Abort(.notFound, reason: "no existing note found"))
-                        .flatMap {
-                            (note) in
-                            // force true delete
-                            return note.delete(force: true, on: req).transform(to: .noContent)
-                    }
-            }
-        }
+                .flatMap { (profile) in
+                    do {
+						// delete note if found
+						return try requester.$notes.query(on: req.db)
+							.filter(\.$profile.$id == profile.requireID())
+							.first()
+							.unwrap(or: Abort(.notFound, reason: "no existing note found"))
+							.flatMap {
+								(note) in
+								// force true delete
+								return note.delete(force: true, on: req.db).transform(to: .noContent)
+						}
+					}
+					catch {
+						return req.eventLoop.makeFailedFuture(error)
+					}
+           		}
+			}
     }
         
     /// `GET /api/v3/users/ID/note`
@@ -560,28 +539,35 @@ struct UsersController: RouteCollection {
     /// - Throws: 400 error if there is no existing note on the profile. A 5xx response should
     ///   be reported as a likely bug, please and thank you.
     /// - Returns: `NoteEditData` containing the note's ID and text.
-    func noteHandler(_ req: Request) throws -> Future<NoteEditData> {
+    func noteHandler(_ req: Request) throws -> EventLoopFuture<NoteEditData> {
         // FIXME: account for blocks, banned user
-        let requester = try req.requireAuthenticated(User.self)
-        return try req.parameters.next(User.self).flatMap {
-            (user) in
-            // get user profile
-            return try user.profile.query(on: req)
-                .first()
-                .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
-                .flatMap {
-                    (profile) in
-                    // return note data if any
-                    return try requester.notes.query(on: req)
-                        .filter(\.profileID == profile.requireID())
-                        .first()
-                        .unwrap(or: Abort(.badRequest, reason: "no existing note found"))
-                        .map {
-                            (note) in
-                            return try note.convertToEdit()
-                    }
-            }
+        let requester = try req.auth.require(User.self)
+		guard let parameter = req.parameters.get("user_id"), let userID = UUID(parameter) else {
+            throw Abort(.badRequest, reason: "No user ID in request.")
         }
+        return User.find(userID, on: req.db)
+			.unwrap(or: Abort(.notFound, reason: "no user found for identifier '\(parameter)'"))
+			.flatMap { (user) in
+				// get user profile
+				return user.$profile.query(on: req.db)
+					.first()
+					.unwrap(or: Abort(.internalServerError, reason: "profile not found"))
+					.flatMap { (profile) in
+						do {
+							// return note data if any
+							return try requester.$notes.query(on: req.db)
+								.filter(\.$profile.$id == profile.requireID())
+								.first()
+								.unwrap(or: Abort(.badRequest, reason: "no existing note found"))
+								.flatMapThrowing { (note) in
+									return try note.convertToEdit()
+								}
+						}
+						catch {
+							return req.eventLoop.makeFailedFuture(error)
+						}
+					}
+        	}
     }
     
     /// `POST /api/v3/users/ID/report`
@@ -597,34 +583,20 @@ struct UsersController: RouteCollection {
     ///   - req: The incoming `Request`, provided automatically.
     ///   - data: `ReportData` containing an optional accompanying message.
     /// - Returns: 201 Created on success.
-    func reportHandler(_ req: Request, data: ReportData) throws -> Future<HTTPStatus> {
-        let submitter = try req.requireAuthenticated(User.self)
+    func reportHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+        let submitter = try req.auth.require(User.self)
         let parent = try submitter.parentAccount(on: req)
-        let user = try req.parameters.next(User.self)
-        return flatMap(parent, user) {
-            (parent, user) in
-            let report = Report(
-                reportType: .user,
-                reportedID: try user.requireID().uuidString,
-                submitterID: try parent.requireID(),
-                submitterMessage: data.message
-            )
-            return report.save(on: req).flatMap {
-                (_) in
-                // quarantine if threshold is met
-                return try Report.query(on: req)
-                    .filter(\.reportedID == String(user.requireID()))
-                    .count()
-                    .flatMap {
-                        (reportCount) in
-                        // FIXME: moderator notification
-                        if reportCount >= Settings.shared.userAutoQuarantineThreshold {
-                            user.accessLevel = .quarantined
-                            return user.save(on: req).transform(to: .created)
-                        }
-                        return req.future(.created)
-                }
-            }
+ 		guard let parameter = req.parameters.get("user_id"), let userID = UUID(parameter) else {
+            throw Abort(.badRequest, reason: "No user ID in request.")
+        }
+		let user = User.find(userID, on: req.db)
+				.unwrap(or: Abort(.notFound, reason: "no user found for identifier '\(parameter)'"))
+        let data = try req.content.decode(ReportData.self)        
+        return parent.and(user).throwingFlatMap { (parent, user) in
+			let report = try Report( reportType: .user, reportedID: userID.uuidString,
+					submitter: parent, submitterMessage: data.message)
+			return user.fileReport(report, on: req)		
+			
         }
     }
     
@@ -637,30 +609,38 @@ struct UsersController: RouteCollection {
     /// - Throws: 400 error if the specified user was not currently blocked. A 5xx response
     ///   should be reported as a likely bug, please and thank you.
     /// - Returns: 204 No Content on success.
-    func unblockHandler(_ req: Request) throws -> Future<HTTPStatus> {
-        let requester = try req.requireAuthenticated(User.self)
-        return try req.parameters.next(User.self).flatMap {
-            (user) in
-            // get requester block barrel
-            return try Barrel.query(on: req)
-                .filter(\.ownerID == requester.requireID())
-                .filter(\.barrelType == .userBlock)
-                .first()
-                .unwrap(or: Abort(.internalServerError, reason: "userBlock barrel not found"))
-                .flatMap {
-                    (barrel) in
-                    // remove user from barrel
-                    guard let index = barrel.modelUUIDs.firstIndex(of: try user.requireID()) else {
-                        throw Abort(.badRequest, reason: "user not found in block list")
-                    }
-                    barrel.modelUUIDs.remove(at: index)
-                    return barrel.save(on: req).flatMap {
-                        (_) in
-                        // update cache and return 204
-                        return try self.removeBlockFromCache(by: requester, of: user, on: req).transform(to: .noContent)
-                    }
-            }
+    func unblockHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+        let requester = try req.auth.require(User.self)
+        let requesterID = try requester.requireID()
+  		guard let parameter = req.parameters.get("user_id"), let userID = UUID(parameter) else {
+            throw Abort(.badRequest, reason: "No user ID in request.")
         }
+		return User.find(userID, on: req.db)
+			.unwrap(or: Abort(.notFound, reason: "no user found for identifier '\(parameter)'"))
+			.flatMap { (user) in
+				// get requester block barrel
+				return Barrel.query(on: req.db)
+					.filter(\.$ownerID == requesterID)
+					.filter(\.$barrelType == .userBlock)
+					.first()
+					.unwrap(or: Abort(.internalServerError, reason: "userBlock barrel not found"))
+					.flatMap { (barrel) in
+						// remove user from barrel
+						guard let index = barrel.modelUUIDs.firstIndex(of: userID) else {
+							return req.eventLoop.makeFailedFuture(Abort(.badRequest, reason: "user not found in block list"))
+						}
+						barrel.modelUUIDs.remove(at: index)
+						return barrel.save(on: req.db).flatMap { (_) in
+							do {
+								// update cache and return 204
+								return try self.removeBlockFromCache(by: requester, of: user, on: req).transform(to: .noContent)
+							}
+							catch {
+								return req.eventLoop.makeFailedFuture(error)
+							}
+						}
+					}
+			}
     }
     
     /// `POST /api/v3/users/ID/unmute`
@@ -671,29 +651,30 @@ struct UsersController: RouteCollection {
     /// - Throws: 400 error if the specified user was not currently muted. A 5xx response should
     ///   be reported as a likely bug, please and thank you.
     /// - Returns: 204 No Content on success.
-    func unmuteHandler(_ req: Request) throws -> Future<HTTPStatus> {
-        let requester = try req.requireAuthenticated(User.self)
-        return try req.parameters.next(User.self).flatMap {
-            (user) in
+    func unmuteHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+        let requester = try req.auth.require(User.self)
+        let requesterID = try requester.requireID()
+  		guard let parameter = req.parameters.get("user_id"), let userID = UUID(parameter) else {
+            throw Abort(.badRequest, reason: "No user ID in request.")
+        }
+        return User.find(userID, on: req.db)
+			.unwrap(or: Abort(.notFound, reason: "no user found for identifier '\(parameter)'"))
+			.flatMap { (user) in
             // get requester mute barrel
-            return try Barrel.query(on: req)
-                .filter(\.ownerID == requester.requireID())
-                .filter(\.barrelType == .userMute)
+            return Barrel.query(on: req.db)
+                .filter(\.$ownerID == requesterID)
+                .filter(\.$barrelType == .userMute)
                 .first()
                 .unwrap(or: Abort(.internalServerError, reason: "userMute barrel not found"))
-                .flatMap {
-                    (barrel) in
+                .flatMap { (barrel) in
                     // remove from barrel
-                    guard let index = barrel.modelUUIDs.firstIndex(of: try user.requireID()) else {
-                        throw Abort(.badRequest, reason: "user not found in mute list")
+                    guard let index = barrel.modelUUIDs.firstIndex(of: userID) else {
+                        return req.eventLoop.makeFailedFuture(Abort(.badRequest, reason: "user not found in mute list"))
                     }
                     barrel.modelUUIDs.remove(at: index)
-                    return barrel.save(on: req).flatMap {
-                        (savedBarrel) in
+                    return barrel.save(on: req.db).flatMap { (_) in
                         // update cache, return 204
-                        let cache = try req.keyedCache(for: .redis)
-                        let key = try "mutes:\(user.requireID())"
-                        return cache.set(key, to: savedBarrel.modelUUIDs).transform(to: .noContent)
+                    	return req.userCache.updateUser(requesterID).transform(to: .noContent)
                     }
             }
         }
@@ -717,70 +698,58 @@ struct UsersController: RouteCollection {
     ///   - req:The incoming `Request`, which provides the `EventLoop` on which this must run.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: Void.
-    func removeBlockFromCache(by requester: User, of user: User, on req: Request) throws -> Future<Void> {
-        // get keyedCache for later
-        let cache = try req.keyedCache(for: .redis)
+    func removeBlockFromCache(by requester: User, of user: User, on req: Request) throws -> EventLoopFuture<Void> {
         // get all involved IDs
         let requesterUUIDs = requester.allAccountIDs(on: req)
         let blockUUIDs = user.allAccountIDs(on: req)
-        return flatMap(requesterUUIDs, blockUUIDs) {
-            (ruuids, buuids) in
-            // need to talk directly with Redis for .command
-            return req.withPooledConnection(to: .redis) {
-                (redis) in
-                // create lock with 1-second expiry
-                let lockValue = UUID().uuidString
-                let commandArgs = ["blocksLock", RedisData(bulk:"\(lockValue)")]
-                return flatMap(redis.command("SETNX", commandArgs),
-                               redis.expire("blocksLock", after: 1)) {
-                    (_, _) in
-                    var futures: [Future<Void>] = []
+        return requesterUUIDs.and(blockUUIDs).flatMap { (ruuids, buuids) in
+			// create lock with 1-second expiry
+			let lockValue = UUID().uuidString
+			let commandArgs: [RESPValue] = [.simpleString(ByteBuffer(string: "blocksLock")), 
+					.simpleString(ByteBuffer(string: "\(lockValue)"))]
+			return req.redis.send(command: "SETNX", with: commandArgs)
+				.and(req.redis.expire("blocksLock", after: TimeAmount.seconds(1)))
+				.flatMap { (_, _) in
+                    var futures: [EventLoopFuture<Void>] = []
                     // update requester caches
                     for uuid in ruuids {
-                        let redisKey = "rblocks:\(uuid)"
-                        let cacheKey = "blocks:\(uuid)"
-                        let cachedBlocks = redis.get(redisKey, as: [String].self)
-                        let _ = cachedBlocks.map {
-                            (cached) in
+                        let redisKey: RedisKey = "rblocks:\(uuid)"
+                        let cachedBlocks = req.redis.get(redisKey, as: [String].self)
+                        futures.append(cachedBlocks.flatMap { (cached) in
                             var blocks = cached ?? []
                             let removals = buuids.map { "\($0)" }
                             blocks.removeAll(where: { removals.contains($0) })
-                            futures.append(redis.set(redisKey, to: blocks))
-                            // update keyedCache
-                            futures.append(cache.set(cacheKey, to: blocks))
-                        }
+                            return req.redis.set(redisKey, to: blocks)
+                        })
                     }
                     // update blocked user caches
                     for uuid in buuids {
-                        let redisKey = "rblocks:\(uuid)"
-                        let cacheKey = "blocks:\(uuid)"
-                        let cachedBlocks = redis.get(redisKey, as: [String].self)
-                        let _ = cachedBlocks.map {
-                            (cached) in
+                        let redisKey: RedisKey = "rblocks:\(uuid)"
+                        let cachedBlocks = req.redis.get(redisKey, as: [String].self)
+                        futures.append(cachedBlocks.flatMap { (cached) in
                             var blocks = cached ?? []
                             let removals = ruuids.map { "\($0)" }
                             blocks.removeAll(where: { removals.contains($0) })
-                            futures.append(redis.set(redisKey, to: blocks))
-                            // update keyedCache
-                            futures.append(cache.set(cacheKey, to: blocks))
-                        }
+                            return req.redis.set(redisKey, to: blocks)
+                        })
                     }
                     // resolve futures
-                    return futures.flatten(on: req).flatMap {
-                        (_) in
+                    return futures.flatten(on: req.eventLoop).flatMap { (_) in
                         // unlock
-                        return redis.get("blocksLock", as: String.self).flatMap {
-                            (lock) in
+                        return req.redis.get("blocksLock", as: String.self).throwingFlatMap { (lock) in
                             guard let lock = lock, lock == lockValue else {
                                 // hmm... notify of error, just allow lock to expire
                                 throw Abort(.internalServerError, reason: "lock conflict")
                             }
                             // delete lock
-                            return redis.delete("blocksLock").transform(to: ())
+                            return req.redis.delete("blocksLock").flatMap { _ in 
+								return req.userCache.updateUsers(ruuids)
+									.and(req.userCache.updateUsers(buuids))
+									.transform(to: ())
+                            }
                         }
                     }
                 }
-            }
         }
     }
     
@@ -800,68 +769,56 @@ struct UsersController: RouteCollection {
     ///   - req:The incoming `Request`, which provides the `EventLoop` on which this must run.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: Void.
-    func setBlocksCache(by requester: User, of user: User, on req: Request) throws -> Future<Void> {
-        // get keyedCache for later
-        let cache = try req.keyedCache(for: .redis)
+    func setBlocksCache(by requester: User, of user: User, on req: Request) throws -> EventLoopFuture<Void> {
         // get all involved IDs
         let requesterUUIDs = requester.allAccountIDs(on: req)
         let blockUUIDs = user.allAccountIDs(on: req)
-        return flatMap(requesterUUIDs, blockUUIDs) {
-            (ruuids, buuids) in
-            // need to talk directly with Redis for .command
-            return req.withPooledConnection(to: .redis) {
-                (redis) in
-                // create lock with 1-second expiry
-                let lockValue = UUID().uuidString
-                let commandArgs = ["blocksLock", RedisData(bulk:"\(lockValue)")]
-                return flatMap(redis.command("SETNX", commandArgs),
-                               redis.expire("blocksLock", after: 1)) {
-                    (_, _) in
-                    var futures: [Future<Void>] = []
-                    // update requester caches
-                    for uuid in ruuids {
-                        let redisKey = "rblocks:\(uuid)"
-                        let cacheKey = "blocks:\(uuid)"
-                        let cachedBlocks = redis.get(redisKey, as: [String].self)
-                        let _ = cachedBlocks.map {
-                            (cached) in
-                            var blocks = cached ?? []
-                            blocks += buuids.map { "\($0)" }
-                            futures.append(redis.set(redisKey, to: blocks))
-                            // update keyedCache
-                            futures.append(cache.set(cacheKey, to: blocks))
-                        }
-                    }
-                    // update blocked user caches
-                    for uuid in buuids {
-                        let redisKey = "rblocks:\(uuid)"
-                        let cacheKey = "blocks:\(uuid)"
-                        let cachedBlocks = redis.get(redisKey, as: [String].self)
-                        let _ = cachedBlocks.map {
-                            (cached) in
-                            var blocks = cached ?? []
-                            blocks += ruuids.map { "\($0)" }
-                            futures.append(redis.set(redisKey, to: blocks))
-                            // update keyedCache
-                            futures.append(cache.set(cacheKey, to: blocks))
-                        }
-                    }
-                    // resolve futures
-                    return futures.flatten(on: req).flatMap {
-                        (_) in
-                        // unlock
-                        return redis.get("blocksLock", as: String.self).flatMap {
-                            (lock) in
-                            guard let lock = lock, lock == lockValue else {
-                                // hmm... notify of error, just allow lock to expire
-                                throw Abort(.internalServerError, reason: "lock conflict")
-                            }
-                            // delete lock
-                            return redis.delete("blocksLock").transform(to: ())
-                        }
-                    }
-                }
-            }
-        }
-    }
+        return requesterUUIDs.and(blockUUIDs).flatMap { (ruuids, buuids) in
+			// create lock with 1-second expiry
+			let lockValue = UUID().uuidString
+			let commandArgs: [RESPValue] = [.simpleString(ByteBuffer(string: "blocksLock")), 
+					.simpleString(ByteBuffer(string: "\(lockValue)"))]
+			return req.redis.send(command: "SETNX", with: commandArgs)
+				.and(req.redis.expire("blocksLock", after: TimeAmount.seconds(1)))
+				.flatMap { (_, _) in
+				var futures: [EventLoopFuture<Void>] = []
+				// update requester caches
+				for uuid in ruuids {
+					let redisKey: RedisKey = "rblocks:\(uuid)"
+					let cachedBlocks = req.redis.get(redisKey, as: [String].self)
+					futures.append(cachedBlocks.flatMap { (cached) in
+						var blocks = cached ?? []
+						blocks += buuids.map { "\($0)" }
+						return req.redis.set(redisKey, to: blocks)
+					})
+				}
+				// update blocked user caches
+				for uuid in buuids {
+					let redisKey: RedisKey = "rblocks:\(uuid)"
+					let cachedBlocks = req.redis.get(redisKey, as: [String].self)
+					futures.append(cachedBlocks.flatMap { (cached) in
+						var blocks = cached ?? []
+						blocks += ruuids.map { "\($0)" }
+						return req.redis.set(redisKey, to: blocks)
+					})
+				}
+				// resolve futures
+				return futures.flatten(on: req.eventLoop).flatMap { (_) in
+					// unlock
+					return req.redis.get("blocksLock", as: String.self).throwingFlatMap { (lock) in
+						guard let lock = lock, lock == lockValue else {
+							// hmm... notify of error, just allow lock to expire
+							throw Abort(.internalServerError, reason: "lock conflict")
+						}
+						// delete lock
+						return req.redis.delete("blocksLock").flatMap { _ in
+							return req.userCache.updateUsers(ruuids)
+								.and(req.userCache.updateUsers(buuids))
+								.transform(to: ())
+						}
+					}
+				}
+			}
+		}
+	}
 }

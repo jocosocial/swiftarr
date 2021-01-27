@@ -1,10 +1,11 @@
-import FluentPostgreSQL
+import Vapor
+import Fluent
 
 /// All API endpoints are protected by a minimum user access level.
 /// This `enum` structure is ordered and should *never* be modified when
 /// working with stored production `User` data – bad things will happen.
 
-enum UserAccessLevel: UInt8, PostgreSQLRawEnum {
+enum UserAccessLevel: UInt8, Codable {
     /// A user account that has not yet been activated. [read-only, limited]
     case unverified
     /// A user account that has been banned. [read-only, limited]
@@ -22,5 +23,10 @@ enum UserAccessLevel: UInt8, PostgreSQLRawEnum {
     case tho
     /// An Administrator account, unrestricted access.
     case admin
+    
+    /// Ensures that the access level of self grants at least the access level given in `level`.
+    /// That is, UserAccessLevel.admin.hasAccess(.verified) returns true, while moderator.hasAccess(.admin) returns false.
+    func hasAccess(_ level: UserAccessLevel) -> Bool {
+    	return self.rawValue >= level.rawValue
+    }
 }
-

@@ -1,36 +1,28 @@
-import FluentPostgreSQL
 import Vapor
-import Authentication
 import Redis
+import Fluent
+import FluentPostgresDriver
 
 /// Called before your application initializes.
-public func configure(_ config: inout Config, _ env: inout Environment, _ services: inout Services) throws {
+public func configure(_ app: Application) throws {
     
+	// Add lifecycle handler.
+	app.lifecycle.use(Application.UserCacheStartup())
+
     // run API on port 8081 by default and set a 10MB hard limit on file size
     let port = Int(Environment.get("PORT") ?? "8081")!
-    services.register {
-        container -> NIOServerConfig in
-        .default(port: port, maxBodySize: 10_000_000)
-    }
-    
-    // register providers first
-    try services.register(FluentPostgreSQLProvider())
-    try services.register(AuthenticationProvider())
-    try services.register(RedisProvider())
-    
+	app.http.server.configuration.port = port
+	app.routes.defaultMaxBodySize = "10mb"
+        
     // register routes to the router
-    let router = EngineRouter.default()
-    try routes(router)
-    services.register(router, as: Router.self)
+//    let router = EngineRouter.default()
+    try routes(app)
+//    services.register(router, as: Router.self)
     
     // register middleware
-    var middlewares = MiddlewareConfig()
-    //middlewares.use(FileMiddleware.self) // serves files from `Public/` directory
-    middlewares.use(ErrorMiddleware.self) // catches errors and converts to HTTP response
-    services.register(middlewares)
+    //app.middleware.use(FileMiddleware.self) // serves files from `Public/` directory
     
     // use iso8601ms for dates
-    var contentConfig = ContentConfig.default()
     let jsonEncoder = JSONEncoder()
     let jsonDecoder = JSONDecoder()
     if #available(OSX 10.13, *) {
@@ -39,109 +31,96 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     } else {
         // Fallback on earlier versions
     }
-    contentConfig.use(encoder: jsonEncoder, for: .json)
-    contentConfig.use(decoder: jsonDecoder, for: .json)
-    services.register(contentConfig)
+	ContentConfiguration.global.use(encoder: jsonEncoder, for: .json)
+    ContentConfiguration.global.use(decoder: jsonDecoder, for: .json)
     
     // configure PostgreSQL connection
     // note: environment variable nomenclature is vapor.cloud compatible
-    let postgresConfig: PostgreSQLDatabaseConfig
     // support for Heroku environment
     if let postgresURL = Environment.get("DATABASE_URL") {
-        postgresConfig = PostgreSQLDatabaseConfig(url: postgresURL)!
-    } else {
+		try app.databases.use(.postgres(url: postgresURL), as: .psql)
+    } else 
+    {
         // otherwise
         let postgresHostname = Environment.get("DATABASE_HOSTNAME") ?? "localhost"
         let postgresUser = Environment.get("DATABASE_USER") ?? "swiftarr"
         let postgresPassword = Environment.get("DATABASE_PASSWORD") ?? "password"
         let postgresDB: String
         let postgresPort: Int
-        if (env == .testing) {
+        if (app.environment == .testing) {
             postgresDB = "swiftarr-test"
             postgresPort = Int(Environment.get("DATABASE_PORT") ?? "5433")!
         } else {
             postgresDB = Environment.get("DATABASE_DB") ?? "swiftarr"
             postgresPort = 5432
         }
-        postgresConfig = PostgreSQLDatabaseConfig(
-            hostname: postgresHostname,
-            port: postgresPort,
-            username: postgresUser,
-            database: postgresDB,
-            password: postgresPassword,
-            transport: .cleartext
-        )
+		app.databases.use(.postgres(hostname: postgresHostname, port: postgresPort, username: postgresUser, 
+				password: postgresPassword, database: postgresDB), as: .psql)
     }
-    let postgres = PostgreSQLDatabase(config: postgresConfig)
+//    let postgres = PostgreSQLDatabase(config: postgresConfig)
     
     // configure Redis connection
-    var redisConfig = RedisClientConfig()
     // support for Heroku environment
-    if let redisString = Environment.get("REDIS_URL"),
-        let redisURL = URL(string: redisString) {
-        redisConfig = RedisClientConfig(url: redisURL)
-    } else {
+    if let redisString = Environment.get("REDIS_URL"), let redisURL = URL(string: redisString) {
+		app.redis.configuration = try RedisConfiguration(url: redisURL)
+    } else 
+    {
         // otherwise
-        let redisHostname: String
-        let redisPort: Int
-        if (env == .testing) {
-            redisHostname = Environment.get("REDIS_HOSTNAME") ?? "localhost"
-            redisPort = Int(Environment.get("REDIS_PORT") ?? "6380")!
-        } else {
-            redisHostname = Environment.get("REDIS_HOSTNAME") ?? "localhost"
-            redisPort = 6379
-        }
-        redisConfig.hostname = redisHostname
-        redisConfig.port = redisPort
-    }
-    let redis = try RedisDatabase(config: redisConfig)
-    
-    // register databases
-    var databases = DatabasesConfig()
-    databases.add(database: postgres, as: .psql)
-    databases.add(database: redis, as: .redis)
-    services.register(databases)
-    
-    // use Redis for KeyedCache
-    services.register(KeyedCache.self) {
-        container in
-        try container.keyedCache(for: .redis)
+        let redisHostname = Environment.get("REDIS_HOSTNAME") ?? "localhost"
+        let redisPort = (app.environment == .testing) ? Int(Environment.get("REDIS_PORT") ?? "6380")! : 6379
+		app.redis.configuration = try RedisConfiguration(hostname: redisHostname, port: redisPort)
     }
     
-    // configure migrations
-    var migrations = MigrationConfig()
-    migrations.add(model: User.self, database: .psql)
-    migrations.add(model: UserProfile.self, database: .psql)
-    migrations.add(model: Token.self, database: .psql)
-    migrations.add(model: RegistrationCode.self, database: .psql)
-    migrations.add(model: ProfileEdit.self, database: .psql)
-    migrations.add(model: UserNote.self, database: .psql)
-    migrations.add(model: Barrel.self, database: .psql)
-    migrations.add(model: Report.self, database: .psql)
-    migrations.add(model: Event.self, database: .psql)
-    migrations.add(model: Category.self, database: .psql)
-    migrations.add(model: Forum.self, database: .psql)
-    migrations.add(model: ForumPost.self, database: .psql)
-    migrations.add(model: ForumEdit.self, database: .psql)
-    migrations.add(model: PostLikes.self, database: .psql)
-    migrations.add(model: Twarrt.self, database: .psql)
-    migrations.add(model: TwarrtEdit.self, database: .psql)
-    migrations.add(model: TwarrtLikes.self, database: .psql)
-    migrations.add(model: FezPost.self, database: .psql)
-    migrations.add(migration: AdminUser.self, database: .psql)
-    migrations.add(migration: ClientUsers.self, database: .psql)
-    migrations.add(migration: RegistrationCodes.self, database: .psql)
-    migrations.add(migration: Events.self, database: .psql)
-    migrations.add(migration: Categories.self, database: .psql)
-    migrations.add(migration: Forums.self, database: .psql)
-    migrations.add(migration: EventForums.self, database: .psql)
-    if (env == .testing || env == .development) {
-        migrations.add(migration: TestUsers.self, database: .psql)
+//    // register databases
+//    var databases = DatabasesConfig()
+//    databases.add(database: postgres, as: .psql)
+//    databases.add(database: redis, as: .redis)
+//    app.services.register(databases)
+//    
+//    // use Redis for KeyedCache
+//    app.services.register(KeyedCache.self) {
+//        container in
+//        try container.keyedCache(for: .redis)
+//    }
+    
+    // configure migrations. Schema-creation migrations first. These create an initial database schema
+    // and do not add any data to the db. These need to be ordered such that referred-to tables
+    // come before referrers.
+	app.migrations.add(CreateUserSchema(), to: .psql)
+	app.migrations.add(CreateUserProfileSchema(), to: .psql)
+	app.migrations.add(CreateTokenSchema(), to: .psql)
+	app.migrations.add(CreateRegistrationCodeSchema(), to: .psql)
+	app.migrations.add(CreateProfileEditSchema(), to: .psql)
+	app.migrations.add(CreateUserNoteSchema(), to: .psql)
+	app.migrations.add(CreateBarrelSchema(), to: .psql)
+	app.migrations.add(CreateReportSchema(), to: .psql)
+	app.migrations.add(CreateCategorySchema(), to: .psql)
+	app.migrations.add(CreateForumSchema(), to: .psql)
+	app.migrations.add(CreateForumPostSchema(), to: .psql)
+	app.migrations.add(CreateForumEditSchema(), to: .psql)
+	app.migrations.add(CreatePostLikesSchema(), to: .psql)
+	app.migrations.add(CreateEventSchema(), to: .psql)
+	app.migrations.add(CreateTwarrtSchema(), to: .psql)
+	app.migrations.add(CreateTwarrtEditSchema(), to: .psql)
+	app.migrations.add(CreateTwarrtLikesSchema(), to: .psql)
+	app.migrations.add(CreateFezPostSchema(), to: .psql)
+	
+	// Second, migrations that seed the db with initial data
+    app.migrations.add(CreateAdminUser(), to: .psql)
+    app.migrations.add(CreateClientUsers(), to: .psql)
+    app.migrations.add(CreateRegistrationCodes(), to: .psql)
+    app.migrations.add(CreateEvents(), to: .psql)
+    app.migrations.add(CreateCategories(), to: .psql)
+    app.migrations.add(CreateForums(), to: .psql)
+    app.migrations.add(CreateEventForums(), to: .psql)
+    if (app.environment == .testing || app.environment == .development) {
+        app.migrations.add(CreateTestUsers(), to: .psql)
     }
-    services.register(migrations)
+    
+    app.migrations.add(CreateTestData(), to: .psql)
     
     // add Fluent commands for CLI migration and revert
-    var commandConfig = CommandConfig.default()
-    commandConfig.useFluentCommands()
-    services.register(commandConfig)
+//    var commandConfig = CommandConfig.default()
+//    commandConfig.useFluentCommands()
+//    services.register(commandConfig)
 }

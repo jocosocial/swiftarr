@@ -1,67 +1,5 @@
 import Vapor
-import FluentPostgreSQL
-
-// model uses Int as primary key
-extension ForumPost: PostgreSQLModel {}
-
-// model can be passed as HTTP body data
-extension ForumPost: Content {}
-
-// model can be used as endpoint parameter
-extension ForumPost: Parameter {}
-
-// MARK: - Custom Migration
-
-extension ForumPost: Migration {
-    /// Required by `Migration` protocol. Creates the table, with foreign key  constraint
-    /// to `Forum`.
-    ///
-    /// - Parameter connection: The connection to the database, usually the Request.
-    /// - Returns: Void.
-    static func prepare(on connection: PostgreSQLConnection) -> Future<Void> {
-        return Database.create(self, on: connection) {
-            (builder) in
-            try addProperties(to: builder)
-            // foreign key constraint to Forum
-            builder.reference(from: \.forumID, to: \Forum.id)
-        }
-    }
-}
-
-// MARK: - Timestamping Conformance
-
-extension ForumPost {
-    /// Required key for `\.createdAt` functionality.
-    static var createdAtKey: TimestampKey? { return \.createdAt }
-    /// Required key for `\.updatedAt` functionality.
-    static var updatedAtKey: TimestampKey? { return \.updatedAt }
-    /// Required key for `\.deletedAt` soft delete functionality.
-    static var deletedAtKey: TimestampKey? { return \.deletedAt }
-}
-
-// MARK: - Relations
-
-extension ForumPost {
-    /// The parent `User`  who authored the post.
-    var author: Parent<ForumPost, User> {
-        return parent(\.authorID)
-    }
-    
-    /// The child `ForumEdit` accountability records of the post.
-    var edits: Children<ForumPost, ForumEdit> {
-        return children(\.postID)
-    }
-
-    /// The parent `Forum` of the post.
-    var forum: Parent<ForumPost, Forum> {
-        return parent(\.forumID)
-    }
-    
-    /// The sibling `User`s who have "liked" the post.
-    var likes: Siblings<ForumPost, User, PostLikes> {
-        return siblings()
-    }
-}
+import Fluent
 
 // MARK: - Functions
 
@@ -72,7 +10,7 @@ extension ForumPost {
         return try PostData(
             postID: self.requireID(),
             createdAt: self.createdAt ?? Date(),
-            authorID: self.authorID,
+            authorID: self.author.requireID(),
             text: self.isQuarantined ? "This post is under moderator review." : self.text,
             image: self.isQuarantined ? "" : self.image,
             isBookmarked: bookmarked,
@@ -82,12 +20,12 @@ extension ForumPost {
     }
 }
 
-extension Future where T: ForumPost {
+extension EventLoopFuture where Value: ForumPost {
     /// Converts a `Future<ForumPost>` to a `Future<PostData>`. This extension provides
     /// the convenience of simply using `post.convertToData()` and allowing the compiler to
     /// choose the appropriate version for the context.
-    func convertToData(bookmarked: Bool, userLike: LikeType?, likeCount: Int) -> Future<PostData> {
-        return self.map {
+    func convertToData(bookmarked: Bool, userLike: LikeType?, likeCount: Int) -> EventLoopFuture<PostData> {
+        return self.flatMapThrowing {
             (forumPost) in
             return try forumPost.convertToData(
                 bookmarked: bookmarked,
@@ -98,3 +36,67 @@ extension Future where T: ForumPost {
     }
 }
 
+// posts can be bookmarked
+extension ForumPost: UserBookmarkable {
+    /// The barrel type for `ForumPost` bookmarking.
+	var bookmarkBarrelType: BarrelType {
+        return .bookmarkedPost
+    }
+    
+    func bookmarkIDString() throws -> String {
+    	return try String(self.requireID())
+    }
+}
+
+// posts can be filtered by author and content
+extension ForumPost: ContentFilterable {
+    /// Checks if a `ForumPost` contains any of the provided array of muting strings, returning true if it does
+    ///
+    /// - Parameters:
+    ///   - mutewords: The list of strings on which to filter the post.
+    /// - Returns: The provided post, or `nil` if the post contains a muting string.
+    func containsMutewords(using mutewords: [String]) -> Bool {
+        for word in mutewords {
+            if self.text.range(of: word, options: .caseInsensitive) != nil {
+                return true
+            }
+        }
+        return false
+    }
+    
+    /// Checks if a `Twarrt` contains any of the provided array of muting strings, returning
+    /// either the original twarrt or `nil` if there is a match.
+    ///
+    /// - Parameters:
+    ///   - post: The `Event` to filter.
+    ///   - mutewords: The list of strings on which to filter the post.
+    ///   - req: The incoming `Request` on whose event loop this needs to run.
+    /// - Returns: The provided post, or `nil` if the post contains a muting string.
+    func filterMutewords(using mutewords: [String]?) -> ForumPost? {
+        if let mutewords = mutewords {
+			for word in mutewords {
+				if self.text.range(of: word, options: .caseInsensitive) != nil {
+					return nil
+				}
+			}
+		}
+        return self
+    }
+    
+}
+
+extension ForumPost: Reportable {
+    /// The barrel type for `ForumPost` bookmarking.
+	var reportType: ReportType {
+        return .forumPost
+    }
+    
+	func checkAutoQuarantine(reportCount: Int, on req: Request) -> EventLoopFuture<Void> {
+		// quarantine if threshold is met
+		if reportCount >= Settings.shared.postAutoQuarantineThreshold && !self.isReviewed {
+			self.isQuarantined = true
+			return self.save(on: req.db)
+		}
+		return req.eventLoop.future()
+	}
+}

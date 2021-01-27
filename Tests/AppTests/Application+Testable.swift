@@ -1,9 +1,9 @@
 import Vapor
 @testable import App
-import FluentPostgreSQL
-import Authentication
 
-extension Application {
+
+
+≈ {
     
     /// Creates an `@testable Application` object with `Environment` argument support.
     ///

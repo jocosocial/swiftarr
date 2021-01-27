@@ -1,7 +1,7 @@
 @testable import App
 import Vapor
 import XCTest
-import FluentPostgreSQL
+
 
 final class UserTests: XCTestCase {
     
@@ -767,8 +767,8 @@ final class UserTests: XCTestCase {
 
         // test jpg upload
         var imageFile = "test-image.jpg"
-        let directoryConfig = DirectoryConfig.detect()
-        var imagePath = directoryConfig.workDir.appending("seeds/").appending(imageFile)
+        let directoryConfig = DirectoryConfiguration.detect()
+        var imagePath = directoryConfig.workingDirectory.appending("seeds/").appending(imageFile)
         var data = FileManager.default.contents(atPath: imagePath)
         var imageUploadData = ImageUploadData(filename: imageFile, image: data!)
         var uploadedImageData = try app.getResult(
@@ -782,7 +782,7 @@ final class UserTests: XCTestCase {
         
         // test png upload
         imageFile = "test-image.png"
-        imagePath = directoryConfig.workDir.appending("seeds/").appending(imageFile)
+        imagePath = directoryConfig.workingDirectory.appending("seeds/").appending(imageFile)
         data = FileManager.default.contents(atPath: imagePath)
         imageUploadData = ImageUploadData(filename: imageFile, image: data!)
         uploadedImageData = try app.getResult(
@@ -796,7 +796,7 @@ final class UserTests: XCTestCase {
         
         // test gif upload
         imageFile = "test-image.gif"
-        imagePath = directoryConfig.workDir.appending("seeds/").appending(imageFile)
+        imagePath = directoryConfig.workingDirectory.appending("seeds/").appending(imageFile)
         data = FileManager.default.contents(atPath: imagePath)
         imageUploadData = ImageUploadData(filename: imageFile, image: data!)
         uploadedImageData = try app.getResult(

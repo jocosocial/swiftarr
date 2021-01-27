@@ -1,29 +1,43 @@
-import FluentPostgreSQL
 import Foundation
+import Fluent
 
 /// A `Pivot` holding a siblings relation between `User` and `ForumPost`.
 
-final class PostLikes: PostgreSQLUUIDPivot, ModifiablePivot {
-     typealias Database = PostgreSQLDatabase
+final class PostLikes: Model {
+    static let schema = "post+likes"
+
     // MARK: Properties
     
     /// The ID of the pivot.
-    var id: UUID?
+    @ID(key: .id) var id: UUID?
     
     /// The type of like reaction. Needs to be optional to conform to `ModifiablePivot`'s
     /// required `init(_:_:)`.
-    var likeType: LikeType?
+    @Field(key: "liketype") var likeType: LikeType?
     
+    // MARK: Relationships
+    
+    /// The associated `User` who likes this.
+	@Parent(key: "user") var user: User
+
+    /// The associated `ForumPost` that was liked.
+    @Parent(key: "forumPost") var post: ForumPost
+
     // MARK: Initialization
     
+    // Used by Fluent
+ 	init() { }
+ 	
     /// Initializes a new PostLikes pivot.
     ///
     /// - Parameters:
     ///   - user: The left hand `User` model.
     ///   - post: The right hand `ForumPost` model.
     init(_ user: User, _ post: ForumPost) throws {
-        self.userID = try user.requireID()
-        self.postID = try post.requireID()
+        self.$user.id = try user.requireID()
+        self.$user.value = user
+        self.$post.id = try post.requireID()
+        self.$post.value = post
     }
     
     /// Convenience initializer to provide `.likeType` initializaion.
@@ -33,27 +47,7 @@ final class PostLikes: PostgreSQLUUIDPivot, ModifiablePivot {
     ///   - post: The right hand `ForumPost` model.
     ///   - likeType: The type of like reaction for this pivot.
     convenience init(_ user: User, _ post: ForumPost, likeType: LikeType) throws {
-        try self.init(user, post)
+		try self.init(user, post)
         self.likeType = likeType
     }
-    
-    // MARK: ModifiablePivot Conformance
-    
-    /// The associated identifier type for `User`.
-    var userID: User.ID
-    /// The associated identifier type for `ForumPost`.
-    var postID: ForumPost.ID
-    
-    typealias Left = User
-    typealias Right = ForumPost
-    
-    /// Required key for `Pivot` protocol.
-    static let leftIDKey: LeftIDKey = \.userID
-    /// Required key for `Pivot` protocol.
-    static let rightIDKey: RightIDKey = \.postID
-}
-
-extension PostLikes {
-    // postgres needs a unique name
-    static var entity = "PostLikes"
 }

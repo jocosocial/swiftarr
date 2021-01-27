@@ -1,39 +1,46 @@
 import Vapor
-import FluentPostgreSQL
+import Fluent
+
 
 /// An individual post within a `FriendlyFez` discussion. A FezPost must contain
 /// either text content or image content, or both.
 
-final class FezPost: Codable {
-     typealias Database = PostgreSQLDatabase
-    // MARK: Properties
+final class FezPost: Model {
+	static let schema = "fezposts"
+	
+	// MARK: Properties
     
     /// The post's ID.
-    var id: Int?
-    
-    /// The ID of the `FriendlyFez` to which the post belongs.
-    var fezID: UUID
-    
-    /// The ID of the post's author.
-    var authorID: UUID
+    @ID(key: .id) var id: Int?
     
     /// The text content of the post.
-    var text: String
+    @Field(key: "text") var text: String
     
     /// The filename of any image content of the post.
-    var image: String
+    @Field(key: "image") var image: String
     
     /// Timestamp of the model's creation, set automatically.
-    var createdAt: Date?
+	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
     
     /// Timestamp of the model's last update, set automatically.
-    var updatedAt: Date?
+    @Timestamp(key: "updated_at", on: .update) var updatedAt: Date?
     
     /// Timestamp of the model's soft-deletion, set automatically.
-    var deletedAt: Date?
+    @Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
     
+	// MARK: Relations
+    
+    /// The `FriendlyFez` type `Barrel` to which the post belongs.
+    @Parent(key: "friendly_fez") var fez: Barrel
+    
+    /// The post's author.
+    @Parent(key: "author") var author: User
+
     // MARK: Initialization
     
+    // Used by Fluent
+ 	init() { }
+ 	
     /// Initializes a new FezPost.
     ///
     /// - Parameters:
@@ -42,13 +49,14 @@ final class FezPost: Codable {
     ///   - text: The text content of the post.
     ///   - image: The filename of any image content of the post.
     init(
-        fezID: UUID,
-        authorID: UUID,
+        fez: Barrel,
+        author: User,
         text: String,
         image: String = ""
-    ) {
-        self.fezID = fezID
-        self.authorID = authorID
+    ) throws {
+        self.$fez.id = try fez.requireID()
+        self.$fez.value = fez
+        self.author = author
         self.text = text
         self.image = image
     }

@@ -1,29 +1,43 @@
-import FluentPostgreSQL
 import Foundation
+import Fluent
 
 /// A `Pivot` holding a sibllings relation between `User` and `Twarrt`.
 
-final class TwarrtLikes: PostgreSQLUUIDPivot, ModifiablePivot {
-     typealias Database = PostgreSQLDatabase
+final class TwarrtLikes: Model {
+    static let schema = "twarrt+likes"
+
     // MARK: Properties
     
     /// The ID of the pivot.
-    var id: UUID?
+    @ID(key: .id) var id: UUID?
     
     /// The type of like reaction. Needs to be optional to conform to `ModifiablePivot`'s
     /// required `init(_:_:)`.
-    var likeType: LikeType?
+    @Field(key: "liketype") var likeType: LikeType?
     
+    // MARK: Relations
+    
+    /// The associated `User` who likes this.
+	@Parent(key: "user") var user: User
+
+    /// The associated `Twarrt` that was liked.
+    @Parent(key: "twarrt") var twarrt: Twarrt
+
     // MARK: Initialization
     
+    // Used by Fluent
+ 	init() { }
+ 	
     /// Initializes a new TwarrtLikes pivot.
     ///
     /// - Parameters:
     ///   - user: The left hand `User` model.
     ///   - twarrt: The right hand `Twarrt` model.
-    init(_ user: User, _ twarrt: Twarrt) throws {
-        self.userID = try user.requireID()
-        self.twarrtID = try twarrt.requireID()
+    init(_ user: User, _ twarrt: Twarrt) throws{
+        self.$user.id = try user.requireID()
+        self.$user.value = user
+        self.$twarrt.id = try twarrt.requireID()
+        self.$twarrt.value = twarrt
     }
     
     /// Convenience initializer to provide `.likeType` initialization.
@@ -36,24 +50,4 @@ final class TwarrtLikes: PostgreSQLUUIDPivot, ModifiablePivot {
         try self.init(user, twarrt)
         self.likeType = likeType
     }
-    
-    // MARK: ModifiablePivot Conformance
-    
-    /// The associated identifier type for `User`.
-    var userID: User.ID
-    /// The associated identifier type for `Twarrt`.
-    var twarrtID: Twarrt.ID
-    
-    typealias Left = User
-    typealias Right = Twarrt
-    
-    /// Required key for `Pivot` protocol.
-    static let leftIDKey: LeftIDKey = \.userID
-    /// Required key for `Pivot` protocol.
-    static let rightIDKey: RightIDKey = \.twarrtID
-}
-
-extension TwarrtLikes {
-    // postgres needs a unique name
-    static var entity = "TwarrtLikes"
 }

@@ -1,6 +1,7 @@
 import Foundation
 import Vapor
-import FluentPostgreSQL
+import Fluent
+
 
 /// A `UserNote` is intended as a free-form test field that will appear on a `UserProfile`,
 /// in which the viewing `User` can make notes about the profile's user.
@@ -9,39 +10,46 @@ import FluentPostgreSQL
 /// user's use only. In other words, different users viewing the same profile will each see
 /// their own viewer-specific `UserNote` text.
 
-final class UserNote: Codable {
-     typealias Database = PostgreSQLDatabase
+final class UserNote: Model {
+	static let schema = "usernotes"
+
     // MARK: Properties
     
     /// The note's ID, provisioned automatically.
-    var id: UUID?
-    
-    /// The ID of the `User` owning the note.
-    var userID: UUID
-    
-    /// The ID of the `UserProfile` to which the note is associated.
-    var profileID: UUID
+    @ID(key: .id) var id: UUID?
     
     /// The text of the note.
-    var note: String
+    @Field(key: "note") var note: String
     
     /// Timestamp of the model's creation, set automatically.
-    var createdAt: Date?
+	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
     
-    /// Timestatmp of the model's last update, set automatically.
-    var updatedAt: Date?
+    /// Timestamp of the model's last update, set automatically.
+    @Timestamp(key: "updated_at", on: .update) var updatedAt: Date?
+    
+	// MARK: Relations
+
+    /// The `User` owning the note.
+    @Parent(key: "author") var author: User
+    
+    /// The `UserProfile` to which the note is associated.
+    @Parent(key: "profile") var profile: UserProfile
     
     // MARK: Initialization
     
+    // Used by Fluent
+ 	init() { }
+ 	
     /// Creates a new UserNote.
     ///
     /// - Parameters:
-    ///   - userID: The ID of the note's owner.
-    ///   - profileID: The ID of the associated profile.
+    ///   - author: The note's author.
+    ///   - profile: The associated `UserProfile`.
     ///   - note: The text of the note.
-    init(userID: UUID, profileID: UUID, note: String = "") {
-        self.userID = userID
-        self.profileID = profileID
+    init(author: User, profile: UserProfile, note: String = "") throws {
+        self.$author.id = try author.requireID()
+        self.$author.value = author
+        self.profile = profile
         self.note = note
     }
 }

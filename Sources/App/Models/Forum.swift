@@ -1,5 +1,6 @@
 import Vapor
-import FluentPostgreSQL
+import Fluent
+
 
 /// A collection of `ForumPost`s on a single topic. Only the `.creatorID` user
 /// or one with .accessLevel of `.moderator` or above can edit a forum's title
@@ -8,36 +9,45 @@ import FluentPostgreSQL
 /// - Note: A locked state (`.isLocked` == true) means that the forum is currently
 ///   read-only and is distinct from a forum's removal by soft-deletion.
 
-final class Forum: Codable {
-     typealias Database = PostgreSQLDatabase
+final class Forum: Model {
+	static let schema = "forums"
+
     // MARK: Properties
     
     /// The forum's ID.
-    var id: UUID?
+    @ID(key: .id) var id: UUID?
     
     /// The title of the forum.
-    var title: String
-    
-    /// The ID of the forum's category.
-    var categoryID: UUID
-    
-    /// The ID of the user who "owns" the forum.
-    var creatorID: UUID
-    
+    @Field(key: "title") var title: String
+        
     /// Whether the forum is in an administratively locked state.
-    var isLocked: Bool
+    @Field(key: "isLocked") var isLocked: Bool
     
     /// Timestamp of the model's creation, set automatically.
-    var createdAt: Date?
+	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
     
     /// Timestamp of the model's last update, set automatically.
-    var updatedAt: Date?
+    @Timestamp(key: "updated_at", on: .update) var updatedAt: Date?
     
     /// Timestamp of the model's soft-deletion, set automatically.
-    var deletedAt: Date?
+    @Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
     
+	// MARK: Relations
+    
+    /// The parent `Category` of the forum.
+	@Parent(key: "category_id") var category: Category
+    
+    /// The parent `User` who created the forum.
+	@Parent(key: "creator_id") var creator: User
+    
+    /// The child `ForumPost`s within the forum.
+    @Children(for: \.$forum) var posts: [ForumPost]
+
     // MARK: Initialization
     
+    // Used by Fluent
+ 	init() { }
+ 	
     /// Initializes a new Forum.
     ///
     /// - Parameters:
@@ -47,13 +57,15 @@ final class Forum: Codable {
     ///   - isLocked: Whether the forum is administratively locked.
     init(
         title: String,
-        categoryID: UUID,
-        creatorID: UUID,
+        category: Category,
+        creator: User,
         isLocked: Bool = false
-    ) {
+    ) throws {
         self.title = title
-        self.categoryID = categoryID
-        self.creatorID = creatorID
+        self.$category.id = try category.requireID()
+        self.$category.value = category
+        self.$creator.id = try creator.requireID()
+        self.$creator.value = creator
         self.isLocked = isLocked
     }
 }

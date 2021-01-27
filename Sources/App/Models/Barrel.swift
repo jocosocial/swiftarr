@@ -1,6 +1,7 @@
 import Vapor
 import Foundation
-import FluentPostgreSQL
+import Fluent
+
 
 /// A `Barrel` is typed, named, wrapper for lists. It can also serve as more general purpose
 /// storage container for any information that can be expressed with strings.
@@ -36,39 +37,43 @@ import FluentPostgreSQL
 ///   string pairs, such as "startTime":["2019-11-21T05:30:00Z"] or "maximumCapacity":["8"].
 ///   Not pretty, but workable for our purposes.
 
-final class Barrel: Codable {
-     typealias Database = PostgreSQLDatabase
+final class Barrel: Model {
+	static let schema = "barrels"
+	
     // MARK: Properties
     
     /// The barrel's ID.
-    var id: UUID?
+    @ID(key: .id) var id: UUID?
     
     /// The ID of the owning entity, which must be a UUID Model.
-    var ownerID: UUID
+    @Field(key: "ownerID") var ownerID: UUID
     
     /// The type of information the barrel holds.
-    var barrelType: BarrelType
+    @Field(key: "barrelType") var barrelType: BarrelType
     
     /// The name of the barrel.
-    var name: String
+    @Field(key: "name") var name: String
 
     /// The IDs of UUID-model barrel contents.
-    var modelUUIDs: [UUID]
+    @Field(key: "modelUUIDs") var modelUUIDs: [UUID]
     
     /// A dictionary to hold string type barrel contents.
-    var userInfo: [String: [String]]
+    @Field(key: "userInfo") var userInfo: [String: [String]]
     
     /// Timestamp of the model's creation, set automatically.
-    var createdAt: Date?
+    @Timestamp(key: "created_at", on: .create) var createdAt: Date?
     
     /// Timestamp of the model's last update, set automatically.
-    var updatedAt: Date?
+    @Timestamp(key: "updated_at", on: .update) var updatedAt: Date?
     
     /// Timestamp of the model's soft-deletion, set automatically.
-    var deletedAt: Date?
+    @Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
 
     // MARK: Initialization
     
+    // Used by Fluent
+ 	init() { }
+ 	
     /// Initializes a new Barrel.
     ///
     /// - Parameters:
@@ -89,5 +94,18 @@ final class Barrel: Codable {
         self.name = name
         self.modelUUIDs = modelUUIDs
         self.userInfo = userInfo
+    }
+    
+    func contains(_ value: UUID) -> Bool {
+    	return modelUUIDs.contains(value)
+    }
+    
+    /// Tests if a barrel contains a reference to a model object. Does not check whether the model object is the right
+    /// kind for this barrel. Does not throw if the model has no ID; returns false instead.
+	func contains<T: Model>(_ model: T) -> Bool where T.IDValue == UUID {
+    	if let modelID: UUID = model.id {
+    		return modelUUIDs.contains(modelID)
+    	}
+    	return false
     }
 }

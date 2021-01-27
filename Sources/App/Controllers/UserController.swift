@@ -1,7 +1,7 @@
 import Vapor
 import Crypto
 import FluentSQL
-import Redis
+import Fluent
 
 /// The collection of `/api/v3/user/*` route endpoints and handler functions related
 /// to a user's own data.
@@ -97,15 +97,15 @@ struct UserController: RouteCollection {
     // MARK: RouteCollection Conformance
     
     /// Required. Registers routes to the incoming router.
-    func boot(router: Router) throws {
+    func boot(routes: RoutesBuilder) throws {
         
         // convenience route group for all /api/v3/user endpoints
-        let userRoutes = router.grouped("api", "v3", "user")
+        let userRoutes = routes.grouped("api", "v3", "user")
         
         // instantiate authentication middleware
-        let basicAuthMiddleware = User.basicAuthMiddleware(using: BCryptDigest())
-        let guardAuthMiddleware = User.guardAuthMiddleware()
-        let tokenAuthMiddleware = User.tokenAuthMiddleware()
+        let basicAuthMiddleware = User.authenticator()
+        let guardAuthMiddleware = User.guardMiddleware()
+        let tokenAuthMiddleware = Token.authenticator()
         
         // set protected route groups
         let basicAuthGroup = userRoutes.grouped([basicAuthMiddleware, guardAuthMiddleware])
@@ -113,41 +113,41 @@ struct UserController: RouteCollection {
         let tokenAuthGroup = userRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
         
         // open access endpoints
-        userRoutes.post(UserCreateData.self, at: "create", use: createHandler)
+        userRoutes.post("create", use: createHandler)
         
         // endpoints available only when not logged in
-        basicAuthGroup.post(UserVerifyData.self, at: "verify", use: verifyHandler)
+        basicAuthGroup.post("verify", use: verifyHandler)
         
         // endpoints available whether logged in or out
-        sharedAuthGroup.post(ImageUploadData.self, at: "image", use: imageHandler)
+        sharedAuthGroup.post("image", use: imageHandler)
         sharedAuthGroup.post("image", "remove", use: imageRemoveHandler)
         sharedAuthGroup.get("profile", use: profileHandler)
-        sharedAuthGroup.post(ProfileEditData.self, at: "profile", use: profileUpdateHandler)
+        sharedAuthGroup.post("profile", use: profileUpdateHandler)
         sharedAuthGroup.get("whoami", use: whoamiHandler)
         
         // endpoints available only when logged in
-        tokenAuthGroup.post(UserCreateData.self, at: "add", use: addHandler)
+        tokenAuthGroup.post("add", use: addHandler)
         tokenAuthGroup.get("alertwords", use: alertwordsHandler)
-        tokenAuthGroup.post("alertwords", "add", String.parameter, use: alertwordsAddHandler)
-        tokenAuthGroup.post("alertwords", "remove", String.parameter, use: alertwordsRemoveHandler)
-        tokenAuthGroup.post(BarrelCreateData.self, at: "barrel", use: createBarrelHandler)
+        tokenAuthGroup.post("alertwords", "add", ":alert_word", use: alertwordsAddHandler)
+        tokenAuthGroup.post("alertwords", "remove", ":alert_word", use: alertwordsRemoveHandler)
+        tokenAuthGroup.post("barrel", use: createBarrelHandler)
         tokenAuthGroup.get("barrels", use: barrelsHandler)
         tokenAuthGroup.get("barrels", "seamonkey", use: seamonkeyBarrelsHandler)
-        tokenAuthGroup.get("barrels", Barrel.parameter, use: barrelHandler)
-        tokenAuthGroup.post("barrels", Barrel.parameter, "add", String.parameter, use: barrelAddHandler)
-        tokenAuthGroup.post("barrels", Barrel.parameter, "delete", use: deleteBarrelHandler)
-        tokenAuthGroup.post("barrels", Barrel.parameter, "remove", String.parameter, use: barrelRemoveHandler)
-        tokenAuthGroup.post("barrels", Barrel.parameter, "rename", String.parameter, use: renameBarrelHandler)
+        tokenAuthGroup.get("barrels", ":barrel_id", use: barrelHandler)
+        tokenAuthGroup.post("barrels", ":barrel_id", "add", ":string", use: barrelAddHandler)
+        tokenAuthGroup.post("barrels", ":barrel_id", "delete", use: deleteBarrelHandler)
+        tokenAuthGroup.post("barrels", ":barrel_id", "remove", ":string", use: barrelRemoveHandler)
+        tokenAuthGroup.post("barrels", ":barrel_id", "rename", ":barrel_name", use: renameBarrelHandler)
         tokenAuthGroup.get("blocks", use: blocksHandler)
         tokenAuthGroup.get("forums", use: ForumController().ownerHandler)
         tokenAuthGroup.get("mutes", use: mutesHandler)
         tokenAuthGroup.get("mutewords", use: mutewordsHandler)
-        tokenAuthGroup.post("mutewords", "add", String.parameter, use: mutewordsAddHandler)
-        tokenAuthGroup.post("mutewords", "remove", String.parameter, use: mutewordsRemoveHandler)
-        tokenAuthGroup.post(NoteUpdateData.self, at: "note", use: noteHandler)
+        tokenAuthGroup.post("mutewords", "add", ":mute_word", use: mutewordsAddHandler)
+        tokenAuthGroup.post("mutewords", "remove", ":mute_word", use: mutewordsRemoveHandler)
+        tokenAuthGroup.post("note", use: noteHandler)
         tokenAuthGroup.get("notes", use: notesHandler)
-        tokenAuthGroup.post(UserPasswordData.self, at: "password", use: passwordHandler)
-        tokenAuthGroup.post(UserUsernameData.self, at: "username", use: usernameHandler)
+        tokenAuthGroup.post("password", use: passwordHandler)
+        tokenAuthGroup.post("username", use: usernameHandler)
     }
     
     // MARK: - Open Access Handlers
@@ -175,68 +175,64 @@ struct UserController: RouteCollection {
     ///   not available.
     /// - Returns: `CreatedUserData` containing the newly created user's ID, username, and a
     ///   recovery key string.
-    func createHandler(_ req: Request, data: UserCreateData) throws -> Future<Response> {
+    func createHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         // see `UserCreateData.validations()`
-        try data.validate()
+        try UserCreateData.validate(content: req)
+        let data = try req.content.decode(UserCreateData.self)
         // check for existing username so we can return 409 Conflict status instead
         // of the default super-unfriendly 500 for unique constraint violation
-        return User.query(on: req)
-            .filter(\.username == data.username)
+        return User.query(on: req.db)
+            .filter(\.$username == data.username)
             .first()
-            .flatMap {
-                (existingUser) in
-                // abort if name is already taken
-                guard existingUser == nil else {
-                    throw Abort(.conflict, reason: "username '\(data.username)' is not available")
-                }
-                
-                // create recovery key
-                var recoveryKey = ""
-                _ = try UserController.generateRecoveryKey(on: req).map {
-                    (resolvedKey) in
-                    recoveryKey = resolvedKey
-                }
-                let normalizedKey = recoveryKey.lowercased().replacingOccurrences(of: " ", with: "")
-                
-                // create user
-                let passwordHash = try BCrypt.hash(data.password)
-                let recoveryHash = try BCrypt.hash(normalizedKey)
-                let user = User(
-                    username: data.username,
-                    password: passwordHash,
-                    recoveryKey: recoveryHash,
-                    verification: nil,
-                    parentID: nil,
-                    accessLevel: .unverified
-                )
-                
-                // wrap in a transaction to ensure each user has an associated profile
-                return req.transaction(on: .psql) {
-                    (connection) in
-                    return user.save(on: connection).flatMap {
-                        (savedUser) in
-                        // initialize default barrels
-                        _ = try self.createDefaultBarrels(for: savedUser, on: req)
-                        // create profile
-                        let profile = try UserProfile(
-                            userID: savedUser.requireID(),
-                            username: savedUser.username
-                        )
-                        return profile.save(on: connection).map {
-                            (_) in
-                            // return user data as .created
-                            let createdUserData = try CreatedUserData(
-                                userID: savedUser.requireID(),
-                                username: savedUser.username,
-                                recoveryKey: recoveryKey
-                            )
-                            let response = Response(http: HTTPResponse(status: .created), using: req)
-                            try response.content.encode(createdUserData)
-                            return response
-                        }
-                    }
-                }
-        }
+            .throwingFlatMap { (existingUser) in
+				// abort if name is already taken
+				guard existingUser == nil else {
+					throw Abort(.conflict, reason: "username '\(data.username)' is not available")
+				}
+				
+				// create recovery key
+				var recoveryKey = ""
+				_ = try UserController.generateRecoveryKey(on: req).map {
+					(resolvedKey) in
+					recoveryKey = resolvedKey
+				}
+				let normalizedKey = recoveryKey.lowercased().replacingOccurrences(of: " ", with: "")
+				
+				// create user
+				let passwordHash = try Bcrypt.hash(data.password)
+				let recoveryHash = try Bcrypt.hash(normalizedKey)
+				let user = User(
+					username: data.username,
+					password: passwordHash,
+					recoveryKey: recoveryHash,
+					verification: nil,
+					parent: nil,
+					accessLevel: .unverified
+				)
+				
+				// wrap in a transaction to ensure each user has an associated profile
+				return req.db.transaction { (database) in
+					return user.save(on: database).throwingFlatMap {
+						// initialize default barrels
+						_ = self.createDefaultBarrels(for: user, on: req)
+						// create profile
+						let profile = try UserProfile(user: user, username: user.username)
+						return profile.save(on: database).throwingFlatMap { (_) in
+							return try req.userCache.updateUser(user.requireID()).flatMapThrowing { (_) in
+								// return user data as .created
+								let createdUserData = try CreatedUserData(
+									userID: user.requireID(),
+									username: user.username,
+									recoveryKey: recoveryKey
+								)
+									let response = Response(status: .created)
+									try response.content.encode(createdUserData)
+									return response
+							}
+						}
+					}
+				}
+			}
     }
     
     // MARK: - basicAuthGroup Handlers (not logged in)
@@ -256,36 +252,35 @@ struct UserController: RouteCollection {
     ///   a valid one. 409 error if the registration code has already been allocated to
     ///   another user.
     /// - Returns: HTTP status 200 on success.
-    func verifyHandler(_ req: Request, data: UserVerifyData) throws -> Future<HTTPStatus> {
-        let user = try req.requireAuthenticated(User.self)
+    func verifyHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+        let user = try req.auth.require(User.self)
         // abort if user is already verified
         guard user.verification == nil else {
             throw Abort(.badRequest, reason: "user is already verified")
         }
         // see `UserVerifyData.validations()`
-        try data.validate()
+        try UserVerifyData.validate(content: req)
+        let data = try req.content.decode(UserVerifyData.self)
         let normalizedCode = data.verification.lowercased().replacingOccurrences(of: " ", with: "")
-        return RegistrationCode.query(on: req)
-            .filter(\.code == normalizedCode)
+        return RegistrationCode.query(on: req.db)
+            .filter(\.$code == normalizedCode)
             .first()
             .unwrap(or: Abort(.badRequest, reason: "registration code not found"))
-            .flatMap {
-                (registrationCode) in
+            .flatMap { (registrationCode) in
                 // abort if code is already used
-                guard registrationCode.userID == nil else {
-                    throw Abort(.conflict, reason: "registration code has already been used")
+                guard registrationCode.user == nil else {
+                    return req.eventLoop.makeFailedFuture(
+                    		Abort(.conflict, reason: "registration code has already been used"))
                 }
                 // update models and return 200
-                return req.transaction(on: .psql) {
-                    (connection) in
+                return req.db.transaction { (database) in
                     // update registrationCode
-                    registrationCode.userID = try user.requireID()
-                    return registrationCode.save(on: connection).flatMap {
-                        (_) in
+                    registrationCode.user = user
+                    return registrationCode.save(on: database).flatMap {
                         // update user
                         user.accessLevel = .verified
                         user.verification = registrationCode.code
-                        return user.save(on: connection).transform(to: .ok)
+                        return user.save(on: database).transform(to: .ok)
                     }
                 }
         }
@@ -305,58 +300,41 @@ struct UserController: RouteCollection {
     ///   - data: `ImageUploadData` containg the filename and image file.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `UploadedImageData` containing the generated image identifier string.
-    func imageHandler(_ req: Request, data: ImageUploadData) throws -> Future<UploadedImageData> {
-        let user = try req.requireAuthenticated(User.self)
+    func imageHandler(_ req: Request) throws -> EventLoopFuture<UploadedImageData> {
+        let user = try req.auth.require(User.self)
+        let data = try req.content.decode(ImageUploadData.self)
         // get generated filename
-        return try processImage(data: data.image, forType: .userProfile, on: req).flatMap {
-            (filename) in
+        return processImage(data: data.image, forType: .userProfile, on: req).flatMap { (filename) in
             // get profile
-            return try user.profile.query(on: req)
+            return user.$profile.query(on: req.db)
                 .first()
                 .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
-                .flatMap {
-                    (profile) in
+                .throwingFlatMap { (profile) in
                     // replace existing image
                     if !profile.userImage.isEmpty {
                         // create ProfileEdit record
-                        let profileEdit = try ProfileEdit(
-                            profileID: profile.requireID(),
-                            profileData: nil,
-                            profileImage: profile.userImage
-                        )
+                        let profileEdit = try ProfileEdit(profile: profile, profileData: nil,
+                            	profileImage: profile.userImage)
                         // archive thumbnail
                         DispatchQueue.global(qos: .background).async {
                             self.archiveImage(profile.userImage, from: self.imageDir)
                         }
-                        return profileEdit.save(on: req).flatMap {
-                            (_) in
-                            // update profile
-                            profile.userImage = filename
-                            return profile.save(on: req).flatMap {
-                                (savedProfile) in
-                                // touch user.profileUpdatedAt
-                                user.profileUpdatedAt = savedProfile.updatedAt ?? Date()
-                                return user.save(on: req).map {
-                                    (_) in
-                                    // return as UploadedImageData
-                                    return UploadedImageData(filename: filename)
-                                }
-                            }
-                        }
+                        return profileEdit.save(on: req.db).transform(to: profile)
                     }
-                    // else add new image
+                    return req.eventLoop.future(profile) 
+				}
+				.flatMap { (profile: UserProfile) in
+                    // add new image
                     profile.userImage = filename
-                    return profile.save(on: req).flatMap {
-                        (savedProfile) in
+                    return profile.save(on: req.db).flatMap { (savedProfile) in
                         // touch user.profileUpdatedAt
-                        user.profileUpdatedAt = savedProfile.updatedAt ?? Date()
-                        return user.save(on: req).map {
-                            (_) in
+                        user.profileUpdatedAt = profile.updatedAt ?? Date()
+                        return user.save(on: req.db).map { (_) in
                             // return as UploadedImageData
                             return UploadedImageData(filename: filename)
                         }
                     }
-            }
+				}
         }
     }
     
@@ -367,40 +345,34 @@ struct UserController: RouteCollection {
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: 204 No Content on success.
-    func imageRemoveHandler(_ req: Request) throws -> Future<HTTPStatus> {
-        let user = try req.requireAuthenticated(User.self)
+    func imageRemoveHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+        let user = try req.auth.require(User.self)
         // get profile
-        return try user.profile.query(on: req)
+        return user.$profile.query(on: req.db)
             .first()
             .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
-            .flatMap {
-                (profile) in
+            .throwingFlatMap { (profile) in
                 if !profile.userImage.isEmpty {
                     // create ProfileEdit record
-                    let profileEdit = try ProfileEdit(
-                        profileID: profile.requireID(),
-                        profileData: nil,
-                        profileImage: profile.userImage
-                    )
+                    let profileEdit = try ProfileEdit(profile: profile, profileData: nil,
+							profileImage: profile.userImage)
                     // archive thumbnail
                     DispatchQueue.global(qos: .background).async {
                         return self.archiveImage(profile.userImage, from: self.imageDir)
                     }
-                    return profileEdit.save(on: req).flatMap {
-                        (_) in
+                    return profileEdit.save(on: req.db).flatMap { (_) in
                         // remove image from profile
                         profile.userImage = ""
-                        return profile.save(on: req).flatMap {
-                            (savedProfile) in
+                        return profile.save(on: req.db).flatMap { (savedProfile) in
                             // touch user.profileUpdatedAt
-                            user.profileUpdatedAt = savedProfile.updatedAt ?? Date()
-                            return user.save(on: req).transform(to: .noContent)
+                            user.profileUpdatedAt = profile.updatedAt ?? Date()
+                            return user.save(on: req.db).transform(to: .noContent)
                         }
                     }
                 }
                 // no existing image
-                return req.future(.noContent)
-        }
+                return req.eventLoop.future(.noContent)
+        	}
     }
     
     /// `GET /api/v3/user/profile`
@@ -419,17 +391,16 @@ struct UserController: RouteCollection {
     /// - Throws: 403 error if the user is banned. A 5xx response should be reported as a likely
     ///   bug, please and thank you.
     /// - Returns: `UserProfileData` containing the editable properties of the profile.
-    func profileHandler(_ req: Request) throws -> Future<UserProfileData> {
-        let user = try req.requireAuthenticated(User.self)
+    func profileHandler(_ req: Request) throws -> EventLoopFuture<UserProfileData> {
+        let user = try req.auth.require(User.self)
         // retrieve profile
-        return try user.profile.query(on: req)
+        return user.$profile.query(on: req.db)
             .first()
             .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
-            .map {
-                (profile) in
+            .map { (profile) in
                 // return as UserProfileData
                 return profile.convertToData()
-        }
+        	}
     }
     
     /// `POST /api/v3/user/profile`
@@ -450,18 +421,24 @@ struct UserController: RouteCollection {
     ///   - data: `ProfileEditData` struct containing the editable properties of the profile.
     /// - Throws: 403 error if the user is banned.
     /// - Returns: `UserProfileData` containing the updated editable properties of the profile.
-    func profileUpdateHandler(_ req: Request, data: ProfileEditData) throws -> Future<UserProfileData> {
-        let user = try req.requireAuthenticated(User.self)
+    func profileUpdateHandler(_ req: Request) throws -> EventLoopFuture<UserProfileData> {
+        let user = try req.auth.require(User.self)
         // abort if banned, profile might even be deleted
         guard user.accessLevel != .banned else {
             throw Abort(.forbidden, reason: "profile cannot be edited")
         }
+//		try ProfileEditData.validate(content: req)
+        let data = try req.content.decode(ProfileEditData.self)
+        
         // retrieve profile
-        return try user.profile.query(on: req)
+        return user.$profile.query(on: req.db)
             .first()
             .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
-            .flatMap {
-                (profile) in
+            .throwingFlatMap { (profile) in
+				// record update for accountability
+				let oldProfileEdit = try ProfileEdit(profile: profile)
+				_ = oldProfileEdit.save(on: req.db)
+            
                 // update fields, nil if no value supplied
                 profile.about = data.about.isEmpty ? nil : data.about
                 profile.displayName = data.displayName.isEmpty ? nil : data.displayName
@@ -482,24 +459,12 @@ struct UserController: RouteCollection {
                 }
                 profile.userSearch = builder.joined(separator: " ").trimmingCharacters(in: .whitespaces)
                 
-                // FIXME: this is backwards, save the *old* data
-
-                return profile.save(on: req).flatMap {
-                    (savedProfile) in
+                return profile.save(on: req.db).map { (_) in
                     // touch user.profileUpdatedAt
-                    user.profileUpdatedAt = savedProfile.updatedAt ?? Date()
-                    _ = user.save(on: req)
-                    // record update for accountability
-                    let profileEdit = try ProfileEdit(
-                        profileID: profile.requireID(),
-                        profileData: data,
-                        profileImage: nil
-                    )
-                    return profileEdit.save(on: req).map {
-                        (_) in
-                        // return as UserProfileData
-                        return savedProfile.convertToData()
-                    }
+                    user.profileUpdatedAt = profile.updatedAt ?? Date()
+                    _ = user.save(on: req.db)
+					// return as UserProfileData
+					return profile.convertToData()
                 }
         }
     }
@@ -515,8 +480,8 @@ struct UserController: RouteCollection {
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Returns: `CurrentUserData` containing the current user's ID, username and logged in
     ///   status.
-    func whoamiHandler(_ req: Request) throws -> Future<CurrentUserData> {
-        let user = try req.authenticated(User.self)
+    func whoamiHandler(_ req: Request) throws -> EventLoopFuture<CurrentUserData> {
+        let user = req.auth.get(User.self)
         // well, we have to unwrap somewhere
         guard let me = user else {
             throw Abort(.internalServerError, reason: "this is seriously not possible")
@@ -525,9 +490,9 @@ struct UserController: RouteCollection {
             userID: me.requireID(),
             username: me.username,
             // if there's a BasicAuthorization header, not logged in
-            isLoggedIn: req.http.headers.basicAuthorization != nil ? false : true
+            isLoggedIn: req.headers.basicAuthorization != nil ? false : true
         )
-        return req.future(currentUserData)
+        return req.eventLoop.future(currentUserData)
     }
     
     // MARK: - tokenAuthGroup Handlers (logged in)
@@ -557,60 +522,59 @@ struct UserController: RouteCollection {
     ///   6 characters. 403 error if the user is banned or currently quarantined. 409 errpr if
     ///   the username is not available.
     /// - Returns: `AddedUserData` containing the newly created user's ID and username.
-    func addHandler(_ req: Request, data: UserCreateData) throws -> Future<Response> {
-        let user = try req.requireAuthenticated(User.self)
+    func addHandler(_ req: Request) throws -> EventLoopFuture<Response> {
+        let user = try req.auth.require(User.self)
         // see `UserCreateData.validations()`
-        try data.validate()
+        try UserCreateData.validate(content: req)
+        let data = try req.content.decode(UserCreateData.self)
         // only upstanding citizens need apply
-        guard user.accessLevel.rawValue >= UserAccessLevel.verified.rawValue else {
+        guard user.accessLevel.hasAccess(.verified) else {
             throw Abort(.forbidden, reason: "user not currently permitted to create sub-account")
         }
         // check if existing username
-        return User.query(on: req)
-            .filter(\.username == data.username)
+        return User.query(on: req.db)
+            .filter(\.$username == data.username)
             .first()
-            .flatMap {
-                (existingUser) in
-                guard existingUser == nil else {
-                    throw Abort(.conflict, reason: "username '\(data.username)' is not available")
-                }
-                // if user has a parent, sub-account inherits, else this account is parent
-                let parentID = user.parentID ?? user.id
-                let passwordHash = try BCrypt.hash(data.password)
-                // sub-account inherits .accessLevel, .recoveryKey and .verification
-                let subAccount = User(
-                    username: data.username,
-                    password: passwordHash,
-                    recoveryKey: user.recoveryKey,
-                    verification: user.verification,
-                    parentID: parentID,
-                    accessLevel: user.accessLevel
-                )
-                // both, or neither
-                return req.transaction(on: .psql) {
-                    (connection) in
-                    return subAccount.save(on: connection).flatMap {
-                        (savedUser) in
-                        // initialize default barrels
-                        _ = try self.createDefaultBarrels(for: savedUser, on: req)
-                        // create profile
-                        let profile = try UserProfile(
-                            userID: savedUser.requireID(),
-                            username: savedUser.username
-                        )
-                        return profile.save(on: connection).map {
-                            (_) in
-                            // return user data as .created
-                            let addedUserData = try AddedUserData(
-                                userID: savedUser.requireID(),
-                                username: savedUser.username
-                            )
-                            let response = Response(http: HTTPResponse(status: .created), using: req)
-                            try response.content.encode(addedUserData)
-                            return response
-                        }
-                    }
-                }
+            .flatMap { (existingUser) in
+				do {
+					guard existingUser == nil else {
+						throw Abort(.conflict, reason: "username '\(data.username)' is not available")
+					}
+					// if user has a parent, sub-account inherits, else this account is parent
+					let passwordHash = try Bcrypt.hash(data.password)
+					// sub-account inherits .accessLevel, .recoveryKey and .verification
+					let subAccount = User(
+						username: data.username,
+						password: passwordHash,
+						recoveryKey: user.recoveryKey,
+						verification: user.verification,
+						parent: user.parent,
+						accessLevel: user.accessLevel
+					)
+					// both, or neither
+					return req.db.transaction { (database) in
+						return subAccount.save(on: database).transform(to: subAccount).addModelID().throwingFlatMap {
+							(newAccount, newAccountID) in
+							// initialize default barrels
+							_ = self.createDefaultBarrels(for: newAccount, on: req)
+							// create profile
+							let profile = try UserProfile(user: newAccount, username: newAccount.username)
+							return profile.save(on: database).flatMapThrowing { (_) in
+								// return user data as .created
+								let addedUserData = AddedUserData(
+									userID: newAccountID,
+									username: newAccount.username
+								)
+								let response = Response(status: .created)
+								try response.content.encode(addedUserData)
+								return response
+							}
+						}
+					}
+				}
+				catch {
+					return req.eventLoop.makeFailedFuture(error)
+				}
         }
     }
     
@@ -621,35 +585,32 @@ struct UserController: RouteCollection {
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `AlertKeywordData` containing the updated contents of the barrel.
-    func alertwordsAddHandler(_ req: Request) throws -> Future<AlertKeywordData> {
-        let user = try req.requireAuthenticated(User.self)
-        let parameter = try req.parameters.next(String.self)
+    func alertwordsAddHandler(_ req: Request) throws -> EventLoopFuture<AlertKeywordData> {
+        let user = try req.auth.require(User.self)
+        let userID = try user.requireID()
+        let param = req.parameters.get("alert_word")
+        guard let parameter = param else {
+        	throw Abort(.badRequest, reason: "No alert word to add found in request.")
+        }
         // get alertwords barrel
-        return try Barrel.query(on: req)
-            .filter(\.ownerID == user.requireID())
-            .filter(\.barrelType == .keywordAlert)
+        return Barrel.query(on: req.db)
+            .filter(\.$ownerID == userID)
+            .filter(\.$barrelType == .keywordAlert)
             .first()
             .unwrap(or: Abort(.internalServerError, reason: "alert keywords barrel not found"))
-            .flatMap {
-                (barrel) in
+            .flatMap { (barrel) in
                 // add string
                 var alertWords = barrel.userInfo["alertWords"] ?? []
                 alertWords.append(parameter)
                 barrel.userInfo.updateValue(alertWords.sorted(), forKey: "alertWords")
-                return barrel.save(on: req).flatMap {
-                    (savedBarrel) in
+                return barrel.save(on: req.db).flatMap { (_) in
                     // return sorted list
                     let alertKeywordData = AlertKeywordData(
-                        name: savedBarrel.name,
+                        name: barrel.name,
                         keywords: alertWords.sorted()
                     )
                     // update cache
-                    let cache = try req.keyedCache(for: .redis)
-                    let key = try "alertwords:\(user.requireID())"
-                    return cache.set(key, to: alertKeywordData.keywords).map {
-                        (_) in
-                        return alertKeywordData
-                    }
+                    return req.userCache.updateUser(userID).transform(to: alertKeywordData)
                 }
         }
     }
@@ -663,16 +624,15 @@ struct UserController: RouteCollection {
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `AlertKeywordData` containing the current alert keywords as an array of
     ///   strings.
-    func alertwordsHandler(_ req: Request) throws -> Future<AlertKeywordData> {
-        let user = try req.requireAuthenticated(User.self)
+    func alertwordsHandler(_ req: Request) throws -> EventLoopFuture<AlertKeywordData> {
+        let user = try req.auth.require(User.self)
         // get alertwords barrel
-        return try Barrel.query(on: req)
-            .filter(\.ownerID == user.requireID())
-            .filter(\.barrelType == .keywordAlert)
+        return try Barrel.query(on: req.db)
+            .filter(\.$ownerID == user.requireID())
+            .filter(\.$barrelType == .keywordAlert)
             .first()
             .unwrap(or: Abort(.internalServerError, reason: "alert keywords barrel not found"))
-            .map {
-                (barrel) in
+            .map { (barrel) in
                 // return as AlertKeywordData
                 let alertKeywordData = AlertKeywordData(
                     name: barrel.name,
@@ -689,40 +649,35 @@ struct UserController: RouteCollection {
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `AlertKeywordData` containing the updated contents of the barrel.
-    func alertwordsRemoveHandler(_ req: Request) throws -> Future<AlertKeywordData> {
-        let user = try req.requireAuthenticated(User.self)
-        let parameter = try req.parameters.next(String.self)
+    func alertwordsRemoveHandler(_ req: Request) throws -> EventLoopFuture<AlertKeywordData> {
+        let user = try req.auth.require(User.self)
+        let userID = try user.requireID()
+        let param = req.parameters.get("alert_word")
+        guard let parameter = param else {
+        	throw Abort(.badRequest, reason: "No alert word to remove found in request.")
+        }
         // get alertwords barrel
-        return try Barrel.query(on: req)
-            .filter(\.ownerID == user.requireID())
-            .filter(\.barrelType == .keywordAlert)
+        return Barrel.query(on: req.db)
+            .filter(\.$ownerID == userID)
+            .filter(\.$barrelType == .keywordAlert)
             .first()
             .unwrap(or: Abort(.internalServerError, reason: "alert keywords barrel not found"))
-            .flatMap {
-                (barrel) in
+            .flatMap { (barrel) in
                 // remove string
                 var alertWords = barrel.userInfo["alertWords"] ?? []
                 guard let index = alertWords.firstIndex(of: parameter) else {
-                    throw Abort(.badRequest, reason: "'\(parameter)' is not in barrel")
+                    return req.eventLoop.makeFailedFuture(
+                    		Abort(.badRequest, reason: "'\(parameter)' is not in barrel"))
                 }
                 alertWords.remove(at: index)
                 barrel.userInfo.updateValue(alertWords.sorted(), forKey: "alertWords")
-                return barrel.save(on: req).flatMap {
-                    (savedBarrel) in
+                return barrel.save(on: req.db).flatMap {
                     // return sorted list
-                    let alertKeywordData = AlertKeywordData(
-                        name: savedBarrel.name,
-                        keywords: alertWords.sorted()
-                    )
-                    // update cache
-                    let cache = try req.keyedCache(for: .redis)
-                    let key = try "alertwords:\(user.requireID())"
-                    return cache.set(key, to: alertKeywordData.keywords).map {
-                        (_) in
-                        return alertKeywordData
-                    }
+                    let alertKeywordData = AlertKeywordData(name: barrel.name, keywords: alertWords.sorted())
+					// update cache
+					return req.userCache.updateUser(userID).transform(to: alertKeywordData)
                 }
-        }
+        	}
     }
 
     /// `POST /api/v3/user/barrels/ID/add/STRING`
@@ -737,66 +692,71 @@ struct UserController: RouteCollection {
     /// - Throws: 400 error if the barrel type is not supported by the endpoint. 403 error if
     ///   the barrel is not owned by the user. 404 or 500 error if the specified ID value is
     ///   invalid.
-    func barrelAddHandler(_ req: Request) throws -> Future<BarrelData> {
-        let user = try req.requireAuthenticated(User.self)
+    func barrelAddHandler(_ req: Request) throws -> EventLoopFuture<BarrelData> {
+        let user = try req.auth.require(User.self)
+		let userID = try user.requireID()
+        let param = req.parameters.get("string")
+        guard let parameter = param else {
+        	throw Abort(.badRequest, reason: "No string to barrel found in request.")
+        }
         // get barrel
-        return try req.parameters.next(Barrel.self).flatMap {
-            (barrel) in
-            guard try barrel.ownerID == user.requireID() else {
-                throw Abort(.forbidden, reason: "user is not owner of barrel")
+        return Barrel.findFromParameter("barrel_id", on: req).addModelID().flatMap { (barrel, barrelID) in
+			do {
+				guard barrel.ownerID == userID else {
+					throw Abort(.forbidden, reason: "user is not owner of barrel")
+				}
+				// only user-created types can be added to here
+				let userTypes: [BarrelType] = [.seamonkey, .userWords]
+				guard userTypes.contains(barrel.barrelType) else {
+					throw Abort(
+						.badRequest,
+						reason: "'\(barrel.barrelType)' barrel cannot be modified with this endpoint"
+					)
+				}
+				// get parameter
+				switch barrel.barrelType {
+					// add UUID if valid user.id
+					case .seamonkey:
+						guard let uuid = UUID(parameter) else {
+							throw Abort(.badRequest, reason: "parameter '\(parameter)' is not a UUID")
+						}
+						_ = User.find(uuid, on: req.db)
+							.unwrap(or: Abort(.badRequest, reason: "'\(uuid)' is not a valid user ID"))
+						barrel.modelUUIDs.append(uuid)
+					// else add string
+					default:
+						var userWords = barrel.userInfo["userWords"] ?? []
+						userWords.append(parameter)
+						barrel.userInfo.updateValue(userWords.sorted(), forKey: "userWords")
+				}
+				return barrel.save(on: req.db).flatMap { (_) in
+					// return as BarrelData
+					var barrelData = BarrelData(
+						barrelID: barrelID,
+						name: barrel.name,
+						seamonkeys: [],
+						stringList: []
+					)
+					// populate .stringList
+					switch barrel.barrelType {
+						case .userWords:
+							barrelData.stringList = barrel.userInfo["userWords"]
+						default:
+							barrelData.stringList = nil
+					}
+					// populate .seamonkeys
+					return User.query(on: req.db)
+						.filter(\.$id ~~ barrel.modelUUIDs)
+						.sort(\.$username, .ascending)
+						.all()
+						.flatMapThrowing { (users) in
+							barrelData.seamonkeys = try users.map { try $0.convertToSeaMonkey() }
+							return barrelData
+					}
+				}
             }
-            // only user-created types can be added to here
-            let userTypes: [BarrelType] = [.seamonkey, .userWords]
-            guard userTypes.contains(barrel.barrelType) else {
-                throw Abort(
-                    .badRequest,
-                    reason: "'\(barrel.barrelType)' barrel cannot be modified with this endpoint"
-                )
-            }
-            // get parameter
-            let parameter = try req.parameters.next(String.self)
-            switch barrel.barrelType {
-                // add UUID if valid user.id
-                case .seamonkey:
-                    guard let uuid = UUID(parameter) else {
-                        throw Abort(.badRequest, reason: "parameter '\(parameter)' is not a UUID")
-                    }
-                    _ = User.find(uuid, on: req)
-                        .unwrap(or: Abort(.badRequest, reason: "'\(uuid)' is not a valid user ID"))
-                    barrel.modelUUIDs.append(uuid)
-                // else add string
-                default:
-                    var userWords = barrel.userInfo["userWords"] ?? []
-                    userWords.append(parameter)
-                    barrel.userInfo.updateValue(userWords.sorted(), forKey: "userWords")
-            }
-            return barrel.save(on: req).flatMap {
-                (savedBarrel) in
-                // return as BarrelData
-                var barrelData = try BarrelData(
-                    barrelID: savedBarrel.requireID(),
-                    name: savedBarrel.name,
-                    seamonkeys: [],
-                    stringList: []
-                )
-                // populate .stringList
-                switch savedBarrel.barrelType {
-                    case .userWords:
-                        barrelData.stringList = savedBarrel.userInfo["userWords"]
-                    default:
-                        barrelData.stringList = nil
-                }
-                // populate .seamonkeys
-                let uuids = savedBarrel.modelUUIDs
-                return User.query(on: req)
-                    .filter(\.id ~~ uuids)
-                    .sort(\.username, .ascending)
-                    .all()
-                    .map {
-                        (users) in
-                        barrelData.seamonkeys = try users.map { try $0.convertToSeaMonkey() }
-                        return barrelData
-                }
+            catch {
+            	return req.eventLoop.makeFailedFuture(error)
             }
         }
     }
@@ -810,29 +770,22 @@ struct UserController: RouteCollection {
     ///   the barrel is not owned by the user. 404 or 500 error if the specified ID value is
     ///   invalid.
     /// - Returns: `BarrelData` containing the barrel's ID, name, and contents.
-    func barrelHandler(_ req: Request) throws -> Future<BarrelData> {
-        let user = try req.requireAuthenticated(User.self)
+    func barrelHandler(_ req: Request) throws -> EventLoopFuture<BarrelData> {
+        let user = try req.auth.require(User.self)
+        let userID = try user.requireID()
         // get barrel
-        return try req.parameters.next(Barrel.self).flatMap {
-            (barrel) in
-            guard try barrel.ownerID == user.requireID() else {
-                throw Abort(.forbidden, reason: "user is not owner of barrel")
+        return Barrel.findFromParameter("barrel_id", on: req).addModelID().flatMap { (barrel, barrelID) in
+            guard barrel.ownerID == userID else {
+                return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "user is not owner of barrel"))
             }
             // only user types can be retrieved here
             let userTypes = UserController.userBarrelTypes
             guard userTypes.contains(barrel.barrelType) else {
-                throw Abort(
-                    .badRequest,
-                    reason: "'\(barrel.barrelType)' barrel cannot be retrieved by this endpoint"
-                )
+                return req.eventLoop.makeFailedFuture(Abort( .badRequest,
+                    reason: "'\(barrel.barrelType)' barrel cannot be retrieved by this endpoint"))
             }
             // retrun as BarrelData
-            var barrelData = try BarrelData(
-                barrelID: barrel.requireID(),
-                name: barrel.name,
-                seamonkeys: [],
-                stringList: []
-            )
+            var barrelData = BarrelData(barrelID: barrelID, name: barrel.name, seamonkeys: [], stringList: [])
             // populate .stringList
             switch barrel.barrelType {
                 case .keywordAlert:
@@ -845,13 +798,11 @@ struct UserController: RouteCollection {
                     barrelData.stringList = nil
             }
             // populate .seamonkeys
-            let uuids = barrel.modelUUIDs
-            return User.query(on: req)
-                .filter(\.id ~~ uuids)
-                .sort(\.username, .ascending)
+            return User.query(on: req.db)
+                .filter(\.$id ~~ barrel.modelUUIDs)
+                .sort(\.$username, .ascending)
                 .all()
-                .map {
-                    (users) in
+                .flatMapThrowing { (users) in
                     barrelData.seamonkeys = try users.map { try $0.convertToSeaMonkey() }
                     return barrelData
             }
@@ -871,11 +822,15 @@ struct UserController: RouteCollection {
     ///   the barrel is not owned by the user. 404 or 500 error if the specified ID value is
     ///   invalid.
     /// - Returns: `BarrelData` containing the updated contents of the barrel.
-    func barrelRemoveHandler(_ req: Request) throws -> Future<BarrelData> {
-        let user = try req.requireAuthenticated(User.self)
+    func barrelRemoveHandler(_ req: Request) throws -> EventLoopFuture<BarrelData> {
+        let user = try req.auth.require(User.self)
+        let param = req.parameters.get("string")
+        guard let parameter = param else {
+        	throw Abort(.badRequest, reason: "No alert word to add found in request.")
+        }
         // get barrel
-        return try req.parameters.next(Barrel.self).flatMap {
-            (barrel) in
+        return Barrel.findFromParameter("barrel_id", on: req).addModelID().flatMap { (barrel, barrelID) in
+			do {
             guard try barrel.ownerID == user.requireID() else {
                 throw Abort(.forbidden, reason: "user is not owner of barrel")
             }
@@ -888,7 +843,6 @@ struct UserController: RouteCollection {
                 )
             }
             // get parameter
-            let parameter = try req.parameters.next(String.self)
             switch barrel.barrelType {
                 // remove UUID if found
                 case .seamonkey:
@@ -908,34 +862,36 @@ struct UserController: RouteCollection {
                     userWords.remove(at: index)
                     barrel.userInfo.updateValue(userWords.sorted(), forKey: "userWords")
             }
-            return barrel.save(on: req).flatMap {
-                (savedBarrel) in
+            return barrel.save(on: req.db).flatMap { (_) in
                 // return as BarrelData
-                var barrelData = try BarrelData(
-                    barrelID: savedBarrel.requireID(),
-                    name: savedBarrel.name,
+                var barrelData = BarrelData(
+                    barrelID: barrelID,
+                    name: barrel.name,
                     seamonkeys: [],
                     stringList: []
                 )
                 // populate .stringList
-                switch savedBarrel.barrelType {
+                switch barrel.barrelType {
                     case .userWords:
-                        barrelData.stringList = savedBarrel.userInfo["userWords"]
+                        barrelData.stringList = barrel.userInfo["userWords"]
                     default:
                         barrelData.stringList = nil
                 }
                 // populate .seamonkeys
-                let uuids = savedBarrel.modelUUIDs
-                return User.query(on: req)
-                    .filter(\.id ~~ uuids)
-                    .sort(\.username, .ascending)
+                let uuids = barrel.modelUUIDs
+                return User.query(on: req.db)
+                    .filter(\.$id ~~ uuids)
+                    .sort(\.$username, .ascending)
                     .all()
-                    .map {
-                        (users) in
+                    .flatMapThrowing { (users) in
                         barrelData.seamonkeys = try users.map { try $0.convertToSeaMonkey() }
                         return barrelData
                 }
             }
+			}
+			catch {
+				return req.eventLoop.makeFailedFuture(error)
+			}
         }
     }
 
@@ -948,17 +904,16 @@ struct UserController: RouteCollection {
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Returns: `[BarrelListData]` containing the barrel IDs and names.
-    func barrelsHandler(_ req: Request) throws -> Future<[BarrelListData]> {
-        let user = try req.requireAuthenticated(User.self)
+    func barrelsHandler(_ req: Request) throws -> EventLoopFuture<[BarrelListData]> {
+        let user = try req.auth.require(User.self)
         // get user's barrels, sorted by name
         let userTypes = UserController.userBarrelTypes
-        return try Barrel.query(on: req)
-            .filter(\.ownerID == user.requireID())
-            .filter(\.barrelType ~~ userTypes)
-            .sort(\.name, .ascending)
+        return try Barrel.query(on: req.db)
+            .filter(\.$ownerID == user.requireID())
+            .filter(\.$barrelType ~~ userTypes)
+            .sort(\.$name, .ascending)
             .all()
-            .map {
-                (barrels) in
+            .flatMapThrowing { (barrels) in
                 // apply .barrelType sort
                 let sortedBarrels = barrels.sorted(by: { $0.barrelType < $1.barrelType })
                 // return as BarrelListData
@@ -977,37 +932,31 @@ struct UserController: RouteCollection {
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `BlockedUserData` containing the currently blocked users as an array of
     ///  `SeaMonkey`.
-    func blocksHandler(_ req: Request) throws -> Future<BlockedUserData> {
-        let user = try req.requireAuthenticated(User.self)
+    func blocksHandler(_ req: Request) throws -> EventLoopFuture<BlockedUserData> {
+        let user = try req.auth.require(User.self)
         // if sub-account, we want parent's blocks
         let barrelAccount = try user.parentAccount(on: req)
-        return barrelAccount.flatMap {
-            (barrelUser) in
+        return barrelAccount.addModelID().flatMap { (barrelUser, barrelUserID) in
             // get blocks barrel
-            return try Barrel.query(on: req)
-                .filter(\.ownerID == barrelUser.requireID())
-                .filter(\.barrelType == .userBlock)
+            return Barrel.query(on: req.db)
+                .filter(\.$ownerID == barrelUserID)
+                .filter(\.$barrelType == .userBlock)
                 .first()
                 .unwrap(or: Abort(.internalServerError, reason: "blocks barrel not found"))
-                .flatMap {
-                    (barrel) in
+                .flatMap { (barrel) in
                     // return as BlockedUserData
-                    var blockedUserData = BlockedUserData(
-                        name: barrel.name,
-                        seamonkeys: []
-                    )
+                    var blockedUserData = BlockedUserData(name: barrel.name, seamonkeys: [])
                     let uuids = barrel.modelUUIDs
                     // return empty list
                     if uuids.count == 0 {
-                        return req.future(blockedUserData)
+                        return req.eventLoop.future(blockedUserData)
                     }
                     // convert IDs to sorted SeaMonkeys
-                    return User.query(on: req)
-                        .filter(\.id ~~ uuids)
-                        .sort(\.username, .ascending)
+                    return User.query(on: req.db)
+                        .filter(\.$id ~~ uuids)
+                        .sort(\.$username, .ascending)
                         .all()
-                        .map {
-                            (users) in
+                        .flatMapThrowing { (users) in
                             blockedUserData.seamonkeys = try users.map { try $0.convertToSeaMonkey() }
                             return blockedUserData
                     }
@@ -1041,10 +990,11 @@ struct UserController: RouteCollection {
     ///   - data: `BarrelCreateData` struct containing the barrel name and any seed UUIDs or
     ///     seed string array.
     /// - Returns: `BarrelData` containing the newly created barrel's data contents.
-    func createBarrelHandler(_ req: Request, data: BarrelCreateData) throws -> Future<Response> {
-        let user = try req.requireAuthenticated(User.self)
+    func createBarrelHandler(_ req: Request) throws -> EventLoopFuture<Response> {
+        let user = try req.auth.require(User.self)
         // see `BarrelCreateData.validations()`
-        try data.validate()
+        try BarrelCreateData.validate(content: req)
+        let data = try req.content.decode(BarrelCreateData.self)
         // initialize barrel
         let barrel = try Barrel(
             ownerID: user.requireID(),
@@ -1065,24 +1015,22 @@ struct UserController: RouteCollection {
                     barrel.modelUUIDs = uuids
             }
         }
-        return barrel.save(on: req).flatMap {
-            (savedBarrel) in
+        return barrel.save(on: req.db).flatMap { (_) in
             // create SeaMonkeys from any UUIDs
-            return User.query(on: req)
-                .filter(\.id ~~ savedBarrel.modelUUIDs)
-                .sort(\.username, .ascending)
+            return User.query(on: req.db)
+                .filter(\.$id ~~ barrel.modelUUIDs)
+                .sort(\.$username, .ascending)
                 .all()
-                .map {
-                    (users) in
+                .flatMapThrowing { (users) in
                     // return as BarrelData, with 201 response
                     let barrelData = try BarrelData(
-                        barrelID: savedBarrel.requireID(),
-                        name: savedBarrel.name,
+                        barrelID: barrel.requireID(),
+                        name: barrel.name,
                         seamonkeys: try users.map { try $0.convertToSeaMonkey() },
                         // sets to nil if the key does not exist
-                        stringList: savedBarrel.userInfo["userWords"]
+                        stringList: barrel.userInfo["userWords"]
                     )
-                    let response = Response(http: HTTPResponse(status: .created), using: req)
+                    let response = Response(status: .created)
                     try response.content.encode(barrelData)
                     return response
             }
@@ -1097,21 +1045,25 @@ struct UserController: RouteCollection {
     /// - Throws: 400 error if the barrel type is not supported by the endpoint. 403 error if
     ///   the barrel is not owned by the user. 404 or 500 error if the specified ID value is
     ///   invalid.
-    func deleteBarrelHandler(_ req: Request) throws -> Future<HTTPStatus> {
-        let user = try req.requireAuthenticated(User.self)
+    func deleteBarrelHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+        let user = try req.auth.require(User.self)
         // get barrel
-        return try req.parameters.next(Barrel.self).flatMap {
-            (barrel) in
-            guard try barrel.ownerID == user.requireID() else {
-                throw Abort(.forbidden, reason: "user is not owner of barrel")
-            }
-            // only user types can be retrieved here
-            let userTypes: [BarrelType] = [.seamonkey, .userWords]
-            guard userTypes.contains(barrel.barrelType) else {
-                throw Abort(.badRequest,reason: "'\(barrel.barrelType)' barrel cannot be deleted")
-            }
-            // delete and return 204
-            return barrel.delete(on: req).transform(to: .noContent)
+        return Barrel.findFromParameter("barrel_id", on: req).flatMap { (barrel) in
+            do {
+				guard try barrel.ownerID == user.requireID() else {
+					throw Abort(.forbidden, reason: "user is not owner of barrel")
+				}
+				// only user types can be retrieved here
+				let userTypes: [BarrelType] = [.seamonkey, .userWords]
+				guard userTypes.contains(barrel.barrelType) else {
+					throw Abort(.badRequest,reason: "'\(barrel.barrelType)' barrel cannot be deleted")
+				}
+				// delete and return 204
+				return barrel.delete(on: req.db).transform(to: .noContent)
+			}
+			catch {
+				return req.eventLoop.makeFailedFuture(error)
+			}
         }
     }
 
@@ -1123,33 +1075,28 @@ struct UserController: RouteCollection {
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `MutedUserData` containing the currently muted users as an array of
     ///  `SeaMonkey`.
-    func mutesHandler(_ req: Request) throws -> Future<MutedUserData> {
-        let user = try req.requireAuthenticated(User.self)
+    func mutesHandler(_ req: Request) throws -> EventLoopFuture<MutedUserData> {
+        let user = try req.auth.require(User.self)
         // retrieve mutes barrel
-        return try Barrel.query(on: req)
-            .filter(\.ownerID == user.requireID())
-            .filter(\.barrelType == .userMute)
+        return try Barrel.query(on: req.db)
+            .filter(\.$ownerID == user.requireID())
+            .filter(\.$barrelType == .userMute)
             .first()
             .unwrap(or: Abort(.internalServerError, reason: "mutes barrel not found"))
-            .flatMap {
-                (barrel) in
+            .flatMap { (barrel) in
                 // return as MutedUserData
-                var mutedUserData = MutedUserData(
-                    name: barrel.name,
-                    seamonkeys: []
-                )
+                var mutedUserData = MutedUserData(name: barrel.name, seamonkeys: [])
                 let uuids = barrel.modelUUIDs
                 // return empty list
                 if uuids.count == 0 {
-                    return req.future(mutedUserData)
+                    return req.eventLoop.future(mutedUserData)
                 }
                 // convert IDs to sorted SeaMonkeys
-                return User.query(on: req)
-                    .filter(\.id ~~ uuids)
-                    .sort(\.username, .ascending)
+                return User.query(on: req.db)
+                    .filter(\.$id ~~ uuids)
+                    .sort(\.$username, .ascending)
                     .all()
-                    .map {
-                        (users) in
+                    .flatMapThrowing { (users) in
                         mutedUserData.seamonkeys = try users.map { try $0.convertToSeaMonkey() }
                         return mutedUserData
                 }
@@ -1163,35 +1110,28 @@ struct UserController: RouteCollection {
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `MuteKeywordData` containing the updated contents of the barrel.
-    func mutewordsAddHandler(_ req: Request) throws -> Future<MuteKeywordData> {
-        let user = try req.requireAuthenticated(User.self)
-        let parameter = try req.parameters.next(String.self)
+    func mutewordsAddHandler(_ req: Request) throws -> EventLoopFuture<MuteKeywordData> {
+        let user = try req.auth.require(User.self)
+        let userID = try user.requireID()
+        let param = req.parameters.get("mute_word")
+        guard let parameter = param else {
+        	throw Abort(.badRequest, reason: "No mute word to add found in request.")
+        }
         // get barrel
-        return try Barrel.query(on: req)
-            .filter(\.ownerID == user.requireID())
-            .filter(\.barrelType == .keywordMute)
+        return try Barrel.query(on: req.db)
+            .filter(\.$ownerID == user.requireID())
+            .filter(\.$barrelType == .keywordMute)
             .first()
             .unwrap(or: Abort(.internalServerError, reason: "muted keywords barrel not found"))
-            .flatMap {
-                (barrel) in
+            .flatMap { (barrel) in
                 // add string
                 var muteWords = barrel.userInfo["muteWords"] ?? []
                 muteWords.append(parameter)
                 barrel.userInfo.updateValue(muteWords.sorted(), forKey: "muteWords")
-                return barrel.save(on: req).flatMap {
-                    (savedBarrel) in
+                return barrel.save(on: req.db).flatMap { (_) in
                     // return sorted list
-                    let muteKeywordData = MuteKeywordData(
-                        name: savedBarrel.name,
-                        keywords: muteWords.sorted()
-                    )
-                    // update cache
-                    let cache = try req.keyedCache(for: .redis)
-                    let key = try "mutewords:\(user.requireID())"
-                    return cache.set(key, to: muteKeywordData.keywords).map {
-                        (_) in
-                        return muteKeywordData
-                    }
+                    let muteKeywordData = MuteKeywordData(name: barrel.name, keywords: muteWords.sorted())
+					return req.userCache.updateUser(userID).transform(to: muteKeywordData)
                 }
         }
     }
@@ -1205,21 +1145,17 @@ struct UserController: RouteCollection {
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `MuteKeywordData` containing the current muting keywords as an array of
     ///   strings.
-    func mutewordsHandler(_ req: Request) throws -> Future<MuteKeywordData> {
-        let user = try req.requireAuthenticated(User.self)
+    func mutewordsHandler(_ req: Request) throws -> EventLoopFuture<MuteKeywordData> {
+        let user = try req.auth.require(User.self)
         // get mutewords barrel
-        return try Barrel.query(on: req)
-            .filter(\.ownerID == user.requireID())
-            .filter(\.barrelType == .keywordMute)
+        return try Barrel.query(on: req.db)
+            .filter(\.$ownerID == user.requireID())
+            .filter(\.$barrelType == .keywordMute)
             .first()
             .unwrap(or: Abort(.internalServerError, reason: "mute keywords barrel not found"))
-            .map {
-                (barrel) in
+            .map { (barrel) in
                 // return as MuteKeywordData
-                let muteKeywordData = MuteKeywordData(
-                    name: barrel.name,
-                    keywords: barrel.userInfo["muteWords"] ?? []
-                )
+                let muteKeywordData = MuteKeywordData(name: barrel.name, keywords: barrel.userInfo["muteWords"] ?? [])
                 return muteKeywordData
         }
     }
@@ -1231,38 +1167,31 @@ struct UserController: RouteCollection {
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `MuteKeywordData` containing the updated contents of the barrel.
-    func mutewordsRemoveHandler(_ req: Request) throws -> Future<MuteKeywordData> {
-        let user = try req.requireAuthenticated(User.self)
-        let parameter = try req.parameters.next(String.self)
+    func mutewordsRemoveHandler(_ req: Request) throws -> EventLoopFuture<MuteKeywordData> {
+        let user = try req.auth.require(User.self)
+        let userID = try user.requireID()
+        let param = req.parameters.get("mute_word")
+        guard let parameter = param else {
+        	throw Abort(.badRequest, reason: "No mute word to remove found in request.")
+        }
         // get barrel
-        return try Barrel.query(on: req)
-            .filter(\.ownerID == user.requireID())
-            .filter(\.barrelType == .keywordMute)
+        return try Barrel.query(on: req.db)
+            .filter(\.$ownerID == user.requireID())
+            .filter(\.$barrelType == .keywordMute)
             .first()
             .unwrap(or: Abort(.internalServerError, reason: "muted keywords barrel not found"))
-            .flatMap {
-                (barrel) in
+            .flatMap { (barrel) in
                 // remove string
                 var muteWords = barrel.userInfo["muteWords"] ?? []
                 guard let index = muteWords.firstIndex(of: parameter) else {
-                    throw Abort(.badRequest, reason: "'\(parameter)' is not in barrel")
+                    return req.eventLoop.makeFailedFuture(Abort(.badRequest, reason: "'\(parameter)' is not in barrel"))
                 }
                 _ = muteWords.remove(at: index)
                 barrel.userInfo.updateValue(muteWords.sorted(), forKey: "muteWords")
-                return barrel.save(on: req).flatMap {
-                    (savedBarrel) in
+                return barrel.save(on: req.db).flatMap { (_) in
                     // return sorted list
-                    let muteKeywordData = MuteKeywordData(
-                        name: savedBarrel.name,
-                        keywords: muteWords.sorted()
-                    )
-                    // update cache
-                    let cache = try req.keyedCache(for: .redis)
-                    let key = try "mutewords:\(user.requireID())"
-                    return cache.set(key, to: muteKeywordData.keywords).map {
-                        (_) in
-                        return muteKeywordData
-                    }
+                    let muteKeywordData = MuteKeywordData(name: barrel.name, keywords: muteWords.sorted())
+                	return req.userCache.updateUser(userID).transform(to: muteKeywordData)
                 }
         }
     }
@@ -1278,40 +1207,37 @@ struct UserController: RouteCollection {
     /// - Throws: 403 if the note is not owned by the user. A 5xx response should be reported
     ///   as a likely bug, please and thank you.
     /// - Returns: `NoteData` containing the updated note and metadata for display.
-    func noteHandler(_ req: Request, data: NoteUpdateData) throws -> Future<NoteData> {
+    func noteHandler(_ req: Request) throws -> EventLoopFuture<NoteData> {
         // FIXME: account for blocks, banned user
-        let user = try req.requireAuthenticated(User.self)
-        // get note
-        return UserNote.find(data.noteID, on: req)
-            .unwrap(or: Abort(.notFound, reason: "note with ID '\(data.noteID)' not found"))
-            .flatMap {
-                (note) in
+        let user = try req.auth.require(User.self)
+        let userID = try user.requireID()
+//		try NoteUpdateData.validate(content: req)
+        let data = try req.content.decode(NoteUpdateData.self)
+		// get note
+        return UserNote.find(data.noteID, on: req.db)
+            .unwrap(or: Abort(.notFound, reason: "note with ID '\(data.noteID)' not found")).addModelID()
+            .flatMap { (note, noteID) in
                 // ensure it belongs to user
-                guard try note.userID == user.requireID() else {
-                    throw Abort(.forbidden, reason: "note does not belong to user")
+                guard note.author.id == userID else {
+                    return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "note does not belong to user"))
                 }
                 note.note = data.note
-                return note.save(on: req).map {
-                    (savedNote) in
-                    // create NoteData
-                    var noteData = try NoteData(
-                        noteID: note.requireID(),
-                        createdAt: savedNote.createdAt ?? Date(),
-                        updatedAt: savedNote.updatedAt ?? Date(),
-                        profileID: savedNote.profileID,
-                        profileUser: "",
-                        note: savedNote.note
-                    )
-                    // .displayedName is probably best to send
-                    _ = savedNote.profile.query(on: req)
-                        .first()
-                        .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
-                        .map {
-                            (profile) in
-                            let publicProfile = try profile.convertToPublic()
-                            noteData.profileUser = publicProfile.displayedName
-                    }
-                    return noteData
+				return note.$profile.query(on: req.db)
+					.first()
+					.unwrap(or: Abort(.internalServerError, reason: "profile not found"))
+					.addModelID()
+					.flatMap { (profile, profileID) in
+						// create NoteData
+						// .displayedName is probably best to send
+						let noteData = NoteData(
+							noteID: noteID,
+							createdAt: note.createdAt ?? Date(),
+							updatedAt: note.updatedAt ?? Date(),
+							profileID: profileID,
+							profileUser: profile.displayedName(),
+							note: note.note
+						)
+						return note.save(on: req.db).transform(to: noteData)
                 }
         }
     }
@@ -1328,34 +1254,27 @@ struct UserController: RouteCollection {
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `[NoteData]` containing all of the user's notes.
-    func notesHandler(_ req: Request) throws -> Future<[NoteData]> {
+    func notesHandler(_ req: Request) throws -> EventLoopFuture<[NoteData]> {
         // FIXME: account for blocks, banned user
-        let user = try req.requireAuthenticated(User.self)
+        let user = try req.auth.require(User.self)
         // get all notes
-        return try user.notes.query(on: req).all().map {
-            (notes) in
+        return user.$notes.query(on: req.db).with(\.$profile).all().map { (notes) in
             // create array for return
-            var notesData = [NoteData]()
-            try notes.forEach {
+			let notesData: [NoteData] = notes.compactMap {
+            	guard let noteID = $0.id else { return nil }
+            	guard let profileID = $0.profile.id else { return nil }
+            
                 // create NoteData
-                var noteData = try NoteData(
-                    noteID: $0.requireID(),
+				// .displayedName is probably best to send
+				let noteData = NoteData(
+                    noteID: noteID,
                     createdAt: $0.createdAt ?? Date(),
                     updatedAt: $0.updatedAt ?? Date(),
-                    profileID: $0.profileID,
-                    profileUser: "",
+                    profileID: profileID,
+                    profileUser: $0.profile.displayedName(),
                     note: $0.note
                 )
-                // .displayedName is probably best to send
-                _ = $0.profile.query(on: req)
-                    .first()
-                    .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
-                    .map {
-                        (profile) in
-                        let publicProfile = try profile.convertToPublic()
-                        noteData.profileUser = publicProfile.displayedName
-                }
-                notesData.append(noteData)
+                return noteData
             }
             return notesData
         }
@@ -1370,46 +1289,47 @@ struct UserController: RouteCollection {
     ///   the barrel is not owned by the user. 404 or 500 error if the specified ID value is
     ///   invalid.
     /// - Returns: `BarrelData` containing the updated barrel data.
-    func renameBarrelHandler(_ req: Request) throws -> Future<BarrelData> {
-        let user = try req.requireAuthenticated(User.self)
+    func renameBarrelHandler(_ req: Request) throws -> EventLoopFuture<BarrelData> {
+        let user = try req.auth.require(User.self)
+        let userID = try user.requireID()
+		let param = req.parameters.get("barrel_name")
+        guard let newBarrelName = param else {
+        	throw Abort(.badRequest, reason: "No barrel name found in request.")
+        }
         // get barrel
-        return try req.parameters.next(Barrel.self).flatMap {
-            (barrel) in
-            guard try barrel.ownerID == user.requireID() else {
-                throw Abort(.forbidden, reason: "user is not owner of barrel")
+        return Barrel.findFromParameter("barrel_id", on: req).addModelID().flatMap { (barrel, barrelID) in
+            guard barrel.ownerID == userID else {
+                return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "user is not owner of barrel"))
             }
             // only user types can be renamed
             let userTypes: [BarrelType] = [.seamonkey, .userWords]
             guard userTypes.contains(barrel.barrelType) else {
-                throw Abort(.badRequest, reason: "'\(barrel.barrelType)' barrel cannot be renamed")
+                return req.eventLoop.makeFailedFuture(
+                		Abort(.badRequest, reason: "'\(barrel.barrelType)' barrel cannot be renamed"))
             }
             // get parameter
-            let parameter = try req.parameters.next(String.self)
-            barrel.name = parameter
-            return barrel.save(on: req).flatMap {
-                (savedBarrel) in
+            barrel.name = newBarrelName
+            return barrel.save(on: req.db).flatMap { (_) in
                 // return as BarrelData
-                var barrelData = try BarrelData(
-                    barrelID: savedBarrel.requireID(),
-                    name: savedBarrel.name,
+                var barrelData = BarrelData(
+                    barrelID: barrelID,
+                    name: barrel.name,
                     seamonkeys: [],
                     stringList: []
                 )
                 // populate .stringList
-                switch savedBarrel.barrelType {
+                switch barrel.barrelType {
                     case .userWords:
-                        barrelData.stringList = savedBarrel.userInfo["userWords"]
+                        barrelData.stringList = barrel.userInfo["userWords"]
                     default:
                         barrelData.stringList = nil
                 }
                 // populate .seamonkeys
-                let uuids = savedBarrel.modelUUIDs
-                return User.query(on: req)
-                    .filter(\.id ~~ uuids)
-                    .sort(\.username, .ascending)
+                return User.query(on: req.db)
+                    .filter(\.$id ~~ barrel.modelUUIDs)
+                    .sort(\.$username, .ascending)
                     .all()
-                    .map {
-                        (users) in
+                    .flatMapThrowing { (users) in
                         barrelData.seamonkeys = try users.map { try $0.convertToSeaMonkey() }
                         return barrelData
                 }
@@ -1428,18 +1348,19 @@ struct UserController: RouteCollection {
     /// - Throws: 400 error if the supplied password is not at least 6 characters. 403 error
     ///   if the user is a `.client`.
     /// - Returns: 201 Created on success.
-    func passwordHandler(_ req: Request, data: UserPasswordData) throws -> Future<HTTPStatus> {
-        let user = try req.requireAuthenticated(User.self)
-        // clients are hard-coded
+    func passwordHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+        let user = try req.auth.require(User.self)
+		// clients are hard-coded
         guard user.accessLevel != .client else {
             throw Abort(.forbidden, reason: "password change would break a client")
         }
         // see `UserPasswordData.validations()`
-        try data.validate()
+		try UserPasswordData.validate(content: req)
+        let data = try req.content.decode(UserPasswordData.self)
         // encrypt, then update user
-        let passwordHash = try BCrypt.hash(data.password)
+        let passwordHash = try Bcrypt.hash(data.password)
         user.password = passwordHash
-        return user.save(on: req).transform(to: .created)
+        return user.save(on: req.db).transform(to: .created)
     }
     
     /// `GET /api/v3/user/barrels/seamonkey`
@@ -1452,16 +1373,15 @@ struct UserController: RouteCollection {
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Returns: `[BarrelListData]` containing the barrel IDs and names.
-    func seamonkeyBarrelsHandler(_ req: Request) throws -> Future<[BarrelListData]> {
-        let user = try req.requireAuthenticated(User.self)
+    func seamonkeyBarrelsHandler(_ req: Request) throws -> EventLoopFuture<[BarrelListData]> {
+        let user = try req.auth.require(User.self)
         // get user's seamonkey barrels, sorted by name
-        return try Barrel.query(on: req)
-            .filter(\.ownerID == user.requireID())
-            .filter(\.barrelType == .seamonkey)
-            .sort(\.name, .ascending)
+        return try Barrel.query(on: req.db)
+            .filter(\.$ownerID == user.requireID())
+            .filter(\.$barrelType == .seamonkey)
+            .sort(\.$name, .ascending)
             .all()
-            .map {
-                (barrels) in
+            .flatMapThrowing { (barrels) in
                 // convert to BarrelListData and return
                 return try barrels.map {
                     try BarrelListData(barrelID: $0.requireID(), name: $0.name)
@@ -1481,30 +1401,30 @@ struct UserController: RouteCollection {
     /// - Throws: 400 error if the username is an invalid format. 403 error if the user is a
     ///   `.client`. 409 errpr if the username is not available.
     /// - Returns: 201 Created on success.
-    func usernameHandler(_ req: Request, data: UserUsernameData) throws -> Future<HTTPStatus> {
-        let user = try req.requireAuthenticated(User.self)
+    func usernameHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+        let user = try req.auth.require(User.self)
         // clients are hard-coded
         guard user.accessLevel != .client else {
             throw Abort(.forbidden, reason: "username change would break a client")
         }
         // see `UserUsernameData.validations()`
-        try data.validate()
+        try UserUsernameData.validate(content: req)
+        let data = try req.content.decode(UserUsernameData.self)
         // check for existing username
-        return User.query(on: req)
-            .filter(\.username == data.username)
+        return User.query(on: req.db)
+            .filter(\.$username == data.username)
             .first()
-            .flatMap {
-                (existingUser) in
+            .flatMap { (existingUser) in
                 // abort if name is already taken
                 guard existingUser == nil else {
-                    throw Abort(.conflict, reason: "username '\(data.username)' is not available")
+                    return req.eventLoop.makeFailedFuture(
+                    		Abort(.conflict, reason: "username '\(data.username)' is not available"))
                 }
                 // need to update profile too
-                return try user.profile.query(on: req)
+                return user.$profile.query(on: req.db)
                     .first()
                     .unwrap(or: Abort(.internalServerError, reason: "user's profile not found"))
-                    .flatMap {
-                        (profile) in
+                    .flatMap { (profile) in
                         user.username = data.username
                         profile.username = data.username
 
@@ -1518,21 +1438,17 @@ struct UserController: RouteCollection {
                         profile.userSearch = builder.joined(separator: " ").trimmingCharacters(in: .whitespaces)
 
                         // update both, or neither
-                        return req.transaction(on: .psql) {
-                            (connection) in
-                            return user.save(on: connection).flatMap {
-                                (savedUser) in
-                                return profile.save(on: connection).map {
-                                    (savedProfile) in
+                        return req.db.transaction { (database) in
+                            return user.save(on: database)
+								.and(profile.save(on: database)).map { _ in 
                                     // touch savedUser.profileUpdatedAt
-                                    savedUser.profileUpdatedAt = savedProfile.updatedAt ?? Date()
-                                    _ = savedUser.save(on: connection)
+                                    user.profileUpdatedAt = profile.updatedAt ?? Date()
+                                    _ = user.save(on: database)
                                     return .created
                                 }
-                            }
-                        }
-                }
-        }
+						}
+					}
+        	}
     }
     
     // MARK: - Helper Functions
@@ -1545,38 +1461,43 @@ struct UserController: RouteCollection {
     ///   - user: The owning `User` of the default barrels.
     ///   - req: The incoming request `Container` of the calling handler.
     /// - Returns: Void.
-    func createDefaultBarrels(for user: User, on req: Request) throws -> Future<Void> {
-        var barrels: [Future<Barrel>] = .init()
-        let alertKeywordsBarrel = try Barrel(
-            ownerID: user.requireID(),
-            barrelType: .keywordAlert,
-            name: "Alert Keywords"
-        )
-        alertKeywordsBarrel.userInfo.updateValue([], forKey: "alertWords")
-        barrels.append(alertKeywordsBarrel.save(on: req))
-        // sub-accounts don't own block lists, they're covered by the parent's
-        if user.parentID == nil {
-            let blocksBarrel = try Barrel(
-                ownerID: user.requireID(),
-                barrelType: .userBlock,
-                name: "Blocked Users"            )
-            barrels.append(blocksBarrel.save(on: req))
-        }
-        let mutesBarrel = try Barrel(
-            ownerID: user.requireID(),
-            barrelType: .userMute,
-            name: "Muted Users"
-        )
-        barrels.append(mutesBarrel.save(on: req))
-        let muteKeywordsBarrel = try Barrel(
-            ownerID: user.requireID(),
-            barrelType: .keywordMute,
-            name: "Muted Keywords"
-        )
-        muteKeywordsBarrel.userInfo.updateValue([], forKey: "muteWords")
-        barrels.append(muteKeywordsBarrel.save(on: req))
-        // resolve futures, return void
-        return barrels.flatten(on: req).transform(to: ())
+    func createDefaultBarrels(for user: User, on req: Request) -> EventLoopFuture<Void> {
+		do {
+			var barrels: [EventLoopFuture<Barrel>] = .init()
+			let alertKeywordsBarrel = try Barrel(
+				ownerID: user.requireID(),
+				barrelType: .keywordAlert,
+				name: "Alert Keywords"
+			)
+			alertKeywordsBarrel.userInfo.updateValue([], forKey: "alertWords")
+			barrels.append(alertKeywordsBarrel.save(on: req.db).transform(to: alertKeywordsBarrel))
+			// sub-accounts don't own block lists, they're covered by the parent's
+			if user.parent == nil {
+				let blocksBarrel = try Barrel(
+					ownerID: user.requireID(),
+					barrelType: .userBlock,
+					name: "Blocked Users"            )
+				barrels.append(blocksBarrel.save(on: req.db).transform(to: blocksBarrel))
+			}
+			let mutesBarrel = try Barrel(
+				ownerID: user.requireID(),
+				barrelType: .userMute,
+				name: "Muted Users"
+			)
+			barrels.append(mutesBarrel.save(on: req.db).transform(to: mutesBarrel))
+			let muteKeywordsBarrel = try Barrel(
+				ownerID: user.requireID(),
+				barrelType: .keywordMute,
+				name: "Muted Keywords"
+			)
+			muteKeywordsBarrel.userInfo.updateValue([], forKey: "muteWords")
+			barrels.append(muteKeywordsBarrel.save(on: req.db).transform(to: muteKeywordsBarrel))
+			// resolve futures, return void
+			return barrels.flatten(on: req.eventLoop).transform(to: ())
+		}
+		catch {
+			return req.eventLoop.makeFailedFuture(error)
+		}
     }
 
     /// Generates a recovery key of 3 words randomly chosen from `words` array.
@@ -1584,14 +1505,14 @@ struct UserController: RouteCollection {
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 500 error if the randomizer fails.
     /// - Returns: A recoveryKey string.
-    static func generateRecoveryKey(on req: Request) throws -> Future<String> {
+    static func generateRecoveryKey(on req: Request) throws -> EventLoopFuture<String> {
         guard let word1 = words.randomElement(),
             let word2 = words.randomElement(),
             let word3 = words.randomElement() else {
                 throw Abort(.internalServerError, reason: "could not generate recovery key")
         }
         let recoveryKey = word1 + " " + word2 + " " + word3
-        return req.future(recoveryKey)
+        return req.eventLoop.future(recoveryKey)
     }
 }
 

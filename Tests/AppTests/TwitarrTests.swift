@@ -1,7 +1,7 @@
 @testable import App
 import Vapor
 import XCTest
-import FluentPostgreSQL
+
 import Foundation
 
 final class TwitarrTests: XCTestCase {
@@ -93,8 +93,8 @@ final class TwitarrTests: XCTestCase {
         
         // test image
         let imageFile = "test-image.jpg"
-        let directoryConfig = DirectoryConfig.detect()
-        let imagePath = directoryConfig.workDir.appending("seeds/").appending(imageFile)
+        let directoryConfig = DirectoryConfiguration.detect()
+        let imagePath = directoryConfig.workingDirectory.appending("seeds/").appending(imageFile)
         let data = FileManager.default.contents(atPath: imagePath)
         let imageUploadData = ImageUploadData(filename: imageFile, image: data!)
         twarrtData = try app.getResult(

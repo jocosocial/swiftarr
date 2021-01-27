@@ -1,16 +1,15 @@
 import Vapor
-import FluentPostgreSQL
+import Fluent
+
 
 /// A `Migration` that creates an initial set of categories for `Forum`s.
 
-struct Categories: Migration {
-    typealias Database = PostgreSQLDatabase
-    
+struct CreateCategories: Migration {    
     /// Required by `Migration` protocol. Creates an initial set of categories for forums.
     ///
-    /// - Parameter conn: A connection to the database, provided automatically.
+    /// - Parameter database: A connection to the database, provided automatically.
     /// - Returns: Void.
-    static func prepare(on conn: PostgreSQLConnection) -> EventLoopFuture<Void> {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
         // categories to which users cannot directly add forums
         let adminCategories: [String] = [
             "Twit-arr Support",
@@ -42,9 +41,8 @@ struct Categories: Migration {
             categories.append(category)
         }
         // save categories
-        return categories.map { $0.save(on: conn) }
-            .flatten(on: conn)
-            .transform(to: ())
+        return categories.map { $0.save(on: database) }
+            .flatten(on: database.eventLoop)
     }
     
     /// Required by `Migration` protocol, but this isn't a model update, so just return a
@@ -52,7 +50,7 @@ struct Categories: Migration {
     ///
     /// - Parameter conn: The database connection.
     /// - Returns: Void.
-    static func revert(on conn: PostgreSQLConnection) -> Future<Void> {
-        return .done(on: conn)
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("categories").delete()
     }
 }

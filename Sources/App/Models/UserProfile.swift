@@ -1,75 +1,84 @@
 import Foundation
 import Vapor
-import FluentPostgreSQL
+import Fluent
+
 
 /// The optional information provided by a user for their profile page. The associated
 /// `UserProfile` is automatically created wnen a `User` is created via the endpoint. Only
 /// the `.userID`, `.username` and `.userSearch` fields are populated upon initialization.
 
-final class UserProfile: Codable {
-    typealias Database = PostgreSQLDatabase
+final class UserProfile: Model, Content {
+	static let schema = "userprofiles"
 
     // MARK: Properties
     
     /// The profile's ID, provisioned automatically.
-    var id: UUID?
+    @ID(key: .id) var id: UUID?
     
-    /// The `ID` of the parent `User`, provisioned by the creation handler.
-    var userID: UUID
+    /// The user's username. Uniqued.
+    @Field(key: "username") var username: String
     
     /// Concatenation of displayName + (@username) + realName, to speed search by name.
-    var userSearch: String
-    
-    /// The user's username.
-    var username: String
+    @Field(key: "userSearch") var userSearch: String
     
     /// The filename of the image for the user's profile picture.
-    var userImage: String
+    @Field(key: "userImage") var userImage: String
     
     /// An optional bio or blurb or whatever.
-    var about: String?
+    @OptionalField(key: "about") var about: String?
     
     /// An optional name for display alongside the username. "Display Name (@username)"
-    var displayName: String?
+    @OptionalField(key: "displayName") var displayName: String?
     
     /// An optional email address. Social media addresses, URLs, etc. should probably be
     /// in `.about` or maybe `.message`.
-    var email: String?
+    @OptionalField(key: "email") var email: String?
     
     /// An optional home city, country, planet...
-    var homeLocation: String?
+    @OptionalField(key: "homeLocation") var homeLocation: String?
     
     /// An optional message to anybody viewing the profile. "I like turtles."
-    var message: String?
+    @OptionalField(key: "message") var message: String?
     
     /// An optional preferred pronoun or form of address.
-    var preferredPronoun: String?
+    @OptionalField(key: "preferredPronoun") var preferredPronoun: String?
     
     /// An optional real world name for the user.
-    var realName: String?
+    @OptionalField(key: "realName") var realName: String?
     
     /// An optional cabin number.
-    var roomNumber: String?
+    @OptionalField(key: "roomNumber") var roomNumber: String?
     
     /// Limits viewing this profile's info (except `.username` and `.displayName`, which are
     /// always viewable) to logged-in users. Default is `false` (don't limit).
-    var limitAccess: Bool
+    @Field(key: "limitAccess") var limitAccess: Bool
 
     /// Timestamp of the model's creation, set automatically.
-    var createdAt: Date?
+	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
     
     /// Timestamp of the model's last update, set automatically.
-    var updatedAt: Date?
+    @Timestamp(key: "updated_at", on: .update) var updatedAt: Date?
     
     /// Timestamp of the model's soft-deletion, set automatically.
-    var deletedAt: Date?
-
-    // MARK: Initialization
+    @Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
     
+	// MARK: Relations
+
+    /// The parent `User`, provisioned by the creation handler.
+    @Parent(key: "user") var user: User
+    
+    /// The child `ProfileEdit` accountability records of the profile.
+    @Children(for: \.$profile) var edits: [ProfileEdit]
+    
+	// MARK: Initialization
+    
+    // Used by Fluent
+ 	init() { }
+ 	
     ///  Initializes a new UserProfile associated with a `User` account.
     ///
     /// - Parameters:
-    ///   - userID: The ID of the parent `User`.
+    ///   - user: The parent `User`.
     ///   - username: The .username of the parent `User`.
     ///   - about: An optional nutshell to share publicly.
     ///   - displayName: An optional name for display alongside the username.
@@ -81,7 +90,7 @@ final class UserProfile: Codable {
     ///   - roomNumber: An option cabin number to share publicly.
     ///   - limitAccess: Whether the full version of this profile is only viewable by logged-in users.
     init(
-        userID: UUID,
+        user: User,
         username: String,
         userImage: String = "",
         about: String? = nil,
@@ -93,8 +102,9 @@ final class UserProfile: Codable {
         realName: String? = nil,
         roomNumber: String? = nil,
         limitAccess: Bool = false
-    ) {
-        self.userID = userID
+    ) throws {
+        self.$user.id = try user.requireID()
+        self.$user.value = user
         // .userSearch is initially just @username
         self.userSearch = "@\(username)"
         self.userImage = userImage

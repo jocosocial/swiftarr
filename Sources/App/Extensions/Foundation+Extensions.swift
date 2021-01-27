@@ -1,4 +1,5 @@
 import Foundation
+import Redis
 
 extension CharacterSet {
     /// Defines a character set containing characters other than alphanumerics that are allowed
@@ -79,4 +80,16 @@ extension JSONEncoder.DateEncodingStrategy {
         var container = $1.singleValueContainer()
         try container.encode(Formatter.iso8601ms.string(from: $0))
     }
+}
+
+extension UUID: RESPValueConvertible {
+	public init?(fromRESP value: RESPValue) {
+    	self.init(uuidString: value.string!)
+    }
+
+    /// Creates a `RESPValue` representation of the conforming type's value.
+    public func convertedToRESPValue() -> RESPValue {
+    	return RESPValue(from: self.uuidString)
+    }
+
 }

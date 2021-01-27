@@ -1,7 +1,7 @@
 @testable import App
 import Vapor
 import XCTest
-import FluentPostgreSQL
+
 
 final class EventTests: XCTestCase {
     
@@ -406,8 +406,8 @@ final class EventTests: XCTestCase {
         
         // test upload
         let scheduleFile = "test-updated-schedule.ics"
-        let directoryConfig = DirectoryConfig.detect()
-        let schedulePath = directoryConfig.workDir.appending("seeds/").appending(scheduleFile)
+        let directoryConfig = DirectoryConfiguration.detect()
+        let schedulePath = directoryConfig.workingDirectory.appending("seeds/").appending(scheduleFile)
         guard let data = FileManager.default.contents(atPath: schedulePath),
             let dataString = String(bytes: data, encoding: .utf8) else {
                 XCTFail("Could not read schedule file.")

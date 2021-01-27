@@ -1,8 +1,7 @@
-import FluentPostgreSQL
 
 /// The type of `FriendlyFez`.
 
-enum FezType: String, CaseIterable, PostgreSQLRawEnum {
+enum FezType: String, CaseIterable, Codable {
     /// Some type of activity.
     case activity
     /// A dining LFG.

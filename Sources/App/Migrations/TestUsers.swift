@@ -1,18 +1,16 @@
 import Vapor
-import FluentPostgreSQL
+import Fluent
 import Crypto
 
 /// A `Migration` that creates a set of test users during startup, so that there exists one
 /// at each `.accessLevel`. This migration should only be run in non-production environments.
 
-struct TestUsers: Migration {
-    typealias Database = PostgreSQLDatabase
-    
+struct CreateTestUsers: Migration {    
     /// Required by `Migration` protocol. Creates a set of test users at each `.accessLevel`.
     ///
-    /// - Parameter conn: A connection to the database, provided automatically.
+    /// - Parameter database: A connection to the database, provided automatically.
     /// - Returns: Void.
-    static func prepare(on conn: PostgreSQLConnection) -> Future<Void> {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
         let usernames: [String: UserAccessLevel] = [
             "unverified": .unverified,
             "banned": .banned,
@@ -24,7 +22,7 @@ struct TestUsers: Migration {
         // create users
         var users: [User] = []
         for username in usernames {
-            let password = try? BCrypt.hash("password")
+            let password = try? Bcrypt.hash("password")
             guard let passwordHash = password else {
                 fatalError("could not create test users: password hash failed")
             }
@@ -36,13 +34,13 @@ struct TestUsers: Migration {
             )
             users.append(user)
         }
-        return users.map { $0.save(on: conn) }.flatten(on: conn).map {
+        return users.map { $0.save(on: database) }.flatten(on: database.eventLoop).throwingFlatMap {
             (savedUsers) in
             // create profile and default barrels
             var profiles: [UserProfile] = []
-            savedUsers.forEach {
+            try users.forEach {
                 guard let id = $0.id else { fatalError("user has no id") }
-                let profile = UserProfile(userID: id, username: $0.username)
+                let profile = try UserProfile(user: $0, username: $0.username)
                 profiles.append(profile)
                 var barrels: [Barrel] = []
                 let alertKeywordsBarrel = Barrel(
@@ -72,20 +70,21 @@ struct TestUsers: Migration {
                 muteKeywordsBarrel.userInfo.updateValue([], forKey: "muteWords")
                 barrels.append(muteKeywordsBarrel)
                 // save barrels
-                _ = barrels.map { $0.save(on: conn) }
+                _ = barrels.map { $0.save(on: database) }
             }
             // save profiles
-            profiles.map { $0.save(on: conn) }.always(on: conn) { return }
+            let futures: [EventLoopFuture<Void>] = profiles.map { $0.save(on: database) }
+            return EventLoopFuture.andAllSucceed(futures, on: database.eventLoop)
         }
     }
     
     /// Required by `Migration` protocol, but this isn't a model update, so just return a
     /// pre-completed `Future`.
     /// 
-    /// - Parameter conn: The database connection.
+    /// - Parameter database: A connection to the database, provided automatically.
     /// - Returns: Void.
-    static func revert(on conn: PostgreSQLConnection) -> Future<Void> {
-        return .done(on: conn)
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("users").delete()
     }
 }
 

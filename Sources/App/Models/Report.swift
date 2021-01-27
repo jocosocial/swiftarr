@@ -1,6 +1,7 @@
 import Foundation
 import Vapor
-import FluentPostgreSQL
+import Fluent
+
 
 /// Twit-arr moderation relies in part on user-submitted reports of content and/or behavior
 /// which does not conform to community standards. A `Report` can be submitted for Moderator
@@ -14,52 +15,59 @@ import FluentPostgreSQL
 /// The `.reportedID` field is a string value, because the entity being reported may have
 /// either a UUID or an integer based ID, which is determined via the `.reportType`.
 
-struct Report: Codable {
-     typealias Database = PostgreSQLDatabase
+final class Report: Model, Content {
+	static let schema = "reports"
+	
     // MARK: Properties
     
     /// The report's ID.
-    var id: UUID?
+    @ID(key: .id) var id: UUID?
     
     /// The type of entity reported.
-    var reportType: ReportType
+    @Field(key: "reportType") var reportType: ReportType
     
     /// The ID of the entity reported.
-    var reportedID: String
-    
-    /// The ID of the `User` submitting the report.
-    var submitterID: UUID
+    @Field(key: "reportedID") var reportedID: String
     
     /// An optional message from the submitter.
-    var submitterMessage: String
+    @Field(key: "submitterMessage") var submitterMessage: String
     
     /// The status of the report.
-    var isClosed: Bool
+    @Field(key: "isClosed") var isClosed: Bool
     
     /// Timestamp of the model's creation, set automatically.
-    var createdAt: Date?
+	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
     
     /// Timestamp of the model's last update, set automatically.
-    var updatedAt: Date?
+    @Timestamp(key: "updated_at", on: .update) var updatedAt: Date?
+        
+	// MARK: Relations
+
+    /// The `User` submitting the report.
+    @Parent(key: "author") var submitter: User
     
     // MARK: Initializaton
     
+    // Used by Fluent
+ 	init() { }
+ 	
     /// Initializes a new Report.
     ///
     /// - Parameters:
     ///   - reportType: The type of entity reported.
     ///   - reportedID: The ID of the entity reported.
-    ///   - submitterID: The ID of the user submitting the report.
+    ///   - submitter: The user submitting the report.
     ///   - submitterMessage: An optional message from the submitter.
     init(
         reportType: ReportType,
         reportedID: String,
-        submitterID: UUID,
+        submitter: User,
         submitterMessage: String = ""
-    ) {
+    ) throws {
         self.reportType = reportType
         self.reportedID = reportedID
-        self.submitterID = submitterID
+        self.$submitter.id = try submitter.requireID()
+        self.$submitter.value = submitter
         self.submitterMessage = submitterMessage
         self.isClosed = false
     }

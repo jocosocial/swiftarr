@@ -1,7 +1,6 @@
 import Vapor
 import Crypto
 import FluentSQL
-import Redis
 
 /// The collection of `/api/v3/auth/*` route endpoints and handler functions related
 /// to authentication.
@@ -50,22 +49,22 @@ struct AuthController: RouteCollection {
     // MARK: RouteCollection Conformance
     
     /// Required. Registers routes to the incoming router.
-    func boot(router: Router) throws {
+    func boot(routes: RoutesBuilder) throws {
         
         // convenience route group for all /api/v3/auth endpoints
-        let authRoutes = router.grouped("api", "v3", "auth")
+        let authRoutes = routes.grouped("api", "v3", "auth")
         
         // instantiate authentication middleware
-        let basicAuthMiddleware = User.basicAuthMiddleware(using: BCryptDigest())
-        let guardAuthMiddleware = User.guardAuthMiddleware()
-        let tokenAuthMiddleware = User.tokenAuthMiddleware()
+        let basicAuthMiddleware = User.authenticator()
+        let guardAuthMiddleware = User.guardMiddleware()
+        let tokenAuthMiddleware = Token.authenticator()
         
         // set protected route groups
         let basicAuthGroup = authRoutes.grouped([basicAuthMiddleware, guardAuthMiddleware])
         let tokenAuthGroup = authRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
         
         // open access endpoints
-        authRoutes.post(UserRecoveryData.self, at: "recovery", use: recoveryHandler)
+        authRoutes.post("recovery", use: recoveryHandler)
         
         // endpoints available only when not logged in
         basicAuthGroup.post("login", use: loginHandler)
@@ -110,16 +109,16 @@ struct AuthController: RouteCollection {
     ///   likely bug, please and thank you.
     /// - Returns: `TokenStringData` containing an authentication token (string) that should
     ///   be used for all subsequent HTTP requests, until expiry or revocation.
-    func recoveryHandler(_ req: Request, data: UserRecoveryData) throws -> Future<TokenStringData> {
+    func recoveryHandler(_ req: Request) throws -> EventLoopFuture<TokenStringData> {
         // see `UserRecoveryData.validations()`
-        try data.validate()
+        try UserRecoveryData.validate(content: req)
+        let data = try req.content.decode(UserRecoveryData.self)        
         // find data.username user
-        return User.query(on: req)
-            .filter(\.username == data.username)
+        return User.query(on: req.db)
+            .filter(\.$username == data.username)
             .first()
             .unwrap(or: Abort(.badRequest, reason: "username \"\(data.username)\" not found"))
-            .flatMap {
-                (user) in
+			.flatMapThrowing { (user) -> User in
                 // abort if account is seeing potential brute-force attack
                 guard user.recoveryAttempts < 5 else {
                     throw Abort(.forbidden, reason: "please see a Twit-arr Team member for password recovery")
@@ -161,32 +160,39 @@ struct AuthController: RouteCollection {
                 guard foundMatch else {
                     // track the attempt count
                     user.recoveryAttempts += 1
-                    _ = user.save(on: req)
+                    _ = user.save(on: req.db)
                     throw Abort(.badRequest, reason: "no match for supplied recovery key")
                 }
                 
                 // user appears valid, zero out attempt tracking
                 user.recoveryAttempts = 0
-                _ = user.save(on: req)
+                _ = user.save(on: req.db)
                 
+                return user
+			}
+			.addModelID()
+			.flatMap { (user, userID) in
                 // return existing token if any
-                return try Token.query(on: req)
-                    .filter(\.userID == user.requireID())
+                return Token.query(on: req.db)
+                    .filter(\.$user.$id == userID)
                     .first()
-                    .flatMap {
-                        (existingToken) in
-                        if let existing = existingToken {
-                            return req.future(TokenStringData(token: existing))
-                        } else {
-                            // otherwise generate and return new token
-                            let token = try Token.generate(for: user)
-                            return token.save(on: req).map {
-                                (savedToken) in
-                                return TokenStringData(token: savedToken)
-                            }
-                        }
-                }
-        }
+                    .flatMap { (existingToken) in
+                    	do {
+							if let existing = existingToken {
+								return req.eventLoop.future(TokenStringData(token: existing))
+							} else {
+								// otherwise generate and return new token
+								let token = try Token.generate(for: user)
+								return token.save(on: req.db).map { _ in
+									return TokenStringData(token: token)
+								}
+							}
+						}
+						catch {
+							return req.eventLoop.makeFailedFuture(error)
+						}
+					}
+			}
     }
     
     // MARK: - basicAuthGroup Handlers (not logged in)
@@ -235,29 +241,32 @@ struct AuthController: RouteCollection {
     ///   banned. A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `TokenStringData` containing an authentication token (string) that should
     ///   be used for all subsequent HTTP requests, until expiry or revocation.
-    func loginHandler(_ req: Request) throws -> Future<TokenStringData> {
-        let user = try req.requireAuthenticated(User.self)
+    func loginHandler(_ req: Request) throws -> EventLoopFuture<TokenStringData> {
+        let user = try req.auth.require(User.self)
         // no login for punks
         guard user.accessLevel != .banned else {
             throw Abort(.forbidden, reason: "nope")
         }
         // return existing token if one exists
-        return try Token.query(on: req)
-            .filter(\.userID == user.requireID())
+        return try Token.query(on: req.db)
+            .filter(\.$user.$id == user.requireID())
             .first()
-            .flatMap {
-                (token) in
-                if let token = token {
-                    return req.future(TokenStringData(token: token))
-                } else {
-                    // otherwise generate and return new token
-                    let token = try Token.generate(for: user)
-                    return token.save(on: req).map {
-                        (savedToken) in
-                        return TokenStringData(token: savedToken)
-                    }
-                }
-        }
+            .flatMap { token in
+                do {
+					if let token = token {
+						return req.eventLoop.future(TokenStringData(token: token))
+					} else {
+						// otherwise generate and return new token
+						let token = try Token.generate(for: user)
+						return token.save(on: req.db).map { _ in
+							return TokenStringData(token: token)
+						}
+					}
+				}
+				catch {
+					return req.eventLoop.makeFailedFuture(error)
+				}
+			}
     }
     
     // MARK: - tokenAuthGroup Handlers (logged in)
@@ -282,18 +291,18 @@ struct AuthController: RouteCollection {
     /// - Throws: 401 error if the authentication failed. 409 error if the user somehow
     ///   wasn't logged in.
     /// - Returns: 204 No Content if the token was successfully deleted.
-    func logoutHandler(_ req: Request) throws -> Future<HTTPStatus> {
-        let user = try req.requireAuthenticated(User.self)
+    func logoutHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+        let user = try req.auth.require(User.self)
         // revoke current auth
-        try req.unauthenticate(User.self)
+        req.auth.logout(User.self)
         // revoke token
-        return try Token.query(on: req)
-            .filter(\.userID == user.requireID())
+        return try Token.query(on: req.db)
+            .filter(\.$user.$id == user.requireID())
             .first()
             .unwrap(or: Abort(.conflict, reason: "user is not logged in"))
             .flatMap {
                 (token) in
-                return token.delete(on: req).transform(to: .noContent)
+                return token.delete(on: req.db).transform(to: .noContent)
         }
     }
 }

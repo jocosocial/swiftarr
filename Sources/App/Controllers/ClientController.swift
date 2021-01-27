@@ -2,6 +2,7 @@ import Vapor
 import Crypto
 import FluentSQL
 import Fluent
+import Redis
 
 /// The collection of `/api/v3/client/*` route endpoints and handler functions that provide
 /// bulk retrieval services for registered API clients.
@@ -11,14 +12,14 @@ struct ClientController: RouteCollection {
     // MARK: RouteCollection Conformance
     
     /// Required. Registers routes to the incoming router.
-    func boot(router: Router) throws {
+    func boot(routes: RoutesBuilder) throws {
         
         // convenience route group for all /api/v3/client endpoints
-        let clientRoutes = router.grouped("api", "v3", "client")
+        let clientRoutes = routes.grouped("api", "v3", "client")
         
         // instantiate authentication middleware
-        let guardAuthMiddleware = User.guardAuthMiddleware()
-        let tokenAuthMiddleware = User.tokenAuthMiddleware()
+        let guardAuthMiddleware = User.guardMiddleware()
+        let tokenAuthMiddleware = Token.authenticator()
         
         // set protected route groups
         let tokenAuthGroup = clientRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
@@ -30,8 +31,8 @@ struct ClientController: RouteCollection {
         // endpoints available whether logged in or out
         
         // endpoints available only when logged in
-        tokenAuthGroup.get("user", "headers", "since", String.parameter, use: userHeadersHandler)
-        tokenAuthGroup.get("user", "updates", "since", String.parameter, use: userUpdatesHandler)
+        tokenAuthGroup.get("user", "headers", "since", ":date", use: userHeadersHandler)
+        tokenAuthGroup.get("user", "updates", "since", ":date", use: userUpdatesHandler)
         tokenAuthGroup.get("usersearch", use: userSearchHandler)
     }
     
@@ -66,48 +67,41 @@ struct ClientController: RouteCollection {
     /// - Throws: 400 error if no valid date string provided. 401 error if the required header
     ///   is missing or invalid. 403 error if user is not a registered client.
     /// - Returns: `[UserHeader]` array of all updated users.
-    func userHeadersHandler(_ req: Request) throws -> Future<[UserHeader]> {
-        let client = try req.requireAuthenticated(User.self)
+    func userHeadersHandler(_ req: Request) throws -> EventLoopFuture<[UserHeader]> {
+        let client = try req.auth.require(User.self)
         // must be registered client
         guard client.accessLevel == .client else {
             throw Abort(.forbidden, reason: "registered clients only")
         }
         // must be on behalf of user
-        guard let userHeader = req.http.headers["x-swiftarr-user"].first,
+        guard let userHeader = req.headers["x-swiftarr-user"].first,
             let userID = UUID(uuidString: userHeader) else {
                 throw Abort(.unauthorized, reason: "no valid 'x-swiftarr-user' header found")
         }
         // find user
-        return User.find(userID, on: req)
+        return User.find(userID, on: req.db)
             .unwrap(or: Abort(.unauthorized, reason: "'x-swiftarr-user' user not found"))
-            .flatMap {
-                (user) in
-                guard user.accessLevel != .client else {
-                    throw Abort(.unauthorized, reason: "'x-swiftarr-user' user cannot be client")
-                }
-                // parse date parameter
-                let since = try req.parameters.next(String.self)
-                guard let date = ClientController.dateFromParameter(string: since) else {
-                    throw Abort(.badRequest, reason: "'\(since)' is not a recognized date format")
-                }
-                // remove blocked users
-                let cache = try req.keyedCache(for: .redis)
-                let key = try "blocks:\(user.requireID())"
-                let cachedBlocks = cache.get(key, as: [UUID].self)
-                return cachedBlocks.flatMap {
-                    (blocks) in
-                    let blocked = blocks ?? []
-                    // return UserHeader array
-                    return UserProfile.query(on: req)
-                        .filter(\.updatedAt > date)
-                        .filter(\.userID !~ blocked)
-                        .all()
-                        .map {
-                            (profiles) in
-                            let headers = try profiles.map { try $0.convertToHeader() }
-                            return headers
-                    }
-                }
+            .throwingFlatMap { (user) in
+					guard user.accessLevel != .client else {
+						throw Abort(.unauthorized, reason: "'x-swiftarr-user' user cannot be client")
+					}
+					// parse date parameter
+					let since = req.parameters.get("date")!
+					guard let date = ClientController.dateFromParameter(string: since) else {
+						throw Abort(.badRequest, reason: "'\(since)' is not a recognized date format")
+					}
+					// remove blocked users
+					let blocked = req.userCache.getBlocks(userID)
+					// return UserHeader array
+					return UserProfile.query(on: req.db)
+						.filter(\.$updatedAt > date)
+						.filter(\.$user.$id !~ blocked)
+						.all()
+						.flatMapThrowing {
+							(profiles) in
+							let headers = try profiles.map { try $0.convertToHeader() }
+							return headers
+					}
         }
     }
     
@@ -124,43 +118,35 @@ struct ClientController: RouteCollection {
     ///   is missing or invalid. 403 error if user is not a registered client.
     /// - Returns: `[UserSearch]` containing the ID and `.userSearch` string values
     ///   of all users, sorted by username.
-    func userSearchHandler(_ req: Request) throws -> Future<[UserSearch]> {
-        let client = try req.requireAuthenticated(User.self)
+    func userSearchHandler(_ req: Request) throws -> EventLoopFuture<[UserSearch]> {
+        let client = try req.auth.require(User.self)
         // must be registered client
         guard client.accessLevel == .client else {
             throw Abort(.forbidden, reason: "registered clients only")
         }
         // must be on behalf of user
-        guard let userHeader = req.http.headers["x-swiftarr-user"].first,
+        guard let userHeader = req.headers["x-swiftarr-user"].first,
             let userID = UUID(uuidString: userHeader) else {
                 throw Abort(.unauthorized, reason: "no valid 'x-swiftarr-user' header found")
         }
         // find user
-        return User.find(userID, on: req)
+        return User.find(userID, on: req.db)
             .unwrap(or: Abort(.unauthorized, reason: "'x-swiftarr-user' user not found"))
-            .flatMap {
-                (user) in
-                // must be actual user
-                guard user.accessLevel != .client else {
-                    throw Abort(.unauthorized, reason: "'x-swiftarr-user' user cannot be client")
-                }
-                // remove blocked users
-                let cache = try req.keyedCache(for: .redis)
-                let key = try "blocks:\(user.requireID())"
-                let cachedBlocks = cache.get(key, as: [UUID].self)
-                return cachedBlocks.flatMap {
-                    (blocks) in
-                    let blocked = blocks ?? []
-                    return UserProfile.query(on: req)
-                        .filter(\.userID !~ blocked)
-                        .sort(\.username, .ascending)
-                        .all()
-                        .map {
-                            (profiles) in
-                            // return as [UserSearch]
-                            return try profiles.map { try $0.convertToSearch() }
-                    }
-                }
+            .throwingFlatMap { (user) in
+				// must be actual user
+				guard user.accessLevel != .client else {
+					throw Abort(.unauthorized, reason: "'x-swiftarr-user' user cannot be client")
+				}
+				// remove blocked users
+				let blocked = req.userCache.getBlocks(userID)
+				return UserProfile.query(on: req.db)
+					.filter(\.$user.$id !~ blocked)
+					.sort(\.$username, .ascending)
+					.all()
+					.flatMapThrowing { (profiles) in
+						// return as [UserSearch]
+						return try profiles.map { try $0.convertToSearch() }
+				}
         }
     }
     
@@ -181,47 +167,39 @@ struct ClientController: RouteCollection {
     /// - Throws: 400 error if no valid date string provided. 401 error if the required header
     ///   is missing or invalid. 403 error if user is not a registered client.
     /// - Returns: `[UserInfo]` containing all updated users.
-    func userUpdatesHandler(_ req: Request) throws -> Future<[UserInfo]> {
-         let client = try req.requireAuthenticated(User.self)
+    func userUpdatesHandler(_ req: Request) throws -> EventLoopFuture<[UserInfo]> {
+         let client = try req.auth.require(User.self)
         // must be registered client
         guard client.accessLevel == .client else {
             throw Abort(.forbidden, reason: "registered clients only")
         }
         // must be on behalf of user
-        guard let userHeader = req.http.headers["x-swiftarr-user"].first,
+        guard let userHeader = req.headers["x-swiftarr-user"].first,
             let userID = UUID(uuidString: userHeader) else {
                 throw Abort(.unauthorized, reason: "no valid 'x-swiftarr-user' header found")
         }
         // find user
-        return User.find(userID, on: req)
+        return User.find(userID, on: req.db)
             .unwrap(or: Abort(.unauthorized, reason: "'x-swiftarr-user' user not found"))
-            .flatMap {
-                (user) in
-                guard user.accessLevel != .client else {
-                    throw Abort(.unauthorized, reason: "'x-swiftarr-user' user cannot be client")
-                }
-                // parse date parameter
-                let since = try req.parameters.next(String.self)
-                guard let date = ClientController.dateFromParameter(string: since) else {
-                    throw Abort(.badRequest, reason: "'\(since)' is not a recognized date format")
-                }
-                // remove blocked users
-                let cache = try req.keyedCache(for: .redis)
-                let key = try "blocks:\(user.requireID())"
-                let cachedBlocks = cache.get(key, as: [UUID].self)
-                return cachedBlocks.flatMap {
-                    (blocks) in
-                    let blocked = blocks ?? []
-                    return User.query(on: req)
-                        .filter(\.profileUpdatedAt > date)
-                        .filter(\.id !~ blocked)
-                        .all()
-                        .map {
-                            (users) in
-                            // return as [UserInfo]
-                            return try users.map { try $0.convertToInfo() }
-                    }
-                }
+            .throwingFlatMap { (user) in
+				guard user.accessLevel != .client else {
+					throw Abort(.unauthorized, reason: "'x-swiftarr-user' user cannot be client")
+				}
+				// parse date parameter
+				let since = req.parameters.get("date")!
+				guard let date = ClientController.dateFromParameter(string: since) else {
+					throw Abort(.badRequest, reason: "'\(since)' is not a recognized date format")
+				}
+				// remove blocked users
+				let blocked =  req.userCache.getBlocks(userID)
+				return User.query(on: req.db)
+					.filter(\.$profileUpdatedAt > date)
+					.filter(\.$id !~ blocked)
+					.all()
+					.flatMapThrowing { (users) in
+						// return as [UserInfo]
+						return try users.map { try $0.convertToInfo() }
+				}
         }
     }
     

@@ -1,5 +1,5 @@
 import Vapor
-import FluentPostgreSQL
+import Fluent
 import Crypto
 
 /// A `Migration` that creates the admin user upon startup. The password and recovery key are
@@ -10,15 +10,13 @@ import Crypto
 /// used in production. If not set to proper values in `docker-compose.yml` (or whatever
 /// other environment of your choice), reminders are printed to console during startup.
 
-struct AdminUser: Migration {
-    typealias Database = PostgreSQLDatabase
-    
+struct CreateAdminUser: Migration {    
     /// Required by `Migration` protocol. Creates the admin user after a bit of sanity
     /// check caution.
     ///
-    /// - Parameter conn: A connection to the database, provided automatically.
+    /// - Parameter database: A connection to the database, provided automatically.
     /// - Returns: Void.
-    static func prepare(on conn: PostgreSQLConnection) -> Future<Void> {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
         // retrieve password and recovery key from environment, else use defaults
         let password = Environment.get("ADMIN_PASSWORD") ?? "password"
         let recoveryKey = Environment.get("RECOVERY_KEY") ?? "recovery key"
@@ -39,8 +37,8 @@ struct AdminUser: Migration {
         
         // abort if no sane values or encryption fails
         guard !password.isEmpty, !recoveryKey.isEmpty,
-            let passwordHash = try? BCrypt.hash(password),
-            let recoveryHash = try? BCrypt.hash(recoveryKey) else {
+            let passwordHash = try? Bcrypt.hash(password),
+            let recoveryHash = try? Bcrypt.hash(recoveryKey) else {
                 fatalError("admin user creation failure: invalid password or recoveryKey")
         }
         
@@ -50,50 +48,48 @@ struct AdminUser: Migration {
             password: passwordHash,
             recoveryKey: recoveryHash,
             verification: "generated user",
-            parentID: nil,
+			parent: nil,
             accessLevel: .admin
         )
         // save user
-        return user.save(on: conn).flatMap {
-            (savedUser) in
+        return user.save(on: database).flatMap {
             // ensure we're good to go
-            guard let id = savedUser.id else {
+            guard let id = user.id else {
                 fatalError("admin user creation failure: savedUser.id not found")
             }
             // create default barrels
-            var barrels: [Future<Barrel>] = .init()
+            var barrels = [EventLoopFuture<Void>]()
             let alertKeywordsBarrel = Barrel(
                 ownerID: id,
                 barrelType: .keywordAlert,
                 name: "Alert Keywords"
             )
             alertKeywordsBarrel.userInfo.updateValue([], forKey: "alertWords")
-            barrels.append(alertKeywordsBarrel.save(on: conn))
+            barrels.append(alertKeywordsBarrel.save(on: database))
             let blocksBarrel = Barrel(
                 ownerID: id,
                 barrelType: .userBlock,
                 name: "Blocked Users"
             )
-            barrels.append(blocksBarrel.save(on: conn))
+            barrels.append(blocksBarrel.save(on: database))
             let mutesBarrel = Barrel(
                 ownerID: id,
                 barrelType: .userMute,
                 name: "Muted Users"
             )
-            barrels.append(mutesBarrel.save(on: conn))
+            barrels.append(mutesBarrel.save(on: database))
             let muteKeywordsBarrel = Barrel(
                 ownerID: id,
                 barrelType: .keywordMute,
                 name: "Muted Keywords"
             )
             muteKeywordsBarrel.userInfo.updateValue([], forKey: "muteWords")
-            barrels.append(muteKeywordsBarrel.save(on: conn))
+            barrels.append(muteKeywordsBarrel.save(on: database))
             // resolve futures, return void
-            return barrels.flatten(on: conn).flatMap {
-                (savedBarrels) in
+			return barrels.flatten(on: database.eventLoop).throwingFlatMap { _ in 
                 // create associated profile directly
-                let profile = UserProfile(userID: id, username: savedUser.username)
-                return profile.save(on: conn).transform(to: ())
+                let profile = try UserProfile(user: user, username: user.username)
+                return profile.save(on: database).transform(to: ())
             }
         }
     }
@@ -103,8 +99,8 @@ struct AdminUser: Migration {
     ///
     /// - Parameter conn: The database connection.
     /// - Returns: Void.
-    static func revert(on conn: PostgreSQLConnection) -> Future<Void> {
-        return .done(on: conn)
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("users").delete()
     }
     
 }

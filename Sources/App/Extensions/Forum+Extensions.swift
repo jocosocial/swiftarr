@@ -1,59 +1,35 @@
 import Vapor
-import FluentPostgreSQL
+import Fluent
 
-// model uses UUID as primary key
-extension Forum: PostgreSQLUUIDModel {}
 
-// model can be passed as HTTP body data
-extension Forum: Content {}
-
-// model can be used as endpoint parameter
-extension Forum: Parameter {}
-
-// MARK: - Custom Migration
-
-extension Forum: Migration {
-    /// Required by `Migration` protocol. Creates the table, with foreign key  constraint
-    /// to `Category`.
-    ///
-    /// - Parameter connection: The connection to the database, usually the Request.
-    /// - Returns: Void.
-    static func prepare(on connection: PostgreSQLConnection) -> Future<Void> {
-        return Database.create(self, on: connection) {
-            (builder) in
-            try addProperties(to: builder)
-            // foreign key constraint to Category
-            builder.reference(from: \.categoryID, to: \Category.id)
-        }
+// forums can be bookmarked
+extension Forum: UserBookmarkable {
+    /// The barrel type for `Twarrt` bookmarking.
+	var bookmarkBarrelType: BarrelType {
+        return .taggedForum
+    }
+    
+    func bookmarkIDString() throws -> String {
+    	return try String(self.requireID())
     }
 }
 
-// MARK: - Timestamping Conformance
-
-extension Forum {
-    /// Required key for `\.createdAt` functionality.
-    static var createdAtKey: TimestampKey? { return \.createdAt }
-    /// Required key for `\.updatedAt` functionality.
-    static var updatedAtKey: TimestampKey? { return \.updatedAt }
-    /// Required key for `\.deletedAt` soft delete functionality.
-    static var deletedAtKey: TimestampKey? { return \.deletedAt }
-}
-
-// MARK: - Relations
-
-extension Forum {
-    /// The parent `Category` of the forum.
-    var category: Parent<Forum, Category> {
-        return parent(\.categoryID)
+// forums can be reported
+extension Forum: Reportable {
+    /// The report type for `Forum` reports.
+	var reportType: ReportType {
+        return .forum
     }
     
-    /// The parent `User` who created the forum.
-    var creator: Parent<Forum, User> {
-        return parent(\.creatorID)
-    }
-    
-    /// The child `ForumPost`s within the forum.
-    var posts: Children<Forum, ForumPost> {
-        return children(\.forumID)
-    }
+	func checkAutoQuarantine(reportCount: Int, on req: Request) -> EventLoopFuture<Void> {
+		// quarantine if threshold is met
+		// FIXME: use separate lock from user's
+		// FIXME: Also, this will re-lock the forum on every new report, even after
+		// mod review. Add self.isReviewed to forums.
+		if reportCount >= Settings.shared.forumAutoQuarantineThreshold {
+			self.isLocked = true
+			return self.save(on: req.db)
+		}
+		return req.eventLoop.future()
+	}
 }

@@ -1,7 +1,7 @@
 @testable import App
 import Vapor
 import XCTest
-import FluentPostgreSQL
+
 import Foundation
 
 final class FezTests: XCTestCase {

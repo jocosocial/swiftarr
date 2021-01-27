@@ -1,34 +1,44 @@
 import Vapor
-import FluentPostgreSQL
+import Fluent
+
 
 /// Categories are used to organize Twit-arr `Forum`s into a managable structure. All `Forum`s
 /// belong to a single `Category`. A category is classified as one of two types: "admin"
 /// (an administratively controlled set of forums) or "user" (users can create forums).
 
-final class Category: Codable {
-     typealias Database = PostgreSQLDatabase
+final class Category: Model {
+	static let schema = "categories"
+	
     // MARK: Properties
     
     /// The category's ID.
-    var id: UUID?
+    @ID(key: .id) var id: UUID?
     
     /// The title of the category.
-    var title: String
+    @Field(key: "title") var title: String
     
     /// Whether the category requires `.moderator` for additions.
-    var isRestricted: Bool
+    @Field(key: "isRestricted") var isRestricted: Bool
     
     /// Timestamp of the model's creation, set automatically.
-    var createdAt: Date?
+    @Timestamp(key: "created_at", on: .create) var createdAt: Date?
     
     /// Timestamp of the model's last update, set automatically.
-    var updatedAt: Date?
+    @Timestamp(key: "updated_at", on: .update) var updatedAt: Date?
     
     /// Timestamp of the model's soft-deletion, set automatically.
-    var deletedAt: Date?
+    @Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
+
+	// MARK: Relations
+	
+    /// The `Forum`s belonging to the category.
+    @Children(for: \.$category) var forums: [Forum]
 
     // MARK: Initialization
     
+    // Used by Fluent
+ 	init() { }
+ 	
     /// Initializes a new Category.
     ///
     /// - Parameters:

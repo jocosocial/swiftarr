@@ -1,8 +1,6 @@
-import FluentPostgreSQL
-
 /// The type of `Event`.
 
-enum EventType: String, PostgreSQLRawEnum {
+enum EventType: String, Codable {
     /// A gaming event.
     case gaming
     /// An official but uncategorized event.
