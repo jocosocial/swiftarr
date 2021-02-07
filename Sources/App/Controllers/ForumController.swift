@@ -1079,11 +1079,11 @@ struct ForumController: RouteCollection {
 					throw Abort(.forbidden, reason: "user cannot modify post")
             }
 			// update if there are changes
-			if post.text != data.text || post.image != data.image {
+			if post.text != data.text || post.image != data.imageFilename {
 				// stash current contents first
 				let forumEdit = try ForumEdit(post: post)
 				post.text = data.text
-				post.image = data.image
+				post.image = data.imageFilename
 				return post.save(on: req.db).and(forumEdit.save(on: req.db)).transform(to: (post, true))
 			}
 			return req.eventLoop.future((post, false))

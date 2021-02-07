@@ -45,7 +45,7 @@ final class TwarrtEdit: Model {
         self.$twarrt.id = try twarrt.requireID()
         self.$twarrt.value = twarrt
         self.text = twarrtContent.text
-        self.imageName = twarrtContent.image
+        self.imageName = twarrtContent.imageFilename
     }
     
     /// Initializes a new TwarrtEdit.

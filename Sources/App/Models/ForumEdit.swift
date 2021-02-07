@@ -46,7 +46,7 @@ final class ForumEdit: Model {
         self.$post.id = try post.requireID()
         self.$post.value = post
         self.postText = postContent.text
-        self.imageName = postContent.image
+        self.imageName = postContent.imageFilename
     }
         
 	/// Initializes a new ForumEdit with the current contents of a post.. Call on the post BEFORE editing it
