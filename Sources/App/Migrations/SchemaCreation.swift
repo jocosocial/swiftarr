@@ -69,7 +69,7 @@ struct CreateEventSchema: Migration {
 struct CreateFezPostSchema: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         database.schema("fezposts")
-				.id()
+				.field("id", .int, .identifier(auto: true))
 				.field("text", .string, .required)
 				.field("image", .string, .required)
     			.field("created_at", .datetime)
@@ -107,9 +107,10 @@ struct CreateForumEditSchema: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         database.schema("forumedits")
 				.id()
-				.field("postContent", .dictionary, .required)
+				.field("post_text", .string, .required)
+				.field("image_name", .string)
     			.field("created_at", .datetime)
- 				.field("post_id", .uuid, .required, .references("forumposts", "id"))
+ 				.field("post_id", .int, .required, .references("forumposts", "id"))
 				.create()
     }
     
@@ -121,7 +122,7 @@ struct CreateForumEditSchema: Migration {
 struct CreateForumPostSchema: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         database.schema("forumposts")
-				.id()
+				.field("id", .int, .identifier(auto: true))
 				.field("text", .string, .required)
 				.field("image", .string, .required)
 				.field("isQuarantined", .bool, .required)
@@ -145,7 +146,7 @@ struct CreatePostLikesSchema: Migration {
 				.id()
 				.field("liketype", .string)
  				.field("user", .uuid, .required, .references("users", "id", onDelete: .cascade))
- 				.field("forumPost", .uuid, .required, .references("forumposts", "id", onDelete: .cascade))
+ 				.field("forumPost", .int, .required, .references("forumposts", "id", onDelete: .cascade))
 				.create()
     }
     
@@ -245,7 +246,8 @@ struct CreateTwarrtEditSchema: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         database.schema("twarrtedits")
 				.id()
-				.field("twarrtContent", .dictionary, .required)
+				.field("text", .string, .required)
+				.field("image_name", .string)
     			.field("created_at", .datetime)
  				.field("author", .uuid, .required, .references("users", "id"))
  				.field("twarrt", .int, .references("twarrts", "id"))

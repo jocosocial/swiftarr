@@ -10,8 +10,9 @@ final class ForumPost: Model {
 	
     // MARK: Properties
     
-    /// The post's ID.
-	@ID(key: .id) var id: Int?
+    /// The post's ID. Sorting posts in a thread by ID should produce the correct ordering, but
+    /// post IDs are unique through all forums, and won't be sequential in any forum.
+	@ID(custom: "id") var id: Int?
     
     /// The text content of the post.
     @Field(key: "text") var text: String

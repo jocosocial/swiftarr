@@ -10,6 +10,15 @@ import Redis
 // access when getting cache entries. This means that it must always have info on every user in the db.
 // This means that when any of a user's attributes that appear in UserCacheData are changed you'll need
 // to call updateUser() on that user.
+//
+// Because UserCache is shared app-wide, concurrency is a concern. Access to the dictionary that stores
+// all the UserCacheData entries is protected by a mutex lock. UserCacheData structs are immutable, their
+// properties and sub-structs are immutable, and UserCacheDatas can only be wholly replaced in the dict--
+// you cannot update by mutating an existing UCD in the dict. 
+//
+// Code that creates a new User must defer returning results to the client until the Update future completes,
+// to prevent a race where a new user immediately makes a call which processes before the cache is updated.
+// For all other updates, it's okay if eventual consistency is okay.
 
 public struct UserCacheData {
 	let userID: UUID
@@ -20,6 +29,18 @@ public struct UserCacheData {
 	let mutes: [UUID]?
 	let mutewords: [String]?
 	let alertwords: [String]?
+	
+	func getBlocks() -> [UUID] {
+		return blocks ?? []
+	}
+		
+	func getMutes() -> [UUID] {
+		return mutes ?? []
+	}
+	
+	func makeHeader() -> UserHeader {
+		return UserHeader(userID: userID, username: username, displayName: displayName, userImage: userImage)
+	}
 }
 
 extension Application {
@@ -55,6 +76,11 @@ extension Application {
 	struct UserCacheStartup: LifecycleHandler {
 		// Load all users into cache at startup.
 		func didBoot(_ app: Application) throws {
+			if app.environment.arguments.count > 1,
+					app.environment.arguments[1].lowercased().hasSuffix("migrate") {
+				return
+			}
+		
 			var dict = [UUID : UserCacheData]()
 			let allUsers = try User.query(on: app.db).all().wait()
 			try allUsers.forEach { user in
@@ -131,7 +157,6 @@ extension Request {
 			return result
 		}
 		
-		// May return a (copy of a) cache entry, or may fetch User from db
 		public func getUser(_ userUUID: UUID) -> UserCacheData? {
 			let dict = request.application.userCacheStorage.dict
 			let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)

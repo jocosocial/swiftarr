@@ -214,22 +214,23 @@ struct UserController: RouteCollection {
 				return req.db.transaction { (database) in
 					return user.save(on: database).throwingFlatMap {
 						// initialize default barrels
-						_ = self.createDefaultBarrels(for: user, on: req)
+						let barrels = self.createDefaultBarrels(for: user, on: database)
 						// create profile
-						let profile = try UserProfile(user: user, username: user.username)
-						return profile.save(on: database).throwingFlatMap { (_) in
-							return try req.userCache.updateUser(user.requireID()).flatMapThrowing { (_) in
-								// return user data as .created
-								let createdUserData = try CreatedUserData(
-									userID: user.requireID(),
-									username: user.username,
-									recoveryKey: recoveryKey
-								)
-									let response = Response(status: .created)
-									try response.content.encode(createdUserData)
-									return response
-							}
-						}
+						let profile = try UserProfile(user: user, username: user.username).save(on: database)
+						return req.eventLoop.flatten([profile, barrels])
+					}
+				}
+				.throwingFlatMap {
+					return try req.userCache.updateUser(user.requireID()).flatMapThrowing { (_) in
+						// return user data as .created
+						let createdUserData = try CreatedUserData(
+							userID: user.requireID(),
+							username: user.username,
+							recoveryKey: recoveryKey
+						)
+							let response = Response(status: .created)
+							try response.content.encode(createdUserData)
+							return response
 					}
 				}
 			}
@@ -556,7 +557,7 @@ struct UserController: RouteCollection {
 						return subAccount.save(on: database).transform(to: subAccount).addModelID().throwingFlatMap {
 							(newAccount, newAccountID) in
 							// initialize default barrels
-							_ = self.createDefaultBarrels(for: newAccount, on: req)
+							_ = self.createDefaultBarrels(for: newAccount, on: database)
 							// create profile
 							let profile = try UserProfile(user: newAccount, username: newAccount.username)
 							return profile.save(on: database).flatMapThrowing { (_) in
@@ -1461,7 +1462,7 @@ struct UserController: RouteCollection {
     ///   - user: The owning `User` of the default barrels.
     ///   - req: The incoming request `Container` of the calling handler.
     /// - Returns: Void.
-    func createDefaultBarrels(for user: User, on req: Request) -> EventLoopFuture<Void> {
+    func createDefaultBarrels(for user: User, on db: Database) -> EventLoopFuture<Void> {
 		do {
 			var barrels: [EventLoopFuture<Barrel>] = .init()
 			let alertKeywordsBarrel = try Barrel(
@@ -1470,33 +1471,33 @@ struct UserController: RouteCollection {
 				name: "Alert Keywords"
 			)
 			alertKeywordsBarrel.userInfo.updateValue([], forKey: "alertWords")
-			barrels.append(alertKeywordsBarrel.save(on: req.db).transform(to: alertKeywordsBarrel))
+			barrels.append(alertKeywordsBarrel.save(on: db).transform(to: alertKeywordsBarrel))
 			// sub-accounts don't own block lists, they're covered by the parent's
 			if user.parent == nil {
 				let blocksBarrel = try Barrel(
 					ownerID: user.requireID(),
 					barrelType: .userBlock,
 					name: "Blocked Users"            )
-				barrels.append(blocksBarrel.save(on: req.db).transform(to: blocksBarrel))
+				barrels.append(blocksBarrel.save(on: db).transform(to: blocksBarrel))
 			}
 			let mutesBarrel = try Barrel(
 				ownerID: user.requireID(),
 				barrelType: .userMute,
 				name: "Muted Users"
 			)
-			barrels.append(mutesBarrel.save(on: req.db).transform(to: mutesBarrel))
+			barrels.append(mutesBarrel.save(on: db).transform(to: mutesBarrel))
 			let muteKeywordsBarrel = try Barrel(
 				ownerID: user.requireID(),
 				barrelType: .keywordMute,
 				name: "Muted Keywords"
 			)
 			muteKeywordsBarrel.userInfo.updateValue([], forKey: "muteWords")
-			barrels.append(muteKeywordsBarrel.save(on: req.db).transform(to: muteKeywordsBarrel))
+			barrels.append(muteKeywordsBarrel.save(on: db).transform(to: muteKeywordsBarrel))
 			// resolve futures, return void
-			return barrels.flatten(on: req.eventLoop).transform(to: ())
+			return barrels.flatten(on: db.eventLoop).transform(to: ())
 		}
 		catch {
-			return req.eventLoop.makeFailedFuture(error)
+			return db.eventLoop.makeFailedFuture(error)
 		}
     }
 

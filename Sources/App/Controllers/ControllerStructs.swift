@@ -105,6 +105,8 @@ struct CategoryData: Content {
     var categoryID: UUID
     /// The title of the category.
     var title: String
+    /// If TRUE, only mods can create/modify threads in this forum. Should be sorted to top of category list.
+    var isRestricted: Bool
 }
 
 /// Used to return a newly created `UserNote` for display or further edit.
@@ -348,14 +350,27 @@ struct ForumData: Content {
     var forumID: UUID
     /// The forum's title
     var title: String
-    /// The ID of the forum's creator.
-    var creatorID: UUID
+    /// The forum's creator.
+	var creator: UserHeader
     /// Whether the forum is in read-only state.
     var isLocked: Bool
     /// Whether the user has favorited forum.
     var isFavorite: Bool
     /// The posts in the forum.
     var posts: [PostData]
+
+    init(forum: Forum, creator: UserHeader, isFavorite: Bool, posts: [PostData]) throws {
+    	guard creator.userID == forum.$creator.id else {
+    		throw Abort(.internalServerError, reason: "Internal server error--Forum's creator does not match.")
+    	}
+    
+		forumID = try forum.requireID()
+		title = forum.title
+		self.creator = creator
+		isLocked = forum.isLocked
+		self.isFavorite = isFavorite
+		self.posts = posts
+    }
 }
 
 /// Used to return the ID, title and status of a `Forum`.
@@ -372,16 +387,35 @@ struct ForumData: Content {
 struct ForumListData: Content {
     /// The forum's ID.
     var forumID: UUID
+    /// The forum's creator.
+	var creator: UserHeader
     /// The forum's title.
     var title: String
     /// The number of posts in the forum.
     var postCount: Int
+    /// Time forum was created.
+    var createdAt: Date
     /// Timestamp of most recent post. Needs to be optional because admin forums may be empty.
     var lastPostAt: Date?
     /// Whether the forum is in read-only state.
     var isLocked: Bool
     /// Whether user has favorited forum.
     var isFavorite: Bool
+    
+	init(forum: Forum, creator: UserHeader, postCount: Int, lastPostAt: Date?, isFavorite: Bool) throws {
+    	guard creator.userID == forum.$creator.id else {
+    		throw Abort(.internalServerError, reason: "Internal server error--Forum's creator does not match.")
+    	}
+		self.forumID = try forum.requireID()
+		self.creator = creator
+		self.title = forum.title
+		self.postCount = postCount
+		self.createdAt = forum.createdAt ?? Date()
+		self.lastPostAt = lastPostAt
+		self.isLocked = forum.isLocked
+		self.isFavorite = isFavorite
+    }
+
 }
 
 /// Used to upload an image file.
@@ -480,17 +514,22 @@ struct NoteUpdateData: Content {
     let note: String
 }
 
-/// Used to update a `ForumPost` or `Twarrt`, and as a property of `PostEdit`.
+/// Used to update a `ForumPost` or `Twarrt`. Format is designed to enable eventual multi-image features.
+/// When enabled, `imageFilename` becomes an array of existing filenames client can delete from or re-order.
+/// Image becomes an array of image data that can be sent; image name matches entries in imageFilenames.. 
 ///
 /// Required by:
 /// * `POST /api/v3/forum/post/ID`
 ///
 /// See `ForumController.postUpdateHandler(_:data:)`.
 struct PostContentData: Content {
-    /// The text of the forum post.
+    /// The new text of the forum post.
     var text: String
-    /// The filename of an existing image.
-    var image: String
+    /// The filename of an existing image. Ignored if newImage is set. Set to "" to delete image. Be sure to set this field to 
+    /// match the existing image filename if not changing.
+    var imageFilename: String
+    /// A new image to replace the existing image.
+    var newImage: ImageUploadData?
 }
 
 /// Used to create a `ForumPost` or `Twarrt`.
@@ -539,8 +578,8 @@ struct PostData: Content {
     var postID: Int
     /// The timestamp of the post.
     var createdAt: Date
-    /// The ID of the post's author.
-    var authorID: UUID
+    /// The post's author.
+    var author: UserHeader
     /// The text of the post.
     var text: String
     /// The filename of the post's optional image.
@@ -551,6 +590,31 @@ struct PostData: Content {
     var userLike: LikeType?
     /// The total number of `LikeType` reactions on the post.
     var likeCount: Int
+    
+    init(post: ForumPost, author: UserHeader, bookmarked: Bool, userLike: LikeType?, likeCount: Int) throws {
+		postID = try post.requireID()
+		createdAt = post.createdAt ?? Date()
+		self.author = author
+		text = post.isQuarantined ? "This post is under moderator review." : post.text
+		image = post.isQuarantined ? "" : post.image
+		isBookmarked = bookmarked
+		self.userLike = userLike
+		self.likeCount = likeCount
+    }
+    
+    // For newly created posts
+    init(post: ForumPost, author: UserHeader) throws {
+		postID = try post.requireID()
+		createdAt = post.createdAt ?? Date()
+		self.author = author
+		text = post.isQuarantined ? "This post is under moderator review." : post.text
+		image = post.isQuarantined ? "" : post.image
+		isBookmarked = false
+		self.userLike = nil
+		self.likeCount = 0
+    }
+    
+    
 }
 
 // FIXME: needs bookmark, userLike too?
@@ -664,11 +728,14 @@ struct SeaMonkey: Content {
 ///
 /// See `AuthController.loginHandler(_:)` and `AuthController.recoveryHandler(_:data:)`.
 struct TokenStringData: Content {
+    /// The user ID of the newly logged in user.
+    var userID: UUID
     /// The token string.
     let token: String
     /// Creates a `TokenStringData` from a `Token`.
     /// - Parameter token: The `Token` associated with the authenticated user.
-    init(token: Token) {
+    init(userID: UUID, token: Token) {
+    	self.userID = userID
         self.token = token.token
     }
 }

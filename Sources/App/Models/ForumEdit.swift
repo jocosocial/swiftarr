@@ -15,8 +15,11 @@ final class ForumEdit: Model {
     /// The edit's ID.
     @ID(key: .id) var id: UUID?
         
-    /// The previous contents of the post.
-    @Field(key: "postContent") var postContent: PostContentData
+    /// The previous text of the post.
+    @Field(key: "post_text") var postText: String
+    
+    /// The previous image, if any.
+    @Field(key: "image_name") var imageName: String?
     
     /// Timestamp of the model's creation, set automatically.
 	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
@@ -39,14 +42,15 @@ final class ForumEdit: Model {
     init(
         post: ForumPost,
         postContent: PostContentData
-    ) throws{
+    ) throws {
         self.$post.id = try post.requireID()
         self.$post.value = post
-        self.postContent = postContent
+        self.postText = postContent.text
+        self.imageName = postContent.image
     }
         
 	/// Initializes a new ForumEdit with the current contents of a post.. Call on the post BEFORE editing it
-	///  to save previous contents.
+	/// to save previous contents.
     ///
     /// - Parameters:
     ///   - post: The Twarrt that will be edited.
@@ -54,6 +58,7 @@ final class ForumEdit: Model {
     {
         self.$post.id = try post.requireID()
         self.$post.value = post
-        self.postContent = PostContentData(text: post.text, image: post.image)
+        self.postText = post.text
+        self.imageName = post.image
     }
 }

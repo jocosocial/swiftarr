@@ -179,12 +179,12 @@ struct AuthController: RouteCollection {
                     .flatMap { (existingToken) in
                     	do {
 							if let existing = existingToken {
-								return req.eventLoop.future(TokenStringData(token: existing))
+								return req.eventLoop.future(TokenStringData(userID: userID, token: existing))
 							} else {
 								// otherwise generate and return new token
 								let token = try Token.generate(for: user)
 								return token.save(on: req.db).map { _ in
-									return TokenStringData(token: token)
+									return TokenStringData(userID: userID, token: token)
 								}
 							}
 						}
@@ -243,28 +243,24 @@ struct AuthController: RouteCollection {
     ///   be used for all subsequent HTTP requests, until expiry or revocation.
     func loginHandler(_ req: Request) throws -> EventLoopFuture<TokenStringData> {
         let user = try req.auth.require(User.self)
+        let userID = try user.requireID()
         // no login for punks
         guard user.accessLevel != .banned else {
             throw Abort(.forbidden, reason: "nope")
         }
         // return existing token if one exists
-        return try Token.query(on: req.db)
-            .filter(\.$user.$id == user.requireID())
+        return Token.query(on: req.db)
+            .filter(\.$user.$id == userID)
             .first()
-            .flatMap { token in
-                do {
-					if let token = token {
-						return req.eventLoop.future(TokenStringData(token: token))
-					} else {
-						// otherwise generate and return new token
-						let token = try Token.generate(for: user)
-						return token.save(on: req.db).map { _ in
-							return TokenStringData(token: token)
-						}
+            .throwingFlatMap { token in
+				if let token = token {
+					return req.eventLoop.future(TokenStringData(userID: userID, token: token))
+				} else {
+					// otherwise generate and return new token
+					let token = try Token.generate(for: user)
+					return token.save(on: req.db).map { _ in
+						return TokenStringData(userID: userID, token: token)
 					}
-				}
-				catch {
-					return req.eventLoop.makeFailedFuture(error)
 				}
 			}
     }

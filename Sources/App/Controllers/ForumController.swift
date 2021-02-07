@@ -25,14 +25,12 @@ struct ForumController: RouteCollection {
         let tokenAuthGroup = forumRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
         
         // open access endpoints
+        forumRoutes.get("categories", use: categoriesHandler)
         
         // endpoints available only when not logged in
         
         // endpoints available whether logged in or out
         sharedAuthGroup.get(":forum_id", use: forumHandler)
-        sharedAuthGroup.get("categories", use: categoriesHandler)
-        sharedAuthGroup.get("categories", "admin", use: categoriesAdminHandler)
-        sharedAuthGroup.get("categories", "user", use: categoriesUserHandler)
         sharedAuthGroup.get("categories", ":category_id", use: categoryForumsHandler)
         sharedAuthGroup.get("match", ":search_string", use: forumMatchHandler)
         sharedAuthGroup.get("post", ":post_id", use: postHandler)
@@ -71,6 +69,27 @@ struct ForumController: RouteCollection {
     }
     
     // MARK: - Open Access Handlers
+
+    /// `GET /api/v3/forum/categories`
+    ///
+    /// Retrieve a list of all forum `Category`s, sorted by type (admin, user)
+    /// and title. 
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Returns: `[CategoryData]` containing all category IDs and titles.
+    func categoriesHandler(_ req: Request) throws -> EventLoopFuture<[CategoryData]> {
+        return Category.query(on: req.db)
+			.all()
+            .flatMapThrowing { (categories) in
+            	let sortedCats = categories.sorted {
+            		return $0.isRestricted == $1.isRestricted ? $0.title < $1.title : $0.isRestricted
+            	}
+                // return as CategoryData
+                return try sortedCats.map {
+                    try CategoryData(categoryID: $0.requireID(), title: $0.title, isRestricted: $0.isRestricted)
+                }
+        }
+    }
     
     // MARK: - basicAuthGroup Handlers (not logged in)
     // All handlers in this route group require a valid HTTP Basic Authentication
@@ -80,78 +99,28 @@ struct ForumController: RouteCollection {
     // All handlers in this route group require a valid HTTP Basic Authorization
     // *or* HTTP Bearer Authorization header in the request.
     
-    /// `GET /api/v3/forum/categories`
-    ///
-    /// Retrieve a list of all forum `Category`s, sorted by type (admin, user)
-    /// and title (for user categories only).
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[CategoryData]` containing all category IDs and titles.
-    func categoriesHandler(_ req: Request) throws -> EventLoopFuture<[CategoryData]> {
-        var categories: [Category] = []
-        // get admin categories
-        return Category.query(on: req.db)
-            .filter(\.$isRestricted == true)
-            .all()
-            .flatMap { (adminCategories) in
-                categories.append(contentsOf: adminCategories)
-                // get sorted user categories
-                return Category.query(on: req.db)
-                    .filter(\.$isRestricted == false)
-                    .sort(\.$title, .ascending)
-                    .all()
-                    .flatMapThrowing { (userCategories) in
-                        categories.append(contentsOf: userCategories)
-                        // return as CategoryData
-                        return try categories.map {
-                            try CategoryData(categoryID: $0.requireID(), title: $0.title)
-                        }
-                }
-        }
-    }
-    
-    /// `GET /api/v3/forum/categories/admin`
-    ///
-    /// Retrieve a list of all "official" forum `Category`s.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[CategoryData]` containing all administrative categories.
-    func categoriesAdminHandler(_ req: Request) throws -> EventLoopFuture<[CategoryData]> {
-        return Category.query(on: req.db)
-            .filter(\.$isRestricted == true)
-            .all()
-            .flatMapThrowing { (categories) in
-                // return as CategoryData
-                return try categories.map {
-                    try CategoryData(categoryID: $0.requireID(), title: $0.title)
-                }
-        }
-    }
-    
-    /// `GET /api/v3/forum/categories/user`
-    ///
-    /// Retrieve a list of all user forum `Category`s, sorted by title.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[CategoryData]` containing all general user categories.
-    func categoriesUserHandler(_ req: Request) throws -> EventLoopFuture<[CategoryData]> {
-        return Category.query(on: req.db)
-            .filter(\.$isRestricted == false)
-            .sort(\.$title, .ascending)
-            .all()
-            .flatMapThrowing { (categories) in
-                // return as CategoryData
-                return try categories.map {
-                    try CategoryData(categoryID: $0.requireID(), title: $0.title)
-                }
-        }
-    }
-    
     /// `GET /api/v3/forum/catgories/ID`
     ///
-    /// Retrieve a list of all forums in the specifiec `Category`, sorted by title if not an
-    /// admin category. If the forum is user-created and a user block applies, the forum will
-    /// not be returned.
+    /// Retrieve a list of all forums in the specifiec `Category`. Will not return forums created by blocked users.
+	/// 
+	/// * `?sort=STRING` - Sort forums by `create`, `update`, or `title`. Create and update return newest forums first.
+	/// * `?start=INT` - The index into the sorted list of forums to start returning results. 0 for first item, which is the default.
+	/// * `?limit=INT` - The max # of entries to return. Defaults to 50
+	/// 
+	/// These options set the anchor point for returning threads. By default the anchor is 'newest create date'. When sorting on 
+	/// update time, these params may be used to ensure a series of calls see (mostly) contiguous resullts. As users keep posting
+	/// to threads, the sorting for most recently updated threads is constantly changing. A paged UI, for example, may show N threads
+	/// per page and use beforedate/afterdate as the user moves between pages to ensure continuity.
+	/// When sorting on update time, afterdate and beforedate operate on the threads' update time. Create and Alpha sort use create time.
+	/// These options are mutally exclusive; if both are present, beforeDate will be used.
+	/// * `?afterdate=DATE` - 
+	/// * `?beforedate=DATE` - 
+	/// 
+	/// With no parameters, defaults to `?sort=create&start=0&limit=50`.
+	/// 
+	/// If you want to ensure you have all the threads in a category, you can sort by create time and ask for threads newer than 
+	/// the last time you asked. If you want to update last post times and post counts, you can sort by update time and get the
+	/// latest updates. 
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 404 error if the category ID is not valid.
@@ -159,33 +128,35 @@ struct ForumController: RouteCollection {
     func categoryForumsHandler(_ req: Request) throws -> EventLoopFuture<[ForumListData]> {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
+        let start = (req.query[Int.self, at: "start"] ?? 0)
+        let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...200)
         // get user's taggedForum barrel, and category
         return user.getBookmarkBarrel(of: .taggedForum, on: req)
         	.and(Category.findFromParameter("category_id", on: req).addModelID()).flatMap {
             (barrel, categoryTuple) in
             let (category, categoryID) = categoryTuple
-			if category.isRestricted {
-				// don't sort admin categories
-				return Forum.query(on: req.db)
-					.filter(\.$category.$id == categoryID)
-					.all()
-					.flatMap { (forums) in
-						return buildForumListData(forums, on: req, favoritesBarrel: barrel)
-                    }
-			} 
-			else {
-				// remove blocks from results
-				let blocked = req.userCache.getBlocks(userID)
-				// sort user categories
-				return Forum.query(on: req.db)
-					.filter(\.$category.$id == categoryID)
-					.filter(\.$creator.$id !~ blocked)
-					.sort(\.$title, .ascending)
-					.all()
-					.flatMap { (forums) in
-						return buildForumListData(forums, on: req, favoritesBarrel: barrel)
-					}
-            }
+			// remove blocks from results, unless it's an admin category
+			let blocked = category.isRestricted ? [] : req.userCache.getBlocks(userID)
+			// sort user categories
+			let query = Forum.query(on: req.db)
+				.filter(\.$category.$id == categoryID)
+				.filter(\.$creator.$id !~ blocked)
+				.range(start..<(start + limit))
+			var dateFilterUsesUpdate = false
+			switch req.query[String.self, at: "sort"] {
+				case "update": _ = query.sort(\.$updatedAt, .descending); dateFilterUsesUpdate = true
+				case "title": _ = query.sort(\.$title, .ascending)
+				default: _ = query.sort(\.$createdAt, .descending)
+			}
+			if let beforeDate = req.query[Date.self, at: "beforedate"] {
+				query.filter((dateFilterUsesUpdate ? \.$updatedAt : \.$createdAt) < beforeDate)
+			}
+			else if let afterDate = req.query[Date.self, at: "afterdate"] {
+				query.filter((dateFilterUsesUpdate ? \.$updatedAt : \.$createdAt) > afterDate)
+			}
+			return query.all().flatMap { (forums) in
+				return buildForumListData(forums, on: req, favoritesBarrel: barrel)
+			}
         }
     }
     
@@ -199,21 +170,20 @@ struct ForumController: RouteCollection {
     /// - Returns: `ForumData` containing the forum's metadata and all posts.
     func forumHandler(_ req: Request) throws -> EventLoopFuture<ForumData> {
         let user = try req.auth.require(User.self)
+        let cacheUser = try req.userCache.getUser(user)
         // get user's taggedForum barrel
 		return user.getBookmarkBarrel(of: .taggedForum, on: req)
 				.and(Forum.findFromParameter("forum_id", on: req)).flatMap { (barrel, forum) in
 			// filter posts
-			return ForumPost.getCachedFilters(for: user, on: req).flatMap { (filters) in
-				return forum.$posts.query(on: req.db)
-					.filter(\.$author.$id !~ filters.blocked)
-					.filter(\.$author.$id !~ filters.muted)
-					.sort(\.$createdAt, .ascending)
-					.all()
-					.flatMap { (posts) -> EventLoopFuture<ForumData> in
-						return buildForumData(forum, posts: posts, user: user, on: req, 
-								filters: filters, favoriteForumBarrel: barrel)
-					}
-			}
+			return forum.$posts.query(on: req.db)
+				.filter(\.$author.$id !~ cacheUser.getBlocks())
+				.filter(\.$author.$id !~ cacheUser.getMutes())
+				.sort(\.$createdAt, .ascending)
+				.all()
+				.flatMap { (posts) -> EventLoopFuture<ForumData> in
+					return buildForumData(forum, posts: posts, user: user, on: req, 
+							mutewords: cacheUser.mutewords, favoriteForumBarrel: barrel)
+				}
         }
     }
     
@@ -287,22 +257,21 @@ struct ForumController: RouteCollection {
     /// - Returns: `ForumData` containing the post's parent forum.
     func postForumHandler(_ req: Request) throws -> EventLoopFuture<ForumData> {
         let user = try req.auth.require(User.self)
+        let cacheUser = try req.userCache.getUser(user)
         // get user's taggedForum barrel, and cached filters, and forum post
         return user.getBookmarkBarrel(of: .taggedForum, on: req)
-         	.and(ForumPost.getCachedFilters(for: user, on: req))
      	  	.and(ForumPost.findFromParameter("post_id", on: req))
-        	.flatMap { (arg0, post) in
-        		let (barrel, filters) = arg0
+        	.flatMap { (barrel, post) in
                 // get forum
                 return post.$forum.get(on: req.db).flatMap { (forum) in
 					return forum.$posts.query(on: req.db)
-						.filter(\.$author.$id !~ filters.blocked)
-						.filter(\.$author.$id !~ filters.muted)
+						.filter(\.$author.$id !~ cacheUser.getBlocks())
+						.filter(\.$author.$id !~ cacheUser.getMutes())
 						.sort(\.$createdAt, .ascending)
 						.all()
 						.flatMap { (posts) in
-							return buildForumData(forum, posts: posts, user: user, on: req, filters: filters,
-									favoriteForumBarrel: barrel)
+							return buildForumData(forum, posts: posts, user: user, on: req, 
+									mutewords: cacheUser.mutewords, favoriteForumBarrel: barrel)
                         }
                 }
             }
@@ -630,24 +599,20 @@ struct ForumController: RouteCollection {
             guard !category.isRestricted || user.accessLevel.hasAccess(.moderator)  else {
                     return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "users cannot create forums in category"))
             }
-            // create forum
-            let forum = try Forum(title: data.title, category: category, creator: user, isLocked: false)
-            return forum.save(on: req.db).flatMap { (_) in
-                // process image
-                return self.processImage(data: data.image, forType: .forumPost, on: req).throwingFlatMap { (imageName) in
+			// process image
+			return self.processImage(data: data.image, forType: .forumPost, on: req).throwingFlatMap { (imageName) in
+				// create forum
+				let forum = try Forum(title: data.title, category: category, creator: user, isLocked: false)
+				return forum.save(on: req.db).throwingFlatMap { (_) in
                     // create first post
-                    let forumPost = try ForumPost(forum: forum, author: forum.creator,
-							text: data.text, image: imageName)
+                    let forumPost = try ForumPost(forum: forum, author: forum.creator, text: data.text, image: imageName)
                     // return as ForumData
                     return forumPost.save(on: req.db).flatMapThrowing { (_) in
-						let forumData = try ForumData(
-							forumID: forum.requireID(),
-							title: forum.title,
-							creatorID: forum.creator.requireID(),
-							isLocked: forum.isLocked,
-							isFavorite: false,
-							posts: [forumPost.convertToData(bookmarked: false, userLike: nil, likeCount: 0)]
-						)
+                    	let creatorHeader = try req.userCache.getHeader(user.requireID())
+                    	let postData = try PostData(post: forumPost, author: creatorHeader, 
+                    			bookmarked: false, userLike: nil, likeCount: 0)
+						let forumData = try ForumData(forum: forum, creator: creatorHeader,
+								isFavorite: false, posts: [postData])
 						return forumData
                     }
                 }
@@ -764,44 +729,35 @@ struct ForumController: RouteCollection {
 		let data = try req.content.decode(ImageUploadData.self)
 		// get post
         return ForumPost.findFromParameter("post_id", on: req).addModelID().flatMap { (post, postID) in
-            guard post.author.id == userID || user.accessLevel.hasAccess(.moderator) else {
+            guard post.$author.id == userID || user.accessLevel.hasAccess(.moderator) else {
 				return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "user cannot modify post"))
             }
-            // get isBookmarked state
-            return user.hasBookmarked(post, on: req).flatMap { (bookmarked) in
-                // get like count
-                return PostLikes.query(on: req.db)
-                    .filter(\.$post.$id == postID)
-                    .count()
-                    .flatMap { (count) in
-                        // get generated filename
-                        return self.processImage(data: data.image, forType: .userProfile, on: req).throwingFlatMap {
-                            (filename) in
-                            // replace existing image
-                            if !post.image.isEmpty {
-                                // create ForumEdit record
-                                let forumEdit = try ForumEdit(post: post)
-                                // archive thumbnail
-                                DispatchQueue.global(qos: .background).async {
-                                    self.archiveImage(post.image, from: self.imageDir)
-                                }
-                                return forumEdit.save(on: req.db).transform(to: filename)
-							}
-							return req.eventLoop.future(filename)
-						}
-						.flatMap { (filename: String) in
-							// update post
-							post.image = filename
-							return post.save(on: req.db).flatMapThrowing { (_) in
-								// return as PostData
-								return try post.convertToData(bookmarked: bookmarked,
-									userLike: nil, likeCount: count)
-							}
-						}
-                	}
-                
-            }
-        }
+			// get generated filename
+			return self.processImage(data: data.image, forType: .userProfile, on: req).throwingFlatMap { (filename) in
+				// replace existing image
+				if !post.image.isEmpty {
+					// create ForumEdit record
+					let forumEdit = try ForumEdit(post: post)
+					// archive thumbnail
+					DispatchQueue.global(qos: .background).async {
+						self.archiveImage(post.image, from: self.imageDir)
+					}
+					return forumEdit.save(on: req.db).transform(to: filename)
+				}
+				return req.eventLoop.future(filename)
+			}
+			.flatMap { (filename: String) in
+				// update post
+				post.image = filename
+				return post.save(on: req.db).flatMap { (_) in
+					// return as PostData. Because a mod can call this to modify an image on another user's post,
+					// we may need to process userLikes and likeCounts.
+					return buildPostData([post], user: user, on: req).map { postDataArray in
+						return postDataArray[0]
+					}
+				}
+			}
+		}
     }
     
     /// `POST /api/v3/forum/post/ID/image/remove`
@@ -815,39 +771,30 @@ struct ForumController: RouteCollection {
     func imageRemoveHandler(_ req: Request) throws -> EventLoopFuture<PostData> {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
-        return ForumPost.findFromParameter("post_id", on: req).addModelID().flatMap { (post, postID) in
+        return ForumPost.findFromParameter("post_id", on: req).addModelID().throwingFlatMap { (post, postID) in
             guard post.author.id == userID || user.accessLevel.hasAccess(.moderator) else {
-				return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "user cannot modify post"))
+				throw Abort(.forbidden, reason: "user cannot modify post")
             }
-            // get isBookmarked state
-            return user.hasBookmarked(post, on: req).flatMap { (bookmarked) in
-                // get like count
-                return PostLikes.query(on: req.db)
-                    .filter(\.$post.$id == postID)
-                    .count()
-                    .throwingFlatMap {
-                        (count) in
-                        if !post.image.isEmpty {
-                            // create ForumEdit record
-							let forumEdit = try ForumEdit(post: post)
-                            // archive thumbnail
-                            DispatchQueue.global(qos: .background).async {
-                                self.archiveImage(post.image, from: self.imageDir)
-                            }
-							return forumEdit.save(on: req.db).transform(to: count)
-						}
-						return req.eventLoop.future(count)
-					}
-					.flatMap { (count: Int) in
-                    	// remove image filename from post
-						post.image = ""
-						return post.save(on: req.db).flatMapThrowing { (_) in
-							// return as PostData
-							return try post.convertToData(bookmarked: bookmarked, userLike: nil, likeCount: count)
-                        }
-					}
-            }
-        }
+			if !post.image.isEmpty {
+				// create ForumEdit record
+				let forumEdit = try ForumEdit(post: post)
+				// archive thumbnail
+				DispatchQueue.global(qos: .background).async {
+					self.archiveImage(post.image, from: self.imageDir)
+				}
+				// Makes a future we don't wait on.
+				_ = forumEdit.save(on: req.db)
+			}
+			// remove image filename from post
+			post.image = ""
+			return post.save(on: req.db).flatMap { (_) in
+				// return as PostData. Because a mod can call this to modify an image on another user's post,
+				// we may need to process userLikes and likeCounts.
+				return buildPostData([post], user: user, on: req).map { postDataArray in
+					return postDataArray[0]
+				}
+			}
+		}
     }
     
     /// `GET /api/v3/forum/likes`
@@ -922,6 +869,7 @@ struct ForumController: RouteCollection {
     /// - Returns: `PostData` containing the post's contents and metadata.
     func postCreateHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         let user = try req.auth.require(User.self)
+        let cacheUser = try req.userCache.getUser(user)
         // ensure user has write access
         guard user.accessLevel.hasAccess(.verified) else {
             throw Abort(.forbidden, reason: "user cannot post in forum")
@@ -930,30 +878,25 @@ struct ForumController: RouteCollection {
         try PostCreateData.validate(content: req)
         let data = try req.content.decode(PostCreateData.self)
         // get forum
-        return Forum.findFromParameter("forum_id", on: req).flatMap { (forum) in
+        return Forum.findFromParameter("forum_id", on: req).throwingFlatMap { (forum) in
             guard !forum.isLocked else {
-                return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "forum is locked read-only"))
+                throw Abort(.forbidden, reason: "forum is locked read-only")
             }
-            // ensure user has access to forum
-            return ForumPost.getCachedFilters(for: user, on: req).flatMap { (filters) in
-                // user cannot retrieve block-owned forum, but prevent end-run
-                guard let creatorID = forum.creator.id, !filters.blocked.contains(creatorID) else {
-                    return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "user cannot post in forum"))
-                }
-                // process image
-                return self.processImage(data: data.imageData, forType: .forumPost, on: req).throwingFlatMap {
-                    (filename) in
-                    // create post
-                    let forumPost = try ForumPost(forum: forum, author: user, text: data.text, image: filename)
-                    return forumPost.save(on: req.db).flatMapThrowing { (_) in
-                        // return as PostData, with 201 status
-                        let response = Response(status: .created)
-                        try response.content.encode(
-                            try forumPost.convertToData(bookmarked: false, userLike: nil, likeCount: 0))
-                        return response
-                    }
-                }
-            }
+            // ensure user has access to forum; user cannot retrieve block-owned forum, but prevent end-run
+			guard let creatorID = forum.creator.id, !cacheUser.getBlocks().contains(creatorID) else {
+				throw Abort(.forbidden, reason: "user cannot post in forum")
+			}
+			// process image
+			return self.processImage(data: data.imageData, forType: .forumPost, on: req).throwingFlatMap { (filename) in
+				// create post
+				let forumPost = try ForumPost(forum: forum, author: user, text: data.text, image: filename)
+				return forumPost.save(on: req.db).flatMapThrowing { (_) in
+					// return as PostData, with 201 status
+					let response = Response(status: .created)
+					try response.content.encode(PostData(post: forumPost, author: cacheUser.makeHeader()))
+					return response
+				}
+			}
         }
     }
     
@@ -1049,31 +992,14 @@ struct ForumController: RouteCollection {
             guard post.author.id != userID else {
                 return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "user cannot like own post"))
             }
-            // get isBookmarked state
-            return user.hasBookmarked(post, on: req).flatMap { (bookmarked) in
-                // check for existing like
-                return PostLikes.query(on: req.db)
-                    .filter(\.$user.$id == userID)
-                    .filter(\.$post.$id == postID)
-                    .first()
-                    .throwingFlatMap { (like) in
-						let newLike = try like ?? PostLikes(user, post, likeType: .laugh)
-						newLike.likeType = .laugh
-						return newLike.save(on: req.db)
-					}
-					.flatMap { 
-						// get likes count
-						return PostLikes.query(on: req.db)
-                                .filter(\.$post.$id == postID)
-                                .count()
-                                .flatMapThrowing { (count) in
-                                    // return as PostData
-                                    return try post.convertToData(bookmarked: bookmarked, userLike: .laugh,
-                                       		likeCount: count)
-                           		}
-					}
-            }
-        }
+			return post.$likes.attachOrEdit(from: post, to: user, on: req.db) { postLike in
+				postLike.likeType = likeType
+			}.flatMap { 
+				return buildPostData([post], user: user, on: req).map { postDataArray in
+					return postDataArray[0]
+				}
+			}
+		}
 	}
 
     /// `GET /api/v3/forum/posts`
@@ -1089,7 +1015,7 @@ struct ForumController: RouteCollection {
             .sort(\.$createdAt, .ascending)
             .all()
             .flatMap { (posts) in
-				return buildPostData(posts, user: user, on: req, includeUserLikes: false)
+				return buildPostData(posts, user: user, on: req)
         	}
     }
     
@@ -1109,31 +1035,22 @@ struct ForumController: RouteCollection {
             guard post.author.id != userID else {
                 return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "user cannot like own post"))
             }
-            // get isBookmarked state
-            return user.hasBookmarked(post, on: req).flatMap { (bookmarked) in
-                // check for existing like
-                return PostLikes.query(on: req.db)
-                    .filter(\.$user.$id == userID)
-                    .filter(\.$post.$id == postID)
-                    .first()
-                    .flatMap { (like) in
-                        guard like != nil else {
-                            return req.eventLoop.makeFailedFuture(
-                            		Abort(.badRequest, reason: "user does not have a reaction on the post"))
-                        }
-                        // remove pivot
-                        return post.$likes.detach(user, on: req.db).flatMap { (_) in
-                            // get likes count
-                            return PostLikes.query(on: req.db)
-                                .filter(\.$post.$id == postID)
-                                .count()
-                                .flatMapThrowing { (count) in
-                                    // return as PostData
-                                    return try post.convertToData(bookmarked: bookmarked, userLike: nil, likeCount: count)
-                            	}
-                        }
-                	}
-            }
+			// check for existing like
+			return PostLikes.query(on: req.db)
+				.filter(\.$user.$id == userID)
+				.filter(\.$post.$id == postID)
+				.first()
+				.throwingFlatMap { (like) in
+					guard like != nil else {
+						throw Abort(.badRequest, reason: "user does not have a reaction on the post")
+					}
+					// remove pivot
+					return post.$likes.detach(user, on: req.db).flatMap { (_) in
+						return buildPostData([post], user: user, on: req).map { postDataArray in
+							return postDataArray[0]
+						}
+					}
+				}
         }
     }
     
@@ -1156,52 +1073,29 @@ struct ForumController: RouteCollection {
 		// see `PostCreateData.validations()`
         try PostContentData.validate(content: req)
         let data = try req.content.decode(PostContentData.self)
-        return ForumPost.findFromParameter("post_id", on: req).addModelID().flatMap { (post, postID) in
+        return ForumPost.findFromParameter("post_id", on: req).addModelID().throwingFlatMap { (post, postID) in
             // ensure user has write access
             guard post.author.id == userID, user.accessLevel.hasAccess(.verified) else {
-					return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "user cannot modify post"))
+					throw Abort(.forbidden, reason: "user cannot modify post")
             }
-            // get isBookmarked state
-            return user.hasBookmarked(post, on: req).flatMap { (bookmarked) in
-                // get like count
-                return PostLikes.query(on: req.db)
-                    .filter(\.$post.$id == postID)
-                    .count()
-                    .throwingFlatMap { (count) in
-						do {
-							// stash current contents
-							let forumEdit = try ForumEdit(post: post)
-							// update if there are changes
-							if post.text != data.text || post.image != data.image {
-								post.text = data.text
-								post.image = data.image
-								return post.save(on: req.db).flatMap { (_) in
-									// save ForumEdit
-									return forumEdit.save(on: req.db).flatMapThrowing { (_) in
-										// return updated post as PostData, with 201 status
-										let response = Response(status: .created)
-										try response.content.encode(try post.convertToData(bookmarked: bookmarked, 
-												userLike: nil, likeCount: count)
-										)
-										return response
-									}
-								}
-							} 
-							else {
-								// just return post as PostData, with 200 status
-								let response = Response(status: .ok)
-								try response.content.encode(try post.convertToData(bookmarked: bookmarked,
-										userLike: nil, likeCount: count)
-								)
-								return req.eventLoop.future(response)
-							}
-						}
-						catch {
-							return req.eventLoop.makeFailedFuture(error)
-						}
-                	}
-            }
-        }
+			// update if there are changes
+			if post.text != data.text || post.image != data.image {
+				// stash current contents first
+				let forumEdit = try ForumEdit(post: post)
+				post.text = data.text
+				post.image = data.image
+				return post.save(on: req.db).and(forumEdit.save(on: req.db)).transform(to: (post, true))
+			}
+			return req.eventLoop.future((post, false))
+		}
+		.flatMap { (post, wasCreated: Bool) in
+			// return updated post as PostData, with 200 or 201 status
+			return buildPostData([post], user: user, on: req).flatMapThrowing { postDataArray in
+				let response = Response(status: wasCreated ? .created : .ok)
+				try response.content.encode(postDataArray[0])
+				return response
+			}
+		}
     }
 }
 
@@ -1229,15 +1123,14 @@ extension ForumController {
 				// return as ForumListData
 				var returnListData: [ForumListData] = []
 				for (index, forum) in forums.enumerated() {
+					let userHeader = try req.userCache.getHeader(forum.$creator.id)
 					returnListData.append(
 						try ForumListData(
-							forumID: forum.requireID(),
-							title: forum.title,
-							postCount: counts[index],
-							lastPostAt: timestamps[index],
-							isLocked: forum.isLocked,
-							isFavorite: forceIsFavorite ?? favoritesBarrel?.contains(forum) ?? false
-						)
+							forum: forum, 
+							creator: userHeader, 
+							postCount: counts[index], 
+							lastPostAt: timestamps[index], 
+							isFavorite: forceIsFavorite ?? favoritesBarrel?.contains(forum) ?? false)
 					)
 				}
 				return returnListData
@@ -1245,14 +1138,13 @@ extension ForumController {
 	}
 	
 	func buildForumData(_ forum: Forum, posts: [ForumPost], user: User, on req: Request,
-			filters: CachedFilters? = nil, favoriteForumBarrel: Barrel? = nil) -> EventLoopFuture<ForumData> {
-
-		return buildPostData(posts, user: user, on: req, mutewords: filters?.mutewords)
+			mutewords: [String]? = nil, favoriteForumBarrel: Barrel? = nil) -> EventLoopFuture<ForumData> {
+		return buildPostData(posts, user: user, on: req, mutewords: mutewords)
 			.flatMapThrowing { (flattenedPosts) in
-				return try ForumData(forumID: forum.requireID(), title: forum.title,
-					creatorID: forum.creator.requireID(), isLocked: forum.isLocked,
-					isFavorite: favoriteForumBarrel?.contains(forum) ?? false,
-					posts: flattenedPosts)
+				let creatorHeader = try req.userCache.getHeader(forum.$creator.id)
+				return try ForumData(forum: forum, creator: creatorHeader, 
+						isFavorite: favoriteForumBarrel?.contains(forum) ?? false,
+						posts: flattenedPosts)
 			}
 	}
 	
@@ -1261,8 +1153,7 @@ extension ForumController {
 	// only need some of the functionality, or for whom some of the values are known in advance e.g.
 	// the method that returns a user's bookmarked posts can assume all the posts it finds are in fact bookmarked.
 	func buildPostData(_ posts: [ForumPost], user: User, on req: Request,
-			mutewords: [String]? = nil, assumeBookmarked: Bool? = nil, 
-			includeUserLikes: Bool = true) -> EventLoopFuture<[PostData]> {
+			mutewords: [String]? = nil, assumeBookmarked: Bool? = nil, assumeLikeType: LikeType? = nil) -> EventLoopFuture<[PostData]> {
 
 		// remove muteword posts
 		var filteredPosts = posts
@@ -1272,20 +1163,21 @@ extension ForumController {
 		// convert to PostData
 		let postsData = filteredPosts.map { (filteredPost) -> EventLoopFuture<PostData> in
 			do {
+      			let author = try req.userCache.getHeader(filteredPost.$author.id)
 				let bookmarked = assumeBookmarked == nil ? user.hasBookmarked(filteredPost, on: req) :
 						req.eventLoop.future(assumeBookmarked!)
-				let userLike = includeUserLikes ? try PostLikes.query(on: req.db)
+				let processUserLike = try author.userID != user.requireID() && assumeLikeType == nil
+				let userLike = processUserLike ? try PostLikes.query(on: req.db)
 					.filter(\.$post.$id == filteredPost.requireID())
 					.filter(\.$user.$id == user.requireID())
-					.first() : req.eventLoop.future(nil)
+					.first().map { $0?.likeType } : req.eventLoop.future(assumeLikeType)
 				let likeCount = try PostLikes.query(on: req.db)
 					.filter(\.$post.$id  == filteredPost.requireID())
 					.count()
-				return bookmarked.and(userLike).and(likeCount).flatMapThrowing {
-					(arg0, count) in
+				return bookmarked.and(userLike).and(likeCount).flatMapThrowing { (arg0, count) in
 					let (bookmarked, userLike) = arg0
-					return try filteredPost.convertToData(bookmarked: bookmarked, userLike: userLike?.likeType,
-							likeCount: count)
+					return try PostData(post: filteredPost, author: author, bookmarked: bookmarked, 
+							userLike: userLike, likeCount: count)
 				}
 			}
 			catch {

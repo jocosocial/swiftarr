@@ -93,3 +93,12 @@ extension UUID: RESPValueConvertible {
     }
 
 }
+
+// Why oh why doesn't foundation already have this? This lets you do
+// 15.clamped(to: 0...5), for example. An open range variant of this is problematic,
+// best not to do it.
+extension Comparable {
+	func clamped(to limits: ClosedRange<Self>) -> Self {
+		return max(limits.lowerBound, min(self, limits.upperBound))
+	}
+}

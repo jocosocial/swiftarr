@@ -3,39 +3,6 @@ import Fluent
 
 // MARK: - Functions
 
-extension ForumPost {
-    /// Converts an `ForumPost` model to a version omitting data that not for public
-    /// consumption.
-    func convertToData(bookmarked: Bool, userLike: LikeType?, likeCount: Int) throws -> PostData {
-        return try PostData(
-            postID: self.requireID(),
-            createdAt: self.createdAt ?? Date(),
-            authorID: self.author.requireID(),
-            text: self.isQuarantined ? "This post is under moderator review." : self.text,
-            image: self.isQuarantined ? "" : self.image,
-            isBookmarked: bookmarked,
-            userLike: userLike,
-            likeCount: likeCount
-        )
-    }
-}
-
-extension EventLoopFuture where Value: ForumPost {
-    /// Converts a `Future<ForumPost>` to a `Future<PostData>`. This extension provides
-    /// the convenience of simply using `post.convertToData()` and allowing the compiler to
-    /// choose the appropriate version for the context.
-    func convertToData(bookmarked: Bool, userLike: LikeType?, likeCount: Int) -> EventLoopFuture<PostData> {
-        return self.flatMapThrowing {
-            (forumPost) in
-            return try forumPost.convertToData(
-                bookmarked: bookmarked,
-                userLike: userLike,
-                likeCount: likeCount
-            )
-        }
-    }
-}
-
 // posts can be bookmarked
 extension ForumPost: UserBookmarkable {
     /// The barrel type for `ForumPost` bookmarking.

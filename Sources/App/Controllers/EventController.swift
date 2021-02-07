@@ -549,48 +549,8 @@ struct EventController: RouteCollection {
 							.sort(\.$createdAt, .ascending)
 							.all()
 							.flatMap { (posts) in
-								do {
-									// remove muteword posts
-									let filteredPosts = posts.compactMap {
-										$0.filterMutewords(using: cachedUser?.mutewords)
-									}
-									// convert to PostData
-									let postsData = try filteredPosts.map {
-										(filteredPost) -> EventLoopFuture<PostData> in
-										let bookmarked = user.hasBookmarked(filteredPost, on: req)
-										let userLike = try PostLikes.query(on: req.db)
-											.filter(\.$post.$id == filteredPost.requireID())
-											.filter(\.$user.$id == user.requireID())
-											.first()
-										let likeCount = try PostLikes.query(on: req.db)
-											.filter(\.$post.$id == filteredPost.requireID())
-											.count()
-										return bookmarked.and(userLike).and(likeCount).flatMapThrowing {
-											(arg0, count) in
-											let (bookmarked, userLike) = arg0
-											return try filteredPost.convertToData(
-												bookmarked: bookmarked,
-												userLike: userLike?.likeType,
-												likeCount: count
-											)
-										}
-									}
-									return postsData.flatten(on: req.eventLoop).flatMapThrowing {
-										(flattenedPosts) in
-										return try ForumData(
-											forumID: forum.requireID(),
-											title: forum.title,
-											creatorID: forum.creator.requireID(),
-											isLocked: forum.isLocked,
-											isFavorite: barrel?.modelUUIDs
-												.contains(try forum.requireID()) ?? false,
-											posts: flattenedPosts
-										)
-									}
-								}
-								catch {
-									return req.eventLoop.makeFailedFuture(error)
-								}
+								return ForumController().buildForumData(forum, posts: posts, user: user, on: req,
+										mutewords: cachedUser?.mutewords, favoriteForumBarrel: barrel)
 						}
 				}
 		}

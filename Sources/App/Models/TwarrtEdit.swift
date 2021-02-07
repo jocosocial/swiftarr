@@ -17,7 +17,11 @@ final class TwarrtEdit: Model {
     @ID(key: .id) var id: UUID?
     
     /// The previous contents of the post.
-    @Field(key: "twarrtContent") var twarrtContent: PostContentData
+     /// The previous text of the post.
+    @Field(key: "text") var text: String
+    
+    /// The previous image, if any.
+    @Field(key: "image_name") var imageName: String?
     
     /// Timestamp of the model's creation, set automatically.
 	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
@@ -37,12 +41,11 @@ final class TwarrtEdit: Model {
     /// - Parameters:
     ///   - twarrt: The Twarrt that was edited.
     ///   - twarrtContent: The previous contents of the Twarrt.
-    init(
-        twarrt: Twarrt,
-        twarrtContent: PostContentData
-    ) {
-        self.twarrt = twarrt
-        self.twarrtContent = twarrtContent
+    init(twarrt: Twarrt, twarrtContent: PostContentData) throws {
+        self.$twarrt.id = try twarrt.requireID()
+        self.$twarrt.value = twarrt
+        self.text = twarrtContent.text
+        self.imageName = twarrtContent.image
     }
     
     /// Initializes a new TwarrtEdit.
@@ -55,7 +58,8 @@ final class TwarrtEdit: Model {
     {
         self.$twarrt.id = try twarrt.requireID()
         self.$twarrt.value = twarrt
-        self.twarrtContent = PostContentData(text: text, image: imageName)
+        self.text = text
+        self.imageName = imageName
     }
     
     /// Initializes a new TwarrtEdit with the current contents of a twarrt.. Call on the twarrt BEFORE editing it
@@ -67,6 +71,7 @@ final class TwarrtEdit: Model {
     {
         self.$twarrt.id = try twarrt.requireID()
         self.$twarrt.value = twarrt
-        self.twarrtContent = PostContentData(text: twarrt.text, image: twarrt.image)
+        self.text = twarrt.text
+        self.imageName = twarrt.image
     }
 }
