@@ -3,6 +3,10 @@ import Fluent
 
 extension Model where IDValue: LosslessStringConvertible {
 
+	static func findFromParameter(_ param: PathComponent, on req: Request) -> EventLoopFuture<Self> {
+		return findFromParameter(param.description, on: req)
+	}
+
     /// Returns an `EventLoopFuture<User>` that will match the UUID of a user in a named request parameter. 
 	/// Returns a failed future with an Abort error if: the parameter doesn't exist, the parameter's value can't be made into an IDValue 
 	/// for the Model type, or no Model type with that ID was found in the database.
@@ -12,15 +16,16 @@ extension Model where IDValue: LosslessStringConvertible {
     ///   which the query must be run.
     /// - Returns: `[UUID]` containing all the user's associated IDs.
 	static func findFromParameter(_ param: String, on req: Request) -> EventLoopFuture<Self> {
-  		guard let parameter = req.parameters.get(param) else {
+		let paramName = param.hasPrefix(":") ? String(param.dropFirst()) : param
+  		guard let paramVal = req.parameters.get(paramName) else {
             return req.eventLoop.makeFailedFuture(Abort(.badRequest, reason: "Request parameter \(param) is missing."))
         }
-  		guard let objectID = IDValue(parameter) else {
+  		guard let objectID = IDValue(paramVal) else {
             return req.eventLoop.makeFailedFuture(
-            		Abort(.badRequest, reason: "Request parameter \(param) with value \(parameter) is malformed."))
+            		Abort(.badRequest, reason: "Request parameter \(param) with value \(paramVal) is malformed."))
         }
 		return Self.find(objectID, on: req.db)
-			.unwrap(or: Abort(.notFound, reason: "no value found for identifier '\(parameter)'"))
+			.unwrap(or: Abort(.notFound, reason: "no value found for identifier '\(paramVal)'"))
 	}
 }
 

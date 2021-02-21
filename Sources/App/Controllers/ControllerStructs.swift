@@ -42,6 +42,17 @@ struct BarrelCreateData: Content {
     var stringList: [String]?
 }
 
+extension BarrelCreateData: RCFValidatable {
+    func runValidations(using decoder: ValidatingDecoder) throws {
+    	let tester = try decoder.validator(keyedBy: CodingKeys.self)
+    	tester.validate(name.count > 0, forKey: .name, or: "Barrel name cannot be empty.")
+    	tester.validate(name.count <= 100, forKey: .name, or: "Barrel name length is limited to 100 characters.")
+    	if uuidList != nil && stringList != nil {
+    		tester.addValidationError(forKey: nil, errorString: "'uuidList' and 'stringList' cannot both contain values")
+		}
+	}
+}
+
 /// Used to return the contents of a user-owned `.seamonkey` or `.userWords` `Barrel`.
 ///
 /// Returned by:
@@ -227,6 +238,19 @@ struct FezContentData: Content {
     var maxCapacity: Int
 }
 
+extension FezContentData: RCFValidatable {
+    func runValidations(using decoder: ValidatingDecoder) throws {
+    	let tester = try decoder.validator(keyedBy: CodingKeys.self)
+    	tester.validate(title.count >= 2, forKey: .title, or: "title field has a 2 character minimum")
+    	tester.validate(title.count <= 100, forKey: .title, or: "title field has a 100 character limit")
+    	tester.validate(info.count >= 2, forKey: .info, or: "info field has a 2 character minimum")
+    	tester.validate(info.count <= 2048, forKey: .info, or: "info field length of \(info.count) is over the 2048 character limit")
+    	tester.validate(location.count >= 2, forKey: .location, or: "location field has a 2 character minimum") 
+    	
+    	// TODO: validations for startTime and endTime  	
+	}
+}
+
 /// Used to return a FriendlyFez `Barrel`'s data.
 ///
 /// Returned by:
@@ -319,7 +343,14 @@ struct FezPostData: Content {
     /// The text content of the fez post.
     var text: String
     /// The image content of the fez post.
-    var image: String
+    var image: String?
+    
+    init(post: FezPost) throws {
+    	self.postID = try post.requireID()
+    	self.authorID = post.$author.id
+    	self.text = post.text
+    	self.image = post.image
+    }
 }
 
 /// Used to create a new `Forum`.
@@ -334,6 +365,16 @@ struct ForumCreateData: Content {
     var text: String
     /// The image content of the forum post.
     var image: Data?
+}
+
+extension ForumCreateData: RCFValidatable {
+    func runValidations(using decoder: ValidatingDecoder) throws {
+    	let tester = try decoder.validator(keyedBy: CodingKeys.self)
+    	tester.validate(title.count >= 2, forKey: .title, or: "forum title has a 2 character minimum")
+    	tester.validate(title.count <= 100, forKey: .title, or: "forum title has a 100 character limit")
+    	tester.validate(text.count >= 1, forKey: .text, or: "post content cannot be empty")
+    	tester.validate(text.count <= 2048, forKey: .text, or: "post content length of \(text.count) is over 2048 character limit")
+	}
 }
 
 /// Used to return the contents of a `Forum`.
@@ -525,13 +566,23 @@ struct NoteUpdateData: Content {
 struct PostContentData: Content {
     /// The new text of the forum post.
     var text: String
-    /// The filename of an existing image. Ignored if newImage is set. Set to "" to delete image. Be sure to set this field to 
-    /// match the existing image filename if not changing.
-    var imageFilename: String
+    /// The filename of an existing image. Ignored if newImage is set. Set to nil to delete image. If you don't have the previous
+	/// filename, you can set this to "" to indicate no change to the image.
+    var imageFilename: String?
     /// A new image to replace the existing image.
     var newImage: ImageUploadData?
 }
 
+extension PostContentData: RCFValidatable {
+    func runValidations(using decoder: ValidatingDecoder) throws {
+    	let tester = try decoder.validator(keyedBy: CodingKeys.self)
+    	tester.validate(text.count > 0, forKey: .text, or: "post text cannot be empty.")
+    	tester.validate(text.count < 2048, forKey: .text, or: "post length of \(text.count) is over the 2048 character limit")
+	}
+}
+
+/////////////
+///
 /// Used to create a `ForumPost` or `Twarrt`.
 ///
 /// Required by:
@@ -544,6 +595,14 @@ struct PostCreateData: Content {
     var text: String
     /// An optional image in Data format.
     var imageData: Data?
+}
+
+extension PostCreateData: RCFValidatable {
+    func runValidations(using decoder: ValidatingDecoder) throws {
+    	let tester = try decoder.validator(keyedBy: CodingKeys.self)
+    	tester.validate(text.count >= 1, forKey: .text, or: "post content cannot be empty")
+    	tester.validate(text.count <= 2048, forKey: .text, or: "post length of \(text.count) is over the 2048 character limit")
+	}
 }
 
 /// Used to return a `ForumPost`'s data.
@@ -583,7 +642,7 @@ struct PostData: Content {
     /// The text of the post.
     var text: String
     /// The filename of the post's optional image.
-    var image: String
+    var image: String?
     /// Whether the current user has bookmarked the post.
     var isBookmarked: Bool
     /// The current user's `LikeType` reaction on the post.
@@ -596,7 +655,7 @@ struct PostData: Content {
 		createdAt = post.createdAt ?? Date()
 		self.author = author
 		text = post.isQuarantined ? "This post is under moderator review." : post.text
-		image = post.isQuarantined ? "" : post.image
+		image = post.isQuarantined ? nil : post.image
 		isBookmarked = bookmarked
 		self.userLike = userLike
 		self.likeCount = likeCount
@@ -608,7 +667,7 @@ struct PostData: Content {
 		createdAt = post.createdAt ?? Date()
 		self.author = author
 		text = post.isQuarantined ? "This post is under moderator review." : post.text
-		image = post.isQuarantined ? "" : post.image
+		image = post.isQuarantined ? nil : post.image
 		isBookmarked = false
 		self.userLike = nil
 		self.likeCount = 0
@@ -633,7 +692,7 @@ struct PostDetailData: Content {
     /// The text of the forum post.
     var text: String
     /// The filename of the post's optional image.
-    var image: String
+    var image: String?
     /// Whether the current user has bookmarked the post.
     var isBookmarked: Bool
     /// The seamonkeys with "laugh" reactions on the post.
@@ -732,6 +791,7 @@ struct TokenStringData: Content {
     var userID: UUID
     /// The token string.
     let token: String
+
     /// Creates a `TokenStringData` from a `Token`.
     /// - Parameter token: The `Token` associated with the authenticated user.
     init(userID: UUID, token: Token) {
@@ -781,7 +841,7 @@ struct TwarrtData: Content {
     /// The text of the twarrt.
     var text: String
     /// The filename of the twarrt's optional image.
-    var image: String
+    var image: String?
     /// The ID of the twarrt to which this twarrt is a reply.
     var replyToID: Int?
     /// Whether the current user has bookmarked the twarrt.
@@ -808,7 +868,7 @@ struct TwarrtDetailData: Content {
     /// The text of the forum post or twarrt.
     var text: String
     /// The filename of the post/twarrt's optional image.
-    var image: String
+    var image: String?
     /// The ID of the twarrt to which this twarrt is a reply.
     var replyToID: Int?
     /// Whether the current user has bookmarked the post.
@@ -843,6 +903,33 @@ struct UserCreateData: Content {
     var username: String
     /// The user's password.
     var password: String
+    /// Optional verification code. If set, must be a valid code. On success, user will be created with .verified access level, consuming this code.
+    /// See `/api/v3/user/verify`
+    var verification: String?
+}
+
+extension UserCreateData: RCFValidatable {
+    func runValidations(using decoder: ValidatingDecoder) throws {
+    	let tester = try decoder.validator(keyedBy: CodingKeys.self)
+    	tester.validate(username.count >= 2, forKey: .username, or: "username has a 2 character minimum")
+    	tester.validate(username.count <= 50, forKey: .username, or: "username has a 50 character limit")
+    	tester.validate(password.count >= 6, forKey: .password, or: "password has a 6 character minimum")
+    	var cs = CharacterSet()
+    	cs.formUnion(.alphanumerics)
+    	cs.formUnion(.usernameSeparators)
+    	tester.validate(username.unicodeScalars.allSatisfy { cs.contains($0) }, forKey: .username, or:
+    			"username can only contain alphanumeric characters plus \"\(usernameSeparatorString)\"")
+    	if let firstChar = username.first, !(firstChar.isLetter || firstChar.isNumber) {
+    		tester.addValidationError(forKey: .username, errorString: "username must start with a letter or number")
+		}
+		// Verification code can be nil, but if it isn't, it must be a properly formed code.
+		if let normalizedCode = verification?.lowercased().replacingOccurrences(of: " ", with: ""), normalizedCode.count > 0 {
+			if normalizedCode.rangeOfCharacter(from: CharacterSet.alphanumerics.inverted) != nil || normalizedCode.count != 6  {
+    			tester.addValidationError(forKey: .verification, errorString: "Malformed verification code. Verification code " +
+						"must be 6 alphanumeric letters; spaces optional")
+			}
+		}
+	}
 }
 
 /// Used to obtain a user's current header information (name and image) for attributed content.
@@ -859,8 +946,8 @@ struct UserHeader: Content {
     var username: String
     /// The user's displayName.
     var displayName: String?
-    /// The user's displayName + username.
-    var userImage: String
+    /// The user's avatar image.
+    var userImage: String?
 }
 
 /// Used to obtain user identity and determine whether any cached information may be stale.
@@ -889,6 +976,13 @@ struct UserInfo: Content {
 struct UserPasswordData: Content {
     /// The user's desired new password.
     var password: String
+}
+
+extension UserPasswordData: RCFValidatable {
+    func runValidations(using decoder: ValidatingDecoder) throws {
+    	let tester = try decoder.validator(keyedBy: CodingKeys.self)
+    	tester.validate(password.count >= 6, forKey: .password, or: "password has a 6 character minimum")
+	}
 }
 
 /// Used to display a user's profile contents for editing.
@@ -935,6 +1029,23 @@ struct UserRecoveryData: Content {
     var recoveryKey: String
 }
 
+extension UserRecoveryData: RCFValidatable {
+    func runValidations(using decoder: ValidatingDecoder) throws {
+    	let tester = try decoder.validator(keyedBy: CodingKeys.self)
+    	tester.validate(username.count >= 2, forKey: .username, or: "username has a 2 character minimum")
+    	tester.validate(username.count <= 50, forKey: .username, or: "username has a 50 character limit")
+    	tester.validate(recoveryKey.count >= 6, forKey: .recoveryKey, or: "password/recovery code has a 6 character minimum")
+    	var cs = CharacterSet()
+    	cs.formUnion(.alphanumerics)
+    	cs.formUnion(.usernameSeparators)
+    	tester.validate(username.unicodeScalars.allSatisfy { cs.contains($0) }, forKey: .username, or:
+    			"username can only contain alphanumeric characters plus \"\(usernameSeparatorString)\"")
+    	if let firstChar = username.first, !(firstChar.isLetter || firstChar.isNumber) {
+    		tester.addValidationError(forKey: .username, errorString: "username must start with a letter or number")
+		}
+	}
+}
+
 /// Used to broad search for a user based on any of their name fields.
 ///
 /// Returned by:
@@ -959,6 +1070,22 @@ struct UserUsernameData: Content {
     var username: String
 }
 
+extension UserUsernameData: RCFValidatable {
+    func runValidations(using decoder: ValidatingDecoder) throws {
+    	let tester = try decoder.validator(keyedBy: CodingKeys.self)
+    	tester.validate(username.count >= 2, forKey: .username, or: "username has a 2 character minimum")
+    	tester.validate(username.count <= 50, forKey: .username, or: "username has a 50 character limit")
+    	var cs = CharacterSet()
+    	cs.formUnion(.alphanumerics)
+    	cs.formUnion(.usernameSeparators)
+    	tester.validate(username.unicodeScalars.allSatisfy { cs.contains($0) }, forKey: .username, or:
+    			"username can only contain alphanumeric characters plus \"\(usernameSeparatorString)\"")
+    	if let firstChar = username.first, !(firstChar.isLetter || firstChar.isNumber) {
+    		tester.addValidationError(forKey: .username, errorString: "username must start with a letter or number")
+		}
+	}
+}
+
 /// Used to verify (register) a created but `.unverified` primary account.
 ///
 /// Required by: `POST /api/v3/user/verify`
@@ -969,117 +1096,125 @@ struct UserVerifyData: Content {
     var verification: String
 }
 
+extension UserVerifyData: RCFValidatable {
+    func runValidations(using decoder: ValidatingDecoder) throws {
+    	let tester = try decoder.validator(keyedBy: CodingKeys.self)
+    	tester.validate(verification.count >= 6 && verification.count <= 7, forKey: .verification, 
+    			or: "verification code is 6 letters long (with an optional space in the middle)")
+	}
+}
+
 // MARK: - Validation
 
-extension BarrelCreateData: Validatable {
-    /// Validates that `.name` contains a value, and that only one of `.uuidList` or
-    /// `.stringList` contains values.
-    static func validations(_ validations: inout Validations) {
-        validations.add("name", as: String.self, is: .count(1...))
-        // FIXME: Removing several complex validations from this file, as Vapor/Validation doesn't seem
-        // to support them anymore.
-//		validations.add("'uuidList' and 'stringList' cannot both contain values") {
-//			(data) in
-//			guard data.uuidList == nil || data.stringList == nil else {
-//				throw Abort(.badRequest, reason: "'uuidList' and 'stringList' cannot both contain values")
-//			}
-//		}
-    }
-}
-
-extension FezContentData: Validatable {
-    /// Validates that `.title`, `.info`, `.location` have values of at least 2
-    /// characters, that `.startTime` and `.endTime` have date values.
-    static func validations(_ validations: inout Validations) {
-        validations.add("title", as: String.self, is: .count(2...))
-        validations.add("info", as: String.self, is: .count(2...))
-        validations.add("location", as: String.self, is: .count(2...))
-//		validations.add(".startTime and .endTime must contain dates or nothing") {
-//			(data) in
-//			guard (Double(data.startTime) != nil) || data.startTime.isEmpty else {
-//				throw Abort(.badRequest, reason: "'startTime' must be either a numeric date or empty")
-//			}
-//			guard (Double(data.endTime) != nil) || data.endTime.isEmpty else {
-//				throw Abort(.badRequest, reason: "'endTime' must be either a numeric date or empty")
-//			}
-//        }
-    }
-}
-
-extension ForumCreateData: Validatable {
-    /// Validates that `.title` and initial post `.text`  both contain values.
-    static func validations(_ validations: inout Validations) {
-        validations.add("title", as: String.self, is: .count(1...))
-        validations.add("text", as: String.self, is: .count(1...))
-    }
-}
-
-extension PostContentData: Validatable {
-    /// Validates that `.text` contains a value.
-    static func validations(_ validations: inout Validations) {
-        validations.add("text", as: String.self, is: .count(1...))
-    }
-}
-
-extension PostCreateData: Validatable {
-    /// Validates that `.text` contains a value.
-    static func validations(_ validations: inout Validations) {
-        validations.add("text", as: String.self, is: .count(1...))
-    }
-}
-
-extension UserCreateData: Validatable {
-    /// Validates that `.username` is 1 or more characters beginning with an alphanumeric,
-    /// and `.password` is least 6 characters in length.
-    static func validations(_ validations: inout Validations) {
-        validations.add("username", as: String.self, is: .count(1...) && .characterSet(.alphanumerics + .usernameSeparators))
-//        validations.add("username must start with an alphanumeric") {
-//            (data) in
-//            guard let first = data.username.unicodeScalars.first,
-//                !CharacterSet.usernameSeparators.contains(first) else {
-//                    return// Abort(.badRequest, reason: "username must start with an alphanumeric")
-//            }
-//        }
-		validations.add("password", as: String.self, is: .count(6...))
-    }
-}
-
-extension UserPasswordData: Validatable {
-    /// Validates that the new password is at least 6 characters in length.
-    static func validations(_ validations: inout Validations) {
-        validations.add("password", as: String.self, is: .count(6...))
-    }
-}
-
-extension UserRecoveryData: Validatable {
-    /// Validates that `.username` is 1 or more alphanumeric characters,
-    /// and `.recoveryCode` is at least 6 character in length (minimum for
-    /// both registration codes and passwords).
-    static func validations(_ validations: inout Validations) {
-        validations.add("username", as: String.self, is: .count(1...) && .characterSet(.alphanumerics))
-        validations.add("recoveryKey", as: String.self, is: .count(6...))
-    }
-}
-
-extension UserUsernameData: Validatable {
-    /// Validates that the new username is 1 or more characters and begins with an
-    /// alphanumeric.
-    static func validations(_ validations: inout Validations) {
-        validations.add("username", as: String.self, is: .count(1...) && .characterSet(.alphanumerics + .usernameSeparators))
-//        validations.add("username must start with an alphanumeric") {
-//            (data) in
-//            guard let first = data.username.unicodeScalars.first,
-//                !CharacterSet.usernameSeparators.contains(first) else {
-//                    throw Abort(.badRequest, reason: "username must start with an alphanumeric")
-//            }
-//        }
-    }
-}
-
-extension UserVerifyData: Validatable {
-    /// Validates that a `.verification` registration code is either 6 or 7 alphanumeric
-    /// characters in length (allows for inclusion or exclusion of the space).
-    static func validations(_ validations: inout Validations) {
-        validations.add("verification", as: String.self, is: .count(6...7) && .characterSet(.alphanumerics + .whitespaces))
-    }
-}
+//extension BarrelCreateData: Validatable {
+//    /// Validates that `.name` contains a value, and that only one of `.uuidList` or
+//    /// `.stringList` contains values.
+//    static func validations(_ validations: inout Validations) {
+//        validations.add("name", as: String.self, is: .count(1...))
+//        // FIXME: Removing several complex validations from this file, as Vapor/Validation doesn't seem
+//        // to support them anymore.
+////		validations.add("'uuidList' and 'stringList' cannot both contain values") {
+////			(data) in
+////			guard data.uuidList == nil || data.stringList == nil else {
+////				throw Abort(.badRequest, reason: "'uuidList' and 'stringList' cannot both contain values")
+////			}
+////		}
+//    }
+//}
+//
+//extension FezContentData: Validatable {
+//    /// Validates that `.title`, `.info`, `.location` have values of at least 2
+//    /// characters, that `.startTime` and `.endTime` have date values.
+//    static func validations(_ validations: inout Validations) {
+//        validations.add("title", as: String.self, is: .count(2...))
+//        validations.add("info", as: String.self, is: .count(2...))
+//        validations.add("location", as: String.self, is: .count(2...))
+////		validations.add(".startTime and .endTime must contain dates or nothing") {
+////			(data) in
+////			guard (Double(data.startTime) != nil) || data.startTime.isEmpty else {
+////				throw Abort(.badRequest, reason: "'startTime' must be either a numeric date or empty")
+////			}
+////			guard (Double(data.endTime) != nil) || data.endTime.isEmpty else {
+////				throw Abort(.badRequest, reason: "'endTime' must be either a numeric date or empty")
+////			}
+////        }
+//    }
+//}
+//
+//extension ForumCreateData: Validatable {
+//    /// Validates that `.title` and initial post `.text`  both contain values.
+//    static func validations(_ validations: inout Validations) {
+//        validations.add("title", as: String.self, is: .count(1...))
+//        validations.add("text", as: String.self, is: .count(1...))
+//    }
+//}
+//
+//extension PostContentData: Validatable {
+//    /// Validates that `.text` contains a value.
+//    static func validations(_ validations: inout Validations) {
+//        validations.add("text", as: String.self, is: .count(1...))
+//    }
+//}
+//
+//extension PostCreateData: Validatable {
+//    /// Validates that `.text` contains a value.
+//    static func validations(_ validations: inout Validations) {
+//        validations.add("text", as: String.self, is: .count(1...))
+//    }
+//}
+//
+//extension UserCreateData: Validatable {
+//    /// Validates that `.username` is 1 or more characters beginning with an alphanumeric,
+//    /// and `.password` is least 6 characters in length.
+//    static func validations(_ validations: inout Validations) {
+//        validations.add("username", as: String.self, is: .count(1...) && .characterSet(.alphanumerics + .usernameSeparators))
+////        validations.add("username must start with an alphanumeric") {
+////            (data) in
+////            guard let first = data.username.unicodeScalars.first,
+////                !CharacterSet.usernameSeparators.contains(first) else {
+////                    return// Abort(.badRequest, reason: "username must start with an alphanumeric")
+////            }
+////        }
+//		validations.add("password", as: String.self, is: .count(6...))
+//    }
+//}
+//
+//extension UserPasswordData: Validatable {
+//    /// Validates that the new password is at least 6 characters in length.
+//    static func validations(_ validations: inout Validations) {
+//        validations.add("password", as: String.self, is: .count(6...))
+//    }
+//}
+//
+//extension UserRecoveryData: Validatable {
+//    /// Validates that `.username` is 1 or more alphanumeric characters,
+//    /// and `.recoveryCode` is at least 6 character in length (minimum for
+//    /// both registration codes and passwords).
+//    static func validations(_ validations: inout Validations) {
+//        validations.add("username", as: String.self, is: .count(1...) && .characterSet(.alphanumerics))
+//        validations.add("recoveryKey", as: String.self, is: .count(6...))
+//    }
+//}
+//
+//extension UserUsernameData: Validatable {
+//    /// Validates that the new username is 1 or more characters and begins with an
+//    /// alphanumeric.
+//    static func validations(_ validations: inout Validations) {
+//        validations.add("username", as: String.self, is: .count(1...) && .characterSet(.alphanumerics + .usernameSeparators))
+////        validations.add("username must start with an alphanumeric") {
+////            (data) in
+////            guard let first = data.username.unicodeScalars.first,
+////                !CharacterSet.usernameSeparators.contains(first) else {
+////                    throw Abort(.badRequest, reason: "username must start with an alphanumeric")
+////            }
+////        }
+//    }
+//}
+//
+//extension UserVerifyData: Validatable {
+//    /// Validates that a `.verification` registration code is either 6 or 7 alphanumeric
+//    /// characters in length (allows for inclusion or exclusion of the space).
+//    static func validations(_ validations: inout Validations) {
+//        validations.add("verification", as: String.self, is: .count(6...7) && .characterSet(.alphanumerics + .whitespaces))
+//    }
+//}

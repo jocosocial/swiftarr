@@ -9,6 +9,11 @@ import Fluent
 struct ForumController: RouteCollection {
     // MARK: RouteCollection Conformance
         
+	// Route path parameters. This trick only works for params that are database IDs and can use findFromParameter().
+    let categoryIDParam = PathComponent(":category_id")
+    let forumIDParam = PathComponent(":forum_id")
+    let postIDParam = PathComponent(":post_id")
+
     /// Required. Registers routes to the incoming router.
     func boot(routes: RoutesBuilder) throws {
         
@@ -30,41 +35,45 @@ struct ForumController: RouteCollection {
         // endpoints available only when not logged in
         
         // endpoints available whether logged in or out
-        sharedAuthGroup.get(":forum_id", use: forumHandler)
-        sharedAuthGroup.get("categories", ":category_id", use: categoryForumsHandler)
+        sharedAuthGroup.get(forumIDParam, use: forumHandler)
+        sharedAuthGroup.get("categories", categoryIDParam, use: categoryForumsHandler)
         sharedAuthGroup.get("match", ":search_string", use: forumMatchHandler)
-        sharedAuthGroup.get("post", ":post_id", use: postHandler)
-        sharedAuthGroup.get("post", ":post_id", "forum", use: postForumHandler)
+        sharedAuthGroup.get("post", postIDParam, use: postHandler)
+        sharedAuthGroup.get("post", postIDParam, "forum", use: postForumHandler)
         sharedAuthGroup.get("post", "hashtag", ":hashtag_string", use: postHashtagHandler)
         sharedAuthGroup.get("post", "search", ":search_string", use: postSearchHandler)
-        sharedAuthGroup.get(":forum_id", "search", ":search_string", use: forumSearchHandler)
+        sharedAuthGroup.get(forumIDParam, "search", ":search_string", use: forumSearchHandler)
         
         // endpoints available only when logged in
         tokenAuthGroup.get("bookmarks", use: bookmarksHandler)
-        tokenAuthGroup.post("categories", ":category_id", "create", use: forumCreateHandler)
-        tokenAuthGroup.post(":forum_id", "favorite", use: favoriteAddHandler)
-        tokenAuthGroup.post(":forum_id", "favorite", "remove", use: favoriteRemoveHandler)
+        tokenAuthGroup.post("categories", categoryIDParam, "create", use: forumCreateHandler)
+        tokenAuthGroup.post(forumIDParam, "favorite", use: favoriteAddHandler)
+        tokenAuthGroup.post(forumIDParam, "favorite", "remove", use: favoriteRemoveHandler)
         tokenAuthGroup.get("favorites", use: favoritesHandler)
         tokenAuthGroup.get("likes", use: likesHandler)
-        tokenAuthGroup.post(":forum_id", "lock", use: forumLockHandler)
+        tokenAuthGroup.post(forumIDParam, "lock", use: forumLockHandler)
         tokenAuthGroup.get("mentions", use: mentionsHandler)
         tokenAuthGroup.get("owner", use: ownerHandler)
-        tokenAuthGroup.post("post", ":post_id", "bookmark", use: bookmarkAddHandler)
-        tokenAuthGroup.post("post", ":post_id", "bookmark", "remove", use: bookmarkRemoveHandler)
-        tokenAuthGroup.post(":forum_id", "create", use: postCreateHandler)
-        tokenAuthGroup.post("post", ":post_id", "delete", use: postDeleteHandler)
-        tokenAuthGroup.post("post", ":post_id", "image", use: imageHandler)
-        tokenAuthGroup.post("post", ":post_id", "image", "remove", use: imageRemoveHandler)
-        tokenAuthGroup.post("post", ":post_id", "laugh", use: postLaughHandler)
-        tokenAuthGroup.post("post", ":post_id", "like", use: postLikeHandler)
-        tokenAuthGroup.post("post", ":post_id", "love", use: postLoveHandler)
-        tokenAuthGroup.post("post", ":post_id", "report", use: postReportHandler)
+        tokenAuthGroup.post("post", postIDParam, "bookmark", use: bookmarkAddHandler)
+        tokenAuthGroup.post("post", postIDParam, "bookmark", "remove", use: bookmarkRemoveHandler)
+        tokenAuthGroup.post(forumIDParam, "create", use: postCreateHandler)
+        tokenAuthGroup.post("post", postIDParam, "delete", use: postDeleteHandler)
+        tokenAuthGroup.delete("post", postIDParam, use: postDeleteHandler)
+        tokenAuthGroup.post("post", postIDParam, "image", use: imageHandler)
+        tokenAuthGroup.post("post", postIDParam, "image", "remove", use: imageRemoveHandler)
+        tokenAuthGroup.post("post", postIDParam, "laugh", use: postLaughHandler)
+        tokenAuthGroup.post("post", postIDParam, "like", use: postLikeHandler)
+        tokenAuthGroup.post("post", postIDParam, "love", use: postLoveHandler)
+        tokenAuthGroup.post("post", postIDParam, "report", use: postReportHandler)
         tokenAuthGroup.post("posts", use: postsHandler)
-        tokenAuthGroup.post("post", ":post_id", "unreact", use: postUnreactHandler)
-        tokenAuthGroup.post("post", ":post_id", "update", use: postUpateHandler)
-        tokenAuthGroup.post(":forum_id", "rename", ":new_name", use: forumRenameHandler)
-        tokenAuthGroup.post(":forum_id", "report", use: forumReportHandler)
-        tokenAuthGroup.post(":forum_id", "unlock", use: forumUnlockHandler)
+        tokenAuthGroup.post("post", postIDParam, "unreact", use: postUnreactHandler)
+        tokenAuthGroup.delete("post", postIDParam, "laugh", use: postUnreactHandler)
+        tokenAuthGroup.delete("post", postIDParam, "like", use: postUnreactHandler)
+        tokenAuthGroup.delete("post", postIDParam, "love", use: postUnreactHandler)
+        tokenAuthGroup.post("post", postIDParam, "update", use: postUpateHandler)
+        tokenAuthGroup.post(forumIDParam, "rename", ":new_name", use: forumRenameHandler)
+        tokenAuthGroup.post(forumIDParam, "report", use: forumReportHandler)
+        tokenAuthGroup.post(forumIDParam, "unlock", use: forumUnlockHandler)
 
     }
     
@@ -132,7 +141,7 @@ struct ForumController: RouteCollection {
         let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...200)
         // get user's taggedForum barrel, and category
         return user.getBookmarkBarrel(of: .taggedForum, on: req)
-        	.and(Category.findFromParameter("category_id", on: req).addModelID()).flatMap {
+        	.and(Category.findFromParameter(categoryIDParam, on: req).addModelID()).flatMap {
             (barrel, categoryTuple) in
             let (category, categoryID) = categoryTuple
 			// remove blocks from results, unless it's an admin category
@@ -173,7 +182,7 @@ struct ForumController: RouteCollection {
         let cacheUser = try req.userCache.getUser(user)
         // get user's taggedForum barrel
 		return user.getBookmarkBarrel(of: .taggedForum, on: req)
-				.and(Forum.findFromParameter("forum_id", on: req)).flatMap { (barrel, forum) in
+				.and(Forum.findFromParameter(forumIDParam, on: req)).flatMap { (barrel, forum) in
 			// filter posts
 			return forum.$posts.query(on: req.db)
 				.filter(\.$author.$id !~ cacheUser.getBlocks())
@@ -233,7 +242,7 @@ struct ForumController: RouteCollection {
 		search = search.replacingOccurrences(of: "%", with: "\\%")
 		search = search.trimmingCharacters(in: .whitespacesAndNewlines)
 		// get forum and cached blocks
-        return Forum.findFromParameter("forum_id", on: req)
+        return Forum.findFromParameter(forumIDParam, on: req)
         	.and(ForumPost.getCachedFilters(for: user, on: req))
         	.flatMap { (forum, filters) in
                 // get posts
@@ -260,7 +269,7 @@ struct ForumController: RouteCollection {
         let cacheUser = try req.userCache.getUser(user)
         // get user's taggedForum barrel, and cached filters, and forum post
         return user.getBookmarkBarrel(of: .taggedForum, on: req)
-     	  	.and(ForumPost.findFromParameter("post_id", on: req))
+     	  	.and(ForumPost.findFromParameter(postIDParam, on: req))
         	.flatMap { (barrel, post) in
                 // get forum
                 return post.$forum.get(on: req.db).flatMap { (forum) in
@@ -286,11 +295,11 @@ struct ForumController: RouteCollection {
     /// - Returns: `PostDetailData` containing the specified post.
     func postHandler(_ req: Request) throws -> EventLoopFuture<PostDetailData> {
         let user = try req.auth.require(User.self)
-        return ForumPost.findFromParameter("post_id", on: req).addModelID()
+        return ForumPost.findFromParameter(postIDParam, on: req).addModelID()
          	.and(ForumPost.getCachedFilters(for: user, on: req))
         	.flatMap { (arg0, filters) in
         		let (post, postID) = arg0
-				if filters.blocked.contains(post.author.id!) || filters.muted.contains(post.author.id!) ||
+				if filters.blocked.contains(post.$author.id) || filters.muted.contains(post.$author.id) ||
 						post.containsMutewords(using: filters.mutewords) {
                 	return req.eventLoop.makeFailedFuture(Abort(.notFound, reason: "post is not available"))
                 }
@@ -316,7 +325,7 @@ struct ForumController: RouteCollection {
 								createdAt: post.createdAt ?? Date(),
 								authorID: post.author.requireID(),
 								text: post.isQuarantined ? "This post is under moderator review." : post.text,
-								image: post.isQuarantined ? "" : post.image,
+								image: post.isQuarantined ? nil : post.image,
 								isBookmarked: bookmarked,
 								laughs: [],
 								likes: [],
@@ -424,7 +433,7 @@ struct ForumController: RouteCollection {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
         // get post and user's bookmarkedPost barrel
-        return ForumPost.findFromParameter("post_id", on: req)
+        return ForumPost.findFromParameter(postIDParam, on: req)
         	.and(user.getBookmarkBarrel(of: .bookmarkedPost, on: req))
         	.flatMapThrowing { (post, bookmarkBarrel) -> Barrel in
                 // create barrel if needed
@@ -454,7 +463,7 @@ struct ForumController: RouteCollection {
     func bookmarkRemoveHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
         // get post and user's bookmarkedPost barrel
-        return ForumPost.findFromParameter("post_id", on: req)
+        return ForumPost.findFromParameter(postIDParam, on: req)
         	.and(user.getBookmarkBarrel(of: .bookmarkedPost, on: req))
         	.flatMapThrowing { (post, bookmarkBarrel) -> Barrel in
                 guard let barrel = bookmarkBarrel else {
@@ -512,7 +521,7 @@ struct ForumController: RouteCollection {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
         // get forum and barrel
-        return Forum.findFromParameter("forum_id", on: req).addModelID()
+        return Forum.findFromParameter(forumIDParam, on: req).addModelID()
         	.and(user.getBookmarkBarrel(of: .taggedForum, on: req)
         			.unwrap(orReplace: Barrel(ownerID: userID, barrelType: .taggedForum)))
         	.flatMap { (arg0, barrel) in
@@ -533,7 +542,7 @@ struct ForumController: RouteCollection {
     func favoriteRemoveHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
         // get forum
-        return Forum.findFromParameter("forum_id", on: req).addModelID()
+        return Forum.findFromParameter(forumIDParam, on: req).addModelID()
 			.and(user.getBookmarkBarrel(of: .taggedForum, on: req))
         	.flatMap { (arg0, forumBarrel) in
         		let (_, forumID) = arg0
@@ -592,10 +601,9 @@ struct ForumController: RouteCollection {
     func forumCreateHandler(_ req: Request) throws -> EventLoopFuture<ForumData> {
         let user = try req.auth.require(User.self)
 		// see `ForumCreateData.validations()`
-        try ForumCreateData.validate(content: req)
-        let data = try req.content.decode(ForumCreateData.self)
+		let data = try ValidatingJSONDecoder().decode(ForumCreateData.self, fromBodyOf: req)
         // check authorization to create
-        return Category.findFromParameter("category_id", on: req).throwingFlatMap { (category) in
+        return Category.findFromParameter(categoryIDParam, on: req).throwingFlatMap { (category) in
             guard !category.isRestricted || user.accessLevel.hasAccess(.moderator)  else {
                     return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "users cannot create forums in category"))
             }
@@ -631,7 +639,7 @@ struct ForumController: RouteCollection {
     func forumLockHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
-        return Forum.findFromParameter("forum_id", on: req).flatMap { (forum) in
+        return Forum.findFromParameter(forumIDParam, on: req).flatMap { (forum) in
             // must be forum owner or .moderator
             guard forum.creator.id == userID || user.accessLevel.hasAccess(.moderator)  else {
                     return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "forum cannot be modified by user"))
@@ -652,7 +660,7 @@ struct ForumController: RouteCollection {
     func forumUnlockHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
-        return Forum.findFromParameter("forum_id", on: req).flatMap { (forum) in
+        return Forum.findFromParameter(forumIDParam, on: req).flatMap { (forum) in
             // must be forum owner or .moderator
             guard forum.creator.id == userID || user.accessLevel.hasAccess(.moderator)  else {
                     return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "forum cannot be modified by user"))
@@ -676,7 +684,7 @@ struct ForumController: RouteCollection {
 		guard let nameParameter = req.parameters.get("new_name"), nameParameter.count > 0 else {
 			throw Abort(.badRequest, reason: "No new name parameter for forum name change.")
 		}
-        return Forum.findFromParameter("forum_id", on: req).flatMap { (forum) in
+        return Forum.findFromParameter(forumIDParam, on: req).flatMap { (forum) in
             // must be forum owner or .moderator
             guard forum.creator.id == userID || user.accessLevel.hasAccess(.moderator)  else {
                     return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "forum cannot be modified by user"))
@@ -703,7 +711,7 @@ struct ForumController: RouteCollection {
         let user = try req.auth.require(User.self)
         let data = try req.content.decode(ReportData.self)
         let parent = try user.parentAccount(on: req)
-        let forum = Forum.findFromParameter("forum_id", on: req).addModelID()
+        let forum = Forum.findFromParameter(forumIDParam, on: req).addModelID()
         return parent.and(forum).throwingFlatMap { (parent, arg1) in
         	let (forum, forumID) = arg1
             let report = try Report( reportType: .forum, reportedID: forumID.uuidString,
@@ -728,25 +736,25 @@ struct ForumController: RouteCollection {
         let userID = try user.requireID()
 		let data = try req.content.decode(ImageUploadData.self)
 		// get post
-        return ForumPost.findFromParameter("post_id", on: req).addModelID().flatMap { (post, postID) in
+        return ForumPost.findFromParameter(postIDParam, on: req).addModelID().flatMap { (post, postID) in
             guard post.$author.id == userID || user.accessLevel.hasAccess(.moderator) else {
 				return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "user cannot modify post"))
             }
 			// get generated filename
 			return self.processImage(data: data.image, forType: .userProfile, on: req).throwingFlatMap { (filename) in
 				// replace existing image
-				if !post.image.isEmpty {
+				if let image = post.image, !image.isEmpty {
 					// create ForumEdit record
 					let forumEdit = try ForumEdit(post: post)
 					// archive thumbnail
 					DispatchQueue.global(qos: .background).async {
-						self.archiveImage(post.image, from: self.imageDir)
+						self.archiveImage(image, on: req)
 					}
 					return forumEdit.save(on: req.db).transform(to: filename)
 				}
 				return req.eventLoop.future(filename)
 			}
-			.flatMap { (filename: String) in
+			.flatMap { (filename: String?) in
 				// update post
 				post.image = filename
 				return post.save(on: req.db).flatMap { (_) in
@@ -771,16 +779,16 @@ struct ForumController: RouteCollection {
     func imageRemoveHandler(_ req: Request) throws -> EventLoopFuture<PostData> {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
-        return ForumPost.findFromParameter("post_id", on: req).addModelID().throwingFlatMap { (post, postID) in
-            guard post.author.id == userID || user.accessLevel.hasAccess(.moderator) else {
+        return ForumPost.findFromParameter(postIDParam, on: req).addModelID().throwingFlatMap { (post, postID) in
+            guard post.$author.id == userID || user.accessLevel.hasAccess(.moderator) else {
 				throw Abort(.forbidden, reason: "user cannot modify post")
             }
-			if !post.image.isEmpty {
+			if let image = post.image, !image.isEmpty {
 				// create ForumEdit record
 				let forumEdit = try ForumEdit(post: post)
 				// archive thumbnail
 				DispatchQueue.global(qos: .background).async {
-					self.archiveImage(post.image, from: self.imageDir)
+					self.archiveImage(image, on: req)
 				}
 				// Makes a future we don't wait on.
 				_ = forumEdit.save(on: req.db)
@@ -875,15 +883,14 @@ struct ForumController: RouteCollection {
             throw Abort(.forbidden, reason: "user cannot post in forum")
         }
         // see `PostCreateData.validations()`
-        try PostCreateData.validate(content: req)
-        let data = try req.content.decode(PostCreateData.self)
+ 		let data = try ValidatingJSONDecoder().decode(PostCreateData.self, fromBodyOf: req)
         // get forum
-        return Forum.findFromParameter("forum_id", on: req).throwingFlatMap { (forum) in
+        return Forum.findFromParameter(forumIDParam, on: req).throwingFlatMap { (forum) in
             guard !forum.isLocked else {
                 throw Abort(.forbidden, reason: "forum is locked read-only")
             }
             // ensure user has access to forum; user cannot retrieve block-owned forum, but prevent end-run
-			guard let creatorID = forum.creator.id, !cacheUser.getBlocks().contains(creatorID) else {
+			guard !cacheUser.getBlocks().contains(forum.$creator.id) else {
 				throw Abort(.forbidden, reason: "user cannot post in forum")
 			}
 			// process image
@@ -901,6 +908,7 @@ struct ForumController: RouteCollection {
     }
     
     /// `POST /api/v3/forum/post/ID/delete`
+	/// `DELETE /api/v3/forum/post/ID`
     ///
     /// Delete the specified `ForumPost`.
     ///
@@ -910,8 +918,8 @@ struct ForumController: RouteCollection {
     func postDeleteHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
-        return ForumPost.findFromParameter("post_id", on: req).flatMap { (post) in
-            guard post.author.id == userID || user.accessLevel.hasAccess(.moderator) else {
+        return ForumPost.findFromParameter(postIDParam, on: req).flatMap { (post) in
+            guard post.$author.id == userID || user.accessLevel.hasAccess(.moderator) else {
                     return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "user cannot delete post"))
             }
             return post.delete(on: req.db).transform(to: .noContent)
@@ -936,7 +944,7 @@ struct ForumController: RouteCollection {
         let user = try req.auth.require(User.self)
         let parent = try user.parentAccount(on: req)
         let data = try req.content.decode(ReportData.self)
-        return ForumPost.findFromParameter("post_id", on: req).and(parent).throwingFlatMap { (post, parent) in
+        return ForumPost.findFromParameter(postIDParam, on: req).and(parent).throwingFlatMap { (post, parent) in
 			do {
 				let report = try Report(reportType: .forumPost, reportedID: String(try post.requireID()),
 							submitter: parent, submitterMessage: data.message)
@@ -988,8 +996,8 @@ struct ForumController: RouteCollection {
         let user = try req.auth.require(User.self)
 		let userID = try user.requireID()
         // get post
-        return ForumPost.findFromParameter("post_id", on: req).addModelID().flatMap { (post, postID) in
-            guard post.author.id != userID else {
+        return ForumPost.findFromParameter(postIDParam, on: req).addModelID().flatMap { (post, postID) in
+            guard post.$author.id != userID else {
                 return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "user cannot like own post"))
             }
 			return post.$likes.attachOrEdit(from: post, to: user, on: req.db) { postLike in
@@ -1031,8 +1039,8 @@ struct ForumController: RouteCollection {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
         // get post
-        return ForumPost.findFromParameter("post_id", on: req).addModelID().flatMap { (post, postID) in
-            guard post.author.id != userID else {
+        return ForumPost.findFromParameter(postIDParam, on: req).addModelID().flatMap { (post, postID) in
+            guard post.$author.id != userID else {
                 return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "user cannot like own post"))
             }
 			// check for existing like
@@ -1071,19 +1079,19 @@ struct ForumController: RouteCollection {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
 		// see `PostCreateData.validations()`
-        try PostContentData.validate(content: req)
-        let data = try req.content.decode(PostContentData.self)
-        return ForumPost.findFromParameter("post_id", on: req).addModelID().throwingFlatMap { (post, postID) in
+		let data = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
+        return ForumPost.findFromParameter(postIDParam, on: req).addModelID().throwingFlatMap { (post, postID) in
             // ensure user has write access
-            guard post.author.id == userID, user.accessLevel.hasAccess(.verified) else {
+            guard post.$author.id == userID, user.accessLevel.hasAccess(.verified) else {
 					throw Abort(.forbidden, reason: "user cannot modify post")
             }
 			// update if there are changes
-			if post.text != data.text || post.image != data.imageFilename {
+			let newFilename: String? = data.imageFilename == "" ? post.image : data.imageFilename
+			if post.text != data.text || post.image != newFilename {
 				// stash current contents first
 				let forumEdit = try ForumEdit(post: post)
 				post.text = data.text
-				post.image = data.imageFilename
+				post.image = newFilename
 				return post.save(on: req.db).and(forumEdit.save(on: req.db)).transform(to: (post, true))
 			}
 			return req.eventLoop.future((post, false))
@@ -1186,17 +1194,4 @@ extension ForumController {
 		}
 		return postsData.flatten(on: req.eventLoop)
 	}
-}
-
-// posts can contain images
-extension ForumController: ImageHandler {
-    /// The base directory for storing ForumPost images.
-    var imageDir: String {
-        return "images/forum/"
-    }
-    
-    /// The height of ForumPost image thumbnails.
-    var thumbnailHeight: Int {
-        return 100
-    }
 }

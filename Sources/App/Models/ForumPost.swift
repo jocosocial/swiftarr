@@ -18,7 +18,7 @@ final class ForumPost: Model {
     @Field(key: "text") var text: String
     
     /// The filename of any image content of the post.
-    @Field(key: "image") var image: String
+    @Field(key: "image") var image: String?
     
     /// Whether the post is in quarantine.
     @Field(key: "isQuarantined") var isQuarantined: Bool
@@ -65,7 +65,7 @@ final class ForumPost: Model {
         forum: Forum,
         author: User,
         text: String,
-        image: String = ""
+        image: String? = nil
     ) throws {
         self.$forum.id = try forum.requireID()
         self.$forum.value = forum

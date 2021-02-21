@@ -177,8 +177,7 @@ struct UserController: RouteCollection {
     ///   recovery key string.
     func createHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         // see `UserCreateData.validations()`
-        try UserCreateData.validate(content: req)
-        let data = try req.content.decode(UserCreateData.self)
+		let data = try ValidatingJSONDecoder().decode(UserCreateData.self, fromBodyOf: req)
         // check for existing username so we can return 409 Conflict status instead
         // of the default super-unfriendly 500 for unique constraint violation
         return User.query(on: req.db)
@@ -192,8 +191,7 @@ struct UserController: RouteCollection {
 				
 				// create recovery key
 				var recoveryKey = ""
-				_ = try UserController.generateRecoveryKey(on: req).map {
-					(resolvedKey) in
+				_ = try UserController.generateRecoveryKey(on: req).map { (resolvedKey) in
 					recoveryKey = resolvedKey
 				}
 				let normalizedKey = recoveryKey.lowercased().replacingOccurrences(of: " ", with: "")
@@ -210,14 +208,51 @@ struct UserController: RouteCollection {
 					accessLevel: .unverified
 				)
 				
+				// We don't need a reg code to make a user, but a malformed code is an error.
+				var normalizedCode = data.verification?.lowercased().replacingOccurrences(of: " ", with: "")
+				if normalizedCode?.count == 0 {
+					normalizedCode = nil
+				}
+				if let code = normalizedCode {
+					guard code.rangeOfCharacter(from: CharacterSet.alphanumerics.inverted) == nil &&
+							code.count == 6 else {
+						throw Abort(.badRequest, reason: "Malformed verification code. Verification code " +
+								"must be 6 alphanumeric letters; spaces optional.")
+					}
+				}
+				
 				// wrap in a transaction to ensure each user has an associated profile
 				return req.db.transaction { (database) in
-					return user.save(on: database).throwingFlatMap {
-						// initialize default barrels
-						let barrels = self.createDefaultBarrels(for: user, on: database)
-						// create profile
-						let profile = try UserProfile(user: user, username: user.username).save(on: database)
-						return req.eventLoop.flatten([profile, barrels])
+					var result: EventLoopFuture<RegistrationCode?>
+					if let code = normalizedCode {
+						result = RegistrationCode.query(on: database).filter(\.$code == code).first()
+					}
+					else {
+						result = database.eventLoop.future(nil)
+					}
+					return result.throwingFlatMap { (regCode) in
+						if normalizedCode != nil {
+							guard let registrationCode = regCode else {
+								throw Abort(.badRequest, reason: "registration code not found")
+							}
+							guard registrationCode.user == nil else {
+							   throw Abort(.conflict, reason: "registration code has already been used")
+							}
+							user.accessLevel = .verified
+							user.verification = registrationCode.code
+						}
+						return user.save(on: database).throwingFlatMap {
+							var saveRegCode: EventLoopFuture<Void> = database.eventLoop.future()
+							if let registrationCode = regCode {
+								registrationCode.$user.id = try user.requireID()
+								saveRegCode = registrationCode.save(on: database)
+							}
+							
+							// initialize default barrels and profile with our new user.
+							let barrels = self.createDefaultBarrels(for: user, on: database)
+							let profile = try UserProfile(user: user, username: user.username).save(on: database)
+							return database.eventLoop.flatten([profile, barrels, saveRegCode])
+						}
 					}
 				}
 				.throwingFlatMap {
@@ -255,28 +290,27 @@ struct UserController: RouteCollection {
     /// - Returns: HTTP status 200 on success.
     func verifyHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
+        let userID = try user.requireID()
         // abort if user is already verified
         guard user.verification == nil else {
             throw Abort(.badRequest, reason: "user is already verified")
         }
         // see `UserVerifyData.validations()`
-        try UserVerifyData.validate(content: req)
-        let data = try req.content.decode(UserVerifyData.self)
+		let data = try ValidatingJSONDecoder().decode(UserVerifyData.self, fromBodyOf: req)
         let normalizedCode = data.verification.lowercased().replacingOccurrences(of: " ", with: "")
         return RegistrationCode.query(on: req.db)
             .filter(\.$code == normalizedCode)
             .first()
             .unwrap(or: Abort(.badRequest, reason: "registration code not found"))
-            .flatMap { (registrationCode) in
+            .throwingFlatMap { (registrationCode) in
                 // abort if code is already used
                 guard registrationCode.user == nil else {
-                    return req.eventLoop.makeFailedFuture(
-                    		Abort(.conflict, reason: "registration code has already been used"))
+                   throw Abort(.conflict, reason: "registration code has already been used")
                 }
                 // update models and return 200
                 return req.db.transaction { (database) in
                     // update registrationCode
-                    registrationCode.user = user
+                    registrationCode.$user.id = userID
                     return registrationCode.save(on: database).flatMap {
                         // update user
                         user.accessLevel = .verified
@@ -305,20 +339,22 @@ struct UserController: RouteCollection {
         let user = try req.auth.require(User.self)
         let data = try req.content.decode(ImageUploadData.self)
         // get generated filename
-        return processImage(data: data.image, forType: .userProfile, on: req).flatMap { (filename) in
+        return processImage(data: data.image, forType: .userProfile, on: req)
+        	.unwrap(or: Abort(.badRequest, reason: "No image data in request."))
+        	.flatMap { (filename) in
             // get profile
             return user.$profile.query(on: req.db)
                 .first()
                 .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
                 .throwingFlatMap { (profile) in
                     // replace existing image
-                    if !profile.userImage.isEmpty {
+                    if let existingImage = profile.userImage, !existingImage.isEmpty {
                         // create ProfileEdit record
                         let profileEdit = try ProfileEdit(profile: profile, profileData: nil,
-                            	profileImage: profile.userImage)
+                            	profileImage: existingImage)
                         // archive thumbnail
                         DispatchQueue.global(qos: .background).async {
-                            self.archiveImage(profile.userImage, from: self.imageDir)
+                            self.archiveImage(existingImage, on: req)
                         }
                         return profileEdit.save(on: req.db).transform(to: profile)
                     }
@@ -353,13 +389,13 @@ struct UserController: RouteCollection {
             .first()
             .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
             .throwingFlatMap { (profile) in
-                if !profile.userImage.isEmpty {
+                if let existingImage = profile.userImage, !existingImage.isEmpty {
                     // create ProfileEdit record
                     let profileEdit = try ProfileEdit(profile: profile, profileData: nil,
-							profileImage: profile.userImage)
+							profileImage: existingImage)
                     // archive thumbnail
                     DispatchQueue.global(qos: .background).async {
-                        return self.archiveImage(profile.userImage, from: self.imageDir)
+                        return self.archiveImage(existingImage, on: req)
                     }
                     return profileEdit.save(on: req.db).flatMap { (_) in
                         // remove image from profile
@@ -526,8 +562,7 @@ struct UserController: RouteCollection {
     func addHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         let user = try req.auth.require(User.self)
         // see `UserCreateData.validations()`
-        try UserCreateData.validate(content: req)
-        let data = try req.content.decode(UserCreateData.self)
+		let data = try ValidatingJSONDecoder().decode(UserCreateData.self, fromBodyOf: req)
         // only upstanding citizens need apply
         guard user.accessLevel.hasAccess(.verified) else {
             throw Abort(.forbidden, reason: "user not currently permitted to create sub-account")
@@ -994,8 +1029,7 @@ struct UserController: RouteCollection {
     func createBarrelHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         let user = try req.auth.require(User.self)
         // see `BarrelCreateData.validations()`
-        try BarrelCreateData.validate(content: req)
-        let data = try req.content.decode(BarrelCreateData.self)
+		let data = try ValidatingJSONDecoder().decode(BarrelCreateData.self, fromBodyOf: req)
         // initialize barrel
         let barrel = try Barrel(
             ownerID: user.requireID(),
@@ -1219,7 +1253,7 @@ struct UserController: RouteCollection {
             .unwrap(or: Abort(.notFound, reason: "note with ID '\(data.noteID)' not found")).addModelID()
             .flatMap { (note, noteID) in
                 // ensure it belongs to user
-                guard note.author.id == userID else {
+                guard note.$author.id == userID else {
                     return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "note does not belong to user"))
                 }
                 note.note = data.note
@@ -1356,8 +1390,7 @@ struct UserController: RouteCollection {
             throw Abort(.forbidden, reason: "password change would break a client")
         }
         // see `UserPasswordData.validations()`
-		try UserPasswordData.validate(content: req)
-        let data = try req.content.decode(UserPasswordData.self)
+		let data = try ValidatingJSONDecoder().decode(UserPasswordData.self, fromBodyOf: req)
         // encrypt, then update user
         let passwordHash = try Bcrypt.hash(data.password)
         user.password = passwordHash
@@ -1409,8 +1442,7 @@ struct UserController: RouteCollection {
             throw Abort(.forbidden, reason: "username change would break a client")
         }
         // see `UserUsernameData.validations()`
-        try UserUsernameData.validate(content: req)
-        let data = try req.content.decode(UserUsernameData.self)
+		let data = try ValidatingJSONDecoder().decode(UserUsernameData.self, fromBodyOf: req)
         // check for existing username
         return User.query(on: req.db)
             .filter(\.$username == data.username)
@@ -1514,17 +1546,5 @@ struct UserController: RouteCollection {
         }
         let recoveryKey = word1 + " " + word2 + " " + word3
         return req.eventLoop.future(recoveryKey)
-    }
-}
-
-extension UserController: ImageHandler {
-    /// The base directory for storing profile images.
-    var imageDir: String {
-        return "images/profile/"
-    }
-    
-    /// The height of profile image thumbnails.
-    var thumbnailHeight: Int {
-        return 44
     }
 }

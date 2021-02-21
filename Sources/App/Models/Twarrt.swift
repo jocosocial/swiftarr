@@ -17,7 +17,7 @@ final class Twarrt: Model {
     @Field(key: "text") var text: String
     
     /// The filename of any image content of the twarrt.
-    @Field(key: "image") var image: String
+    @Field(key: "image") var image: String?
     
     /// Whether the twarrt is in quarantine, unable to be replied to directly.
     @Field(key: "isQuarantined") var isQuarantined: Bool
@@ -63,7 +63,7 @@ final class Twarrt: Model {
     init(
         author: User,
         text: String,
-        image: String = "",
+        image: String? = nil,
         replyTo: Twarrt? = nil
     ) throws {
         self.$author.id = try author.requireID()

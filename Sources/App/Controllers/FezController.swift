@@ -371,8 +371,7 @@ struct FezController: RouteCollection {
     func createHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         let user = try req.auth.require(User.self)
         // see `FezCreateData.validations()`
-        try FezContentData.validate(content: req)
-        let data = try req.content.decode(FezContentData.self)
+		let data = try ValidatingJSONDecoder().decode(FezContentData.self, fromBodyOf: req)
         // create barrel
         let barrel = try Barrel(
             ownerID: user.requireID(),
@@ -516,10 +515,9 @@ struct FezController: RouteCollection {
 								.filter(\.$author.$id !~ filters.muted)
 								.sort(\.$createdAt, .ascending)
 								.all()
-								.flatMapThrowing {
-									(posts) in
+								.flatMapThrowing { (posts) in
 									// add as FezPostData
-									fezDetailData.posts = try posts.map { try $0.convertToData() }
+									fezDetailData.posts = try posts.map { try FezPostData(post: $0) }
 									return fezDetailData
 								}
 						}
@@ -741,8 +739,7 @@ struct FezController: RouteCollection {
     func postAddHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         let user = try req.auth.require(User.self)
         // see PostContentData.validations()
-        try PostCreateData.validate(content: req)
-        let data = try req.content.decode(PostCreateData.self)
+ 		let data = try ValidatingJSONDecoder().decode(PostCreateData.self, fromBodyOf: req)
         // get fez
         return Barrel.findFromParameter("barrel_id", on: req).flatMap { (barrel) in
             guard barrel.barrelType == .friendlyFez else {
@@ -832,7 +829,7 @@ struct FezController: RouteCollection {
 										.all()
 										.flatMapThrowing { (posts) in
 											// add as FezPostData
-											fezDetailData.posts = try posts.map { try $0.convertToData() }
+											fezDetailData.posts = try posts.map { try FezPostData(post: $0) }
 											let response = Response(status: .created)
 											try response.content.encode(fezDetailData)
 											return response
@@ -869,7 +866,7 @@ struct FezController: RouteCollection {
                 .unwrap(or: Abort(.internalServerError, reason: "fez not found"))
                 .flatMap { (barrel) in
                     // delete post
-                    guard post.author.id == userID else {
+                    guard post.$author.id == userID else {
                         return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "user cannot delete post"))
                     }
                     return post.delete(on: req.db).flatMap { (_) in
@@ -952,7 +949,7 @@ struct FezController: RouteCollection {
 											.all()
 											.flatMapThrowing { (posts) in
 												// add as FezPostData
-												fezDetailData.posts = try posts.map { try $0.convertToData() }
+												fezDetailData.posts = try posts.map { try FezPostData(post: $0) }
 												let response = Response(status: .created)
 												try response.content.encode(fezDetailData)
 												return response
@@ -1087,8 +1084,7 @@ struct FezController: RouteCollection {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
 		// see FezContentData.validations()
-        try FezContentData.validate(content: req)
-        let data = try req.content.decode(FezContentData.self)        
+		let data = try ValidatingJSONDecoder().decode(FezContentData.self, fromBodyOf: req)
         // get barrel
         return Barrel.findFromParameter("barrel_id", on: req).flatMap { (barrel) in
             guard barrel.barrelType == .friendlyFez else {
@@ -1366,18 +1362,6 @@ struct FezController: RouteCollection {
 
 }
 
-// posts can contain images
-extension FezController: ImageHandler {
-    /// The base directory for storing FezPost images.
-    var imageDir: String {
-        return "images/fez/"
-    }
-    
-    /// The height of FezPost image thumbnails.
-    var thumbnailHeight: Int {
-        return 100
-    }
-}
 
 // MARK: - Helper Functions
 

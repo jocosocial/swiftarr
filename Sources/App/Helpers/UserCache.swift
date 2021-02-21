@@ -2,6 +2,8 @@ import Foundation
 import Vapor
 import Fluent
 import Redis
+import NIO
+import PostgresNIO
 
 // With ~2000 users at an average of ~1K per UserCacheData, an in-memory cache of all users would take
 // up about 2 Megs of space. We should easily be able to handle this size cache. 
@@ -24,7 +26,7 @@ public struct UserCacheData {
 	let userID: UUID
 	let username: String
 	let displayName: String?
-	let userImage: String
+	let userImage: String?
 	let blocks: [UUID]?
 	let mutes: [UUID]?
 	let mutewords: [String]?
@@ -82,7 +84,19 @@ extension Application {
 			}
 		
 			var dict = [UUID : UserCacheData]()
-			let allUsers = try User.query(on: app.db).all().wait()
+			var allUsers: [User]
+			// As it happens, we can diagnose several startup-time malfunctions here, as this is usually the first query each launch.
+			do {
+				allUsers = try User.query(on: app.db).all().wait()
+			}
+			catch let error as NIO.IOError where error.errnoCode == 61 {
+				app.logger.critical("Initial connection to Postgres failed. Is the db up and running?")
+				throw error
+			}
+			catch let error as PostgresNIO.PostgresError {
+				app.logger.critical("Initial attempt to access Swiftarr DB tables failed. Is the DB set up (all migrations run)?")
+				throw error
+			}
 			try allUsers.forEach { user in
 				let userID = try user.requireID()
 				let barrelFuture = Barrel.query(on: app.db)
@@ -168,12 +182,11 @@ extension Request {
 		
 		public func updateUser(_ userUUID: UUID) -> EventLoopFuture<UserCacheData> {
 			return getUpdatedUserCacheData(userUUID).map { cacheData in	
-				var dict = request.application.userCacheStorage.dict
 				let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
 				// It's possible another thread could add this cache entry while this thread is
 				// building it. That's okay.
 				cacheLock.withLock {
-					dict[userUUID] = cacheData
+					request.application.userCacheStorage.dict[userUUID] = cacheData
 				}
 				return cacheData
 			}
@@ -184,11 +197,10 @@ extension Request {
 				return getUpdatedUserCacheData(userUUID)
 			}
 			return futures.flatten(on: request.eventLoop).map { cacheData in
-				var dict = request.application.userCacheStorage.dict
 				let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
 				cacheLock.withLock {
 					cacheData.forEach { userCacheData in
-						dict[userCacheData.userID] = userCacheData
+						request.application.userCacheStorage.dict[userCacheData.userID] = userCacheData
 					}
 				}
 			}

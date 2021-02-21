@@ -9,6 +9,11 @@ import Fluent
 struct TwitarrController: RouteCollection {
     // MARK: RouteCollection Conformance
     
+    // Vapor uses ":pathParam" to declare a parameterized path element, and "pathParam" (no colon) to get 
+    // the parameter value in route handlers. findFromParameter() has a variant that takes a PathComponent,
+    // and it's slightly more type-safe to do this rather than relying on string matching.
+    var twarrtIDParam = PathComponent(":twarrt_id")
+    
     /// Required. Resisters routes to the incoming router.
     func boot(routes: RoutesBuilder) throws {
         
@@ -26,76 +31,32 @@ struct TwitarrController: RouteCollection {
         
 		// endpoints available whether logged in or not
 		sharedAuthGroup.get("", use: twarrtsHandler)
-		sharedAuthGroup.get(":twarrt_id", use: twarrtHandler)
+		sharedAuthGroup.get(twarrtIDParam, use: twarrtHandler)
         
 		// endpoints only available when logged in
-		tokenAuthGroup.post(":twarrt_id", "bookmark", use: bookmarkAddHandler)
-		tokenAuthGroup.post(":twarrt_id", "bookmark", "remove", use: bookmarkRemoveHandler)
+		tokenAuthGroup.post(twarrtIDParam, "bookmark", use: bookmarkAddHandler)
+		tokenAuthGroup.post(twarrtIDParam, "bookmark", "remove", use: bookmarkRemoveHandler)
 		tokenAuthGroup.get("bookmarks", use: bookmarksHandler)
 		tokenAuthGroup.post("create", use: twarrtCreateHandler)
-		tokenAuthGroup.post(":twarrt_id", "delete", use: twarrtDeleteHandler)
-		tokenAuthGroup.post(":twarrt_id", "laugh", use: twarrtLaughHandler)
-		tokenAuthGroup.post(":twarrt_id", "like", use: twarrtLikeHandler)
-		tokenAuthGroup.post(":twarrt_id", "love", use: twarrtLoveHandler)
+		tokenAuthGroup.post(twarrtIDParam, "delete", use: twarrtDeleteHandler)
+		tokenAuthGroup.delete(twarrtIDParam, use: twarrtDeleteHandler)
+		tokenAuthGroup.post(twarrtIDParam, "laugh", use: twarrtLaughHandler)
+		tokenAuthGroup.post(twarrtIDParam, "like", use: twarrtLikeHandler)
+		tokenAuthGroup.post(twarrtIDParam, "love", use: twarrtLoveHandler)
 		tokenAuthGroup.get("likes", use: likesHandler)
-		tokenAuthGroup.post(":twarrt_id", "reply", use: replyHandler)
-		tokenAuthGroup.post(":twarrt_id", "report", use: twarrtReportHandler)
-		tokenAuthGroup.post(":twarrt_id", "unreact", use: twarrtUnreactHandler)
-		tokenAuthGroup.post(":twarrt_id", "update", use: twarrtUpdateHandler)
-
-		// Unused, probably going to be deleted.
-//		sharedAuthGroup.get("barrel", ":barrel_id", use: twarrtsBarrelHandler)
-//		sharedAuthGroup.get("hashtag", ":hashtag", use: twarrtsHashtagHandler)
-//		sharedAuthGroup.get("search", ":search_string", use: twarrtsSearchHandler)
-//		sharedAuthGroup.get("user", ":user_id", use: twarrtsUserHandler)
-//		tokenAuthGroup.post(":twarrt_id", "image", use: imageHandler)
-//		tokenAuthGroup.post(":twarrt_id", "image", "remove", use: imageRemoveHandler)
-//		tokenAuthGroup.get("mentions", use: mentionsHandler)
-//		tokenAuthGroup.get("user", use: userHandler)
+		tokenAuthGroup.post(twarrtIDParam, "reply", use: replyHandler)
+		tokenAuthGroup.post(twarrtIDParam, "report", use: twarrtReportHandler)
+		tokenAuthGroup.post(twarrtIDParam, "unreact", use: twarrtUnreactHandler)
+		tokenAuthGroup.delete(twarrtIDParam, "laugh", use: twarrtUnreactHandler)
+		tokenAuthGroup.delete(twarrtIDParam, "like", use: twarrtUnreactHandler)
+		tokenAuthGroup.delete(twarrtIDParam, "love", use: twarrtUnreactHandler)
+		tokenAuthGroup.post(twarrtIDParam, "update", use: twarrtUpdateHandler)
    }
     
     // MARK: - sharedAuthGroup Handlers (logged in or not)
     // All handlers in this route group require a valid HTTP Basic Authorization
     // *or* HTTP Bearer Authorization header in the request.
-    
-    /// `GET /api/v3/twitarr/barrel/ID`
-    ///
-    /// Retrieve all `Twarrt`s posted by users in the specified `.seamonkey` type `Barrel`.
-    ///
-    /// - Note: The barrel does not need to be owned by the requesting user, though all blocks
-    ///   and mutes of the requesting user are applied regardless.
-    ///
-    /// - Requires: A specified `Barrel` of `BarrelType.seamonkey`.
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Throws: 400 error if the barrel is not a barrel of seamonkeys.
-    /// - Returns: `[TwarrtData]` containing all twarrts posted by the barrel seamonkeys.
-//    func twarrtsBarrelHandler(_ req: Request) throws -> EventLoopFuture<[TwarrtData]> {
-//        let user = try req.auth.require(User.self)
-//        // get seamonkey barrel
-//        return Barrel.findFromParameter("barrel_id", on: req).flatMap { (barrel) in
-//            // ensure .seamonkey type
-//            guard barrel.barrelType == .seamonkey else {
-//                return req.eventLoop.makeFailedFuture(Abort(.badRequest, reason: "barrel is not a seamonkey barrel"))
-//            }
-//            // get filters
-//            return Twarrt.getCachedFilters(for: user, on: req).flatMap {
-//                (filters) in
-//                // get twarrts
-//                return Twarrt.query(on: req.db)
-//                    .filter(\.$author.$id ~~ barrel.modelUUIDs)
-//                    .filter(\.$author.$id !~ filters.blocked)
-//                    .filter(\.$author.$id !~ filters.muted)
-//                    .with(\.$author)
-//                    .sort(\.$createdAt, .descending)
-//                    .all()
-//                    .flatMap { twarrts in
-//                    	return buildTwarrtData(from: twarrts, user: user, on: req, filters: filters,
-//                    			assumeBookmarked: true)
-//					}
-//            }
-//        }
-//    }
-    
+        
     /// `GET /api/v3/twitarr/ID`
     ///
     /// Retrieve the specfied `Twarrt` with full user `LikeType` data.
@@ -105,10 +66,10 @@ struct TwitarrController: RouteCollection {
     /// - Returns: `TwarrtDetaildata` containing the specified twarrt.
     func twarrtHandler(_ req: Request) throws -> EventLoopFuture<TwarrtDetailData> {
         let user = try req.auth.require(User.self)
-        return Twarrt.findFromParameter("twarrt_id", on: req).addModelID().flatMap { (twarrt, twartID) in
+        return Twarrt.findFromParameter(twarrtIDParam, on: req).addModelID().flatMap { (twarrt, twartID) in
             // we have twarrt, but need to filter
             return Twarrt.getCachedFilters(for: user, on: req).flatMap { (filters) in
-				if filters.blocked.contains(twarrt.author.id!) || filters.muted.contains(twarrt.author.id!) ||
+				if filters.blocked.contains(twarrt.$author.id) || filters.muted.contains(twarrt.$author.id) ||
 						twarrt.containsMutewords(using: filters.mutewords) {
                 	return req.eventLoop.makeFailedFuture(Abort(.notFound, reason: "twarrt is not available"))
                 }
@@ -300,106 +261,7 @@ struct TwitarrController: RouteCollection {
 			}
 		}
     }
-    
-    /// `GET /api/v3/twitarr/hashtag/#STRING`
-    ///
-    /// Retrieve all `Twarrt`s that contain the exact specified hashtag.
-    ///
-    /// - Note: By "exact" we mean the string cannot be a substring of another hashtag (there
-    ///   must be a preceeding space), but the match is not case-sensitive. For example, `#joco`
-    ///   will not match `#joco2020` or `#joco#2020`, but will match `#JoCo`. Use the more
-    ///   generic `GET /api/v3/twitarr/search/STRING` endpoint with the same `#joco` parameter
-    ///   if you want that type of substring matching behavior.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Throws: 400 error if the specified string is not a hashtag.
-    /// - Returns: `[TwarrtData]` containing all matching twarrts.
-//    func twarrtsHashtagHandler(_ req: Request) throws -> EventLoopFuture<[TwarrtData]> {
-//        let user = try req.auth.require(User.self)
-//        guard var hashtag = req.parameters.get("hashtag") else {
-//            throw Abort(.badRequest, reason: "Missing hashtag parameter.")
-//        }
-//        // ensure it's a hashtag
-//        guard hashtag.hasPrefix("#") else {
-//            throw Abort(.badRequest, reason: "hashtag parameter must start with '#'")
-//        }
-//        // postgres "_" and "%" are wildcards, so escape for literals
-//        hashtag = hashtag.replacingOccurrences(of: "_", with: "\\_")
-//        hashtag = hashtag.replacingOccurrences(of: "%", with: "\\%")
-//        hashtag = hashtag.trimmingCharacters(in: .whitespacesAndNewlines)
-//        // get cached blocks
-//		return Twarrt.getCachedFilters(for: user, on: req).flatMap { (filters) -> EventLoopFuture<[TwarrtData]> in
-//            // get twarrts
-//            return Twarrt.query(on: req.db)
-//                .filter(\.$author.$id !~ filters.blocked)
-//                .filter(\.$author.$id !~ filters.muted)
-//                .filter(\.$text, .custom("ILIKE"), "%\(hashtag)%")
-//                .sort(\.$id, .descending)
-//                .all()
-//				.flatMap { twarrts in
-//					return buildTwarrtData(from: twarrts, user: user, on: req, filters: filters, 
-//							matchHashtag: hashtag)
-//				}
-//        }
-//    }
-    
-    /// `GET /api/v3/twitarr/search/STRING`
-    ///
-    /// Retrieve all `Twarrt`s that contain the specified string.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[TwarrtData]` containing all matching twarrts.
-//    func twarrtsSearchHandler(_ req: Request) throws -> EventLoopFuture<[TwarrtData]> {
-//        let user = try req.auth.require(User.self)
-//        guard var search = req.parameters.get("search_string") else {
-//            throw Abort(.badRequest, reason: "Missing search parameter.")
-//        }
-//        // postgres "_" and "%" are wildcards, so escape for literals
-//        search = search.replacingOccurrences(of: "_", with: "\\_")
-//        search = search.replacingOccurrences(of: "%", with: "\\%")
-//        search = search.trimmingCharacters(in: .whitespacesAndNewlines)
-//        // get cached blocks
-//        return Twarrt.getCachedFilters(for: user, on: req).flatMap { (filters) in
-//            // get twarrts
-//            return Twarrt.query(on: req.db)
-//                .filter(\.$author.$id !~ filters.blocked)
-//                .filter(\.$author.$id !~ filters.muted)
-//                .filter(\.$text, .custom("ILIKE"), "%\(search)%")
-//                .sort(\.$id, .descending)
-//                .all()
-//				.flatMap { (twarrts) in
-//                    return buildTwarrtData(from: twarrts, user: user, on: req, filters: filters)
-//				}
-//        }
-//    }
-    
-    /// `GET /api/v3/twitarr/user/ID`
-    ///
-    /// Retrieve all `Twarrt`s posted by the specified `User`.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[TwarrtData]` containing all specified user's twarrts.
-//    func twarrtsUserHandler(_ req: Request) throws -> EventLoopFuture<[TwarrtData]> {
-//        let requester = try req.auth.require(User.self)
-//        return User.findFromParameter("user_id", on: req).addModelID().flatMap {
-//            (user, userID) in
-//            // get cached blocks
-//            return Twarrt.getCachedFilters(for: requester, on: req).flatMap {
-//                (filters) in
-//                // get twarrts
-//                return Twarrt.query(on: req.db)
-//                    .filter(\.$author.$id !~ filters.blocked)
-//                    .filter(\.$author.$id !~ filters.muted)
-//                    .filter(\.$author.$id == userID)
-//                    .sort(\.$id, .descending)
-//                    .all()
-//					.flatMap { (twarrts) in
-//						return buildTwarrtData(from: twarrts, user: user, on: req, filters: filters)
-//					}
-//            }
-//        }
-//    }
-    
+        
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
@@ -415,7 +277,7 @@ struct TwitarrController: RouteCollection {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
         // get twarrt
-        return Twarrt.findFromParameter("twarrt_id", on: req).addModelID().flatMap {
+        return Twarrt.findFromParameter(twarrtIDParam, on: req).addModelID().flatMap {
             (twarrt, twarrtID) in
             // get user's bookmarkedTwarrt barrel
             return user.getBookmarkBarrel(of:.bookmarkedTwarrt, on: req).flatMap {
@@ -445,7 +307,7 @@ struct TwitarrController: RouteCollection {
     func bookmarkRemoveHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
         // get twarrt
-        return Twarrt.findFromParameter("twarrt_id", on: req).addModelID().flatMap {
+        return Twarrt.findFromParameter(twarrtIDParam, on: req).addModelID().flatMap {
             (twarrt, twarrtID) in
             // get user's bookmarkedTwarrt barrel
             return user.getBookmarkBarrel(of:.bookmarkedTwarrt, on: req)
@@ -490,79 +352,7 @@ struct TwitarrController: RouteCollection {
 				}
 		}
     }
-    
-    /// `POST /api/v3/twitarr/ID/image`
-    ///
-    /// Sets the `Twarrt` image to the file uploaded in the HTTP body.
-    ///
-    /// - Requires: `ImageUploadData` payload in the HTTP body.
-    /// - Parameters:
-    ///   - req: The incoming `Request`, provided automatically.
-    ///   - data: `ImageUploadData` containing the filename and image file.
-    /// - Throws: 403 error if user does not have permission to modify the twarrt.
-    /// - Returns: `TwarrtData` containing the updated image value.
-//    func imageHandler(_ req: Request) throws -> EventLoopFuture<TwarrtData> {
-//        let user = try req.auth.require(User.self)
-//        let userID = try user.requireID()
-//        let data = try req.content.decode(ImageUploadData.self)
-//        // get twarrt
-//        return Twarrt.findFromParameter("twarrt_id", on: req).addModelID().flatMap { (twarrt, twarrtID) in
-//            guard twarrt.author.id == userID || user.accessLevel.hasAccess(.moderator) else {
-//                    return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "user cannot modify twarrt"))
-//            }
-//			// get generated filename
-//			return self.processImage(data: data.image, forType: .twarrt, on: req).throwingFlatMap { (filename) in
-//				// replace existing image
-//				if !twarrt.image.isEmpty {
-//					// archive thumbnail
-//					DispatchQueue.global(qos: .background).async {
-//						self.archiveImage(twarrt.image, from: self.imageDir)
-//					}
-//					// Save the edit, but don't wait for it to complete
-//					_ = try TwarrtEdit(twarrt: twarrt).save(on: req.db)
-//				}
-//				// update twarrt
-//				twarrt.image = filename
-//				return twarrt.save(on: req.db).flatMap { (_) in
-//					return buildTwarrtData(from: twarrt, user: user, on: req)
-//				}
-//			}
-//		}
-//    }
-//    
-    /// `POST /api/v3/twitarr/ID/image/remove`
-    ///
-    /// Remove the image from a `Twarrt`, if there is one. A `TwarrtEdit` record is created
-    /// if there was an image to remove.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Throws: 403 error if the user does not have permission to modify the twarrt.
-    /// - Returns: `TwarrtData` containing the updated image name.
-//    func imageRemoveHandler(_ req: Request) throws -> EventLoopFuture<TwarrtData> {
-//        let user = try req.auth.require(User.self)
-//        let userID = try user.requireID()
-//        return Twarrt.findFromParameter("twarrt_id", on: req).throwingFlatMap { (twarrt) in
-//            guard twarrt.author.id == userID || user.accessLevel.hasAccess(.moderator) else {
-//                    throw Abort(.forbidden, reason: "user cannot modify twarrt")
-//            }
-//			if !twarrt.image.isEmpty {
-//				// archive thumbnail
-//				DispatchQueue.global(qos: .background).async {
-//					self.archiveImage(twarrt.image, from: self.imageDir)
-//				}
-//				// Save the edit
-//				return try TwarrtEdit(twarrt: twarrt).save(on: req.db).flatMap { (_) in
-//					// remove image filename from twarrt
-//					twarrt.image = ""
-//					return twarrt.save(on: req.db).transform(to: twarrt)
-//				}
-//			}
-//			return req.eventLoop.future(twarrt)
-//		}.flatMap { (twarrt) in
-//			return buildTwarrtData(from: twarrt, user: user, on: req)
-//		}
-//	}
-    
+        
     /// `GET /api/v3/twitarr/likes`
     ///
     /// Retrieve all `Twarrt`s the user has liked.
@@ -650,17 +440,15 @@ struct TwitarrController: RouteCollection {
     /// - Returns: `TwarrtData` containing the twarrt's contents and metadata.
     func replyHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         let user = try req.auth.require(User.self)
-		try PostCreateData.validate(content: req)
-        let data = try req.content.decode(PostCreateData.self)
+		let data = try ValidatingJSONDecoder().decode(PostCreateData.self, fromBodyOf: req)
         // get replyTo twarrt
-        return Twarrt.findFromParameter(":twarrt_id", on: req).flatMap { (replyTo) in
+        return Twarrt.findFromParameter(twarrtIDParam, on: req).flatMap { (replyTo) in
         	do {
 				guard !replyTo.isQuarantined else {
 					throw Abort(.badRequest, reason: "moderator-bot: twarrt cannot be replied to")
 				}
 				// process image
-				return self.processImage(data: data.imageData, forType: .twarrt, on: req).throwingFlatMap {
-					(filename) in
+				return self.processImage(data: data.imageData, forType: .twarrt, on: req).throwingFlatMap { (filename) in
 					// create twarrt
 					let twarrt = try Twarrt(author: user, text: data.text, image: filename, replyTo: replyTo)
 					return twarrt.save(on: req.db).flatMapThrowing { (savedTwarrt) in
@@ -690,8 +478,7 @@ struct TwitarrController: RouteCollection {
     /// - Returns: `TwarrtData` containing the twarrt's contents and metadata.
     func twarrtCreateHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         let user = try req.auth.require(User.self)
- 		try PostCreateData.validate(content: req)
-        let data = try req.content.decode(PostCreateData.self)
+ 		let data = try ValidatingJSONDecoder().decode(PostCreateData.self, fromBodyOf: req)
         // process image
         return self.processImage(data: data.imageData, forType: .twarrt, on: req).throwingFlatMap { (filename) in
             // create twarrt
@@ -709,6 +496,7 @@ struct TwitarrController: RouteCollection {
     }
     
     /// `POST /api/v3/twitarr/ID/delete`
+	/// `DELETE /api/v3/twitarr/ID`
     ///
     /// Delete the specified `Twarrt`.
     ///
@@ -718,8 +506,8 @@ struct TwitarrController: RouteCollection {
     func twarrtDeleteHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
-        return Twarrt.findFromParameter("twarrt_id", on: req).flatMap {  (twarrt) in
-            guard twarrt.author.id == userID || user.accessLevel.hasAccess(.moderator) else {
+        return Twarrt.findFromParameter(twarrtIDParam, on: req).flatMap {  (twarrt) in
+            guard twarrt.$author.id == userID || user.accessLevel.hasAccess(.moderator) else {
                     return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "user cannot delete twarrt"))
             }
             return twarrt.delete(on: req.db).transform(to: .noContent)
@@ -745,7 +533,7 @@ struct TwitarrController: RouteCollection {
         let user = try req.auth.require(User.self)
         let data = try req.content.decode(ReportData.self)
         let parent = try user.parentAccount(on: req)
-        let twarrt = Twarrt.findFromParameter("twarrt_id", on: req).addModelID()
+        let twarrt = Twarrt.findFromParameter(twarrtIDParam, on: req).addModelID()
         return parent.and(twarrt).throwingFlatMap { (parent, arg1) in
         	let (twarrt, twarrtID) = arg1
 			let report = try Report(reportType: .twarrt, reportedID: String(twarrtID),
@@ -798,7 +586,7 @@ struct TwitarrController: RouteCollection {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
         // get twarrt
-        return Twarrt.findFromParameter("twarrt_id", on: req).addModelID().flatMap { (twarrt, twarrtID) in
+        return Twarrt.findFromParameter(twarrtIDParam, on: req).addModelID().flatMap { (twarrt, twarrtID) in
             guard twarrt.$author.id != userID else {
                 return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "user cannot like own twarrt"))
             }
@@ -818,36 +606,25 @@ struct TwitarrController: RouteCollection {
     }
         
     /// `POST /api/v3/twitarr/ID/unreact`
+    /// `DELETE /api/v3/twitarr/ID/reaction`
     ///
     /// Remove a `LikeType` reaction from the specified `Twarrt`.
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Throws: 400 error it there was no existing reaction. 403 error if user is the twarrt's
-    ///   creator.
+    /// - Throws: 403 error if user is is the twarrt's creator. 404 if no twarrt with the ID is found. 
     /// - Returns: `TwarrtData` containing the updated like info.
     func twarrtUnreactHandler(_ req: Request) throws -> EventLoopFuture<TwarrtData> {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
         // get twarrt
-        return Twarrt.findFromParameter("twarrt_id", on: req).addModelID().flatMap { (twarrt, twarrtID) in
-            guard twarrt.author.id != userID else {
+        return Twarrt.findFromParameter(twarrtIDParam, on: req).flatMap { twarrt in
+            guard twarrt.$author.id != userID else {
                 return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "user cannot like own post"))
             }
-			// check for existing like
-			return TwarrtLikes.query(on: req.db)
-				.filter(\.$user.$id == userID)
-				.filter(\.$twarrt.$id == twarrtID)
-				.first()
-				.flatMap { (like) in
-					guard like != nil else {
-						return req.eventLoop.makeFailedFuture(
-								Abort(.badRequest, reason: "user does not have a reaction on the twarrt"))
-					}
-					// remove pivot
-					return twarrt.$likes.detach(user, on: req.db).flatMap { (_) in
-						return buildTwarrtData(from: twarrt, user: user, on: req)
-					}
-            }
+			// remove pivot
+			return twarrt.$likes.detach(user, on: req.db).flatMap { (_) in
+				return buildTwarrtData(from: twarrt, user: user, on: req)
+			}
         }
     }
     
@@ -864,11 +641,10 @@ struct TwitarrController: RouteCollection {
     func twarrtUpdateHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
-		try PostContentData.validate(content: req)
-        let data = try req.content.decode(PostContentData.self)
-        return Twarrt.findFromParameter("twarrt_id", on: req).throwingFlatMap { (twarrt) in
+		let data = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
+        return Twarrt.findFromParameter(twarrtIDParam, on: req).throwingFlatMap { (twarrt) in
             // ensure user has write access
-            guard twarrt.author.id == userID, user.accessLevel.hasAccess(.verified) else {
+            guard twarrt.$author.id == userID, user.accessLevel.hasAccess(.verified) else {
                     throw Abort(.forbidden, reason: "user cannot modify twarrt")
             }
 			if let imageData = data.newImage {
@@ -877,9 +653,10 @@ struct TwitarrController: RouteCollection {
 					return (twarrt, newFilename)
 				}
 			}
-			return req.eventLoop.future((twarrt, data.imageFilename))
+			let newFilename: String? = data.imageFilename == "" ? twarrt.image : data.imageFilename
+			return req.eventLoop.future((twarrt, newFilename))
 		}
-		.throwingFlatMap { (twarrt: Twarrt, newImageFilename: String) in
+		.throwingFlatMap { (twarrt: Twarrt, newImageFilename: String?) in
 			// update if there are changes
 			if twarrt.text != data.text || twarrt.image != newImageFilename {
 				// stash current twarrt contents before modifying
@@ -989,18 +766,5 @@ extension TwitarrController {
 	}
 	
 	
-}
-
-// twarrts can contain images
-extension TwitarrController: ImageHandler {
-    /// The base directory for storing Twarrt images.
-    var imageDir: String {
-        return "images/twitarr/"
-    }
-    
-    /// The height of Twarrt image thumbnails.
-    var thumbnailHeight: Int {
-        return 100
-    }
 }
 

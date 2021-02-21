@@ -1,12 +1,13 @@
 import Foundation
 import Redis
 
+let usernameSeparatorString: String = "-.+_"
 extension CharacterSet {
     /// Defines a character set containing characters other than alphanumerics that are allowed
     /// in a username.
     static var usernameSeparators: CharacterSet {
         var separatorChars: CharacterSet = .init()
-        separatorChars.insert(charactersIn: "-.+_")
+        separatorChars.insert(charactersIn: usernameSeparatorString)
         return separatorChars
     }
 }

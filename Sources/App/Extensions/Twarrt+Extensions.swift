@@ -6,12 +6,13 @@ import Fluent
 extension Twarrt {
     /// Converts a `Twarrt` model to a version omitting data that is not for public consumption.
     func convertToData(author: UserHeader, bookmarked: Bool, userLike: LikeType?, likeCount: Int) throws -> TwarrtData {
+		let image = self.image?.count ?? 0 > 0 ? self.image : nil
         return try TwarrtData(
             twarrtID: self.requireID(),
             createdAt: self.createdAt ?? Date(),
             author: author,
             text: self.isQuarantined ? "This twarrt is under moderator review." : self.text,
-            image: self.isQuarantined ? "" : self.image,
+            image: self.isQuarantined ? "" : image,
             replyToID: self.replyTo?.requireID(),
             isBookmarked: bookmarked,
             userLike: userLike,

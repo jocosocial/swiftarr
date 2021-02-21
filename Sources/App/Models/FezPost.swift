@@ -17,7 +17,7 @@ final class FezPost: Model {
     @Field(key: "text") var text: String
     
     /// The filename of any image content of the post.
-    @Field(key: "image") var image: String
+    @Field(key: "image") var image: String?
     
     /// Timestamp of the model's creation, set automatically.
 	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
@@ -52,7 +52,7 @@ final class FezPost: Model {
         fez: Barrel,
         author: User,
         text: String,
-        image: String = ""
+        image: String?
     ) throws {
         self.$fez.id = try fez.requireID()
         self.$fez.value = fez

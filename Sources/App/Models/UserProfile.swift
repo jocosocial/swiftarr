@@ -22,7 +22,7 @@ final class UserProfile: Model, Content {
     @Field(key: "userSearch") var userSearch: String
     
     /// The filename of the image for the user's profile picture.
-    @Field(key: "userImage") var userImage: String
+    @Field(key: "userImage") var userImage: String?
     
     /// An optional bio or blurb or whatever.
     @OptionalField(key: "about") var about: String?
@@ -92,7 +92,7 @@ final class UserProfile: Model, Content {
     init(
         user: User,
         username: String,
-        userImage: String = "",
+        userImage: String? = nil,
         about: String? = nil,
         displayName: String? = nil,
         email: String? = nil,

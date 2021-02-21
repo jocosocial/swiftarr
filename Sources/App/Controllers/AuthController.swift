@@ -111,8 +111,7 @@ struct AuthController: RouteCollection {
     ///   be used for all subsequent HTTP requests, until expiry or revocation.
     func recoveryHandler(_ req: Request) throws -> EventLoopFuture<TokenStringData> {
         // see `UserRecoveryData.validations()`
-        try UserRecoveryData.validate(content: req)
-        let data = try req.content.decode(UserRecoveryData.self)        
+		let data = try ValidatingJSONDecoder().decode(UserRecoveryData.self, fromBodyOf: req)
         // find data.username user
         return User.query(on: req.db)
             .filter(\.$username == data.username)

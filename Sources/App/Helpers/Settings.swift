@@ -45,6 +45,15 @@ final class Settings {
         }
         get { return settingsQueue.sync { _maximumTwarrts } }
     }
+    
+    var maxImageSize: Int {
+        set(newValue) {
+            settingsQueue.async {
+                self._maximumTwarrts = newValue
+            }
+        }
+        get { return settingsQueue.sync { _maxImageSize } }
+    }
 
     // MARK: Quarantine
     
@@ -94,5 +103,6 @@ final class Settings {
 
     /// Internal storage.
     fileprivate var _maximumTwarrts: Int = 200
+    fileprivate var _maxImageSize: Int = 20 * 1024 * 1024
     
 }

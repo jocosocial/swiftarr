@@ -36,4 +36,7 @@ public func routes(_ app: Application) throws {
     
     let usersController = UsersController()
     try app.register(collection: usersController)
+    
+    let imageController = ImageController()
+    try app.register(collection: imageController)
 }

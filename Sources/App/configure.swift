@@ -20,7 +20,12 @@ public func configure(_ app: Application) throws {
 //    services.register(router, as: Router.self)
     
     // register middleware
-    //app.middleware.use(FileMiddleware.self) // serves files from `Public/` directory
+//    app.middleware.use(FileMiddleware(publicDirectory: "Public/")) // serves files from `Public/` directory
+//	app.middleware.use(SwiftarrErrorMiddleware.default(environment: app.environment))
+	var new = Middlewares()
+	new.use(RouteLoggingMiddleware(logLevel: .info))
+	new.use(SwiftarrErrorMiddleware.default(environment: app.environment))
+	app.middleware = new
     
     // use iso8601ms for dates
     let jsonEncoder = JSONEncoder()

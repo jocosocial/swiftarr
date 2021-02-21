@@ -30,7 +30,7 @@ final class TwarrtEdit: Model {
 
     /// The ID of the twarrt that was edited.
     @Parent(key: "twarrt") var twarrt: Twarrt
-    
+        
     // MARK: Initialization
     
     // Used by Fluent

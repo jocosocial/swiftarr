@@ -3,31 +3,6 @@ import Fluent
 
 // MARK: - Functions
 
-extension FezPost {
-    /// Converts a `FezPost` model to a version omitting data that is not for public
-    /// consumption.
-    func convertToData() throws -> FezPostData {
-        return try FezPostData(
-            postID: self.requireID(),
-            authorID: self.author.requireID(),
-            text: self.text,
-            image: self.image
-        )
-    }
-}
-
-extension EventLoopFuture where Value: FezPost {
-    /// Convers a `Future<FezPost>` to a `Futured<FezPostData>`. This extension provides
-    /// the convenience of simply using `post.convertToData)` and allowing the compiler to
-    /// choose the appropriate version for the context.
-    func convertToData() -> EventLoopFuture<FezPostData> {
-        return self.flatMapThrowing {
-            (fezPost) in
-            return try fezPost.convertToData()
-        }
-    }
-}
-
 // fezposts can be filtered by author and content
 extension FezPost: ContentFilterable {
     /// Checks if a `FezPost` contains any of the provided array of muting strings, returning true if it does
