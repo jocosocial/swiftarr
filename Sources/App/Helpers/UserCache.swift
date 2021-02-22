@@ -15,7 +15,7 @@ import PostgresNIO
 //
 // Because UserCache is shared app-wide, concurrency is a concern. Access to the dictionary that stores
 // all the UserCacheData entries is protected by a mutex lock. UserCacheData structs are immutable, their
-// properties and sub-structs are immutable, and UserCacheDatas can only be wholly replaced in the dict--
+// properties and sub-structs are immutable, and UserCacheDatas can only be wholly replaced in the cache--
 // you cannot update by mutating an existing UCD in the dict. 
 //
 // Code that creates a new User must defer returning results to the client until the Update future completes,
@@ -26,17 +26,31 @@ public struct UserCacheData {
 	let userID: UUID
 	let username: String
 	let displayName: String?
+	let profileUpdateTime: Date
 	let userImage: String?
-	let blocks: [UUID]?
-	let mutes: [UUID]?
+	let blocks: Set<UUID>?
+	let mutes: Set<UUID>?
 	let mutewords: [String]?
 	let alertwords: [String]?
 	
-	func getBlocks() -> [UUID] {
+	init(userID: UUID, user: User, profile: UserProfile, blocks: [UUID]?, mutes: [UUID]?, mutewords: [String]?, alertwords: [String]?) {
+		self.userID = userID
+		username = user.username
+		displayName = profile.displayName
+		profileUpdateTime = user.profileUpdatedAt
+		userImage = profile.userImage
+		// I actually hate using map in this way--the maps apply to the optionals, not the underlying arrays.
+		self.blocks = blocks.map { Set($0) }
+		self.mutes = mutes.map { Set($0) }
+		self.mutewords = mutewords
+		self.alertwords = alertwords
+	}
+	
+	func getBlocks() -> Set<UUID> {
 		return blocks ?? []
 	}
 		
-	func getMutes() -> [UUID] {
+	func getMutes() -> Set<UUID> {
 		return mutes ?? []
 	}
 	
@@ -50,7 +64,7 @@ extension Application {
     var userCacheStorage: UserCacheStorage {
         get {
             guard let result = self.storage[UserCacheStorageKey.self] else {
-				return UserCacheStorage(dict: [:])
+				return UserCacheStorage()
             }
             return result
         }
@@ -61,7 +75,13 @@ extension Application {
 
 	/// This is the datatype that gets stored in UserCacheStorage. Vapor's Services API uses this.
 	struct UserCacheStorage {
-		var dict: [UUID : UserCacheData]
+		var usersByID: [UUID : UserCacheData] = [:]
+		var usersByName: [String : UserCacheData] = [:]
+		
+		mutating func cacheUser(_ data: UserCacheData) {
+			self.usersByID[data.userID] = data
+			self.usersByName[data.username] = data
+		}
 	}
 	
 	/// Storage key used by Vapor's Services API. Used by UserCache to access its cache data.
@@ -83,7 +103,7 @@ extension Application {
 				return
 			}
 		
-			var dict = [UUID : UserCacheData]()
+			var initialStorage = UserCacheStorage()
 			var allUsers: [User]
 			// As it happens, we can diagnose several startup-time malfunctions here, as this is usually the first query each launch.
 			do {
@@ -126,15 +146,14 @@ extension Application {
 								}
 							}
 						
-							let cacheData = UserCacheData(userID: userID, username: user.username, 
-									displayName: profile.displayName, userImage: profile.userImage, 
-									blocks: blocks, mutes: mutes, mutewords: muteWords, alertwords: alertWords)
-							dict[userID] = cacheData
+							let cacheData = UserCacheData(userID: userID, user: user, profile: profile, blocks: blocks,
+									mutes: mutes, mutewords: muteWords, alertwords: alertWords)
+							initialStorage.cacheUser(cacheData)
 						}
 				}
 				try futures.wait()
 			}
-			app.userCacheStorage = UserCacheStorage(dict: dict)
+			app.userCacheStorage = initialStorage
 		}
 	}
 
@@ -156,11 +175,37 @@ extension Request {
 					displayName: user.displayName, userImage: user.userImage)
 		}
 		
-		func getBlocks(_ user: User) throws -> [UUID] {
+		func getHeader(_ username: String) -> UserHeader? {
+			let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
+			if let user = cacheLock.withLock({
+				request.application.userCacheStorage.usersByName[username]
+			}) {
+				return UserHeader(userID: user.userID, username: user.username, 
+						displayName: user.displayName, userImage: user.userImage)
+			}
+			return nil
+		}
+		
+		func getHeaders(fromDate: Date, forUser: User) throws -> [UserHeader] {
+			let userBlocks = try getBlocks(forUser)
+			let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
+			let users = cacheLock.withLock({
+				request.application.userCacheStorage.usersByID.filter { cachedUser in
+					cachedUser.value.profileUpdateTime >= fromDate && !userBlocks.contains(cachedUser.key)
+				}
+			})
+			
+			// We could do this step above, by mapping instead of filtering, but this moves some of the work out of the lock.
+			return  users.values.map {
+				UserHeader(userID: $0.userID, username: $0.username, displayName: $0.displayName, userImage: $0.userImage)
+			}
+		}
+		
+		func getBlocks(_ user: User) throws -> Set<UUID> {
 			return try getUser(user).blocks ?? []
 		}
 		
-		func getBlocks(_ userUUID: UUID) -> [UUID] {
+		func getBlocks(_ userUUID: UUID) -> Set<UUID> {
 			return getUser(userUUID)?.blocks ?? []
 		}
 		
@@ -172,10 +217,9 @@ extension Request {
 		}
 		
 		public func getUser(_ userUUID: UUID) -> UserCacheData? {
-			let dict = request.application.userCacheStorage.dict
 			let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
 			let cacheResult = cacheLock.withLock {
-				dict[userUUID]
+				request.application.userCacheStorage.usersByID[userUUID]
 			}
 			return cacheResult
 		}
@@ -186,7 +230,7 @@ extension Request {
 				// It's possible another thread could add this cache entry while this thread is
 				// building it. That's okay.
 				cacheLock.withLock {
-					request.application.userCacheStorage.dict[userUUID] = cacheData
+					request.application.userCacheStorage.cacheUser(cacheData)
 				}
 				return cacheData
 			}
@@ -199,8 +243,9 @@ extension Request {
 			return futures.flatten(on: request.eventLoop).map { cacheData in
 				let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
 				cacheLock.withLock {
+					var storage = request.application.userCacheStorage
 					cacheData.forEach { userCacheData in
-						request.application.userCacheStorage.dict[userCacheData.userID] = userCacheData
+						storage.cacheUser(userCacheData)
 					}
 				}
 			}
@@ -240,9 +285,8 @@ extension Request {
 								}
 							}
 						
-							let cacheData = UserCacheData(userID: userUUID, username: user.username, 
-									displayName: profile.displayName, userImage: profile.userImage, 
-									blocks: blocks, mutes: mutes, mutewords: muteWords, alertwords: alertWords)
+							let cacheData = UserCacheData(userID: userUUID, user: user, profile: profile, blocks: blocks,
+									mutes: mutes, mutewords: muteWords, alertwords: alertWords)
 							return cacheData
 						}
 				}

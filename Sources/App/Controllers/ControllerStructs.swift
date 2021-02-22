@@ -950,24 +950,6 @@ struct UserHeader: Content {
     var userImage: String?
 }
 
-/// Used to obtain user identity and determine whether any cached information may be stale.
-///
-/// Returned by:
-/// * `GET /api/v3/users/ID`
-/// * `GET /api/v3/users/find/STRING`
-/// * `GET /api/v3/client/user/updates/since/DATE`
-///
-/// See `UsersController.userHandler(_:)`, `UsersController.findHandler(_:)`,
-/// `ClientController.userUpdatesHandler(_:)`.
-struct UserInfo: Content {
-    /// The user's ID.
-    var userID: UUID
-    /// The user's username.
-    var username: String
-    /// Timestamp of last update to the user's profile.
-    var updatedAt: Date
-}
-
 /// Used to change a user's password.
 ///
 /// Required by: `POST /api/v3/user/password`

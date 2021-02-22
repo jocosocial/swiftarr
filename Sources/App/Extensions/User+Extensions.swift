@@ -83,17 +83,7 @@ extension User {
                 return try users.map { try $0.requireID() }
         	}
     }
-    
-    /// Converts a `User` model to a version that is publicly viewable. Only the ID, username
-    /// and timestamp of the last profile update are returned.
-    func convertToInfo() throws -> UserInfo {
-        return try UserInfo(
-            userID: self.requireID(),
-            username: self.username,
-            updatedAt: self.profileUpdatedAt
-        )
-    }
-    
+        
     /// Returns the parent `User` of the user sending the request. If the requesting user has
     /// no parent, the user itself is returned.
     ///
@@ -115,17 +105,7 @@ extension User {
     }
 }
 
-extension EventLoopFuture where Value: User {
-    /// Converts a `EventLoopFuture<User>` to a `EventLoopFuture<UserInfo>`. This extension provides the
-    /// convenience of simply using `user.convertToInfo()` and allowing the compiler to
-    /// choose the appropriate version for the context.
-    func convertToInfo() throws -> EventLoopFuture<UserInfo> {
-        return self.flatMapThrowing {
-            (user) in
-            return try user.convertToInfo()
-        }
-    }
-    
+extension EventLoopFuture where Value: User {    
     /// Converts a `Future<User>` to a `Future<SeaMonkey>`. This extension provides the
     /// convenience of simply using `user.convertToSeaMonkey()` and allowing the compiler
     /// to choose the appropriate version for the context.

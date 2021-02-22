@@ -37,9 +37,8 @@ struct UsersController: RouteCollection {
         
         // endpoints available whether logged in or out
         sharedAuthGroup.get("find", ":userSearchString", use: findHandler)
-        sharedAuthGroup.get(":user_id", "header", use: headerHandler)
         sharedAuthGroup.get(":user_id", "profile", use: profileHandler)
-        sharedAuthGroup.get(":user_id", use: userHandler)
+        sharedAuthGroup.get(":user_id", use: headerHandler)
 
         // endpoints available only when logged in
         tokenAuthGroup.post(":user_id", "block", use: blockHandler)
@@ -80,33 +79,28 @@ struct UsersController: RouteCollection {
     /// - Throws: 404 error if no match is found.
     /// - Returns: `UserInfo` containing the user's ID, username and timestamp of last
     ///   profile update.
-    func findHandler(_ req: Request) throws -> EventLoopFuture<UserInfo> {
+    func findHandler(_ req: Request) throws -> UserHeader {
         let requester = try req.auth.require(User.self)
         let requesterID = try requester.requireID()
-        let parameter = req.parameters.get("userSearchString") ?? "<missing>"
+		guard let parameter = req.parameters.get("userSearchString") else {
+			throw Abort(.badRequest, reason: "Find User: missing search string")
+		}
+		var userHeader: UserHeader? = req.userCache.getHeader(parameter) 
         // try converting to UUID
-        let userID = UUID(uuidString: parameter)
-        return User.query(on: req.db).group(.or) {
-            (or) in
-            // search ID if a UUID
-            if let userID = userID {
-                or.filter(\.$id == userID)
-            }
-            // search as username
-            or.filter(\.$username == parameter)
-        }.first()
-            .unwrap(or: Abort(.notFound, reason: "no user found for identifier '\(parameter)'"))
-            .flatMapThrowing { (user) in
-				// 404 if blocked
-				let blocked = req.userCache.getBlocks(requesterID)
-				if blocked.contains(try user.requireID()) {
-					throw Abort(.notFound, reason: "no user found for identifier '\(parameter)'")
-				}
-				return try user.convertToInfo()
-        	}
-    }
-    
-    /// `GET /api/v3/users/ID/header`
+		if userHeader == nil, let userID = UUID(uuidString: parameter) {
+			userHeader = try? req.userCache.getHeader(userID)
+		}
+		guard let foundUser = userHeader else {
+			throw Abort(.notFound, reason: "no user found for identifier '\(parameter)'")
+		}
+		let blocked = req.userCache.getBlocks(requesterID)
+		if blocked.contains(foundUser.userID) {
+			throw Abort(.notFound, reason: "no user found for identifier '\(parameter)'")
+		}
+		return foundUser
+	}
+            
+    /// `GET /api/v3/users/ID`
     ///
     /// Retrieves the specified user's `UserHeader` info.
     ///
@@ -120,22 +114,16 @@ struct UsersController: RouteCollection {
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `UserHeader` containing the user's ID, `.displayedName` and profile
     ///   image filename.
-    func headerHandler(_ req: Request) throws -> EventLoopFuture<UserHeader> {
+    func headerHandler(_ req: Request) throws -> UserHeader {
         let requester = try req.auth.require(User.self)
-        return User.findFromParameter("user_id", on: req).throwingFlatMap { (user) in
-			// 404 if blocked
-        	let blocks = try req.userCache.getBlocks(requester)
-			if blocks.contains(try user.requireID()) {
-				throw Abort(.notFound, reason: "user is not available")
-			}
-			return user.$profile.query(on: req.db)
-				.first()
-				.unwrap(or: Abort(.internalServerError, reason: "profile not found"))
-				.flatMapThrowing { (profile) in
-					// return as UserHeader
-					return try profile.convertToHeader()
-			}
+		guard let parameter = req.parameters.get("user_id") else {
+			throw Abort(.badRequest, reason: "UserID parameter missing")
 		}
+		guard let userHeader = req.userCache.getHeader(parameter), 
+				try !req.userCache.getBlocks(requester.requireID()).contains(userHeader.userID) else {
+			throw Abort(.notFound, reason: "no user found for identifier '\(parameter)'")
+		}
+		return userHeader
     }
     
     /// `GET /api/v3/users/ID/profile`
@@ -196,38 +184,7 @@ struct UsersController: RouteCollection {
 				}
 		}
     }
-    
-    /// `GET /api/v3/users/ID`
-    ///
-    /// Retrieves the specified user's `UserInfo`.
-    ///
-    /// This endpoint provides one-off retrieval of a user's username and the timestamp of
-    /// the last time their publicly viewable data was updated. It would typically be used to:
-    ///
-    ///  - obtain a username from an ID
-    ///  - determine if a user's info has updated since it was last obtained (username change,
-    ///    displayedName change, profile photo change, or any field on their profile)
-    ///
-    /// For bulk data retrieval, see the `ClientController` endpoints.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Throws: 404 error if no match is found.
-    /// - Returns: `UserInfo` containing the user's ID, username and timestamp of last
-    ///   profile update.
-    func userHandler(_ req: Request) throws -> EventLoopFuture<UserInfo> {
-        let requester = try req.auth.require(User.self)
-        return User.findFromParameter("user_id", on: req)
-        	.flatMapThrowing { (user) in
-      			 // 404 if blocked
-        		let blocked = try req.userCache.getBlocks(requester)
-				if blocked.contains(try user.requireID()) {
-					throw Abort(.notFound, reason: "user is not available")
-				}
-				// return as UserInfo
-				return try user.convertToInfo()
-			}
-    }
-    
+        
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
