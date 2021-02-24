@@ -20,14 +20,24 @@ import Fluent
 final class User: Model, Content {
 	static let schema = "users"
 	
-   // MARK: Properties
-    
     /// The user's ID, provisioned automatically.
  	@ID(key: .id) var id: UUID?
     
+// MARK: Who This User Is
     /// The user's publicly viewable username.
     @Field(key: "username") var username: String
     
+    /// An optional name for display alongside the username. "Display Name (@username)"
+    @OptionalField(key: "displayName") var displayName: String?
+    
+    /// An optional real world name for the user.
+    @OptionalField(key: "realName") var realName: String?
+    
+    /// Concatenation of displayName + (@username) + realName, to speed search by name.
+    @Field(key: "userSearch") var userSearch: String
+    
+
+// MARK: Access
     /// The user's password, encrypted to BCrypt hash value.
     @Field(key: "password") var password: String
     
@@ -48,6 +58,36 @@ final class User: Model, Content {
     /// Cumulative number of reports submitted on user's posts.
     @Field(key: "reports") var reports: Int
     
+// MARK: About This User
+
+    /// The filename of the image for the user's profile picture.
+    @Field(key: "userImage") var userImage: String?
+    
+    /// An optional bio or blurb or whatever.
+    @OptionalField(key: "about") var about: String?
+    
+    /// An optional email address. Social media addresses, URLs, etc. should probably be
+    /// in `.about` or maybe `.message`.
+    @OptionalField(key: "email") var email: String?
+    
+    /// An optional home city, country, planet...
+    @OptionalField(key: "homeLocation") var homeLocation: String?
+    
+    /// An optional message to anybody viewing the profile. "I like turtles."
+    @OptionalField(key: "message") var message: String?
+    
+    /// An optional preferred pronoun or form of address.
+    @OptionalField(key: "preferredPronoun") var preferredPronoun: String?
+    
+    /// An optional cabin number.
+    @OptionalField(key: "roomNumber") var roomNumber: String?
+    
+    /// Limits viewing this profile's info (except `.username` and `.displayName`, which are
+    /// always viewable) to logged-in users. Default is `false` (don't limit).
+    @Field(key: "limitAccess") var limitAccess: Bool
+
+// Timestamps
+    
     /// Timestamp of the model's creation, set automatically.
 	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
     
@@ -57,7 +97,7 @@ final class User: Model, Content {
     /// Timestamp of the model's soft-deletion, set automatically.
     @Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
     
-    /// Timestamp of the child UserProfile's last update.
+    /// Timestamp of the UserProfile's last update.
     @Field(key: "profileUpdatedAt") var profileUpdatedAt: Date
     
 	// MARK: Relations
@@ -82,10 +122,9 @@ final class User: Model, Content {
     /// The child `ForumPost`s created by the user.
 	@Children(for: \.$author) var posts: [ForumPost]
 	
-    /// The child `UserProfile` of the user.
-	@Children(for: \.$user) var profile: [UserProfile]		// Actually 1:1
-//	@Parent(key: "user_profile") var profile: UserProfile
-    
+    /// The child `ProfileEdit` accountability records of the profile.
+    @Children(for: \.$user) var edits: [ProfileEdit]
+        
     /// The sibling `Twarrt`s "liked" by the user.
     @Siblings(through: TwarrtLikes.self, from: \.$user, to: \.$twarrt) var twarrtLikes: [Twarrt]
 
@@ -135,5 +174,8 @@ final class User: Model, Content {
         self.recoveryAttempts = recoveryAttempts
         self.reports = reports
         self.profileUpdatedAt = profileUpdatedAt
+        self.limitAccess = false
+        
+        buildUserSearchString()
     }
 }

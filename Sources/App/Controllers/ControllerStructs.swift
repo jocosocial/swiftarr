@@ -76,6 +76,15 @@ struct BarrelData: Content {
     var stringList: [String]?
 }
 
+extension BarrelData {
+	init(barrel: Barrel, users: [User]? = nil) throws {
+		barrelID = try barrel.requireID()
+		name = barrel.name
+		seamonkeys = try users?.map { try SeaMonkey(user: $0) } ?? []
+		stringList = barrel.userInfo["userWords"]
+	}
+}
+
 /// Used to obtain a list of user-owned `Barrel` names and IDs.
 ///
 /// Returned by:
@@ -118,18 +127,6 @@ struct CategoryData: Content {
     var title: String
     /// If TRUE, only mods can create/modify threads in this forum. Should be sorted to top of category list.
     var isRestricted: Bool
-}
-
-/// Used to return a newly created `UserNote` for display or further edit.
-///
-/// Returned by: `POST /api/v3/users/ID/note`
-///
-/// See `UsersController.noteCreateHandler(_:data:)`.
-struct CreatedNoteData: Content {
-    /// The ID of the note.
-    var noteID: UUID
-    /// The text of the note.
-    var note: String
 }
 
 /// Used to return a newly created account's ID, username and recovery key.
@@ -253,7 +250,7 @@ extension FezContentData: RCFValidatable {
 
 /// Used to return a FriendlyFez `Barrel`'s data.
 ///
-/// Returned by:
+/// Returned by these methods, with `posts` set to nil.
 /// * `POST /api/v3/fez/create`
 /// * `POST /api/v3/fez/ID/join`
 /// * `POST /api/v3/fez/ID/unjoin`
@@ -263,7 +260,12 @@ extension FezContentData: RCFValidatable {
 /// * `POST /api/v3/fez/ID/user/ID/add`
 /// * `POST /api/v3/fez/ID/user/ID/remove`
 /// * `POST /api/v3/fez/ID/cancel`
-///
+/// 
+/// Returned by these  methods, with `posts` populated.
+/// * `GET /api/v3/fez/ID`
+/// * `POST /api/v3/fez/ID/post`
+/// * `POST /api/v3/fex/ID/post/ID/delete`
+
 /// See `FezController.createHandler(_:data:)`, `FezController.joinHandler(_:)`,
 /// `FezController.unjoinHandler(_:)`, `FezController.joinedHandler(_:)`
 /// `FezController.openhandler(_:)`, `FezController.ownerHandler(_:)`,
@@ -290,40 +292,8 @@ struct FezData: Content, ResponseEncodable {
     var seamonkeys: [SeaMonkey]
     /// The seamonkeys on a waiting list for the fez.
     var waitingList: [SeaMonkey]
-}
-
-/// Used to return a FriendlyFez `Barrel`'s data with discussion posts.
-///
-/// Returned by:
-/// * `GET /api/v3/fez/ID`
-/// * `POST /api/v3/fez/ID/post`
-/// * `POST /api/v3/fex/ID/post/ID/delete`
-///
-/// See `FezController.fezHandler(_:)`, `FezController.postAddHandler(_:data:)`,
-/// `FezController.postDeleteHandler(_:)`.
-struct FezDetailData: Content {
-    /// The ID of the fez.
-    var fezID: UUID
-    /// The ID of the fez's owner.
-    var ownerID: UUID
-    /// The `FezType` .label of the fez.
-    var fezType: String
-    /// The title of the fez.
-    var title: String
-    /// A description of the fez.
-    var info: String
-    /// The starting time of the fez.
-    var startTime: String
-    /// The ending time of the fez.
-    var endTime: String
-    /// The location for the fez.
-    var location: String
-    /// The seamonkeys participating in the fez.
-    var seamonkeys: [SeaMonkey]
-    /// The seamonkeys on a waiting list for the fez.
-    var waitingList: [SeaMonkey]
     /// The FezPosts in the fez discussion.
-    var posts: [FezPostData]
+    var posts: [FezPostData]?
 }
 
 /// Used to return a `FezPost`'s data.
@@ -344,7 +314,9 @@ struct FezPostData: Content {
     var text: String
     /// The image content of the fez post.
     var image: String?
-    
+}
+
+extension FezPostData {    
     init(post: FezPost) throws {
     	self.postID = try post.requireID()
     	self.authorID = post.$author.id
@@ -399,7 +371,9 @@ struct ForumData: Content {
     var isFavorite: Bool
     /// The posts in the forum.
     var posts: [PostData]
+}
 
+extension ForumData {
     init(forum: Forum, creator: UserHeader, isFavorite: Bool, posts: [PostData]) throws {
     	guard creator.userID == forum.$creator.id else {
     		throw Abort(.internalServerError, reason: "Internal server error--Forum's creator does not match.")
@@ -442,7 +416,9 @@ struct ForumListData: Content {
     var isLocked: Bool
     /// Whether user has favorited forum.
     var isFavorite: Bool
-    
+}
+
+extension ForumListData {
 	init(forum: Forum, creator: UserHeader, postCount: Int, lastPostAt: Date?, isFavorite: Bool) throws {
     	guard creator.userID == forum.$creator.id else {
     		throw Abort(.internalServerError, reason: "Internal server error--Forum's creator does not match.")
@@ -513,46 +489,28 @@ struct NoteCreateData: Content {
 ///
 /// Returned by:
 /// * `GET /api/v3/user/notes`
+/// * `GET /api/v3/users/ID/note`
 /// * `POST /api/v3/user/note`
 ///
 /// See `UserController.notesHandler(_:)`, `UserController.noteHandler(_:data:)`.
 struct NoteData: Content {
-    /// The ID of the note.
-    let noteID: UUID
     /// Timestamp of the note's creation.
     let createdAt: Date
     /// Timestamp of the note's last update.
     let updatedAt: Date
-    /// The ID of the associated profile.
-    let profileID: UUID
-    /// The .displayName of the profile's user.
-    var profileUser: String
+    /// The user the note is written about. The target user does not get to see notes written about them.
+    let targetUser: UserHeader
     /// The text of the note.
     var note: String
 }
 
-/// Used to obtain the contents of a `UserNote` for edit when viewing the associated profile.
-///
-/// Returned by: `GET /api/v3/users/ID/note`
-///
-/// See `UsersController.noteHandler(_:)`.
-struct NoteEditData: Content {
-    /// The note's ID.
-    var noteID: UUID
-    /// The text of the note.
-    var note: String
-}
-
-/// Used to update a `UserNote` in a non-profile-viewing context.
-///
-/// Required by: `POST /api/v3/user/note`
-///
-/// See `UserController.noteHandler(_:data:)`.
-struct NoteUpdateData: Content {
-    /// The ID of the note being updated.
-    let noteID: UUID
-    /// The udated text of the note.
-    let note: String
+extension NoteData {
+	init(note: UserNote) throws {
+		self.createdAt = note.createdAt ?? Date()
+		self.updatedAt = note.updatedAt ?? Date()
+		self.targetUser = try UserHeader(user: note.noteSubject)
+		self.note = note.note
+	}
 }
 
 /// Used to update a `ForumPost` or `Twarrt`. Format is designed to enable eventual multi-image features.
@@ -649,7 +607,9 @@ struct PostData: Content {
     var userLike: LikeType?
     /// The total number of `LikeType` reactions on the post.
     var likeCount: Int
-    
+}
+
+extension PostData {    
     init(post: ForumPost, author: UserHeader, bookmarked: Bool, userLike: LikeType?, likeCount: Int) throws {
 		postID = try post.requireID()
 		createdAt = post.createdAt ?? Date()
@@ -703,42 +663,18 @@ struct PostDetailData: Content {
     var loves: [SeaMonkey]
 }
 
-/// Used to update a user's profile contents.
-///
-/// Required by: `POST /api/v3/user/profile`
-///
-/// See `UserController.profileUpdateHandler(_:data:)`.
-struct ProfileEditData: Content {
-    /// An optional blurb about the user.
-    var about: String
-    /// An optional name for display alongside the username.
-    var displayName: String
-    /// An optional email address.
-    var email: String
-    /// An optional home location (e.g. city).
-    var homeLocation: String
-    /// An optional greeting/message to visitors of the profile.
-    var message: String
-    /// An optional preferred form of address.
-    var preferredPronoun: String
-    /// An optional real name of the user.
-    var realName: String
-    /// An optional ship cabin number.
-    var roomNumber: String
-    /// Whether display of the optional fields' data should be limited to logged in users.
-    var limitAccess: Bool
-}
-
 /// Used to return a user's public profile contents.
 ///
 /// Returned by: `GET /api/v3/users/ID/profile`
 ///
 /// See `UsersController.profileHandler(_:)`.
 struct ProfilePublicData: Content {
-    /// The profile's ID.
-    var profileID: UUID
-    /// A generated displayName + username string.
-    var displayedName: String
+    /// The userID for this profile data.
+    var userID: UUID
+    /// The user's username.
+    let username: String
+    /// The user's displayName, if any.
+    var displayName: String
     /// An optional blurb about the user.
     var about: String
     /// An optional email address for the user.
@@ -755,6 +691,22 @@ struct ProfilePublicData: Content {
     var roomNumber: String
     /// A UserNote owned by the visiting user, about the profile's user (see `UserNote`).
     var note: String?
+}
+
+extension ProfilePublicData {
+	init(user: User, note: String?) throws {
+		self.userID = try user.requireID()
+		self.username = user.username
+		self.displayName = user.displayName ?? ""
+		self.about = user.about ?? ""
+		self.email = user.email ?? ""
+		self.homeLocation = user.homeLocation ?? ""
+		self.message = user.message ?? ""
+		self.preferredPronoun = user.preferredPronoun ?? ""
+		self.realName = user.realName ?? ""
+		self.roomNumber = user.roomNumber ?? ""
+		self.note = note
+	}
 }
 
 /// Used to submit a message with a `Report`.
@@ -777,6 +729,21 @@ struct SeaMonkey: Content {
     var userID: UUID
     /// The user's username.
     var username: String
+}
+
+extension SeaMonkey {
+	init(user: User) throws {
+		userID = try user.requireID()
+		username = user.username
+	}
+	
+	init(header: UserHeader) {
+		userID = header.userID
+		username = header.username
+	}
+	
+	static var Blocked: SeaMonkey { .init(userID: Settings.shared.blockedUserID, username: "BlockedUser") }
+	static var Available: SeaMonkey { .init(userID: Settings.shared.friendlyFezID, username: "AvailableSlot") }
 }
 
 /// Used to return a token string for use in HTTP Bearer Authentication.
@@ -950,6 +917,15 @@ struct UserHeader: Content {
     var userImage: String?
 }
 
+extension UserHeader {
+	init(user: User) throws {
+		self.userID = try user.requireID()
+		self.username = user.username
+		self.displayName = user.displayName
+		self.userImage = user.userImage
+	}
+}
+
 /// Used to change a user's password.
 ///
 /// Required by: `POST /api/v3/user/password`
@@ -967,7 +943,10 @@ extension UserPasswordData: RCFValidatable {
 	}
 }
 
-/// Used to display a user's profile contents for editing.
+/// Used to edit the current user's profile contents. For profile data on other users, see `ProfilePublicData`.
+///
+/// Required by: 
+/// * `POST /api/v3/user/profile`
 ///
 /// Returned by:
 /// * `GET /api/v3/user/profile`
@@ -977,8 +956,6 @@ extension UserPasswordData: RCFValidatable {
 struct UserProfileData: Content {
     /// The user's username. [not editable here]
     let username: String
-    /// A generated displayName + username string. [not editable]
-    var displayedName: String
     /// An optional blurb about the user.
     var about: String
     /// An optional name for display alongside the username.
@@ -997,6 +974,21 @@ struct UserProfileData: Content {
     var roomNumber: String
     /// Whether display of the optional fields' data should be limited to logged in users.
     var limitAccess: Bool
+}
+
+extension UserProfileData {
+	init(user: User) throws {
+		self.username = user.username
+		self.displayName = user.displayName ?? ""
+		self.about = user.about ?? ""
+		self.email = user.email ?? ""
+		self.homeLocation = user.homeLocation ?? ""
+		self.message = user.message ?? ""
+		self.preferredPronoun = user.preferredPronoun ?? ""
+		self.realName = user.realName ?? ""
+		self.roomNumber = user.roomNumber ?? ""
+		self.limitAccess = user.limitAccess
+	}
 }
 
 /// Used to attempt to recover an account in a forgotten-password type scenario.

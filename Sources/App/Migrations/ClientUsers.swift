@@ -70,17 +70,7 @@ struct CreateClientUsers: Migration {
                 clients.append(user)
             }
             // save clients
-            return clients.map { $0.save(on: database) }.flatten(on: database.eventLoop).throwingFlatMap {
-                (savedUsers) in
-                // add profiles
-                var profiles: [UserProfile] = []
-				try clients.forEach {
-                    guard $0.id != nil else { fatalError("user has no id") }
-                    let profile = try UserProfile(user: $0, username: $0.username)
-                    profiles.append(profile)
-                }
-                return profiles.map { $0.save(on: database) }.flatten(on: database.eventLoop)
-            }
+            return clients.map { $0.save(on: database) }.flatten(on: database.eventLoop)
         } catch let error {
             fatalError("Environment.detect() failed! error: \(error)")
         }

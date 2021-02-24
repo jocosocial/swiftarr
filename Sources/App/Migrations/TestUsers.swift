@@ -34,15 +34,11 @@ struct CreateTestUsers: Migration {
             )
             users.append(user)
         }
-        return users.map { $0.save(on: database) }.flatten(on: database.eventLoop).throwingFlatMap {
-            (savedUsers) in
-            // create profile and default barrels
-            var profiles: [UserProfile] = []
-            try users.forEach {
+        return users.map { $0.save(on: database) }.flatten(on: database.eventLoop).throwingFlatMap { (savedUsers) in
+            // create default barrels
+			var barrels: [Barrel] = []
+            users.forEach {
                 guard let id = $0.id else { fatalError("user has no id") }
-                let profile = try UserProfile(user: $0, username: $0.username)
-                profiles.append(profile)
-                var barrels: [Barrel] = []
                 let alertKeywordsBarrel = Barrel(
                     ownerID: id,
                     barrelType: .keywordAlert,
@@ -69,12 +65,9 @@ struct CreateTestUsers: Migration {
                 )
                 muteKeywordsBarrel.userInfo.updateValue([], forKey: "muteWords")
                 barrels.append(muteKeywordsBarrel)
-                // save barrels
-                _ = barrels.map { $0.save(on: database) }
             }
-            // save profiles
-            let futures: [EventLoopFuture<Void>] = profiles.map { $0.save(on: database) }
-            return EventLoopFuture.andAllSucceed(futures, on: database.eventLoop)
+			// save barrels
+			return barrels.map { $0.save(on: database) }.flatten(on: database.eventLoop)
         }
     }
     

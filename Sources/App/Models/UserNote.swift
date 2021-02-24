@@ -32,8 +32,8 @@ final class UserNote: Model {
     /// The `User` owning the note.
     @Parent(key: "author") var author: User
     
-    /// The `UserProfile` to which the note is associated.
-    @Parent(key: "profile") var profile: UserProfile
+    /// The `User`being written about. Don't confure these two fields! Users do not get access to what others have written about them.
+    @Parent(key: "note_subject") var noteSubject: User
     
     // MARK: Initialization
     
@@ -46,10 +46,11 @@ final class UserNote: Model {
     ///   - author: The note's author.
     ///   - profile: The associated `UserProfile`.
     ///   - note: The text of the note.
-    init(author: User, profile: UserProfile, note: String = "") throws {
+    init(author: User, subject: User, note: String = "") throws {
         self.$author.id = try author.requireID()
         self.$author.value = author
-        self.profile = profile
+        self.$noteSubject.id = try subject.requireID()
+        self.$noteSubject.value = subject
         self.note = note
     }
 }

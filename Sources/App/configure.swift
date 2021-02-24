@@ -92,7 +92,6 @@ public func configure(_ app: Application) throws {
     // and do not add any data to the db. These need to be ordered such that referred-to tables
     // come before referrers.
 	app.migrations.add(CreateUserSchema(), to: .psql)
-	app.migrations.add(CreateUserProfileSchema(), to: .psql)
 	app.migrations.add(CreateTokenSchema(), to: .psql)
 	app.migrations.add(CreateRegistrationCodeSchema(), to: .psql)
 	app.migrations.add(CreateProfileEditSchema(), to: .psql)

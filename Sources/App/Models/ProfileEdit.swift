@@ -16,8 +16,8 @@ final class ProfileEdit: Model {
     /// The edit's ID.
     @ID(key: .id) var id: UUID?
         
-    /// If this is a profile data update, the submitted `ProfileEditData`.
-    @OptionalField(key: "profileData") var profileData: ProfileEditData?
+    /// If this is a profile data update, the submitted `UserProfileData`.
+    @OptionalField(key: "profileData") var profileData: UserProfileData?
 
     /// If this is a profile image update, the image filename.
     @OptionalField(key: "profileImage") var profileImage: String?
@@ -27,8 +27,8 @@ final class ProfileEdit: Model {
     
 	// MARK: Relations
 
-    /// The parent `UserProfile` of the edit.
-    @Parent(key: "userprofile") var profile: UserProfile
+    /// The parent `User` of the edit.
+    @Parent(key: "user") var user: User
 
     // MARK: Initialization
     
@@ -42,28 +42,28 @@ final class ProfileEdit: Model {
     ///   - profileData: The submitted `ProfileEditData`, else nil.
     ///   - profileImage: The name of the submitted image, else nil.
     init(
-        profile: UserProfile,
-        profileData: ProfileEditData? = nil,
+        user: User,
+        profileData: UserProfileData? = nil,
         profileImage: String? = nil
     ) throws {
-    	self.$profile.id = try profile.requireID()
-    	self.$profile.value = profile
+    	self.$user.id = try user.requireID()
+    	self.$user.value = user
         self.profileData = profileData
         self.profileImage = profileImage
     }
     
     /// Makes a profileEdit from the values in the given profile.
-    init(profile: UserProfile) throws {
-    	self.$profile.id = try profile.requireID()
-    	self.$profile.value = profile
-    	self.profileData = ProfileEditData(about: profile.about ?? "", 
-    	displayName: profile.displayName ?? "", 
-    	email: profile.email ?? "", 
-    	homeLocation: profile.homeLocation ?? "", 
-    	message: profile.message ?? "", 
-    	preferredPronoun: profile.preferredPronoun ?? "", 
-    	realName: profile.realName ?? "", 
-    	roomNumber: profile.roomNumber ?? "", 
-    	limitAccess: profile.limitAccess)
-    }
+//    init(profile: UserProfile) throws {
+//    	self.$profile.id = try profile.requireID()
+//    	self.$profile.value = profile
+//    	self.profileData = ProfileEditData(about: profile.about ?? "", 
+//    	displayName: profile.displayName ?? "", 
+//    	email: profile.email ?? "", 
+//    	homeLocation: profile.homeLocation ?? "", 
+//    	message: profile.message ?? "", 
+//    	preferredPronoun: profile.preferredPronoun ?? "", 
+//    	realName: profile.realName ?? "", 
+//    	roomNumber: profile.roomNumber ?? "", 
+//    	limitAccess: profile.limitAccess)
+//    }
 }

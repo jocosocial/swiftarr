@@ -103,3 +103,21 @@ extension SiblingsProperty {
     }
 
 }
+
+// This lets use PathComponents when registering route parameters, and then get the string that req.parameters.get() wants
+// from inside the route handler. Vapor uses ":parameter" when registering the route parameter, but uses "parameter" when 
+// retrieving it.
+extension PathComponent {
+	var paramString: String {
+        switch self {
+        case .anything:
+            return "*"
+        case .catchall:
+            return "**"
+        case .parameter(let name):
+            return name
+        case .constant(let constant):
+            return constant
+        }
+	}
+}

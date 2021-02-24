@@ -162,7 +162,7 @@ struct CreateProfileEditSchema: Migration {
 				.field("profileData", .dictionary)
 				.field("profileImage", .string)
     			.field("created_at", .datetime)
- 				.field("userprofile", .uuid, .required, .references("userprofiles", "id"))
+ 				.field("user", .uuid, .required, .references("users", "id"))
 				.create()
     }
     
@@ -278,18 +278,31 @@ struct CreateUserSchema: Migration {
     			.id()
     			.field("username", .string, .required)
     			.unique(on: "username")
+     			.field("displayName", .string)
+     			.field("realName", .string)
+     			.field("userSearch", .string, .required)
+
     			.field("password", .string, .required)
     			.field("recoveryKey", .string, .required)
     			.field("verification", .string)
     			.field("accessLevel", .int8, .required)
     			.field("recoveryAttempts", .int, .required)
     			.field("reports", .int, .required)
+    			
+     			.field("userImage", .string)
+     			.field("about", .string)
+     			.field("email", .string)
+     			.field("homeLocation", .string)
+     			.field("message", .string)
+     			.field("preferredPronoun", .string)
+     			.field("roomNumber", .string)
+     			.field("limitAccess", .bool, .required)
+    			
     			.field("created_at", .datetime)
     			.field("updated_at", .datetime)
     			.field("deleted_at", .datetime)
     			.field("profileUpdatedAt", .datetime, .required)
     			.field("parent", .uuid, .references("users", "id"))
- //   			.field("user_profile", .uuid, .references("userprofiles", "id"))
     			.create()
     }
     
@@ -306,7 +319,7 @@ struct CreateUserNoteSchema: Migration {
     			.field("created_at", .datetime)
     			.field("updated_at", .datetime)
  				.field("author", .uuid, .required, .references("users", "id"))
- 				.field("profile", .uuid, .references("userprofiles", "id"))
+ 				.field("note_subject", .uuid, .references("users", "id"))
 				.create()
     }
     
@@ -314,33 +327,3 @@ struct CreateUserNoteSchema: Migration {
         database.schema("usernotes").delete()
     }
 }
-
-struct CreateUserProfileSchema: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
-    	database.schema("userprofiles")
-    			.id()
-	   			.field("username", .string, .required)
-     			.field("userSearch", .string, .required)
-     			.field("userImage", .string)
-     			.field("about", .string)
-     			.field("displayName", .string)
-     			.field("email", .string)
-     			.field("homeLocation", .string)
-     			.field("message", .string)
-     			.field("preferredPronoun", .string)
-     			.field("realName", .string)
-     			.field("roomNumber", .string)
-     			.field("limitAccess", .bool, .required)
-    			.field("created_at", .datetime)
-    			.field("updated_at", .datetime)
-    			.field("deleted_at", .datetime)
-     			.field("user", .uuid, .required, .references("users", "id"))
-    			.unique(on: "user")
-	   			.create()
-	}
-    
-    func revert(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("userprofiles").delete()
-    }
-}
-

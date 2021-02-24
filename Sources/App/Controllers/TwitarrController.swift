@@ -7,13 +7,13 @@ import Fluent
 /// to the twit-arr stream.
 
 struct TwitarrController: RouteCollection {
-    // MARK: RouteCollection Conformance
     
     // Vapor uses ":pathParam" to declare a parameterized path element, and "pathParam" (no colon) to get 
     // the parameter value in route handlers. findFromParameter() has a variant that takes a PathComponent,
     // and it's slightly more type-safe to do this rather than relying on string matching.
     var twarrtIDParam = PathComponent(":twarrt_id")
     
+// MARK: RouteCollection Conformance
     /// Required. Resisters routes to the incoming router.
     func boot(routes: RoutesBuilder) throws {
         
@@ -86,9 +86,7 @@ struct TwitarrController: RouteCollection {
 									.unwrap(or: Abort(.internalServerError, reason: "user not found"))
 							}
 							return likeUsers.flatten(on: req.eventLoop).flatMapThrowing { (users) in
-								let seamonkeys = try users.map {
-									try $0.convertToSeaMonkey()
-								}
+								let seamonkeys = try users.map { try SeaMonkey(user: $0) }
 								// init return struct
 								var twarrtDetailData = try TwarrtDetailData(
 									postID: twarrt.requireID(),

@@ -29,7 +29,6 @@ struct TestController: RouteCollection {
         
         // open access endpoints
         testRoutes.get("getusers", use: getUsersHandler)
-        testRoutes.get("getprofiles", use: getProfilesHandler)
         testRoutes.get("getregistrationcodes", use: getRegistrationCodesHandler)
         
         // endpoints available only when not logged in
@@ -51,17 +50,7 @@ struct TestController: RouteCollection {
     func getUsersHandler(_ req: Request) throws -> EventLoopFuture<[User]> {
         return User.query(on: req.db).range(...10).all()
     }
-    
-    /// `GET /api/v3/test/getprofiles`
-    ///
-    /// Returns the first 10 profiles in the database.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: An array of at most the first 10 `UserProfile` models in the databases.
-    func getProfilesHandler(_ req: Request) throws -> EventLoopFuture<[UserProfile]> {
-        return UserProfile.query(on: req.db).range(...10).all()
-    }
-    
+        
     /// `GET /api/v3/test/getregistrationcodes`
     ///
     /// Returns an array of all stored `RegistrationCode` models. If called in a production

@@ -86,11 +86,7 @@ struct CreateAdminUser: Migration {
             muteKeywordsBarrel.userInfo.updateValue([], forKey: "muteWords")
             barrels.append(muteKeywordsBarrel.save(on: database))
             // resolve futures, return void
-			return barrels.flatten(on: database.eventLoop).throwingFlatMap { _ in 
-                // create associated profile directly
-                let profile = try UserProfile(user: user, username: user.username)
-                return profile.save(on: database).transform(to: ())
-            }
+			return barrels.flatten(on: database.eventLoop).transform(to: ())
         }
     }
     

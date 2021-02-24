@@ -33,12 +33,12 @@ public struct UserCacheData {
 	let mutewords: [String]?
 	let alertwords: [String]?
 	
-	init(userID: UUID, user: User, profile: UserProfile, blocks: [UUID]?, mutes: [UUID]?, mutewords: [String]?, alertwords: [String]?) {
+	init(userID: UUID, user: User, blocks: [UUID]?, mutes: [UUID]?, mutewords: [String]?, alertwords: [String]?) {
 		self.userID = userID
 		username = user.username
-		displayName = profile.displayName
+		displayName = user.displayName
 		profileUpdateTime = user.profileUpdatedAt
-		userImage = profile.userImage
+		userImage = user.userImage
 		// I actually hate using map in this way--the maps apply to the optionals, not the underlying arrays.
 		self.blocks = blocks.map { Set($0) }
 		self.mutes = mutes.map { Set($0) }
@@ -129,27 +129,22 @@ extension Application {
 				let redisKey: RedisKey = "rblocks:\(userID.uuidString)"
 				let blockFuture = app.redis.get(redisKey, as: [UUID].self)
 			
-				let futures = barrelFuture.and(blockFuture).flatMap { (barrels, blocks) in 
-					return user.$profile.query(on: app.db)
-						.first()
-						.unwrap(or: Abort(.internalServerError, reason: "profile not found"))
-						.map { (profile) in
-							var mutes: [UUID]?
-							var muteWords: [String]?
-							var alertWords: [String]?
-							for barrel in barrels {
-								switch barrel.barrelType {
-									case .userMute: mutes = barrel.modelUUIDs
-									case .keywordMute: muteWords = barrel.userInfo["muteWords"]
-									case .keywordAlert: alertWords = barrel.userInfo["alertWords"]
-									default: continue
-								}
-							}
-						
-							let cacheData = UserCacheData(userID: userID, user: user, profile: profile, blocks: blocks,
-									mutes: mutes, mutewords: muteWords, alertwords: alertWords)
-							initialStorage.cacheUser(cacheData)
+				let futures = barrelFuture.and(blockFuture).map { (barrels, blocks) in 
+					var mutes: [UUID]?
+					var muteWords: [String]?
+					var alertWords: [String]?
+					for barrel in barrels {
+						switch barrel.barrelType {
+							case .userMute: mutes = barrel.modelUUIDs
+							case .keywordMute: muteWords = barrel.userInfo["muteWords"]
+							case .keywordAlert: alertWords = barrel.userInfo["alertWords"]
+							default: continue
 						}
+					}
+				
+					let cacheData = UserCacheData(userID: userID, user: user, blocks: blocks,
+							mutes: mutes, mutewords: muteWords, alertwords: alertWords)
+					initialStorage.cacheUser(cacheData)
 				}
 				try futures.wait()
 			}
@@ -201,6 +196,14 @@ extension Request {
 			}
 		}
 		
+		func getHeaders(_ userIDs: [UUID]) -> [UserHeader] {
+			let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
+			let users = cacheLock.withLock({
+				userIDs.compactMap { request.application.userCacheStorage.usersByID[$0] }
+			})
+			return users.map { $0.makeHeader() }
+		}
+		
 		func getBlocks(_ user: User) throws -> Set<UUID> {
 			return try getUser(user).blocks ?? []
 		}
@@ -224,6 +227,7 @@ extension Request {
 			return cacheResult
 		}
 		
+		@discardableResult
 		public func updateUser(_ userUUID: UUID) -> EventLoopFuture<UserCacheData> {
 			return getUpdatedUserCacheData(userUUID).map { cacheData in	
 				let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
@@ -267,28 +271,23 @@ extension Request {
 				.unwrap(or: Abort(.internalServerError, reason: "user not found"))
 				.and(barrelFuture)
 				.and(blockFuture)
-				.flatMap { (arg0, blocks) in 
+				.map { (arg0, blocks) in 
 					let (user, barrels) = arg0
-					return user.$profile.query(on: request.db)
-						.first()
-						.unwrap(or: Abort(.internalServerError, reason: "profile not found"))
-						.map { (profile) in
-							var mutes: [UUID]?
-							var muteWords: [String]?
-							var alertWords: [String]?
-							for barrel in barrels {
-								switch barrel.barrelType {
-									case .userMute: mutes = barrel.modelUUIDs
-									case .keywordMute: muteWords = barrel.userInfo["muteWords"]
-									case .keywordAlert: alertWords = barrel.userInfo["alertWords"]
-									default: continue
-								}
-							}
-						
-							let cacheData = UserCacheData(userID: userUUID, user: user, profile: profile, blocks: blocks,
-									mutes: mutes, mutewords: muteWords, alertwords: alertWords)
-							return cacheData
+					var mutes: [UUID]?
+					var muteWords: [String]?
+					var alertWords: [String]?
+					for barrel in barrels {
+						switch barrel.barrelType {
+							case .userMute: mutes = barrel.modelUUIDs
+							case .keywordMute: muteWords = barrel.userInfo["muteWords"]
+							case .keywordAlert: alertWords = barrel.userInfo["alertWords"]
+							default: continue
 						}
+					}
+				
+					let cacheData = UserCacheData(userID: userUUID, user: user, blocks: blocks,
+							mutes: mutes, mutewords: muteWords, alertwords: alertWords)
+					return cacheData
 				}
 		}
 

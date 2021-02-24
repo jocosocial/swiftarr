@@ -295,58 +295,36 @@ struct ForumController: RouteCollection {
     /// - Returns: `PostDetailData` containing the specified post.
     func postHandler(_ req: Request) throws -> EventLoopFuture<PostDetailData> {
         let user = try req.auth.require(User.self)
-        return ForumPost.findFromParameter(postIDParam, on: req).addModelID()
-         	.and(ForumPost.getCachedFilters(for: user, on: req))
-        	.flatMap { (arg0, filters) in
-        		let (post, postID) = arg0
-				if filters.blocked.contains(post.$author.id) || filters.muted.contains(post.$author.id) ||
-						post.containsMutewords(using: filters.mutewords) {
-                	return req.eventLoop.makeFailedFuture(Abort(.notFound, reason: "post is not available"))
-                }
-        	
-				// get likes data and bookmark state
-                return PostLikes.query(on: req.db)
-					.filter(\.$post.$id == postID)
-					.all()
-					.and(user.hasBookmarked(post, on: req))
-					.flatMap { (postLikes, bookmarked) in
-						// get users
-						let likeUsers: [EventLoopFuture<User>] = postLikes.map { (postLike) -> EventLoopFuture<User> in
-							return User.find(postLike.user.id, on: req.db)
-								.unwrap(or: Abort(.internalServerError, reason: "user not found"))
-						}
-						return likeUsers.flatten(on: req.eventLoop).flatMapThrowing { (users) in
-							let seamonkeys = try users.map {
-								try $0.convertToSeaMonkey()
-							}
-							// init return struct
-							var postDetailData = try PostDetailData(
-								postID: post.requireID(),
-								createdAt: post.createdAt ?? Date(),
-								authorID: post.author.requireID(),
-								text: post.isQuarantined ? "This post is under moderator review." : post.text,
-								image: post.isQuarantined ? nil : post.image,
-								isBookmarked: bookmarked,
-								laughs: [],
-								likes: [],
-								loves: []
-							)
-							// sort seamonkeys into like types
-							for (index, like) in postLikes.enumerated() {
-								switch like.likeType {
-									case .laugh:
-										postDetailData.laughs.append(seamonkeys[index])
-									case .like:
-										postDetailData.likes.append(seamonkeys[index])
-									case .love:
-										postDetailData.loves.append(seamonkeys[index])
-									default: continue
-								}
-							}
-							return postDetailData
-						}
-                	}
+        let cacheUser = try req.userCache.getUser(user)
+        return ForumPost.findFromParameter(postIDParam, on: req).addModelID().flatMap { (post, postID) in
+			if cacheUser.getBlocks().contains(post.$author.id) || cacheUser.getMutes().contains(post.$author.id) ||
+					post.containsMutewords(using: cacheUser.mutewords ?? []) {
+				return req.eventLoop.makeFailedFuture(Abort(.notFound, reason: "post is not available"))
+			}
+			// get likes data and bookmark state
+			return PostLikes.query(on: req.db)
+				.filter(\.$post.$id == postID)
+				.all()
+				.and(user.hasBookmarked(post, on: req))
+				.flatMapThrowing { (postLikes, bookmarked) in
+					let laughUsers = postLikes.filter { $0.likeType == .laugh }.map { $0.$user.id }
+					let likeUsers = postLikes.filter { $0.likeType == .like }.map { $0.$user.id }
+					let loveUsers = postLikes.filter { $0.likeType == .love }.map { $0.$user.id }
+					// init return struct
+					let postDetailData = try PostDetailData(
+						postID: post.requireID(),
+						createdAt: post.createdAt ?? Date(),
+						authorID: post.author.requireID(),
+						text: post.isQuarantined ? "This post is under moderator review." : post.text,
+						image: post.isQuarantined ? nil : post.image,
+						isBookmarked: bookmarked,
+						laughs: req.userCache.getHeaders(laughUsers).map { SeaMonkey(header: $0) },
+						likes: req.userCache.getHeaders(likeUsers).map { SeaMonkey(header: $0) },
+						loves: req.userCache.getHeaders(loveUsers).map { SeaMonkey(header: $0) }
+					)
+					return postDetailData
             }
+		}
     }
     
     /// `GET /api/v3/forum/post/hashtag/#STRING`

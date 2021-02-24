@@ -14,7 +14,13 @@ import RediStack
 
 struct UsersController: RouteCollection {
     
-    // MARK: RouteCollection Conformance
+    // Vapor uses ":pathParam" to declare a parameterized path element, and "pathParam" (no colon) to get 
+    // the parameter value in route handlers. findFromParameter() has a variant that takes a PathComponent,
+    // and it's slightly more type-safe to do this rather than relying on string matching.
+    var userIDParam = PathComponent(":user_id")
+    var searchStringParam = PathComponent(":search_string")
+
+// MARK: RouteCollection Conformance
     
     /// Required. Registers routes to the incoming router.
     func boot(routes: RoutesBuilder) throws {
@@ -37,20 +43,21 @@ struct UsersController: RouteCollection {
         
         // endpoints available whether logged in or out
         sharedAuthGroup.get("find", ":userSearchString", use: findHandler)
-        sharedAuthGroup.get(":user_id", "profile", use: profileHandler)
-        sharedAuthGroup.get(":user_id", use: headerHandler)
+        sharedAuthGroup.get(userIDParam, "profile", use: profileHandler)
+        sharedAuthGroup.get(userIDParam, use: headerHandler)
 
         // endpoints available only when logged in
-        tokenAuthGroup.post(":user_id", "block", use: blockHandler)
-        tokenAuthGroup.get("match", "allnames", ":search_string", use: matchAllNamesHandler)
-        tokenAuthGroup.get("match", "username", ":search_string", use: matchUsernameHandler)
-        tokenAuthGroup.post(":user_id", "mute", use: muteHandler)
-        tokenAuthGroup.post(":user_id", "note", "create", use: noteCreateHandler)
-        tokenAuthGroup.post(":user_id", "note", "delete", use: noteDeleteHandler)
-        tokenAuthGroup.get(":user_id", "note", use: noteHandler)
-        tokenAuthGroup.post(":user_id", "report", use: reportHandler)
-        tokenAuthGroup.post(":user_id", "unblock", use: unblockHandler)
-        tokenAuthGroup.post(":user_id", "unmute", use: unmuteHandler)
+        tokenAuthGroup.post(userIDParam, "block", use: blockHandler)
+        tokenAuthGroup.get("match", "allnames", searchStringParam, use: matchAllNamesHandler)
+        tokenAuthGroup.get("match", "username", searchStringParam, use: matchUsernameHandler)
+        tokenAuthGroup.post(userIDParam, "mute", use: muteHandler)
+        tokenAuthGroup.post(userIDParam, "note", use: noteCreateHandler)
+        tokenAuthGroup.post(userIDParam, "note", "delete", use: noteDeleteHandler)
+        tokenAuthGroup.delete(userIDParam, "note", use: noteDeleteHandler)
+        tokenAuthGroup.get(userIDParam, "note", use: noteHandler)
+        tokenAuthGroup.post(userIDParam, "report", use: reportHandler)
+        tokenAuthGroup.post(userIDParam, "unblock", use: unblockHandler)
+        tokenAuthGroup.post(userIDParam, "unmute", use: unmuteHandler)
     }
     
     // MARK: - Open Access Handlers
@@ -116,7 +123,7 @@ struct UsersController: RouteCollection {
     ///   image filename.
     func headerHandler(_ req: Request) throws -> UserHeader {
         let requester = try req.auth.require(User.self)
-		guard let parameter = req.parameters.get("user_id") else {
+		guard let parameter = req.parameters.get(userIDParam.paramString) else {
 			throw Abort(.badRequest, reason: "UserID parameter missing")
 		}
 		guard let userHeader = req.userCache.getHeader(parameter), 
@@ -142,45 +149,38 @@ struct UsersController: RouteCollection {
     ///   user's profile.
     func profileHandler(_ req: Request) throws -> EventLoopFuture<ProfilePublicData> {
         let requester = try req.auth.require(User.self)
-        return User.findFromParameter("user_id", on: req)
-			.throwingFlatMap { (user) in
+        return User.findFromParameter(userIDParam, on: req)
+			.throwingFlatMap { (profiledUser) in
 				// 404 if blocked
         		let blocked = try req.userCache.getBlocks(requester)
-				if blocked.contains(try user.requireID()) {
+				if blocked.contains(try profiledUser.requireID()) {
 					throw Abort(.notFound, reason: "profile is not available")
 				}
 				// a .banned profile is only available to .moderator or above
-				if user.accessLevel == .banned && !requester.accessLevel.hasAccess(.moderator) {
+				if profiledUser.accessLevel == .banned && !requester.accessLevel.hasAccess(.moderator) {
 					throw Abort(.notFound, reason: "profile is not available")
 				}
-				// get profile and convert to .Public
-				return user.$profile.query(on: req.db)
+				var publicProfile = try ProfilePublicData(user: profiledUser, note: nil)
+				// if auth type is Basic, requester is not logged in, so hide info if
+				// `.limitAccess` is true or requester is .banned
+				if (req.headers.basicAuthorization != nil && profiledUser.limitAccess) || requester.accessLevel == .banned {
+					publicProfile.about = ""
+					publicProfile.email = ""
+					publicProfile.homeLocation = ""
+					publicProfile.message = "You must be logged in to view this user's Profile details."
+					publicProfile.preferredPronoun = ""
+					publicProfile.realName = ""
+					publicProfile.roomNumber = ""
+				}
+				// include UserNote if any, then return
+				return try requester.$notes.query(on: req.db)
+					.filter(\.$noteSubject.$id == profiledUser.requireID())
 					.first()
-					.unwrap(or: Abort(.internalServerError, reason: "profile not found"))
-					.throwingFlatMap { (profile) in
-						var publicProfile = try profile.convertToPublic()
-						// if auth type is Basic, requester is not logged in, so hide info if
-						// `.limitAccess` is true or requester is .banned
-						if (req.headers.basicAuthorization != nil && profile.limitAccess)
-							|| requester.accessLevel == .banned {
-							publicProfile.about = ""
-							publicProfile.email = ""
-							publicProfile.homeLocation = ""
-							publicProfile.message = "You must be logged in to view this user's Profile details."
-							publicProfile.preferredPronoun = ""
-							publicProfile.realName = ""
-							publicProfile.roomNumber = ""
+					.map { (note) in
+						if let note = note {
+							publicProfile.note = note.note
 						}
-						// include UserNote if any, then return
-						return try requester.$notes.query(on: req.db)
-							.filter(\.$profile.$id == profile.requireID())
-							.first()
-							.map { (note) in
-								if let note = note {
-									publicProfile.note = note.note
-								}
-								return publicProfile
-						}
+						return publicProfile
 				}
 		}
     }
@@ -217,7 +217,7 @@ struct UsersController: RouteCollection {
 					.filter(\.$barrelType == .userBlock)
 					.first()
 					.unwrap(or: Abort(.internalServerError, reason: "userBlock barrel not found"))
-        return User.findFromParameter("user_id", on: req)
+        return User.findFromParameter(userIDParam, on: req)
         	.and(blockBarrel)
             .flatMap { (user, barrel) in
 				do {
@@ -243,7 +243,7 @@ struct UsersController: RouteCollection {
     /// `GET /api/v3/users/match/allnames/STRING`
     ///
     /// Retrieves all `UserProfile.userSearch` values containing the specified substring,
-    /// returning an array of precomposed `.userSearch` strings in `UserSearch` format.
+    /// returning an array of precomposed `.userSearch` strings in `UserHeader` format.
     /// The intended use for this endpoint is to help isolate a particular user in an
     /// auto-complete type scenario, by searching **all** of the `.displayName`, `.username`
     /// and `.realName` profile fields.
@@ -262,9 +262,9 @@ struct UsersController: RouteCollection {
     /// - Throws: 403 error if the search term is not permitted.
     /// - Returns: `[UserSearch]` containing the ID and profile.userSearch string
     ///   values of all matching users.
-    func matchAllNamesHandler(_ req: Request) throws -> EventLoopFuture<[UserSearch]> {
+    func matchAllNamesHandler(_ req: Request) throws -> EventLoopFuture<[UserHeader]> {
         let requester = try req.auth.require(User.self)
-		guard var search = req.parameters.get("search_string") else {
+		guard var search = req.parameters.get(searchStringParam.paramString) else {
             throw Abort(.badRequest, reason: "No user search string in request.")
         }
         // postgres "_" and "%" are wildcards, so escape for literals
@@ -277,14 +277,14 @@ struct UsersController: RouteCollection {
         }
         // remove blocks from results
         let blocked = try req.userCache.getBlocks(requester)
-		return UserProfile.query(on: req.db)
+		return User.query(on: req.db)
 			.filter(\.$userSearch, .custom("ILIKE"), "%\(search)%")
-			.filter(\.$user.$id !~ blocked)
+			.filter(\.$id !~ blocked)
 			.sort(\.$username, .ascending)
 			.all()
 			.flatMapThrowing { (profiles) in
 				// return as UserSearch
-				return try profiles.map { try $0.convertToSearch() }
+				return try profiles.map { try UserHeader(user: $0) }
 		}
     }
 
@@ -302,22 +302,21 @@ struct UsersController: RouteCollection {
     /// - Returns: `[String]` containng all matching usernames as "@username" strings.
     func matchUsernameHandler(_ req: Request) throws -> EventLoopFuture<[String]> {
         let requester = try req.auth.require(User.self)
-		guard var search = req.parameters.get("search_string") else {
+		guard var search = req.parameters.get(searchStringParam.paramString) else {
             throw Abort(.badRequest, reason: "No user search string in request.")
         }
         // postgres "_" is wildcard, so escape for literal
         search = search.replacingOccurrences(of: "_", with: "\\_")
         // remove blocks from results
         let blocked = try req.userCache.getBlocks(requester)
-		return UserProfile.query(on: req.db)
+		return User.query(on: req.db)
 			.filter(\.$username, .custom("ILIKE"), "%\(search)%")
-			.filter(\.$user.$id !~ blocked)
+			.filter(\.$id !~ blocked)
 			.sort(\.$username, .ascending)
 			.all()
-			.map {
-				(profiles) in
+			.map { (users) in
 				// return @username only
-				return profiles.map { "@\($0.username)" }
+				return users.map { "@\($0.username)" }
 			}
     }
     
@@ -341,7 +340,7 @@ struct UsersController: RouteCollection {
     func muteHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
 		let requester = try req.auth.require(User.self)
         let requesterID = try requester.requireID()
-		guard let parameter = req.parameters.get("user_id"), let userID = UUID(parameter) else {
+		guard let parameter = req.parameters.get(userIDParam.paramString), let userID = UUID(parameter) else {
             throw Abort(.badRequest, reason: "No user ID in request.")
         }
 		return User.find(userID, on: req.db)
@@ -366,82 +365,44 @@ struct UsersController: RouteCollection {
 
     /// `POST /api/v3/users/ID/note`
     ///
-    /// Creates a new `UserNote` associated with the specified user's profile and the current
-    /// user.
-    ///
-    /// - Note: In order to support the editing of a note in contexts other than when
-    ///   actively viewing a profile, the contents of `profile.note` cannot be used to determine
-    ///   if there is an existing associated UserNote, since it is possible for a valid note to
-    ///   contain no text at any given time. This means that a GET should be performed on this
-    ///   endpoint prior to attempting a POST. If GET returns data, use `POST /api/v3/user/note`
-    ///   to update the note instead of this endpoint.
-    ///
+    /// Saves a `UserNote` associated with the specified user and the current user.
+	///
     /// - Requires: `NoteCreateData` payload in the HTTP body.
     /// - Parameters:
     ///   - req: The incoming `Request`, provided automatically.
     ///   - data: `NoteCreateData` struct containing the text of the note.
-    /// - Throws: 400 error if the profile is a banned user's. 409 error if there is an existing
-    ///   note on the profile. A 5xx response should be reported as a likely bug, please and
+    /// - Throws: 400 error if the profile is a banned user's. A 5xx response should be reported as a likely bug, please and
     ///   thank you.
-    /// - Returns: `CreatedNoteData` containing the newly created note's ID and text.
+    /// - Returns: `NoteData` containing the newly created note.
     func noteCreateHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         // FIXME: account for banned user
         let requester = try req.auth.require(User.self)
-		guard let parameter = req.parameters.get("user_id"), let userID = UUID(parameter) else {
-            throw Abort(.badRequest, reason: "No user ID in request.")
-        }
         let data = try req.content.decode(NoteCreateData.self)        
-        return User.find(userID, on: req.db)
-			.unwrap(or: Abort(.notFound, reason: "no user found for identifier '\(parameter)'"))
-			.flatMap {
-            (user) in
+        return User.findFromParameter(userIDParam, on: req)
+			.throwingFlatMap { (targetUser) in
             // profile shouldn't be visible, but just in case
-            guard user.accessLevel != .banned else {
-                return req.eventLoop.makeFailedFuture(Abort(.badRequest, reason: "notes are unavailable for profile"))
+            guard targetUser.accessLevel != .banned else {
+                throw Abort(.badRequest, reason: "notes are unavailable for profile")
             }
-            // get user profile
-            return user.$profile.query(on: req.db)
-                .first()
-                .unwrap(or: Abort(.internalServerError, reason: "profile not found"))
-                .flatMap { (profile) in
-                	do {
-						// check for existing note
-						return try requester.$notes.query(on: req.db)
-							.filter(\.$profile.$id == profile.requireID())
-							.first()
-							.flatMap { (existingNote) in
-								do {
-									guard existingNote == nil else {
-										throw Abort(.conflict, reason: "note already exists for this profile")
-									}
-									// create note
-									let note = try UserNote(author: requester, profile: profile, note: data.note)
-									// return note's data with 201 response
-									return note.save(on: req.db).flatMapThrowing { _ in
-										let createdNoteData = try CreatedNoteData(
-											noteID: note.requireID(),
-											note: note.note
-										)
-										let response = Response(status: .created)
-										try response.content.encode(createdNoteData)
-										return response
-									}
-								}
-								catch {
-									return req.eventLoop.makeFailedFuture(error)
-								}
-							}
+			// check for existing note
+			return try requester.$notes.query(on: req.db)
+				.filter(\.$noteSubject.$id == targetUser.requireID())
+				.first()
+				.throwingFlatMap { (existingNote) in
+					let note = try existingNote ?? UserNote(author: requester, subject: targetUser, note: data.note)
+					note.note = data.note
+					// return note's data with 201 response
+					return note.save(on: req.db).throwingFlatMap { _ in
+						let createdNoteData = try NoteData(note: note)
+						return createdNoteData.encodeResponse(status: .created, for: req)
 					}
-					catch {
-						return req.eventLoop.makeFailedFuture(error)
-					}
-				}
-       		}
+			}
+		}
     }
     
     /// `POST /api/v3/users/ID/note/delete`
     ///
-    /// Deletes an existing `UseerNote` associated with the specified user's profile and
+    /// Deletes an existing `UserNote` associated with the specified user's profile and
     /// the current user.
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
@@ -451,34 +412,18 @@ struct UsersController: RouteCollection {
     func noteDeleteHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         // FIXME: account for blocks, banned user
         let requester = try req.auth.require(User.self)
-		guard let parameter = req.parameters.get("user_id"), let userID = UUID(parameter) else {
-            throw Abort(.badRequest, reason: "No user ID in request.")
-        }
-        return User.find(userID, on: req.db)
-			.unwrap(or: Abort(.notFound, reason: "no user found for identifier '\(parameter)'"))
-			.flatMap { (user) in
-            // get user profile
-            return user.$profile.query(on: req.db)
-                .first()
-                .unwrap(or: Abort(.internalServerError, reason: "profile not found, note not deleted"))
-                .flatMap { (profile) in
-                    do {
-						// delete note if found
-						return try requester.$notes.query(on: req.db)
-							.filter(\.$profile.$id == profile.requireID())
-							.first()
-							.unwrap(or: Abort(.notFound, reason: "no existing note found"))
-							.flatMap {
-								(note) in
-								// force true delete
-								return note.delete(force: true, on: req.db).transform(to: .noContent)
-						}
-					}
-					catch {
-						return req.eventLoop.makeFailedFuture(error)
-					}
-           		}
-			}
+        return User.findFromParameter(userIDParam, on: req).addModelID()
+			.flatMap { (targetUser, targetUserID) in
+				// delete note if found
+				return requester.$notes.query(on: req.db)
+					.filter(\.$noteSubject.$id == targetUserID)
+					.first()
+					.unwrap(or: Abort(.notFound, reason: "no existing note found"))
+					.flatMap { (note) in
+						// force true delete
+						return note.delete(force: true, on: req.db).transform(to: .noContent)
+				}
+		}
     }
         
     /// `GET /api/v3/users/ID/note`
@@ -496,35 +441,19 @@ struct UsersController: RouteCollection {
     /// - Throws: 400 error if there is no existing note on the profile. A 5xx response should
     ///   be reported as a likely bug, please and thank you.
     /// - Returns: `NoteEditData` containing the note's ID and text.
-    func noteHandler(_ req: Request) throws -> EventLoopFuture<NoteEditData> {
+    func noteHandler(_ req: Request) throws -> EventLoopFuture<NoteData> {
         // FIXME: account for blocks, banned user
         let requester = try req.auth.require(User.self)
-		guard let parameter = req.parameters.get("user_id"), let userID = UUID(parameter) else {
+		guard let parameter = req.parameters.get(userIDParam.paramString), let targetUserID = UUID(parameter) else {
             throw Abort(.badRequest, reason: "No user ID in request.")
         }
-        return User.find(userID, on: req.db)
-			.unwrap(or: Abort(.notFound, reason: "no user found for identifier '\(parameter)'"))
-			.flatMap { (user) in
-				// get user profile
-				return user.$profile.query(on: req.db)
-					.first()
-					.unwrap(or: Abort(.internalServerError, reason: "profile not found"))
-					.flatMap { (profile) in
-						do {
-							// return note data if any
-							return try requester.$notes.query(on: req.db)
-								.filter(\.$profile.$id == profile.requireID())
-								.first()
-								.unwrap(or: Abort(.badRequest, reason: "no existing note found"))
-								.flatMapThrowing { (note) in
-									return try note.convertToEdit()
-								}
-						}
-						catch {
-							return req.eventLoop.makeFailedFuture(error)
-						}
-					}
-        	}
+		return requester.$notes.query(on: req.db)
+			.filter(\.$noteSubject.$id == targetUserID)
+			.first()
+			.unwrap(or: Abort(.badRequest, reason: "no existing note found"))
+			.flatMapThrowing { (note) in
+				return try NoteData(note: note)
+		}
     }
     
     /// `POST /api/v3/users/ID/report`
@@ -543,7 +472,7 @@ struct UsersController: RouteCollection {
     func reportHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let submitter = try req.auth.require(User.self)
         let parent = try submitter.parentAccount(on: req)
- 		guard let parameter = req.parameters.get("user_id"), let userID = UUID(parameter) else {
+ 		guard let parameter = req.parameters.get(userIDParam.paramString), let userID = UUID(parameter) else {
             throw Abort(.badRequest, reason: "No user ID in request.")
         }
 		let user = User.find(userID, on: req.db)
@@ -569,7 +498,7 @@ struct UsersController: RouteCollection {
     func unblockHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let requester = try req.auth.require(User.self)
         let requesterID = try requester.requireID()
-  		guard let parameter = req.parameters.get("user_id"), let userID = UUID(parameter) else {
+  		guard let parameter = req.parameters.get(userIDParam.paramString), let userID = UUID(parameter) else {
             throw Abort(.badRequest, reason: "No user ID in request.")
         }
 		return User.find(userID, on: req.db)
@@ -611,7 +540,7 @@ struct UsersController: RouteCollection {
     func unmuteHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let requester = try req.auth.require(User.self)
         let requesterID = try requester.requireID()
-  		guard let parameter = req.parameters.get("user_id"), let userID = UUID(parameter) else {
+  		guard let parameter = req.parameters.get(userIDParam.paramString), let userID = UUID(parameter) else {
             throw Abort(.badRequest, reason: "No user ID in request.")
         }
         return User.find(userID, on: req.db)

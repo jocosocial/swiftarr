@@ -83,13 +83,13 @@ struct ClientController: RouteCollection {
 				}
 				// remove blocked users
 				let blocked = req.userCache.getBlocks(userID)
-				return UserProfile.query(on: req.db)
-					.filter(\.$user.$id !~ blocked)
+				return User.query(on: req.db)
+					.filter(\.$id !~ blocked)
 					.sort(\.$username, .ascending)
 					.all()
-					.flatMapThrowing { (profiles) in
+					.flatMapThrowing { (users) in
 						// return as [UserSearch]
-						return try profiles.map { try $0.convertToSearch() }
+						return try users.map { try UserSearch(userID: $0.requireID(), userSearch: $0.userSearch) }
 				}
         }
     }

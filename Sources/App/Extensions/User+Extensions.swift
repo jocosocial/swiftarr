@@ -97,23 +97,15 @@ extension User {
 				.unwrap(or: Abort(.internalServerError, reason: "parent not found"))
     }
     
-    /// Converts a `User` model to a `SeaMonkey` representation.
-    func convertToSeaMonkey() throws -> SeaMonkey {
-        return try SeaMonkey(
-            userID: self.requireID(),
-            username: "@\(self.username)")
-    }
-}
-
-extension EventLoopFuture where Value: User {    
-    /// Converts a `Future<User>` to a `Future<SeaMonkey>`. This extension provides the
-    /// convenience of simply using `user.convertToSeaMonkey()` and allowing the compiler
-    /// to choose the appropriate version for the context.
-    func convertToSeaMonkey() throws -> EventLoopFuture<SeaMonkey> {
-        return self.flatMapThrowing {
-            (user) in
-            return try user.convertToSeaMonkey()
-        }
+    func buildUserSearchString() {
+		var builder = [String]()
+		builder.append(displayName ?? "")
+		builder.append(builder[0].isEmpty ? "@\(username)" : "(@\(username))")
+		if let realName = realName {
+			builder.append("- \(realName)")
+		}
+		userSearch = builder.joined(separator: " ").trimmingCharacters(in: .whitespaces)
+		profileUpdatedAt = Date()
     }
 }
 
