@@ -40,7 +40,7 @@ struct ImageController: RouteCollection {
 	}
 	
 	func getImage_ThumbnailHandler(_ req: Request) throws -> Response {
-		return try getImageHandler(req, typeStr: "thumbnail")
+		return try getImageHandler(req, typeStr: "thumb")
 	}
 	
 	func getImageHandler(_ req: Request, typeStr: String) throws -> Response {

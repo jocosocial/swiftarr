@@ -2,6 +2,7 @@ import Vapor
 import Redis
 import Fluent
 import FluentPostgresDriver
+import Leaf
 
 /// Called before your application initializes.
 public func configure(_ app: Application) throws {
@@ -25,6 +26,7 @@ public func configure(_ app: Application) throws {
 	var new = Middlewares()
 	new.use(RouteLoggingMiddleware(logLevel: .info))
 	new.use(SwiftarrErrorMiddleware.default(environment: app.environment))
+	new.use(FileMiddleware(publicDirectory: "Resources/Assets")) // serves files from `Public/` directory
 	app.middleware = new
     
     // use iso8601ms for dates
@@ -75,6 +77,8 @@ public func configure(_ app: Application) throws {
         let redisPort = (app.environment == .testing) ? Int(Environment.get("REDIS_PORT") ?? "6380")! : 6379
 		app.redis.configuration = try RedisConfiguration(hostname: redisHostname, port: redisPort)
     }
+    
+    app.views.use(.leaf)
     
 //    // register databases
 //    var databases = DatabasesConfig()

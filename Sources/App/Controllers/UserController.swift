@@ -128,6 +128,7 @@ struct UserController: RouteCollection {
         // endpoints available whether logged in or out
         sharedAuthGroup.post("image", use: imageHandler)
         sharedAuthGroup.post("image", "remove", use: imageRemoveHandler)
+        sharedAuthGroup.delete("image", use: imageRemoveHandler)
         sharedAuthGroup.get("profile", use: profileHandler)
         sharedAuthGroup.post("profile", use: profileUpdateHandler)
         sharedAuthGroup.get("whoami", use: whoamiHandler)
@@ -372,6 +373,7 @@ struct UserController: RouteCollection {
     }
     
     /// `POST /api/v3/user/image/remove`
+    /// `DELETE /api/v3/user/image`
     ///
     /// Removes the user's profile image from their `UserProfile`.
     ///
@@ -430,14 +432,14 @@ struct UserController: RouteCollection {
     /// can customize their profile even if they do not yet have their registration code.
     ///
     /// - Note: All fields of the `UserProfileData` structure being submitted **must** be
-    ///   present and have values. While the properties of the profile itself are optional, the
+    ///   present. While the properties of the profile itself are optional, the
     ///   submitted values all *replace* the existing propety values. Submitting a value of `""`
     ///   resets its respective profile property to `nil`.
     ///
-    /// - Requires: `ProfileEditData` payload in the HTTP body.
+    /// - Requires: `UserProfileData` payload in the HTTP body.
     /// - Parameters:
     ///   - req: The incoming `Request`, provided automatically.
-    ///   - data: `ProfileEditData` struct containing the editable properties of the profile.
+    ///   - data: `UserProfileData` struct containing the editable properties of the profile.
     /// - Throws: 403 error if the user is banned.
     /// - Returns: `UserProfileData` containing the updated editable properties of the profile.
     func profileUpdateHandler(_ req: Request) throws -> EventLoopFuture<UserProfileData> {
@@ -455,14 +457,14 @@ struct UserController: RouteCollection {
 		_ = oldProfileEdit.save(on: req.db)
 	
 		// update fields, nil if no value supplied
-		user.about = data.about.isEmpty ? nil : data.about
-		user.displayName = data.displayName.isEmpty ? nil : data.displayName
-		user.email = data.email.isEmpty ? nil : data.email
-		user.homeLocation = data.homeLocation.isEmpty ? nil : data.homeLocation
-		user.message = data.message.isEmpty ? nil : data.message
-		user.preferredPronoun = data.message.isEmpty ? nil : data.preferredPronoun
-		user.realName = data.realName.isEmpty ? nil : data.realName
-		user.roomNumber = data.roomNumber.isEmpty ? nil : data.roomNumber
+		user.about = data.about?.isEmpty == true ? nil : data.about
+		user.displayName = data.displayName?.isEmpty == true ? nil : data.displayName
+		user.email = data.email?.isEmpty == true ? nil : data.email
+		user.homeLocation = data.homeLocation?.isEmpty == true ? nil : data.homeLocation
+		user.message = data.message?.isEmpty == true ? nil : data.message
+		user.preferredPronoun = data.preferredPronoun?.isEmpty == true ? nil : data.preferredPronoun
+		user.realName = data.realName?.isEmpty == true ? nil : data.realName
+		user.roomNumber = data.roomNumber?.isEmpty == true ? nil : data.roomNumber
 		user.limitAccess = data.limitAccess
 		
 		// build .userSearch value
@@ -1181,9 +1183,9 @@ struct UserController: RouteCollection {
         // FIXME: account for blocks, banned user
         let user = try req.auth.require(User.self)
         // get all notes, and for each note, the user the note's written about.
-        return user.$notes.query(on: req.db).with(\.$noteSubject).all().flatMapThrowing { (notes) in
+        return user.$notes.query(on: req.db).with(\.$noteSubject).with(\.$noteSubject).all().flatMapThrowing { (notes) in
             // create array for return
-			let notesData: [NoteData] = try notes.map { try NoteData(note: $0) }
+			let notesData: [NoteData] = try notes.map { try NoteData(note: $0, targetUser: $0.noteSubject) }
             return notesData
 		}
     }

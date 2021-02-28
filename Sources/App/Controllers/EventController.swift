@@ -47,6 +47,7 @@ struct EventController: RouteCollection {
         // endpoints available only when logged in
         tokenAuthGroup.post(":event_id", "favorite", use: favoriteAddHandler)
         tokenAuthGroup.post(":event_id", "favorite", "remove", use: favoriteRemoveHandler)
+        tokenAuthGroup.delete(":event_id", "favorite", use: favoriteRemoveHandler)
         tokenAuthGroup.get("favorites", use: favoritesHandler)
         tokenAuthGroup.post("update", use: eventsUpdateHandler)
     }
@@ -658,6 +659,7 @@ struct EventController: RouteCollection {
     }
     
     /// `POST /api/v3/events/ID/favorite/remove`
+    /// `DELETE /api/v3/events/ID/favorite`
     ///
     /// Remove the specified `Event` from the user's tagged events list.
     ///

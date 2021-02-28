@@ -14,7 +14,7 @@ extension Event {
             endTime: self.endTime,
             location: self.location,
             eventType: self.eventType.label,
-            forum: self.forum?.id,
+            forum: self.$forum.id,
             isFavorite: tagged
         )
     }

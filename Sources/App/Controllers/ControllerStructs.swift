@@ -505,10 +505,10 @@ struct NoteData: Content {
 }
 
 extension NoteData {
-	init(note: UserNote) throws {
+	init(note: UserNote, targetUser: User) throws {
 		self.createdAt = note.createdAt ?? Date()
 		self.updatedAt = note.updatedAt ?? Date()
-		self.targetUser = try UserHeader(user: note.noteSubject)
+		self.targetUser = try UserHeader(user: targetUser)
 		self.note = note.note
 	}
 }
@@ -663,27 +663,24 @@ struct PostDetailData: Content {
     var loves: [SeaMonkey]
 }
 
-/// Used to return a user's public profile contents.
+/// Used to return a user's public profile contents. For viewing/editing a user's own profile, see `UserProfileData`.
 ///
 /// Returned by: `GET /api/v3/users/ID/profile`
 ///
 /// See `UsersController.profileHandler(_:)`.
 struct ProfilePublicData: Content {
-    /// The userID for this profile data.
-    var userID: UUID
-    /// The user's username.
-    let username: String
-    /// The user's displayName, if any.
-    var displayName: String
+    /// Basic info abou thte user--their ID, username, displayname, and avatar image.
+    var header: UserHeader
+
     /// An optional blurb about the user.
     var about: String
     /// An optional email address for the user.
+    var message: String
+    /// An optional preferred pronoun or form of address.
     var email: String
     /// An optional home location for the user.
     var homeLocation: String
     /// An optional greeting/message to visitors of the profile.
-    var message: String
-    /// An optional preferred pronoun or form of address.
     var preferredPronoun: String
     /// An optional real world name of the user.
     var realName: String
@@ -695,9 +692,7 @@ struct ProfilePublicData: Content {
 
 extension ProfilePublicData {
 	init(user: User, note: String?) throws {
-		self.userID = try user.requireID()
-		self.username = user.username
-		self.displayName = user.displayName ?? ""
+		self.header = try UserHeader(user: user)
 		self.about = user.about ?? ""
 		self.email = user.email ?? ""
 		self.homeLocation = user.homeLocation ?? ""
@@ -957,21 +952,21 @@ struct UserProfileData: Content {
     /// The user's username. [not editable here]
     let username: String
     /// An optional blurb about the user.
-    var about: String
+    var about: String?
     /// An optional name for display alongside the username.
-    var displayName: String
+    var displayName: String?
     /// An optional email address.
-    var email: String
+    var email: String?
     /// An optional home location (e.g. city).
-    var homeLocation: String
+    var homeLocation: String?
     /// An optional greeting/message to visitors of the profile.
-    var message: String
+    var message: String?
     /// An optional preferred form of address.
-    var preferredPronoun: String
+    var preferredPronoun: String?
     /// An optional real name of the user.
-    var realName: String
+    var realName: String?
     /// An optional ship cabin number.
-    var roomNumber: String
+    var roomNumber: String?
     /// Whether display of the optional fields' data should be limited to logged in users.
     var limitAccess: Bool
 }
@@ -979,14 +974,14 @@ struct UserProfileData: Content {
 extension UserProfileData {
 	init(user: User) throws {
 		self.username = user.username
-		self.displayName = user.displayName ?? ""
-		self.about = user.about ?? ""
-		self.email = user.email ?? ""
-		self.homeLocation = user.homeLocation ?? ""
-		self.message = user.message ?? ""
-		self.preferredPronoun = user.preferredPronoun ?? ""
-		self.realName = user.realName ?? ""
-		self.roomNumber = user.roomNumber ?? ""
+		self.displayName = user.displayName
+		self.about = user.about
+		self.email = user.email
+		self.homeLocation = user.homeLocation
+		self.message = user.message
+		self.preferredPronoun = user.preferredPronoun
+		self.realName = user.realName
+		self.roomNumber = user.roomNumber
 		self.limitAccess = user.limitAccess
 	}
 }

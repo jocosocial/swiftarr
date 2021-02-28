@@ -393,7 +393,7 @@ struct UsersController: RouteCollection {
 					note.note = data.note
 					// return note's data with 201 response
 					return note.save(on: req.db).throwingFlatMap { _ in
-						let createdNoteData = try NoteData(note: note)
+						let createdNoteData = try NoteData(note: note, targetUser: targetUser)
 						return createdNoteData.encodeResponse(status: .created, for: req)
 					}
 			}
@@ -401,6 +401,7 @@ struct UsersController: RouteCollection {
     }
     
     /// `POST /api/v3/users/ID/note/delete`
+    /// `DELETE /api/v3/users/ID/note`
     ///
     /// Deletes an existing `UserNote` associated with the specified user's profile and
     /// the current user.
@@ -449,10 +450,11 @@ struct UsersController: RouteCollection {
         }
 		return requester.$notes.query(on: req.db)
 			.filter(\.$noteSubject.$id == targetUserID)
+			.with(\.$noteSubject)
 			.first()
 			.unwrap(or: Abort(.badRequest, reason: "no existing note found"))
 			.flatMapThrowing { (note) in
-				return try NoteData(note: note)
+				return try NoteData(note: note, targetUser: note.noteSubject)
 		}
     }
     
