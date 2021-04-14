@@ -45,7 +45,8 @@ final class Event: Model {
     
  	// MARK: Relations
 
-    /// The ID of a forum associated with the event.
+    /// The ID of a forum associated with the event. I believe we want the forum to be the parent of the event
+    /// so the forum can keep existing even if the event is deleted.
     @OptionalParent(key: "forum_id") var forum: Forum?
     
 	// MARK: Initialization

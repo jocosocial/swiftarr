@@ -75,7 +75,8 @@ struct CreateFezPostSchema: Migration {
     			.field("created_at", .datetime)
     			.field("updated_at", .datetime)
     			.field("deleted_at", .datetime)
- 				.field("friendly_fez", .uuid, .required, .references("barrels", "id"))
+ 				.field("friendly_fez", .uuid, .required, .references("friendlyfez", "id"))
+ 				.field("author", .uuid, .required, .references("users", "id"))
 				.create()
     }
 
@@ -140,10 +141,55 @@ struct CreateForumPostSchema: Migration {
     }
 }
 
+struct CreateFriendlyFezSchema: Migration {
+	func prepare(on database: Database) -> EventLoopFuture<Void> {
+		database.schema("friendlyfez")
+				.id()
+				.field("fezType", .string, .required)
+				.field("title", .string, .required)
+				.field("info", .string, .required)
+				.field("location", .string)
+				.field("start_time", .datetime)
+				.field("end_time", .datetime)
+				.field("min_capacity", .int, .required)
+				.field("max_capacity", .int, .required)
+				.field("post_count", .int, .required)
+				.field("cancelled", .bool, .required)
+				.field("participant_array", .array(of: .uuid), .required)
+				.field("owner", .uuid, .required, .references("users", "id", onDelete: .cascade))
+    			.field("created_at", .datetime)
+    			.field("updated_at", .datetime)
+    			.field("deleted_at", .datetime)
+				.create()
+	}
+ 
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("friendlyfez").delete()
+    }
+}
+
+struct CreateFezParticipantSchema: Migration {
+	func prepare(on database: Database) -> EventLoopFuture<Void> {
+		database.schema("fez+participants")
+				.id()
+				.unique(on: "user", "friendly_fez")
+ 				.field("user", .uuid, .required, .references("users", "id", onDelete: .cascade))
+ 				.field("friendly_fez", .uuid, .required, .references("friendlyfez", "id", onDelete: .cascade))
+				.field("read_count", .int, .required)
+				.field("hidden_count", .int, .required)
+				.create()
+	}
+ 
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("fez+participants").delete()
+    }
+}
+
 struct CreatePostLikesSchema: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         database.schema("post+likes")
 				.id()
+				.unique(on: "user", "forumPost")
 				.field("liketype", .string)
  				.field("user", .uuid, .required, .references("users", "id", onDelete: .cascade))
  				.field("forumPost", .int, .required, .references("forumposts", "id", onDelete: .cascade))
@@ -261,6 +307,7 @@ struct CreateTwarrtLikesSchema: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         database.schema("twarrt+likes")
 				.id()
+				.unique(on: "user", "twarrt")
 				.field("liketype", .string)
  				.field("user", .uuid, .required, .references("users", "id", onDelete: .cascade))
  				.field("twarrt", .int, .required, .references("twarrts", "id", onDelete: .cascade))

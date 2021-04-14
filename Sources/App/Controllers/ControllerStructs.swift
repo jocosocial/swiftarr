@@ -218,37 +218,43 @@ struct EventsUpdateData: Content {
 /// See: `FezController.createHandler(_:data:)`, `FezController.updateHandler(_:data:)`.
 struct FezContentData: Content {
     /// The `FezType` .label of the fez.
-    var fezType: String
+    var fezType: FezType
     /// The title for the FriendlyFez.
     var title: String
     /// A description of the fez.
     var info: String
-    /// The starting time for the fez, a date as string.
-    var startTime: String
-    /// The ending time for the fez, a date as string.
-    var endTime: String
+    /// The starting time for the fez.
+    var startTime: Date?
+    /// The ending time for the fez.
+    var endTime: Date?
     /// The location for the fez.
-    var location: String
+    var location: String?
     /// The minimum number of seamonkeys needed for the fez.
     var minCapacity: Int
     /// The maximum number of seamonkeys for the fez.
     var maxCapacity: Int
+    /// Users to add to the fez upon creation. The creator is always added as the first user.
+    var initialUsers: [UUID]
 }
 
 extension FezContentData: RCFValidatable {
     func runValidations(using decoder: ValidatingDecoder) throws {
     	let tester = try decoder.validator(keyedBy: CodingKeys.self)
-    	tester.validate(title.count >= 2, forKey: .title, or: "title field has a 2 character minimum")
-    	tester.validate(title.count <= 100, forKey: .title, or: "title field has a 100 character limit")
-    	tester.validate(info.count >= 2, forKey: .info, or: "info field has a 2 character minimum")
-    	tester.validate(info.count <= 2048, forKey: .info, or: "info field length of \(info.count) is over the 2048 character limit")
-    	tester.validate(location.count >= 2, forKey: .location, or: "location field has a 2 character minimum") 
+    	if fezType != .closed {
+			tester.validate(title.count >= 2, forKey: .title, or: "title field has a 2 character minimum")
+			tester.validate(title.count <= 100, forKey: .title, or: "title field has a 100 character limit")
+			tester.validate(info.count >= 2, forKey: .info, or: "info field has a 2 character minimum")
+			tester.validate(info.count <= 2048, forKey: .info, or: "info field length of \(info.count) is over the 2048 character limit")
+			if let loc = location {
+				tester.validate(loc.count >= 3, forKey: .location, or: "location field has a 3 character minimum") 
+			}
+		}
     	
     	// TODO: validations for startTime and endTime  	
 	}
 }
 
-/// Used to return a FriendlyFez `Barrel`'s data.
+/// Used to return a `FriendlyFez`'s data.
 ///
 /// Returned by these methods, with `posts` set to nil.
 /// * `POST /api/v3/fez/create`
@@ -277,23 +283,50 @@ struct FezData: Content, ResponseEncodable {
     /// The ID of the fez's owner.
     var ownerID: UUID
     /// The `FezType` .label of the fez.
-    var fezType: String
+    var fezType: FezType
     /// The title of the fez.
     var title: String
     /// A description of the fez.
     var info: String
     /// The starting time of the fez.
-    var startTime: String
+    var startTime: Date?
     /// The ending time of the fez.
-    var endTime: String
+    var endTime: Date?
     /// The location for the fez.
-    var location: String
-    /// The seamonkeys participating in the fez.
-    var seamonkeys: [SeaMonkey]
-    /// The seamonkeys on a waiting list for the fez.
-    var waitingList: [SeaMonkey]
+    var location: String?
+    /// The users participating in the fez.
+    var participants: [UserHeader]
+    /// The users on a waiting list for the fez.
+    var waitingList: [UserHeader]
+    /// How many posts the user can see in the fez. The count is returned even for calls that don't return the actual posts, but is not returned for 
+    /// fezzes where the user is not a member. PostCount does not include posts from blocked/muted users.
+	var postCount: Int
+    /// How many posts the user has read. If postCount > readCount, there's posts to be read. UI can also use readCount to set the initial view 
+    /// to the first unread message.ReadCount does not include posts from blocked/muted users.
+	var readCount: Int
+	/// The most recent of: Creation time for the fez, time of the last post (may not exactly match post time), user add/remove, or update to fezzes' fields. 
+	var lastModificationTime: Date
     /// The FezPosts in the fez discussion.
     var posts: [FezPostData]?
+}
+
+extension FezData {
+	init(fez: FriendlyFez) throws {
+		self.fezID = try fez.requireID()
+		self.ownerID = fez.$owner.id
+		self.fezType = fez.fezType
+		self.title = fez.title
+		self.info = fez.info
+		self.startTime = fez.startTime
+		self.endTime = fez.endTime
+		self.location = fez.location
+		self.participants = []
+		self.waitingList = []
+		self.postCount = 0
+		self.readCount = 0
+		self.lastModificationTime = fez.updatedAt ?? Date()
+		self.posts = nil
+	}
 }
 
 /// Used to return a `FezPost`'s data.
@@ -312,6 +345,8 @@ struct FezPostData: Content {
     var authorID: UUID
     /// The text content of the fez post.
     var text: String
+    /// The time the post was submitted.
+    var timestamp: Date
     /// The image content of the fez post.
     var image: String?
 }
@@ -321,6 +356,7 @@ extension FezPostData {
     	self.postID = try post.requireID()
     	self.authorID = post.$author.id
     	self.text = post.text
+    	self.timestamp = post.createdAt ?? post.updatedAt ?? Date()
     	self.image = post.image
     }
 }
@@ -919,6 +955,9 @@ extension UserHeader {
 		self.displayName = user.displayName
 		self.userImage = user.userImage
 	}
+	
+	static var Blocked: UserHeader { .init(userID: Settings.shared.blockedUserID, username: "BlockedUser", 
+			displayName: "BlockedUser", userImage: "") }
 }
 
 /// Used to change a user's password.

@@ -110,27 +110,33 @@ final class User: Model, Content {
 // FIXME: how to handle this
 //	@Children(for: \$.) var barrels: [Barrel]
 
+    /// The child `Twarrt`s created by the user.
+	@Children(for: \.$author) var twarrts: [Twarrt]
+
+    /// The sibling `Twarrt`s "liked" by the user.
+    @Siblings(through: TwarrtLikes.self, from: \.$user, to: \.$twarrt) var twarrtLikes: [Twarrt]
+
 	/// The child `Forum`s created by the user.
 	@Children(for: \.$creator) var forums: [Forum]
     
-    /// The child `UserNote`s owned by the user.
-	@Children(for: \.$author) var notes: [UserNote]
+    /// The child `ForumPost`s created by the user.
+	@Children(for: \.$author) var posts: [ForumPost]
 	
     /// The sibling `ForumPost`s "liked" by the user.
     @Siblings(through: PostLikes.self, from: \.$user, to: \.$post) var postLikes: [ForumPost]
 
-    /// The child `ForumPost`s created by the user.
-	@Children(for: \.$author) var posts: [ForumPost]
+	/// The child `FriendlyFez` objects created by this user.
+	@Children(for: \.$owner) var owned_fezzes: [FriendlyFez]
 	
+	/// The sibling `FriendlyFez` objects this user has joined.
+	@Siblings(through: FezParticipant.self, from: \.$user, to: \.$fez) var joined_fezzes: [FriendlyFez]
+
     /// The child `ProfileEdit` accountability records of the profile.
     @Children(for: \.$user) var edits: [ProfileEdit]
         
-    /// The sibling `Twarrt`s "liked" by the user.
-    @Siblings(through: TwarrtLikes.self, from: \.$user, to: \.$twarrt) var twarrtLikes: [Twarrt]
-
-    /// The child `Twarrt`s created by the user.
-	@Children(for: \.$author) var twarrts: [Twarrt]
-
+    /// The child `UserNote`s owned by the user.
+	@Children(for: \.$author) var notes: [UserNote]
+	
     // MARK: Initialization
     
     // Used by Fluent

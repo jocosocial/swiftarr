@@ -11,7 +11,7 @@ final class FezPost: Model {
 	// MARK: Properties
     
     /// The post's ID.
-    @ID(key: .id) var id: Int?
+    @ID(custom: "id") var id: Int?
     
     /// The text content of the post.
     @Field(key: "text") var text: String
@@ -31,7 +31,7 @@ final class FezPost: Model {
 	// MARK: Relations
     
     /// The `FriendlyFez` type `Barrel` to which the post belongs.
-    @Parent(key: "friendly_fez") var fez: Barrel
+    @Parent(key: "friendly_fez") var fez: FriendlyFez
     
     /// The post's author.
     @Parent(key: "author") var author: User
@@ -49,14 +49,15 @@ final class FezPost: Model {
     ///   - text: The text content of the post.
     ///   - image: The filename of any image content of the post.
     init(
-        fez: Barrel,
+        fez: FriendlyFez,
         author: User,
         text: String,
         image: String?
     ) throws {
         self.$fez.id = try fez.requireID()
         self.$fez.value = fez
-        self.author = author
+        self.$author.id = try author.requireID()
+        self.$author.value = author
         self.text = text
         self.image = image
     }

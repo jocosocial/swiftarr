@@ -7,6 +7,11 @@ public func routes(_ app: Application) throws {
         return "It works!"
     }
     
+	app.get("hello") { req -> EventLoopFuture<View> in
+//	    return req.view.render("hello", ["name": "Leaf"])
+	    return req.view.render("CodeOfConduct", ["name": "Leaf"])
+	}
+
 	let adminController = AdminController()
 	try app.register(collection: adminController)
 
