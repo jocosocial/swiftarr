@@ -327,17 +327,19 @@ struct FezController: RouteCollection {
     ///
     /// Add a `FezPost` to the specified `FriendlyFez`.
     ///
-    /// - Requires: `PostCreateData` payload in the HTTP body.
+    /// - Requires: `PostContentData` payload in the HTTP body.
     /// - Parameters:
     ///   - req: The incoming `Request`, provided automatically
-    ///   - data: `PostCreateData` containing the post's contents and optional image.
     /// - Throws: 404 error if the fez is not available. A 5xx response should be reported
     ///   as a likely bug, please and thank you.
     /// - Returns: `FezData` containing the updated fez discussion.
     func postAddHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         let user = try req.auth.require(User.self)
-        // see PostCreateData.validations()
- 		let data = try ValidatingJSONDecoder().decode(PostCreateData.self, fromBodyOf: req)
+        // see PostContentData.validations()
+ 		let data = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
+ 		if data.images.count > 1 {
+ 			throw Abort(.badRequest, reason: "Fez posts may only have one image")
+ 		}
         // get fez
         return FriendlyFez.findFromParameter(fezIDParam, on: req).throwingFlatMap { (fez) in
             let cacheUser = try req.userCache.getUser(user)
@@ -348,8 +350,9 @@ struct FezController: RouteCollection {
 				throw Abort(.notFound, reason: "fez is not available")
 			}
             // process image
-            return self.processImage(data: data.imageData, forType: .forumPost, on: req).throwingFlatMap { (filename) in
+			return self.processImages(data.images , usage: .fezPost, on: req).throwingFlatMap { (filenames) in
                 // create and save the new post, update fezzes' cached post count
+                let filename = filenames.count > 0 ? filenames[0] : nil
                 let post = try FezPost(fez: fez, author: user, text: data.text, image: filename)
                 fez.postCount += 1
                 var saveFutures = [ post.save(on: req.db), fez.save(on: req.db) ]

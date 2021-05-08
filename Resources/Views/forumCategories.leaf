@@ -1,0 +1,19 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 mt-2">
+    		<div class="row align-items-end">
+    			<div class="col col-auto">
+			    	<h6><b>Forum Categories</b></h6>
+				</div>
+			</div>
+			<div class="list-group">
+			#for(cat in categories):
+				<a href="/forums/#(cat.categoryID)" class="list-group-item list-group-item-action">		
+					#(cat.title)		
+				</a>
+			#endfor
+			</div>
+		</div>
+    #endexport
+#endextend
+

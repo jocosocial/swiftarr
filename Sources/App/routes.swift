@@ -2,15 +2,9 @@ import Vapor
 
 /// Register your application's routes here.
 public func routes(_ app: Application) throws {
-    // Basic "It works" example
-    app.get { req in
-        return "It works!"
-    }
     
-	app.get("hello") { req -> EventLoopFuture<View> in
-//	    return req.view.render("hello", ["name": "Leaf"])
-	    return req.view.render("CodeOfConduct", ["name": "Leaf"])
-	}
+	let siteController = SiteController(app)
+	try app.register(collection: siteController)
 
 	let adminController = AdminController()
 	try app.register(collection: adminController)

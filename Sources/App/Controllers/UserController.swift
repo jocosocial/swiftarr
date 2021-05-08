@@ -345,7 +345,7 @@ struct UserController: RouteCollection {
         let user = try req.auth.require(User.self)
         let data = try req.content.decode(ImageUploadData.self)
         // get generated filename
-        return processImage(data: data.image, forType: .userProfile, on: req)
+        return processImage(data: data.image, usage: .userProfile, on: req)
         	.unwrap(or: Abort(.badRequest, reason: "No image data in request."))
         	.throwingFlatMap { (filename) in
 				// replace existing image

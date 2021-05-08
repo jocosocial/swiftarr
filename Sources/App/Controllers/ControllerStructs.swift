@@ -369,10 +369,8 @@ extension FezPostData {
 struct ForumCreateData: Content {
     /// The forum's title.
     var title: String
-    /// The text content of the forum post.
-    var text: String
-    /// The image content of the forum post.
-    var image: Data?
+    /// The first post in the forum. 
+	var firstPost: PostContentData
 }
 
 extension ForumCreateData: RCFValidatable {
@@ -380,8 +378,6 @@ extension ForumCreateData: RCFValidatable {
     	let tester = try decoder.validator(keyedBy: CodingKeys.self)
     	tester.validate(title.count >= 2, forKey: .title, or: "forum title has a 2 character minimum")
     	tester.validate(title.count <= 100, forKey: .title, or: "forum title has a 100 character limit")
-    	tester.validate(text.count >= 1, forKey: .text, or: "post content cannot be empty")
-    	tester.validate(text.count <= 2048, forKey: .text, or: "post content length of \(text.count) is over 2048 character limit")
 	}
 }
 
@@ -471,16 +467,18 @@ extension ForumListData {
 
 }
 
-/// Used to upload an image file.
+/// Used to upload an image file or refer to an already-uploaded image. Either `filename` or `image` should always be set. 
+/// If both are set, `filename` is ignored and `image` is processed and saved with a new name.
 ///
 /// Required by: `POST /api/v3/user/image`
+/// Incorporated into `PostContentData`, which is in turn required by several routes.
 ///
 /// See `UserController.imageHandler(_:data)`.
 struct ImageUploadData: Content {
-    /// The name of the image file.
-    var filename: String
-    /// The image in `Data` format.
-    var image: Data
+    /// The filename of an existing image previously uploaded to the server. Ignored if image is set.
+    var filename: String?
+    /// The image in `Data` format. 
+    var image: Data?
 }
 
 /// Used to obtain the user's current list of keywords for muting public content.
@@ -549,22 +547,25 @@ extension NoteData {
 	}
 }
 
-/// Used to update a `ForumPost` or `Twarrt`. Format is designed to enable eventual multi-image features.
-/// When enabled, `imageFilename` becomes an array of existing filenames client can delete from or re-order.
-/// Image becomes an array of image data that can be sent; image name matches entries in imageFilenames.. 
+/// Used to create or update a `ForumPost` or `Twarrt`. 
 ///
 /// Required by:
+/// * `POST /api/v3/forum/ID/create`
 /// * `POST /api/v3/forum/post/ID`
+/// * `POST /api/v3/forum/post/ID/update`
+/// * `POST /api/v3/twitarr/create`
+/// * `POST /api/v3/twitarr/ID/reply`
+/// * `POST /api/v3/twitarr/ID/update`
+/// * `POST /api/v3/fez/ID/post`
 ///
 /// See `ForumController.postUpdateHandler(_:data:)`.
 struct PostContentData: Content {
     /// The new text of the forum post.
     var text: String
-    /// The filename of an existing image. Ignored if newImage is set. Set to nil to delete image. If you don't have the previous
-	/// filename, you can set this to "" to indicate no change to the image.
-    var imageFilename: String?
-    /// A new image to replace the existing image.
-    var newImage: ImageUploadData?
+    /// An array of up to 4 images (1 when used in a Fez post). Each image can specify either new image data or an existing image filename. 
+	/// For new posts, images will generally contain all new image data. When editing existing posts, images may contain a mix of new and existing images. 
+	/// Reorder ImageUploadDatas to change presentation order. Set images to [] to remove images attached to post when editing.
+    var images: [ImageUploadData]
 }
 
 extension PostContentData: RCFValidatable {
@@ -572,30 +573,7 @@ extension PostContentData: RCFValidatable {
     	let tester = try decoder.validator(keyedBy: CodingKeys.self)
     	tester.validate(text.count > 0, forKey: .text, or: "post text cannot be empty.")
     	tester.validate(text.count < 2048, forKey: .text, or: "post length of \(text.count) is over the 2048 character limit")
-	}
-}
-
-/////////////
-///
-/// Used to create a `ForumPost` or `Twarrt`.
-///
-/// Required by:
-/// * `POST /api/v3/forum/ID/create`
-/// * `POST /api/v3/twitarr/create`
-///
-/// See `ForumController.postCreateHandler(_:data:)`, `TwitarrController.twarrtCreateHandler(_:data:)`.
-struct PostCreateData: Content {
-    /// The text of the forum post or twarrt.
-    var text: String
-    /// An optional image in Data format.
-    var imageData: Data?
-}
-
-extension PostCreateData: RCFValidatable {
-    func runValidations(using decoder: ValidatingDecoder) throws {
-    	let tester = try decoder.validator(keyedBy: CodingKeys.self)
-    	tester.validate(text.count >= 1, forKey: .text, or: "post content cannot be empty")
-    	tester.validate(text.count <= 2048, forKey: .text, or: "post length of \(text.count) is over the 2048 character limit")
+    	tester.validate(images.count < 5, forKey: .images, or: "posts are limited to 4 image attachments")
 	}
 }
 
@@ -635,8 +613,8 @@ struct PostData: Content {
     var author: UserHeader
     /// The text of the post.
     var text: String
-    /// The filename of the post's optional image.
-    var image: String?
+    /// The filenames of the post's optional images.
+    var images: [String]?
     /// Whether the current user has bookmarked the post.
     var isBookmarked: Bool
     /// The current user's `LikeType` reaction on the post.
@@ -651,7 +629,7 @@ extension PostData {
 		createdAt = post.createdAt ?? Date()
 		self.author = author
 		text = post.isQuarantined ? "This post is under moderator review." : post.text
-		image = post.isQuarantined ? nil : post.image
+		images = post.isQuarantined ? nil : post.images
 		isBookmarked = bookmarked
 		self.userLike = userLike
 		self.likeCount = likeCount
@@ -663,7 +641,7 @@ extension PostData {
 		createdAt = post.createdAt ?? Date()
 		self.author = author
 		text = post.isQuarantined ? "This post is under moderator review." : post.text
-		image = post.isQuarantined ? nil : post.image
+		images = post.isQuarantined ? nil : post.images
 		isBookmarked = false
 		self.userLike = nil
 		self.likeCount = 0
@@ -687,8 +665,8 @@ struct PostDetailData: Content {
     var authorID: UUID
     /// The text of the forum post.
     var text: String
-    /// The filename of the post's optional image.
-    var image: String?
+    /// The filenames of the post's optional images.
+    var images: [String]?
     /// Whether the current user has bookmarked the post.
     var isBookmarked: Bool
     /// The seamonkeys with "laugh" reactions on the post.
@@ -838,8 +816,8 @@ struct TwarrtData: Content {
     var author: UserHeader
     /// The text of the twarrt.
     var text: String
-    /// The filename of the twarrt's optional image.
-    var image: String?
+    /// The filenames of the twarrt's optional images.
+    var images: [String]?
     /// The ID of the twarrt to which this twarrt is a reply.
     var replyToID: Int?
     /// Whether the current user has bookmarked the twarrt.
@@ -849,6 +827,24 @@ struct TwarrtData: Content {
     /// The total number of `LikeType` reactions on the twarrt.
     var likeCount: Int
 }
+
+extension TwarrtData {
+    init(twarrt: Twarrt, creator: UserHeader, isBookmarked: Bool, userLike: LikeType?, likeCount: Int) throws {
+    	guard creator.userID == twarrt.$author.id else {
+    		throw Abort(.internalServerError, reason: "Internal server error--Twarrt's creator does not match.")
+    	}
+		twarrtID = try twarrt.requireID()
+		createdAt = twarrt.createdAt ?? Date()
+		self.author = creator
+		text = twarrt.text
+		images = twarrt.images
+		replyToID = twarrt.$replyTo.id
+		self.isBookmarked = isBookmarked
+		self.userLike = userLike
+		self.likeCount = likeCount
+    }
+}
+
 
 // FIXME: needs bookmark, userLike too?
 /// Used to return a `Twarrt`'s data with full user `LikeType` info.
@@ -865,8 +861,8 @@ struct TwarrtDetailData: Content {
     var authorID: UUID
     /// The text of the forum post or twarrt.
     var text: String
-    /// The filename of the post/twarrt's optional image.
-    var image: String?
+    /// The filenames of the post/twarrt's optional images.
+    var images: [String]?
     /// The ID of the twarrt to which this twarrt is a reply.
     var replyToID: Int?
     /// Whether the current user has bookmarked the post.
@@ -1111,118 +1107,3 @@ extension UserVerifyData: RCFValidatable {
     			or: "verification code is 6 letters long (with an optional space in the middle)")
 	}
 }
-
-// MARK: - Validation
-
-//extension BarrelCreateData: Validatable {
-//    /// Validates that `.name` contains a value, and that only one of `.uuidList` or
-//    /// `.stringList` contains values.
-//    static func validations(_ validations: inout Validations) {
-//        validations.add("name", as: String.self, is: .count(1...))
-//        // FIXME: Removing several complex validations from this file, as Vapor/Validation doesn't seem
-//        // to support them anymore.
-////		validations.add("'uuidList' and 'stringList' cannot both contain values") {
-////			(data) in
-////			guard data.uuidList == nil || data.stringList == nil else {
-////				throw Abort(.badRequest, reason: "'uuidList' and 'stringList' cannot both contain values")
-////			}
-////		}
-//    }
-//}
-//
-//extension FezContentData: Validatable {
-//    /// Validates that `.title`, `.info`, `.location` have values of at least 2
-//    /// characters, that `.startTime` and `.endTime` have date values.
-//    static func validations(_ validations: inout Validations) {
-//        validations.add("title", as: String.self, is: .count(2...))
-//        validations.add("info", as: String.self, is: .count(2...))
-//        validations.add("location", as: String.self, is: .count(2...))
-////		validations.add(".startTime and .endTime must contain dates or nothing") {
-////			(data) in
-////			guard (Double(data.startTime) != nil) || data.startTime.isEmpty else {
-////				throw Abort(.badRequest, reason: "'startTime' must be either a numeric date or empty")
-////			}
-////			guard (Double(data.endTime) != nil) || data.endTime.isEmpty else {
-////				throw Abort(.badRequest, reason: "'endTime' must be either a numeric date or empty")
-////			}
-////        }
-//    }
-//}
-//
-//extension ForumCreateData: Validatable {
-//    /// Validates that `.title` and initial post `.text`  both contain values.
-//    static func validations(_ validations: inout Validations) {
-//        validations.add("title", as: String.self, is: .count(1...))
-//        validations.add("text", as: String.self, is: .count(1...))
-//    }
-//}
-//
-//extension PostContentData: Validatable {
-//    /// Validates that `.text` contains a value.
-//    static func validations(_ validations: inout Validations) {
-//        validations.add("text", as: String.self, is: .count(1...))
-//    }
-//}
-//
-//extension PostCreateData: Validatable {
-//    /// Validates that `.text` contains a value.
-//    static func validations(_ validations: inout Validations) {
-//        validations.add("text", as: String.self, is: .count(1...))
-//    }
-//}
-//
-//extension UserCreateData: Validatable {
-//    /// Validates that `.username` is 1 or more characters beginning with an alphanumeric,
-//    /// and `.password` is least 6 characters in length.
-//    static func validations(_ validations: inout Validations) {
-//        validations.add("username", as: String.self, is: .count(1...) && .characterSet(.alphanumerics + .usernameSeparators))
-////        validations.add("username must start with an alphanumeric") {
-////            (data) in
-////            guard let first = data.username.unicodeScalars.first,
-////                !CharacterSet.usernameSeparators.contains(first) else {
-////                    return// Abort(.badRequest, reason: "username must start with an alphanumeric")
-////            }
-////        }
-//		validations.add("password", as: String.self, is: .count(6...))
-//    }
-//}
-//
-//extension UserPasswordData: Validatable {
-//    /// Validates that the new password is at least 6 characters in length.
-//    static func validations(_ validations: inout Validations) {
-//        validations.add("password", as: String.self, is: .count(6...))
-//    }
-//}
-//
-//extension UserRecoveryData: Validatable {
-//    /// Validates that `.username` is 1 or more alphanumeric characters,
-//    /// and `.recoveryCode` is at least 6 character in length (minimum for
-//    /// both registration codes and passwords).
-//    static func validations(_ validations: inout Validations) {
-//        validations.add("username", as: String.self, is: .count(1...) && .characterSet(.alphanumerics))
-//        validations.add("recoveryKey", as: String.self, is: .count(6...))
-//    }
-//}
-//
-//extension UserUsernameData: Validatable {
-//    /// Validates that the new username is 1 or more characters and begins with an
-//    /// alphanumeric.
-//    static func validations(_ validations: inout Validations) {
-//        validations.add("username", as: String.self, is: .count(1...) && .characterSet(.alphanumerics + .usernameSeparators))
-////        validations.add("username must start with an alphanumeric") {
-////            (data) in
-////            guard let first = data.username.unicodeScalars.first,
-////                !CharacterSet.usernameSeparators.contains(first) else {
-////                    throw Abort(.badRequest, reason: "username must start with an alphanumeric")
-////            }
-////        }
-//    }
-//}
-//
-//extension UserVerifyData: Validatable {
-//    /// Validates that a `.verification` registration code is either 6 or 7 alphanumeric
-//    /// characters in length (allows for inclusion or exclusion of the space).
-//    static func validations(_ validations: inout Validations) {
-//        validations.add("verification", as: String.self, is: .count(6...7) && .characterSet(.alphanumerics + .whitespaces))
-//    }
-//}

@@ -22,8 +22,8 @@ struct TwitarrController: RouteCollection {
         
         // instantiate authentication middleware
         let basicAuthMiddleware = User.authenticator()
-        let guardAuthMiddleware = User.guardMiddleware()
         let tokenAuthMiddleware = Token.authenticator()
+        let guardAuthMiddleware = User.guardMiddleware()
         
         // set protected route groups
         let sharedAuthGroup = twitarrRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware, guardAuthMiddleware])
@@ -91,11 +91,11 @@ struct TwitarrController: RouteCollection {
 								var twarrtDetailData = try TwarrtDetailData(
 									postID: twarrt.requireID(),
 									createdAt: twarrt.createdAt ?? Date(),
-									authorID: twarrt.author.requireID(),
+									authorID: twarrt.$author.id,
 									text: twarrt.isQuarantined ?
 										"This twarrt is under moderator review." : twarrt.text,
-									image: twarrt.image,
-									replyToID: twarrt.replyTo?.requireID(),
+									images: twarrt.images,
+									replyToID: twarrt.$replyTo.id,
 									isBookmarked: bookmarked,
 									laughs: [],
 									likes: [],
@@ -430,37 +430,31 @@ struct TwitarrController: RouteCollection {
     /// Create a `Twarrt` as a reply to an existing twarrt. If the replyTo twarrt is in
     /// quarantine, the post is rejected.
     ///
-    /// - Requires: `PostCreateData` payload in the HTTP body.
+    /// - Requires: `PostContentData` payload in the HTTP body.
     /// - Parameters:
     ///   - req: The incoming `Request`, provided automatically.
-    ///   - data: `PostCreateData` containing the twarrt's text and optional image.
     /// - Throws: 400 error if the replyTo twarrt is in quarantine.
-    /// - Returns: `TwarrtData` containing the twarrt's contents and metadata.
+    /// - Returns: `TwarrtData` containing the twarrt's contents and metadata. HTTP 201 status if successful.
     func replyHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         let user = try req.auth.require(User.self)
-		let data = try ValidatingJSONDecoder().decode(PostCreateData.self, fromBodyOf: req)
+		let data = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
         // get replyTo twarrt
-        return Twarrt.findFromParameter(twarrtIDParam, on: req).flatMap { (replyTo) in
-        	do {
-				guard !replyTo.isQuarantined else {
-					throw Abort(.badRequest, reason: "moderator-bot: twarrt cannot be replied to")
-				}
-				// process image
-				return self.processImage(data: data.imageData, forType: .twarrt, on: req).throwingFlatMap { (filename) in
-					// create twarrt
-					let twarrt = try Twarrt(author: user, text: data.text, image: filename, replyTo: replyTo)
-					return twarrt.save(on: req.db).flatMapThrowing { (savedTwarrt) in
-						// return as TwarrtData with 201 status
-						let authorHeader = try req.userCache.getHeader(twarrt.$author.id)
-						let response = Response(status: .created)
-						try response.content.encode(try twarrt.convertToData(author: authorHeader, 
-								bookmarked: false, userLike: nil, likeCount: 0))
-						return response
-					}
-				}
+        return Twarrt.findFromParameter(twarrtIDParam, on: req).throwingFlatMap { (replyTo) in
+			guard !replyTo.isQuarantined else {
+				throw Abort(.badRequest, reason: "moderator-bot: twarrt cannot be replied to")
 			}
-			catch {
-				return req.eventLoop.makeFailedFuture(error)
+			// process images
+			return self.processImages(data.images, usage: .twarrt, on: req).throwingFlatMap { (filenames) in
+				// create twarrt
+				let twarrt = try Twarrt(author: user, text: data.text, images: filenames, replyTo: replyTo)
+				return twarrt.save(on: req.db).flatMapThrowing { (savedTwarrt) in
+					// return as TwarrtData with 201 status
+					let authorHeader = try req.userCache.getHeader(twarrt.$author.id)
+					let response = Response(status: .created)
+					try response.content.encode(TwarrtData(twarrt: twarrt, creator: authorHeader, isBookmarked: false,
+							userLike: nil, likeCount: 0))
+					return response
+				}
 			}
         }
     }
@@ -469,25 +463,23 @@ struct TwitarrController: RouteCollection {
     ///
     /// Create a new `Twarrt` in the twitarr stream.
     ///
-    /// - Requires: `PostCreateData` payload in the HTTP body.
+    /// - Requires: `PostContentData` payload in the HTTP body.
     /// - Parameters:
     ///   - req: The incoming `Request`, provided automatically.
-    ///   - data: `PostCreateData` containing the twarrt's text and optional image.
-    /// - Returns: `TwarrtData` containing the twarrt's contents and metadata.
+    /// - Returns: `TwarrtData` containing the twarrt's contents and metadata. HTTP 201 status if successful.
     func twarrtCreateHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         let user = try req.auth.require(User.self)
- 		let data = try ValidatingJSONDecoder().decode(PostCreateData.self, fromBodyOf: req)
-        // process image
-        return self.processImage(data: data.imageData, forType: .twarrt, on: req).throwingFlatMap { (filename) in
+ 		let data = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
+        // process images
+        return self.processImages(data.images, usage: .twarrt, on: req).throwingFlatMap { (filenames) in
             // create twarrt
-			let twarrt = try Twarrt(author: user, text: data.text, image: filename)
+			let twarrt = try Twarrt(author: user, text: data.text, images: filenames)
             return twarrt.save(on: req.db).flatMapThrowing { _ in
                 // return as TwarrtData with 201 status
 				let authorHeader = try req.userCache.getHeader(twarrt.$author.id)
                 let response = Response(status: .created)
-                try response.content.encode(
-                    try twarrt.convertToData(author: authorHeader, bookmarked: false, userLike: nil, likeCount: 0)
-                )
+                try response.content.encode(TwarrtData(twarrt: twarrt, creator: authorHeader, isBookmarked: false,
+						userLike: nil, likeCount: 0))
                 return response
             }
         }
@@ -641,26 +633,22 @@ struct TwitarrController: RouteCollection {
         let userID = try user.requireID()
 		let data = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
         return Twarrt.findFromParameter(twarrtIDParam, on: req).throwingFlatMap { (twarrt) in
-            // ensure user has write access
-            guard twarrt.$author.id == userID, user.accessLevel.hasAccess(.verified) else {
-                    throw Abort(.forbidden, reason: "user cannot modify twarrt")
+			// I *think* the author should be allowed to edit a quarantined twarrt?
+			// ensure user has write access
+			guard twarrt.$author.id == userID, user.accessLevel.hasAccess(.verified) else {
+				throw Abort(.forbidden, reason: "user cannot modify twarrt")
             }
-			if let imageData = data.newImage {
-				// get generated filename--this will always be a new name.
-				return processImage(data: imageData.image, forType: .twarrt, on: req).map { newFilename in
-					return (twarrt, newFilename)
-				}
+			return processImages(data.images, usage: .twarrt, on: req).map { filenames in
+				return (twarrt, filenames)
 			}
-			let newFilename: String? = data.imageFilename == "" ? twarrt.image : data.imageFilename
-			return req.eventLoop.future((twarrt, newFilename))
 		}
-		.throwingFlatMap { (twarrt: Twarrt, newImageFilename: String?) in
+		.throwingFlatMap { (twarrt: Twarrt, filenames: [String]) in
 			// update if there are changes
-			if twarrt.text != data.text || twarrt.image != newImageFilename {
+			if twarrt.text != data.text || twarrt.images != filenames {
 				// stash current twarrt contents before modifying
 				let twarrtEdit = try TwarrtEdit(twarrt: twarrt)
 				twarrt.text = data.text
-				twarrt.image = newImageFilename
+				twarrt.images = filenames
 				return twarrt.save(on: req.db)
 					.flatMap { twarrtEdit.save(on: req.db) }
 					.transform(to: (twarrt, HTTPStatus.created))
@@ -737,7 +725,7 @@ extension TwitarrController {
 						req.eventLoop.makeSucceededFuture(assumeBookmarked!)
 				let userLike: EventLoopFuture<TwarrtLikes?>
 				if try author.userID == user.requireID() {
-					// A use cannot like their own content, ergo there's no userLike for a user's own twarrt.
+					// A user cannot like their own content, ergo there's no userLike for a user's own twarrt.
 					userLike = req.eventLoop.future(nil)
 				}
 				else {
@@ -752,7 +740,7 @@ extension TwitarrController {
 				return bookmarked.and(userLike).and(likeCount).flatMapThrowing {
 					(arg0, count) in
 					let (bookmarked, userLike) = arg0
-					return try twarrt.convertToData(author: author, bookmarked: bookmarked, 
+					return try TwarrtData(twarrt: twarrt, creator: author, isBookmarked: bookmarked, 
 							userLike: userLike?.likeType, likeCount: count)
 				}
 			}

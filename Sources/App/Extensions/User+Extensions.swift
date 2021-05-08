@@ -2,7 +2,7 @@ import Vapor
 import Fluent
 
 
-// MARK: - BasicAuthenticatable Conformance
+// MARK: - ModelAuthenticatable Conformance
 
 extension User: ModelAuthenticatable {
     /// Required username key for HTTP Basic Authorization.
@@ -14,6 +14,8 @@ extension User: ModelAuthenticatable {
 		try Bcrypt.verify(password, created: self.password)
 	}
 }
+
+extension User: ModelSessionAuthenticatable { }
 
 
 // MARK: - Functions

@@ -31,8 +31,8 @@ struct ImageController: RouteCollection {
 //		let tokenAuthGroup = imageRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
 
 		// open access endpoints
-		imageRoutes.get("full", ":image_uuid", use: getImage_FullHandler)
-		imageRoutes.get("thumb", ":image_uuid", use: getImage_ThumbnailHandler)
+		imageRoutes.get("full", ":image_filename", use: getImage_FullHandler)
+		imageRoutes.get("thumb", ":image_filename", use: getImage_ThumbnailHandler)
 	}
 	
 	func getImage_FullHandler(_ req: Request) throws -> Response {
@@ -44,9 +44,16 @@ struct ImageController: RouteCollection {
 	}
 	
 	func getImageHandler(_ req: Request, typeStr: String) throws -> Response {
-		guard let fileParam = req.parameters.get("image_uuid") else {
+		guard let fileParam = req.parameters.get("image_filename") else {
 			throw Abort(.badRequest, reason: "No image file specified.")
 		}
+		
+		// Check the extension
+		var fileExtension = URL(fileURLWithPath: fileParam).pathExtension
+		if ![".bmp", "gif", "jpg", "png", "tiff", "wbmp", "webp"].contains(fileExtension) {
+			fileExtension = "jpg"
+		}
+		
 		// Strip extension and any other gunk off the filename. Eject if two extensions detected (.php.jpg, for example).
 		let noFiletype = URL(fileURLWithPath: fileParam).deletingPathExtension()
 		if noFiletype.pathExtension.count > 0 {
@@ -65,7 +72,7 @@ struct ImageController: RouteCollection {
 			
         let fileURL = imagesDirectory.appendingPathComponent(typeStr)
         		.appendingPathComponent(subDirName)
-        		.appendingPathComponent(fileUUID.uuidString + ".jpg")
+        		.appendingPathComponent(fileUUID.uuidString + "." + fileExtension)
 		return req.fileio.streamFile(at: fileURL.path)
 	}
 }

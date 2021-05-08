@@ -8,14 +8,6 @@ import Leaf
 /// here for easier organization. If order-of-initialization issues arise, rearrange as necessary.
 public func configure(_ app: Application) throws {
     
-	// Add lifecycle handlers early
-	app.lifecycle.use(Application.UserCacheStartup())
-
-	try HTTPServerConfiguration(app)
-	try databaseConnectionConfiguration(app)
-	try configureMiddleware(app)
-    try routes(app)
-   
     // use iso8601ms for dates
     let jsonEncoder = JSONEncoder()
     let jsonDecoder = JSONDecoder()
@@ -27,10 +19,16 @@ public func configure(_ app: Application) throws {
     }
 	ContentConfiguration.global.use(encoder: jsonEncoder, for: .json)
     ContentConfiguration.global.use(decoder: jsonDecoder, for: .json)
-    
-    
-    app.views.use(.leaf)
-    
+
+	// Add lifecycle handlers early
+	app.lifecycle.use(Application.UserCacheStartup())
+
+	try HTTPServerConfiguration(app)
+	try databaseConnectionConfiguration(app)
+	try configureMiddleware(app)
+	try configureSessions(app)
+	try configureLeaf(app)
+    try routes(app)
 	try configureMigrations(app)
 }
 
@@ -89,6 +87,35 @@ func configureMiddleware(_ app: Application) throws {
 	new.use(SwiftarrErrorMiddleware.default(environment: app.environment))
 	new.use(FileMiddleware(publicDirectory: "Resources/Assets")) // serves files from `Public/` directory
 	app.middleware = new
+}
+
+func configureSessions(_ app: Application) throws {
+	app.sessions.configuration.cookieName = "swiftarr_session"
+	
+	// Configures cookie value creation.
+	app.sessions.configuration.cookieFactory = { sessionID in
+		.init(string: sessionID.string,
+				expires: Date( timeIntervalSinceNow: 60 * 60 * 24 * 7),
+				maxAge: nil,
+				domain: nil,
+				path: "/",
+				isSecure: false,
+				isHTTPOnly: true,
+				sameSite: .lax
+		)
+	}
+	
+	// .memory is the default, but we'll eventually want to use Redis to store sessions.
+//	app.sessions.use(.redis)
+}
+
+func configureLeaf(_ app: Application) throws {
+    app.views.use(.leaf)
+    
+    // Custom Leaf tags
+    app.leaf.tags["elem"] = ElementSanitizerTag()
+    app.leaf.tags["addJocomoji"] = AddJocomojiTag()
+    app.leaf.tags["relativeTime"] = RelativeTimeTag()
 }
 	
 func configureMigrations(_ app: Application) throws {

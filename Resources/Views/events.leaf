@@ -1,0 +1,9 @@
+#extend("trunk"):
+    #export("body"):
+    	<ul>
+        #for(event in events):
+        	<li>#elem(event.title)</li>
+		#endfor
+		</ul>
+    #endexport
+#endextend

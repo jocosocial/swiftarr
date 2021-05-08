@@ -3,39 +3,6 @@ import Fluent
 
 // MARK: - Functions
 
-extension Twarrt {
-    /// Converts a `Twarrt` model to a version omitting data that is not for public consumption.
-    func convertToData(author: UserHeader, bookmarked: Bool, userLike: LikeType?, likeCount: Int) throws -> TwarrtData {
-		let image = self.image?.count ?? 0 > 0 ? self.image : nil
-        return try TwarrtData(
-            twarrtID: self.requireID(),
-            createdAt: self.createdAt ?? Date(),
-            author: author,
-            text: self.isQuarantined ? "This twarrt is under moderator review." : self.text,
-            image: self.isQuarantined ? "" : image,
-            replyToID: self.replyTo?.requireID(),
-            isBookmarked: bookmarked,
-            userLike: userLike,
-            likeCount: likeCount
-        )
-    }
-}
-
-//extension EventLoopFuture where Value: Twarrt {
-//    /// Converts a `EventLoopFuture<Twarrt>` to a `EventLoopFuture<TwarrtData>`. This extension provides
-//    /// the convenience of simply using `twarrt.convertToData()` and allowing the compiler to
-//    /// choose the appropriate version for the context.
-//    func convertToData(bookmarked: Bool, userLike: LikeType?, likeCount: Int) -> EventLoopFuture<TwarrtData> {
-//        return self.flatMapThrowing { (twarrt) in
-//            return try twarrt.convertToData(
-//                bookmarked: bookmarked,
-//                userLike: userLike,
-//                likeCount: likeCount
-//            )
-//        }
-//    }
-//}
-
 // twarrts can be filtered by author and content
 extension Twarrt: ContentFilterable {
     /// Checks if a `Twarrt` contains any of the provided array of muting strings, returning true if it does

@@ -59,8 +59,6 @@ struct ForumController: RouteCollection {
         tokenAuthGroup.post(forumIDParam, "create", use: postCreateHandler)
         tokenAuthGroup.post("post", postIDParam, "delete", use: postDeleteHandler)
         tokenAuthGroup.delete("post", postIDParam, use: postDeleteHandler)
-        tokenAuthGroup.post("post", postIDParam, "image", use: imageHandler)
-        tokenAuthGroup.post("post", postIDParam, "image", "remove", use: imageRemoveHandler)
         tokenAuthGroup.post("post", postIDParam, "laugh", use: postLaughHandler)
         tokenAuthGroup.post("post", postIDParam, "like", use: postLikeHandler)
         tokenAuthGroup.post("post", postIDParam, "love", use: postLoveHandler)
@@ -316,7 +314,7 @@ struct ForumController: RouteCollection {
 						createdAt: post.createdAt ?? Date(),
 						authorID: post.author.requireID(),
 						text: post.isQuarantined ? "This post is under moderator review." : post.text,
-						image: post.isQuarantined ? nil : post.image,
+						images: post.isQuarantined ? nil : post.images,
 						isBookmarked: bookmarked,
 						laughs: req.userCache.getHeaders(laughUsers).map { SeaMonkey(header: $0) },
 						likes: req.userCache.getHeaders(likeUsers).map { SeaMonkey(header: $0) },
@@ -585,13 +583,13 @@ struct ForumController: RouteCollection {
             guard !category.isRestricted || user.accessLevel.hasAccess(.moderator)  else {
                     return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "users cannot create forums in category"))
             }
-			// process image
-			return self.processImage(data: data.image, forType: .forumPost, on: req).throwingFlatMap { (imageName) in
+			// process images
+			return self.processImages(data.firstPost.images, usage: .forumPost, on: req).throwingFlatMap { (imageFilenames) in
 				// create forum
 				let forum = try Forum(title: data.title, category: category, creator: user, isLocked: false)
 				return forum.save(on: req.db).throwingFlatMap { (_) in
                     // create first post
-                    let forumPost = try ForumPost(forum: forum, author: forum.creator, text: data.text, image: imageName)
+                    let forumPost = try ForumPost(forum: forum, author: forum.creator, text: data.firstPost.text, images: imageFilenames)
                     // return as ForumData
                     return forumPost.save(on: req.db).flatMapThrowing { (_) in
                     	let creatorHeader = try req.userCache.getHeader(user.requireID())
@@ -698,91 +696,6 @@ struct ForumController: RouteCollection {
         }
     }
     
-    
-    /// `POST /api/v3/forum/post/ID/image`
-    ///
-    /// Sets the `ForumPost` image to the file uploaded in the HTTP body.
-    ///
-    /// - Requires: `ImageUpdloadData` payload in the HTTP body.
-    /// - Parameters:
-    ///   - req: The incoming `Request`, provided automatically.
-    ///   - data: `ImageUploadData` containg the filename and image file.
-    /// - Throws: 403 error if the user does not have permission to modify the post.
-    /// - Returns: `PostData` containing the updated image value.
-    func imageHandler(_ req: Request) throws -> EventLoopFuture<PostData> {
-        let user = try req.auth.require(User.self)
-        let userID = try user.requireID()
-		let data = try req.content.decode(ImageUploadData.self)
-		// get post
-        return ForumPost.findFromParameter(postIDParam, on: req).addModelID().flatMap { (post, postID) in
-            guard post.$author.id == userID || user.accessLevel.hasAccess(.moderator) else {
-				return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "user cannot modify post"))
-            }
-			// get generated filename
-			return self.processImage(data: data.image, forType: .userProfile, on: req).throwingFlatMap { (filename) in
-				// replace existing image
-				if let image = post.image, !image.isEmpty {
-					// create ForumEdit record
-					let forumEdit = try ForumEdit(post: post)
-					// archive thumbnail
-					DispatchQueue.global(qos: .background).async {
-						self.archiveImage(image, on: req)
-					}
-					return forumEdit.save(on: req.db).transform(to: filename)
-				}
-				return req.eventLoop.future(filename)
-			}
-			.flatMap { (filename: String?) in
-				// update post
-				post.image = filename
-				return post.save(on: req.db).flatMap { (_) in
-					// return as PostData. Because a mod can call this to modify an image on another user's post,
-					// we may need to process userLikes and likeCounts.
-					return buildPostData([post], user: user, on: req).map { postDataArray in
-						return postDataArray[0]
-					}
-				}
-			}
-		}
-    }
-    
-    /// `POST /api/v3/forum/post/ID/image/remove`
-    ///
-    /// Removes the image from a `ForumPost`, if there is one. A `ForumEdit` record is created
-    /// if there was an image to remove.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Throws: 403 error if the user does not have permission to modify the post.
-    /// - Returns: `PostData` containing updated image name.
-    func imageRemoveHandler(_ req: Request) throws -> EventLoopFuture<PostData> {
-        let user = try req.auth.require(User.self)
-        let userID = try user.requireID()
-        return ForumPost.findFromParameter(postIDParam, on: req).addModelID().throwingFlatMap { (post, postID) in
-            guard post.$author.id == userID || user.accessLevel.hasAccess(.moderator) else {
-				throw Abort(.forbidden, reason: "user cannot modify post")
-            }
-			if let image = post.image, !image.isEmpty {
-				// create ForumEdit record
-				let forumEdit = try ForumEdit(post: post)
-				// archive thumbnail
-				DispatchQueue.global(qos: .background).async {
-					self.archiveImage(image, on: req)
-				}
-				// Makes a future we don't wait on.
-				_ = forumEdit.save(on: req.db)
-			}
-			// remove image filename from post
-			post.image = ""
-			return post.save(on: req.db).flatMap { (_) in
-				// return as PostData. Because a mod can call this to modify an image on another user's post,
-				// we may need to process userLikes and likeCounts.
-				return buildPostData([post], user: user, on: req).map { postDataArray in
-					return postDataArray[0]
-				}
-			}
-		}
-    }
-    
     /// `GET /api/v3/forum/likes`
     ///
     /// Retrieve all `ForumPost`s the user has liked.
@@ -847,10 +760,9 @@ struct ForumController: RouteCollection {
     ///
     /// Create a new `ForumPost` in the specified `Forum`.
     ///
-    /// - Requires: `PostCreateData` payload in the HTTP body.
+    /// - Requires: `PostContentData` payload in the HTTP body.
     /// - Parameters:
     ///   - req: The incoming `Request`, provided automatically.
-    ///   - data: `PostCreateData` containing the post's text and optional image.
     /// - Throws: 403 error if the forum is locked or user is blocked.
     /// - Returns: `PostData` containing the post's contents and metadata.
     func postCreateHandler(_ req: Request) throws -> EventLoopFuture<Response> {
@@ -860,8 +772,8 @@ struct ForumController: RouteCollection {
         guard user.accessLevel.hasAccess(.verified) else {
             throw Abort(.forbidden, reason: "user cannot post in forum")
         }
-        // see `PostCreateData.validations()`
- 		let data = try ValidatingJSONDecoder().decode(PostCreateData.self, fromBodyOf: req)
+        // see `PostContentData.validations()`
+ 		let newPostData = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
         // get forum
         return Forum.findFromParameter(forumIDParam, on: req).throwingFlatMap { (forum) in
             guard !forum.isLocked else {
@@ -871,10 +783,10 @@ struct ForumController: RouteCollection {
 			guard !cacheUser.getBlocks().contains(forum.$creator.id) else {
 				throw Abort(.forbidden, reason: "user cannot post in forum")
 			}
-			// process image
-			return self.processImage(data: data.imageData, forType: .forumPost, on: req).throwingFlatMap { (filename) in
+			// process images
+			return self.processImages(newPostData.images, usage: .forumPost, on: req).throwingFlatMap { (filenames) in
 				// create post
-				let forumPost = try ForumPost(forum: forum, author: user, text: data.text, image: filename)
+				let forumPost = try ForumPost(forum: forum, author: user, text: newPostData.text, images: filenames)
 				return forumPost.save(on: req.db).flatMapThrowing { (_) in
 					// return as PostData, with 201 status
 					let response = Response(status: .created)
@@ -1044,10 +956,6 @@ struct ForumController: RouteCollection {
     ///
     /// Update the specified `ForumPost`.
     ///
-    /// - Note: This endpoint only changes the `.text` and `.image` *filename* of the post.
-    ///   To change or remove the actual image asoociated with the post, use
-    ///   `POST /api/v3/forum/post/ID/image` or `POST /api/v3/forum/post/ID/image/remove`.
-    ///
     /// - Requires: `PostContentData` payload in the HTTP body.
     /// - Parameters:
     ///   - req: The incoming `Request`, provided automatically.
@@ -1056,30 +964,37 @@ struct ForumController: RouteCollection {
     func postUpateHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
-		// see `PostCreateData.validations()`
-		let data = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
-        return ForumPost.findFromParameter(postIDParam, on: req).addModelID().throwingFlatMap { (post, postID) in
-            // ensure user has write access
-            guard post.$author.id == userID, user.accessLevel.hasAccess(.verified) else {
-					throw Abort(.forbidden, reason: "user cannot modify post")
-            }
-			// update if there are changes
-			let newFilename: String? = data.imageFilename == "" ? post.image : data.imageFilename
-			if post.text != data.text || post.image != newFilename {
-				// stash current contents first
-				let forumEdit = try ForumEdit(post: post)
-				post.text = data.text
-				post.image = newFilename
-				return post.save(on: req.db).and(forumEdit.save(on: req.db)).transform(to: (post, true))
-			}
-			return req.eventLoop.future((post, false))
-		}
-		.flatMap { (post, wasCreated: Bool) in
-			// return updated post as PostData, with 200 or 201 status
-			return buildPostData([post], user: user, on: req).flatMapThrowing { postDataArray in
-				let response = Response(status: wasCreated ? .created : .ok)
-				try response.content.encode(postDataArray[0])
-				return response
+		// see `PostContentData.validations()`
+		let newPostData = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
+        return ForumPost.findFromParameter(postIDParam, on: req).addModelID().flatMap { (post, postID) in
+        	return post.$forum.load(on: req.db).throwingFlatMap {
+				// ensure user has write access
+				guard post.$author.id == userID, user.accessLevel.hasAccess(.verified) else {
+						throw Abort(.forbidden, reason: "user cannot modify post")
+				}
+				guard !post.forum.isLocked else {
+					throw Abort(.forbidden, reason: "forum is locked read-only")
+				}
+				// process images
+				return self.processImages(newPostData.images, usage: .forumPost, on: req).throwingFlatMap { (filenames) in
+					// update if there are changes
+					if post.text != newPostData.text || post.images != filenames {
+						// stash current contents first
+						let forumEdit = try ForumEdit(post: post)
+						post.text = newPostData.text
+						post.images = filenames
+						return post.save(on: req.db).and(forumEdit.save(on: req.db)).transform(to: (post, true))
+					}
+					return req.eventLoop.future((post, false))
+				}
+				.flatMap { (post, wasCreated: Bool) in
+					// return updated post as PostData, with 200 or 201 status
+					return buildPostData([post], user: user, on: req).flatMapThrowing { postDataArray in
+						let response = Response(status: wasCreated ? .created : .ok)
+						try response.content.encode(postDataArray[0])
+						return response
+					}
+				}
 			}
 		}
     }

@@ -9,6 +9,8 @@ enum ImageHandlerType: String {
     case forumPost
     /// The image is for a `Twarrt`
     case twarrt
+    /// The image is for a `FezPost`
+    case fezPost
     /// The image is for a `User`'s profile.
     case userProfile
 }
@@ -51,9 +53,15 @@ extension RouteCollection {
 	/// Currently, this fn returns paths in the form:
 	///		<WorkingDir>/images/<full/thumb>/<xx>/<filename>.jpg
 	/// where "xx" is the first 2 characters of the filename.
-	func getImagePath(for image: String, type: ImageHandlerType, size: ImageSize, on req: Request) throws -> URL {
+	func getImagePath(for image: String, format: String? = nil, usage: ImageHandlerType, size: ImageSize, on req: Request) throws -> URL {
 		let baseImagesDirectory = req.application.baseImagesDirectory ?? 
 				URL(fileURLWithPath: DirectoryConfiguration.detect().workingDirectory).appendingPathComponent("images")
+		
+		// Determine format extension to use. Caller can force a format with the 'format' parameter.
+		var imageFormat: String = format ?? URL(fileURLWithPath: image).pathExtension
+		if !(["bmp", "gif", "png", "tiff", "webp"].contains(imageFormat)) {
+			imageFormat = "jpg"
+		}
 
 		// Strip extension and any other gunk off the filename. Eject if two extensions detected (.php.jpg, for example).
 		let noFiletype = URL(fileURLWithPath: image).deletingPathExtension()
@@ -69,15 +77,33 @@ extension RouteCollection {
 			if !FileManager().fileExists(atPath: subDir.path) {
 				try FileManager().createDirectory(atPath: subDir.path, withIntermediateDirectories: true)
 			}
-			let fileURL = subDir.appendingPathComponent(filename + ".jpg")
+			let fileURL = subDir.appendingPathComponent(filename + "." + imageFormat)
 			return fileURL
 		}
 		let staticBase =  baseImagesDirectory.appendingPathComponent("staticImages")
 		if !FileManager().fileExists(atPath: staticBase.path) {
 			try FileManager().createDirectory(atPath: staticBase.path, withIntermediateDirectories: true)
 		}
-		let fileURL = staticBase.appendingPathComponent(filename + ".jpg")
+		let fileURL = staticBase.appendingPathComponent(filename + "." + imageFormat)
 		return fileURL
+	}
+	
+	func processImages(_ images: [ImageUploadData], usage: ImageHandlerType, on req: Request) -> EventLoopFuture<[String]> {
+		guard images.count <= 4 else {
+			return req.eventLoop.makeFailedFuture(Abort(.badRequest, reason: "Too many image attachments"))
+		}
+		var processingFutures = [EventLoopFuture<String?>]()
+		for image in images {
+			if let imageData = image.image {
+				processingFutures.append(processImage(data: imageData, usage: usage, on: req))
+			}
+			else if let filename = image.filename {
+				processingFutures.append(req.eventLoop.makeSucceededFuture(filename))
+			}
+		}
+		return processingFutures.flatten(on: req.eventLoop).map { filenames in
+			return filenames.compactMap { $0 }
+		}
 	}
 
     /// Takes an optional image in Data form as input, produces full and thumbnail JPEG vrsions,
@@ -89,7 +115,7 @@ extension RouteCollection {
     ///   - forType: The type of model using the image content.
     ///    - req: The incoming `Request`, on which this processing must run.
     /// - Returns: The generated name of the stored file, or nil.
-    func processImage(data: Data?, forType: ImageHandlerType, on req: Request) -> EventLoopFuture<String?> {
+    func processImage(data: Data?, usage: ImageHandlerType, on req: Request) -> EventLoopFuture<String?> {
 		do {
 			guard let data = data else {
 				// Not an error, just nothing to do.
@@ -100,20 +126,47 @@ extension RouteCollection {
 				throw Abort(.badRequest, reason: "Image too large. Size limit is \(maxMegabytes)MB.")
 			}
 			return req.application.threadPool.runIfActive(eventLoop: req.eventLoop) {
-				var image = try Image.init(data: data)
-								
-				// attempt to crop to square if profile image
-				if forType == .userProfile && image.size.height != image.size.width {
-					let size = min(image.size.height, image.size.width)
-					var cropOrigin: Point
-					if image.size.height > image.size.width {
-						cropOrigin = Point(x: 0, y: (image.size.height - size) / 2)
-					} else {
-						cropOrigin = Point(x: (image.size.width - size) / 2, y: 0)
+				let imageTypes: [ImportableFormat] = [.jpg, .png, .gif, .webp, .tiff, .bmp, .wbmp]
+				var foundType: ImportableFormat? = nil
+				var foundImage: Image?
+				for type in imageTypes {
+					foundImage = try? Image(data: data, as: type) 
+					if foundImage != nil{
+						foundType = type
+						break
 					}
-					let square = Rectangle(point: cropOrigin, size: Size(width: size, height: size))
-					if let croppedImage = image.cropped(to: square) {
-						image = croppedImage
+				}
+				guard var image = foundImage, let imageType = foundType else {
+					throw Error.invalidImage(reason: "No matching raster formatter for given image found")
+				}
+				var outputType = imageType
+				
+				// Disallow images with an aspect ratio > 10:1, as they're too often malicious (even if by 'malicious' it means
+				// "ha ha you have to scroll past this"). Also disallow extremely large widths and heights.
+				let sourceSize = image.size
+				if sourceSize.width > 10000 || sourceSize.height > 10000 {
+					throw Error.invalidImage(reason: "Image dimensions too large")
+				}
+				let aspectRatio = Double(sourceSize.width) / Double(sourceSize.height)
+				if aspectRatio < 0.1 || aspectRatio > 10.0 {
+					throw Error.invalidImage(reason: "Invalid image aspect ratio. ")
+				}
+												
+				// attempt to crop to square if profile image
+				if usage == .userProfile {
+					outputType = .jpg
+					if image.size.height != image.size.width {
+						let size = min(image.size.height, image.size.width)
+						var cropOrigin: Point
+						if image.size.height > image.size.width {
+							cropOrigin = Point(x: 0, y: (image.size.height - size) / 2)
+						} else {
+							cropOrigin = Point(x: (image.size.width - size) / 2, y: 0)
+						}
+						let square = Rectangle(point: cropOrigin, size: Size(width: size, height: size))
+						if let croppedImage = image.cropped(to: square) {
+							image = croppedImage
+						}
 					}
 				}
 				
@@ -121,6 +174,7 @@ extension RouteCollection {
 				// A 4:3 portrait photo at 1536x2048 would downscale slightly to 1242x1656. 2K should therefore
 				// be a reasonable size limit.
 				if image.size.height > 2048 || image.size.width > 2048 {
+					outputType = .jpg
 					let resizeAmt: Double = 2048.0 / Double(max(image.size.height, image.size.width))
 					if let resizedImage = image.resizedTo(width: Int(Double(image.size.width) * resizeAmt), 
 							height: Int(Double(image.size.height) * resizeAmt)) {
@@ -130,15 +184,19 @@ extension RouteCollection {
 
 				// ensure directories exist
 				let name = UUID().uuidString
-				let fullPath = try self.getImagePath(for: name, type: forType, size: .full, on: req)
-				let thumbPath = try self.getImagePath(for: name, type: forType, size: .thumbnail, on: req)
+				let outputExtension = ExportableFormat(outputType).fileExtension()
+				let fullPath = try self.getImagePath(for: name, format: outputExtension, usage: usage, size: .full, on: req)
+				let thumbPath = try self.getImagePath(for: name, format: outputExtension, usage: usage, size: .thumbnail, on: req)
 			
-				// save full image as jpg
-				image.write(to: fullPath, quality: 90)
+				// save full image. If we didn't have to modify the input image, save the original in its original format.
+				// Jpeg images always get exported, to ensure the Q value isn't needlessly high.
+				let imageData = try outputType == .jpg ? image.export(as: .jpg(quality: 90)) : data
+				try imageData.write(to: fullPath)
 				
 				// save thumbnail
 				if let thumbnail = image.resizedTo(height: 100) {
-					thumbnail.write(to: thumbPath, quality: 90)
+					let thumbnailData = try thumbnail.export(as: ExportableFormat(outputType))
+					try thumbnailData.write(to: thumbPath)
 				}
 				return fullPath.lastPathComponent
 			}
@@ -161,12 +219,12 @@ extension RouteCollection {
     func archiveImage(_ image: String, on req: Request) -> Void {
         do {
 			// remove existing full image
-			let fullURL = try self.getImagePath(for: image, type: .twarrt , size: .full, on: req)
+			let fullURL = try self.getImagePath(for: image, usage: .twarrt , size: .full, on: req)
 			try FileManager().removeItem(at: fullURL)
 
             // move thumbnail
-			let thumbnailURL = try self.getImagePath(for: image, type: .twarrt , size: .thumbnail, on: req)
-			let archiveURL = try self.getImagePath(for: image, type: .twarrt , size: .archive, on: req)
+			let thumbnailURL = try self.getImagePath(for: image, usage: .twarrt , size: .thumbnail, on: req)
+			let archiveURL = try self.getImagePath(for: image, usage: .twarrt , size: .archive, on: req)
             try FileManager().moveItem(at: thumbnailURL, to: archiveURL)
 
         } catch let error {
@@ -174,4 +232,30 @@ extension RouteCollection {
             print("could not archive image: \(error)")
         }
     }
+}
+
+extension ExportableFormat {
+	init(_ imp: ImportableFormat) {
+		switch imp {
+//		case .bmp: self = .bmp(compression: true)
+		case .gif: self = .gif
+		case .jpg: self = .jpg(quality: 90)
+		case .png: self = .png
+		case .tiff: self = .tiff
+		case .webp: self = .webp
+		default: self = .jpg(quality: 90)
+		}
+	}
+
+	func fileExtension() -> String {
+		switch self {
+		case .bmp: return "bmp"
+		case .gif: return "gif"
+		case .jpg: return "jpg"
+		case .png: return "png"
+		case .tiff: return "tiff"
+		case .wbmp: return "wbmp"
+		case .webp: return "webp"
+		}
+	}
 }
