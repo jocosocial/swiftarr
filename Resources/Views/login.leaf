@@ -23,13 +23,15 @@
 			</div>
 		#else:			
 			<div class="container-fluid mt-3">
+				<div class="row">
+					<h5>Welcome to Twit-arr! Please log in.</h5>
+				</div>
 				<form action="/login" method="POST">
-				  <div class="mb-3 col-6">
+				  <div class="mb-3 col-7">
 					<label for="username" class="form-label">Username</label>
-					<input type="text" class="form-control" id="username" name="username" ""aria-describedby="usernameHelp">
-					<div id="usernameHelp" class="form-text">We'll never share your email with anyone else.</div>
+					<input type="text" class="form-control" id="username" name="username">
 				  </div>
-				  <div class="mb-3 col-6">
+				  <div class="mb-3 col-7">
 					<label for="password" class="form-label">Password</label>
 					<input type="password" class="form-control" id="password" name="password">
 				  </div>
@@ -37,9 +39,9 @@
 				</form>
 			</div>
 			
-			#if(loginError):
+			#if(error):
 			<div class="alert alert-danger mt-3" role="alert">
-				<b>Error:</b> #(loginError)
+				<b>Error:</b> #(error.reason)
 			</div>
 			#endif
 			<div class="container-fluid mt-3">
@@ -47,10 +49,10 @@
 					<a class="nav-link" href="/createAccount">I want to create an account</a>
 				</div>
 				<div class="row nav-item">
-					<a class="nav-link" href="/recoverPassword">I forgot my password!</a>
+					<a class="nav-link" href="/resetPassword">I forgot my password!</a>
 				</div>
 				<div class="row nav-item">
-					<a class="nav-link" href="/codeofconduct">I want to read the Code of Conduct and Twit-arr Rules!</a>
+					<a class="nav-link" href="/codeOfConduct">I want to read the Code of Conduct and Twit-arr Rules!</a>
 				</div>
 			</div>
 		#endif

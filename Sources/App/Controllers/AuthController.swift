@@ -85,10 +85,10 @@ struct AuthController: RouteCollection {
     /// information internally, that doesn't necessarily help if the user is setting up another
     /// client or on another device, and is even less likely to be of use for logging into the
     /// web front end.
-    ///
-    /// The intended API client flow here is (a) use this endpoint to obtain an `HTTP Bearer
-    /// Authentication` token upon success, then (b) use the returned token to immediately
-    /// `POST` to the `/api/v3/user/password` endpoint for password change/reset.
+	/// 
+	/// Upon successful authentication, the user's password is set to the `newPassword` value in the provided
+	/// `UserRecoveryData`, the user is logged in, and the users' login `TokenStringData` is returned
+	/// (the same struct returned by `/api/v3/login`).
     ///
     /// - Note: The `User.verification` registration code can only be used to recover *once*.
     ///   This limitation is to prevent a possible race condition in which a malicious
@@ -102,7 +102,6 @@ struct AuthController: RouteCollection {
     /// - Requires: `UserRecoveryData` payload in the HTTP body.
     /// - Parameters:
     ///   - req: The incoming `Request`, provided automatically.
-    ///   - data: `UserRecoveryData` struct containing the username and recoveryKey
     ///   pair to attempt.
     /// - Throws: 400 error if the recovery fails. 403 error if the maximum number of successive
     ///   failed recovery attempts has been reached. A 5xx response should be reported as a
@@ -117,7 +116,12 @@ struct AuthController: RouteCollection {
             .filter(\.$username == data.username)
             .first()
             .unwrap(or: Abort(.badRequest, reason: "username \"\(data.username)\" not found"))
-			.flatMapThrowing { (user) -> User in
+            .addModelID()
+			.throwingFlatMap { (user, userID) in
+				// no login for punks
+				guard user.accessLevel != .banned else {
+					throw Abort(.forbidden, reason: "nope")
+				}
                 // abort if account is seeing potential brute-force attack
                 guard user.recoveryAttempts < 5 else {
                     throw Abort(.forbidden, reason: "please see a Twit-arr Team member for password recovery")
@@ -163,35 +167,28 @@ struct AuthController: RouteCollection {
                     throw Abort(.badRequest, reason: "no match for supplied recovery key")
                 }
                 
-                // user appears valid, zero out attempt tracking
+                // user appears valid, zero out attempt tracking and save new password
                 user.recoveryAttempts = 0
+                user.password = try Bcrypt.hash(data.newPassword)
                 _ = user.save(on: req.db)
                 
-                return user
-			}
-			.addModelID()
-			.flatMap { (user, userID) in
                 // return existing token if any
                 return Token.query(on: req.db)
                     .filter(\.$user.$id == userID)
                     .first()
-                    .flatMap { (existingToken) in
-                    	do {
-							if let existing = existingToken {
-								return req.eventLoop.future(TokenStringData(userID: userID, token: existing))
-							} else {
-								// otherwise generate and return new token
-								let token = try Token.generate(for: user)
-								return token.save(on: req.db).map { _ in
-									return TokenStringData(userID: userID, token: token)
-								}
+                    .throwingFlatMap { (existingToken) in
+						if let existing = existingToken {
+							return req.eventLoop.future(TokenStringData(userID: userID, token: existing))
+						} 
+						else {
+							// otherwise generate and return new token
+							let token = try Token.generate(for: user)
+							return token.save(on: req.db).map { _ in
+								return TokenStringData(userID: userID, token: token)
 							}
 						}
-						catch {
-							return req.eventLoop.makeFailedFuture(error)
-						}
-					}
-			}
+				}
+		}
     }
     
     // MARK: - basicAuthGroup Handlers (not logged in)

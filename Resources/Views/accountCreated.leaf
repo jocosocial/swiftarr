@@ -1,0 +1,64 @@
+#extend("trunk"):
+    #export("body"):
+		<div class="container-fluid mt-3">
+			<div class="row">
+				<div class="col">
+					<h5>Account Created. Welcome!</h5>
+					<p>Your Account Recivery Key is shown below. If for any reason you lose access to your account and can't recover your password, you can use the Recovery Key (once!) to regain access to your account.</p>
+					<p>This key is only shown to you <b>once</b>, right after you create your account, so write the key down somwehere or screenshot this page before proceeding.</p>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col">
+					<div class="alert alert-success mx-3" role="alert">
+						Your recovery key is: <b>"#(recoveryKey)"</b>
+					</div>
+				</div>
+			</div>
+		</div>
+			
+		#if(trunk.userIsLoggedIn):
+			<div class="container-fluid mt-3">
+				#if(trunk.metaRedirectURL):
+					<div class="row">
+						<div class="col col-auto">
+							<p>This button should take you to the page you were trying to see before we made you create an account. Thanks for joining!</p>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col">
+							<a href="#(trunk.metaRedirectURL)" class="btn btn-primary btn-lg" role="button">Finally!</a>
+						</div>
+					</div>
+				#else:
+					<div class="row">
+						<div class="col">
+							<p>Thanks for joining! You're all logged in with your new account. Hit this button when you're ready to continue.</p>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col col-auto">
+							<a href="/tweets" class="btn btn-primary btn-lg" role="button">I'm ready</a>
+						</div>
+					</div>
+				#endif
+			</div>
+		#else:
+			<div class="container-fluid mt-3">
+				<div class="row">
+					<p>We've created your account, but you still need to log in. Tap the button below when you're ready to continue.</p>
+				</div>
+				<div class="row">
+					<div class="col col-auto">
+						<a href="/login" class="btn btn-primary btn-lg" role="button">I'm ready</a>
+					</div>
+				</div>
+			</div>
+		#endif
+		<div class="container-fluid mt-3">
+			<div class="row nav-item">
+				<a class="nav-link" href="/codeOfConduct">I want to read the Code of Conduct and Twit-arr Rules!</a>
+			</div>
+		</div>
+    #endexport
+#endextend

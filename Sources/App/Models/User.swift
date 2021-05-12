@@ -45,7 +45,7 @@ final class User: Model, Content {
     @Field(key: "recoveryKey") var recoveryKey: String
     
     /// The registration code (or other identifier) used to activate the user
-    /// for full read-write access.
+    /// for full read-write access. Prefixed with "*" after being used for password recovery.
     @OptionalField(key: "verification") var verification: String?
     
     /// The user's `UserAccessLevel`, set to `.unverified` at time of creation,

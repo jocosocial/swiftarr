@@ -756,6 +756,11 @@ extension SeaMonkey {
 }
 
 /// Used to return a token string for use in HTTP Bearer Authentication.
+/// 
+/// Clients can use the `userID` field  to validate the user that logged in matches the user they *thiought* was logging in.
+/// This guards against a situation where one user changes their username to the previous username value
+/// of another user. A client using `/client/user/updates/since` could end up associating a login with the wrong
+/// `User` because they were matching on `username` instead of `userID`. 
 ///
 /// Returned by:
 /// * `POST /api/v3/auth/login`
@@ -763,7 +768,7 @@ extension SeaMonkey {
 ///
 /// See `AuthController.loginHandler(_:)` and `AuthController.recoveryHandler(_:data:)`.
 struct TokenStringData: Content {
-    /// The user ID of the newly logged in user.
+    /// The user ID of the newly logged in user. 
     var userID: UUID
     /// The token string.
     let token: String
@@ -908,6 +913,7 @@ extension UserCreateData: RCFValidatable {
     	tester.validate(username.count >= 2, forKey: .username, or: "username has a 2 character minimum")
     	tester.validate(username.count <= 50, forKey: .username, or: "username has a 50 character limit")
     	tester.validate(password.count >= 6, forKey: .password, or: "password has a 6 character minimum")
+    	tester.validate(password.count <= 50, forKey: .password, or: "password has a 50 character limit")
     	var cs = CharacterSet()
     	cs.formUnion(.alphanumerics)
     	cs.formUnion(.usernameSeparators)
@@ -916,10 +922,10 @@ extension UserCreateData: RCFValidatable {
     	if let firstChar = username.first, !(firstChar.isLetter || firstChar.isNumber) {
     		tester.addValidationError(forKey: .username, errorString: "username must start with a letter or number")
 		}
-		// Verification code can be nil, but if it isn't, it must be a properly formed code.
+		// Registration code can be nil, but if it isn't, it must be a properly formed code.
 		if let normalizedCode = verification?.lowercased().replacingOccurrences(of: " ", with: ""), normalizedCode.count > 0 {
 			if normalizedCode.rangeOfCharacter(from: CharacterSet.alphanumerics.inverted) != nil || normalizedCode.count != 6  {
-    			tester.addValidationError(forKey: .verification, errorString: "Malformed verification code. Verification code " +
+    			tester.addValidationError(forKey: .verification, errorString: "Malformed registration code. Registration code " +
 						"must be 6 alphanumeric letters; spaces optional")
 			}
 		}
@@ -956,20 +962,23 @@ extension UserHeader {
 			displayName: "BlockedUser", userImage: "") }
 }
 
-/// Used to change a user's password.
+/// Used to change a user's password. Even when already logged in, users need to provide their current password to set a new password.
 ///
 /// Required by: `POST /api/v3/user/password`
 ///
 /// See `UserController.passwordHandler(_:data:)`.
 struct UserPasswordData: Content {
+    /// The user's current password.
+    var currentPassword: String
     /// The user's desired new password.
-    var password: String
+    var newPassword: String
 }
 
 extension UserPasswordData: RCFValidatable {
     func runValidations(using decoder: ValidatingDecoder) throws {
     	let tester = try decoder.validator(keyedBy: CodingKeys.self)
-    	tester.validate(password.count >= 6, forKey: .password, or: "password has a 6 character minimum")
+    	tester.validate(newPassword.count >= 6, forKey: .newPassword, or: "password has a 6 character minimum")
+    	tester.validate(newPassword.count <= 50, forKey: .newPassword, or: "password has a 50 character limit")
 	}
 }
 
@@ -1031,6 +1040,8 @@ struct UserRecoveryData: Content {
     var username: String
     /// The string to use – any one of: password / registration key / recovery key.
     var recoveryKey: String
+    /// The new password to set for the account.
+    var newPassword: String
 }
 
 extension UserRecoveryData: RCFValidatable {
@@ -1047,6 +1058,8 @@ extension UserRecoveryData: RCFValidatable {
     	if let firstChar = username.first, !(firstChar.isLetter || firstChar.isNumber) {
     		tester.addValidationError(forKey: .username, errorString: "username must start with a letter or number")
 		}
+    	tester.validate(newPassword.count >= 6, forKey: .newPassword, or: "password has a 6 character minimum length")
+    	tester.validate(newPassword.count <= 50, forKey: .newPassword, or: "password has a 50 character limit")
 	}
 }
 

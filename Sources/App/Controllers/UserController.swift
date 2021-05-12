@@ -238,6 +238,7 @@ struct UserController: RouteCollection {
 						result = database.eventLoop.future(nil)
 					}
 					return result.throwingFlatMap { (regCode) in
+						// normalizedCode is from request body, regCode is from RegistrationCode table lookup
 						if normalizedCode != nil {
 							guard let registrationCode = regCode else {
 								throw Abort(.badRequest, reason: "registration code not found")
@@ -1266,8 +1267,12 @@ struct UserController: RouteCollection {
         }
         // see `UserPasswordData.validations()`
 		let data = try ValidatingJSONDecoder().decode(UserPasswordData.self, fromBodyOf: req)
+		guard try Bcrypt.verify(data.currentPassword, created: user.password) else {
+			throw Abort(.badRequest, reason: "Existing password doesn't match; cannot set new password")
+		}
+		
         // encrypt, then update user
-        let passwordHash = try Bcrypt.hash(data.password)
+        let passwordHash = try Bcrypt.hash(data.newPassword)
         user.password = passwordHash
         return user.save(on: req.db).transform(to: .created)
     }
