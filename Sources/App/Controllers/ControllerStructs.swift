@@ -481,6 +481,21 @@ struct ImageUploadData: Content {
     var image: Data?
 }
 
+extension ImageUploadData {
+	/// Failable initializer; either filename or image must be non-nil and non-empty.
+	init?(_ filename: String?, _ image: Data?) {
+		if let fn = filename, fn.count > 0 {
+			self.filename = fn
+		}
+		if let img = image, img.count > 0 {
+			self.image = img
+		}
+		if self.filename == nil && self.image == nil {
+			return nil
+		}
+	}
+}
+
 /// Used to obtain the user's current list of keywords for muting public content.
 ///
 /// Returned by:

@@ -1,0 +1,15 @@
+.img-for-upload {
+	max-width: 278px;
+	max-height: 278px; 
+	object-fit: contain;
+	border: 1px solid #dee2e6;
+	margin: 0.25rem;
+}
+
+.image-upload-input {
+	display: none;
+}
+
+.dnone {
+  display: none;
+}

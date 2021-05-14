@@ -35,8 +35,12 @@ struct TrunkContext : Encodable {
 // Leaf data used by the messagePostForm.
 struct MessagePostFormContent: Encodable {
 	var messageText: String
-	var photoFilename: String?
+	var photoFilenames: [String] 			// Must have 4 values to make Leaf templating work. 
 	
+	init() {
+		messageText = ""
+		photoFilenames = ["", "", "", ""]
+	}
 }
 
 
@@ -163,6 +167,7 @@ struct SiteController: RouteCollection {
         privateRoutes.post("tweets", ":twarrt_id", "love", use: tweetLoveActionHandler)
         privateRoutes.post("tweets", ":twarrt_id", "unreact", use: tweetUnreactActionHandler)
         privateRoutes.get("tweets", "edit", ":twarrt_id", use: tweetEditPageHandler)
+        privateRoutes.post("tweets", "create", use: tweetCreatePostHandler)
 	}
 	
     func rootPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
@@ -424,6 +429,7 @@ struct SiteController: RouteCollection {
  			let tweets = try response.content.decode([TwarrtData].self)
      		struct TweetPageContext : Encodable {
 				var trunk: TrunkContext
+				var post: MessagePostFormContent
     			var tweets: [TwarrtData]
     			var filterDesc: String
     			var earlierPostsUrl: String?
@@ -431,6 +437,7 @@ struct SiteController: RouteCollection {
     			
     			init(_ req: Request, tweets: [TwarrtData]) throws {
     				trunk = .init(req, title: "Tweets")
+    				post = .init()
     				self.tweets = tweets
     				filterDesc = "Tweets"
     				if tweets.count > 0 {
@@ -474,6 +481,40 @@ struct SiteController: RouteCollection {
  			let tweet = try response.content.decode(TwarrtData.self)
     		return tweet
     	}
+    }
+    
+    func tweetCreatePostHandler(_ req: Request) throws -> EventLoopFuture<Response> {
+    	struct PostStruct : Codable {
+    		let postText: String
+    		let localPhoto1: Data?
+    		let serverPhoto1: String?
+    		let localPhoto2: Data?
+    		let serverPhoto2: String?
+    		let localPhoto3: Data?
+    		let serverPhoto3: String?
+    		let localPhoto4: Data?
+    		let serverPhoto4: String?
+    	}
+		let postStruct = try req.content.decode(PostStruct.self)
+		let images: [ImageUploadData] = [ImageUploadData(postStruct.serverPhoto1, postStruct.localPhoto1),
+				ImageUploadData(postStruct.serverPhoto2, postStruct.localPhoto2),
+				ImageUploadData(postStruct.serverPhoto3, postStruct.localPhoto3),
+				ImageUploadData(postStruct.serverPhoto4, postStruct.localPhoto4)].compactMap { $0 }
+		let postContent = PostContentData(text: postStruct.postText, images: images)
+		return apiQuery(req, endpoint: "/twitarr/create", method: .POST, beforeSend: { req throws in
+			try req.content.encode(postContent)
+		}).flatMapThrowing { response in
+			if response.status.code < 300 {
+//				let tweet = try response.content.decode(TwarrtData.self)
+//				return req.redirect(to: "/tweets")
+				return Response(status: .created)
+			}
+			else {
+				// This is that thing where we decode an error response from the API and then make it into an exception.
+				let error = try response.content.decode(ErrorResponse.self)
+				throw error
+			}
+		}
     }
     
     func tweetEditPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
@@ -578,3 +619,5 @@ struct SiteController: RouteCollection {
 	
 
 */
+
+

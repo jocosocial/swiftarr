@@ -6,7 +6,7 @@ import Vapor
 /// Field-specific validation errors are keyed by the path to the field that caused the error. Validation errors that aren't specific to an input field
 /// (e.g. an error indicating that one of two fields may be empty, but not both) are all concatenated and placed into a `general` key in `fieldErrors`.
 /// This means lthat all errors are both in `error` (concatenated into a single string), and also in `fieldErrors` (split into fields). 
-struct ErrorResponse: Codable {
+struct ErrorResponse: Codable, Error {
 	/// Always `true` to indicate this is a non-typical JSON response.
 	var error: Bool
 
@@ -44,6 +44,12 @@ public final class SwiftarrErrorMiddleware: Middleware {
                 reason = abort.reason
                 status = abort.status
                 headers = abort.headers
+			case let resp as ErrorResponse:
+				// A call that returns an ErrorResponse on failure could get parsed and then thrown by a higher level API call
+				reason = resp.reason
+				status = .badRequest
+				headers = [:]
+				fieldErrors = resp.fieldErrors
             default:
                 // if not release mode, and error is debuggable, provide debug info
                 // otherwise, deliver a generic 500 to avoid exposing any sensitive error info
