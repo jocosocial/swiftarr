@@ -3,8 +3,11 @@ import Vapor
 /// Register your application's routes here.
 public func routes(_ app: Application) throws {
     
-	let siteController = SiteController(app)
-	try app.register(collection: siteController)
+	let siteLoginController = SiteLoginController()
+	try siteLoginController.registerRoutes(app)
+	
+	let siteController = SiteController()
+	try siteController.registerRoutes(app)
 
 	let adminController = AdminController()
 	try app.register(collection: adminController)

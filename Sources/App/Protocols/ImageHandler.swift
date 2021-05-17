@@ -88,6 +88,16 @@ extension RouteCollection {
 		return fileURL
 	}
 	
+    /// Takes an an array of `ImageUploadData` as input. Some of the input elements may be new image Data that needs procssing;
+	/// some of the input elements may refer to already-processed images in our image store. Once all the ImageUploadData elements are processed,
+	/// returns a `[String]` containing the filenames where al the images are stored. The use case here is for editing existing content with
+	/// image attachments in a way that prevents re-uploading of photos that are already on the server.
+    ///
+    /// - Parameters:
+    ///   - images: The  images in `ImageUploadData` format. 
+    ///   - usage: The type of model using the image content.
+    ///    - req: The incoming `Request`, on which this processing must run.
+    /// - Returns: The generated names of the stored files.
 	func processImages(_ images: [ImageUploadData], usage: ImageHandlerType, on req: Request) -> EventLoopFuture<[String]> {
 		guard images.count <= 4 else {
 			return req.eventLoop.makeFailedFuture(Abort(.badRequest, reason: "Too many image attachments"))
@@ -112,7 +122,7 @@ extension RouteCollection {
     ///
     /// - Parameters:
     ///   - data: The uploaded image in `Data` format.
-    ///   - forType: The type of model using the image content.
+    ///   - usage: The type of model using the image content.
     ///    - req: The incoming `Request`, on which this processing must run.
     /// - Returns: The generated name of the stored file, or nil.
     func processImage(data: Data?, usage: ImageHandlerType, on req: Request) -> EventLoopFuture<String?> {

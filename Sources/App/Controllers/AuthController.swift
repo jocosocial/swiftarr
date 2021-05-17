@@ -178,13 +178,13 @@ struct AuthController: RouteCollection {
                     .first()
                     .throwingFlatMap { (existingToken) in
 						if let existing = existingToken {
-							return req.eventLoop.future(TokenStringData(userID: userID, token: existing))
+							return try req.eventLoop.future(TokenStringData(user: user, token: existing))
 						} 
 						else {
 							// otherwise generate and return new token
 							let token = try Token.generate(for: user)
-							return token.save(on: req.db).map { _ in
-								return TokenStringData(userID: userID, token: token)
+							return token.save(on: req.db).flatMapThrowing { _ in
+								return try TokenStringData(user: user, token: token)
 							}
 						}
 				}
@@ -250,12 +250,12 @@ struct AuthController: RouteCollection {
             .first()
             .throwingFlatMap { token in
 				if let token = token {
-					return req.eventLoop.future(TokenStringData(userID: userID, token: token))
+					return try req.eventLoop.future(TokenStringData(user: user, token: token))
 				} else {
 					// otherwise generate and return new token
 					let token = try Token.generate(for: user)
-					return token.save(on: req.db).map { _ in
-						return TokenStringData(userID: userID, token: token)
+					return token.save(on: req.db).flatMapThrowing { _ in
+						return try TokenStringData(user: user, token: token)
 					}
 				}
 			}

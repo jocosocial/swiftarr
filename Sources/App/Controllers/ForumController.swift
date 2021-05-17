@@ -232,6 +232,7 @@ struct ForumController: RouteCollection {
     /// - Returns: `[PostData]` containing all matching posts in the forum.
     func forumSearchHandler(_ req: Request) throws -> EventLoopFuture<[PostData]> {
         let user = try req.auth.require(User.self)
+        let cacheUser = try req.userCache.getUser(user)
         guard var search = req.parameters.get("search_string") else {
             throw Abort(.badRequest, reason: "Missing search parameter.")
         }
@@ -240,19 +241,17 @@ struct ForumController: RouteCollection {
 		search = search.replacingOccurrences(of: "%", with: "\\%")
 		search = search.trimmingCharacters(in: .whitespacesAndNewlines)
 		// get forum and cached blocks
-        return Forum.findFromParameter(forumIDParam, on: req)
-        	.and(ForumPost.getCachedFilters(for: user, on: req))
-        	.flatMap { (forum, filters) in
-                // get posts
-                return forum.$posts.query(on: req.db)
-                    .filter(\.$author.$id !~ filters.blocked)
-                    .filter(\.$author.$id !~ filters.muted)
-                    .filter(\.$text, .custom("ILIKE"), "%\(search)%")
-                    .all()
-                    .flatMap { (posts) in
-						return buildPostData(posts, user: user, on: req, mutewords: filters.mutewords)
-                	}
-            }
+        return Forum.findFromParameter(forumIDParam, on: req).flatMap { forum in
+			// get posts
+			return forum.$posts.query(on: req.db)
+				.filter(\.$author.$id !~ cacheUser.getBlocks())
+				.filter(\.$author.$id !~ cacheUser.getMutes())
+				.filter(\.$text, .custom("ILIKE"), "%\(search)%")
+				.all()
+				.flatMap { (posts) in
+					return buildPostData(posts, user: user, on: req, mutewords: cacheUser.mutewords)
+				}
+		}
     }
     
     /// `GET /api/v3/forum/post/ID/forum`
@@ -340,6 +339,7 @@ struct ForumController: RouteCollection {
     /// - Returns: `[PostData]` containing all matching posts.
     func postHashtagHandler(_ req: Request) throws -> EventLoopFuture<[PostData]> {
         let user = try req.auth.require(User.self)
+		let cachedUser = try req.userCache.getUser(user)
         guard var hashtag = req.parameters.get("hashtag_string") else {
             throw Abort(.badRequest, reason: "Missing hashtag parameter.")
         }
@@ -351,18 +351,15 @@ struct ForumController: RouteCollection {
         hashtag = hashtag.replacingOccurrences(of: "_", with: "\\_")
         hashtag = hashtag.replacingOccurrences(of: "%", with: "\\%")
         hashtag = hashtag.trimmingCharacters(in: .whitespacesAndNewlines)
-        // get cached blocks
-        return ForumPost.getCachedFilters(for: user, on: req).flatMap { (filters) in
-            // get posts
-            return ForumPost.query(on: req.db)
-                .filter(\.$author.$id !~ filters.blocked)
-                .filter(\.$author.$id !~ filters.muted)
-                .filter(\.$text, .custom("ILIKE"), "%\(hashtag) %")
-                .all()
-                .flatMap { (posts) in
- 					return buildPostData(posts, user: user, on: req, mutewords: filters.mutewords)
-            	}
-        }
+		// get posts
+		return ForumPost.query(on: req.db)
+			.filter(\.$author.$id !~ cachedUser.getBlocks())
+			.filter(\.$author.$id !~ cachedUser.getMutes())
+			.filter(\.$text, .custom("ILIKE"), "%\(hashtag) %")
+			.all()
+			.flatMap { (posts) in
+				return buildPostData(posts, user: user, on: req, mutewords: cachedUser.mutewords)
+			}
     }
     
     /// `GET /api/v3/forum/post/search/STRING`
@@ -373,6 +370,7 @@ struct ForumController: RouteCollection {
     /// - Returns: `[PostData]` containing all matching posts.
     func postSearchHandler(_ req: Request) throws -> EventLoopFuture<[PostData]> {
         let user = try req.auth.require(User.self)
+		let cachedUser = try req.userCache.getUser(user)
         guard var search = req.parameters.get("search_string") else {
             throw Abort(.badRequest, reason: "Missing search parameter.")
         }
@@ -380,18 +378,15 @@ struct ForumController: RouteCollection {
         search = search.replacingOccurrences(of: "_", with: "\\_")
         search = search.replacingOccurrences(of: "%", with: "\\%")
         search = search.trimmingCharacters(in: .whitespacesAndNewlines)
-        // get cached blocks
-        return ForumPost.getCachedFilters(for: user, on: req).flatMap {  (filters) in
-            // get posts
-            return ForumPost.query(on: req.db)
-                .filter(\.$author.$id !~ filters.blocked)
-                .filter(\.$author.$id !~ filters.muted)
-                .filter(\.$text, .custom("ILIKE"), "%\(search)%")
-                .all()
-                .flatMap { (posts) in
- 					return buildPostData(posts, user: user, on: req, mutewords: filters.mutewords)
-            	}
-        }
+		// get posts
+		return ForumPost.query(on: req.db)
+			.filter(\.$author.$id !~ cachedUser.getBlocks())
+			.filter(\.$author.$id !~ cachedUser.getMutes())
+			.filter(\.$text, .custom("ILIKE"), "%\(search)%")
+			.all()
+			.flatMap { (posts) in
+				return buildPostData(posts, user: user, on: req, mutewords: cachedUser.mutewords)
+			}
     }
     
     // MARK: - tokenAuthGroup Handlers (logged in)
@@ -978,10 +973,11 @@ struct ForumController: RouteCollection {
 				// process images
 				return self.processImages(newPostData.images, usage: .forumPost, on: req).throwingFlatMap { (filenames) in
 					// update if there are changes
-					if post.text != newPostData.text || post.images != filenames {
+					let normalizedText = newPostData.text.replacingOccurrences(of: "\r\n", with: "\r")
+					if post.text != normalizedText || post.images != filenames {
 						// stash current contents first
 						let forumEdit = try ForumEdit(post: post)
-						post.text = newPostData.text
+						post.text = normalizedText
 						post.images = filenames
 						return post.save(on: req.db).and(forumEdit.save(on: req.db)).transform(to: (post, true))
 					}

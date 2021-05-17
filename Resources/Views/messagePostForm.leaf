@@ -1,29 +1,43 @@
 <ul class="container-md mx-0 px-0 list-group">
 	<li class="list-group-item bg-transparent mb-3">				
-		<form class="ajax" action="/tweets/create" enctype="multipart/form-data" method="POST">
+		<form class="ajax" action="#(post.formAction)" enctype="multipart/form-data" method="POST" postSuccessURL="#(post.postSuccessURL)">
 			<div class="container-fluid">
-				<div class="row mb-2">
-					<textarea class="form-control" maxlength="2000" rows="6" name="postText">#(post.messageText)</textarea>
+				<div class="row mb-2"> 
+					<textarea class="form-control" maxlength="2000" rows="6" name="postText">#elem(post.messageText)</textarea>
 				</div>
 				<div class="row mb-2">
 					Add up to 4 photos
 				</div>
 				<div class="row mb-2">
 					#for(fn in post.photoFilenames):
-						<div class="card px-0" style="width: 288px;">
+						<div class="card px-0 col-6 col-md-4 col-lg-3">
 							<h5 class="card-header">Photo #(index + 1)</h5>
-							<img class="card-img-top img-for-upload twitarr-image-#(index + 1)" src="#(fn)" alt="" #if(fn == ""):style="display: none"#endif>
-							<p class="text-center no-image-marker" #if(fn != ""):style="display: none"#endif><i>no photo selected</i></p>
-							<div class="card-body">
-								<label class="btn btn-primary col-12 form-label">
-									<input class="image-upload-input" type="file" accept="image/png, image/jpeg" name="localPhoto#(index + 1)">
-									Choose Photo…
-								</label>
-								<input type="hidden" value="#(fn)" name="serverPhoto#(index + 1)">
-								#if(index > 0):
-									<button type="button" class="btn btn-primary twitarr-image-swap">Move to Slot #(index)</button>
-								#endif
-								<button type="button" class="btn btn-primary twitarr-image-remove">Remove</button>
+							<div class="m-1 border img-for-upload-container">
+								<div class="ratio ratio-1x1">
+									<img class="img-for-upload" alt="">
+								</div>
+							</div>
+							<p class="text-center no-image-marker"><i>no photo selected</i></p>
+							<div class="container-fluid p-1">
+								<div class="row">
+									<div class="col">
+										<label class="btn btn-primary col-12 form-label">
+											<input class="image-upload-input" type="file" accept="image/png, image/jpeg" name="localPhoto#(index + 1)">
+											Choose Photo
+										</label>
+										<input type="hidden" value="#elem(fn)" name="serverPhoto#(index + 1)">
+									</div>
+								</div>
+								<div class="row justify-content-between m-0">
+									#if(index > 0):
+										<div class="col col-auto p-0 m-0">
+											<button type="button" class="btn btn-primary btn-sm twitarr-image-swap"><< Swap</button>
+										</div>
+									#endif
+									<div class="col col-auto p-0 m-0">
+										<button type="button" class="btn btn-primary btn-sm twitarr-image-remove">Remove</button>
+									</div>
+								</div>
 							</div>
 						</div>
 					#endfor
@@ -32,23 +46,22 @@
 					<div class="col gx-0">
 						<small>Please remember to abide by the <a href="/codeOfConduct">Code of Conduct</a></small>
 					</div>
-					<div class="col col-auto">
-						<button type="button" class="btn btn-primary">Cancel</button>
-					</div>
 					<div class="col col-auto gx-0">
 						<button type="submit" class="btn btn-primary">Post</button>
 					</div>
 				</div>
-				<div class="row justify-content-end mt-2">
-					<div class="col col-auto form-check">
-						<input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
-						<label class="form-check-label small" for="flexCheckDefault">Post as TwitarrTeam</label>
+				#if(trunk.userIsMod):
+					<div class="row justify-content-end mt-2">
+						<div class="col col-auto form-check">
+							<input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
+							<label class="form-check-label small" for="flexCheckDefault">Post as TwitarrTeam</label>
+						</div>
+						<div class="col col-auto form-check gx-0">
+							<input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
+							<label class="form-check-label small" for="flexCheckDefault">Post as Moderator</label>
+						</div>
 					</div>
-					<div class="col col-auto form-check gx-0">
-						<input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
-						<label class="form-check-label small" for="flexCheckDefault">Post as Moderator</label>
-					</div>
-				</div>
+				#endif
 				<div class="alert alert-danger mt-3 dnone" role="alert">
 				</div>				
 				</div>

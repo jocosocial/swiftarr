@@ -468,7 +468,9 @@ extension ForumListData {
 }
 
 /// Used to upload an image file or refer to an already-uploaded image. Either `filename` or `image` should always be set. 
-/// If both are set, `filename` is ignored and `image` is processed and saved with a new name.
+/// If both are set, `filename` is ignored and `image` is processed and saved with a new name. A more Swift-y way to do this
+/// would be an Enum with associated values, except Codable support becomes a pain and makes it difficult to understand 
+/// what the equivalent JSON struct will look like.
 ///
 /// Required by: `POST /api/v3/user/image`
 /// Incorporated into `PostContentData`, which is in turn required by several routes.
@@ -589,6 +591,8 @@ extension PostContentData: RCFValidatable {
     	tester.validate(text.count > 0, forKey: .text, or: "post text cannot be empty.")
     	tester.validate(text.count < 2048, forKey: .text, or: "post length of \(text.count) is over the 2048 character limit")
     	tester.validate(images.count < 5, forKey: .images, or: "posts are limited to 4 image attachments")
+    	let lines = text.replacingOccurrences(of: "\r\n", with: "\r").components(separatedBy: .newlines).count
+    	tester.validate(lines <= 25, forKey: .images, or: "posts are limited to 25 lines of text")
 	}
 }
 
@@ -775,7 +779,8 @@ extension SeaMonkey {
 /// Clients can use the `userID` field  to validate the user that logged in matches the user they *thiought* was logging in.
 /// This guards against a situation where one user changes their username to the previous username value
 /// of another user. A client using `/client/user/updates/since` could end up associating a login with the wrong
-/// `User` because they were matching on `username` instead of `userID`. 
+/// `User` because they were matching on `username` instead of `userID`.  That is, a user picks a username and logs in
+/// with their own password. Their client has a (out of date) stored User record, for a different user, that had the same username.
 ///
 /// Returned by:
 /// * `POST /api/v3/auth/login`
@@ -785,13 +790,27 @@ extension SeaMonkey {
 struct TokenStringData: Content {
     /// The user ID of the newly logged in user. 
     var userID: UUID
+    /// The user's access level.
+	var accessLevel: UserAccessLevel
     /// The token string.
     let token: String
 
-    /// Creates a `TokenStringData` from a `Token`.
-    /// - Parameter token: The `Token` associated with the authenticated user.
-    init(userID: UUID, token: Token) {
-    	self.userID = userID
+    /// Creates a `TokenStringData` from a `UserAccessLevel` and a `Token`. The Token must be associated with a `User`, 
+    /// but the User object does not need to be attached.
+    init(accessLevel: UserAccessLevel, token: Token) {
+    	self.userID = token.$user.id
+    	self.accessLevel = accessLevel
+        self.token = token.token
+    }
+    
+    /// Creates a `TokenStringData` from a `User` and a `Token`. The Token must be associated with  the user, 
+    /// but the User object does not need to be attached.
+    init(user: User, token: Token) throws {
+    	guard try token.$user.id == user.requireID() else {
+    		throw Abort(.internalServerError, reason: "Attempt to create TokenStringData for token not assigned to User")
+    	}
+    	self.userID = token.$user.id
+    	self.accessLevel = user.accessLevel
         self.token = token.token
     }
 }
@@ -877,8 +896,8 @@ struct TwarrtDetailData: Content {
     var postID: Int
     /// The timestamp of the post/twarrt.
     var createdAt: Date
-    /// The ID of the post/twarrt's author.
-    var authorID: UUID
+    /// The twarrt's author.
+    var author: UserHeader
     /// The text of the forum post or twarrt.
     var text: String
     /// The filenames of the post/twarrt's optional images.

@@ -68,7 +68,8 @@ final class Twarrt: Model {
     ) throws {
         self.$author.id = try author.requireID()
         self.$author.value = author
-        self.text = text
+        // We don't do much text manipulation on input, but let's normalize line endings.
+        self.text = text.replacingOccurrences(of: "\r\n", with: "\r")
         self.images = images
         self.$replyTo.id = replyTo?.id
         self.$replyTo.value = replyTo

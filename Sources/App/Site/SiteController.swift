@@ -33,16 +33,44 @@ struct TrunkContext : Encodable {
 }
 
 // Leaf data used by the messagePostForm.
-struct MessagePostFormContent: Encodable {
+struct MessagePostContext: Encodable {
 	var messageText: String
-	var photoFilenames: [String] 			// Must have 4 values to make Leaf templating work. 
+	var photoFilenames: [String] 			// Must have 4 values to make Leaf templating work. Use "" as placeholder.
+	var formAction: String
+	var postSuccessURL: String
 	
+	// For creating a new tweet
 	init() {
 		messageText = ""
 		photoFilenames = ["", "", "", ""]
+		formAction = "/tweets/create"
+		postSuccessURL = "/tweets"
+	}
+	
+	// For editing a tweet
+	init(with tweet: TwarrtDetailData) {
+		messageText = tweet.text
+		photoFilenames = tweet.images ?? []
+		while photoFilenames.count < 4 {
+			photoFilenames.append("")
+		}
+		formAction = "/tweets/edit/\(tweet.postID)"
+		postSuccessURL = "/tweets"
 	}
 }
 
+// POST data structure returned by the form in messagePostForm.leaf
+struct MessagePostFormContent : Codable {
+	let postText: String
+	let localPhoto1: Data?
+	let serverPhoto1: String?
+	let localPhoto2: Data?
+	let serverPhoto2: String?
+	let localPhoto3: Data?
+	let serverPhoto3: String?
+	let localPhoto4: Data?
+	let serverPhoto4: String?
+}
 
 // Used to build an URL query string.
 struct TwarrtQuery: Content {
@@ -98,75 +126,33 @@ struct TwarrtQuery: Content {
 	}
 }
 
-struct SiteController: RouteCollection {
-	weak var app: Application?
+struct SiteController: SiteControllerUtils {
 
-    let categoryIDParam = PathComponent(":category_id")
-    let forumIDParam = PathComponent(":forum_id")
-    let postIDParam = PathComponent(":post_id")
-
-	init(_ app: Application) {
-		self.app = app
-	}
-
-	func boot(routes: RoutesBuilder) throws {
-		guard let app = app else { return }
-
+	func registerRoutes(_ app: Application) throws {
 		// Routes that the user does not need to be logged in to access.
-		let openRoutes: RoutesBuilder = routes.grouped( [
-				app.sessions.middleware, 
-				User.sessionAuthenticator(),
-				Token.authenticator()
-		])
+		let openRoutes = getOpenRoutes(app)
         openRoutes.get(use: rootPageHandler)
-        openRoutes.get("login", use: loginPageHandler)
-        openRoutes.post("login", use: loginPageLoginHandler)
-        openRoutes.get("createAccount", use: createAccountPageHandler)
-        openRoutes.post("createAccount", use: createAccountPagePostHandler)
-        openRoutes.get("resetPassword", use: resetPasswordPageHandler)
-        openRoutes.post("resetPassword", use: resetPasswordPostHandler)			// Change pw while logged in
-        openRoutes.post("recoverPassword", use: recoverPasswordPostHandler)		// Change pw while not logged in
-        openRoutes.get("codeOfConduct", use: codeOfConductPageHandler)
-
         openRoutes.get("events", use: eventsPageHandler)
 
-		// This middleware redirects to "/login" when accessing a global page that requires auth while not logged in.
-		// It saves the page the user was attempting to view in the session, so we can return there post-login.
-		let redirectMiddleware = User.redirectMiddleware { (req) -> String in
-			req.session.data["returnAfterLogin"] = req.url.string
-			return "/login"
-		}
-		
 		// Routes that require login but are generally 'global' -- Two logged-in users could share this URL and both see the content
 		// Not for Seamails, pages for posting new content, mod pages, etc. Logged-out users given one of these links should get
-		// redirect-chained through /login and back.
-		let globalRoutes: RoutesBuilder = routes.grouped( [
-				app.sessions.middleware, 
-				User.sessionAuthenticator(),
-				Token.authenticator(),
-				redirectMiddleware
-		])
-		
+		// redirect-chained through /login and back.		
+		let globalRoutes = getGlobalRoutes(app)
         globalRoutes.get("tweets", use: tweetsPageHandler)
         globalRoutes.get("forums", use: forumCategoriesPageHandler)
         globalRoutes.get("forums", categoryIDParam, use: forumPageHandler)
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
-		let privateRoutes = routes.grouped( [ 
-				app.sessions.middleware, 
-				User.sessionAuthenticator(),
-				Token.authenticator(),
-				User.guardMiddleware()
-		])
-		
-        privateRoutes.get("logout", use: loginPageHandler)
-        privateRoutes.post("logout", use: loginPageLogoutHandler)
-        
-        privateRoutes.post("tweets", ":twarrt_id", "like", use: tweetLikeActionHandler)
-        privateRoutes.post("tweets", ":twarrt_id", "laugh", use: tweetLaughActionHandler)
-        privateRoutes.post("tweets", ":twarrt_id", "love", use: tweetLoveActionHandler)
-        privateRoutes.post("tweets", ":twarrt_id", "unreact", use: tweetUnreactActionHandler)
-        privateRoutes.get("tweets", "edit", ":twarrt_id", use: tweetEditPageHandler)
+		let privateRoutes = getPrivateRoutes(app)
+        privateRoutes.post("tweets", twarrtIDParam, "like", use: tweetLikeActionHandler)
+        privateRoutes.post("tweets", twarrtIDParam, "laugh", use: tweetLaughActionHandler)
+        privateRoutes.post("tweets", twarrtIDParam, "love", use: tweetLoveActionHandler)
+        privateRoutes.post("tweets", twarrtIDParam, "unreact", use: tweetUnreactActionHandler)
+        privateRoutes.post("tweets", twarrtIDParam, "delete", use: tweetPostDeleteHandler)
+        privateRoutes.get("tweets", "reply", twarrtIDParam, use: tweetReplyPageHandler)
+		privateRoutes.post("tweets", "reply", twarrtIDParam, use: tweetReplyPostHandler)
+		privateRoutes.get("tweets", "edit", twarrtIDParam, use: tweetEditPageHandler)
+        privateRoutes.post("tweets", "edit", twarrtIDParam, use: tweetEditPostHandler)
         privateRoutes.post("tweets", "create", use: tweetCreatePostHandler)
 	}
 	
@@ -174,236 +160,6 @@ struct SiteController: RouteCollection {
 	    return req.view.render("login", ["name": "Leaf"])
     }
     
-
-// MARK: - Login
-	struct LoginPageContext : Encodable {
-		var trunk: TrunkContext
-		var error: ErrorResponse?
-		var operationSuccess: Bool
-		var operationName: String
-		
-		init(_ req: Request, errorStr: String? = nil) {
-			trunk = .init(req, title: "Login")
-			operationSuccess = false
-			operationName = "Login"
-			if let str = errorStr {
-				error = ErrorResponse(error: true, reason: str)
-			}
-		}
-	}
-	
-	struct UserCreatedContext : Encodable {
-		var trunk: TrunkContext
-		var username: String
-		var recoveryKey: String
-
-		init(_ req: Request, username: String, recoveryKey: String) {
-			trunk = .init(req, title: "Account Created")
-			self.username = username
-			self.recoveryKey = recoveryKey
-		}
-	}
-	
-    func loginPageHandler(_ req: Request) -> EventLoopFuture<View> {
-		return req.view.render("login", LoginPageContext(req))
-	}
-	    
-    func loginPageLoginHandler(_ req: Request) -> EventLoopFuture<View> {
-    	struct PostStruct : Codable {
-    		var username: String
-    		var password: String
-    	}
-    	do {
-			let postStruct = try req.content.decode(PostStruct.self)
-			let credentials = "\(postStruct.username):\(postStruct.password)".data(using: .utf8)!.base64EncodedString()
-			let headers = HTTPHeaders([("Authorization", "Basic \(credentials)")])
-			return apiQuery(req, endpoint: "/auth/login", method: .POST, defaultHeaders: headers)
-				.throwingFlatMap { apiResponse in
-					if apiResponse.status.code < 300 {
-						let tokenResponse = try apiResponse.content.decode(TokenStringData.self)
-						return loginUser(with: tokenResponse, on: req).flatMap {
-							var loginContext = LoginPageContext(req)
-							loginContext.trunk.metaRedirectURL = req.session.data["returnAfterLogin"] ?? "/tweets"
-							loginContext.operationSuccess = true
-							return req.view.render("login", loginContext)
-						}
-						.flatMapError { error in 
-							return req.view.render("login", LoginPageContext(req, errorStr: error.localizedDescription))
-						}
-					}
-					else {
-						let errorResponse = try apiResponse.content.decode(ErrorResponse.self)
-						return req.view.render("login", LoginPageContext(req, errorStr: errorResponse.reason)) 
-					}
-			}
-		}
-		catch {
-			return req.view.render("login", LoginPageContext(req, errorStr: error.localizedDescription))
-		}
-	}
-	    
-    func loginPageLogoutHandler(_ req: Request) -> EventLoopFuture<View> {
-    	req.session.destroy()
-    	req.auth.logout(User.self)
-    	req.auth.logout(Token.self)
-    	var loginContext = LoginPageContext(req)
-		loginContext.trunk.metaRedirectURL = "/login"
-		loginContext.operationSuccess = true
-		loginContext.operationName = "Logout"
-		return req.view.render("login", loginContext)
-    }
-    
-    func createAccountPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-		return req.view.render("createAccount", LoginPageContext(req))
-    }
-    
-	func createAccountPagePostHandler(_ req: Request) throws -> EventLoopFuture<View> {
-    	struct PostStruct : Codable {
-    		var regcode: String?
-    		var username: String
-    		var displayname: String?
-    		var password: String
-    		var passwordConfirm: String
-    	}
-    	do {
-			let postStruct = try req.content.decode(PostStruct.self)
-			guard postStruct.password == postStruct.passwordConfirm else {
-				return req.view.render("createAccount", LoginPageContext(req, errorStr: "Password fields do not match"))
-			}
-			return apiQuery(req, endpoint: "/user/create", method: .POST, beforeSend: { req throws in
-				let createData = UserCreateData(username: postStruct.username, password: postStruct.password, 
-						verification: postStruct.regcode)
-				try req.content.encode(createData)
-			}).throwingFlatMap { apiResponse in
-				if apiResponse.status.code < 300 {
-					let createUserResponse = try apiResponse.content.decode(CreatedUserData.self)
-					
-					// Try to login immediately after account creation, but if login fails, still show the 
-					// AccountCreated page with the Recovery Key. The user can login manually later.
-					let credentials = "\(postStruct.username):\(postStruct.password)".data(using: .utf8)!.base64EncodedString()
-					let headers = HTTPHeaders([("Authorization", "Basic \(credentials)")])
-					return apiQuery(req, endpoint: "/auth/login", method: .POST, defaultHeaders: headers)
-						.throwingFlatMap { apiResponse in
-							if apiResponse.status.code < 300 {
-								let tokenResponse = try apiResponse.content.decode(TokenStringData.self)
-								return loginUser(with: tokenResponse, on: req).flatMap {
-									var userCreatedContext = UserCreatedContext(req, username: createUserResponse.username, 
-											recoveryKey: createUserResponse.recoveryKey)
-									userCreatedContext.trunk.metaRedirectURL = req.session.data["returnAfterLogin"]
-									return req.view.render("accountCreated", userCreatedContext)
-								}.flatMapError { error in 
-									var userCreatedContext = UserCreatedContext(req, username: createUserResponse.username, 
-											recoveryKey: createUserResponse.recoveryKey)
-									userCreatedContext.trunk.metaRedirectURL = req.session.data["returnAfterLogin"]
-									return req.view.render("accountCreated", userCreatedContext)
-								}
-							}
-							else {
-								var userCreatedContext = UserCreatedContext(req, username: createUserResponse.username, 
-										recoveryKey: createUserResponse.recoveryKey)
-								userCreatedContext.trunk.metaRedirectURL = req.session.data["returnAfterLogin"]
-								return req.view.render("accountCreated", userCreatedContext)
-							}
-						}
-				}
-				else {
-					let errorResponse = try apiResponse.content.decode(ErrorResponse.self)
-					return req.view.render("createAccount", LoginPageContext(req, errorStr: errorResponse.reason))
-				}
-			}
-		}
-		catch {
-			return req.view.render("createAccount", LoginPageContext(req, errorStr: error.localizedDescription))
-		}
-	}
-	
-	// Uses password update if you're logged in, else uses the recover password flow.
-    func resetPasswordPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-		return req.view.render("resetPassword", LoginPageContext(req))
-    }
-
-	// Change password for logged-in user
-    func resetPasswordPostHandler(_ req: Request) throws -> EventLoopFuture<View> {
-    	struct PostStruct : Codable {
-    		var currentPassword: String
-    		var password: String
-    		var confirmPassword: String
-    	}
-    	do {
-			let postStruct = try req.content.decode(PostStruct.self)
-			guard postStruct.password == postStruct.confirmPassword else {
-				return req.view.render("resetPassword", LoginPageContext(req, errorStr: "Password fields do not match"))
-			}
-			return apiQuery(req, endpoint: "/user/password", method: .POST, beforeSend: { req throws in
-				let userPwData = UserPasswordData(currentPassword: postStruct.currentPassword, newPassword: postStruct.password)
-				try req.content.encode(userPwData)
-			}).throwingFlatMap { apiResponse in
-				var context = LoginPageContext(req)
-				context.operationName = "Change Password"
-				if apiResponse.status.code < 300 {
-					context.operationSuccess = true
-					context.trunk.metaRedirectURL = "/"
-				}
-				else {
-					let errorResponse = try apiResponse.content.decode(ErrorResponse.self)
-					context.error = errorResponse
-				}
-				return req.view.render("resetPassword", context)
-			}.flatMapError { error in 
-				return req.view.render("resetPassword", LoginPageContext(req, errorStr: error.localizedDescription))
-			}
-		}
-		catch {
-			return req.view.render("resetPassword", LoginPageContext(req, errorStr: error.localizedDescription))
-		}
-    }
-    
-    func recoverPasswordPostHandler(_ req: Request) -> EventLoopFuture<View> {
-    	struct PostStruct : Codable {
-    		var username: String
-    		var regCode: String
-    		var password: String
-    		var confirmPassword: String
-    	}
-    	do {
-			let postStruct = try req.content.decode(PostStruct.self)
-			guard postStruct.password == postStruct.confirmPassword else {
-				return req.view.render("resetPassword", LoginPageContext(req, errorStr: "Password fields do not match"))
-			}
-			return apiQuery(req, endpoint: "/auth/recovery", method: .POST, beforeSend: { req throws in
-				let recoveryData = UserRecoveryData(username: postStruct.username, recoveryKey: postStruct.regCode, 
-						newPassword: postStruct.password)
-				try req.content.encode(recoveryData)
-			}).throwingFlatMap { apiResponse in
-				if apiResponse.status.code < 300 {
-					let tokenResponse = try apiResponse.content.decode(TokenStringData.self)
-					return loginUser(with: tokenResponse, on: req).flatMap {
-						var loginContext = LoginPageContext(req)
-						loginContext.trunk.metaRedirectURL = req.session.data["returnAfterLogin"] ?? "/tweets"
-						loginContext.operationSuccess = true
-						loginContext.operationName = "Password Change"
-						return req.view.render("login", loginContext)
-					}
-					.flatMapError { error in 
-						return req.view.render("resetPassword", LoginPageContext(req, errorStr: error.localizedDescription))
-					}				
-				}
-				else {
-					let errorResponse = try apiResponse.content.decode(ErrorResponse.self)
-					return req.view.render("resetPassword", LoginPageContext(req, errorStr: errorResponse.reason))
-				}
-			}
-		}
-		catch {
-			return req.view.render("resetPassword", LoginPageContext(req, errorStr: error.localizedDescription))
-		}
-    }
-    
-    func codeOfConductPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-		return req.view.render("codeOfConduct", LoginPageContext(req))
-    }
-
-
 // MARK: - Events
     func eventsPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		return apiQuery(req, endpoint: "/events").throwingFlatMap { response in
@@ -429,7 +185,7 @@ struct SiteController: RouteCollection {
  			let tweets = try response.content.decode([TwarrtData].self)
      		struct TweetPageContext : Encodable {
 				var trunk: TrunkContext
-				var post: MessagePostFormContent
+				var post: MessagePostContext
     			var tweets: [TwarrtData]
     			var filterDesc: String
     			var earlierPostsUrl: String?
@@ -474,7 +230,7 @@ struct SiteController: RouteCollection {
     }
     
     func tweetPostReactionHandler(_ req: Request, reactionType: String) throws -> EventLoopFuture<TwarrtData> {
-    	guard let twarrtID = req.parameters.get("twarrt_id") else {
+    	guard let twarrtID = req.parameters.get(twarrtIDParam.paramString) else {
             throw Abort(.badRequest, reason: "Missing search parameter.")
     	}
     	return apiQuery(req, endpoint: "/twitarr/\(twarrtID)/\(reactionType)", method: .POST).flatMapThrowing { response in
@@ -483,19 +239,20 @@ struct SiteController: RouteCollection {
     	}
     }
     
-    func tweetCreatePostHandler(_ req: Request) throws -> EventLoopFuture<Response> {
-    	struct PostStruct : Codable {
-    		let postText: String
-    		let localPhoto1: Data?
-    		let serverPhoto1: String?
-    		let localPhoto2: Data?
-    		let serverPhoto2: String?
-    		let localPhoto3: Data?
-    		let serverPhoto3: String?
-    		let localPhoto4: Data?
-    		let serverPhoto4: String?
+    // Although this looks like it just redirects the call, middleware plays an important part here. 
+    // Javascript POSTs the delete request, middleware for this route validates via the session cookia.
+    // We then call the Swiftarr API, using the token (pulled out of our session data) to validate.
+    func tweetPostDeleteHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+    	guard let twarrtID = req.parameters.get(twarrtIDParam.paramString) else {
+            throw Abort(.badRequest, reason: "Missing search parameter.")
     	}
-		let postStruct = try req.content.decode(PostStruct.self)
+    	return apiQuery(req, endpoint: "/twitarr/\(twarrtID)", method: .DELETE).map { response in
+    		return response.status
+    	}
+    }
+    
+    func tweetCreatePostHandler(_ req: Request) throws -> EventLoopFuture<Response> {
+		let postStruct = try req.content.decode(MessagePostFormContent.self)
 		let images: [ImageUploadData] = [ImageUploadData(postStruct.serverPhoto1, postStruct.localPhoto1),
 				ImageUploadData(postStruct.serverPhoto2, postStruct.localPhoto2),
 				ImageUploadData(postStruct.serverPhoto3, postStruct.localPhoto3),
@@ -517,24 +274,103 @@ struct SiteController: RouteCollection {
 		}
     }
     
+	struct TweetEditPageContext : Encodable {
+		var trunk: TrunkContext
+		var replyToTweet: TwarrtDetailData?
+		var post: MessagePostContext
+		
+		// For editing
+		init(_ req: Request, editTweet: TwarrtDetailData) throws {
+			trunk = .init(req, title: "Edit Twarrt")
+			self.post = .init(with: editTweet)
+		}
+		
+		// For replys
+		init(_ req: Request, replyToTweet: TwarrtDetailData) {
+			trunk = .init(req, title: "Reply to Twarrt")
+			self.replyToTweet = replyToTweet
+			post = .init()
+		}
+	}
+	
+    func tweetReplyPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+    	guard let twarrtID = req.parameters.get(twarrtIDParam.paramString) else {
+            throw Abort(.badRequest, reason: "Missing twarrt_id parameter.")
+    	}
+    	return apiQuery(req, endpoint: "/twitarr/\(twarrtID)").throwingFlatMap { response in
+ 			let tweet = try response.content.decode(TwarrtDetailData.self)
+    		var ctx = TweetEditPageContext(req, replyToTweet: tweet)
+    		ctx.post.formAction = "/tweets/reply/\(twarrtID)"
+			return req.view.render("tweetReply", ctx)
+    	}
+    }
+    
+    func tweetReplyPostHandler(_ req: Request) throws -> EventLoopFuture<Response> {
+    	guard let twarrtID = req.parameters.get(twarrtIDParam.paramString) else {
+            throw Abort(.badRequest, reason: "Missing twarrt_id parameter.")
+    	}
+		let postStruct = try req.content.decode(MessagePostFormContent.self)
+		let images: [ImageUploadData] = [ImageUploadData(postStruct.serverPhoto1, postStruct.localPhoto1),
+				ImageUploadData(postStruct.serverPhoto2, postStruct.localPhoto2),
+				ImageUploadData(postStruct.serverPhoto3, postStruct.localPhoto3),
+				ImageUploadData(postStruct.serverPhoto4, postStruct.localPhoto4)].compactMap { $0 }
+		let postContent = PostContentData(text: postStruct.postText, images: images)
+ 		return apiQuery(req, endpoint: "/twitarr/\(twarrtID)/reply", method: .POST, beforeSend: { req throws in
+			try req.content.encode(postContent)
+		}).flatMapThrowing { response in
+			if response.status.code < 300 {
+				return Response(status: .created)
+			}
+			else {
+				// This is that thing where we decode an error response from the API and then make it into an exception.
+				let error = try response.content.decode(ErrorResponse.self)
+				throw error
+			}
+		}
+    }
+    
     func tweetEditPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-    	guard let twarrtID = req.parameters.get("twarrt_id") else {
-            throw Abort(.badRequest, reason: "Missing twarr_id parameter.")
+    	guard let twarrtID = req.parameters.get(twarrtIDParam.paramString) else {
+            throw Abort(.badRequest, reason: "Missing twarrt_id parameter.")
     	}
     	return apiQuery(req, endpoint: "/twitarr/\(twarrtID)").throwingFlatMap { response in
  			let tweet = try response.content.decode(TwarrtDetailData.self)
      		struct TweetEditPageContext : Encodable {
 				var trunk: TrunkContext
-    			var tweet: TwarrtDetailData
+    			var post: MessagePostContext
     			
     			init(_ req: Request, tweet: TwarrtDetailData) throws {
     				trunk = .init(req, title: "Edit Twarrt")
-    				self.tweet = tweet
+    				self.post = .init(with: tweet)
     			}
     		}
     		let ctx = try TweetEditPageContext(req, tweet: tweet)
 			return req.view.render("tweetEdit", ctx)
     	}
+    }
+    
+    func tweetEditPostHandler(_ req: Request) throws -> EventLoopFuture<Response> {
+    	guard let twarrtID = req.parameters.get(twarrtIDParam.paramString) else {
+            throw Abort(.badRequest, reason: "Missing twarrt_id parameter.")
+    	}
+		let postStruct = try req.content.decode(MessagePostFormContent.self)
+		let images: [ImageUploadData] = [ImageUploadData(postStruct.serverPhoto1, postStruct.localPhoto1),
+				ImageUploadData(postStruct.serverPhoto2, postStruct.localPhoto2),
+				ImageUploadData(postStruct.serverPhoto3, postStruct.localPhoto3),
+				ImageUploadData(postStruct.serverPhoto4, postStruct.localPhoto4)].compactMap { $0 }
+		let postContent = PostContentData(text: postStruct.postText, images: images)
+ 		return apiQuery(req, endpoint: "/twitarr/\(twarrtID)/update", method: .POST, beforeSend: { req throws in
+			try req.content.encode(postContent)
+		}).flatMapThrowing { response in
+			if response.status.code < 300 {
+				return Response(status: .created)
+			}
+			else {
+				// This is that thing where we decode an error response from the API and then make it into an exception.
+				let error = try response.content.decode(ErrorResponse.self)
+				throw error
+			}
+		}
     }
 
 // MARK: - Forums
@@ -575,24 +411,27 @@ struct SiteController: RouteCollection {
 			return req.view.render("forums", ctx)
     	}
     }
+}
+
     
 // MARK: - Utilities
 
-	// Currently we do a direct DB lookup on login so that we can call auth.login() on the User that logged in.
-	// This breaks the idea of the web client only relying on the API. I believe a better solution will be to
-	// make a new Authenticatable type (WebUser?) that isn't database-backed and is stored in the Session, and
-	// then the web client can Auth on that type instead of User. But, I want to be sure we *really* don't need 
-	// User before embarking on this.
-	func loginUser(with tokenResponse: TokenStringData, on req: Request) -> EventLoopFuture<Void> {
-		return User.query(on: req.db).filter(\.$id == tokenResponse.userID).first().flatMapThrowing { user in
-			guard let user = user else {
-				throw Abort(.unauthorized, reason: "User not found")
-			}
-			req.auth.login(user)
-			req.session.data["token"] = tokenResponse.token				
-		}
-	}
+protocol SiteControllerUtils {
+    var categoryIDParam: PathComponent { get }
+    var twarrtIDParam: PathComponent { get }
+    var forumIDParam: PathComponent { get }
+    var postIDParam: PathComponent { get }
 
+	func apiQuery(_ req: Request, endpoint: String, method: HTTPMethod, defaultHeaders: HTTPHeaders?,
+			beforeSend: (inout ClientRequest) throws -> ()) -> EventLoopFuture<ClientResponse>
+}
+
+extension SiteControllerUtils {
+
+    var categoryIDParam: PathComponent { PathComponent(":category_id") }
+    var twarrtIDParam: PathComponent { PathComponent(":twarrt_id") }
+    var forumIDParam: PathComponent { PathComponent(":forum_id") }
+    var postIDParam: PathComponent { PathComponent(":post_id") }
 
 	func apiQuery(_ req: Request, endpoint: String, method: HTTPMethod = .GET, defaultHeaders: HTTPHeaders? = nil,
 			beforeSend: (inout ClientRequest) throws -> () = { _ in }) -> EventLoopFuture<ClientResponse> {
@@ -605,6 +444,44 @@ struct SiteController: RouteCollection {
     		urlStr.append("?\(queryStr)")
     	}
     	return req.client.send(method, headers: headers, to: URI(string: urlStr), beforeSend: beforeSend)
+	}
+	
+	// Routes that the user does not need to be logged in to access.
+	func getOpenRoutes(_ app: Application) -> RoutesBuilder {
+		return app.grouped( [
+				app.sessions.middleware, 
+				User.sessionAuthenticator(),
+				Token.authenticator()
+		])
+	}
+
+	// Routes that require login but are generally 'global' -- Two logged-in users could share this URL and both see the content
+	// Not for Seamails, pages for posting new content, mod pages, etc. Logged-out users given one of these links should get
+	// redirect-chained through /login and back.
+	func getGlobalRoutes(_ app: Application) -> RoutesBuilder {
+		// This middleware redirects to "/login" when accessing a global page that requires auth while not logged in.
+		// It saves the page the user was attempting to view in the session, so we can return there post-login.
+		let redirectMiddleware = User.redirectMiddleware { (req) -> String in
+			req.session.data["returnAfterLogin"] = req.url.string
+			return "/login"
+		}
+		
+		return app.grouped( [
+				app.sessions.middleware, 
+				User.sessionAuthenticator(),
+				Token.authenticator(),
+				redirectMiddleware
+		])
+	}
+		
+	// Routes for non-shareable content. If you're not logged in we failscreen. Most POST actions go here.
+	func getPrivateRoutes(_ app: Application) -> RoutesBuilder {
+		return app.grouped( [ 
+				app.sessions.middleware, 
+				User.sessionAuthenticator(),
+				Token.authenticator(),
+				User.guardMiddleware()
+		])
 	}
 }
 

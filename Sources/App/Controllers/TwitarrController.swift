@@ -66,58 +66,60 @@ struct TwitarrController: RouteCollection {
     /// - Returns: `TwarrtDetaildata` containing the specified twarrt.
     func twarrtHandler(_ req: Request) throws -> EventLoopFuture<TwarrtDetailData> {
         let user = try req.auth.require(User.self)
+ 		let cachedUser = try req.userCache.getUser(user)
         return Twarrt.findFromParameter(twarrtIDParam, on: req).addModelID().flatMap { (twarrt, twartID) in
             // we have twarrt, but need to filter
-            return Twarrt.getCachedFilters(for: user, on: req).flatMap { (filters) in
-				if filters.blocked.contains(twarrt.$author.id) || filters.muted.contains(twarrt.$author.id) ||
-						twarrt.containsMutewords(using: filters.mutewords) {
-                	return req.eventLoop.makeFailedFuture(Abort(.notFound, reason: "twarrt is not available"))
-                }
-				return user.hasBookmarked(twarrt, on: req).flatMap { (bookmarked) in
-					// get likes data
-					return TwarrtLikes.query(on: req.db)
-						.filter(\.$twarrt.$id == twartID)
-						.all()
-						.flatMap { (twarrtLikes) in
-							// get users
-							let likeUsers: [EventLoopFuture<User>] = twarrtLikes.map {
-								(twarrtLike) -> EventLoopFuture<User> in
-								return User.find(twarrtLike.user.id, on: req.db)
-									.unwrap(or: Abort(.internalServerError, reason: "user not found"))
+			if cachedUser.getBlocks().contains(twarrt.$author.id) || cachedUser.getMutes().contains(twarrt.$author.id) ||
+					twarrt.containsMutewords(using: cachedUser.mutewords ?? []) {
+				return req.eventLoop.makeFailedFuture(Abort(.notFound, reason: "twarrt is not available"))
+			}
+			return user.hasBookmarked(twarrt, on: req).flatMap { (bookmarked) in
+				// get likes data
+				return TwarrtLikes.query(on: req.db)
+					.filter(\.$twarrt.$id == twartID)
+					.all()
+					.flatMap { (twarrtLikes) in
+						// get users
+						let likeUsers: [EventLoopFuture<User>] = twarrtLikes.map {
+							(twarrtLike) -> EventLoopFuture<User> in
+							return User.find(twarrtLike.user.id, on: req.db)
+								.unwrap(or: Abort(.internalServerError, reason: "user not found"))
+						}
+						return likeUsers.flatten(on: req.eventLoop).flatMapThrowing { (users) in
+							let seamonkeys = try users.map { try SeaMonkey(user: $0) }
+							// init return struct
+							guard let author = req.userCache.getUser(twarrt.$author.id)?.makeHeader() else {
+								throw Abort(.internalServerError, reason: "Could not find author of twarrt.")
 							}
-							return likeUsers.flatten(on: req.eventLoop).flatMapThrowing { (users) in
-								let seamonkeys = try users.map { try SeaMonkey(user: $0) }
-								// init return struct
-								var twarrtDetailData = try TwarrtDetailData(
-									postID: twarrt.requireID(),
-									createdAt: twarrt.createdAt ?? Date(),
-									authorID: twarrt.$author.id,
-									text: twarrt.isQuarantined ?
-										"This twarrt is under moderator review." : twarrt.text,
-									images: twarrt.images,
-									replyToID: twarrt.$replyTo.id,
-									isBookmarked: bookmarked,
-									laughs: [],
-									likes: [],
-									loves: []
-								)
-								// sort seamonkeys into like types
-								for (index, like) in twarrtLikes.enumerated() {
-									switch like.likeType {
-										case .laugh:
-											twarrtDetailData.laughs.append(seamonkeys[index])
-										case .like:
-											twarrtDetailData.likes.append(seamonkeys[index])
-										case .love:
-											twarrtDetailData.loves.append(seamonkeys[index])
-										default: continue
-									}
+							var twarrtDetailData = try TwarrtDetailData(
+								postID: twarrt.requireID(),
+								createdAt: twarrt.createdAt ?? Date(),
+								author: author,
+								text: twarrt.isQuarantined ?
+									"This twarrt is under moderator review." : twarrt.text,
+								images: twarrt.images,
+								replyToID: twarrt.$replyTo.id,
+								isBookmarked: bookmarked,
+								laughs: [],
+								likes: [],
+								loves: []
+							)
+							// sort seamonkeys into like types
+							for (index, like) in twarrtLikes.enumerated() {
+								switch like.likeType {
+									case .laugh:
+										twarrtDetailData.laughs.append(seamonkeys[index])
+									case .like:
+										twarrtDetailData.likes.append(seamonkeys[index])
+									case .love:
+										twarrtDetailData.loves.append(seamonkeys[index])
+									default: continue
 								}
-								return twarrtDetailData
 							}
-                        }
-                }
-            }
+							return twarrtDetailData
+						}
+					}
+			}
         }
     }
     
@@ -644,10 +646,11 @@ struct TwitarrController: RouteCollection {
 		}
 		.throwingFlatMap { (twarrt: Twarrt, filenames: [String]) in
 			// update if there are changes
-			if twarrt.text != data.text || twarrt.images != filenames {
+			let normalizedText = data.text.replacingOccurrences(of: "\r\n", with: "\r")
+			if twarrt.text != normalizedText || twarrt.images != filenames {
 				// stash current twarrt contents before modifying
 				let twarrtEdit = try TwarrtEdit(twarrt: twarrt)
-				twarrt.text = data.text
+				twarrt.text = normalizedText
 				twarrt.images = filenames
 				return twarrt.save(on: req.db)
 					.flatMap { twarrtEdit.save(on: req.db) }

@@ -20,19 +20,22 @@ struct AdminController: RouteCollection {
         let adminRoutes = routes.grouped("api", "v3", "admin")
         
         // instantiate authentication middleware
-        let guardAuthMiddleware = User.guardMiddleware()
         let tokenAuthMiddleware = Token.authenticator()
+        let requireVerifiedMiddleware = RequireVerifiedMiddleware()
+        let requireModMiddleware = RequireModeratorMiddleware()
+        let guardAuthMiddleware = User.guardMiddleware()
         
         // set protected route groups
-        let tokenAuthGroup = adminRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
-        
-        // open access endpoints
-        
-        // endpoints available only when not logged in
-        
-        // endpoints available only when logged in
-        tokenAuthGroup.get("reports", use: reportsHandler)
-        tokenAuthGroup.get("user", ":user_id", use: userHandler)
+        let userAuthGroup = adminRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware, requireVerifiedMiddleware])
+        let moderatorAuthGroup = adminRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware, requireModMiddleware])
+ 
+ 		// endpoints for all users
+ 		userAuthGroup.post("report", "create", use: createReportHandler)
+                
+        // endpoints available for Moderators only
+		moderatorAuthGroup.get("reports", use: reportsHandler)
+		
+//        tokenAuthGroup.get("user", ":user_id", use: userHandler)
     }
     
     // MARK: - Open Access Handlers
@@ -62,6 +65,18 @@ struct AdminController: RouteCollection {
         return User.findFromParameter("user_id", on: req)
     }
     
+    /// `POST /api/v3/admin/report/create`
+    ///
+    /// Files a Report against a Twarrt, ForumPost, Forum, FezPost, or User.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 403 error if the user is not an verified.
+    /// - Returns: `[Report]`.
+    func createReportHandler(_ req: Request) throws -> EventLoopFuture<[Report]> {
+        let user = try req.auth.require(User.self)
+        return Report.query(on: req.db).all()
+    }
+
     /// `GET /api/v3/admin/reports`
     ///
     /// Retrieves the full `Report` model of all reports.

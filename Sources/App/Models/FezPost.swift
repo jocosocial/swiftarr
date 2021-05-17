@@ -58,7 +58,9 @@ final class FezPost: Model {
         self.$fez.value = fez
         self.$author.id = try author.requireID()
         self.$author.value = author
-        self.text = text
+        
+        // Generally I'm in favor of "validate input, sanitize output" but I hate "\r\n" with the fury of a thousand suns.
+        self.text = text.replacingOccurrences(of: "\r\n", with: "\r")
         self.image = image
     }
 }

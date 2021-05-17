@@ -58,6 +58,10 @@ struct AddJocomojiTag: LeafTag {
 		for emojiTag in AddJocomojiTag.jocomoji {
 			string = string.replacingOccurrences(of: ":\(emojiTag):", with: "<img src=\"img/emoji/small/\(emojiTag).png\" width=18 height=18>")
 		}
+		
+		// Also convert newlines to HTML breaks.
+		string = string.replacingOccurrences(of: "\r", with: "<br>")
+		
 		return LeafData.string(string)
 	}
 }

@@ -1,7 +1,13 @@
 // Make the like/love/laugh buttons post their actions when tapped.
-var likeButtons = document.querySelectorAll('[data-action]');
-for (let btn of likeButtons) {
-	btn.addEventListener("click", likeAction);
+var buttons = document.querySelectorAll('[data-action]');
+for (let btn of buttons) {
+	let action = btn.getAttribute('data-action');
+	if (action == "delete") {
+		btn.addEventListener("click", deleteAction);
+	}
+	else {
+		btn.addEventListener("click", likeAction);
+	}
 }
 
 function likeAction() {
@@ -56,6 +62,29 @@ function setLikeButtonsState(buttons, tappedButton, state) {
 	}
 }
 
+document.getElementById('deleteModal')?.addEventListener('show.bs.modal', function(event) {
+	let twarrtElem = event.relatedTarget.closest('[data-twarrtid]');
+	let deleteBtn = event.target.querySelector('[data-delete-twarrtid]');
+	deleteBtn.setAttribute('data-delete-twarrtid', twarrtElem.getAttribute('data-twarrtid'));
+	event.target.querySelector('[data-purpose="errordisplay"]').innerHTML = ""
+})
+
+function deleteAction() {
+	let twarrtid = event.target.getAttribute('data-delete-twarrtid');
+	let modal = event.target.closest('.modal')
+	let req = new Request("/tweets/" + twarrtid + "/delete", { method: 'POST' });
+	fetch(req).then(response => {
+		if (response.status < 300) {
+			bootstrap.Modal.getInstance(modal).hide()
+			document.querySelector('li[data-twarrtid="' + twarrtid + '"]')?.remove()
+		}
+		else {
+			response.json().then( data => {
+				modal.querySelector('[data-purpose="errordisplay"]').innerHTML = "<b>Error:</b> " + data.reason
+			})
+		}
+	})
+}
 
 // Make every twarrt expand when first clicked, showing the previously hidden action bar.
 var twarrtlistItems = document.querySelectorAll('[data-twarrtid]');
@@ -67,6 +96,8 @@ function showActionBar() {
 	var bsCollapse = new bootstrap.Collapse(actionbar, { toggle: false }).show()
 }
 
+
+// MARK: - 
 // Handlers for the parts of messagePostForm.leaf
 var imageUploadInputs = document.querySelectorAll('.image-upload-input');
 for (let input of imageUploadInputs) {
@@ -75,6 +106,7 @@ for (let input of imageUploadInputs) {
 }
 function updatePhotoCardState(cardElement) {
 	let imgElem = cardElement.querySelector('img');
+	let imgContainer = cardElement.querySelector('.img-for-upload-container');
 	let noImgElem = cardElement.querySelector('.no-image-marker');
 	let fileInputElem = cardElement.querySelector('.image-upload-input');
 	let hiddenFormElem = cardElement.querySelector('input[type="hidden"]');
@@ -83,17 +115,17 @@ function updatePhotoCardState(cardElement) {
 	let imageVisible = true;
 	if (fileInputElem.files.length > 0) {
 		imgElem.src = window.URL.createObjectURL(fileInputElem.files[0]);
-		imgElem.style.display = "block";
+		imgContainer.style.display = "block";
 		noImgElem.style.display = "none";
 		hiddenFormElem.value = "";
 	}
 	else if (hiddenFormElem.value) {
 		imgElem.src = "/api/v3/image/thumb/" + hiddenFormElem.value;
-		imgElem.style.display = "block";
+		imgContainer.style.display = "block";
 		noImgElem.style.display = "none";
 	}
 	else {
-		imgElem.style.display = "none";
+		imgContainer.style.display = "none";
 		noImgElem.style.display = "block";
 		imageRemoveButton.disabled = true
 		imageVisible = false;
@@ -104,7 +136,7 @@ function updatePhotoCardState(cardElement) {
 	imageRemoveButton.disabled = !imageVisible;
 	let nextCard = cardElement.nextElementSibling;
 	if (nextCard != null) {
-		nextCard.style.display = imgElem.style.display;
+		nextCard.style.display = imgContainer.style.display;
 	}
 }
 var imageRemoveButtons = document.querySelectorAll('.twitarr-image-remove');
@@ -149,7 +181,13 @@ function submitAJAXForm(formElement, event) {
 	var req = new XMLHttpRequest();
 	req.onload = function() {
 		if (this.status < 300) {
-			location.reload();
+			let successURL = formElement.getAttribute("postSuccessURL");
+			if (successURL) {
+				location.assign(successURL);
+			}
+			else {
+				location.reload();
+			}
 		}
 		else {
 			var data = JSON.parse(this.responseText);

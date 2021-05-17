@@ -26,6 +26,8 @@ enum UserAccessLevel: UInt8, Codable {
     
     /// Ensures that the access level of self grants at least the access level given in `level`.
     /// That is, UserAccessLevel.admin.hasAccess(.verified) returns true, while moderator.hasAccess(.admin) returns false.
+    /// Although this currently uses > to test, the method could be expanded to non-hierarchy access types--and we may need to,
+    /// as `Client`s can make calls that `Moderator`s cannot, and vice versa.
     func hasAccess(_ level: UserAccessLevel) -> Bool {
     	return self.rawValue >= level.rawValue
     }

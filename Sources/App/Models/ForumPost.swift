@@ -71,7 +71,8 @@ final class ForumPost: Model {
         self.$forum.value = forum
         self.$author.id = try author.requireID()
         self.$author.value = author
-        self.text = text
+        // We don't do much text manipulation on input, but let's normalize line endings.
+        self.text = text.replacingOccurrences(of: "\r\n", with: "\r")
         self.images = images
         self.isQuarantined = false
         self.isReviewed = false

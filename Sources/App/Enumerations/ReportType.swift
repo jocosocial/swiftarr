@@ -10,4 +10,6 @@ enum ReportType: String, Codable {
     case twarrt
     /// A `User`.
     case user
+    /// a `FezPost`
+    case fezPost
 }
