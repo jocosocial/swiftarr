@@ -3,13 +3,33 @@
     	<div class="container-md ms-0 mt-2">
     		<div class="row align-items-end">
     			<div class="col col-auto">
-			    	<h6><b>Forums</b></h6>
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item" aria-current="page"><a href="/forums">Forums</a></li>
+							<li class="breadcrumb-item active" aria-current="page">Some Category??</li>
+						</ol>
+					</nav>
 				</div>
 			</div>
 			<div class="list-group">
 			#for(forum in forums):
-				<a href="/forum/category" class="list-group-item list-group-item-action">		
-					#elem(forum.title)<br>		
+				<a href="/forum/#(forum.forumID)" class="list-group-item list-group-item-action">		
+					<div class="row">
+						<div class="col">
+							#elem(forum.title)
+						</div>
+						<div class="col col-auto">
+							<span class="text-muted">#relativeTime(forum.lastPostAt)</span>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col">
+							#(forum.postCount) posts
+						</div>
+						<div class="col col-auto">
+							<span class="text-muted">#relativeTime(forum.lastPostAt)</span>
+						</div>
+					</div>
 				</a>
 			#endfor
 			</div>

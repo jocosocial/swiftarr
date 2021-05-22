@@ -56,7 +56,7 @@ struct AddJocomojiTag: LeafTag {
 		// Sanitize first to remove any existing tags. Also ensure the inline <img> tags we're about to add don't get nuked
 		string = ElementSanitizerTag.sanitize(string)
 		for emojiTag in AddJocomojiTag.jocomoji {
-			string = string.replacingOccurrences(of: ":\(emojiTag):", with: "<img src=\"img/emoji/small/\(emojiTag).png\" width=18 height=18>")
+			string = string.replacingOccurrences(of: ":\(emojiTag):", with: "<img src=\"/img/emoji/small/\(emojiTag).png\" width=18 height=18>")
 		}
 		
 		// Also convert newlines to HTML breaks.

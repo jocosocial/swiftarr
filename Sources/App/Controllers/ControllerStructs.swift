@@ -306,7 +306,7 @@ struct FezData: Content, ResponseEncodable {
 	var readCount: Int
 	/// The most recent of: Creation time for the fez, time of the last post (may not exactly match post time), user add/remove, or update to fezzes' fields. 
 	var lastModificationTime: Date
-    /// The FezPosts in the fez discussion.
+    /// The FezPosts in the fez discussion. Only populated for some calls; see above.
     var posts: [FezPostData]?
 }
 
@@ -678,10 +678,12 @@ extension PostData {
 struct PostDetailData: Content {
     /// The ID of the post.
     var postID: Int
+    /// The ID of the Forum containing the post.
+    var forumID: UUID
     /// The timestamp of the post.
     var createdAt: Date
-    /// The ID of the post's author.
-    var authorID: UUID
+    /// The post's author.
+    var author: UserHeader
     /// The text of the forum post.
     var text: String
     /// The filenames of the post's optional images.

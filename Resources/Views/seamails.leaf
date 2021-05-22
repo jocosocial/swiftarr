@@ -1,0 +1,45 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 mt-2">
+    		<div class="row align-items-end">
+    			<div class="col">
+    				Seamail
+				</div>
+    			<div class="col col-auto align-self-end">
+			    	<a class="btn btn-primary btn-sm" role="button" href="/seamail/create">New Seamail</a>
+				</div>
+			</div>
+			<div class="list-group">
+				#if(count(fezzes) == 0):
+					<div class="row">
+						<div class="col">
+							<li class="list-group-item">You haven't received any Seamail messages yet, but you can create one by tapping "New Seamail"</li>
+						</div>
+					</div>
+				#else:
+					#for(fez in fezzes):
+						<a href="/fez/#(fez.fezID)" class="list-group-item list-group-item-action">		
+							<div class="row">
+								<div class="col">
+									#elem(fez.title)
+								</div>
+								<div class="col col-auto">
+									<span class="text-muted">#relativeTime(fez.lastModificationDate)</span>
+								</div>
+							</div>
+							<div class="row">
+								<div class="col">
+									<span class="text-muted">#relativeTime(forum.lastPostAt)</span>
+								</div>
+								<div class="col col-auto">
+									#(fez.postCount) posts
+								</div>
+							</div>
+						</a>
+					#endfor
+				#endif
+			</div>
+		</div>
+    #endexport
+#endextend
+

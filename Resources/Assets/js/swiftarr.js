@@ -1,55 +1,58 @@
 // Make the like/love/laugh buttons post their actions when tapped.
 var buttons = document.querySelectorAll('[data-action]');
 for (let btn of buttons) {
-	let action = btn.getAttribute('data-action');
-	if (action == "delete") {
+	let action = btn.dataset.action;
+	if (action == "deletePost" || action == "deleteTwarrt") {
 		btn.addEventListener("click", deleteAction);
 	}
-	else {
+	else if (action == "laugh" || action == "like" || action == "love") {
 		btn.addEventListener("click", likeAction);
 	}
 }
 
 function likeAction() {
-	let twarrtid = event.target.closest('[data-twarrtid]').getAttribute('data-twarrtid');
+	let postid = event.target.closest('[data-postid]').dataset.postid;
 	let tappedButton = event.target;
-	var path = 'tweets/' + twarrtid + '/';
+	let listType = event.currentTarget.closest('ul')?.dataset.listtype;
+	var path =  '/' + listType + '/' + postid + '/';
 
 	if (!tappedButton.checked) {
 		path = path + "unreact";
 	}
 	else {
-		path = path + tappedButton.getAttribute("data-action");
+		path = path + tappedButton.dataset.action;
 	}
 		
-	let buttons = tappedButton.parentElement.querySelectorAll("input");
+	let buttons = tappedButton.closest('[data-state]').querySelectorAll("input");
 	setLikeButtonsState(buttons, tappedButton, false);
 
 	let req = new Request(path, { method: 'POST' });
 	fetch(req).then(function(response) {
-	  let errorDiv = tappedButton.closest('[data-twarrtid]').querySelector('[data-purpose="errordisplay"]');
-	  if (response.ok) {
-		errorDiv.innerHTML = "";
-	  }
-	  else {
-	  	errorDiv.innerHTML = "Could not post reaction";
-	  }
-	  setTimeout(() => {
-		setLikeButtonsState(buttons, tappedButton, true);
-	  }, 1000)
+		let postElement = tappedButton.closest('[data-postid]');
+		let errorDiv = tappedButton.closest('[data-postid]').querySelector('[data-purpose="errordisplay"]');
+		if (response.ok) {
+			errorDiv.textContent = "";
+		}
+		else {
+			errorDiv.textContent = "Could not post reaction";
+		}
+		setTimeout(() => {
+			setLikeButtonsState(buttons, tappedButton, true);
+			updateLikeCounts(postElement);
+		}, 1000)
 	}).catch(error => {
-	  tappedButton.closest('[data-twarrtid]').querySelector('[data-purpose="errordisplay"]').innerHTML = "Could not post reaction";
-	  setLikeButtonsState(buttons, tappedButton, true);
+		tappedButton.closest('[data-postid]').querySelector('[data-purpose="errordisplay"]').textContent = "Could not post reaction";
+		setLikeButtonsState(buttons, tappedButton, true);
 	});
 }
 
 function setLikeButtonsState(buttons, tappedButton, state) {
-	let spanElem = tappedButton.parentElement.querySelector("label[for='" + tappedButton.id + "'] > .spinner-border");
+	let spinnerElem = tappedButton.labels[0]?.querySelector(".spinner-border");
 	if (state) {
 		for (let btn of buttons) {
 			btn.disabled = false;
 		}
-		if (spanElem !== null) spanElem.classList.add("d-none");
+		if (spinnerElem !== null) spinnerElem.classList.add("d-none");
 	}
 	else {
 		for (let btn of buttons) {
@@ -58,25 +61,32 @@ function setLikeButtonsState(buttons, tappedButton, state) {
 				btn.checked = false;
 			}
 		}
-		if (spanElem !== null) spanElem.classList.remove("d-none");
+		if (spinnerElem !== null) spinnerElem.classList.remove("d-none");
 	}
 }
 
 document.getElementById('deleteModal')?.addEventListener('show.bs.modal', function(event) {
-	let twarrtElem = event.relatedTarget.closest('[data-twarrtid]');
-	let deleteBtn = event.target.querySelector('[data-delete-twarrtid]');
-	deleteBtn.setAttribute('data-delete-twarrtid', twarrtElem.getAttribute('data-twarrtid'));
+	let postElem = event.relatedTarget.closest('[data-postid]');
+	let deleteBtn = event.target.querySelector('[data-delete-postid]');
+	deleteBtn.setAttribute('data-delete-postid', postElem.dataset.postid);
 	event.target.querySelector('[data-purpose="errordisplay"]').innerHTML = ""
 })
 
 function deleteAction() {
-	let twarrtid = event.target.getAttribute('data-delete-twarrtid');
-	let modal = event.target.closest('.modal')
-	let req = new Request("/tweets/" + twarrtid + "/delete", { method: 'POST' });
+	let postid = event.target.dataset.deletePostid;
+	let modal = event.target.closest('.modal');
+	let path = "";
+	if (event.target.dataset.action == "deleteTwarrt") {
+		path = "/tweets/" + postid + "/delete";
+	}
+	else {
+		path = "/forumpost/" + postid + "/delete";
+	}
+	let req = new Request(path, { method: 'POST' });
 	fetch(req).then(response => {
 		if (response.status < 300) {
 			bootstrap.Modal.getInstance(modal).hide()
-			document.querySelector('li[data-twarrtid="' + twarrtid + '"]')?.remove()
+			document.querySelector('li[data-postid="' + postid + '"]')?.remove()
 		}
 		else {
 			response.json().then( data => {
@@ -86,14 +96,44 @@ function deleteAction() {
 	})
 }
 
-// Make every twarrt expand when first clicked, showing the previously hidden action bar.
-var twarrtlistItems = document.querySelectorAll('[data-twarrtid]');
-for (let twarrt of twarrtlistItems) {
-	twarrt.addEventListener("click", showActionBar);
+// Make every post expand when first clicked, showing the previously hidden action bar.
+var postListItems = document.querySelectorAll('[data-postid]');
+for (let posElement of postListItems) {
+	posElement.addEventListener("click", showActionBar);
 }
 function showActionBar() {
-	let actionbar = event.currentTarget.querySelector('[data-label="actionbar"]');
-	var bsCollapse = new bootstrap.Collapse(actionbar, { toggle: false }).show()
+	let actionBar = event.currentTarget.querySelector('[data-label="actionbar"]');
+	if (!actionBar.classList.contains("show")) {
+		var bsCollapse = new bootstrap.Collapse(actionBar, { toggle: false }).show();
+		updateLikeCounts(event.currentTarget);
+	}
+}
+function updateLikeCounts(postElement) {
+	let listType = postElement.closest('ul')?.dataset.listtype;
+	let postid = postElement.dataset.postid;
+	fetch("/" + listType + "/" + postid)
+		.then(response => response.json())
+		.then(jsonStruct => {
+			let actionBar = postElement.querySelector('[data-label="actionbar"]');
+			if (jsonStruct.laughs) { 
+				let laughspan = actionBar.querySelector('.laughtext');
+				if (laughspan) {
+					laughspan.textContent = (jsonStruct.laughs.length > 0 ? jsonStruct.laughs.length : "");
+				}
+			}
+			if (jsonStruct.likes) { 
+				let likespan = actionBar.querySelector('.liketext');
+				if (likespan) {
+					likespan.textContent = (jsonStruct.likes.length > 0 ? jsonStruct.likes.length : "");
+				}
+			}
+			if (jsonStruct.loves) { 
+				let lovespan = actionBar.querySelector('.lovetext');
+				if (lovespan) {
+					lovespan.textContent = (jsonStruct.loves.length > 0 ? jsonStruct.loves.length : "");
+				}
+			}
+		});
 }
 
 
@@ -173,6 +213,8 @@ function swapUploadImage() {
 	updatePhotoCardState(prevCard);
 	updatePhotoCardState(cardElement);
 }
+
+// For all form submits that display an error alert on fail but load a new page on success.
 for (let form of document.querySelectorAll('form.ajax')) {
 	form.addEventListener("submit", function(event) { submitAJAXForm(form, event); });
 }
@@ -181,7 +223,7 @@ function submitAJAXForm(formElement, event) {
 	var req = new XMLHttpRequest();
 	req.onload = function() {
 		if (this.status < 300) {
-			let successURL = formElement.getAttribute("postSuccessURL");
+			let successURL = formElement.dataset.successurl;
 			if (successURL) {
 				location.assign(successURL);
 			}
@@ -193,13 +235,13 @@ function submitAJAXForm(formElement, event) {
 			var data = JSON.parse(this.responseText);
 			let alertElement = formElement.querySelector('.alert');
 			alertElement.innerHTML = "<b>Error:</b> " + data.reason;
-			alertElement.style.display = "block"
+			alertElement.classList.remove("d-none")
 		}
 	}
 	req.onerror = function() {
 		let alertElement = formElement.querySelector('.alert');
 		alertElement.innerHTML = "<b>Error:</b> " + this.statusText;
-		alertElement.style.display = "block"
+		alertElement.classList.remove("d-none")
 	}
 	req.open("post", formElement.action);
     req.send(new FormData(formElement));

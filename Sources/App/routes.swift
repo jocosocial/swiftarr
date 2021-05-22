@@ -5,6 +5,15 @@ public func routes(_ app: Application) throws {
     
 	let siteLoginController = SiteLoginController()
 	try siteLoginController.registerRoutes(app)
+
+	let siteTwitarrController = SiteTwitarrController()
+	try siteTwitarrController.registerRoutes(app)
+	
+	let siteSeamailController = SiteSeamailController()
+	try siteSeamailController.registerRoutes(app)
+	
+	let siteForumController = SiteForumController()
+	try siteForumController.registerRoutes(app)
 	
 	let siteController = SiteController()
 	try siteController.registerRoutes(app)

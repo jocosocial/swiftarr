@@ -239,10 +239,12 @@ struct CreateReportSchema: Migration {
 				.field("reportType", .string, .required)
 				.field("reportedID", .string, .required)
 				.field("submitterMessage", .string, .required)
+				.field("moderator_memo", .string, .required)
 				.field("isClosed", .bool, .required)
     			.field("created_at", .datetime)
     			.field("updated_at", .datetime)
  				.field("author", .uuid, .required, .references("users", "id"))
+ 				.field("handled_by", .uuid, .required, .references("users", "id"))
 				.create()
     }
     

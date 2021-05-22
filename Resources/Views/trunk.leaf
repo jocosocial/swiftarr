@@ -22,7 +22,7 @@
 		<a class="navbar-brand" href="/">Twit-arr</a>
 		<a class="nav-link active" aria-current="page" href="/tweets">Tweets</a>
 		<a class="nav-link" href="/forums">Forums</a>
-		<a class="nav-item nav-link" href="#">Seamail</a>
+		<a class="nav-item nav-link" href="/seamail">Seamail</a>
 		<a class="nav-item nav-link" href="/events">Schedule</a>
 		<div class="collapse navbar-collapse" id="navbarSupportedContent">
 		  <div class="navbar-nav">

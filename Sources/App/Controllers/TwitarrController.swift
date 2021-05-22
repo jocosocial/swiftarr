@@ -73,51 +73,40 @@ struct TwitarrController: RouteCollection {
 					twarrt.containsMutewords(using: cachedUser.mutewords ?? []) {
 				return req.eventLoop.makeFailedFuture(Abort(.notFound, reason: "twarrt is not available"))
 			}
-			return user.hasBookmarked(twarrt, on: req).flatMap { (bookmarked) in
-				// get likes data
-				return TwarrtLikes.query(on: req.db)
-					.filter(\.$twarrt.$id == twartID)
-					.all()
-					.flatMap { (twarrtLikes) in
+			return twarrt.$likes.$pivots.get(on: req.db).flatMap { twarrtLikes in
+				return user.hasBookmarked(twarrt, on: req).flatMapThrowing { bookmarked in
 						// get users
-						let likeUsers: [EventLoopFuture<User>] = twarrtLikes.map {
-							(twarrtLike) -> EventLoopFuture<User> in
-							return User.find(twarrtLike.user.id, on: req.db)
-								.unwrap(or: Abort(.internalServerError, reason: "user not found"))
+						let userUUIDs = twarrtLikes.map { $0.$user.id }
+						let seamonkeys = req.userCache.getHeaders(userUUIDs).map { SeaMonkey(header: $0) }
+						// init return struct
+						guard let author = req.userCache.getUser(twarrt.$author.id)?.makeHeader() else {
+							throw Abort(.internalServerError, reason: "Could not find author of twarrt.")
 						}
-						return likeUsers.flatten(on: req.eventLoop).flatMapThrowing { (users) in
-							let seamonkeys = try users.map { try SeaMonkey(user: $0) }
-							// init return struct
-							guard let author = req.userCache.getUser(twarrt.$author.id)?.makeHeader() else {
-								throw Abort(.internalServerError, reason: "Could not find author of twarrt.")
+						var twarrtDetailData = try TwarrtDetailData(
+							postID: twarrt.requireID(),
+							createdAt: twarrt.createdAt ?? Date(),
+							author: author,
+							text: twarrt.isQuarantined ? "This twarrt is under moderator review." : twarrt.text,
+							images: twarrt.isQuarantined ? nil : twarrt.images,
+							replyToID: twarrt.$replyTo.id,
+							isBookmarked: bookmarked,
+							laughs: [],
+							likes: [],
+							loves: []
+						)
+						// sort seamonkeys into like types
+						for (index, like) in twarrtLikes.enumerated() {
+							switch like.likeType {
+								case .laugh:
+									twarrtDetailData.laughs.append(seamonkeys[index])
+								case .like:
+									twarrtDetailData.likes.append(seamonkeys[index])
+								case .love:
+									twarrtDetailData.loves.append(seamonkeys[index])
+								default: continue
 							}
-							var twarrtDetailData = try TwarrtDetailData(
-								postID: twarrt.requireID(),
-								createdAt: twarrt.createdAt ?? Date(),
-								author: author,
-								text: twarrt.isQuarantined ?
-									"This twarrt is under moderator review." : twarrt.text,
-								images: twarrt.images,
-								replyToID: twarrt.$replyTo.id,
-								isBookmarked: bookmarked,
-								laughs: [],
-								likes: [],
-								loves: []
-							)
-							// sort seamonkeys into like types
-							for (index, like) in twarrtLikes.enumerated() {
-								switch like.likeType {
-									case .laugh:
-										twarrtDetailData.laughs.append(seamonkeys[index])
-									case .like:
-										twarrtDetailData.likes.append(seamonkeys[index])
-									case .love:
-										twarrtDetailData.loves.append(seamonkeys[index])
-									default: continue
-								}
-							}
-							return twarrtDetailData
 						}
+						return twarrtDetailData
 					}
 			}
         }

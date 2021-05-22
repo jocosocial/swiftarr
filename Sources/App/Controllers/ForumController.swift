@@ -139,8 +139,7 @@ struct ForumController: RouteCollection {
         let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...200)
         // get user's taggedForum barrel, and category
         return user.getBookmarkBarrel(of: .taggedForum, on: req)
-        	.and(Category.findFromParameter(categoryIDParam, on: req).addModelID()).flatMap {
-            (barrel, categoryTuple) in
+        	.and(Category.findFromParameter(categoryIDParam, on: req).addModelID()).flatMap { (barrel, categoryTuple) in
             let (category, categoryID) = categoryTuple
 			// remove blocks from results, unless it's an admin category
 			let blocked = category.isRestricted ? [] : req.userCache.getBlocks(userID)
@@ -309,9 +308,10 @@ struct ForumController: RouteCollection {
 					let loveUsers = postLikes.filter { $0.likeType == .love }.map { $0.$user.id }
 					// init return struct
 					let postDetailData = try PostDetailData(
-						postID: post.requireID(),
+						postID: postID,
+						forumID: post.$forum.id,
 						createdAt: post.createdAt ?? Date(),
-						authorID: post.author.requireID(),
+						author: req.userCache.getHeader(post.$author.id),
 						text: post.isQuarantined ? "This post is under moderator review." : post.text,
 						images: post.isQuarantined ? nil : post.images,
 						isBookmarked: bookmarked,
