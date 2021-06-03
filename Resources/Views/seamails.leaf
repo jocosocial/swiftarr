@@ -1,7 +1,7 @@
 #extend("trunk"):
     #export("body"):
     	<div class="container-md ms-0 mt-2">
-    		<div class="row align-items-end">
+    		<div class="row mb-2 align-items-end">
     			<div class="col">
     				Seamail
 				</div>
@@ -18,21 +18,34 @@
 					</div>
 				#else:
 					#for(fez in fezzes):
-						<a href="/fez/#(fez.fezID)" class="list-group-item list-group-item-action">		
+						<a href="/seamail/#(fez.fezID)" class="list-group-item list-group-item-action">		
 							<div class="row">
 								<div class="col">
 									#elem(fez.title)
 								</div>
 								<div class="col col-auto">
-									<span class="text-muted">#relativeTime(fez.lastModificationDate)</span>
+									<span class="text-muted">#relativeTime(fez.lastModificationTime)</span>
 								</div>
+							</div>
+							<div class="row">
+								#for(participant in fez.participants):
+									#if(participant.userID != trunk.userID):
+										<div class="col col-auto border">
+											#avatar(participant.userImage)
+											<span>#elem(participant.username)</span>
+										</div>	
+									#endif			
+								#endfor
 							</div>
 							<div class="row">
 								<div class="col">
 									<span class="text-muted">#relativeTime(forum.lastPostAt)</span>
 								</div>
 								<div class="col col-auto">
-									#(fez.postCount) posts
+									<span class="badge rounded-pill bg-light text-dark">#(fez.postCount) posts</span>
+									#if(fez.readCount < fez.postCount):
+										<span class="badge rounded-pill bg-danger">#(fez.postCount - fez.readCount) new</span>
+									#endif
 								</div>
 							</div>
 						</a>

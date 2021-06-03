@@ -1,0 +1,43 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 mt-2">
+    		<div class="row justify-content-center">
+    			<div class="col col-auto">
+    				User Profile for: <b>@#elem(profile.header.username)</b>
+				</div>
+			</div>
+			<div class="row justify-content-center align-items-center mx-1 mb-3">
+    			<div class="col col-auto p-1 border">
+    				#avatar(profile.header.userImage, 200)
+				</div>
+				<div class="col-sm">
+					#if(profile.header.displayName):
+						Display Name: <b>#elem(profile.header.displayName)</b><br>
+					#endif
+					#if(profile.realName):
+						Real Name: <b>#elem(profile.realName)</b><br>
+					#endif
+					#if(profile.roomNumber):
+						Room #: <b>#elem(profile.roomNumber)</b><br>
+					#endif
+					#if(profile.email):
+						Email: <b>#elem(profile.email)</b><br>
+					#endif
+					#if(profile.homeLocaiton):
+						Home Town: <b>#elem(profile.homeLocation)</b><br>
+					#endif
+					#if(profile.preferredPronoun):
+						Pronouns: <b>#elem(profile.preferredPronoun)</b><br>
+					#endif
+				</div>
+			</div>
+			<div class="row mx-1 border">
+    			<div class="col col-auto p-1">
+    				<h6>About @#elem(profile.header.username)&#58;</h6>
+					#elem(profile.about) Something about James goes here.
+				</div>				
+			</div>
+		</div>
+    #endexport
+#endextend
+

@@ -20,6 +20,9 @@ final class Category: Model {
     /// Whether the category requires `.moderator` for additions.
     @Field(key: "isRestricted") var isRestricted: Bool
     
+    /// The number of forums containted in this Category. Should always be equal to forums.count.
+    @Field(key: "forumCount") var forumCount: Int32
+    
     /// Timestamp of the model's creation, set automatically.
     @Timestamp(key: "created_at", on: .create) var createdAt: Date?
     
@@ -50,5 +53,6 @@ final class Category: Model {
     ) {
         self.title = title
         self.isRestricted = isRestricted
+        self.forumCount = 0
     }
 }

@@ -19,7 +19,7 @@
 			
 		#if(trunk.userIsLoggedIn):
 			<div class="container-fluid mt-3">
-				#if(trunk.metaRedirectURL):
+				#if(redirectURL):
 					<div class="row">
 						<div class="col col-auto">
 							<p>This button should take you to the page you were trying to see before we made you create an account. Thanks for joining!</p>
@@ -27,7 +27,7 @@
 					</div>
 					<div class="row">
 						<div class="col">
-							<a href="#(trunk.metaRedirectURL)" class="btn btn-primary btn-lg" role="button">Finally!</a>
+							<a href="#(redirectURL)" class="btn btn-primary btn-lg" role="button">Finally!</a>
 						</div>
 					</div>
 				#else:

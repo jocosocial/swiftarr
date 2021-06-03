@@ -79,22 +79,25 @@ struct ForumController: RouteCollection {
 
     /// `GET /api/v3/forum/categories`
     ///
-    /// Retrieve a list of all forum `Category`s, sorted by type (admin, user)
-    /// and title. 
+    /// Retrieve a list of  forum `Category`s, sorted by type (admin, user) and title. 
+	/// Requiest parameters:
+	/// - `?cat=UUID` Only return information about the given category. Will still return an array of `CategoryData`.
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Returns: `[CategoryData]` containing all category IDs and titles.
     func categoriesHandler(_ req: Request) throws -> EventLoopFuture<[CategoryData]> {
-        return Category.query(on: req.db)
-			.all()
-            .flatMapThrowing { (categories) in
-            	let sortedCats = categories.sorted {
-            		return $0.isRestricted == $1.isRestricted ? $0.title < $1.title : $0.isRestricted
-            	}
-                // return as CategoryData
-                return try sortedCats.map {
-                    try CategoryData(categoryID: $0.requireID(), title: $0.title, isRestricted: $0.isRestricted)
-                }
+    	let futureCategories = Category.query(on: req.db)
+		if let catID = req.query[UUID.self, at: "cat"]  {
+			futureCategories.filter(\.$id == catID)
+		}
+        return futureCategories.all().flatMapThrowing { (categories) in
+			let sortedCats = categories.sorted {
+				return $0.isRestricted == $1.isRestricted ? $0.title < $1.title : $0.isRestricted
+			}
+			// return as CategoryData
+			return try sortedCats.map {
+				try CategoryData($0)
+			}
         }
     }
     
@@ -132,7 +135,7 @@ struct ForumController: RouteCollection {
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 404 error if the category ID is not valid.
     /// - Returns: `[ForumListData]` containing all category forums.
-    func categoryForumsHandler(_ req: Request) throws -> EventLoopFuture<[ForumListData]> {
+    func categoryForumsHandler(_ req: Request) throws -> EventLoopFuture<CategoryData> {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
         let start = (req.query[Int.self, at: "start"] ?? 0)
@@ -161,7 +164,9 @@ struct ForumController: RouteCollection {
 				query.filter((dateFilterUsesUpdate ? \.$updatedAt : \.$createdAt) > afterDate)
 			}
 			return query.all().flatMap { (forums) in
-				return buildForumListData(forums, on: req, favoritesBarrel: barrel)
+				return buildForumListData(forums, on: req, favoritesBarrel: barrel).flatMapThrowing { forumList in
+					return try CategoryData(category, forumThreads: forumList)
+				}
 			}
         }
     }
@@ -587,6 +592,12 @@ struct ForumController: RouteCollection {
                     let forumPost = try ForumPost(forum: forum, author: forum.creator, text: data.firstPost.text, images: imageFilenames)
                     // return as ForumData
                     return forumPost.save(on: req.db).flatMapThrowing { (_) in
+                    	// Update Category
+                    	_ = category.$forums.query(on: req.db).count().map { count -> EventLoopFuture<Void> in
+                    		category.forumCount = Int32(count)
+                    		return category.save(on: req.db)                    		
+                    	}
+                    
                     	let creatorHeader = try req.userCache.getHeader(user.requireID())
                     	let postData = try PostData(post: forumPost, author: creatorHeader, 
                     			bookmarked: false, userLike: nil, likeCount: 0)

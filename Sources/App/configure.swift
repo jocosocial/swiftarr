@@ -37,6 +37,9 @@ func HTTPServerConfiguration(_ app: Application) throws {
     let port = Int(Environment.get("PORT") ?? "8081")!
 	app.http.server.configuration.port = port
 	app.routes.defaultMaxBodySize = "10mb"
+	
+	// for testing
+	app.http.server.configuration.hostname = "192.168.0.19"
 }
 
 func databaseConnectionConfiguration(_ app: Application) throws {
@@ -116,6 +119,7 @@ func configureLeaf(_ app: Application) throws {
     app.leaf.tags["elem"] = ElementSanitizerTag()
     app.leaf.tags["addJocomoji"] = AddJocomojiTag()
     app.leaf.tags["relativeTime"] = RelativeTimeTag()
+    app.leaf.tags["avatar"] = AvatarTag()
 }
 	
 func configureMigrations(_ app: Application) throws {
@@ -156,6 +160,7 @@ func configureMigrations(_ app: Application) throws {
 	}
 	
 	app.migrations.add(CreateTestData(), to: .psql)
+	app.migrations.add(SetInitialCategoryForumCounts(), to: .psql)
 }
     
     // add Fluent commands for CLI migration and revert

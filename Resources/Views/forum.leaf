@@ -5,8 +5,8 @@
     			<div class="col col-auto">
 					<nav aria-label="breadcrumb">
 						<ol class="breadcrumb">
-							<li class="breadcrumb-item" aria-current="page"><a href="/forums">Forums</a></li>
-							<li class="breadcrumb-item" aria-current="page">Some Category??</li>
+							<li class="breadcrumb-item"><a href="/forums">Forums</a></li>
+							<li class="breadcrumb-item"><a href="/forums/#(category.categoryID)">#(category.title)</a></li>
 							<li class="breadcrumb-item active" aria-current="page">#(forum.title)</li>
 						</ol>
 					</nav>
@@ -18,11 +18,7 @@
 						<div class="container-fluid">
 							<div class="row align-items-start justify-content-start">	
 								<div class="col g-0" style="flex: 0 0 40px;">
-									#if(forumPost.author.userImage):
-										<img src="/api/v3/image/thumb/#(forumPost.author.userImage)" width=40 height=40 alt="Avatar">
-									#else:
-										<img src="/img/NoAvatarUser.png" width=40 height=40 alt="Avatar">
-									#endif
+									#avatar(forumPost.author.userImage)
 								</div>
 								<div class="col">
 									<div class="row">	

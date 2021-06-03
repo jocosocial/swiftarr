@@ -72,7 +72,7 @@ struct UsersController: RouteCollection {
     
     /// `GET /api/v3/users/find/STRING`
     ///
-    /// Retrieves a user's `UserInfo` using either an ID (UUID string) or a username.
+    /// Retrieves a user's `UserHeader` using either an ID (UUID string) or a username.
     ///
     /// This endpoint is of limited utility, but is included for the case of obtaining a
     /// user's ID from a username. If you have an ID and want the associated username, use
@@ -84,7 +84,7 @@ struct UsersController: RouteCollection {
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 404 error if no match is found.
-    /// - Returns: `UserInfo` containing the user's ID, username and timestamp of last
+    /// - Returns: `UserHeader` containing the user's ID, username and timestamp of last
     ///   profile update.
     func findHandler(_ req: Request) throws -> UserHeader {
         let requester = try req.auth.require(User.self)
@@ -242,8 +242,8 @@ struct UsersController: RouteCollection {
     
     /// `GET /api/v3/users/match/allnames/STRING`
     ///
-    /// Retrieves all `UserProfile.userSearch` values containing the specified substring,
-    /// returning an array of precomposed `.userSearch` strings in `UserHeader` format.
+    /// Retrieves all `User.userSearch` values containing the specified substring,
+    /// returning an array of `UserHeader` structs..
     /// The intended use for this endpoint is to help isolate a particular user in an
     /// auto-complete type scenario, by searching **all** of the `.displayName`, `.username`
     /// and `.realName` profile fields.
@@ -260,8 +260,7 @@ struct UsersController: RouteCollection {
     ///
     /// - Parameter req: he incoming request `Container`, provided automatically.
     /// - Throws: 403 error if the search term is not permitted.
-    /// - Returns: `[UserSearch]` containing the ID and profile.userSearch string
-    ///   values of all matching users.
+    /// - Returns: `[UserHeader]` values of all matching users.
     func matchAllNamesHandler(_ req: Request) throws -> EventLoopFuture<[UserHeader]> {
         let requester = try req.auth.require(User.self)
 		guard var search = req.parameters.get(searchStringParam.paramString) else {
@@ -274,6 +273,9 @@ struct UsersController: RouteCollection {
         search = search.trimmingCharacters(in: .whitespacesAndNewlines)
         guard search != "@", search != "(@" else {
             throw Abort(.forbidden, reason: "'\(search)' is not a permitted search string")
+        }
+		guard search.count >= 2 else {
+            throw Abort(.badRequest, reason: "User search requires at least 2 valid characters in search string..")
         }
         // remove blocks from results
         let blocked = try req.userCache.getBlocks(requester)

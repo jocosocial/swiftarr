@@ -44,6 +44,7 @@ struct SiteLoginController: SiteControllerUtils {
 		var trunk: TrunkContext
 		var username: String
 		var recoveryKey: String
+		var redirectURL: String?
 
 		init(_ req: Request, username: String, recoveryKey: String) {
 			trunk = .init(req, title: "Account Created")
@@ -137,19 +138,19 @@ struct SiteLoginController: SiteControllerUtils {
 								return loginUser(with: tokenResponse, on: req).flatMap {
 									var userCreatedContext = UserCreatedContext(req, username: createUserResponse.username, 
 											recoveryKey: createUserResponse.recoveryKey)
-									userCreatedContext.trunk.metaRedirectURL = req.session.data["returnAfterLogin"]
+									userCreatedContext.redirectURL = req.session.data["returnAfterLogin"]
 									return req.view.render("accountCreated", userCreatedContext)
 								}.flatMapError { error in 
 									var userCreatedContext = UserCreatedContext(req, username: createUserResponse.username, 
 											recoveryKey: createUserResponse.recoveryKey)
-									userCreatedContext.trunk.metaRedirectURL = req.session.data["returnAfterLogin"]
+									userCreatedContext.redirectURL = req.session.data["returnAfterLogin"]
 									return req.view.render("accountCreated", userCreatedContext)
 								}
 							}
 							else {
 								var userCreatedContext = UserCreatedContext(req, username: createUserResponse.username, 
 										recoveryKey: createUserResponse.recoveryKey)
-								userCreatedContext.trunk.metaRedirectURL = req.session.data["returnAfterLogin"]
+								userCreatedContext.redirectURL = req.session.data["returnAfterLogin"]
 								return req.view.render("accountCreated", userCreatedContext)
 							}
 						}

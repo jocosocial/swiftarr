@@ -1,5 +1,5 @@
 // Make the like/love/laugh buttons post their actions when tapped.
-var buttons = document.querySelectorAll('[data-action]');
+let buttons = document.querySelectorAll('[data-action]');
 for (let btn of buttons) {
 	let action = btn.dataset.action;
 	if (action == "deletePost" || action == "deleteTwarrt") {
@@ -97,7 +97,7 @@ function deleteAction() {
 }
 
 // Make every post expand when first clicked, showing the previously hidden action bar.
-var postListItems = document.querySelectorAll('[data-postid]');
+let postListItems = document.querySelectorAll('[data-postid]');
 for (let posElement of postListItems) {
 	posElement.addEventListener("click", showActionBar);
 }
@@ -139,7 +139,7 @@ function updateLikeCounts(postElement) {
 
 // MARK: - 
 // Handlers for the parts of messagePostForm.leaf
-var imageUploadInputs = document.querySelectorAll('.image-upload-input');
+let imageUploadInputs = document.querySelectorAll('.image-upload-input');
 for (let input of imageUploadInputs) {
 	updatePhotoCardState(input.closest('.card'));
 	input.addEventListener("change", function() { updatePhotoCardState(event.target.closest('.card')); })
@@ -179,7 +179,7 @@ function updatePhotoCardState(cardElement) {
 		nextCard.style.display = imgContainer.style.display;
 	}
 }
-var imageRemoveButtons = document.querySelectorAll('.twitarr-image-remove');
+let imageRemoveButtons = document.querySelectorAll('.twitarr-image-remove');
 for (let btn of imageRemoveButtons) {
 	btn.addEventListener("click", removeUploadImage);
 }
@@ -197,7 +197,7 @@ function removeUploadImage() {
 	lastCard.querySelector('input[type="hidden"]').value = "";
 	updatePhotoCardState(lastCard);
 }
-var imageSwapButtons = document.querySelectorAll('.twitarr-image-swap');
+let imageSwapButtons = document.querySelectorAll('.twitarr-image-swap');
 for (let btn of imageSwapButtons) {
 	btn.addEventListener("click", swapUploadImage);
 }
@@ -246,3 +246,51 @@ function submitAJAXForm(formElement, event) {
 	req.open("post", formElement.action);
     req.send(new FormData(formElement));
 }
+
+
+// Populates username completions for a partial username. 
+let userSearchAPICallTimeout = null;
+let userSearch = document.querySelector('input.user-autocomplete');
+userSearch?.addEventListener('input', function(event) {
+	if (userSearchAPICallTimeout) {
+		clearTimeout(userSearchAPICallTimeout);
+	}
+	userSearchAPICallTimeout = setTimeout(() => {
+		userSearchAPICallTimeout = null;
+		let searchString = userSearch.value?.replace(/\s+/g, '');
+		if (searchString.length < 2) { return }
+		fetch("/seamail/usernames/search/" + encodeURIComponent(searchString))
+			.then(response => response.json())
+			.then(userHeaders => {
+				let suggestionDiv = document.getElementById('name_suggestions');
+				suggestionDiv.innerHTML = "";
+				for (user of userHeaders) {
+					let nameDiv = document.createElement("div");
+					nameDiv.classList.add("col-auto", "border");
+					nameDiv.dataset.uuid = user.userID;
+					nameDiv.appendChild(document.createTextNode("@" + user.username));
+					suggestionDiv.append(nameDiv);
+					nameDiv.addEventListener('click', function(event) {
+						let participantsDiv = document.getElementById('named_participants');
+						for (index = 0; index < participantsDiv.children.length; ++index) {
+							if (participantsDiv.children[index].dataset['uuid'] == nameDiv.dataset.uuid) {
+								return;
+							}
+						} 
+						let divCopy = nameDiv.cloneNode(true);
+						participantsDiv.append(divCopy);
+						divCopy.addEventListener('click', function(event) {
+							divCopy.remove();
+						});
+						let names = [];
+						for (index = 1; index < participantsDiv.children.length; ++index) {
+							names.push(participantsDiv.children[index].dataset['uuid']);
+						} 
+						let hiddenFormElem = document.getElementById('participants_hidden');
+						hiddenFormElem.value = names;
+					});
+				}
+			})
+		
+	}, 200);
+})

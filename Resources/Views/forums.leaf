@@ -1,18 +1,23 @@
 #extend("trunk"):
     #export("body"):
     	<div class="container-md ms-0 mt-2">
-    		<div class="row align-items-end">
-    			<div class="col col-auto">
+    		<div class="row">
+    			<div class="col">
 					<nav aria-label="breadcrumb">
 						<ol class="breadcrumb">
 							<li class="breadcrumb-item" aria-current="page"><a href="/forums">Forums</a></li>
-							<li class="breadcrumb-item active" aria-current="page">Some Category??</li>
+							<li class="breadcrumb-item active" aria-current="page">#(forums.title)</li>
 						</ol>
 					</nav>
 				</div>
+				#if(!forums.isRestricted):
+					<div class="col col-auto">
+						<a class="btn btn-primary btn-sm" href="/forums/#(forums.categoryID)/createForum">New Thread</a>
+					</div>
+				#endif
 			</div>
 			<div class="list-group">
-			#for(forum in forums):
+			#for(forum in forums.forumThreads):
 				<a href="/forum/#(forum.forumID)" class="list-group-item list-group-item-action">		
 					<div class="row">
 						<div class="col">

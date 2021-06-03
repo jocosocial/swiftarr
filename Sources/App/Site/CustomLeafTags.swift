@@ -9,12 +9,12 @@ import Vapor
 import Leaf
 import Foundation
 
-// This tag should output-sanitize all string values in self, replacing existing values.
-// For each string, it should encode the chars &<>"'/ into their HTML entities, preventing them from being interpreted as HTML
-// commands when Leaf inserts them into HTML Element contexts. For inserting into other contexts, other sanitizing should be done.
-// See https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
-//
-// Usage: elem(String) -> String
+/// This tag should output-sanitize all string values in self, replacing existing values.
+/// For each string, it should encode the chars &<>"'/ into their HTML entities, preventing them from being interpreted as HTML
+/// commands when Leaf inserts them into HTML Element contexts. For inserting into other contexts, other sanitizing should be done.
+/// See https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
+///
+/// Usage: #elem(String) -> String
 struct ElementSanitizerTag: LeafTag {
 	static func sanitize(_ str: String) -> String {
 		var string = str
@@ -43,6 +43,10 @@ struct ElementSanitizerTag: LeafTag {
     }
 }
 
+/// Runs the element sanitizer on the given string, and then converts Jocomoji (specific string tags with the form :tag:)
+/// into inline images.
+///
+/// Usage: #addJocomoji(String) -> String
 struct AddJocomojiTag: LeafTag {
 	static let jocomoji = [ "buffet", "die-ship", "die", "fez", "hottub", "joco", "pirate", "ship-front",
 			"ship", "towel-monkey", "tropical-drink", "zombie" ]
@@ -66,6 +70,12 @@ struct AddJocomojiTag: LeafTag {
 	}
 }
 
+/// Turns a Date string into a relative date string. Argument is a ISO8601 formatted Date, or what JSON encoding 
+/// does to Date values. Output is a string giving a relative time in the past (from now) indicating the approximate time of the Date.
+///
+///	Output is constrained to a single element. e.g: "3 hours ago", "1 day ago", "5 minutes ago"
+///
+/// Usage: #relativeTime(dateValue) -> String
 struct RelativeTimeTag: LeafTag {
     func render(_ ctx: LeafContext) throws -> LeafData {
         try ctx.requireParameterCount(1)
@@ -109,3 +119,24 @@ struct RelativeTimeTag: LeafTag {
 	}
 }
 
+/// Inserts an <img> tag for the given user's avatar image. Presents a default image if the user doesn't have an image.
+/// Note: If we implement identicons at the API level, users will always have images, and the 'generic user' image here is just a fallback.
+///
+/// First parameter is the file name of the image, second optional parameter is the size of the <img> to produce. This tag will select the best size image to reference
+/// based on the size of  the image tag it is being placed in. Only produces square image views.
+///
+/// Useage: #avatar(imageFilename), #avatar(imageFilename, 800)
+struct AvatarTag: LeafTag {
+    func render(_ ctx: LeafContext) throws -> LeafData {
+		var imgSize = 40
+		if ctx.parameters.count > 1, let tempSize = ctx.parameters[1].int {
+			imgSize = tempSize
+		}
+    	var imagePath = "/img/NoAvatarUser.png"
+		if ctx.parameters.count > 0, let userImageString = ctx.parameters[0].string {
+			let imgLoadSize = imgSize > 100 ? "full" : "thumb"
+			imagePath = "/api/v3/image/\(imgLoadSize)/\(userImageString)"	
+		}
+		return LeafData.string("<img src=\"\(imagePath)\" width=\(imgSize) height=\(imgSize) alt=\"Avatar\">")
+	}
+}

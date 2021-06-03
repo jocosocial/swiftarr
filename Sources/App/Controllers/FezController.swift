@@ -162,7 +162,6 @@ struct FezController: RouteCollection {
     /// - Requires: `FezContentData` payload in the HTTP body.
     /// - Parameters:
     ///   - req: The incoming `Request`, provided automatically.
-    ///   - data: `FezContentData` containing the fez data.
     /// - Throws: 400 error if the supplied data does not validate.
     /// - Returns: `FezData` containing the newly created fez.
     func createHandler(_ req: Request) throws -> EventLoopFuture<Response> {
@@ -187,31 +186,7 @@ struct FezController: RouteCollection {
 			}
 		}
     }
-    
-    /// `POST /api/v3/fez/createprivate`
-    ///
-    /// Create a private `FriendlyFez`, also known as a text chat. The Fez has a `.type` of `.closed`.
-	/// 
-	/// The creating user is automatically added to the participant list.
-	///
-    /// - Parameters:
-    ///   - req: The incoming `Request`, provided automatically.
-    ///   - data: `FezContentData` containing the fez data.
-    /// - Throws: 400 error if the supplied data does not validate.
-    /// - Returns: `FezData` containing the newly created fez.
-    func createPrivateHandler(_ req: Request) throws -> EventLoopFuture<Response> {
-        let user = try req.auth.require(User.self)
-        let fez = try FriendlyFez(owner: user)
-		fez.participantArray = try [user.requireID()]
-        return fez.save(on: req.db).flatMapThrowing {
-        	let fezData = try buildFezData(from: fez, with: nil, for: user, on: req)
-            // with 201 status
-            let response = Response(status: .created)
-            try response.content.encode(fezData)
-            return response
-        }
-    }
-    
+        
     /// `GET /api/v3/fez/ID`
     ///
     /// Retrieve the specified FriendlyFez with all fez discussion `FezPost`s. This updates the user's `readCount`, marking all current posts as read.
@@ -344,10 +319,13 @@ struct FezController: RouteCollection {
         return FriendlyFez.findFromParameter(fezIDParam, on: req).throwingFlatMap { (fez) in
             let cacheUser = try req.userCache.getUser(user)
 			guard fez.participantArray.contains(cacheUser.userID) else {
-				return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "user is not member of fez; cannot post"))
+				throw Abort(.forbidden, reason: "user is not member of fez; cannot post")
 			}
 			guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
 				throw Abort(.notFound, reason: "fez is not available")
+			}
+			guard fez.fezType != .closed || data.images.count == 0 else {
+				throw Abort(.badRequest, reason: "Private conversations can't contain photos.")
 			}
             // process image
 			return self.processImages(data.images , usage: .fezPost, on: req).throwingFlatMap { (filenames) in

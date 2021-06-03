@@ -111,15 +111,13 @@ struct BlockedUserData: Content {
     var seamonkeys: [SeaMonkey]
 }
 
-/// Used to return the ID and title of a `Category`.
+/// Used to return the ID and title of a `Category`. 
 ///
 /// Returned by:
 /// * `GET /api/v3/forum/categories`
-/// * `GET /api/v3/forum/categories/admin`
-/// * `GET /api/v3/forum/categories/user`
+/// * `GET /api/v3/forum/catgories/ID`
 ///
-/// See `ForumController.categoriesHandler(_:)`, `ForumController.categoriesAdminHandler(_:)`,
-/// `ForumController.categoriesUserHandler(_:)`.
+/// See `ForumController.categoriesHandler(_:)`
 struct CategoryData: Content {
     /// The ID of the category.
     var categoryID: UUID
@@ -127,6 +125,20 @@ struct CategoryData: Content {
     var title: String
     /// If TRUE, only mods can create/modify threads in this forum. Should be sorted to top of category list.
     var isRestricted: Bool
+    /// The number of threads in this category
+    var numThreads: Int32
+    ///The threads in the category. Only populated for /categories/ID.
+    var forumThreads: [ForumListData]?
+}
+
+extension CategoryData {
+	init(_ cat: Category, forumThreads: [ForumListData]? = nil) throws {
+		categoryID = try cat.requireID()
+		title = cat.title
+		isRestricted = cat.isRestricted
+		numThreads = cat.forumCount
+		self.forumThreads = forumThreads
+	}
 }
 
 /// Used to return a newly created account's ID, username and recovery key.
@@ -393,6 +405,8 @@ extension ForumCreateData: RCFValidatable {
 struct ForumData: Content {
     /// The forum's ID.
     var forumID: UUID
+    /// The ID of the forum's containing Category..
+    var categoryID: UUID
     /// The forum's title
     var title: String
     /// The forum's creator.
@@ -412,6 +426,7 @@ extension ForumData {
     	}
     
 		forumID = try forum.requireID()
+		categoryID = forum.$category.id
 		title = forum.title
 		self.creator = creator
 		isLocked = forum.isLocked
@@ -706,16 +721,15 @@ struct PostDetailData: Content {
 struct ProfilePublicData: Content {
     /// Basic info abou thte user--their ID, username, displayname, and avatar image.
     var header: UserHeader
-
     /// An optional blurb about the user.
     var about: String
-    /// An optional email address for the user.
+    /// An optional greeting/message to visitors of the profile.
     var message: String
-    /// An optional preferred pronoun or form of address.
+    /// An optional email address for the user.
     var email: String
     /// An optional home location for the user.
     var homeLocation: String
-    /// An optional greeting/message to visitors of the profile.
+    /// An optional preferred pronoun or form of address.
     var preferredPronoun: String
     /// An optional real world name of the user.
     var realName: String

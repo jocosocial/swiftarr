@@ -1,0 +1,105 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 mt-2">
+    		<div class="row">
+				<nav aria-label="breadcrumb">
+				  <ol class="breadcrumb">
+					<li class="breadcrumb-item"><a href="/seamail">Seamail</a></li>
+					<li class="breadcrumb-item active" aria-current="page">#(fez.title)</li>
+				  </ol>
+				</nav>
+			</div>
+			<div class="row">
+				<h6>Participants</h6>
+			</div>
+			<div class="row mb-2 mx-0">
+				#for(participant in fez.participants):
+					<div class="col col-auto border">
+						#avatar(participant.userImage)
+						<span>#elem(participant.username)</span>
+					</div>				
+				#endfor
+			</div>
+			<ul class="list-group container-md mx-0 px-0">
+				#for(fezPost in oldPosts):
+					<li class="list-group-item bg-transparent">
+						<div class="container-fluid">
+							<div class="row align-items-start justify-content-start">	
+								<div class="col g-0" style="flex: 0 0 40px;">
+									#avatar(fezPost.author.userImage)
+								</div>
+								<div class="col">
+									<div class="row">	
+										<div class="col">
+											<b>#elem(fezPost.author.displayName) @#elem(fezPost.author.username)</b>
+										</div>
+										<div class="col-auto">
+											<span class="text-muted">#relativeTime(fezPost.timestamp)</span>
+										</div>
+									</div>
+									<div class="row">	
+										<div class="col">
+											#addJocomoji(fezPost.text)
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</li>
+				#endfor
+				#if(showDivider):
+					<hr class="newline">
+				#endif
+				<span id="newposts"></span>
+				#for(fezPost in newPosts):
+					<li class="list-group-item bg-transparent">
+						<div class="container-fluid">
+							<div class="row align-items-start justify-content-start">	
+								<div class="col g-0" style="flex: 0 0 40px;">
+									#avatar(fezPost.author.userImage)
+								</div>
+								<div class="col">
+									<div class="row">	
+										<div class="col">
+											<b>#elem(fezPost.author.displayName) @#elem(fezPost.author.username)</b>
+										</div>
+										<div class="col-auto">
+											<span class="text-muted">#relativeTime(fezPost.timestamp)</span>
+										</div>
+									</div>
+									<div class="row">	
+										<div class="col">
+											#addJocomoji(fezPost.text)
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</li>
+				#endfor
+			</ul>
+			<ul class="container-md mt-2 mx-0 px-0 list-group">
+				<li class="list-group-item bg-transparent mb-3">				
+					<form class="ajax" action="#(post.formAction)" enctype="multipart/form-data" method="POST" data-successurl="#(post.postSuccessURL)">
+						<div class="container-fluid">
+							<div class="row mb-2"> 
+								<textarea class="form-control" maxlength="500" rows="3" name="postText" placeholder="Send a message"></textarea>
+							</div>
+							<div class="row mb-2">
+								<div class="col gx-0">
+									<small>Please remember to abide by the<br><a href="/codeOfConduct">Code of Conduct</a></small>
+								</div>
+								<div class="col col-auto gx-0">
+									<button type="submit" class="btn btn-primary">Post</button>
+								</div>
+							</div>
+							<div class="alert alert-danger mt-3 d-none" role="alert">
+							</div>				
+						</div>
+					</form>
+				</li>
+			</ul>
+		</div>
+    #endexport
+#endextend
+

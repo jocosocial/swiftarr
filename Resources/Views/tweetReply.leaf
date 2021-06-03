@@ -11,11 +11,7 @@
 							<div class="container-fluid">
 								<div class="row align-items-start justify-content-start">	
 									<div class="col g-0" style="flex: 0 0 40px;">
-										#if(replyToTweet.author.userImage):
-											<img src="/api/v3/image/thumb/#(replyToTweet.author.userImage)" width=40 height=40 alt="Avatar">
-										#else:
-											<img src="/img/NoAvatarUser.png" width=40 height=40 alt="Avatar">
-										#endif
+										#avatar(replyToTweet.author.userImage)
 									</div>
 									<div class="col">
 										<div class="row">	

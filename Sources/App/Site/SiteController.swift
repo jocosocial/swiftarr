@@ -34,16 +34,15 @@ struct TrunkContext : Encodable {
 
 // Leaf data used by the messagePostForm.
 struct MessagePostContext: Encodable {
-	var messageText: String
-	var photoFilenames: [String] 			// Must have 4 values to make Leaf templating work. Use "" as placeholder.
+	var messageText: String = ""
+	var photoFilenames: [String] = ["", "", "", ""]	// Must have 4 values to make Leaf templating work. Use "" as placeholder.
 	var formAction: String
 	var postSuccessURL: String
-	var authorName: String?					// Nil if current user is also author. Non-nil therefore implies mod edit.
+	var authorName: String?							// Nil if current user is also author. Non-nil therefore implies mod edit.
+	var showForumTitle: Bool = false
 	
 	// For creating a new tweet
 	init() {
-		messageText = ""
-		photoFilenames = ["", "", "", ""]
 		formAction = "/tweets/create"
 		postSuccessURL = "/tweets"
 	}
@@ -59,10 +58,15 @@ struct MessagePostContext: Encodable {
 		postSuccessURL = "/tweets"
 	}
 	
+	// For creating a new forum in a category
+	init(withCategoryID catID: String) {
+		formAction = "/forums/\(catID)/createForum"
+		postSuccessURL = "/forums/\(catID)"
+		showForumTitle = true
+	}
+	
 	// For creating a new post in a forum
 	init(withForumID forumID: String) {
-		messageText = ""
-		photoFilenames = ["", "", "", ""]
 		formAction = "/forum/\(forumID)/create"
 		postSuccessURL = "/forum/\(forumID)"
 	}
@@ -77,11 +81,24 @@ struct MessagePostContext: Encodable {
 		formAction = "/forumpost/edit/\(withForumPost.postID)"
 		postSuccessURL = "/forum/\(withForumPost.forumID)"
 	}
-
+	
+	// For creating a new Seamail thread--parameter is not used
+	init(forNewSeamail: Bool) {
+		formAction = "/seamail/create"
+		postSuccessURL = "/seamail"
+	}
+	
+	// For posting in an existing Seamail thread
+	init(forSeamail: FezData) {
+		formAction = "/seamail/\(forSeamail.fezID)/post"
+		postSuccessURL = "/seamail/\(forSeamail.fezID)"
+	}
 }
 
 // POST data structure returned by the form in messagePostForm.leaf
+// This form and data structure are used for creating and editing twarrts, forum posts, and fez messages.
 struct MessagePostFormContent : Codable {
+	let forumTitle: String?					// Only used when creating new forums
 	let postText: String
 	let localPhoto1: Data?
 	let serverPhoto1: String?
@@ -220,6 +237,8 @@ protocol SiteControllerUtils {
     var twarrtIDParam: PathComponent { get }
     var forumIDParam: PathComponent { get }
     var postIDParam: PathComponent { get }
+    var fezIDParam: PathComponent { get }
+    var userIDParam: PathComponent { get }
 
 	func apiQuery(_ req: Request, endpoint: String, method: HTTPMethod, defaultHeaders: HTTPHeaders?,
 			beforeSend: (inout ClientRequest) throws -> ()) -> EventLoopFuture<ClientResponse>
@@ -231,6 +250,8 @@ extension SiteControllerUtils {
     var twarrtIDParam: PathComponent { PathComponent(":twarrt_id") }
     var forumIDParam: PathComponent { PathComponent(":forum_id") }
     var postIDParam: PathComponent { PathComponent(":post_id") }
+    var fezIDParam: PathComponent { PathComponent(":fez_id") }
+    var userIDParam: PathComponent { PathComponent(":user_id") }
 
 	func apiQuery(_ req: Request, endpoint: String, method: HTTPMethod = .GET, defaultHeaders: HTTPHeaders? = nil,
 			beforeSend: (inout ClientRequest) throws -> () = { _ in }) -> EventLoopFuture<ClientResponse> {
@@ -238,7 +259,10 @@ extension SiteControllerUtils {
     	if let token = req.session.data["token"], !headers.contains(name: "Authorization") {
    			headers.add(name: "Authorization", value: "Bearer \(token)")
     	}
-    	var urlStr = "http://localhost:8081/api/v3" + endpoint
+//    	var urlStr = "http://localhost:8081/api/v3" + endpoint
+		let hostname = req.application.http.server.configuration.hostname
+		let port = req.application.http.server.configuration.port
+    	var urlStr = "http://\(hostname):\(port)/api/v3" + endpoint
     	if let queryStr = req.url.query {
     		urlStr.append("?\(queryStr)")
     	}

@@ -26,16 +26,16 @@
 				<div class="container-fluid">
 					<div class="row align-items-start justify-content-start">	
 						<div class="col g-0" style="flex: 0 0 40px;">
-							#if(tweet.author.userImage):
-								<img src="/api/v3/image/thumb/#(tweet.author.userImage)" width=40 height=40 alt="Avatar">
-							#else:
-								<img src="/img/NoAvatarUser.png" width=40 height=40 alt="Avatar">
-							#endif
+							<a href="/user/#(tweet.author.userID)">
+							#avatar(tweet.author.userImage)
+							</a>
 						</div>
 						<div class="col">
 							<div class="row">	
 								<div class="col">
-									<b>#elem(tweet.author.displayName)</b> @#elem(tweet.author.username)
+									<a href="/user/#(tweet.author.userID)">
+										<b>#elem(tweet.author.displayName)</b> @#elem(tweet.author.username)
+									</a>
 								</div>
 								<div class="col-auto">
 									<span class="text-muted">#relativeTime(tweet.createdAt)</span>

@@ -7,7 +7,8 @@ extension Model where IDValue: LosslessStringConvertible {
 		return findFromParameter(param.description, on: req)
 	}
 
-    /// Returns an `EventLoopFuture<User>` that will match the UUID of a user in a named request parameter. 
+    /// Returns an `EventLoopFuture<Model>` that will match the ID given in a named request parameter. 
+	/// For a route that has a ":userid" parameter,  `User.findFromParameter("userid", req)` will return that user from the User table.
 	/// Returns a failed future with an Abort error if: the parameter doesn't exist, the parameter's value can't be made into an IDValue 
 	/// for the Model type, or no Model type with that ID was found in the database.
     ///

@@ -31,6 +31,7 @@ struct CreateCategorySchema: Migration {
 				.field("title", .string, .required)
 				.unique(on: "title")
 				.field("isRestricted", .bool, .required)
+				.field("forumCount", .int32, .required)
     			.field("created_at", .datetime)
     			.field("updated_at", .datetime)
     			.field("deleted_at", .datetime)
