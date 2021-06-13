@@ -18,6 +18,9 @@ public func routes(_ app: Application) throws {
 	let siteUserController = SiteUserController()
 	try siteUserController.registerRoutes(app)
 	
+	let siteModController = SiteModController()
+	try siteModController.registerRoutes(app)
+	
 	let siteController = SiteController()
 	try siteController.registerRoutes(app)
 

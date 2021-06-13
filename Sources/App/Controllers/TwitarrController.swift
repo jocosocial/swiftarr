@@ -486,11 +486,8 @@ struct TwitarrController: RouteCollection {
     /// - Returns: 204 No COntent on success.
     func twarrtDeleteHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
-        let userID = try user.requireID()
-        return Twarrt.findFromParameter(twarrtIDParam, on: req).flatMap {  (twarrt) in
-            guard twarrt.$author.id == userID || user.accessLevel.hasAccess(.moderator) else {
-                    return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "user cannot delete twarrt"))
-            }
+        return Twarrt.findFromParameter(twarrtIDParam, on: req).throwingFlatMap { (twarrt) in
+			try user.guardCanModifyContent(byUserID: twarrt.$author.id, customErrorString: "user cannot delete twarrt")
             return twarrt.delete(on: req.db).transform(to: .noContent)
         }
     }
@@ -621,14 +618,11 @@ struct TwitarrController: RouteCollection {
     /// - Returns: `TwarrtData` containing the twarrt's contents and metadata.
     func twarrtUpdateHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         let user = try req.auth.require(User.self)
-        let userID = try user.requireID()
 		let data = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
         return Twarrt.findFromParameter(twarrtIDParam, on: req).throwingFlatMap { (twarrt) in
 			// I *think* the author should be allowed to edit a quarantined twarrt?
 			// ensure user has write access
-			guard twarrt.$author.id == userID, user.accessLevel.hasAccess(.verified) else {
-				throw Abort(.forbidden, reason: "user cannot modify twarrt")
-            }
+			try user.guardCanModifyContent(byUserID: twarrt.$author.id, customErrorString: "user cannot modify twarrt")
 			return processImages(data.images, usage: .twarrt, on: req).map { filenames in
 				return (twarrt, filenames)
 			}
@@ -638,7 +632,7 @@ struct TwitarrController: RouteCollection {
 			let normalizedText = data.text.replacingOccurrences(of: "\r\n", with: "\r")
 			if twarrt.text != normalizedText || twarrt.images != filenames {
 				// stash current twarrt contents before modifying
-				let twarrtEdit = try TwarrtEdit(twarrt: twarrt)
+				let twarrtEdit = try TwarrtEdit(twarrt: twarrt, editor: user)
 				twarrt.text = normalizedText
 				twarrt.images = filenames
 				return twarrt.save(on: req.db)
@@ -729,8 +723,7 @@ extension TwitarrController {
 				let likeCount = try TwarrtLikes.query(on: req.db)
 					.filter(\.$twarrt.$id == twarrt.requireID())
 					.count()
-				return bookmarked.and(userLike).and(likeCount).flatMapThrowing {
-					(arg0, count) in
+				return bookmarked.and(userLike).and(likeCount).flatMapThrowing { (arg0, count) in
 					let (bookmarked, userLike) = arg0
 					return try TwarrtData(twarrt: twarrt, creator: author, isBookmarked: bookmarked, 
 							userLike: userLike?.likeType, likeCount: count)

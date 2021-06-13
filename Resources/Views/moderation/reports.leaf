@@ -1,0 +1,48 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 mt-2">
+    		<div class="row align-items-end">
+    			<div class="col col-auto">
+			    	<h6><b>Reports</b></h6>
+				</div>
+			</div>
+			<div class="list-group">
+			#for(report in reports):
+				<a class="list-group-item list-group-item-action" href="#(report.contentURL)">
+					<div class="container-fluid">
+						<div class="row">
+							<div class="col">
+								#(report.reportType)
+							</div>
+							<div class="col col-auto">
+								reported #relativeTime(report.firstReportTime)
+							</div>
+						</div>
+						<div class="row">
+							<div class="col">
+								#if(count(report.reports) == 1):
+									#if(report.reports.handledBy):
+										#if(report.isClosed):
+											Closed by #elem(report.reports.handledBy.username)
+										#else:
+											Being Handled by #elem(report.handledBy.username)
+										#endif
+									#else:
+										#if(report.isClosed):
+											1 Closed Report
+										#else:
+											1 Open Report
+										#endif
+									#endif
+								#else:
+									#count(report.reports) reports, #(report.openCount) open
+								#endif
+							</div>
+						</div>
+					</div>
+				</a>
+			#endfor
+			</div>
+		</div>
+    #endexport
+#endextend

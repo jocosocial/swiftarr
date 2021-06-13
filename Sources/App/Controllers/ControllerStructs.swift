@@ -767,6 +767,50 @@ struct ReportData: Content {
     var message: String
 }
 
+/// Used to return data about `Report`s submitted by users. Only Moderators and above have access.
+///
+/// Required by:
+/// * `GET /api/v3/admin/reports`
+struct ReportAdminData: Content {
+	/// The id of the report.
+	var id: UUID
+	/// The type of content being reported
+	var type: ReportType
+	/// The ID of the reported entity. Could resolve to an Int or a UUID, depending on the value of`type`.
+	var reportedID: String
+	/// Text the report author wrote when submitting the report.
+	var submitterMessage: String?
+	/// Notes by the mod handling the report.
+	var moderatorMemo: String?
+	/// The user that submitted the report--NOT the user whose content is being reported.
+	var author: UserHeader
+	/// The mod who handled (or closed) the report. 
+	var handledBy: UserHeader?
+	/// TRUE if the report has been closed by moderators.
+	var isClosed: Bool
+	/// The time the submitter filed the report.
+	var creationTime: Date
+	/// The last time the report has been modified.
+	var updateTime: Date
+}
+
+extension ReportAdminData {
+	init(req: Request, report: Report) throws {
+		id = try report.requireID()
+		type = report.reportType
+		reportedID = report.reportedID
+		submitterMessage = report.submitterMessage
+		moderatorMemo = report.moderatorMemo
+		isClosed = report.isClosed
+		creationTime = report.createdAt ?? Date()
+		updateTime = report.updatedAt ?? Date()
+		author = try req.userCache.getHeader(report.$submitter.id)
+		if let modID = report.$handledBy.id {
+			handledBy = try req.userCache.getHeader(modID)
+		}
+	}
+}
+
 /// Returned by `Barrel`s as a unit representing a user.
 struct SeaMonkey: Content {
     /// The user's ID.
@@ -884,15 +928,15 @@ struct TwarrtData: Content {
 }
 
 extension TwarrtData {
-    init(twarrt: Twarrt, creator: UserHeader, isBookmarked: Bool, userLike: LikeType?, likeCount: Int) throws {
+    init(twarrt: Twarrt, creator: UserHeader, isBookmarked: Bool, userLike: LikeType?, likeCount: Int, overrideQuarantine: Bool = false) throws {
     	guard creator.userID == twarrt.$author.id else {
     		throw Abort(.internalServerError, reason: "Internal server error--Twarrt's creator does not match.")
     	}
 		twarrtID = try twarrt.requireID()
 		createdAt = twarrt.createdAt ?? Date()
 		self.author = creator
-		text = twarrt.text
-		images = twarrt.images
+		text = twarrt.isQuarantined && !overrideQuarantine ? "This post is under moderator review." : twarrt.text
+		images = twarrt.isQuarantined && !overrideQuarantine ? nil : twarrt.images
 		replyToID = twarrt.$replyTo.id
 		self.isBookmarked = isBookmarked
 		self.userLike = userLike
@@ -900,6 +944,54 @@ extension TwarrtData {
     }
 }
 
+/// Used to return a `TwarrtEdit`'s data for moderators.
+///
+///	Included in:
+///	* `TwarrtModerationData`
+///	
+/// Returned by:
+/// * `GET /api/v3/admin/twarrt/id`
+struct TwarrtEditData: Content {
+	/// The ID of the twarrt.
+    var twarrtID: Int
+	/// The ID of the edit.
+    var editID: UUID
+    /// The timestamp of the twarrt.
+    var createdAt: Date
+    /// Who initiated the edit. Usually the twarrt author, but could be a moderator. Note that the saved edit shows the state BEFORE the edit,
+    /// therefore the 'author' here changed the contents to those of the NEXT edit (or to the current Twarrt state).
+    var author: UserHeader
+    /// The text of the twarrt.
+    var text: String
+    /// The filenames of the twarrt's optional images.
+    var images: [String]?
+}
+
+extension TwarrtEditData {
+    init(edit: TwarrtEdit, editor: UserHeader) throws {
+    	twarrtID = edit.$twarrt.id
+    	editID = try edit.requireID()
+    	createdAt = edit.createdAt ?? Date()
+    	author = editor
+    	text = edit.text
+    	images = edit.images    	
+    }
+}
+
+/// Used to return data a moderator needs to moderate a twarrt. 
+///	
+/// Returned by:
+/// * `GET /api/v3/admin/twarrt/id`
+///
+/// See `AdminController.twarrtModerationHandler(_:)`
+struct TwarrtModerationData: Content{
+	var twarrt: TwarrtData
+	var isDeleted: Bool
+	var isQuarantined: Bool
+	var isReviewed: Bool
+	var edits: [TwarrtEditData]
+	var reports: [ReportAdminData]
+}
 
 // FIXME: needs bookmark, userLike too?
 /// Used to return a `Twarrt`'s data with full user `LikeType` info.

@@ -22,7 +22,7 @@ import Fluent
 /// - Moderator modifies content, quarantines content, warns user, bans user, or takes some other action. 
 /// - Moderator fills in actionTaken field and closes the report.
 
-final class Report: Model, Content {
+final class Report: Model {
 	static let schema = "reports"
 	
     // MARK: Properties
@@ -40,7 +40,7 @@ final class Report: Model, Content {
     @Field(key: "submitterMessage") var submitterMessage: String
 
     /// Memo by moderator detailing actions taken. Only visible to moderators.
-    @Field(key: "moderator_memo") var moderatorMemo: String
+    @Field(key: "moderator_memo") var moderatorMemo: String?
     
     /// The status of the report.
     @Field(key: "isClosed") var isClosed: Bool

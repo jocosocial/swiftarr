@@ -28,8 +28,8 @@ struct TestController: RouteCollection {
 //        let tokenAuthGroup = testRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
         
         // open access endpoints
-        testRoutes.get("getusers", use: getUsersHandler)
-        testRoutes.get("getregistrationcodes", use: getRegistrationCodesHandler)
+ //       testRoutes.get("getusers", use: getUsersHandler)
+ //       testRoutes.get("getregistrationcodes", use: getRegistrationCodesHandler)
         
         // endpoints available only when not logged in
         

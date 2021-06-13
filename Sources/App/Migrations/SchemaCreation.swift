@@ -240,12 +240,12 @@ struct CreateReportSchema: Migration {
 				.field("reportType", .string, .required)
 				.field("reportedID", .string, .required)
 				.field("submitterMessage", .string, .required)
-				.field("moderator_memo", .string, .required)
+				.field("moderator_memo", .string)
 				.field("isClosed", .bool, .required)
     			.field("created_at", .datetime)
     			.field("updated_at", .datetime)
  				.field("author", .uuid, .required, .references("users", "id"))
- 				.field("handled_by", .uuid, .required, .references("users", "id"))
+ 				.field("handled_by", .uuid, .references("users", "id"))
 				.create()
     }
     
@@ -298,6 +298,7 @@ struct CreateTwarrtEditSchema: Migration {
 				.field("images", .array(of: .string))
     			.field("created_at", .datetime)
  				.field("twarrt", .int, .references("twarrts", "id"))
+ 				.field("editor", .uuid, .references("users", "id"))
 				.create()
     }
     

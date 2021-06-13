@@ -580,7 +580,7 @@ struct ForumController: RouteCollection {
 		let data = try ValidatingJSONDecoder().decode(ForumCreateData.self, fromBodyOf: req)
         // check authorization to create
         return Category.findFromParameter(categoryIDParam, on: req).throwingFlatMap { (category) in
-            guard !category.isRestricted || user.accessLevel.hasAccess(.moderator)  else {
+            guard !category.isRestricted || user.accessLevel.canCreateRestrictedForums() else {
                     return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "users cannot create forums in category"))
             }
 			// process images
@@ -620,12 +620,9 @@ struct ForumController: RouteCollection {
     /// - Returns: 201 Created on success.
     func forumLockHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
-        let userID = try user.requireID()
-        return Forum.findFromParameter(forumIDParam, on: req).flatMap { (forum) in
+        return Forum.findFromParameter(forumIDParam, on: req).throwingFlatMap { (forum) in
             // must be forum owner or .moderator
-            guard forum.creator.id == userID || user.accessLevel.hasAccess(.moderator)  else {
-                    return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "forum cannot be modified by user"))
-            }
+            try user.guardCanLockForum(forumCreatorID: forum.$creator.id)
             forum.isLocked = true
             return forum.save(on: req.db).transform(to: .created)
         }
@@ -641,12 +638,9 @@ struct ForumController: RouteCollection {
     /// - Returns: 204 No Content on success.
     func forumUnlockHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
-        let userID = try user.requireID()
-        return Forum.findFromParameter(forumIDParam, on: req).flatMap { (forum) in
+        return Forum.findFromParameter(forumIDParam, on: req).throwingFlatMap { (forum) in
             // must be forum owner or .moderator
-            guard forum.creator.id == userID || user.accessLevel.hasAccess(.moderator)  else {
-                    return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "forum cannot be modified by user"))
-            }
+            try user.guardCanLockForum(forumCreatorID: forum.$creator.id)
             forum.isLocked = false
             return forum.save(on: req.db).transform(to: .noContent)
         }
@@ -662,15 +656,12 @@ struct ForumController: RouteCollection {
     /// - Returns: 201 Created on success.
     func forumRenameHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
-        let userID = try user.requireID()
 		guard let nameParameter = req.parameters.get("new_name"), nameParameter.count > 0 else {
 			throw Abort(.badRequest, reason: "No new name parameter for forum name change.")
 		}
-        return Forum.findFromParameter(forumIDParam, on: req).flatMap { (forum) in
+        return Forum.findFromParameter(forumIDParam, on: req).throwingFlatMap { (forum) in
             // must be forum owner or .moderator
-            guard forum.creator.id == userID || user.accessLevel.hasAccess(.moderator)  else {
-                    return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "forum cannot be modified by user"))
-            }
+            try user.guardCanModifyContent(byUserID: forum.$creator.id)
             forum.title = nameParameter
             return forum.save(on: req.db).transform(to: .created)
         }
@@ -775,7 +766,7 @@ struct ForumController: RouteCollection {
         let user = try req.auth.require(User.self)
         let cacheUser = try req.userCache.getUser(user)
         // ensure user has write access
-        guard user.accessLevel.hasAccess(.verified) else {
+        guard user.accessLevel.canCreateContent() else {
             throw Abort(.forbidden, reason: "user cannot post in forum")
         }
         // see `PostContentData.validations()`
@@ -813,11 +804,8 @@ struct ForumController: RouteCollection {
     /// - Returns: 204 No Content on success.
     func postDeleteHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
-        let userID = try user.requireID()
-        return ForumPost.findFromParameter(postIDParam, on: req).flatMap { (post) in
-            guard post.$author.id == userID || user.accessLevel.hasAccess(.moderator) else {
-                    return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "user cannot delete post"))
-            }
+        return ForumPost.findFromParameter(postIDParam, on: req).throwingFlatMap { (post) in
+            try user.guardCanModifyContent(byUserID: post.$author.id, customErrorString: "user cannot delete post")
             return post.delete(on: req.db).transform(to: .noContent)
         }
     }
@@ -969,15 +957,12 @@ struct ForumController: RouteCollection {
     /// - Returns: `PostData` containing the post's contents and metadata.
     func postUpateHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         let user = try req.auth.require(User.self)
-        let userID = try user.requireID()
 		// see `PostContentData.validations()`
 		let newPostData = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
         return ForumPost.findFromParameter(postIDParam, on: req).addModelID().flatMap { (post, postID) in
         	return post.$forum.load(on: req.db).throwingFlatMap {
 				// ensure user has write access
-				guard post.$author.id == userID, user.accessLevel.hasAccess(.verified) else {
-						throw Abort(.forbidden, reason: "user cannot modify post")
-				}
+				try user.guardCanModifyContent(byUserID: post.$author.id)
 				guard !post.forum.isLocked else {
 					throw Abort(.forbidden, reason: "forum is locked read-only")
 				}

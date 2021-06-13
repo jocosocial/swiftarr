@@ -17,7 +17,7 @@ import Fluent
 /// `.deletedAt` are all maintained automatically by the model protocols and should never be
 ///  otherwise modified.
 
-final class User: Model, Content {
+final class User: Model {
 	static let schema = "users"
 	
     /// The user's ID, provisioned automatically.

@@ -30,6 +30,9 @@ final class TwarrtEdit: Model {
 
     /// The ID of the twarrt that was edited.
     @Parent(key: "twarrt") var twarrt: Twarrt
+    
+    /// The `User` that performed the edit.
+    @Parent(key: "editor") var editor: User
         
     // MARK: Initialization
     
@@ -41,11 +44,12 @@ final class TwarrtEdit: Model {
     ///
     /// - Parameters:
     ///   - twarrt: The Twarrt that will be edited.
-    init(twarrt: Twarrt) throws
+    init(twarrt: Twarrt, editor: User) throws
     {
         self.$twarrt.id = try twarrt.requireID()
         self.$twarrt.value = twarrt
         self.text = twarrt.text
         self.images = twarrt.images
+        self.$editor.id = try editor.requireID()
     }
 }

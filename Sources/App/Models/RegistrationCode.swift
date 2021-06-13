@@ -13,7 +13,7 @@ import Fluent
 /// Twit-arr admins prior to the event, and they are loaded by a `Migration` during system
 /// startup.
 
-final class RegistrationCode: Model, Content {
+final class RegistrationCode: Model {
  	static let schema = "registrationcodes"
  	
 	// MARK: Properties

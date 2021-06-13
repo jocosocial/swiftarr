@@ -109,6 +109,23 @@ extension User {
 		userSearch = builder.joined(separator: " ").trimmingCharacters(in: .whitespaces)
 		profileUpdatedAt = Date()
     }
+    
+    /// Ensures that either the receiver can edit/delete other users' content (that is, they're a moderator), or that 
+    /// they authored the content they're trying to modify/delete themselves, and still have rights to edit
+	/// their own content (that is, they aren't banned/quarantined).
+    func guardCanModifyContent(byUserID: UUID, customErrorString: String = "user cannot modify this content") throws {
+    	guard try accessLevel.canEditOthersContent() || (requireID() == byUserID && accessLevel.canCreateContent()) else {
+			throw Abort(.forbidden, reason: customErrorString)
+    	}
+    }
+    
+    /// Throws if the user does not have authorization to lock a forum. The user must either be a mod, or be the owner of the forum.
+    /// Making a function out of this hopefully makes it easier if we have ot change the requirements for forum locking.
+    func guardCanLockForum(forumCreatorID: UUID, customErrorString: String = "user cannot lock/unlock this forum") throws {
+    	guard try accessLevel.hasAccess(.moderator) || (requireID() == forumCreatorID && accessLevel.canCreateContent()) else {
+			throw Abort(.forbidden, reason: customErrorString)
+    	}
+    }
 }
 
 // users can be reported

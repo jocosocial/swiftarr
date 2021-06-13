@@ -11,12 +11,16 @@
 							<div class="container-fluid">
 								<div class="row align-items-start justify-content-start">	
 									<div class="col g-0" style="flex: 0 0 40px;">
-										#avatar(replyToTweet.author.userImage)
+										<a href="/user/#(replyToTweet.author.userID)">		
+											#avatar(replyToTweet.author.userImage)
+										</a>
 									</div>
 									<div class="col">
 										<div class="row">	
 											<div class="col">
-												<b>#elem(replyToTweet.author.displayName)</b> @#elem(replyToTweet.author.username)
+												<a href="/user/#(replyToTweet.author.userID)">		
+													<b>#elem(replyToTweet.author.displayName)</b> @#elem(replyToTweet.author.username)
+												</a>
 											</div>
 											<div class="col-auto">
 												<span class="text-muted">#relativeTime(replyToTweet.createdAt)</span>

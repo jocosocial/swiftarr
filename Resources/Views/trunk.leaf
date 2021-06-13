@@ -30,14 +30,18 @@
 					More
 				</a>
 				<ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-					<li><hr class="dropdown-divider"></li>
+					<li><a class="dropdown-item text-primary" href="#">FriendlyFez</a></li>
 					<li><a class="dropdown-item" href="#">Games</a></li>
 					<li><a class="dropdown-item" href="#">Karaoke</a></li>
+					#if(trunk.userIsMod):
+						<hr class="dropdown-divider">
+						<a class="dropdown-item text-primary" href="/reports">Reports</a>
+					#endif
 					<li><hr class="dropdown-divider"></li>
 					#if(trunk.userIsLoggedIn):
-					<li><a class="dropdown-item" href="/logout">Logout</a></li>
+						<li><a class="dropdown-item" href="/logout">Logout #elem(trunk.username)</a></li>
 					#else:
-					<li><a class="dropdown-item" href="/login">Login</a></li>
+						<li><a class="dropdown-item" href="/login">Login</a></li>
 					#endif
 				</ul>
 			</li>
@@ -47,11 +51,15 @@
 					<a class="dropdown-item text-primary" href="#">FriendlyFez</a>
 					<a class="dropdown-item text-primary" href="#">Games</a>
 					<a class="dropdown-item text-primary" href="#">Karaoke</a>
+					#if(trunk.userIsMod):
+						<hr class="dropdown-divider">
+						<a class="dropdown-item text-primary" href="/reports">Reports</a>
+					#endif
 					<hr class="dropdown-divider">
 					#if(trunk.userIsLoggedIn):
-					<a class="dropdown-item text-primary" href="/logout">Logout</a>
+						<a class="dropdown-item text-primary" href="/logout">Logout #elem(trunk.username)</a>
 					#else:
-					<a class="dropdown-item text-primary" href="/login">Login</a>
+						<a class="dropdown-item text-primary" href="/login">Login</a>
 					#endif
 				</div>
 		  <form class="d-flex">

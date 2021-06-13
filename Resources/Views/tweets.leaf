@@ -67,9 +67,7 @@
 								<a class="btn btn-outline-primary" href="/tweets/report/#(tweet.twarrtID)">Report</a>
 							#endif
 						  	#if(trunk.userIsMod):
-						  		<button type="button" class="btn btn-outline-primary">Quarantine</button>
-						  		<button type="button" class="btn btn-outline-primary">Mod-Edit</button>
-								<button type="button" class="btn btn-outline-primary">Mod-Delete</button>
+								<a class="btn btn-outline-primary" href="/moderate/twarrt/#(tweet.twarrtID)">Mod</a>
 							#endif
 						</div>								
 						#if(tweet.author.userID != trunk.userID):

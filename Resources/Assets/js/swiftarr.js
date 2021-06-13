@@ -1,6 +1,5 @@
 // Make the like/love/laugh buttons post their actions when tapped.
-let buttons = document.querySelectorAll('[data-action]');
-for (let btn of buttons) {
+for (let btn of document.querySelectorAll('[data-action]')) {
 	let action = btn.dataset.action;
 	if (action == "deletePost" || action == "deleteTwarrt") {
 		btn.addEventListener("click", deleteAction);
@@ -97,8 +96,7 @@ function deleteAction() {
 }
 
 // Make every post expand when first clicked, showing the previously hidden action bar.
-let postListItems = document.querySelectorAll('[data-postid]');
-for (let posElement of postListItems) {
+for (let posElement of document.querySelectorAll('[data-postid]')) {
 	posElement.addEventListener("click", showActionBar);
 }
 function showActionBar() {
@@ -139,8 +137,7 @@ function updateLikeCounts(postElement) {
 
 // MARK: - 
 // Handlers for the parts of messagePostForm.leaf
-let imageUploadInputs = document.querySelectorAll('.image-upload-input');
-for (let input of imageUploadInputs) {
+for (let input of document.querySelectorAll('.image-upload-input')) {
 	updatePhotoCardState(input.closest('.card'));
 	input.addEventListener("change", function() { updatePhotoCardState(event.target.closest('.card')); })
 }
@@ -179,8 +176,8 @@ function updatePhotoCardState(cardElement) {
 		nextCard.style.display = imgContainer.style.display;
 	}
 }
-let imageRemoveButtons = document.querySelectorAll('.twitarr-image-remove');
-for (let btn of imageRemoveButtons) {
+
+for (let btn of document.querySelectorAll('.twitarr-image-remove')) {
 	btn.addEventListener("click", removeUploadImage);
 }
 function removeUploadImage() {
@@ -197,8 +194,8 @@ function removeUploadImage() {
 	lastCard.querySelector('input[type="hidden"]').value = "";
 	updatePhotoCardState(lastCard);
 }
-let imageSwapButtons = document.querySelectorAll('.twitarr-image-swap');
-for (let btn of imageSwapButtons) {
+
+for (let btn of document.querySelectorAll('.twitarr-image-swap')) {
 	btn.addEventListener("click", swapUploadImage);
 }
 function swapUploadImage() {

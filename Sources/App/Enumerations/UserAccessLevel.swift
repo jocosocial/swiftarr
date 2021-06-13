@@ -31,4 +31,29 @@ enum UserAccessLevel: UInt8, Codable {
     func hasAccess(_ level: UserAccessLevel) -> Bool {
     	return self.rawValue >= level.rawValue
     }
+    
+// MARK: Capability Queries
+
+    /// Returns TRUE iff this user is allowed to post their own content and edit or delete content they created..
+    func canCreateContent() -> Bool {
+    	return self.rawValue >= UserAccessLevel.verified.rawValue
+    }
+    
+    /// Returns TRUE if this user is allowed to moderate others' content. This includes editing text, removing images, and 
+    /// deleting posts. This capability does not include the ability to moderate users themselves.
+    func canEditOthersContent() -> Bool {
+    	return self.rawValue >= UserAccessLevel.moderator.rawValue
+    }
+    
+    /// Returns TRUE if this user can change the access level of other users. The access level of Client users cannot be changed,
+    /// and only `admin` level users can set other users' access level to equal their own. For example `moderator` users can
+    /// change user levels FROM any of [unverified, banned, quarantined, verified] TO any of [unverified, banned, quarantined, verified].
+    func canModerateUsers() -> Bool {
+    	return self.rawValue >= UserAccessLevel.moderator.rawValue
+    }
+    
+    /// Returns TRUE iff the user is allowed to create forum threads in restricted forums.
+    func canCreateRestrictedForums() -> Bool {
+    	return hasAccess(.moderator)
+    }
 }
