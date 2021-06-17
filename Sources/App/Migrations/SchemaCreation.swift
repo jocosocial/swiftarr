@@ -121,6 +121,22 @@ struct CreateForumEditSchema: Migration {
     }
 }
 
+struct CreateForumReadersSchema: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("forum+readers")
+				.id()
+				.unique(on: "user", "forum")
+				.field("read_count", .int, .required)
+ 				.field("user", .uuid, .required, .references("users", "id", onDelete: .cascade))
+  				.field("forum", .uuid, .required, .references("forums", "id", onDelete: .cascade))
+				.create()
+    }
+    
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("forum+readers").delete()
+    }
+}
+
 struct CreateForumPostSchema: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         database.schema("forumposts")

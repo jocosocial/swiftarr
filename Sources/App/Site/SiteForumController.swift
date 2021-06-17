@@ -79,13 +79,15 @@ struct SiteForumController: SiteControllerUtils {
     	}
 		return apiQuery(req, endpoint: "/forum/\(forumID)").throwingFlatMap { response in
  			let forum = try response.content.decode(ForumData.self)
- 			return apiQuery(req, endpoint: "/forum/categories?cat=\(forum.categoryID)").throwingFlatMap { catResponse in
+ 			return apiQuery(req, endpoint: "/forum/categories?cat=\(forum.categoryID)", 
+ 					passThroughQuery: false).throwingFlatMap { catResponse in
  				let cats = try catResponse.content.decode([CategoryData].self)
 				struct ForumPageContext : Encodable {
 					var trunk: TrunkContext
 					var forum: ForumData
 					var post: MessagePostContext
 					var category: CategoryData
+					var paginator: PaginatorContext
 					
 					init(_ req: Request, forum: ForumData, cat: [CategoryData]) throws {
 						trunk = .init(req, title: "Forum Thread")
@@ -97,6 +99,10 @@ struct SiteForumController: SiteControllerUtils {
 						else {
 							category = CategoryData(categoryID: UUID(), title: "Unknown Category", 
 									isRestricted: false, numThreads: 0, forumThreads: nil)
+						}
+						paginator = .init(currentPage: forum.start / forum.limit, 
+								totalPages: (forum.totalPosts + forum.limit - 1) / forum.limit) { pageIndex in
+							"/forum/\(forum.forumID)?start=\(pageIndex * forum.limit)&limit=\(forum.limit)"
 						}
 					}
 				}

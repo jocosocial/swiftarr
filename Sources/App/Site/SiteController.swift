@@ -3,7 +3,7 @@ import Crypto
 import FluentSQL
 
 // Leaf data used by all views. Mostly this is stuff in the navbar.
-struct TrunkContext : Encodable {
+struct TrunkContext: Encodable {
 	var title: String
 	var metaRedirectURL: String?
 	
@@ -29,6 +29,47 @@ struct TrunkContext : Encodable {
 			userID = UUID(uuid: UUID_NULL)
 		}
 		self.title = title
+	}
+}
+
+/// Context required for a paginator control. A page may include "paginator.leaf" multiple times to place multiples of the same paginator, but
+/// the context is set up to only allow one paginator per page, at a path of "/paginator" from the context root. I could enforce this with a protocol, but ... meh.
+struct PaginatorContext: Codable {
+	struct PageInfo: Codable {
+		var index: Int
+		var active: Bool
+		var link: String
+	}
+
+	var prevPageURL: String?
+	var nextPageURL: String?
+	var lastPageURL: String?
+	var pageURLs: [PageInfo]
+	
+	/// Works with "paginator.leaf". Builds a paginator control allowing navigation to different pages in a N-page array.
+	///
+	/// Parameters:
+	/// - currentPage: A 0-based index indicating the 'active' page in the paginator control.
+	/// - totalPages: The total number of pages the paginator 'controls'. The UI may not create a button for every page.
+	/// - urlForPage: A closure that takes a page index and returns a relative URL that will load that page.
+	init(currentPage: Int, totalPages: Int, urlForPage: (Int) -> String) {
+		pageURLs = []
+		var minPage = max(currentPage - 3, 0)
+		let maxPage = min(minPage + 6, totalPages - 1)
+		minPage = max(maxPage - 6, 0)
+		
+		for pageIndex in minPage...maxPage {
+			pageURLs.append(PageInfo(index: pageIndex + 1, active: pageIndex == currentPage, link: urlForPage(pageIndex)))
+		}
+		if currentPage > 0 {
+			prevPageURL = urlForPage(currentPage - 1)
+		}
+		if currentPage < totalPages - 1 {
+			nextPageURL = urlForPage(currentPage + 1)
+		}
+		if maxPage < totalPages - 1 {
+			lastPageURL = urlForPage(totalPages - 1)
+		}
 	}
 }
 
@@ -240,7 +281,7 @@ protocol SiteControllerUtils {
     var fezIDParam: PathComponent { get }
     var userIDParam: PathComponent { get }
 
-	func apiQuery(_ req: Request, endpoint: String, method: HTTPMethod, defaultHeaders: HTTPHeaders?,
+	func apiQuery(_ req: Request, endpoint: String, method: HTTPMethod, defaultHeaders: HTTPHeaders?, passThroughQuery: Bool,
 			beforeSend: (inout ClientRequest) throws -> ()) -> EventLoopFuture<ClientResponse>
 }
 
@@ -254,6 +295,7 @@ extension SiteControllerUtils {
     var userIDParam: PathComponent { PathComponent(":user_id") }
 
 	func apiQuery(_ req: Request, endpoint: String, method: HTTPMethod = .GET, defaultHeaders: HTTPHeaders? = nil,
+			passThroughQuery: Bool = true,
 			beforeSend: (inout ClientRequest) throws -> () = { _ in }) -> EventLoopFuture<ClientResponse> {
     	var headers = defaultHeaders ?? HTTPHeaders()
     	if let token = req.session.data["token"], !headers.contains(name: "Authorization") {
@@ -263,8 +305,14 @@ extension SiteControllerUtils {
 		let hostname = req.application.http.server.configuration.hostname
 		let port = req.application.http.server.configuration.port
     	var urlStr = "http://\(hostname):\(port)/api/v3" + endpoint
-    	if let queryStr = req.url.query {
-    		urlStr.append("?\(queryStr)")
+    	if passThroughQuery, let queryStr = req.url.query {
+    		// FIXME: Chintzy. Should convert to URLComponents and back.
+    		if urlStr.contains("?") {
+	    		urlStr.append("&\(queryStr)")
+    		}
+    		else {
+	    		urlStr.append("?\(queryStr)")
+			}
     	}
     	return req.client.send(method, headers: headers, to: URI(string: urlStr), beforeSend: beforeSend)
 	}

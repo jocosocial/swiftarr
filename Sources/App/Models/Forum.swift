@@ -42,6 +42,9 @@ final class Forum: Model {
     
     /// The child `ForumPost`s within the forum.
     @Children(for: \.$forum) var posts: [ForumPost]
+    
+    /// The `ForumReaders` pivots contain read counts for each user who has read this forum thread. 
+    @Siblings(through: ForumReaders.self, from: \.$forum, to: \.$user) var readers: [User]
 
     // MARK: Initialization
     

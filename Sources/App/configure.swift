@@ -138,6 +138,7 @@ func configureMigrations(_ app: Application) throws {
 	app.migrations.add(CreateForumSchema(), to: .psql)
 	app.migrations.add(CreateForumPostSchema(), to: .psql)
 	app.migrations.add(CreateForumEditSchema(), to: .psql)
+	app.migrations.add(CreateForumReadersSchema(), to: .psql)
 	app.migrations.add(CreatePostLikesSchema(), to: .psql)
 	app.migrations.add(CreateEventSchema(), to: .psql)
 	app.migrations.add(CreateTwarrtSchema(), to: .psql)

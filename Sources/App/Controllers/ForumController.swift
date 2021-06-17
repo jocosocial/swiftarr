@@ -19,6 +19,7 @@ struct ForumController: RouteCollection {
         
         // convenience route group for all /api/v3/forum endpoints
         let forumRoutes = routes.grouped("api", "v3", "forum")
+        let eventRoutes = routes.grouped("api", "v3", "events")
         
         // instantiate authentication middleware
         let basicAuthMiddleware = User.authenticator()
@@ -26,6 +27,7 @@ struct ForumController: RouteCollection {
         let tokenAuthMiddleware = Token.authenticator()
         
         // set protected route groups
+        let eventSharedAuthGroup = eventRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware, guardAuthMiddleware])
         let sharedAuthGroup = forumRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware, guardAuthMiddleware])
         let tokenAuthGroup = forumRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
         
@@ -43,6 +45,8 @@ struct ForumController: RouteCollection {
         sharedAuthGroup.get("post", "hashtag", ":hashtag_string", use: postHashtagHandler)
         sharedAuthGroup.get("post", "search", ":search_string", use: postSearchHandler)
         sharedAuthGroup.get(forumIDParam, "search", ":search_string", use: forumSearchHandler)
+
+		eventSharedAuthGroup.get(":event_id", "forum", use: eventForumHandler)
         
         // endpoints available only when logged in
         tokenAuthGroup.get("bookmarks", use: bookmarksHandler)
@@ -111,7 +115,7 @@ struct ForumController: RouteCollection {
     
     /// `GET /api/v3/forum/catgories/ID`
     ///
-    /// Retrieve a list of all forums in the specifiec `Category`. Will not return forums created by blocked users.
+    /// Retrieve a list of forums in the specifiec `Category`. Will not return forums created by blocked users.
 	/// 
 	/// * `?sort=STRING` - Sort forums by `create`, `update`, or `title`. Create and update return newest forums first.
 	/// * `?start=INT` - The index into the sorted list of forums to start returning results. 0 for first item, which is the default.
@@ -134,7 +138,7 @@ struct ForumController: RouteCollection {
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 404 error if the category ID is not valid.
-    /// - Returns: `[ForumListData]` containing all category forums.
+    /// - Returns: `CategoryData` containing category forums.
     func categoryForumsHandler(_ req: Request) throws -> EventLoopFuture<CategoryData> {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
@@ -164,7 +168,7 @@ struct ForumController: RouteCollection {
 				query.filter((dateFilterUsesUpdate ? \.$updatedAt : \.$createdAt) > afterDate)
 			}
 			return query.all().flatMap { (forums) in
-				return buildForumListData(forums, on: req, favoritesBarrel: barrel).flatMapThrowing { forumList in
+				return buildForumListData(forums, on: req, userID: userID, favoritesBarrel: barrel).flatMapThrowing { forumList in
 					return try CategoryData(category, forumThreads: forumList)
 				}
 			}
@@ -174,38 +178,36 @@ struct ForumController: RouteCollection {
     /// `GET /api/v3/forum/ID`
     ///
     /// Retrieve a `Forum` with all its `ForumPost`s. Content from blocked or muted users,
-    /// or containing user's muteWords, is not returned.
+    /// or containing user's muteWords, is not returned. Posts are always sorted by creation time.
     ///
+	/// Query parameters:
+	/// * `?start=INT` - The index into the array of posts to start returning results. 0 for first post. Default is the last post the user read, rounded down to a multiple of `limit`.
+	/// * `?limit=INT` - The max # of entries to return. Defaults to 50. Clamped to a max value set in Settings.
+	/// 
+	/// Start and Limit do not take blocks and mutes into account, matching the behavior of the totalPosts values. Instead, when asking for e.g. the first 50 posts in a thread,
+	/// you may only receive 46 posts, as 4 posts in that batch were blocked/muted. To continue reading the thread, ask to start with post 50 (not post 47)--you'll receive however
+	/// many posts are viewable by the user in the range 50...99 . Doing it this way makes Forum read counts invariant to blocks--if a user reads a forum, then blocks a user, then
+	/// comes back to the forum, they should come back to the same place they were in previously.
+	///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 404 error if the forum is not available.
-    /// - Returns: `ForumData` containing the forum's metadata and all posts.
+    /// - Returns: `ForumData` containing the forum's metadata and posts.
     func forumHandler(_ req: Request) throws -> EventLoopFuture<ForumData> {
-        let user = try req.auth.require(User.self)
-        let cacheUser = try req.userCache.getUser(user)
-        // get user's taggedForum barrel
-		return user.getBookmarkBarrel(of: .taggedForum, on: req)
-				.and(Forum.findFromParameter(forumIDParam, on: req)).flatMap { (barrel, forum) in
-			// filter posts
-			return forum.$posts.query(on: req.db)
-				.filter(\.$author.$id !~ cacheUser.getBlocks())
-				.filter(\.$author.$id !~ cacheUser.getMutes())
-				.sort(\.$createdAt, .ascending)
-				.all()
-				.flatMap { (posts) -> EventLoopFuture<ForumData> in
-					return buildForumData(forum, posts: posts, user: user, on: req, 
-							mutewords: cacheUser.mutewords, favoriteForumBarrel: barrel)
-				}
-        }
-    }
+        return Forum.findFromParameter(forumIDParam, on: req).throwingFlatMap { forum in
+			return try buildForumData(forum, on: req)
+		}
+	}
+	
     
     /// `GET /api/v3/forum/match/STRING`
     ///
-    /// Retrieve all `Forum`s whose title contains the specified string.
+    /// Retrieve all `Forum`s in all categories whose title contains the specified string.
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Returns: `[ForumListData]` containing all matching forums.
     func forumMatchHandler(_ req: Request) throws -> EventLoopFuture<[ForumListData]> {
         let user = try req.auth.require(User.self)
+        let userID = try user.requireID()
         guard var search = req.parameters.get("search_string") else {
             throw Abort(.badRequest, reason: "Missing search parameter.")
         }
@@ -223,7 +225,7 @@ struct ForumController: RouteCollection {
                     .filter(\.$title, .custom("ILIKE"), "%\(search)%")
                     .all()
                     .flatMap { (forums) in
-                    	return buildForumListData(forums, on: req, favoritesBarrel: barrel)
+                    	return buildForumListData(forums, on: req, userID: userID, favoritesBarrel: barrel)
                 	}
             }
     }
@@ -262,31 +264,51 @@ struct ForumController: RouteCollection {
     ///
     /// Retrieve the `ForumData` of the specified `ForumPost`'s parent `Forum`.
     ///
+	/// Query parameters:
+	/// * `?start=INT` - The index into the array of posts to start returning results. 0 for first post. Default is the last post the user read, rounded down to a multiple of `limit`.
+	/// * `?limit=INT` - The max # of entries to return. Defaults to 50. Clamped to a max value set in Settings.
+	/// 
+	/// Start and Limit do not take blocks and mutes into account, matching the behavior of the totalPosts values. Instead, when asking for e.g. the first 50 posts in a thread,
+	/// you may only receive 46 posts, as 4 posts in that batch were blocked/muted. To continue reading the thread, ask to start with post 50 (not post 47)--you'll receive however
+	/// many posts are viewable by the user in the range 50...99 . Doing it this way makes Forum read counts invariant to blocks--if a user reads a forum, then blocks a user, then
+	/// comes back to the forum, they should come back to the same place they were in previously.
+	///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `ForumData` containing the post's parent forum.
     func postForumHandler(_ req: Request) throws -> EventLoopFuture<ForumData> {
-        let user = try req.auth.require(User.self)
-        let cacheUser = try req.userCache.getUser(user)
-        // get user's taggedForum barrel, and cached filters, and forum post
-        return user.getBookmarkBarrel(of: .taggedForum, on: req)
-     	  	.and(ForumPost.findFromParameter(postIDParam, on: req))
-        	.flatMap { (barrel, post) in
-                // get forum
-                return post.$forum.get(on: req.db).flatMap { (forum) in
-					return forum.$posts.query(on: req.db)
-						.filter(\.$author.$id !~ cacheUser.getBlocks())
-						.filter(\.$author.$id !~ cacheUser.getMutes())
-						.sort(\.$createdAt, .ascending)
-						.all()
-						.flatMap { (posts) in
-							return buildForumData(forum, posts: posts, user: user, on: req, 
-									mutewords: cacheUser.mutewords, favoriteForumBarrel: barrel)
-                        }
-                }
-            }
-    }
+		return ForumPost.findFromParameter(postIDParam, on: req).flatMap { post in
+			return post.$forum.get(on: req.db).throwingFlatMap { forum in
+				return try buildForumData(forum, on: req)
+			}
+		}
+	}
     
+    /// `GET /api/v3/events/ID/forum`
+    ///
+    /// Retrieve the `Forum` associated with an `Event`, with its `ForumPost`s. Content from
+    /// blocked or muted users, or containing user's muteWords, is not returned.
+	///
+	/// Query parameters:
+	/// * `?start=INT` - The index into the array of posts to start returning results. 0 for first post. Default is the last post the user read, rounded down to a multiple of `limit`.
+	/// * `?limit=INT` - The max # of entries to return. Defaults to 50. Clamped to a max value set in Settings.
+	/// 
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: `ForumData` containing the forum's metadata and all posts.
+    func eventForumHandler(_ req: Request) throws -> EventLoopFuture<ForumData> {
+    	return Event.findFromParameter("event_id", on: req).flatMap { event in
+			guard let forumID = event.$forum.id else {
+				return req.eventLoop.makeFailedFuture(Abort(.internalServerError, reason: "event has no forum"))
+			}
+			return Forum.find(forumID, on: req.db).unwrap(or: Abort(.internalServerError, reason: "forum not found"))
+					.throwingFlatMap { forum in
+				return try buildForumData(forum, on: req)
+			}
+		}
+	}
+
+
     /// `GET /api/v3/forum/post/ID`
     ///
     /// Retrieve the specified `ForumPost` with full user `LikeType` data.
@@ -557,7 +579,7 @@ struct ForumController: RouteCollection {
 				.sort(\.$title, .ascending)
 				.all()
 				.flatMap { (forums) in
-					return buildForumListData(forums, on: req, forceIsFavorite: true)
+					return buildForumListData(forums, on: req, userID: userID, forceIsFavorite: true)
             }
         }
     }
@@ -742,13 +764,14 @@ struct ForumController: RouteCollection {
     /// - Returns: `[ForumListData]` containing all forums created by the user.
     func ownerHandler(_ req: Request) throws-> EventLoopFuture<[ForumListData]> {
         let user = try req.auth.require(User.self)
+        let userID = try user.requireID()
         // get user's taggedForum barrel
         return user.getBookmarkBarrel(of: .taggedForum, on: req).flatMap { (barrel) in
             return user.$forums.query(on: req.db)
                 .sort(\.$title, .ascending)
                 .all()
                 .flatMap { (forums) in
-					return buildForumListData(forums, on: req, favoritesBarrel: barrel)
+					return buildForumListData(forums, on: req, userID: userID, favoritesBarrel: barrel)
             	}
         }
     }
@@ -995,52 +1018,102 @@ struct ForumController: RouteCollection {
 // Utilities for route methods
 extension ForumController {
 	
-	func buildForumListData(_ forums: [Forum], on req: Request, 
+	/// Builds an array of `ForumListData` from the given `Forums`. `ForumListData` does not return post content, but does return post counts.
+	func buildForumListData(_ forums: [Forum], on req: Request, userID: UUID,
 			favoritesBarrel: Barrel? = nil, forceIsFavorite: Bool? = nil) -> EventLoopFuture<[ForumListData]> {
 		// get forum metadata
 		var forumCounts: [EventLoopFuture<Int>] = []
-		var forumTimestamps: [EventLoopFuture<Date?>] = []
+		var forumLastPosts: [EventLoopFuture<ForumPost?>] = []
+		var readerPivots: [EventLoopFuture<ForumReaders?>] = []
 		for forum in forums {
 			forumCounts.append(forum.$posts.query(on: req.db).count())
-			forumTimestamps.append(forum.$posts.query(on: req.db)
-				.sort(\.$createdAt, .descending)
-				.first()
-				.map { (post) in
-					post?.createdAt
-				}
-			)
+			forumLastPosts.append(forum.$posts.query(on: req.db).sort(\.$createdAt, .descending).first())
+			readerPivots.append(forum.$readers.$pivots.query(on: req.db).filter(\.$user.$id == userID).first())
 		}
 		// resolve futures
-		return forumCounts.flatten(on: req.eventLoop).and(forumTimestamps.flatten(on: req.eventLoop))
-			.flatMapThrowing { (counts, timestamps) in
+		return forumCounts.flatten(on: req.eventLoop).and(forumLastPosts.flatten(on: req.eventLoop))
+				.flatMap { (counts, lastPosts) in
+			return readerPivots.flatten(on: req.eventLoop).flatMapThrowing { readCounts in
 				// return as ForumListData
 				var returnListData: [ForumListData] = []
 				for (index, forum) in forums.enumerated() {
-					let userHeader = try req.userCache.getHeader(forum.$creator.id)
+					let creatorHeader = try req.userCache.getHeader(forum.$creator.id)
+					var lastPosterHeader: UserHeader? 
+					var lastPostTime: Date? 
+					if let lastPost = lastPosts[index] {
+						lastPosterHeader = try req.userCache.getHeader(lastPost.$author.id)
+						lastPostTime = lastPost.createdAt
+					}
 					returnListData.append(
 						try ForumListData(
 							forum: forum, 
-							creator: userHeader, 
+							creator: creatorHeader, 
 							postCount: counts[index], 
-							lastPostAt: timestamps[index], 
+							readCount: readCounts[index]?.readCount ?? 0, 
+							lastPostAt: lastPostTime,
+							lastPoster: lastPosterHeader,
 							isFavorite: forceIsFavorite ?? favoritesBarrel?.contains(forum) ?? false)
 					)
 				}
 				return returnListData
 			}
+		}
 	}
 	
-	func buildForumData(_ forum: Forum, posts: [ForumPost], user: User, on req: Request,
-			mutewords: [String]? = nil, favoriteForumBarrel: Barrel? = nil) -> EventLoopFuture<ForumData> {
-		return buildPostData(posts, user: user, on: req, mutewords: mutewords)
-			.flatMapThrowing { (flattenedPosts) in
-				let creatorHeader = try req.userCache.getHeader(forum.$creator.id)
-				return try ForumData(forum: forum, creator: creatorHeader, 
-						isFavorite: favoriteForumBarrel?.contains(forum) ?? false,
-						posts: flattenedPosts)
+	/// Builds a `ForumData` with the contents of the given `Forum`. Uses the requests' "limit" and "start" query parameters
+	/// to return only a subset of the forums' posts (for forums where postCount > limit).
+	func buildForumData(_ forum: Forum, on req: Request) throws -> EventLoopFuture<ForumData> {
+		let user = try req.auth.require(User.self)
+		let userID = try user.requireID()
+		let cacheUser = try req.userCache.getUser(user)
+		return forum.$posts.query(on: req.db).count().flatMap { postCount in
+			return forum.$readers.$pivots.query(on: req.db).filter(\.$user.$id == userID).first()
+					.and(user.getBookmarkBarrel(of: .taggedForum, on: req)).flatMap { (readerPivot, favoriteForumBarrel) in
+				let clampedReadCount = min(readerPivot?.readCount ?? 0, postCount)
+				let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
+				let defaultStart = (clampedReadCount / limit) * limit
+				let start = (req.query[Int.self, at: "start"] ?? defaultStart)
+				// Get the 'start' post without filtering blocks and mutes
+				return forum.$posts.query(on: req.db).sort(\.$createdAt, .ascending).range(start...start).first().flatMap { startPost in
+					// filter posts
+					var query = forum.$posts.query(on: req.db)
+							.filter(\.$author.$id !~ cacheUser.getBlocks())
+							.filter(\.$author.$id !~ cacheUser.getMutes())
+							.sort(\.$createdAt, .ascending)
+					if let startPostID = startPost?.id {
+						query = query.range(0...limit).filter(\.$id >= startPostID)
+					}
+					else {
+						query = query.range(start...start + limit)
+					}
+					return query.all().flatMap { (posts) -> EventLoopFuture<ForumData> in
+						if let pivot = readerPivot {
+							let newReadCount = min(start + limit, postCount)
+							if newReadCount > pivot.readCount || pivot.readCount > postCount {
+								pivot.readCount = newReadCount
+								_ = pivot.save(on: req.db)
+							}
+						}
+						else {
+							_ = forum.$readers.attach(user, on: req.db) { newReader in 
+								newReader.readCount = min(start + limit, postCount)
+							}
+						}
+						return buildPostData(posts, user: user, on: req, mutewords: cacheUser.mutewords).flatMapThrowing { flattenedPosts in
+							let creatorHeader = try req.userCache.getHeader(forum.$creator.id)
+							var result = try ForumData(forum: forum, creator: creatorHeader, 
+									isFavorite: favoriteForumBarrel?.contains(forum) ?? false, posts: flattenedPosts)
+							result.start = start
+							result.limit = limit
+							result.totalPosts = postCount
+							return result
+						}
+					}
+				}
 			}
+		}
 	}
-	
+		
 	// Builds an array of PostData structures from the given posts, adding the user's bookmarks and likes
 	// for the post, as well as the total count of likes. The optional parameters are for callers that
 	// only need some of the functionality, or for whom some of the values are known in advance e.g.

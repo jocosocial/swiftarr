@@ -415,6 +415,12 @@ struct ForumData: Content {
     var isLocked: Bool
     /// Whether the user has favorited forum.
     var isFavorite: Bool
+    /// The total number of posts in the thread. Could be > posts.count even if all the viewable posts are being returned. If start + limit >= totalPosts this response has the last post in the thread.
+	var totalPosts: Int
+	/// The index number of the first post in the `posts` array. 0 is the index of the first post in the forum. This number is usually  a multiple of `limit` and indicates the page of results.
+	var start: Int
+	/// The number of posts the server attempted to gather. posts.count may be less than this number if posts were filtered out by blocks/mutes, or if start + limit > totalPosts.
+	var limit: Int
     /// The posts in the forum.
     var posts: [PostData]
 }
@@ -432,6 +438,9 @@ extension ForumData {
 		isLocked = forum.isLocked
 		self.isFavorite = isFavorite
 		self.posts = posts
+		self.totalPosts = 1
+		self.start = 0
+		self.limit = 50
     }
 }
 
@@ -453,10 +462,15 @@ struct ForumListData: Content {
 	var creator: UserHeader
     /// The forum's title.
     var title: String
-    /// The number of posts in the forum.
+    /// The number of posts in the forum. 
     var postCount: Int
+    /// The number of posts the user has read.  Specifically, this will be the number of posts the forum contained the last time the user called a fn that returned a `ForumData`.
+    /// Blocked and muted posts are included in this number, but not returned in the array of posts.
+    var readCount: Int
     /// Time forum was created.
     var createdAt: Date
+    /// The last user to post to the forum. Nil if there are no posts in the forum.
+	var lastPoster: UserHeader?
     /// Timestamp of most recent post. Needs to be optional because admin forums may be empty.
     var lastPostAt: Date?
     /// Whether the forum is in read-only state.
@@ -466,7 +480,7 @@ struct ForumListData: Content {
 }
 
 extension ForumListData {
-	init(forum: Forum, creator: UserHeader, postCount: Int, lastPostAt: Date?, isFavorite: Bool) throws {
+	init(forum: Forum, creator: UserHeader, postCount: Int, readCount: Int, lastPostAt: Date?, lastPoster: UserHeader?, isFavorite: Bool) throws {
     	guard creator.userID == forum.$creator.id else {
     		throw Abort(.internalServerError, reason: "Internal server error--Forum's creator does not match.")
     	}
@@ -474,8 +488,10 @@ extension ForumListData {
 		self.creator = creator
 		self.title = forum.title
 		self.postCount = postCount
+		self.readCount = readCount
 		self.createdAt = forum.createdAt ?? Date()
 		self.lastPostAt = lastPostAt
+		self.lastPoster = lastPoster
 		self.isLocked = forum.isLocked
 		self.isFavorite = isFavorite
     }

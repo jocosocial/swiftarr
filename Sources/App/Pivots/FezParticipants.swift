@@ -14,7 +14,7 @@ final class FezParticipant: Model {
     /// to scroll the post view to show the first unread message.
     @Field(key: "read_count") var readCount: Int
 
-    /// How many posts in this fez that that this user cannot see, due do mutes and blocks.
+    /// How many posts in this fez that this user cannot see, due to mutes and blocks.
     @Field(key: "hidden_count") var hiddenCount: Int
         
 // MARK: Relationships

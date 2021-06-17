@@ -107,14 +107,19 @@
 				#endfor
 			</ul>				
 		</div>
-		<div class="container-md ms-0 mt-2">
-			<div class="row">
-				<div class="col">
-					Post a new message:
+
+		#extend("paginator")
+
+		#if(!paginator.nextPageURL):
+			<div class="container-md ms-0 mt-2">
+				<div class="row">
+					<div class="col">
+						Post a new message:
+					</div>
 				</div>
+				#extend("messagePostForm")
 			</div>
-			#extend("messagePostForm")
-    	</div>
+		#endif
 		<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
 			<div class="modal-dialog">
 				<div class="modal-content">

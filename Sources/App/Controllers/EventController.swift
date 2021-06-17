@@ -24,7 +24,7 @@ struct EventController: RouteCollection {
         let openAuthGroup = eventRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware])
 
         // set protected route groups
-        let sharedAuthGroup = eventRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware, guardAuthMiddleware])
+//		let sharedAuthGroup = eventRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware, guardAuthMiddleware])
         let tokenAuthGroup = eventRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
         
         // open access endpoints
@@ -42,7 +42,6 @@ struct EventController: RouteCollection {
         // endpoints available only when not logged in
         
         // endpoints available whether logged in or out
-        sharedAuthGroup.get(":event_id", "forum", use: eventForumHandler)
         
         // endpoints available only when logged in
         tokenAuthGroup.post(":event_id", "favorite", use: favoriteAddHandler)
@@ -516,47 +515,7 @@ struct EventController: RouteCollection {
     // MARK: - sharedAuthGroup Handlers (logged in or not)
     // All handlers in this route group require a valid HTTP Basic Authorization
     // *or* HTTP Bearer Authorization header in the request.
-    
-    /// `GET /api/v3/events/ID/forum`
-    ///
-    /// Retrieve the `Forum` associated with an `Event`, with all its `ForumPost`s. Content from
-    /// blocked or muted users, or containing user's muteWords, is not returned.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: `ForumData` containing the forum's metadata and all posts.
-    func eventForumHandler(_ req: Request) throws -> EventLoopFuture<ForumData> {
-        let user = try req.auth.require(User.self)
-        let userID = try user.requireID()
-        // get user's taggedForum barrel, and our Event
-        return Barrel.query(on: req.db)
-            .filter(\.$ownerID == userID)
-            .filter(\.$barrelType == .taggedForum)
-            .first()
-            .and(Event.findFromParameter("event_id", on: req))
-            .flatMap { (barrel, event) in
-				// get forum and userCache for blocks/mutes
-				guard let forumID = event.$forum.id else {
-					return req.eventLoop.makeFailedFuture(
-							Abort(.internalServerError, reason: "event has no forum"))
-				}
-				return Forum.find(forumID, on: req.db)
-					.unwrap(or: Abort(.internalServerError, reason: "forum not found"))
-					.flatMap { (forum) in
-						let cachedUser = req.userCache.getUser(userID)
-						return forum.$posts.query(on: req.db)
-							.filter(\.$author.$id !~ (cachedUser?.blocks ?? []))
-							.filter(\.$author.$id !~ (cachedUser?.mutes ?? []))
-							.sort(\.$createdAt, .ascending)
-							.all()
-							.flatMap { (posts) in
-								return ForumController().buildForumData(forum, posts: posts, user: user, on: req,
-										mutewords: cachedUser?.mutewords, favoriteForumBarrel: barrel)
-						}
-				}
-		}
-    }
-    
+        
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.

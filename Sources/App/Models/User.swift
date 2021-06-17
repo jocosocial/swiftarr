@@ -125,13 +125,16 @@ final class User: Model {
     /// The sibling `ForumPost`s "liked" by the user.
     @Siblings(through: PostLikes.self, from: \.$user, to: \.$post) var postLikes: [ForumPost]
 
+    /// The `ForumReaders` pivots contain read counts for each forum thread this user had viewed.. 
+    @Siblings(through: ForumReaders.self, from: \.$user, to: \.$forum) var readForums: [Forum]
+
 	/// The child `FriendlyFez` objects created by this user.
 	@Children(for: \.$owner) var owned_fezzes: [FriendlyFez]
 	
 	/// The sibling `FriendlyFez` objects this user has joined.
 	@Siblings(through: FezParticipant.self, from: \.$user, to: \.$fez) var joined_fezzes: [FriendlyFez]
 
-    /// The child `ProfileEdit` accountability records of the profile.
+    /// The child `ProfileEdit` accountability records of this user.
     @Children(for: \.$user) var edits: [ProfileEdit]
         
     /// The child `UserNote`s owned by the user.

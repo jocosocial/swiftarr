@@ -16,6 +16,9 @@ struct CreateTestUsers: Migration {
             "banned": .banned,
             "quarantined": .quarantined,
             "verified": .verified,
+            "james": .verified,
+            "heidi": .verified,
+            "sam": .verified,
             "moderator": .moderator,
             "tho": .tho
         ]

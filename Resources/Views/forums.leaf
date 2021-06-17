@@ -29,10 +29,10 @@
 					</div>
 					<div class="row">
 						<div class="col">
-							#(forum.postCount) posts
+							#(forum.postCount) posts#if(forum.readCount < forum.postCount):, #(forum.postCount - forum.readCount) new#endif
 						</div>
 						<div class="col col-auto">
-							<span class="text-muted">#relativeTime(forum.lastPostAt)</span>
+							<span class="text-muted">Last post: @#elem(forum.lastPoster.username)</span>
 						</div>
 					</div>
 				</a>
