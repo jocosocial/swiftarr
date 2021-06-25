@@ -7,8 +7,9 @@ import Fluent
 /// to the event schedule.
 
 struct EventController: RouteCollection {
-    // MARK: RouteCollection Conformance
-    
+     var eventIDParam: PathComponent { PathComponent(":event_id") }
+
+// MARK: RouteCollection Conformance
     /// Required. Registers routes to the incoming router.
     func boot(routes: RoutesBuilder) throws {
         
@@ -29,24 +30,16 @@ struct EventController: RouteCollection {
         
         // open access endpoints
         openAuthGroup.get(use: eventsHandler)
-        openAuthGroup.get("match", ":matchString", use: eventsMatchHandler)
-        openAuthGroup.get("now", use: eventsNowHandler)
-        openAuthGroup.get("official", use: officialHandler)
-        openAuthGroup.get("official", "now", use: officialNowHandler)
-        openAuthGroup.get("official", "today", use: officialTodayHandler)
-        openAuthGroup.get("shadow", use: shadowHandler)
-        openAuthGroup.get("shadow", "now", use: shadowNowHandler)
-        openAuthGroup.get("shadow", "today", use: shadowTodayHandler)
-        openAuthGroup.get("today", use: eventsTodayHandler)
+        openAuthGroup.get(eventIDParam, use: singleEventHandler)
 
         // endpoints available only when not logged in
         
         // endpoints available whether logged in or out
         
         // endpoints available only when logged in
-        tokenAuthGroup.post(":event_id", "favorite", use: favoriteAddHandler)
-        tokenAuthGroup.post(":event_id", "favorite", "remove", use: favoriteRemoveHandler)
-        tokenAuthGroup.delete(":event_id", "favorite", use: favoriteRemoveHandler)
+        tokenAuthGroup.post(eventIDParam, "favorite", use: favoriteAddHandler)
+        tokenAuthGroup.post(eventIDParam, "favorite", "remove", use: favoriteRemoveHandler)
+        tokenAuthGroup.delete(eventIDParam, "favorite", use: favoriteRemoveHandler)
         tokenAuthGroup.get("favorites", use: favoritesHandler)
         tokenAuthGroup.post("update", use: eventsUpdateHandler)
     }
@@ -57,460 +50,108 @@ struct EventController: RouteCollection {
 
     /// `GET /api/v3/events`
     ///
-    /// Retrieve entire event schedule.
+    /// Retrieve a list of scheduled events. By default, this retrieves the entire event schedule.
+	/// 
+	/// Query Parameters:
+	/// - day=STRING			3 letter day of week abbreviation e.g. "TUE" .Returns events for that day *of the cruise in 2022* "SAT" returns events for embarkation day while 
+	/// 					the current date is earlier than embarkation day, then it returns events for disembarkation day.
+	/// - ?date=DATE			Returns events occurring on the given day. Empty list if there are no cruise events on that day.
+	/// - ?time=DATE			Returns events whose startTime is earlier (or equal) to DATE and endTime is later than DATE. Note that this will often include 'all day' events.
+	/// - ?type=[official, shadow]	Only returns events matching the selected type. 
+	/// - ?match=STRING		Returns events whose title or description contain the given string.
+	/// 
+	/// The `?day=STRING` query parameter is intended to make it easy to get schedule events returned even when the cruise is not occurring, for ease of testing.. 
+	/// The day and date parameters actually return events from 3AM on the given day until 3AM the next day--some events start after midnight and tend to get lost by those
+	/// looking at daily schedules.
+	/// 
+	/// All the above parameters filter the set of `EventData` objects that get returned. Onlly one of [day, date, time] may be used.  
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Returns: `[EventData]` containing all events.
     func eventsHandler(_ req: Request) throws -> EventLoopFuture<[EventData]> {
-        // check if we have a user
-        let auth = req.auth.get(User.self)
-        guard let user = auth else {
-            // return untagged events if not
-            return Event.query(on: req.db)
-                .sort(\.$startTime, .ascending)
-                .all()
-                .flatMapThrowing {
-                    (events) in
-                    return try events.map { try $0.convertToData(withFavorited: false) }
-            }
-        }
-        // else tag events
-        return user.getBookmarkBarrel(of: .taggedEvent, on: req).flatMap {
-            (barrel) in
-            let uuids = barrel?.modelUUIDs ?? []
-            return Event.query(on: req.db)
-                .sort(\.$startTime, .ascending)
-                .all()
-                .flatMapThrowing {
-                    (events) in
-                    return try events.map {
-                        (event) in
-                        if uuids.contains(try event.requireID()) {
-                            return try event.convertToData(withFavorited: true)
-                        } else {
-                            return try event.convertToData(withFavorited: false)
-                        }
-                    }
-            }
-        }
-    }
-    
-    /// `GET /api/v3/events/match/STRING`
-    ///
-    /// Retrieve all events whose title or description contain the specfied string.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[EventData]` containing all matching events.
-    func eventsMatchHandler(_ req: Request) throws -> EventLoopFuture<[EventData]> {
-        var search = req.parameters.get("matchString")!
-        // postgres "_" and "%" are wildcards, so escape for literals
-        search = search.replacingOccurrences(of: "_", with: "\\_")
-        search = search.replacingOccurrences(of: "%", with: "\\%")
-        search = search.trimmingCharacters(in: .whitespacesAndNewlines)
-        // check if we have a user
-        let auth = req.auth.get(User.self)
-        guard let user = auth else {
-            // return untagged events if not
-            return Event.query(on: req.db).group(.or) {
-                (or) in
+    	struct QueryOptions: Content {
+			var day: String?
+			var date: Date?
+			var time: Date?
+			var type: String?
+			var match: String?
+    	}
+    	let options = try req.query.decode(QueryOptions.self)
+    	let query = Event.query(on: req.db).sort(\.$startTime, .ascending)
+        if var search = options.match {
+			// postgres "_" and "%" are wildcards, so escape for literals
+			search = search.replacingOccurrences(of: "_", with: "\\_")
+			search = search.replacingOccurrences(of: "%", with: "\\%")
+			search = search.trimmingCharacters(in: .whitespacesAndNewlines)
+			query.group(.or) { (or) in
                 or.filter(\.$title, .custom("ILIKE"), "%\(search)%")
                 or.filter(\.$info, .custom("ILIKE"), "%\(search)%")
-            }.all()
-                .flatMapThrowing {
-                    (events) in
-                    return try events.map { try $0.convertToData(withFavorited: false) }
-            }
-        }
-        // else tag events
-        return user.getBookmarkBarrel(of: .taggedEvent, on: req).flatMap {
-            (barrel) in
-            let uuids = barrel?.modelUUIDs ?? []
-            return Event.query(on: req.db).group(.or) {
-                (or) in
-                or.filter(\.$title, .custom("ILIKE"), "%\(search)%")
-                or.filter(\.$info, .custom("ILIKE"), "%\(search)%")
-            }.all()
-                .flatMapThrowing {
-                    (events) in
-                    return try events.map {
-                        (event) in
-                        if uuids.contains(try event.requireID()) {
-                            return try event.convertToData(withFavorited: true)
-                        } else {
-                            return try event.convertToData(withFavorited: false)
-                        }
-                    }
-            }
-        }
+			}
+		}
+		if let eventType = options.type {
+			if eventType == "shadow" {
+				query.filter(\.$eventType == .shadow)
+			}
+			else {
+				query.filter(\.$eventType != .shadow)
+			}
+		}
+		var serverCalendar = Calendar(identifier: .gregorian)
+		serverCalendar.timeZone = req.application.environment == .testing ? TimeZone(abbreviation: "EST")! : TimeZone.autoupdatingCurrent
+		let cruiseStartDate = Settings.shared.cruiseStartDate
+		var searchStartTime: Date?
+		var searchEndTime: Date?
+		if let day = options.day {
+			var cruiseDayIndex: Int
+			switch day.prefix(3).lowercased() {
+				case "sat": cruiseDayIndex = Date() < cruiseStartDate ? 0 : 7
+				case "1sa": cruiseDayIndex = 0
+				case "2sa": cruiseDayIndex = 7
+				case "sun": cruiseDayIndex = 1
+				case "mon": cruiseDayIndex = 2 
+				case "tue": cruiseDayIndex = 3
+				case "wed": cruiseDayIndex = 4
+				case "thu": cruiseDayIndex = 5
+				case "fri": cruiseDayIndex = 6
+				default: cruiseDayIndex = 0
+			}
+			searchStartTime = serverCalendar.date(byAdding: .day, value: cruiseDayIndex, to: cruiseStartDate)
+			searchEndTime = serverCalendar.date(byAdding: .day, value: cruiseDayIndex + 1, to: cruiseStartDate)
+		}
+		else if let date = options.date {
+			searchStartTime = serverCalendar.date(byAdding: .hour, value: 3, to: serverCalendar.startOfDay(for: date))
+			searchEndTime = serverCalendar.date(byAdding: .day, value: 1, to: searchStartTime ?? cruiseStartDate) 
+		}
+		else if let time = options.time {
+			query.filter(\.$startTime <= time).filter(\.$endTime > time)
+		}
+		if let start = searchStartTime, let end = searchEndTime {
+			query.filter(\.$startTime >= start).filter(\.$startTime < end)
+		}
+		return query.all().throwingFlatMap { events in
+			return (req.auth.get(User.self)?.getBookmarkBarrel(of: .taggedEvent, on: req) ?? req.eventLoop.future(nil))
+				.flatMapThrowing { eventsBarrel in
+				let result = try events.map { try EventData($0, isFavorite: eventsBarrel?.modelUUIDs.contains($0.requireID()) ?? false) }
+				return result
+			}
+		}
     }
     
-    /// `GET /api/v3/events/now`
+    /// `GET /api/v3/events/ID`
     ///
-    /// Retrieve all events happening now.
-    ///
+    /// Retrieve a single event from its ID.
+	/// 
     /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[EventData]` containing all current events.
-    func eventsNowHandler(_ req: Request) throws -> EventLoopFuture<[EventData]> {
-        let now = Date()
-        // check if we have a user
-        let auth = req.auth.get(User.self)
-        guard let user = auth else {
-            // return untagged events if not
-            return Event.query(on: req.db)
-                .filter(\.$startTime <= now)
-                .filter(\.$endTime > now)
-                .sort(\.$startTime, .ascending)
-                .all()
-                .flatMapThrowing {
-                    (events) in
-                    return try events.map { try $0.convertToData(withFavorited: false) }
-            }
-        }
-        // else tag events
-        return user.getBookmarkBarrel(of: .taggedEvent, on: req).flatMap {
-            (barrel) in
-            let uuids = barrel?.modelUUIDs ?? []
-            return Event.query(on: req.db)
-                .filter(\.$startTime <= now)
-                .filter(\.$endTime > now)
-                .sort(\.$startTime, .ascending)
-                .all()
-                .flatMapThrowing {
-                    (events) in
-                    return try events.map {
-                        (event) in
-                        if uuids.contains(try event.requireID()) {
-                            return try event.convertToData(withFavorited: true)
-                        } else {
-                            return try event.convertToData(withFavorited: false)
-                        }
-                    }
-            }
-        }
+    /// - Returns: `EventData` containing  event info.
+    func singleEventHandler(_ req: Request) throws -> EventLoopFuture<EventData> {
+    	return Event.findFromParameter(eventIDParam, on: req).flatMap { event in
+			return (req.auth.get(User.self)?.getBookmarkBarrel(of: .taggedEvent, on: req) ?? req.eventLoop.future(nil))
+					.flatMapThrowing { eventsBarrel in
+	    		return try EventData(event, isFavorite: eventsBarrel?.modelUUIDs.contains(event.requireID()) ?? false)
+			}
+    	}
     }
-    
-    /// `GET /api/v3/events/today`
-    ///
-    /// Retrieve all events for the current day.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[EventData]` containing all events for the current day.
-    func eventsTodayHandler(_ req: Request) throws -> EventLoopFuture<[EventData]> {
-        // FIXME: is this handling UTC correctly?
-        let todayStart = Calendar.current.startOfDay(for: Date())
-        let todayEnd = Date.init(timeInterval: 86400, since: todayStart)
-        // check if we have a user
-        let auth = req.auth.get(User.self)
-        guard let user = auth else {
-            // return untagged events if not
-            return Event.query(on: req.db)
-                .filter(\.$startTime >= todayStart)
-                .filter(\.$startTime < todayEnd)
-                .sort(\.$startTime, .ascending)
-                .all()
-                .flatMapThrowing {
-                    (events) in
-                    return try events.map { try $0.convertToData(withFavorited: false) }
-            }
-        }
-        // else tag events
-        return user.getBookmarkBarrel(of: .taggedEvent, on: req).flatMap {
-            (barrel) in
-            let uuids = barrel?.modelUUIDs ?? []
-            return Event.query(on: req.db)
-                .filter(\.$startTime >= todayStart)
-                .filter(\.$startTime < todayEnd)
-                .sort(\.$startTime, .ascending)
-                .all()
-                .flatMapThrowing {
-                    (events) in
-                    return try events.map {
-                        (event) in
-                        if uuids.contains(try event.requireID()) {
-                            return try event.convertToData(withFavorited: true)
-                        } else {
-                            return try event.convertToData(withFavorited: false)
-                        }
-                    }
-            }
-        }
-    }
-    
-    /// `GET /api/v3/events/official`
-    ///
-    /// Retrieve all official events on the schedule.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[EventData]` containing all official events.
-    func officialHandler(_ req: Request) throws -> EventLoopFuture<[EventData]> {
-        // check if we have a user
-        let auth = req.auth.get(User.self)
-        guard let user = auth else {
-            // return untagged events if not
-            return Event.query(on: req.db)
-                .filter(\.$eventType != .shadow)
-                .sort(\.$startTime, .ascending)
-                .all()
-                .flatMapThrowing {
-                    (events) in
-                    return try events.map { try $0.convertToData(withFavorited: false) }
-            }
-        }
-        // else tag events
-        return user.getBookmarkBarrel(of: .taggedEvent, on: req).flatMap {
-            (barrel) in
-            let uuids = barrel?.modelUUIDs ?? []
-            return Event.query(on: req.db)
-                .filter(\.$eventType != .shadow)
-                .sort(\.$startTime, .ascending)
-                .all()
-                .flatMapThrowing {
-                    (events) in
-                    return try events.map {
-                        (event) in
-                        if uuids.contains(try event.requireID()) {
-                            return try event.convertToData(withFavorited: true)
-                        } else {
-                            return try event.convertToData(withFavorited: false)
-                        }
-                    }
-            }
-        }
-    }
-    
-    /// `GET /api/v3/events/official/now`
-    ///
-    /// Retrieve all official events happening now.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[EventData]` containing all current official events.
-    func officialNowHandler(_ req: Request) throws -> EventLoopFuture<[EventData]> {
-        let now = Date()
-        // check if we have a user
-        let auth = req.auth.get(User.self)
-        guard let user = auth else {
-            // return untagged events if not
-            return Event.query(on: req.db)
-                .filter(\.$eventType != .shadow)
-                .filter(\.$startTime <= now)
-                .filter(\.$endTime > now)
-                .sort(\.$startTime, .ascending)
-                .all()
-                .flatMapThrowing {
-                    (events) in
-                    return try events.map { try $0.convertToData(withFavorited: false) }
-            }
-        }
-        // else tag events
-        return user.getBookmarkBarrel(of: .taggedEvent, on: req).flatMap {
-            (barrel) in
-            let uuids = barrel?.modelUUIDs ?? []
-            return Event.query(on: req.db)
-                .filter(\.$eventType != .shadow)
-                .filter(\.$startTime <= now)
-                .filter(\.$endTime > now)
-                .sort(\.$startTime, .ascending)
-                .all()
-                .flatMapThrowing {
-                    (events) in
-                    return try events.map {
-                        (event) in
-                        if uuids.contains(try event.requireID()) {
-                            return try event.convertToData(withFavorited: true)
-                        } else {
-                            return try event.convertToData(withFavorited: false)
-                        }
-                    }
-            }
-        }
-    }
-    
-    /// `GET /api/v3/events/official/today`
-    ///
-    /// Retrieve all official events for the current day.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[EventData]` containing all official events for the current day.
-    func officialTodayHandler(_ req: Request) throws -> EventLoopFuture<[EventData]> {
-        // FIXME: is this handling UTC correctly?
-        let todayStart = Calendar.current.startOfDay(for: Date())
-        let todayEnd = Date.init(timeInterval: 86400, since: todayStart)
-        // check if we have a user
-        let auth = req.auth.get(User.self)
-        guard let user = auth else {
-            // return untagged events if not
-            return Event.query(on: req.db)
-                .filter(\.$eventType != .shadow)
-                .filter(\.$startTime >= todayStart)
-                .filter(\.$startTime < todayEnd)
-                .sort(\.$startTime, .ascending)
-                .all()
-                .flatMapThrowing {
-                    (events) in
-                    return try events.map { try $0.convertToData(withFavorited: false) }
-            }
-        }
-        // else tag events
-        return user.getBookmarkBarrel(of: .taggedEvent, on: req).flatMap {
-            (barrel) in
-            let uuids = barrel?.modelUUIDs ?? []
-            return Event.query(on: req.db)
-                .filter(\.$eventType != .shadow)
-                .filter(\.$startTime >= todayStart)
-                .filter(\.$startTime < todayEnd)
-                .sort(\.$startTime, .ascending)
-                .all()
-                .flatMapThrowing {
-                    (events) in
-                    return try events.map {
-                        (event) in
-                        if uuids.contains(try event.requireID()) {
-                            return try event.convertToData(withFavorited: true)
-                        } else {
-                            return try event.convertToData(withFavorited: false)
-                        }
-                    }
-            }
-        }
-    }
-    
-    /// `GET /api/v3/events/shadow`
-    ///
-    /// Retrieve all shadow events on the schedule.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[EventData]` containing all shadow events.
-    func shadowHandler(_ req: Request) throws -> EventLoopFuture<[EventData]> {
-        // check if we have a user
-        let auth = req.auth.get(User.self)
-        guard let user = auth else {
-            // return untagged events if not
-            return Event.query(on: req.db)
-                .filter(\.$eventType == .shadow)
-                .sort(\.$startTime, .ascending)
-                .all()
-                .flatMapThrowing {
-                    (events) in
-                    return try events.map { try $0.convertToData(withFavorited: false) }
-            }
-        }
-        // else tag events
-        return user.getBookmarkBarrel(of: .taggedEvent, on: req).flatMap {
-            (barrel) in
-            let uuids = barrel?.modelUUIDs ?? []
-            return Event.query(on: req.db)
-                .filter(\.$eventType == .shadow)
-                .sort(\.$startTime, .ascending)
-                .all()
-                .flatMapThrowing {
-                    (events) in
-                    return try events.map {
-                        (event) in
-                        if uuids.contains(try event.requireID()) {
-                            return try event.convertToData(withFavorited: true)
-                        } else {
-                            return try event.convertToData(withFavorited: false)
-                        }
-                    }
-            }
-        }
-    }
-    
-    /// `GET /api/v3/events/shadow/now`
-    ///
-    /// Retrieve all shadow events happening now.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[EventData]` containing all current shadow events.
-    func shadowNowHandler(_ req: Request) throws -> EventLoopFuture<[EventData]> {
-        let now = Date()
-        // check if we have a user
-        let auth = req.auth.get(User.self)
-        guard let user = auth else {
-            // return untagged events if not
-            return Event.query(on: req.db)
-                .filter(\.$eventType == .shadow)
-                .filter(\.$startTime <= now)
-                .filter(\.$endTime > now)
-                .sort(\.$startTime, .ascending)
-                .all()
-                .flatMapThrowing {
-                    (events) in
-                    return try events.map { try $0.convertToData(withFavorited: false) }
-            }
-        }
-        // else tag events
-        return user.getBookmarkBarrel(of: .taggedEvent, on: req).flatMap {
-            (barrel) in
-            let uuids = barrel?.modelUUIDs ?? []
-            return Event.query(on: req.db)
-                .filter(\.$eventType == .shadow)
-                .filter(\.$startTime <= now)
-                .filter(\.$endTime > now)
-                .sort(\.$startTime, .ascending)
-                .all()
-                .flatMapThrowing {
-                    (events) in
-                    return try events.map {
-                        (event) in
-                        if uuids.contains(try event.requireID()) {
-                            return try event.convertToData(withFavorited: true)
-                        } else {
-                            return try event.convertToData(withFavorited: false)
-                        }
-                    }
-            }
-        }
-    }
-    
-    /// `GET /api/v3/events/shadow/today`
-    ///
-    /// Retrieve all shadow events for the current day.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[EventData]` containing all shadow events for the current day.
-    func shadowTodayHandler(_ req: Request) throws -> EventLoopFuture<[EventData]> {
-        // FIXME: is this handling UTC correctly?
-        let todayStart = Calendar.current.startOfDay(for: Date())
-        let todayEnd = Date.init(timeInterval: 86400, since: todayStart)
-        // check if we have a user
-        let auth = req.auth.get(User.self)
-        guard let user = auth else {
-            // return untagged events if not
-            return Event.query(on: req.db)
-                .filter(\.$eventType == .shadow)
-                .filter(\.$startTime >= todayStart)
-                .filter(\.$startTime < todayEnd)
-                .sort(\.$startTime, .ascending)
-                .all()
-                .flatMapThrowing {
-                    (events) in
-                    return try events.map { try $0.convertToData(withFavorited: false) }
-            }
-        }
-        // else tag events
-        return user.getBookmarkBarrel(of: .taggedEvent, on: req).flatMap {
-            (barrel) in
-            let uuids = barrel?.modelUUIDs ?? []
-            return Event.query(on: req.db)
-                .filter(\.$eventType == .shadow)
-                .filter(\.$startTime >= todayStart)
-                .filter(\.$startTime < todayEnd)
-                .sort(\.$startTime, .ascending)
-                .all()
-                .flatMapThrowing {
-                    (events) in
-                    return try events.map {
-                        (event) in
-                        if uuids.contains(try event.requireID()) {
-                            return try event.convertToData(withFavorited: true)
-                        } else {
-                            return try event.convertToData(withFavorited: false)
-                        }
-                    }
-            }
-        }
-    }
+
     
     // MARK: - sharedAuthGroup Handlers (logged in or not)
     // All handlers in this route group require a valid HTTP Basic Authorization
@@ -584,7 +225,7 @@ struct EventController: RouteCollection {
                 
                 // resolve futures, return as EventData
                 return updatedEvents.flatten(on: req.eventLoop).flatMapThrowing {
-                    return try updateEvents.map { try $0.convertToData(withFavorited: false) }
+					return try updateEvents.map { try EventData($0, isFavorite: false) }
                 }
             }
         }
@@ -600,20 +241,21 @@ struct EventController: RouteCollection {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
         // get event
-        return Event.findFromParameter("event_id", on: req).flatMap {
-            (event) in
+        return Event.findFromParameter("event_id", on: req).flatMap { (event) in
             guard let eventID = event.id else { return req.eventLoop.makeFailedFuture(FluentError.idRequired) } 
             // get user's taggedEvent barrel
             return Barrel.query(on: req.db)
-                .filter(\.$ownerID == userID)
-                .filter(\.$barrelType == .taggedEvent)
-                .first()
-				.unwrap(orReplace: Barrel(ownerID: userID, barrelType: .taggedEvent))
-                .flatMap { (barrel) in
-					// add event and return 201
+					.filter(\.$ownerID == userID)
+					.filter(\.$barrelType == .taggedEvent)
+					.first()
+					.unwrap(orReplace: Barrel(ownerID: userID, barrelType: .taggedEvent))
+					.flatMap { (barrel) in
+				// add event and return 201
+				if !barrel.modelUUIDs.contains(eventID) {
 					barrel.modelUUIDs.append(eventID)
-					return barrel.save(on: req.db).transform(to: .created)
-                }
+				}
+				return barrel.save(on: req.db).transform(to: .created)
+			}
         }
     }
     
@@ -629,27 +271,26 @@ struct EventController: RouteCollection {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
         // get event
-        return Event.findFromParameter("event_id", on: req).flatMap {
-            (event) in
+        return Event.findFromParameter("event_id", on: req).flatMap { (event) in
             guard let eventID = event.id else { return req.eventLoop.makeFailedFuture(FluentError.idRequired) } 
             // get user's taggedEvent barrel
             return Barrel.query(on: req.db)
-                .filter(\.$ownerID == userID)
-                .filter(\.$barrelType == .taggedEvent)
-                .first()
-                .flatMap { (eventBarrel) in
-					guard let barrel = eventBarrel else {
-						return req.eventLoop.makeFailedFuture(
-								Abort(.badRequest, reason: "user has not tagged any events"))
-					}
-					// remove event
-					guard let index = barrel.modelUUIDs.firstIndex(of: eventID) else {
-						return req.eventLoop.makeFailedFuture(
-								Abort(.badRequest, reason: "event was not tagged"))
-					}
-					barrel.modelUUIDs.remove(at: index)
-					return barrel.save(on: req.db).transform(to: .noContent)
-           		}
+					.filter(\.$ownerID == userID)
+					.filter(\.$barrelType == .taggedEvent)
+					.first()
+					.flatMap { (eventBarrel) in
+				guard let barrel = eventBarrel else {
+					return req.eventLoop.makeFailedFuture(
+							Abort(.badRequest, reason: "user has not tagged any events"))
+				}
+				// remove event
+				guard let index = barrel.modelUUIDs.firstIndex(of: eventID) else {
+					return req.eventLoop.makeFailedFuture(
+							Abort(.badRequest, reason: "event was not tagged"))
+				}
+				barrel.modelUUIDs.remove(at: index)
+				return barrel.save(on: req.db).transform(to: .noContent)
+			}
         }
     }
     
@@ -675,7 +316,7 @@ struct EventController: RouteCollection {
                 .all()
                 .flatMapThrowing {
                     (events) in
-                    return try events.map { try $0.convertToData(withFavorited: true) }
+                    return try events.map { try EventData($0, isFavorite: true) }
             }
         }
     }

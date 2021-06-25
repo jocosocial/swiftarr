@@ -30,7 +30,7 @@
     		<div class="row">
     			<div class="col">
 					<ul class="container-md mx-0 px-0 list-group">
-						<li class="list-group-item bg-transparent" data-twarrtid="#(replyToTweet.twarrtID)">				
+						<li class="list-group-item bg-transparent" data-twarrtid="#(modData.twarrt.twarrtID)">				
 							<div class="container-fluid mx-0 px-1">
 								<div class="row align-items-start justify-content-start">	
 									<div class="col g-0" style="flex: 0 0 40px;">
@@ -54,7 +54,7 @@
 												#addJocomoji(modData.twarrt.text)
 											</div>
 										</div>
-										#if(replyToTweet.images):
+										#if(modData.twarrt.images):
 											<div class="row">	
 												#for(image in modData.twarrt.images):
 													<div class="col">
@@ -123,7 +123,7 @@
 														#addJocomoji(edit.text)
 													</div>
 												</div>
-												#if(replyToTweet.images):
+												#if(edit.images):
 													<div class="row">	
 														#for(image in edit.images):
 															<div class="col">

@@ -211,7 +211,10 @@ struct SiteTwitarrController: SiteControllerUtils {
     				self.post = .init(with: tweet)
     			}
     		}
-    		let ctx = try TweetEditPageContext(req, tweet: tweet)
+    		var ctx = try TweetEditPageContext(req, tweet: tweet)
+    		if ctx.trunk.userID != tweet.author.userID {
+    			ctx.post.authorName = ctx.trunk.username
+    		}
 			return req.view.render("tweetEdit", ctx)
     	}
     }

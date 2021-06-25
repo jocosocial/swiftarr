@@ -23,6 +23,7 @@ public func configure(_ app: Application) throws {
 	// Add lifecycle handlers early
 	app.lifecycle.use(Application.UserCacheStartup())
 
+	try configureSettings(app)
 	try HTTPServerConfiguration(app)
 	try databaseConnectionConfiguration(app)
 	try configureMiddleware(app)
@@ -32,6 +33,17 @@ public func configure(_ app: Application) throws {
 	try configureMigrations(app)
 }
 
+func configureSettings(_ app: Application) throws {
+	if app.environment == .testing {
+		// Until we get a proper 2022 schedule, we're using the 2020 schedule for testing. 
+		Settings.shared.cruiseStartDate = Calendar.autoupdatingCurrent.date(from: DateComponents(calendar: Calendar.current, 
+			timeZone: TimeZone(abbreviation: "EST")!, year: 2020, month: 3, day: 7))!
+	}
+	else {
+		
+	}
+}
+
 func HTTPServerConfiguration(_ app: Application) throws {
 	// run API on port 8081 by default and set a 10MB hard limit on file size
     let port = Int(Environment.get("PORT") ?? "8081")!
@@ -39,7 +51,12 @@ func HTTPServerConfiguration(_ app: Application) throws {
 	app.routes.defaultMaxBodySize = "10mb"
 	
 	// for testing
-	app.http.server.configuration.hostname = "192.168.0.19"
+	if app.environment == .development {
+		app.http.server.configuration.hostname = "192.168.0.19"
+	}
+	else if app.environment == .production {
+		app.http.server.configuration.hostname = "joco.hollandamerica.com"
+	}
 }
 
 func databaseConnectionConfiguration(_ app: Application) throws {
@@ -56,7 +73,7 @@ func databaseConnectionConfiguration(_ app: Application) throws {
         let postgresPassword = Environment.get("DATABASE_PASSWORD") ?? "password"
         let postgresDB: String
         let postgresPort: Int
-        if (app.environment == .testing) {
+        if app.environment == .testing {
             postgresDB = "swiftarr-test"
             postgresPort = Int(Environment.get("DATABASE_PORT") ?? "5433")!
         } else {
@@ -119,6 +136,7 @@ func configureLeaf(_ app: Application) throws {
     app.leaf.tags["elem"] = ElementSanitizerTag()
     app.leaf.tags["addJocomoji"] = AddJocomojiTag()
     app.leaf.tags["relativeTime"] = RelativeTimeTag()
+    app.leaf.tags["eventTime"] = EventTimeTag()
     app.leaf.tags["avatar"] = AvatarTag()
 }
 	

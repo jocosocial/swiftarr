@@ -3,35 +3,6 @@ import Fluent
 
 // MARK: - Functions
 
-extension Event {
-    /// Converts an `Event` model to a version omitting data that is of no interest to a user.
-    func convertToData(withFavorited tagged: Bool) throws -> EventData {
-        return try EventData(
-            eventID: self.requireID(),
-            title: self.title,
-            description: self.info,
-            startTime: self.startTime,
-            endTime: self.endTime,
-            location: self.location,
-            eventType: self.eventType.label,
-            forum: self.$forum.id,
-            isFavorite: tagged
-        )
-    }
-}
-
-extension EventLoopFuture where Value: Event {
-    /// Converts a `Future<Event>` to a `Future<EventData>`. This extension provides the
-    /// convenience of simply using `event.convertToData()` and allowing the compiler to
-    /// choose the appropriate version for the context.
-    func convertToData(withFavorited tagged: Bool) throws -> EventLoopFuture<EventData> {
-        return self.flatMapThrowing {
-            (event) in
-            return try event.convertToData(withFavorited: tagged)
-        }
-    }
-}
-
 // events can be bookmarked
 extension Event: UserBookmarkable {
     /// The barrel type for `Event` bookmarking.

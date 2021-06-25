@@ -3,7 +3,11 @@
     	<div class="container-md ms-0 my-1">
     		<div class="row">
     			<div class="col col-auto">
-			    	<h6><b>Edit Post</b></h6>
+    				#if(post.authorName):
+				    	<h6><b>Mod Edit Post</b></h6>
+					#else:
+				    	<h6><b>Edit Post</b></h6>
+					#endif
 				</div>
 			</div>
 			#extend("messagePostForm")

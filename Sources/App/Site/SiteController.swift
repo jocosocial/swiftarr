@@ -236,7 +236,6 @@ struct SiteController: SiteControllerUtils {
 		// Routes that the user does not need to be logged in to access.
 		let openRoutes = getOpenRoutes(app)
         openRoutes.get(use: rootPageHandler)
-        openRoutes.get("events", use: eventsPageHandler)
 
 		// Routes that require login but are generally 'global' -- Two logged-in users could share this URL and both see the content
 		// Not for Seamails, pages for posting new content, mod pages, etc. Logged-out users given one of these links should get
@@ -251,24 +250,6 @@ struct SiteController: SiteControllerUtils {
 	    return req.view.render("login", ["name": "Leaf"])
     }
     
-// MARK: - Events
-    func eventsPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-		return apiQuery(req, endpoint: "/events").throwingFlatMap { response in
- 			let events = try response.content.decode([EventData].self)
-     		struct EventPageContext : Encodable {
-				var trunk: TrunkContext
-    			var events: [EventData]
-    			
-    			init(_ req: Request, events: [EventData]) {
-    				self.events = events
-    				trunk = .init(req, title: "Events")
-    			}
-    		}
-    		var eventContext = EventPageContext(req, events: events)
-    		eventContext.events[0].title = "<script>alert('Hello Bob!')</script>"
-			return req.view.render("events", eventContext)
-    	}
-    }
 }
     
 // MARK: - Utilities
@@ -280,7 +261,9 @@ protocol SiteControllerUtils {
     var postIDParam: PathComponent { get }
     var fezIDParam: PathComponent { get }
     var userIDParam: PathComponent { get }
+    var eventIDParam: PathComponent { get }
 
+	func registerRoutes(_ app: Application) throws
 	func apiQuery(_ req: Request, endpoint: String, method: HTTPMethod, defaultHeaders: HTTPHeaders?, passThroughQuery: Bool,
 			beforeSend: (inout ClientRequest) throws -> ()) -> EventLoopFuture<ClientResponse>
 }
@@ -293,6 +276,7 @@ extension SiteControllerUtils {
     var postIDParam: PathComponent { PathComponent(":post_id") }
     var fezIDParam: PathComponent { PathComponent(":fez_id") }
     var userIDParam: PathComponent { PathComponent(":user_id") }
+    var eventIDParam: PathComponent { PathComponent(":event_id") }
 
 	func apiQuery(_ req: Request, endpoint: String, method: HTTPMethod = .GET, defaultHeaders: HTTPHeaders? = nil,
 			passThroughQuery: Bool = true,

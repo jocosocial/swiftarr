@@ -173,26 +173,14 @@ struct CurrentUserData: Content {
 ///
 /// Returned by:
 /// * `GET /api/v3/events`
-/// * `GET /api/v3/events/official`
-/// * `GET /api/v3/events/shadow`
-/// * `GET /api/v3/events/now`
-/// * `GET /api/v3/events/official/now`
-/// * `GET /api/v3/events/shadow/now`
-/// * `GET /api/v3/events/today`
-/// * `GET /api/v3/events/official/today`
-/// * `GET /api/v3/events/shadow/today`
-/// * `GET /api/v3/events/match/STRING`
 /// * `GET /api/v3/events/favorites`
 ///
-/// See `EventController.eventsHandler(_:)`, `EventController.officialHandler(_:)`,
-/// `EventController.shadowHandler(_:)`, `EventController.eventsNowHandler(_:)`,
-/// `EventController.officialNowHandler(_:)`,`EventController.shadowNowHandler(_:)`,
-/// `EventController.eventsTodayHandler(_:)`, `EventController.officialTodayHandler(_:)`,
-/// `EventController.shadowTodayHandler(_:)`, `EventController.eventsMatchHandler(_:)`
-/// `EventController.favoritesHandler(_:)`.
+/// See `EventController.eventsHandler(_:)`, `EventController.favoritesHandler(_:)`.
 struct EventData: Content {
-    /// The event's ID.
+    /// The event's ID. This is the Swiftarr database record for this event.
     var eventID: UUID
+    /// The event's UID. This is the VCALENDAR/ICS File/sched.com identifier for this event--what calendar software uses to correllate whether 2 events are the same event.
+    var uid: String
     /// The event's title.
     var title: String
     /// A description of the event.
@@ -209,6 +197,21 @@ struct EventData: Content {
     var forum: UUID?
     /// Whether user has favorited event.
     var isFavorite: Bool
+}
+
+extension EventData {
+	init(_ event: Event, isFavorite: Bool = false) throws {
+		eventID = try event.requireID()
+		uid = event.uid
+		title = event.title
+		description = event.info
+		startTime = event.startTime
+		endTime = event.endTime
+		location = event.location
+		eventType = event.eventType.label
+		forum = event.$forum.id
+		self.isFavorite = isFavorite
+	}
 }
 
 /// Used to update the `Event` database.

@@ -39,6 +39,7 @@
 			#endfor
 			</div>
 		</div>
+		#extend("paginator")
     #endexport
 #endextend
 

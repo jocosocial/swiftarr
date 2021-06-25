@@ -4,105 +4,54 @@ import Vapor
 
 final class Settings {
     
+    /// Wraps settings properties, making them thread-safe.
+	@propertyWrapper class SettingsValue<T> {
+		private var internalValue: T
+		var wrappedValue: T {
+			get { return Settings.settingsQueue.sync { internalValue } }
+			set { Settings.settingsQueue.async { self.internalValue = newValue } }
+		}
+		
+		init(wrappedValue: T) {
+			internalValue = wrappedValue
+		}
+	}
+	
     /// The shared instance for this singleton.
     static let shared = Settings()
     
     /// DispatchQueue to use for thread-safety synchronization.
-    fileprivate let settingsQueue = DispatchQueue(label: "settingsQueue")
+    fileprivate static let settingsQueue = DispatchQueue(label: "settingsQueue")
     
     /// Required initializer.
     private init() {}
         
-    
     /// The ID of the blocked user placeholder.
-    var blockedUserID: UUID {
-        set(newValue) {
-            settingsQueue.async {
-                self._blockedUserID = newValue
-            }
-        }
-        get { return settingsQueue.sync { _blockedUserID } }
-    }
+    @SettingsValue var blockedUserID: UUID = UUID()
 
     /// The ID of the FriendlyFez user placeholder.
-    var friendlyFezID: UUID {
-        set(newValue) {
-            settingsQueue.async {
-                self._friendlyFezID = newValue
-            }
-        }
-        get { return settingsQueue.sync { _friendlyFezID } }
-    }
+	@SettingsValue var friendlyFezID: UUID = UUID()
     
-    // MARK: Limits
-    
+// MARK: Limits
     /// The maximum number of twartts allowed per request.
-    var maximumTwarrts: Int {
-        set(newValue) {
-            settingsQueue.async {
-                self._maximumTwarrts = newValue
-            }
-        }
-        get { return settingsQueue.sync { _maximumTwarrts } }
-    }
-    
-    var maxImageSize: Int {
-        set(newValue) {
-            settingsQueue.async {
-                self._maximumTwarrts = newValue
-            }
-        }
-        get { return settingsQueue.sync { _maxImageSize } }
-    }
+    @SettingsValue var maximumTwarrts: Int = 200
 
-    // MARK: Quarantine
-    
+	/// Largest image we allow to be uploaded, in bytes.
+    @SettingsValue var maxImageSize: Int = 20 * 1024 * 1024
+
+// MARK: Quarantine
     /// The number of reports to trigger forum auto-quarantine.
-    var forumAutoQuarantineThreshold: Int {
-        set(newValue) {
-            settingsQueue.async {
-                self._forumAutoQuarantineThreshold = newValue
-            }
-        }
-        get { return settingsQueue.sync { _forumAutoQuarantineThreshold } }
-    }
+    @SettingsValue var forumAutoQuarantineThreshold: Int = 3
     
     /// The number of reports to trigger post/twarrt auto-quarantine.
-    var postAutoQuarantineThreshold: Int {
-        set(newValue) {
-            settingsQueue.async {
-                self._postAutoQuarantineThreshold = newValue
-            }
-        }
-        get { return settingsQueue.sync { _postAutoQuarantineThreshold } }
-    }
+	@SettingsValue var postAutoQuarantineThreshold: Int = 3
     
     /// The number of reports to trigger user auto-quarantine.
-    var userAutoQuarantineThreshold: Int {
-        set(newValue) {
-            settingsQueue.async {
-                self._userAutoQuarantineThreshold = newValue
-            }
-        }
-        get { return settingsQueue.sync { _userAutoQuarantineThreshold } }
-    }
+    @SettingsValue var userAutoQuarantineThreshold: Int = 5
     
-    // MARK: - Internal Storage
+// MARK: Dates
+	/// A Date set to midnight on the day the cruise ship leaves port, in the timezone the ship leaves from. Used by the Events Controller for date arithimetic.
+	@SettingsValue var cruiseStartDate: Date = Calendar.autoupdatingCurrent.date(from: DateComponents(calendar: Calendar.current, 
+			timeZone: TimeZone(abbreviation: "EST")!, year: 2020, month: 3, day: 7))!
 
-    /// Internal storage.
-    fileprivate var _blockedUserID: UUID = UUID()
-    /// Internal storage.
-    fileprivate var _friendlyFezID: UUID = UUID()
-    
-    /// Internal storage.
-    fileprivate var _forumAutoQuarantineThreshold: Int = 3
-    /// Internal storage.
-    fileprivate var _postAutoQuarantineThreshold: Int = 3
-    /// Internal storage.
-    fileprivate var _userAutoQuarantineThreshold: Int = 5
-
-    /// Internal storage.
-    fileprivate var _maximumTwarrts: Int = 200
-    fileprivate var _maxImageSize: Int = 20 * 1024 * 1024
-    
 }

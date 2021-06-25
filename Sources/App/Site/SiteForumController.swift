@@ -55,19 +55,25 @@ struct SiteForumController: SiteControllerUtils {
     	guard let catID = req.parameters.get(categoryIDParam.paramString) else {
     		throw "Invalid forum category ID"
     	}
+        let start = (req.query[Int.self, at: "start"] ?? 0)
+        let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...200)
     	
 		return apiQuery(req, endpoint: "/forum/categories/\(catID)").throwingFlatMap { response in
  			let forums = try response.content.decode(CategoryData.self)
      		struct ForumsPageContext : Encodable {
 				var trunk: TrunkContext
     			var forums: CategoryData
+				var paginator: PaginatorContext
     			
-    			init(_ req: Request, forums: CategoryData) throws {
+    			init(_ req: Request, forums: CategoryData, start: Int, limit: Int) throws {
     				trunk = .init(req, title: "Forum Threads")
     				self.forums = forums
+					paginator = .init(currentPage: start / limit, totalPages: (Int(forums.numThreads) + limit - 1) / limit) { pageIndex in
+						"/forums/\(forums.categoryID)?start=\(pageIndex * limit)&limit=\(limit)"
+					}
     			}
     		}
-    		let ctx = try ForumsPageContext(req, forums: forums)
+    		let ctx = try ForumsPageContext(req, forums: forums, start: start, limit: limit)
 			return req.view.render("forums", ctx)
     	}
     }

@@ -75,7 +75,7 @@ struct AddJocomojiTag: LeafTag {
 ///
 ///	Output is constrained to a single element. e.g: "3 hours ago", "1 day ago", "5 minutes ago"
 ///
-/// Usage: #relativeTime(dateValue) -> String
+/// Usage in Leaf templates: #relativeTime(dateValue) -> String
 struct RelativeTimeTag: LeafTag {
     func render(_ ctx: LeafContext) throws -> LeafData {
         try ctx.requireParameterCount(1)
@@ -116,6 +116,27 @@ struct RelativeTimeTag: LeafTag {
 			return LeafData.string(resultStr)
 		}
 		return "some time ago"
+	}
+}
+
+/// Returns a string descibing when an event is taking place. Shows both the start and end time.
+/// Usage in Leaf templates:: #eventTime(startTime, endTime) -> String
+struct EventTimeTag: LeafTag {
+	func render(_ ctx: LeafContext) throws -> LeafData {
+        try ctx.requireParameterCount(2)
+		guard let startTimeDouble = ctx.parameters[0].double, let endTimeDouble = ctx.parameters[1].double else {
+            throw "Unable to convert parameter to double for date"
+		}
+
+		let dateFormatter = DateFormatter()
+		dateFormatter.dateStyle = .short
+		dateFormatter.timeStyle = .short
+		dateFormatter.locale = Locale(identifier: "en_US")
+		dateFormatter.timeZone = TimeZone.autoupdatingCurrent
+		var timeString = dateFormatter.string(from: Date(timeIntervalSince1970: startTimeDouble))
+		dateFormatter.dateStyle = .none
+		timeString.append(" - \(dateFormatter.string(from: Date(timeIntervalSince1970: endTimeDouble)))")
+		return LeafData.string(timeString)
 	}
 }
 

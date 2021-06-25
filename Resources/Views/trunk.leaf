@@ -72,7 +72,6 @@
 
     #import("body")
 
-    <script src="/js/bootstrap.bundle.js"></script>
     <script src="/js/swiftarr.js"></script>
   </body>
 </html>

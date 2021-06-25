@@ -1,3 +1,5 @@
+import("/js/bootstrap.bundle.js");
+
 // Make the like/love/laugh buttons post their actions when tapped.
 for (let btn of document.querySelectorAll('[data-action]')) {
 	let action = btn.dataset.action;
@@ -6,6 +8,15 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 	}
 	else if (action == "laugh" || action == "like" || action == "love") {
 		btn.addEventListener("click", likeAction);
+	}
+	else if (action == "follow") {
+		btn.addEventListener("click", followEventAction);
+	}
+	else if (action == "filterfollowing") {
+		btn.addEventListener("click", filterFollowingEventAction);
+	}
+	else if (action == "filterEventType") {
+		btn.addEventListener("click", eventFilterDropdownTappedAction);
 	}
 }
 
@@ -64,6 +75,33 @@ function setLikeButtonsState(buttons, tappedButton, state) {
 	}
 }
 
+function followEventAction() {
+	let eventid = event.target.closest('[data-eventid]').dataset.eventid;
+	let tappedButton = event.target;
+	let actionStr = tappedButton.checked ? 'POST' : 'DELETE';
+	let req = new Request('/events/' + eventid + '/favorite', { method: actionStr });
+	let spinnerElem = tappedButton.labels[0]?.querySelector(".spinner-border");
+	if (spinnerElem !== null) spinnerElem.classList.remove("d-none");
+	let errorDiv = tappedButton.closest('[data-eventid]').querySelector('[data-purpose="errordisplay"]');
+	fetch(req).then(function(response) {
+		if (response.ok) {
+			errorDiv.innerHTML = "";
+			tappedButton.closest('[data-eventfavorite]').dataset.eventfavorite = tappedButton.checked ? "true": "false";
+		}
+		else {
+			response.json().then( data => {
+				errorDiv.innerHTML = "<b>Error:</b> " + data.reason
+			});
+		}
+		setTimeout(() => {
+			if (spinnerElem !== null) spinnerElem.classList.add("d-none");
+		}, 1000);
+	}).catch(error => {
+		if (spinnerElem !== null) spinnerElem.classList.add("d-none");
+		errorDiv.innerHTML = "<b>Error:</b> " + error;
+	});
+}
+
 document.getElementById('deleteModal')?.addEventListener('show.bs.modal', function(event) {
 	let postElem = event.relatedTarget.closest('[data-postid]');
 	let deleteBtn = event.target.querySelector('[data-delete-postid]');
@@ -99,6 +137,9 @@ function deleteAction() {
 for (let posElement of document.querySelectorAll('[data-postid]')) {
 	posElement.addEventListener("click", showActionBar);
 }
+for (let posElement of document.querySelectorAll('[data-eventid]')) {
+	posElement.addEventListener("click", showActionBar);
+}
 function showActionBar() {
 	let actionBar = event.currentTarget.querySelector('[data-label="actionbar"]');
 	if (!actionBar.classList.contains("show")) {
@@ -109,6 +150,7 @@ function showActionBar() {
 function updateLikeCounts(postElement) {
 	let listType = postElement.closest('ul')?.dataset.listtype;
 	let postid = postElement.dataset.postid;
+	if (!listType || !postid) return;
 	fetch("/" + listType + "/" + postid)
 		.then(response => response.json())
 		.then(jsonStruct => {
@@ -135,8 +177,7 @@ function updateLikeCounts(postElement) {
 }
 
 
-// MARK: - 
-// Handlers for the parts of messagePostForm.leaf
+// MARK: - messagePostForm Handlers
 for (let input of document.querySelectorAll('.image-upload-input')) {
 	updatePhotoCardState(input.closest('.card'));
 	input.addEventListener("change", function() { updatePhotoCardState(event.target.closest('.card')); })
@@ -291,3 +332,39 @@ userSearch?.addEventListener('input', function(event) {
 		
 	}, 200);
 })
+
+// MARK: - Schedule Page Handlers
+
+function filterFollowingEventAction() {
+	let category = document.getElementById("eventFilterMenu").dataset.category;
+	let followingOnly = document.getElementById("eventFollowingFilter").classList.contains("active");
+	filterEvents(category, followingOnly);
+}
+
+function eventFilterDropdownTappedAction() {
+	let categoryButton = document.getElementById("eventFilterMenu");
+	let followingButton = document.getElementById("eventFollowingFilter");
+	let category = event.target.dataset.category;
+	categoryButton.innerHTML = event.target.innerHTML;
+	categoryButton.dataset.category = category;
+	for (menuItem of categoryButton.parentElement.querySelectorAll('[data-action]')) {
+		menuItem.classList.remove("active");
+	}
+	event.target.classList.add("active");
+	filterEvents(category, followingButton.classList.contains("active"));
+}
+
+function filterEvents(category, onlyFollowing) {
+	for (let listItem of document.querySelectorAll('[data-eventid]')) {
+		let hideEvent = (onlyFollowing && listItem.dataset.eventfavorite == "false") ||
+				(category && category != "all" && category != listItem.dataset.eventcategory);
+		if (hideEvent && listItem.classList.contains("show")) {
+//			listItem.classList.remove("show")
+			new bootstrap.Collapse(listItem)
+		}
+		else if (!hideEvent && !listItem.classList.contains("show")) {
+//			listItem.classList.add("show")
+			new bootstrap.Collapse(listItem)
+		}
+	}
+}

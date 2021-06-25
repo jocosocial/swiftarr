@@ -2,28 +2,19 @@ import Vapor
 
 /// Register your application's routes here.
 public func routes(_ app: Application) throws {
-    
-	let siteLoginController = SiteLoginController()
-	try siteLoginController.registerRoutes(app)
 
-	let siteTwitarrController = SiteTwitarrController()
-	try siteTwitarrController.registerRoutes(app)
-	
-	let siteSeamailController = SiteSeamailController()
-	try siteSeamailController.registerRoutes(app)
-	
-	let siteForumController = SiteForumController()
-	try siteForumController.registerRoutes(app)
-
-	let siteUserController = SiteUserController()
-	try siteUserController.registerRoutes(app)
-	
-	let siteModController = SiteModController()
-	try siteModController.registerRoutes(app)
-	
-	let siteController = SiteController()
-	try siteController.registerRoutes(app)
-
+	let siteControllers: [SiteControllerUtils] = [
+			SiteController(),
+			SiteLoginController(),
+			SiteTwitarrController(),
+			SiteSeamailController(),
+			SiteForumController(),
+			SiteEventsController(),
+			SiteUserController(),
+			SiteModController()
+	]
+	try siteControllers.forEach { try $0.registerRoutes(app) }
+    	
 	let adminController = AdminController()
 	try app.register(collection: adminController)
 
