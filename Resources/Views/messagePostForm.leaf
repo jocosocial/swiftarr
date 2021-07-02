@@ -47,6 +47,8 @@
 						</div>
 					#endfor
 				</div>
+				<div class="alert alert-danger mt-3 d-none" role="alert">
+				</div>				
 				<div class="row mb-2">
 					<div class="col gx-0">
 						<small>Please remember to abide by the <a href="/codeOfConduct">Code of Conduct</a></small>
@@ -67,8 +69,6 @@
 						</div>
 					</div>
 				#endif
-				<div class="alert alert-danger mt-3 d-none" role="alert">
-				</div>				
 			</div>
 		</form>
 	</li>

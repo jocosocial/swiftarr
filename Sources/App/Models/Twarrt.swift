@@ -19,12 +19,9 @@ final class Twarrt: Model {
     /// The filenames of any images for the post.
     @Field(key: "images") var images: [String]?
     
-    /// Whether the twarrt is in quarantine, unable to be replied to directly.
-    @Field(key: "isQuarantined") var isQuarantined: Bool
-    
-    /// Whether the twarrt has been reviewed as non-violating content by the Moderator team.
-    @Field(key: "isReviewed") var isReviewed: Bool
-    
+    /// Moderators can set several statuses on twarrts that modify editability and visibility.
+    @Enum(key: "mod_status") var moderationStatus: ContentModerationStatus
+        
     /// Timestamp of the model's creation, set automatically.
 	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
     
@@ -36,7 +33,7 @@ final class Twarrt: Model {
     
 	// MARK: Relations
 	
-    /// The ID of the twarrt's author.
+    /// The twarrt's author.
     @Parent(key: "author") var author: User
 
     /// The twarrt being replied to, if any.
@@ -73,7 +70,6 @@ final class Twarrt: Model {
         self.images = images
         self.$replyTo.id = replyTo?.id
         self.$replyTo.value = replyTo
-        self.isQuarantined = false
-        self.isReviewed = false
+        self.moderationStatus = .normal
     }
 }

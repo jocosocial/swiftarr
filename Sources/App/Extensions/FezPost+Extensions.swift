@@ -39,3 +39,14 @@ extension FezPost: ContentFilterable {
     }
     
 }
+
+// Fez posts can be reported
+extension FezPost: Reportable {
+    /// The report type for `FezPost` reports.
+	var reportType: ReportType { .fezPost }
+	/// Standardizes how to get the author ID of a Reportable object.
+	var authorUUID: UUID { $author.id }
+
+	/// No auto quarantine for fez posts.
+	var autoQuarantineThreshold: Int { Int.max }
+}

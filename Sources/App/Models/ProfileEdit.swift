@@ -3,7 +3,7 @@ import Fluent
 
 
 /// When a `UserProfile` is edited, a `ProfileEdit` is created and associated with the
-/// profile.
+/// profile. The `ProfileEdit` records the state of the profile just before the edit occurred.
 ///
 /// This is done for accountability purposes and the data collected is intended to be viewable
 /// only by users with an access level of `.moderator` or above.
@@ -16,10 +16,10 @@ final class ProfileEdit: Model {
     /// The edit's ID.
     @ID(key: .id) var id: UUID?
         
-    /// If this is a profile data update, the submitted `UserProfileData`.
+    /// The `UserProfileData` contents of the user's profile
     @OptionalField(key: "profileData") var profileData: UserProfileData?
 
-    /// If this is a profile image update, the image filename.
+    /// The user's userImage filename.
     @OptionalField(key: "profileImage") var profileImage: String?
     
     /// Timestamp of the model's creation, set automatically.
@@ -27,9 +27,12 @@ final class ProfileEdit: Model {
     
 	// MARK: Relations
 
-    /// The parent `User` of the edit.
+    /// The `User` whose profile got edited.
     @Parent(key: "user") var user: User
 
+    /// The `User` that performed the edit. Equal to `user` if someone's editing their own profile.
+    @Parent(key: "editor") var editor: User
+        
     // MARK: Initialization
     
     // Used by Fluent
@@ -38,32 +41,14 @@ final class ProfileEdit: Model {
     /// Initializes a new ProfileEdit.
     ///
     /// - Parameters:
-    ///   - profileID: The ID of the profile that was edited.
-    ///   - profileData: The submitted `ProfileEditData`, else nil.
-    ///   - profileImage: The name of the submitted image, else nil.
-    init(
-        user: User,
-        profileData: UserProfileData? = nil,
-        profileImage: String? = nil
-    ) throws {
-    	self.$user.id = try user.requireID()
-    	self.$user.value = user
-        self.profileData = profileData
-        self.profileImage = profileImage
+    ///   - target: The `User` whose profile data was changed.
+    ///   - editor: The `User` who performed the edit.
+    init(target: User, editor: User) throws {
+    	self.$user.id = try target.requireID()
+    	self.$user.value = target
+    	self.$editor.id = try editor.requireID()
+    	self.$editor.value = editor
+    	self.profileData = try UserProfileData(user: target)
+        self.profileImage = target.userImage
     }
-    
-    /// Makes a profileEdit from the values in the given profile.
-//    init(profile: UserProfile) throws {
-//    	self.$profile.id = try profile.requireID()
-//    	self.$profile.value = profile
-//    	self.profileData = ProfileEditData(about: profile.about ?? "", 
-//    	displayName: profile.displayName ?? "", 
-//    	email: profile.email ?? "", 
-//    	homeLocation: profile.homeLocation ?? "", 
-//    	message: profile.message ?? "", 
-//    	preferredPronoun: profile.preferredPronoun ?? "", 
-//    	realName: profile.realName ?? "", 
-//    	roomNumber: profile.roomNumber ?? "", 
-//    	limitAccess: profile.limitAccess)
-//    }
 }

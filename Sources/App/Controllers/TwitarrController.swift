@@ -428,6 +428,7 @@ struct TwitarrController: RouteCollection {
     /// - Returns: `TwarrtData` containing the twarrt's contents and metadata. HTTP 201 status if successful.
     func replyHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         let user = try req.auth.require(User.self)
+		try user.guardCanCreateContent(customErrorString: "user cannot post twarrts")
 		let data = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
         // get replyTo twarrt
         return Twarrt.findFromParameter(twarrtIDParam, on: req).throwingFlatMap { (replyTo) in
@@ -460,6 +461,7 @@ struct TwitarrController: RouteCollection {
     /// - Returns: `TwarrtData` containing the twarrt's contents and metadata. HTTP 201 status if successful.
     func twarrtCreateHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         let user = try req.auth.require(User.self)
+		try user.guardCanCreateContent(customErrorString: "user cannot post twarrts")
  		let data = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
         // process images
         return self.processImages(data.images, usage: .twarrt, on: req).throwingFlatMap { (filenames) in
@@ -487,7 +489,8 @@ struct TwitarrController: RouteCollection {
     func twarrtDeleteHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
         return Twarrt.findFromParameter(twarrtIDParam, on: req).throwingFlatMap { (twarrt) in
-			try user.guardCanModifyContent(byUserID: twarrt.$author.id, customErrorString: "user cannot delete twarrt")
+			try user.guardCanModifyContent(twarrt, customErrorString: "user cannot delete twarrt")
+			twarrt.logIfModeratorAction(.delete, user: user, on: req)
             return twarrt.delete(on: req.db).transform(to: .noContent)
         }
     }
@@ -510,14 +513,9 @@ struct TwitarrController: RouteCollection {
     func twarrtReportHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
         let data = try req.content.decode(ReportData.self)
-        let parent = try user.parentAccount(on: req)
-        let twarrt = Twarrt.findFromParameter(twarrtIDParam, on: req).addModelID()
-        return parent.and(twarrt).throwingFlatMap { (parent, arg1) in
-        	let (twarrt, twarrtID) = arg1
-			let report = try Report(reportType: .twarrt, reportedID: String(twarrtID),
-						submitter: parent, submitterMessage: data.message)
-			return twarrt.fileReport(report, on: req)
-        }
+        return Twarrt.findFromParameter(twarrtIDParam, on: req).throwingFlatMap { twarrt in
+        	return try twarrt.fileReport(submitter: user, submitterMessage: data.message, on: req)
+		}
     }
     
     /// `POST /api/v3/twitarr/ID/laugh`
@@ -622,7 +620,7 @@ struct TwitarrController: RouteCollection {
         return Twarrt.findFromParameter(twarrtIDParam, on: req).throwingFlatMap { (twarrt) in
 			// I *think* the author should be allowed to edit a quarantined twarrt?
 			// ensure user has write access
-			try user.guardCanModifyContent(byUserID: twarrt.$author.id, customErrorString: "user cannot modify twarrt")
+			try user.guardCanModifyContent(twarrt, customErrorString: "user cannot modify twarrt")
 			return processImages(data.images, usage: .twarrt, on: req).map { filenames in
 				return (twarrt, filenames)
 			}
@@ -642,6 +640,7 @@ struct TwitarrController: RouteCollection {
 			return req.eventLoop.future((twarrt, HTTPStatus.ok))
 		}
 		.flatMap { (twarrt: Twarrt, status: HTTPStatus) in
+			twarrt.logIfModeratorAction(.edit, user: user, on: req)
 			return buildTwarrtData(from: twarrt, user: user, on: req).flatMapThrowing { (twarrtData) in
 				// return updated twarrt as TwarrtData, with 201 status
 				let response = Response(status: status)

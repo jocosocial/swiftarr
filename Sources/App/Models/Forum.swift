@@ -20,8 +20,8 @@ final class Forum: Model {
     /// The title of the forum.
     @Field(key: "title") var title: String
         
-    /// Whether the forum is in an administratively locked state.
-    @Field(key: "isLocked") var isLocked: Bool
+    /// Moderators can set several statuses on forums that modify editability and visibility.
+    @Enum(key: "mod_status") var moderationStatus: ContentModerationStatus
     
     /// Timestamp of the model's creation, set automatically.
 	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
@@ -69,6 +69,6 @@ final class Forum: Model {
         self.$category.value = category
         self.$creator.id = try creator.requireID()
         self.$creator.value = creator
-        self.isLocked = isLocked
+        self.moderationStatus = .normal
     }
 }

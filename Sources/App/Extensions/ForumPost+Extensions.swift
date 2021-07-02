@@ -54,16 +54,9 @@ extension ForumPost: ContentFilterable {
 
 extension ForumPost: Reportable {
     /// The barrel type for `ForumPost` bookmarking.
-	var reportType: ReportType {
-        return .forumPost
-    }
+	var reportType: ReportType { .forumPost }
     
-	func checkAutoQuarantine(reportCount: Int, on req: Request) -> EventLoopFuture<Void> {
-		// quarantine if threshold is met
-		if reportCount >= Settings.shared.postAutoQuarantineThreshold && !self.isReviewed {
-			self.isQuarantined = true
-			return self.save(on: req.db)
-		}
-		return req.eventLoop.future()
-	}
+	var authorUUID: UUID { $author.id }
+	
+	var autoQuarantineThreshold: Int { Settings.shared.postAutoQuarantineThreshold }
 }

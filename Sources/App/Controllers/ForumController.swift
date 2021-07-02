@@ -599,6 +599,7 @@ struct ForumController: RouteCollection {
     func forumCreateHandler(_ req: Request) throws -> EventLoopFuture<ForumData> {
         let user = try req.auth.require(User.self)
 		// see `ForumCreateData.validations()`
+		try user.guardCanCreateContent()
 		let data = try ValidatingJSONDecoder().decode(ForumCreateData.self, fromBodyOf: req)
         // check authorization to create
         return Category.findFromParameter(categoryIDParam, on: req).throwingFlatMap { (category) in
@@ -642,10 +643,12 @@ struct ForumController: RouteCollection {
     /// - Returns: 201 Created on success.
     func forumLockHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
+		guard user.accessLevel.canEditOthersContent() else {
+			throw Abort(.forbidden, reason: "User cannot this forum.")
+		}
         return Forum.findFromParameter(forumIDParam, on: req).throwingFlatMap { (forum) in
-            // must be forum owner or .moderator
-            try user.guardCanLockForum(forumCreatorID: forum.$creator.id)
-            forum.isLocked = true
+            forum.moderationStatus = .locked
+			forum.logIfModeratorAction(.lock, user: user, on: req)
             return forum.save(on: req.db).transform(to: .created)
         }
     }
@@ -660,11 +663,15 @@ struct ForumController: RouteCollection {
     /// - Returns: 204 No Content on success.
     func forumUnlockHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
+        guard user.accessLevel.canEditOthersContent() else {
+			throw Abort(.forbidden, reason: "Only moderators can unlock locked forums.")
+        }
         return Forum.findFromParameter(forumIDParam, on: req).throwingFlatMap { (forum) in
             // must be forum owner or .moderator
-            try user.guardCanLockForum(forumCreatorID: forum.$creator.id)
-            forum.isLocked = false
-            return forum.save(on: req.db).transform(to: .noContent)
+            try user.guardCanModifyContent(forum, customErrorString: "User cannot unlock this forum")
+            forum.moderationStatus = .normal
+ 			forum.logIfModeratorAction(.unlock, user: user, on: req)
+			return forum.save(on: req.db).transform(to: .noContent)
         }
     }
     
@@ -683,9 +690,10 @@ struct ForumController: RouteCollection {
 		}
         return Forum.findFromParameter(forumIDParam, on: req).throwingFlatMap { (forum) in
             // must be forum owner or .moderator
-            try user.guardCanModifyContent(byUserID: forum.$creator.id)
+			try user.guardCanModifyContent(forum, customErrorString: "User cannot modify forum title.")
             forum.title = nameParameter
-            return forum.save(on: req.db).transform(to: .created)
+  			forum.logIfModeratorAction(.unlock, user: user, on: req)
+			return forum.save(on: req.db).transform(to: .created)
         }
     }
     
@@ -705,14 +713,9 @@ struct ForumController: RouteCollection {
     func forumReportHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
         let data = try req.content.decode(ReportData.self)
-        let parent = try user.parentAccount(on: req)
-        let forum = Forum.findFromParameter(forumIDParam, on: req).addModelID()
-        return parent.and(forum).throwingFlatMap { (parent, arg1) in
-        	let (forum, forumID) = arg1
-            let report = try Report( reportType: .forum, reportedID: forumID.uuidString,
-                	submitter: parent, submitterMessage: data.message)
-			return forum.fileReport(report, on: req)
-        }
+        return Forum.findFromParameter(forumIDParam, on: req).throwingFlatMap { forum in
+        	return try forum.fileReport(submitter: user, submitterMessage: data.message, on: req)
+		}
     }
     
     /// `GET /api/v3/forum/likes`
@@ -788,17 +791,11 @@ struct ForumController: RouteCollection {
     func postCreateHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         let user = try req.auth.require(User.self)
         let cacheUser = try req.userCache.getUser(user)
-        // ensure user has write access
-        guard user.accessLevel.canCreateContent() else {
-            throw Abort(.forbidden, reason: "user cannot post in forum")
-        }
         // see `PostContentData.validations()`
  		let newPostData = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
         // get forum
         return Forum.findFromParameter(forumIDParam, on: req).throwingFlatMap { (forum) in
-            guard !forum.isLocked else {
-                throw Abort(.forbidden, reason: "forum is locked read-only")
-            }
+			try guardUserCanPostInForum(user, in: forum)
             // ensure user has access to forum; user cannot retrieve block-owned forum, but prevent end-run
 			guard !cacheUser.getBlocks().contains(forum.$creator.id) else {
 				throw Abort(.forbidden, reason: "user cannot post in forum")
@@ -821,15 +818,20 @@ struct ForumController: RouteCollection {
 	/// `DELETE /api/v3/forum/post/ID`
     ///
     /// Delete the specified `ForumPost`.
+	/// 
+	/// To delete, the user must have an access level allowing them to delete the post, and the forum itself must not be locked or in quarantine.
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 403 error if the user is not permitted to delete.
     /// - Returns: 204 No Content on success.
     func postDeleteHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
-        return ForumPost.findFromParameter(postIDParam, on: req).throwingFlatMap { (post) in
-            try user.guardCanModifyContent(byUserID: post.$author.id, customErrorString: "user cannot delete post")
-            return post.delete(on: req.db).transform(to: .noContent)
+        return ForumPost.findFromParameter(postIDParam, on: req).flatMap { post in
+        	return post.$forum.load(on: req.db).throwingFlatMap {
+				try guardUserCanPostInForum(user, in: post.forum, editingPost: post)
+  				post.logIfModeratorAction(.delete, user: user, on: req)
+        	    return post.delete(on: req.db).transform(to: .noContent)
+			}
         }
     }
     
@@ -849,18 +851,10 @@ struct ForumController: RouteCollection {
     /// - Returns: 201 Created on success.
     func postReportHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
-        let parent = try user.parentAccount(on: req)
         let data = try req.content.decode(ReportData.self)
-        return ForumPost.findFromParameter(postIDParam, on: req).and(parent).throwingFlatMap { (post, parent) in
-			do {
-				let report = try Report(reportType: .forumPost, reportedID: String(try post.requireID()),
-							submitter: parent, submitterMessage: data.message)
-				return post.fileReport(report, on: req)
-			}
-			catch {
-				return req.eventLoop.makeFailedFuture(error)
-			}
-        }
+        return ForumPost.findFromParameter(postIDParam, on: req).throwingFlatMap { post in
+        	return try post.fileReport(submitter: user, submitterMessage: data.message, on: req)
+		}
     }
     
     /// `POST /api/v3/forum/post/ID/laugh`
@@ -984,11 +978,8 @@ struct ForumController: RouteCollection {
 		let newPostData = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
         return ForumPost.findFromParameter(postIDParam, on: req).addModelID().flatMap { (post, postID) in
         	return post.$forum.load(on: req.db).throwingFlatMap {
-				// ensure user has write access
-				try user.guardCanModifyContent(byUserID: post.$author.id)
-				guard !post.forum.isLocked else {
-					throw Abort(.forbidden, reason: "forum is locked read-only")
-				}
+				// ensure user has write access, the post can be modified by them, and the forum isn't locked.
+				try guardUserCanPostInForum(user, in: post.forum, editingPost: post)
 				// process images
 				return self.processImages(newPostData.images, usage: .forumPost, on: req).throwingFlatMap { (filenames) in
 					// update if there are changes
@@ -998,6 +989,7 @@ struct ForumController: RouteCollection {
 						let forumEdit = try ForumEdit(post: post)
 						post.text = normalizedText
 						post.images = filenames
+  						post.logIfModeratorAction(.edit, user: user, on: req)
 						return post.save(on: req.db).and(forumEdit.save(on: req.db)).transform(to: (post, true))
 					}
 					return req.eventLoop.future((post, false))
@@ -1017,6 +1009,19 @@ struct ForumController: RouteCollection {
 
 // Utilities for route methods
 extension ForumController {
+
+	/// Ensures the given user has appropriate access to create or edit posts in the given forum. If editing a post, you must pass the post in the `editingPost` parameter.
+	func guardUserCanPostInForum(_ user: User, in forum: Forum, editingPost: ForumPost? = nil) throws {
+		if let post = editingPost {
+			try user.guardCanModifyContent(post) 
+		}
+		else {
+			try user.guardCanCreateContent()
+		}
+		guard user.accessLevel.canEditOthersContent() || (forum.moderationStatus == .normal || forum.moderationStatus == .modReviewed) else {
+			throw Abort(.forbidden, reason: "Forum is locked.")
+		}
+	}
 	
 	/// Builds an array of `ForumListData` from the given `Forums`. `ForumListData` does not return post content, but does return post counts.
 	func buildForumListData(_ forums: [Forum], on req: Request, userID: UUID,
@@ -1070,9 +1075,9 @@ extension ForumController {
 			return forum.$readers.$pivots.query(on: req.db).filter(\.$user.$id == userID).first()
 					.and(user.getBookmarkBarrel(of: .taggedForum, on: req)).flatMap { (readerPivot, favoriteForumBarrel) in
 				let clampedReadCount = min(readerPivot?.readCount ?? 0, postCount)
-				let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
+				let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 1...Settings.shared.maximumForumPosts)
 				let defaultStart = (clampedReadCount / limit) * limit
-				let start = (req.query[Int.self, at: "start"] ?? defaultStart)
+				let start = max((req.query[Int.self, at: "start"] ?? defaultStart), 0)
 				// Get the 'start' post without filtering blocks and mutes
 				return forum.$posts.query(on: req.db).sort(\.$createdAt, .ascending).range(start...start).first().flatMap { startPost in
 					// filter posts
@@ -1081,7 +1086,7 @@ extension ForumController {
 							.filter(\.$author.$id !~ cacheUser.getMutes())
 							.sort(\.$createdAt, .ascending)
 					if let startPostID = startPost?.id {
-						query = query.range(0...limit).filter(\.$id >= startPostID)
+						query = query.range(0..<limit).filter(\.$id >= startPostID)
 					}
 					else {
 						query = query.range(start...start + limit)

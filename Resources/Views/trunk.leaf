@@ -30,7 +30,7 @@
 					More
 				</a>
 				<ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-					<li><a class="dropdown-item text-primary" href="#">FriendlyFez</a></li>
+					<li><a class="dropdown-item text-primary" href="/fez">FriendlyFez</a></li>
 					<li><a class="dropdown-item" href="#">Games</a></li>
 					<li><a class="dropdown-item" href="#">Karaoke</a></li>
 					#if(trunk.userIsMod):
@@ -48,7 +48,7 @@
 		</ul>
 		<div class="collapse" id="navbarSupportedContent">
 				<div class="d-block d-md-none navbar-dark bg-transparent mb-3">
-					<a class="dropdown-item text-primary" href="#">FriendlyFez</a>
+					<a class="dropdown-item text-primary" href="/fez">FriendlyFez</a>
 					<a class="dropdown-item text-primary" href="#">Games</a>
 					<a class="dropdown-item text-primary" href="#">Karaoke</a>
 					#if(trunk.userIsMod):

@@ -33,7 +33,7 @@ final class Report: Model {
     /// The type of entity reported.
     @Field(key: "reportType") var reportType: ReportType
     
-    /// The ID of the entity reported.
+    /// The ID of the entity reported. Could resolve to an Int or a UUID, depending on the value of`reportType`.
     @Field(key: "reportedID") var reportedID: String
     
     /// An optional message from the submitter.
@@ -56,7 +56,10 @@ final class Report: Model {
     /// The `User` submitting the report.
     @Parent(key: "author") var submitter: User
 
-    /// The  moderator-level`User`handling the report.
+	/// The `User` whose content is being reported. 
+    @Parent(key: "reportedUser") var reportedUser: User
+
+    /// The  moderator-level`User`handling the report. Nil until a moderator starts handling the report.
 	@OptionalParent(key: "handled_by") var handledBy: User?
     
     // MARK: Initializaton
@@ -71,15 +74,11 @@ final class Report: Model {
     ///   - reportedID: The ID of the entity reported.
     ///   - submitter: The user submitting the report.
     ///   - submitterMessage: An optional message from the submitter.
-    init(
-        reportType: ReportType,
-        reportedID: String,
-        submitter: User,
-        submitterMessage: String = ""
-    ) throws {
-        self.reportType = reportType
-        self.reportedID = reportedID
-        self.$submitter.id = try submitter.requireID()
+    init<T: Reportable>(reportedContent: T, submitter: User, submitterMessage: String = "") throws {
+        self.reportType = reportedContent.reportType
+        self.reportedID = try reportedContent.reportableContentID()
+		self.$reportedUser.id = reportedContent.authorUUID
+		self.$submitter.id = try submitter.requireID()
         self.$submitter.value = submitter
         self.submitterMessage = submitterMessage
         self.isClosed = false

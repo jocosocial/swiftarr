@@ -12,7 +12,7 @@
 					<div class="container-fluid">
 						<div class="row">
 							<div class="col">
-								#(report.reportType)
+								#(report.reportType) by @#elem(report.reportedUser.username)
 							</div>
 							<div class="col col-auto">
 								reported #relativeTime(report.firstReportTime)

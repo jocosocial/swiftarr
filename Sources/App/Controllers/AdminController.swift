@@ -103,7 +103,7 @@ struct AdminController: RouteCollection {
 					}
 					let reportData = try reports.map { try ReportAdminData.init(req: req, report: $0) }
 					let modData = TwarrtModerationData(twarrt: twarrtData, isDeleted: twarrt.deletedAt != nil, 
-							isQuarantined: twarrt.isQuarantined, isReviewed: twarrt.isReviewed, edits: editData, reports: reportData)
+							moderationStatus: twarrt.moderationStatus, edits: editData, reports: reportData)
 					return modData
 				}
 			}

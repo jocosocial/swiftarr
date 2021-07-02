@@ -16,9 +16,12 @@ final class FezPost: Model {
     /// The text content of the post.
     @Field(key: "text") var text: String
     
-    /// The filename of any image content of the post.
+    /// The filename of any image content of the post. FezPosts are limited to one image, and "closed" Fez types cannot have any.
     @Field(key: "image") var image: String?
     
+    /// Moderators can set several statuses on fezPosts that modify editability and visibility.
+    @Enum(key: "mod_status") var moderationStatus: ContentModerationStatus
+        
     /// Timestamp of the model's creation, set automatically.
 	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
     
@@ -30,7 +33,7 @@ final class FezPost: Model {
     
 	// MARK: Relations
     
-    /// The `FriendlyFez` type `Barrel` to which the post belongs.
+    /// The `FriendlyFez` to which the post belongs.
     @Parent(key: "friendly_fez") var fez: FriendlyFez
     
     /// The post's author.
@@ -62,5 +65,6 @@ final class FezPost: Model {
         // Generally I'm in favor of "validate input, sanitize output" but I hate "\r\n" with the fury of a thousand suns.
         self.text = text.replacingOccurrences(of: "\r\n", with: "\r")
         self.image = image
+        self.moderationStatus = .normal
     }
 }

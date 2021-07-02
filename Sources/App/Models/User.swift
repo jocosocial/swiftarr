@@ -36,7 +36,6 @@ final class User: Model {
     /// Concatenation of displayName + (@username) + realName, to speed search by name.
     @Field(key: "userSearch") var userSearch: String
     
-
 // MARK: Access
     /// The user's password, encrypted to BCrypt hash value.
     @Field(key: "password") var password: String
@@ -52,11 +51,21 @@ final class User: Model {
     /// or to the parent's access level if a sub-account.
     @Field(key: "accessLevel") var accessLevel: UserAccessLevel
     
+    /// Only refers to the user's ability to change their profile. Think of the profile fields as content, and mods can quarantine or lock that content,
+    /// separate from outright banning a user.
+    @Enum(key: "moderationStatus") var moderationStatus: ContentModerationStatus
+
     /// Number of successive failed attempts at password recovery.
     @Field(key: "recoveryAttempts") var recoveryAttempts: Int
     
     /// Cumulative number of reports submitted on user's posts.
     @Field(key: "reports") var reports: Int
+    
+    /// If non-nil, the account has been handed a time out by a moderator. The account will have an effective access level of 'Quarantined' until the given time.
+    /// Quarantine generally means normal Read access but user canot post or modify any text or image content. The user's `accessLevel` field should not be
+    /// changed when applying a temp quarantine. This way if mods later decide to ban the user, the end of the temp quarantine won't reset the user's access level
+	/// (most likely to `.verified`).
+    @Field(key: "tempQuarantineUntil") var tempQuarantineUntil: Date?
     
 // MARK: About This User
 
@@ -184,6 +193,7 @@ final class User: Model {
         self.reports = reports
         self.profileUpdatedAt = profileUpdatedAt
         self.limitAccess = false
+        self.moderationStatus = .normal
         
         buildUserSearchString()
     }

@@ -13,6 +13,7 @@ struct FezController: RouteCollection {
     // the parameter value in route handlers. findFromParameter() has a variant that takes a PathComponent,
     // and it's slightly more type-safe to do this rather than relying on string matching.
     var fezIDParam = PathComponent(":fez_id")
+    var fezPostIDParam = PathComponent(":fezPost_id")
     var userIDParam = PathComponent(":user_id")
 
     /// Required. Registers routes to the incoming router.
@@ -42,12 +43,13 @@ struct FezController: RouteCollection {
         tokenAuthGroup.post(fezIDParam, "join", use: joinHandler)
         tokenAuthGroup.get("owner", use: ownerHandler)
         tokenAuthGroup.post(fezIDParam, "post", use: postAddHandler)
-        tokenAuthGroup.post("post", ":post_id", "delete", use: postDeleteHandler)
-        tokenAuthGroup.delete("post", ":post_id", use: postDeleteHandler)
+        tokenAuthGroup.post("post", fezPostIDParam, "delete", use: postDeleteHandler)
+        tokenAuthGroup.delete("post", fezPostIDParam, use: postDeleteHandler)
         tokenAuthGroup.post(fezIDParam, "unjoin", use: unjoinHandler)
         tokenAuthGroup.post(fezIDParam, "update", use: updateHandler)
         tokenAuthGroup.post("user", userIDParam, "add", use: userAddHandler)
         tokenAuthGroup.post(fezIDParam, "user", userIDParam, "remove", use: userRemoveHandler)
+		tokenAuthGroup.post("post", fezPostIDParam, "report", use: reportHandler)
     }
     
     // MARK: - sharedAuthGroup Handlers (logged in or not)
@@ -310,6 +312,7 @@ struct FezController: RouteCollection {
     /// - Returns: `FezData` containing the updated fez discussion.
     func postAddHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         let user = try req.auth.require(User.self)
+        try user.guardCanCreateContent()
         // see PostContentData.validations()
  		let data = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
  		if data.images.count > 1 {
@@ -390,6 +393,10 @@ struct FezController: RouteCollection {
             return post.$fez.query(on: req.db).with(\.$participants.$pivots).first()
                 .unwrap(or: Abort(.internalServerError, reason: "fez not found"))
                 .throwingFlatMap { (fez) in
+					let cacheUser = try req.userCache.getUser(user)
+					guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
+						throw Abort(.notFound, reason: "fez is not available")
+					}
                 	return try fez.$fezPosts.query(on: req.db).filter(\.$id < post.requireID()).count().flatMap { postIndex in
 						// delete post, reduce post count cached in fez
 						fez.postCount -= 1
@@ -417,11 +424,8 @@ struct FezController: RouteCollection {
 							}
 						}
 						
+  						post.logIfModeratorAction(.delete, user: user, on: req)
 						return saveFutures.flatten(on: req.eventLoop).throwingFlatMap { (_) in
-							let cacheUser = try req.userCache.getUser(user)
-							guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
-								throw Abort(.notFound, reason: "fez is not available")
-							}
 							return try buildPostsForFez(fez.requireID(), on: req, userBlocks: cacheUser.getBlocks(),
 									userMutes: cacheUser.getMutes()).flatMapThrowing { posts in
 								var fezData = try buildFezData(from: fez, with: posterPivot, for: user, on: req)
@@ -434,6 +438,27 @@ struct FezController: RouteCollection {
 		}
 	}
 	
+    /// `POST /api/v3/fez/post/ID/report`
+    ///
+    /// Creates a `Report` regarding the specified `FezPost`.
+    ///
+    /// - Note: The accompanying report message is optional on the part of the submitting user,
+    ///   but the `ReportData` is mandatory in order to allow one. If there is no message,
+    ///   send an empty string in the `.message` field.
+    ///
+    /// - Requires: `ReportData` payload in the HTTP body.
+    /// - Parameters:
+    ///   - req: The incoming `Request`, provided automatically.
+    ///   - data: `ReportData` containing an optional accompanying message.
+    /// - Returns: 201 Created on success.
+    func reportHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+        let submitter = try req.auth.require(User.self)
+        let data = try req.content.decode(ReportData.self)        
+		return FezPost.findFromParameter(fezPostIDParam, on: req).throwingFlatMap { reportedUser in
+        	return try reportedUser.fileReport(submitter: submitter, submitterMessage: data.message, on: req)
+		}
+    }
+
     /// `POST /api/v3/fez/ID/unjoin`
     ///
     /// Remove the current user from the FriendlyFez. If the `.maxCapacity` of the fez had

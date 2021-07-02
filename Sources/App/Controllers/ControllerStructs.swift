@@ -438,7 +438,7 @@ extension ForumData {
 		categoryID = forum.$category.id
 		title = forum.title
 		self.creator = creator
-		isLocked = forum.isLocked
+		isLocked = forum.moderationStatus == .locked
 		self.isFavorite = isFavorite
 		self.posts = posts
 		self.totalPosts = 1
@@ -495,7 +495,7 @@ extension ForumListData {
 		self.createdAt = forum.createdAt ?? Date()
 		self.lastPostAt = lastPostAt
 		self.lastPoster = lastPoster
-		self.isLocked = forum.isLocked
+		self.isLocked = forum.moderationStatus == .locked
 		self.isFavorite = isFavorite
     }
 
@@ -699,11 +699,8 @@ extension PostData {
 		self.userLike = nil
 		self.likeCount = 0
     }
-    
-    
 }
 
-// FIXME: needs bookmark, userLike too?
 /// Used to return a `ForumPost`'s data with full user `LikeType` info.
 ///
 /// Returned by: `GET /api/v3/forum/post/ID`
@@ -724,6 +721,8 @@ struct PostDetailData: Content {
     var images: [String]?
     /// Whether the current user has bookmarked the post.
     var isBookmarked: Bool
+    /// The current user's `LikeType` reaction on the post.
+    var userLike: LikeType?
     /// The seamonkeys with "laugh" reactions on the post.
     var laughs: [SeaMonkey]
     /// The seamonkeys with "like" reactions on the post.
@@ -797,6 +796,8 @@ struct ReportAdminData: Content {
 	var type: ReportType
 	/// The ID of the reported entity. Could resolve to an Int or a UUID, depending on the value of`type`.
 	var reportedID: String
+	/// The user that authored the content being reported..
+	var reportedUser: UserHeader
 	/// Text the report author wrote when submitting the report.
 	var submitterMessage: String?
 	/// Notes by the mod handling the report.
@@ -818,6 +819,7 @@ extension ReportAdminData {
 		id = try report.requireID()
 		type = report.reportType
 		reportedID = report.reportedID
+		reportedUser = try req.userCache.getHeader(report.$reportedUser.id)
 		submitterMessage = report.submitterMessage
 		moderatorMemo = report.moderatorMemo
 		isClosed = report.isClosed
@@ -1003,11 +1005,10 @@ extension TwarrtEditData {
 /// * `GET /api/v3/admin/twarrt/id`
 ///
 /// See `AdminController.twarrtModerationHandler(_:)`
-struct TwarrtModerationData: Content{
+struct TwarrtModerationData: Content {
 	var twarrt: TwarrtData
 	var isDeleted: Bool
-	var isQuarantined: Bool
-	var isReviewed: Bool
+	var moderationStatus: ContentModerationStatus
 	var edits: [TwarrtEditData]
 	var reports: [ReportAdminData]
 }

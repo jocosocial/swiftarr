@@ -25,6 +25,7 @@ struct SiteModController: SiteControllerUtils {
 	struct ReportContentGroup: Codable {
 		var reportType: ReportType
 		var reportedID: String
+		var reportedUser: UserHeader
 		var firstReportTime: Date
 		var openCount: Int
 		var contentURL: String
@@ -55,7 +56,7 @@ struct SiteModController: SiteControllerUtils {
 					case .fezPost: contentURL = "moderate/fezPost/\(report.reportedID)"
 					case .user: contentURL = "moderate/user/\(report.reportedID)"
 				}
-				var newGroup = ReportContentGroup(reportType: report.type, reportedID: report.reportedID, 
+				var newGroup = ReportContentGroup(reportType: report.type, reportedID: report.reportedID, reportedUser: report.reportedUser, 
 						firstReportTime: Date(), openCount: 0, contentURL: contentURL, reports: [report])
 				newGroup.openCount += report.isClosed ? 0 : 1
 				newGroup.firstReportTime = report.creationTime

@@ -475,19 +475,10 @@ struct UsersController: RouteCollection {
     /// - Returns: 201 Created on success.
     func reportHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let submitter = try req.auth.require(User.self)
-        let parent = try submitter.parentAccount(on: req)
- 		guard let parameter = req.parameters.get(userIDParam.paramString), let userID = UUID(parameter) else {
-            throw Abort(.badRequest, reason: "No user ID in request.")
-        }
-		let user = User.find(userID, on: req.db)
-				.unwrap(or: Abort(.notFound, reason: "no user found for identifier '\(parameter)'"))
         let data = try req.content.decode(ReportData.self)        
-        return parent.and(user).throwingFlatMap { (parent, user) in
-			let report = try Report( reportType: .user, reportedID: userID.uuidString,
-					submitter: parent, submitterMessage: data.message)
-			return user.fileReport(report, on: req)		
-			
-        }
+		return User.findFromParameter(userIDParam, on: req).throwingFlatMap { reportedUser in
+        	return try reportedUser.fileReport(submitter: submitter, submitterMessage: data.message, on: req)
+		}
     }
     
     /// `POST /api/v3/users/ID/unblock`

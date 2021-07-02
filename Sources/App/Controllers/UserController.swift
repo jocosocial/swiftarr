@@ -129,8 +129,10 @@ struct UserController: RouteCollection {
         sharedAuthGroup.post("image", use: imageHandler)
         sharedAuthGroup.post("image", "remove", use: imageRemoveHandler)
         sharedAuthGroup.delete("image", use: imageRemoveHandler)
+        sharedAuthGroup.delete(":target_user", "image", use: imageRemoveHandler)
         sharedAuthGroup.get("profile", use: profileHandler)
         sharedAuthGroup.post("profile", use: profileUpdateHandler)
+        sharedAuthGroup.post(":target_user", "profile", use: profileUpdateHandler)
         sharedAuthGroup.get("whoami", use: whoamiHandler)
         
         // endpoints available only when logged in
@@ -155,6 +157,7 @@ struct UserController: RouteCollection {
         tokenAuthGroup.get("notes", use: notesHandler)
         tokenAuthGroup.post("password", use: passwordHandler)
         tokenAuthGroup.post("username", use: usernameHandler)
+        tokenAuthGroup.post(":target_user", "username", use: usernameHandler)
     }
     
     // MARK: - Open Access Handlers
@@ -344,6 +347,7 @@ struct UserController: RouteCollection {
     /// - Returns: `UploadedImageData` containing the generated image identifier string.
     func imageHandler(_ req: Request) throws -> EventLoopFuture<UploadedImageData> {
         let user = try req.auth.require(User.self)
+        try user.guardCanEditProfile()
         let data = try req.content.decode(ImageUploadData.self)
         // get generated filename
         return processImage(data: data.image, usage: .userProfile, on: req)
@@ -352,7 +356,7 @@ struct UserController: RouteCollection {
 				// replace existing image
 				if let existingImage = user.userImage, !existingImage.isEmpty {
 					// create ProfileEdit record
-					let profileEdit = try ProfileEdit(user: user, profileData: nil, profileImage: existingImage)
+					let profileEdit = try ProfileEdit(target: user, editor: user)
 					// archive thumbnail
 					DispatchQueue.global(qos: .background).async {
 						self.archiveImage(existingImage, on: req)
@@ -375,6 +379,7 @@ struct UserController: RouteCollection {
     
     /// `POST /api/v3/user/image/remove`
     /// `DELETE /api/v3/user/image`
+	/// `DELETE /api/v3/user/ID/image`				// For moderators -- removes another user's image.
     ///
     /// Removes the user's profile image from their `UserProfile`.
     ///
@@ -383,25 +388,37 @@ struct UserController: RouteCollection {
     /// - Returns: 204 No Content on success.
     func imageRemoveHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
-		if let existingImage = user.userImage, !existingImage.isEmpty {
-			// create ProfileEdit record
-			let profileEdit = try ProfileEdit(user: user, profileData: nil, profileImage: existingImage)
-			// archive thumbnail
-			DispatchQueue.global(qos: .background).async {
-				return self.archiveImage(existingImage, on: req)
+        let targetUserID = req.parameters.get("target_user", as: UUID.self)
+		return User.find(targetUserID, on: req.db).throwingFlatMap { foundTargetUser in
+			// If the request includes a targetUserID but we couldn't find them--bail. Otherwise `user` will be removing
+			// their own profile image, which is not what they intended.
+			guard targetUserID == nil || foundTargetUser != nil else {
+				throw Abort(.badRequest, reason: "Could not find user with userID \(targetUserID?.uuidString ?? "")")
 			}
-			return profileEdit.save(on: req.db).flatMap { (_) in
-				// remove image from profile
-				user.userImage = nil
-				user.profileUpdatedAt = Date()
-				return user.save(on: req.db).flatMapThrowing {
-					try req.userCache.updateUser(user.requireID())
-					return .noContent
+			// In the moderation route, foundTargetUser != nil and (usually) foundTargetUser != user. 
+			// If a user is editing their own image, foundTargetUser == nil.
+			let targetUser = foundTargetUser ?? user
+			try user.guardCanEditProfile(ofUser: targetUser)
+			if let existingImage = targetUser.userImage, !existingImage.isEmpty {
+				// create ProfileEdit record
+				let profileEdit = try ProfileEdit(target: targetUser, editor: user)
+				// archive thumbnail
+				DispatchQueue.global(qos: .background).async {
+					return self.archiveImage(existingImage, on: req)
+				}
+				return profileEdit.save(on: req.db).flatMap { (_) in
+					// remove image from profile
+					targetUser.userImage = nil
+					targetUser.profileUpdatedAt = Date()
+					return targetUser.save(on: req.db).flatMapThrowing {
+						try req.userCache.updateUser(targetUser.requireID())
+						return .noContent
+					}
 				}
 			}
+			// no existing image
+			return req.eventLoop.future(.noContent)
 		}
-		// no existing image
-		return req.eventLoop.future(.noContent)
     }
     
     /// `GET /api/v3/user/profile`
@@ -426,6 +443,7 @@ struct UserController: RouteCollection {
     }
     
     /// `POST /api/v3/user/profile`
+	/// `POST /api/v3/user/ID/profile` 				- for moderator use
     ///
     /// Updates the user's profile.
     ///
@@ -445,35 +463,41 @@ struct UserController: RouteCollection {
     /// - Returns: `UserProfileData` containing the updated editable properties of the profile.
     func profileUpdateHandler(_ req: Request) throws -> EventLoopFuture<UserProfileData> {
         let user = try req.auth.require(User.self)
-        // abort if banned, profile might even be deleted
-        guard user.accessLevel != .banned else {
-            throw Abort(.forbidden, reason: "profile cannot be edited")
-        }
-//		try ProfileEditData.validate(content: req)
-        let data = try req.content.decode(UserProfileData.self)
-        
-		// record update for accountability
-		let currentProfileData = try UserProfileData(user: user)
-		let oldProfileEdit = try ProfileEdit(user: user, profileData: currentProfileData, profileImage: nil)
-		_ = oldProfileEdit.save(on: req.db)
-	
-		// update fields, nil if no value supplied
-		user.about = data.about?.isEmpty == true ? nil : data.about
-		user.displayName = data.displayName?.isEmpty == true ? nil : data.displayName
-		user.email = data.email?.isEmpty == true ? nil : data.email
-		user.homeLocation = data.homeLocation?.isEmpty == true ? nil : data.homeLocation
-		user.message = data.message?.isEmpty == true ? nil : data.message
-		user.preferredPronoun = data.preferredPronoun?.isEmpty == true ? nil : data.preferredPronoun
-		user.realName = data.realName?.isEmpty == true ? nil : data.realName
-		user.roomNumber = data.roomNumber?.isEmpty == true ? nil : data.roomNumber
-		user.limitAccess = data.limitAccess
+        let targetUserID = req.parameters.get("target_user", as: UUID.self)
+		return User.find(targetUserID, on: req.db).throwingFlatMap { foundTargetUser in
+			// If the request includes a targetUserID but we couldn't find them--bail. Otherwise `user` will be removing
+			// their own profile image, which is not what they intended.
+			guard targetUserID == nil || foundTargetUser != nil else {
+				throw Abort(.badRequest, reason: "Could not find user with userID \(targetUserID?.uuidString ?? "")")
+			}
+			// In the moderation route, foundTargetUser != nil and (usually) foundTargetUser != user. 
+			// If a user is editing their own image, foundTargetUser == nil.
+			let targetUser = foundTargetUser ?? user
+			try user.guardCanEditProfile(ofUser: targetUser)
+			let data = try req.content.decode(UserProfileData.self)
+			
+			// record update for accountability
+			let oldProfileEdit = try ProfileEdit(target: targetUser, editor: user)
+			_ = oldProfileEdit.save(on: req.db)
 		
-		// build .userSearch value
-		user.buildUserSearchString()
-		
-		return user.save(on: req.db).flatMapThrowing {
-			try req.userCache.updateUser(user.requireID())
-			return try UserProfileData(user: user)
+			// update fields, nil if no value supplied
+			targetUser.about = data.about?.isEmpty == true ? nil : data.about
+			targetUser.displayName = data.displayName?.isEmpty == true ? nil : data.displayName
+			targetUser.email = data.email?.isEmpty == true ? nil : data.email
+			targetUser.homeLocation = data.homeLocation?.isEmpty == true ? nil : data.homeLocation
+			targetUser.message = data.message?.isEmpty == true ? nil : data.message
+			targetUser.preferredPronoun = data.preferredPronoun?.isEmpty == true ? nil : data.preferredPronoun
+			targetUser.realName = data.realName?.isEmpty == true ? nil : data.realName
+			targetUser.roomNumber = data.roomNumber?.isEmpty == true ? nil : data.roomNumber
+			targetUser.limitAccess = data.limitAccess
+			
+			// build .userSearch value
+			targetUser.buildUserSearchString()
+			
+			return targetUser.save(on: req.db).flatMapThrowing {
+				try req.userCache.updateUser(targetUser.requireID())
+				return try UserProfileData(user: targetUser)
+			}
 		}
     }
     
@@ -1304,9 +1328,9 @@ struct UserController: RouteCollection {
     }
 
     /// `POST /api/v3/user/username`
+    /// `POST /api/v3/user/ID/username`				-- moderator use
     ///
-    /// Changes a user's username to the supplied value, if possible. Also updates the
-    /// username in the associated `UserProfile`.
+    /// Changes a user's username to the supplied value, if possible. 
     ///
     /// - Requires: `UserUsernameData` payload in the HTTP body.
     /// - Parameters:
@@ -1317,29 +1341,44 @@ struct UserController: RouteCollection {
     /// - Returns: 201 Created on success.
     func usernameHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
-        // clients are hard-coded
-        guard user.accessLevel != .client else {
-            throw Abort(.forbidden, reason: "username change would break a client")
-        }
-        // see `UserUsernameData.validations()`
-		let data = try ValidatingJSONDecoder().decode(UserUsernameData.self, fromBodyOf: req)
-        // check for existing username
-        return User.query(on: req.db)
-            .filter(\.$username == data.username)
-            .first()
-            .flatMap { (existingUser) in
-                // abort if name is already taken
-                guard existingUser == nil else {
-                    return req.eventLoop.makeFailedFuture(
-                    		Abort(.conflict, reason: "username '\(data.username)' is not available"))
-                }
-				user.username = data.username
-				user.buildUserSearchString()
-				return user.save(on: req.db).flatMapThrowing {
-					try req.userCache.updateUser(user.requireID())
+        let targetUserID = req.parameters.get("target_user", as: UUID.self)
+		return User.find(targetUserID, on: req.db).throwingFlatMap { foundTargetUser in
+			// If the request includes a targetUserID but we couldn't find them--bail. Otherwise `user` will be removing
+			// their own profile image, which is not what they intended.
+			guard targetUserID == nil || foundTargetUser != nil else {
+				throw Abort(.badRequest, reason: "Could not find user with userID \(targetUserID?.uuidString ?? "")")
+			}
+			// In the moderation route, foundTargetUser != nil and (usually) foundTargetUser != user. 
+			// If a user is editing their own image, foundTargetUser == nil.
+			let targetUser = foundTargetUser ?? user
+			try user.guardCanEditProfile(ofUser: targetUser)
+			// clients are hard-coded
+			guard targetUser.accessLevel != .client else {
+				throw Abort(.forbidden, reason: "username change would break a client")
+			}
+			// see `UserUsernameData.validations()`
+			let data = try ValidatingJSONDecoder().decode(UserUsernameData.self, fromBodyOf: req)
+			// check for existing username
+			return User.query(on: req.db)
+					.filter(\.$username == data.username)
+					.first()
+					.throwingFlatMap { (existingUser) in
+				// abort if name is already taken
+				guard existingUser == nil else {
+					throw Abort(.conflict, reason: "username '\(data.username)' is not available")
+				}
+				// record update for accountability
+				let oldProfileEdit = try ProfileEdit(target: targetUser, editor: user)
+				_ = oldProfileEdit.save(on: req.db)
+
+				targetUser.username = data.username
+				targetUser.buildUserSearchString()
+				return targetUser.save(on: req.db).flatMapThrowing {
+					try req.userCache.updateUser(targetUser.requireID())
 					return .created
 				}
-        	}
+			}
+		}
     }
     
     // MARK: - Helper Functions

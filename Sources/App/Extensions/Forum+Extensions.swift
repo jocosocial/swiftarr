@@ -17,19 +17,9 @@ extension Forum: UserBookmarkable {
 // forums can be reported
 extension Forum: Reportable {
     /// The report type for `Forum` reports.
-	var reportType: ReportType {
-        return .forum
-    }
+	var reportType: ReportType { .forum }
     
-	func checkAutoQuarantine(reportCount: Int, on req: Request) -> EventLoopFuture<Void> {
-		// quarantine if threshold is met
-		// FIXME: use separate lock from user's
-		// FIXME: Also, this will re-lock the forum on every new report, even after
-		// mod review. Add self.isReviewed to forums.
-		if reportCount >= Settings.shared.forumAutoQuarantineThreshold {
-			self.isLocked = true
-			return self.save(on: req.db)
-		}
-		return req.eventLoop.future()
-	}
+	var authorUUID: UUID { $creator.id }
+
+	var autoQuarantineThreshold: Int { Settings.shared.forumAutoQuarantineThreshold }
 }

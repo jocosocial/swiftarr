@@ -4,6 +4,26 @@ import Fluent
 // This file contains Migrations that create the initial database schema. 
 // These migrations do not migrate from an old schema to a new one--they migrate from nothing. 
 
+// This migration creates custom enum types used by the database. Other migrations then use these
+// custom types to define enum-valued fields.
+struct CreateCustomEnums: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+		database.enum("moderation_status")
+			.case("normal")
+			.case("autoQuarantined")
+			.case("quarantined")
+			.case("modReviewed")
+			.case("locked")
+			.create()
+			.transform(to: database.eventLoop.future())			
+	}
+    
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.enum("moderation_status").delete()
+    }
+}
+
+
 struct CreateBarrelSchema: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         database.schema("barrels")
@@ -58,7 +78,7 @@ struct CreateEventSchema: Migration {
     			.field("created_at", .datetime)
     			.field("updated_at", .datetime)
     			.field("deleted_at", .datetime)
-    			.field("forum_id", .uuid, .references("forums", "id"))
+    			.field("forum_id", .uuid, .references("forums", "id", onDelete: .setNull))
 				.create()
     }
     
@@ -69,16 +89,19 @@ struct CreateEventSchema: Migration {
 
 struct CreateFezPostSchema: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("fezposts")
-				.field("id", .int, .identifier(auto: true))
-				.field("text", .string, .required)
-				.field("image", .string)
-    			.field("created_at", .datetime)
-    			.field("updated_at", .datetime)
-    			.field("deleted_at", .datetime)
- 				.field("friendly_fez", .uuid, .required, .references("friendlyfez", "id"))
- 				.field("author", .uuid, .required, .references("users", "id"))
-				.create()
+		database.enum("moderation_status").read().flatMap { modStatusEnum in
+			database.schema("fezposts")
+					.field("id", .int, .identifier(auto: true))
+					.field("text", .string, .required)
+					.field("image", .string)
+					.field("mod_status", modStatusEnum, .required)
+					.field("created_at", .datetime)
+					.field("updated_at", .datetime)
+					.field("deleted_at", .datetime)
+					.field("friendly_fez", .uuid, .required, .references("friendlyfez", "id"))
+					.field("author", .uuid, .required, .references("users", "id"))
+					.create()
+		}
     }
 
     func revert(on database: Database) -> EventLoopFuture<Void> {
@@ -88,16 +111,18 @@ struct CreateFezPostSchema: Migration {
 
 struct CreateForumSchema: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("forums")
-				.id()
-				.field("title", .string, .required)
-				.field("isLocked", .bool, .required)
-    			.field("created_at", .datetime)
-    			.field("updated_at", .datetime)
-    			.field("deleted_at", .datetime)
- 				.field("category_id", .uuid, .required, .references("categories", "id"))
- 				.field("creator_id", .uuid, .required, .references("users", "id"))
-				.create()
+		database.enum("moderation_status").read().flatMap { modStatusEnum in
+			database.schema("forums")
+					.id()
+					.field("title", .string, .required)
+					.field("mod_status", modStatusEnum, .required)
+					.field("created_at", .datetime)
+					.field("updated_at", .datetime)
+					.field("deleted_at", .datetime)
+					.field("category_id", .uuid, .required, .references("categories", "id"))
+					.field("creator_id", .uuid, .required, .references("users", "id"))
+					.create()
+		}
     }
     
     func revert(on database: Database) -> EventLoopFuture<Void> {
@@ -139,18 +164,19 @@ struct CreateForumReadersSchema: Migration {
 
 struct CreateForumPostSchema: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("forumposts")
-				.field("id", .int, .identifier(auto: true))
-				.field("text", .string, .required)
-				.field("images", .array(of: .string))
-				.field("isQuarantined", .bool, .required)
-				.field("isReviewed", .bool, .required)
-    			.field("created_at", .datetime)
-    			.field("updated_at", .datetime)
-    			.field("deleted_at", .datetime)
- 				.field("forum", .uuid, .required, .references("forums", "id"))
- 				.field("author", .uuid, .required, .references("users", "id"))
-				.create()
+		database.enum("moderation_status").read().flatMap { modStatusEnum in
+			database.schema("forumposts")
+					.field("id", .int, .identifier(auto: true))
+					.field("text", .string, .required)
+					.field("images", .array(of: .string))
+					.field("mod_status", modStatusEnum, .required)
+					.field("created_at", .datetime)
+					.field("updated_at", .datetime)
+					.field("deleted_at", .datetime)
+					.field("forum", .uuid, .required, .references("forums", "id"))
+					.field("author", .uuid, .required, .references("users", "id"))
+					.create()
+		}
     }
     
     func revert(on database: Database) -> EventLoopFuture<Void> {
@@ -202,6 +228,25 @@ struct CreateFezParticipantSchema: Migration {
     }
 }
 
+struct CreateModeratorActionSchema: Migration {
+	func prepare(on database: Database) -> EventLoopFuture<Void> {
+		database.schema("moderator_actions")
+				.id()
+				.field("action_type", .string, .required)
+				.field("content_type", .string, .required)
+				.field("content_id", .string, .required)
+    			.field("created_at", .datetime)
+ 				.field("actor", .uuid, .required, .references("users", "id"))
+ 				.field("target_user", .uuid, .required, .references("users", "id"))
+				.create()
+	}
+ 
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("fez+participants").delete()
+    }
+
+}
+
 struct CreatePostLikesSchema: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         database.schema("post+likes")
@@ -226,6 +271,7 @@ struct CreateProfileEditSchema: Migration {
 				.field("profileImage", .string)
     			.field("created_at", .datetime)
  				.field("user", .uuid, .required, .references("users", "id"))
+ 				.field("editor", .uuid, .required, .references("users", "id"))
 				.create()
     }
     
@@ -261,6 +307,7 @@ struct CreateReportSchema: Migration {
     			.field("created_at", .datetime)
     			.field("updated_at", .datetime)
  				.field("author", .uuid, .required, .references("users", "id"))
+ 				.field("reportedUser", .uuid, .required, .references("users", "id"))
  				.field("handled_by", .uuid, .references("users", "id"))
 				.create()
     }
@@ -287,18 +334,19 @@ struct CreateTokenSchema: Migration {
 
 struct CreateTwarrtSchema: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("twarrts")
-				.field("id", .int, .identifier(auto: true))
-				.field("text", .string, .required)
-				.field("images", .array(of: .string))
-				.field("isQuarantined", .bool, .required)
-				.field("isReviewed", .bool, .required)
-    			.field("created_at", .datetime)
-    			.field("updated_at", .datetime)
-    			.field("deleted_at", .datetime)
- 				.field("author", .uuid, .required, .references("users", "id"))
- 				.field("reply_to", .int, .references("twarrts", "id"))
-				.create()
+		database.enum("moderation_status").read().flatMap { modStatusEnum in
+			database.schema("twarrts")
+					.field("id", .int, .identifier(auto: true))
+					.field("text", .string, .required)
+					.field("images", .array(of: .string))
+					.field("mod_status", modStatusEnum, .required)
+					.field("created_at", .datetime)
+					.field("updated_at", .datetime)
+					.field("deleted_at", .datetime)
+					.field("author", .uuid, .required, .references("users", "id"))
+					.field("reply_to", .int, .references("twarrts", "id"))
+					.create()
+		}
     }
     
     func revert(on database: Database) -> EventLoopFuture<Void> {
@@ -341,36 +389,40 @@ struct CreateTwarrtLikesSchema: Migration {
 
 struct CreateUserSchema: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-    	database.schema("users")
-    			.id()
-    			.field("username", .string, .required)
-    			.unique(on: "username")
-     			.field("displayName", .string)
-     			.field("realName", .string)
-     			.field("userSearch", .string, .required)
+		database.enum("moderation_status").read().flatMap { modStatusEnum in
+			database.schema("users")
+					.id()
+					.field("username", .string, .required)
+					.unique(on: "username")
+					.field("displayName", .string)
+					.field("realName", .string)
+					.field("userSearch", .string, .required)
 
-    			.field("password", .string, .required)
-    			.field("recoveryKey", .string, .required)
-    			.field("verification", .string)
-    			.field("accessLevel", .int8, .required)
-    			.field("recoveryAttempts", .int, .required)
-    			.field("reports", .int, .required)
-    			
-     			.field("userImage", .string)
-     			.field("about", .string)
-     			.field("email", .string)
-     			.field("homeLocation", .string)
-     			.field("message", .string)
-     			.field("preferredPronoun", .string)
-     			.field("roomNumber", .string)
-     			.field("limitAccess", .bool, .required)
-    			
-    			.field("created_at", .datetime)
-    			.field("updated_at", .datetime)
-    			.field("deleted_at", .datetime)
-    			.field("profileUpdatedAt", .datetime, .required)
-    			.field("parent", .uuid, .references("users", "id"))
-    			.create()
+					.field("password", .string, .required)
+					.field("recoveryKey", .string, .required)
+					.field("verification", .string)
+					.field("accessLevel", .int8, .required)
+					.field("moderationStatus", modStatusEnum, .required)
+					.field("recoveryAttempts", .int, .required)
+					.field("reports", .int, .required)
+					.field("tempQuarantineUntil", .date)
+					
+					.field("userImage", .string)
+					.field("about", .string)
+					.field("email", .string)
+					.field("homeLocation", .string)
+					.field("message", .string)
+					.field("preferredPronoun", .string)
+					.field("roomNumber", .string)
+					.field("limitAccess", .bool, .required)
+					
+					.field("created_at", .datetime)
+					.field("updated_at", .datetime)
+					.field("deleted_at", .datetime)
+					.field("profileUpdatedAt", .datetime, .required)
+					.field("parent", .uuid, .references("users", "id"))
+					.create()
+		}
     }
     
     func revert(on database: Database) -> EventLoopFuture<Void> {

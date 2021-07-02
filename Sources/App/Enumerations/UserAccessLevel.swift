@@ -8,7 +8,7 @@ import Fluent
 enum UserAccessLevel: UInt8, Codable {
     /// A user account that has not yet been activated. [read-only, limited]
     case unverified
-    /// A user account that has been banned. [read-only, limited]
+    /// A user account that has been banned. [cannot log in]
     case banned
     /// A `.verified` user account that has triggered Moderator review. [read-only]
     case quarantined

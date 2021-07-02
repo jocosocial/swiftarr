@@ -36,6 +36,9 @@ final class Settings {
     /// The maximum number of twartts allowed per request.
     @SettingsValue var maximumTwarrts: Int = 200
 
+    /// The maximum number of twartts allowed per request.
+    @SettingsValue var maximumForumPosts: Int = 200
+
 	/// Largest image we allow to be uploaded, in bytes.
     @SettingsValue var maxImageSize: Int = 20 * 1024 * 1024
 

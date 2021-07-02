@@ -142,7 +142,11 @@ func configureLeaf(_ app: Application) throws {
 	
 func configureMigrations(_ app: Application) throws {
 
-	// configure migrations. Schema-creation migrations first. These create an initial database schema
+	// Migration order is important here, particularly for initializing a new database.
+	// First initialize custom enum types. These are custom 'types' for fields (like .string, .int, or .uuid) -- but custom.
+	app.migrations.add(CreateCustomEnums(), to: .psql) 
+	
+	// Second group is schema-creation migrations. These create an initial database schema
 	// and do not add any data to the db. These need to be ordered such that referred-to tables
 	// come before referrers.
 	app.migrations.add(CreateUserSchema(), to: .psql)
@@ -150,6 +154,7 @@ func configureMigrations(_ app: Application) throws {
 	app.migrations.add(CreateRegistrationCodeSchema(), to: .psql)
 	app.migrations.add(CreateProfileEditSchema(), to: .psql)
 	app.migrations.add(CreateUserNoteSchema(), to: .psql)
+	app.migrations.add(CreateModeratorActionSchema(), to: .psql)
 	app.migrations.add(CreateBarrelSchema(), to: .psql)
 	app.migrations.add(CreateReportSchema(), to: .psql)
 	app.migrations.add(CreateCategorySchema(), to: .psql)
@@ -166,7 +171,7 @@ func configureMigrations(_ app: Application) throws {
 	app.migrations.add(CreateFezParticipantSchema(), to: .psql)
 	app.migrations.add(CreateFezPostSchema(), to: .psql)
 	
-	// Second, migrations that seed the db with initial data
+	// Third, migrations that seed the db with initial data
 	app.migrations.add(CreateAdminUser(), to: .psql)
 	app.migrations.add(CreateClientUsers(), to: .psql)
 	app.migrations.add(CreateRegistrationCodes(), to: .psql)
@@ -178,6 +183,7 @@ func configureMigrations(_ app: Application) throws {
 		app.migrations.add(CreateTestUsers(), to: .psql)
 	}
 	
+	// Fourth, migrations that touch up initial state
 	app.migrations.add(CreateTestData(), to: .psql)
 	app.migrations.add(SetInitialCategoryForumCounts(), to: .psql)
 }

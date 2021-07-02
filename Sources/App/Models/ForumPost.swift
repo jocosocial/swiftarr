@@ -20,12 +20,9 @@ final class ForumPost: Model {
     /// The filenames of any images for the post.
     @Field(key: "images") var images: [String]?
     
-    /// Whether the post is in quarantine.
-    @Field(key: "isQuarantined") var isQuarantined: Bool
-    
-    /// Whether the post has been reviewed as non-violating content by the Moderator team.
-    @Field(key: "isReviewed") var isReviewed: Bool
-
+    /// Moderators can set several statuses on forumPosts that modify editability and visibility.
+    @Enum(key: "mod_status") var moderationStatus: ContentModerationStatus
+        
     /// Timestamp of the model's creation, set automatically.
 	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
     
@@ -74,7 +71,6 @@ final class ForumPost: Model {
         // We don't do much text manipulation on input, but let's normalize line endings.
         self.text = text.replacingOccurrences(of: "\r\n", with: "\r")
         self.images = images
-        self.isQuarantined = false
-        self.isReviewed = false
+        self.moderationStatus = .normal
     }
 }

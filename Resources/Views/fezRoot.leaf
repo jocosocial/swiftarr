@@ -1,0 +1,58 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 mt-2">
+    		<div class="row mb-2 align-items-center">
+    			<div class="col">
+    				<b>Friendly Fez</b>
+				</div>
+    			<div class="col col-auto align-self-end">
+			    	<a class="btn btn-primary btn-sm" role="button" href="/fez/create">New Fez</a>
+				</div>
+			</div>
+			<div class="list-group">
+				#if(count(fezzes) == 0):
+					<div class="row">
+						<div class="col">
+							<li class="list-group-item">You aren't in any Friendly Fezzes yet, but you can create one by tapping "New Fez" or find one to join below.</li>
+						</div>
+					</div>
+				#else:
+					#for(fez in fezzes):
+						<a href="/seamail/#(fez.fezID)" class="list-group-item list-group-item-action">		
+							<div class="row">
+								<div class="col">
+									#elem(fez.title)
+								</div>
+								<div class="col col-auto">
+									<span class="text-muted">#relativeTime(fez.lastModificationTime)</span>
+								</div>
+							</div>
+							<div class="row">
+								#for(participant in fez.participants):
+									#if(participant.userID != trunk.userID):
+										<div class="col col-auto border">
+											#avatar(participant.userImage)
+											<span>#elem(participant.username)</span>
+										</div>	
+									#endif			
+								#endfor
+							</div>
+							<div class="row">
+								<div class="col">
+									<span class="text-muted">#relativeTime(forum.lastPostAt)</span>
+								</div>
+								<div class="col col-auto">
+									<span class="badge rounded-pill bg-light text-dark">#(fez.postCount) posts</span>
+									#if(fez.readCount < fez.postCount):
+										<span class="badge rounded-pill bg-danger">#(fez.postCount - fez.readCount) new</span>
+									#endif
+								</div>
+							</div>
+						</a>
+					#endfor
+				#endif
+			</div>
+		</div>
+    #endexport
+#endextend
+

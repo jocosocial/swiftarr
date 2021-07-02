@@ -106,6 +106,7 @@ struct SiteLoginController: SiteControllerUtils {
 		return req.view.render("createAccount", LoginPageContext(req))
     }
     
+    // Called when the Create Account form is POSTed.
 	func createAccountPagePostHandler(_ req: Request) throws -> EventLoopFuture<View> {
     	struct PostStruct : Codable {
     		var regcode: String?
@@ -136,6 +137,16 @@ struct SiteLoginController: SiteControllerUtils {
 							if apiResponse.status.code < 300 {
 								let tokenResponse = try apiResponse.content.decode(TokenStringData.self)
 								return loginUser(with: tokenResponse, on: req).flatMap {
+									if let displayname = postStruct.displayname {
+										// Set displayname; ignore result. We *could* direct errors here to show an alert in the 
+										// accountCreated webpage, but don't allow failures at this point to prevent showing the page.
+										_ = apiQuery(req, endpoint: "/user/profile", method: .POST, beforeSend: { req throws in
+											let profileData = UserProfileData(username: postStruct.username, about: nil, 
+													displayName: displayname, email: nil, homeLocation: nil, message: nil, 
+													preferredPronoun: nil, realName: nil, roomNumber: nil, limitAccess: false)
+											try req.content.encode(profileData)
+										})
+									}
 									var userCreatedContext = UserCreatedContext(req, username: createUserResponse.username, 
 											recoveryKey: createUserResponse.recoveryKey)
 									userCreatedContext.redirectURL = req.session.data["returnAfterLogin"]

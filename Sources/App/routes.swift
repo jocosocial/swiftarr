@@ -8,6 +8,7 @@ public func routes(_ app: Application) throws {
 			SiteLoginController(),
 			SiteTwitarrController(),
 			SiteSeamailController(),
+			SiteFriendlyFezController(),
 			SiteForumController(),
 			SiteEventsController(),
 			SiteUserController(),
