@@ -70,7 +70,7 @@
 			</li>
 		#else:
 			#for(event in events):
-				<li class="list-group-item bg-transparent collapse show" 
+				<li class="list-group-item bg-transparent collapse show has-action-bar" 
 						data-eventid="#(event.eventID)" 
 						data-eventfavorite=#if(event.isFavorite == true):"true"#else:"false"#endif
 						data-eventcategory="#(event.eventType)">				

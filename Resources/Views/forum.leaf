@@ -12,14 +12,19 @@
 					</nav>
 				</div>
 				<div class="col col-auto">
+					#if(forum.creator.userID == trunk.userID):
+						<a class="btn btn-outline-primary btn-sm" href="/forum/#(forum.forumID)/edit">Edit</a>
+					#else:
+						<a class="btn btn-outline-primary btn-sm" href="/forum/report/#(forum.forumID)">Report Forum</a>
+					#endif
 					#if(trunk.userIsMod):
-						<button type="button" class="btn btn-outline-primary btn-sm">Mod Thread</button>
+						<a class="btn btn-outline-primary btn-sm" href="/moderate/forum/#(forum.forumID)">Mod</a>
 					#endif
 				</div>
 			</div>
 			<ul class="container-md mx-0 px-0 list-group" data-listtype="forumpost">
 				#for(forumPost in forum.posts):
-					<li class="list-group-item bg-transparent" data-postid="#(forumPost.postID)">				
+					<li class="list-group-item bg-transparent has-action-bar" data-postid="#(forumPost.postID)">				
 						<div class="container-fluid">
 							<div class="row align-items-start justify-content-start">	
 								<div class="col g-0" style="flex: 0 0 40px;">
@@ -63,7 +68,7 @@
 										<a class="btn btn-outline-primary" href="/forumpost/report/#(forumPost.postID)">Report</a>
 									#endif
 									#if(trunk.userIsMod):
-										<button type="button" class="btn btn-outline-primary">Mod</button>
+										<a class="btn btn-outline-primary" href="/moderate/forumpost/#(forumPost.postID)">Mod</a>
 									#endif
 								</div>								
 								#if(forumPost.author.userID != trunk.userID):

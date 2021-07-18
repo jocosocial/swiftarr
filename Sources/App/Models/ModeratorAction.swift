@@ -25,6 +25,9 @@ final class ModeratorAction: Model {
     /// The ID of the content that was affected, converted into a string. The actuial @id could be an Int or a UUID, depending on the value of `contentType`.
     @Field(key: "content_id") var contentID: String
      
+	/// If the mod is in the process of handling reports when taking this action, this gets set to the reports' actionGroup, making it easier to correllate user reports amd mod actions.
+    @Field(key: "action_group") var actionGroup: UUID?
+
     /// Timestamp of the model's creation, set automatically.
 	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
     
@@ -53,6 +56,7 @@ final class ModeratorAction: Model {
     	$actor.id = try moderator.requireID()
     	$actor.value = moderator
     	$target.id = content.authorUUID
+    	actionGroup = moderator.actionGroup
     }
 }
 
@@ -68,7 +72,13 @@ enum ModeratorActionType: String, Codable {
 	case editProfile
 	case changeAccessLevel	// really, change access level
 
-	var label: String {
-		return "meh"
+	static func setFromModerationStatus(_ status: ContentModerationStatus) -> Self {
+		switch status {
+			case .normal: return .unlock
+			case .autoQuarantined: return .quarantine
+			case .quarantined: return .quarantine
+			case .locked: return .lock
+			case .modReviewed: return .markReviewed
+		}
 	}
 }

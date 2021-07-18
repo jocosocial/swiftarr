@@ -55,8 +55,9 @@ struct PaginatorContext: Codable {
 	init(currentPage: Int, totalPages: Int, urlForPage: (Int) -> String) {
 		pageURLs = []
 		var minPage = max(currentPage - 3, 0)
-		let maxPage = min(minPage + 6, totalPages - 1)
+		var maxPage = min(minPage + 6, totalPages - 1)
 		minPage = max(maxPage - 6, 0)
+		maxPage = max(maxPage, 0)
 		
 		for pageIndex in minPage...maxPage {
 			pageURLs.append(PageInfo(index: pageIndex + 1, active: pageIndex == currentPage, link: urlForPage(pageIndex)))
@@ -75,17 +76,21 @@ struct PaginatorContext: Codable {
 
 // Leaf data used by the messagePostForm.
 struct MessagePostContext: Encodable {
+	var forumTitle: String = ""
 	var messageText: String = ""
 	var photoFilenames: [String] = ["", "", "", ""]	// Must have 4 values to make Leaf templating work. Use "" as placeholder.
 	var formAction: String
 	var postSuccessURL: String
 	var authorName: String?							// Nil if current user is also author. Non-nil therefore implies mod edit.
 	var showForumTitle: Bool = false
+	var onlyShowForumTitle: Bool = false
+	var showModPostOptions: Bool = false
 	
 	// For creating a new tweet
 	init() {
 		formAction = "/tweets/create"
 		postSuccessURL = "/tweets"
+		showModPostOptions = true
 	}
 	
 	// For editing a tweet
@@ -104,12 +109,23 @@ struct MessagePostContext: Encodable {
 		formAction = "/forums/\(catID)/createForum"
 		postSuccessURL = "/forums/\(catID)"
 		showForumTitle = true
+		showModPostOptions = true
+	}
+	
+	// For editing a forum title
+	init(forEditingForum forum: ForumData) {
+		forumTitle = forum.title
+		formAction = "/forum/\(forum.forumID)/edit"
+		postSuccessURL = "/forum/\(forum.forumID)"
+		showForumTitle = true
+		onlyShowForumTitle = true
 	}
 	
 	// For creating a new post in a forum
 	init(withForumID forumID: String) {
 		formAction = "/forum/\(forumID)/create"
 		postSuccessURL = "/forum/\(forumID)"
+		showModPostOptions = true
 	}
 	
 	// For editing a post in a forum
@@ -140,7 +156,7 @@ struct MessagePostContext: Encodable {
 // This form and data structure are used for creating and editing twarrts, forum posts, and fez messages.
 struct MessagePostFormContent : Codable {
 	let forumTitle: String?					// Only used when creating new forums
-	let postText: String
+	let postText: String?
 	let localPhoto1: Data?
 	let serverPhoto1: String?
 	let localPhoto2: Data?
@@ -226,6 +242,14 @@ struct ReportPageContext : Encodable {
 		reportFormAction = "/forumpost/report/\(postID)"
 		reportSuccessURL = req.headers.first(name: "Referer") ?? "/forums"
 	}
+	
+	// For reporting a forum title
+	init(_ req: Request, forumID: String) throws {
+		trunk = .init(req, title: "Report Forum Title")
+		reportTitle = "Report a Forum Title"
+		reportFormAction = "/forum/report/\(forumID)"
+		reportSuccessURL = req.headers.first(name: "Referer") ?? "/forums"
+	}
 }
     
 
@@ -262,6 +286,8 @@ protocol SiteControllerUtils {
     var fezIDParam: PathComponent { get }
     var userIDParam: PathComponent { get }
     var eventIDParam: PathComponent { get }
+    var reportIDParam: PathComponent { get }
+    var modStateParam: PathComponent { get }
 
 	func registerRoutes(_ app: Application) throws
 	func apiQuery(_ req: Request, endpoint: String, method: HTTPMethod, defaultHeaders: HTTPHeaders?, passThroughQuery: Bool,
@@ -277,6 +303,8 @@ extension SiteControllerUtils {
     var fezIDParam: PathComponent { PathComponent(":fez_id") }
     var userIDParam: PathComponent { PathComponent(":user_id") }
     var eventIDParam: PathComponent { PathComponent(":event_id") }
+    var reportIDParam: PathComponent { PathComponent(":report_id") }
+    var modStateParam: PathComponent { PathComponent(":mod_state") }
 
 	func apiQuery(_ req: Request, endpoint: String, method: HTTPMethod = .GET, defaultHeaders: HTTPHeaders? = nil,
 			passThroughQuery: Bool = true,

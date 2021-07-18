@@ -46,6 +46,9 @@ final class Forum: Model {
     /// The `ForumReaders` pivots contain read counts for each user who has read this forum thread. 
     @Siblings(through: ForumReaders.self, from: \.$forum, to: \.$user) var readers: [User]
 
+    /// The child `ForumEdit` accountability records of the forum.
+    @Children(for: \.$forum) var edits: [ForumEdit]
+
     // MARK: Initialization
     
     // Used by Fluent

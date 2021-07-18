@@ -3,7 +3,7 @@
     	<div class="container-md ms-0 mt-2">
     		<div class="row align-items-end">
     			<div class="col col-auto">
-			    	<h6><b>Reports</b></h6>
+			    	<h6><b>Reports Grouped by Reported Content</b></h6>
 				</div>
 			</div>
 			<div class="list-group">

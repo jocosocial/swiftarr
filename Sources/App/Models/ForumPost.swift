@@ -40,8 +40,8 @@ final class ForumPost: Model {
     /// The parent `User`  who authored the post.
     @Parent(key: "author") var author: User
     
-    /// The child `ForumEdit` accountability records of the post.
-    @Children(for: \.$post) var edits: [ForumEdit]
+    /// The child `ForumPostEdit` accountability records of the post.
+    @Children(for: \.$post) var edits: [ForumPostEdit]
     
     /// The sibling `User`s who have "liked" the post.
     @Siblings(through: PostLikes.self, from: \.$post, to: \.$user) var likes

@@ -9,34 +9,39 @@ struct CreateCategories: Migration {
     /// - Parameter database: A connection to the database, provided automatically.
     /// - Returns: Void.
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        // categories to which users cannot directly add forums
+		var categories: [Category] = []
+		
+		// categories only mods can see and post in
+        let moderatorCategories: [String] = [
+            "Moderators Only",
+        ]
+        for modCategory in moderatorCategories {
+            let category = Category(title: modCategory, viewAccess: .moderator, createForumAccess: .moderator)
+            categories.append(category)
+        }
+        
+		// categories to which users cannot directly add forums
         let adminCategories: [String] = [
-            "Twit-arr Support",
             "Event Forums",
             "Shadow Event Forums"
         ]
-        // categories to which users can add forums
-        var userCategories: [String] = []
-        do {
-            if (try Environment.detect().isRelease) {
-                userCategories = [
-                    // category list here
-                ]
-            } else {
-                // test categories
-                userCategories = ["Test 1", "Test 2"]
-            }
-        } catch let error {
-            fatalError("Environment.detect() failed! error: \(error)")
-        }
-        // create categories
-        var categories: [Category] = []
         for adminCategory in adminCategories {
-            let category = Category(title: adminCategory, isRestricted: true)
+            let category = Category(title: adminCategory, createForumAccess: .moderator)
             categories.append(category)
         }
+
+        // categories to which users can add forums
+        let userCategories: [String] = [
+            "Twit-arr Support",
+            "Help Desk",
+            "General",
+            "Lower Decks",
+            "Upper Decks",
+            "Activities",
+            "Egype"
+        ]
         for userCategory in userCategories {
-            let category = Category(title: userCategory, isRestricted: false)
+            let category = Category(title: userCategory)
             categories.append(category)
         }
         // save categories

@@ -10,74 +10,73 @@ struct ForumController: RouteCollection {
     // MARK: RouteCollection Conformance
         
 	// Route path parameters. This trick only works for params that are database IDs and can use findFromParameter().
-    let categoryIDParam = PathComponent(":category_id")
-    let forumIDParam = PathComponent(":forum_id")
-    let postIDParam = PathComponent(":post_id")
+	let categoryIDParam = PathComponent(":category_id")
+	let forumIDParam = PathComponent(":forum_id")
+	let postIDParam = PathComponent(":post_id")
 
-    /// Required. Registers routes to the incoming router.
-    func boot(routes: RoutesBuilder) throws {
+	/// Required. Registers routes to the incoming router.
+	func boot(routes: RoutesBuilder) throws {
         
-        // convenience route group for all /api/v3/forum endpoints
-        let forumRoutes = routes.grouped("api", "v3", "forum")
-        let eventRoutes = routes.grouped("api", "v3", "events")
-        
-        // instantiate authentication middleware
-        let basicAuthMiddleware = User.authenticator()
-        let guardAuthMiddleware = User.guardMiddleware()
-        let tokenAuthMiddleware = Token.authenticator()
-        
-        // set protected route groups
-        let eventSharedAuthGroup = eventRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware, guardAuthMiddleware])
-        let sharedAuthGroup = forumRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware, guardAuthMiddleware])
-        let tokenAuthGroup = forumRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
-        
-        // open access endpoints
-        forumRoutes.get("categories", use: categoriesHandler)
-        
-        // endpoints available only when not logged in
-        
-        // endpoints available whether logged in or out
-        sharedAuthGroup.get(forumIDParam, use: forumHandler)
-        sharedAuthGroup.get("categories", categoryIDParam, use: categoryForumsHandler)
-        sharedAuthGroup.get("match", ":search_string", use: forumMatchHandler)
-        sharedAuthGroup.get("post", postIDParam, use: postHandler)
-        sharedAuthGroup.get("post", postIDParam, "forum", use: postForumHandler)
-        sharedAuthGroup.get("post", "hashtag", ":hashtag_string", use: postHashtagHandler)
-        sharedAuthGroup.get("post", "search", ":search_string", use: postSearchHandler)
-        sharedAuthGroup.get(forumIDParam, "search", ":search_string", use: forumSearchHandler)
+		// convenience route group for all /api/v3/forum endpoints
+		let forumRoutes = routes.grouped("api", "v3", "forum")
+		let eventRoutes = routes.grouped("api", "v3", "events")
+
+		// instantiate authentication middleware
+		let basicAuthMiddleware = User.authenticator()
+		let guardAuthMiddleware = User.guardMiddleware()
+		let tokenAuthMiddleware = Token.authenticator()
+
+		// set protected route groups
+		let eventSharedAuthGroup = eventRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware, guardAuthMiddleware])
+		let sharedAuthGroup = forumRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware, guardAuthMiddleware])
+		let tokenAuthGroup = forumRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
+
+		// open access endpoints
+		forumRoutes.grouped(tokenAuthMiddleware).get("categories", use: categoriesHandler)
+
+		// endpoints available only when not logged in
+
+		// endpoints available whether logged in or out
+		sharedAuthGroup.get(forumIDParam, use: forumHandler)
+		sharedAuthGroup.get("categories", categoryIDParam, use: categoryForumsHandler)
+		sharedAuthGroup.get("match", ":search_string", use: forumMatchHandler)
+		sharedAuthGroup.get("post", postIDParam, use: postHandler)
+		sharedAuthGroup.get("post", postIDParam, "forum", use: postForumHandler)
+		sharedAuthGroup.get("post", "hashtag", ":hashtag_string", use: postHashtagHandler)
+		sharedAuthGroup.get("post", "search", ":search_string", use: postSearchHandler)
+		sharedAuthGroup.get(forumIDParam, "search", ":search_string", use: forumSearchHandler)
 
 		eventSharedAuthGroup.get(":event_id", "forum", use: eventForumHandler)
-        
-        // endpoints available only when logged in
-        tokenAuthGroup.get("bookmarks", use: bookmarksHandler)
-        tokenAuthGroup.post("categories", categoryIDParam, "create", use: forumCreateHandler)
-        tokenAuthGroup.post(forumIDParam, "favorite", use: favoriteAddHandler)
-        tokenAuthGroup.post(forumIDParam, "favorite", "remove", use: favoriteRemoveHandler)
-        tokenAuthGroup.get("favorites", use: favoritesHandler)
-        tokenAuthGroup.get("likes", use: likesHandler)
-        tokenAuthGroup.post(forumIDParam, "lock", use: forumLockHandler)
-        tokenAuthGroup.get("mentions", use: mentionsHandler)
-        tokenAuthGroup.get("owner", use: ownerHandler)
-        tokenAuthGroup.post("post", postIDParam, "bookmark", use: bookmarkAddHandler)
-        tokenAuthGroup.post("post", postIDParam, "bookmark", "remove", use: bookmarkRemoveHandler)
-        tokenAuthGroup.post(forumIDParam, "create", use: postCreateHandler)
-        tokenAuthGroup.post("post", postIDParam, "delete", use: postDeleteHandler)
-        tokenAuthGroup.delete("post", postIDParam, use: postDeleteHandler)
-        tokenAuthGroup.post("post", postIDParam, "laugh", use: postLaughHandler)
-        tokenAuthGroup.post("post", postIDParam, "like", use: postLikeHandler)
-        tokenAuthGroup.post("post", postIDParam, "love", use: postLoveHandler)
-        tokenAuthGroup.post("post", postIDParam, "report", use: postReportHandler)
-        tokenAuthGroup.post("posts", use: postsHandler)
-        tokenAuthGroup.post("post", postIDParam, "unreact", use: postUnreactHandler)
-        tokenAuthGroup.delete("post", postIDParam, "laugh", use: postUnreactHandler)
-        tokenAuthGroup.delete("post", postIDParam, "like", use: postUnreactHandler)
-        tokenAuthGroup.delete("post", postIDParam, "love", use: postUnreactHandler)
-        tokenAuthGroup.post("post", postIDParam, "update", use: postUpateHandler)
-        tokenAuthGroup.post(forumIDParam, "rename", ":new_name", use: forumRenameHandler)
-        tokenAuthGroup.post(forumIDParam, "report", use: forumReportHandler)
-        tokenAuthGroup.post(forumIDParam, "unlock", use: forumUnlockHandler)
 
-    }
+		// endpoints available only when logged in
+		tokenAuthGroup.get("bookmarks", use: bookmarksHandler)
+		tokenAuthGroup.post("categories", categoryIDParam, "create", use: forumCreateHandler)
+		tokenAuthGroup.post(forumIDParam, "favorite", use: favoriteAddHandler)
+		tokenAuthGroup.post(forumIDParam, "favorite", "remove", use: favoriteRemoveHandler)
+		tokenAuthGroup.get("favorites", use: favoritesHandler)
+		tokenAuthGroup.get("likes", use: likesHandler)
+		tokenAuthGroup.get("mentions", use: mentionsHandler)
+		tokenAuthGroup.get("owner", use: ownerHandler)
+		tokenAuthGroup.post("post", postIDParam, "bookmark", use: bookmarkAddHandler)
+		tokenAuthGroup.post("post", postIDParam, "bookmark", "remove", use: bookmarkRemoveHandler)
+		tokenAuthGroup.post(forumIDParam, "create", use: postCreateHandler)
+		tokenAuthGroup.post("post", postIDParam, "delete", use: postDeleteHandler)
+		tokenAuthGroup.delete("post", postIDParam, use: postDeleteHandler)
+		tokenAuthGroup.post("post", postIDParam, "laugh", use: postLaughHandler)
+		tokenAuthGroup.post("post", postIDParam, "like", use: postLikeHandler)
+		tokenAuthGroup.post("post", postIDParam, "love", use: postLoveHandler)
+		tokenAuthGroup.post("post", postIDParam, "report", use: postReportHandler)
+		tokenAuthGroup.post("posts", use: postsHandler)
+		tokenAuthGroup.post("post", postIDParam, "unreact", use: postUnreactHandler)
+		tokenAuthGroup.delete("post", postIDParam, "laugh", use: postUnreactHandler)
+		tokenAuthGroup.delete("post", postIDParam, "like", use: postUnreactHandler)
+		tokenAuthGroup.delete("post", postIDParam, "love", use: postUnreactHandler)
+		tokenAuthGroup.post("post", postIDParam, "update", use: postUpateHandler)
+		tokenAuthGroup.post(forumIDParam, "rename", ":new_name", use: forumRenameHandler)
+		tokenAuthGroup.post(forumIDParam, "report", use: forumReportHandler)
+		tokenAuthGroup.post(forumIDParam, "delete", use: forumDeleteHandler)
+		tokenAuthGroup.delete(forumIDParam, use: forumDeleteHandler)
+	}
     
     // MARK: - Open Access Handlers
 
@@ -90,17 +89,27 @@ struct ForumController: RouteCollection {
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Returns: `[CategoryData]` containing all category IDs and titles.
     func categoriesHandler(_ req: Request) throws -> EventLoopFuture<[CategoryData]> {
-    	let futureCategories = Category.query(on: req.db)
+        var effectiveAccessLevel: UserAccessLevel = .unverified
+        if let user = req.auth.get(User.self) {
+        	effectiveAccessLevel = user.accessLevel
+        }
+    	let futureCategories = Category.query(on: req.db).filter(\.$accessLevelToView <= effectiveAccessLevel)
 		if let catID = req.query[UUID.self, at: "cat"]  {
 			futureCategories.filter(\.$id == catID)
 		}
         return futureCategories.all().flatMapThrowing { (categories) in
 			let sortedCats = categories.sorted {
-				return $0.isRestricted == $1.isRestricted ? $0.title < $1.title : $0.isRestricted
+				if $0.accessLevelToView != $1.accessLevelToView {
+					return $0.accessLevelToView.rawValue > $1.accessLevelToView.rawValue
+				}
+				if $0.accessLevelToCreate != $1.accessLevelToCreate {
+					return $0.accessLevelToCreate.rawValue > $1.accessLevelToCreate.rawValue
+				}
+				return $0.title < $1.title
 			}
 			// return as CategoryData
 			return try sortedCats.map {
-				try CategoryData($0)
+				try CategoryData($0, restricted: $0.accessLevelToCreate.rawValue > effectiveAccessLevel.rawValue)
 			}
         }
     }
@@ -149,7 +158,7 @@ struct ForumController: RouteCollection {
         	.and(Category.findFromParameter(categoryIDParam, on: req).addModelID()).flatMap { (barrel, categoryTuple) in
             let (category, categoryID) = categoryTuple
 			// remove blocks from results, unless it's an admin category
-			let blocked = category.isRestricted ? [] : req.userCache.getBlocks(userID)
+			let blocked = category.accessLevelToCreate.hasAccess(.moderator) ? [] : req.userCache.getBlocks(userID)
 			// sort user categories
 			let query = Forum.query(on: req.db)
 				.filter(\.$category.$id == categoryID)
@@ -169,7 +178,8 @@ struct ForumController: RouteCollection {
 			}
 			return query.all().flatMap { (forums) in
 				return buildForumListData(forums, on: req, userID: userID, favoritesBarrel: barrel).flatMapThrowing { forumList in
-					return try CategoryData(category, forumThreads: forumList)
+					return try CategoryData(category, restricted: category.accessLevelToCreate.rawValue > user.accessLevel.rawValue,
+							forumThreads: forumList)
 				}
 			}
         }
@@ -181,8 +191,15 @@ struct ForumController: RouteCollection {
     /// or containing user's muteWords, is not returned. Posts are always sorted by creation time.
     ///
 	/// Query parameters:
-	/// * `?start=INT` - The index into the array of posts to start returning results. 0 for first post. Default is the last post the user read, rounded down to a multiple of `limit`.
+	/// * `?start=INT` - The index into the array of posts to start returning results. 0 for first post. Not compatible with `startPost`.
+	/// * `?startPost=INT` - PostID of a post in the thread.  Acts as if `start` had been used with the index of this post within the thread.
 	/// * `?limit=INT` - The max # of entries to return. Defaults to 50. Clamped to a max value set in Settings.
+	/// 
+	/// The first post in the result `posts` array (assuming it isn't blocked/muted) will be, in priority order:
+	/// 	- The `start`-th post in the thread (first post has index 0).
+	/// 	- The post with id of `startPost`
+	/// 	- The page of thread posts (with `limit` as pagesize) that contains the last post read by the user.
+	/// 	- The first post in the thread.
 	/// 
 	/// Start and Limit do not take blocks and mutes into account, matching the behavior of the totalPosts values. Instead, when asking for e.g. the first 50 posts in a thread,
 	/// you may only receive 46 posts, as 4 posts in that batch were blocked/muted. To continue reading the thread, ask to start with post 50 (not post 47)--you'll receive however
@@ -265,9 +282,13 @@ struct ForumController: RouteCollection {
     /// Retrieve the `ForumData` of the specified `ForumPost`'s parent `Forum`.
     ///
 	/// Query parameters:
-	/// * `?start=INT` - The index into the array of posts to start returning results. 0 for first post. Default is the last post the user read, rounded down to a multiple of `limit`.
+	/// * `?start=INT` - The index into the array of posts to start returning results. 0 for first post.
 	/// * `?limit=INT` - The max # of entries to return. Defaults to 50. Clamped to a max value set in Settings.
 	/// 
+	/// The first post in the result `posts` array (assuming it isn't blocked/muted) will be, in priority order:
+	/// 	- The `start`-th post in the thread (first post has index 0).
+	/// 	- The post with ID given by the `ID` path parameter
+	///
 	/// Start and Limit do not take blocks and mutes into account, matching the behavior of the totalPosts values. Instead, when asking for e.g. the first 50 posts in a thread,
 	/// you may only receive 46 posts, as 4 posts in that batch were blocked/muted. To continue reading the thread, ask to start with post 50 (not post 47)--you'll receive however
 	/// many posts are viewable by the user in the range 50...99 . Doing it this way makes Forum read counts invariant to blocks--if a user reads a forum, then blocks a user, then
@@ -334,18 +355,11 @@ struct ForumController: RouteCollection {
 					let likeUsers = postLikes.filter { $0.likeType == .like }.map { $0.$user.id }
 					let loveUsers = postLikes.filter { $0.likeType == .love }.map { $0.$user.id }
 					// init return struct
-					let postDetailData = try PostDetailData(
-						postID: postID,
-						forumID: post.$forum.id,
-						createdAt: post.createdAt ?? Date(),
-						author: req.userCache.getHeader(post.$author.id),
-						text: post.isQuarantined ? "This post is under moderator review." : post.text,
-						images: post.isQuarantined ? nil : post.images,
-						isBookmarked: bookmarked,
-						laughs: req.userCache.getHeaders(laughUsers).map { SeaMonkey(header: $0) },
-						likes: req.userCache.getHeaders(likeUsers).map { SeaMonkey(header: $0) },
-						loves: req.userCache.getHeaders(loveUsers).map { SeaMonkey(header: $0) }
-					)
+					var postDetailData = try PostDetailData(post: post, author: req.userCache.getHeader(post.$author.id))
+					postDetailData.isBookmarked = bookmarked
+					postDetailData.laughs = req.userCache.getHeaders(laughUsers).map { SeaMonkey(header: $0) }
+					postDetailData.likes = req.userCache.getHeaders(likeUsers).map { SeaMonkey(header: $0) }
+					postDetailData.loves = req.userCache.getHeaders(loveUsers).map { SeaMonkey(header: $0) }
 					return postDetailData
             }
 		}
@@ -603,8 +617,8 @@ struct ForumController: RouteCollection {
 		let data = try ValidatingJSONDecoder().decode(ForumCreateData.self, fromBodyOf: req)
         // check authorization to create
         return Category.findFromParameter(categoryIDParam, on: req).throwingFlatMap { (category) in
-            guard !category.isRestricted || user.accessLevel.canCreateRestrictedForums() else {
-                    return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "users cannot create forums in category"))
+            guard user.accessLevel.hasAccess(category.accessLevelToCreate) else {
+				return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "users cannot create forums in category"))
             }
 			// process images
 			return self.processImages(data.firstPost.images, usage: .forumPost, on: req).throwingFlatMap { (imageFilenames) in
@@ -632,49 +646,7 @@ struct ForumController: RouteCollection {
             }
         }
     }
-    
-    /// `POST /api/v3/forum/ID/lock`
-    ///
-    /// Place a read-only lock on the specified `Forum`.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Throws: 403 error if the user does not have credentials to modify the forum. 404 error
-    ///   if the forum ID is not valid.
-    /// - Returns: 201 Created on success.
-    func forumLockHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        let user = try req.auth.require(User.self)
-		guard user.accessLevel.canEditOthersContent() else {
-			throw Abort(.forbidden, reason: "User cannot this forum.")
-		}
-        return Forum.findFromParameter(forumIDParam, on: req).throwingFlatMap { (forum) in
-            forum.moderationStatus = .locked
-			forum.logIfModeratorAction(.lock, user: user, on: req)
-            return forum.save(on: req.db).transform(to: .created)
-        }
-    }
-    
-    /// `POST /api/v3/forum/ID/unlock`
-    ///
-    /// Remove a read-only lock on the specified `Forum`.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Throws: 403 error if the user does not have credentials to modify the forum. 404 error
-    ///   if the forum ID is not valid.
-    /// - Returns: 204 No Content on success.
-    func forumUnlockHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        let user = try req.auth.require(User.self)
-        guard user.accessLevel.canEditOthersContent() else {
-			throw Abort(.forbidden, reason: "Only moderators can unlock locked forums.")
-        }
-        return Forum.findFromParameter(forumIDParam, on: req).throwingFlatMap { (forum) in
-            // must be forum owner or .moderator
-            try user.guardCanModifyContent(forum, customErrorString: "User cannot unlock this forum")
-            forum.moderationStatus = .normal
- 			forum.logIfModeratorAction(.unlock, user: user, on: req)
-			return forum.save(on: req.db).transform(to: .noContent)
-        }
-    }
-    
+        
     /// `POST /api/v3/forum/ID/rename/:new_name`
     ///
     /// Rename the specified `Forum` to the specified title string.
@@ -691,9 +663,13 @@ struct ForumController: RouteCollection {
         return Forum.findFromParameter(forumIDParam, on: req).throwingFlatMap { (forum) in
             // must be forum owner or .moderator
 			try user.guardCanModifyContent(forum, customErrorString: "User cannot modify forum title.")
-            forum.title = nameParameter
-  			forum.logIfModeratorAction(.unlock, user: user, on: req)
-			return forum.save(on: req.db).transform(to: .created)
+			if forum.title != nameParameter {
+				_ = try ForumEdit(forum: forum, editor: user).save(on: req.db)
+            	forum.title = nameParameter
+  				forum.logIfModeratorAction(.edit, user: user, on: req)
+				return forum.save(on: req.db).transform(to: .created)
+			}
+			return req.eventLoop.future(.created)
         }
     }
     
@@ -716,6 +692,38 @@ struct ForumController: RouteCollection {
         return Forum.findFromParameter(forumIDParam, on: req).throwingFlatMap { forum in
         	return try forum.fileReport(submitter: user, submitterMessage: data.message, on: req)
 		}
+    }
+    
+    /// `POST /api/v3/forum/ID/delete`
+	/// `DELETE /api/v3/forum/ID`
+    ///
+    /// Delete the specified `Forum`. This soft-deletes the forum itself and all the forum's posts.
+	/// 
+	/// To delete, the user must have an access level allowing them to delete the forum. Currently this means moderators and above.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 403 error if the user is not permitted to delete.
+    /// - Returns: 204 No Content on success.
+    func forumDeleteHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+        let user = try req.auth.require(User.self)
+        guard user.accessLevel.canEditOthersContent() else {
+			throw Abort(.forbidden, reason: "User does not have access to delete forums.")
+        }
+        return Forum.findFromParameter(forumIDParam, on: req).flatMap { forum in
+			return forum.$category.get(on: req.db).throwingFlatMap { category in
+				try user.guardCanModifyContent(forum)
+				forum.logIfModeratorAction(.delete, user: user, on: req)
+				return try ForumPost.query(on: req.db).filter(\.$forum.$id == forum.requireID()).delete().throwingFlatMap {
+					return forum.delete(on: req.db).flatMap { _ in
+						// Update Category
+						return category.$forums.query(on: req.db).count().flatMap { count in
+							category.forumCount = Int32(count)
+							return category.save(on: req.db).transform(to: .noContent)            		
+						}
+					}
+				}
+			}
+        }
     }
     
     /// `GET /api/v3/forum/likes`
@@ -986,7 +994,7 @@ struct ForumController: RouteCollection {
 					let normalizedText = newPostData.text.replacingOccurrences(of: "\r\n", with: "\r")
 					if post.text != normalizedText || post.images != filenames {
 						// stash current contents first
-						let forumEdit = try ForumEdit(post: post)
+						let forumEdit = try ForumPostEdit(post: post)
 						post.text = normalizedText
 						post.images = filenames
   						post.logIfModeratorAction(.edit, user: user, on: req)
@@ -1067,7 +1075,7 @@ extension ForumController {
 	
 	/// Builds a `ForumData` with the contents of the given `Forum`. Uses the requests' "limit" and "start" query parameters
 	/// to return only a subset of the forums' posts (for forums where postCount > limit).
-	func buildForumData(_ forum: Forum, on req: Request) throws -> EventLoopFuture<ForumData> {
+	func buildForumData(_ forum: Forum, on req: Request, startPostID: Int? = nil) throws -> EventLoopFuture<ForumData> {
 		let user = try req.auth.require(User.self)
 		let userID = try user.requireID()
 		let cacheUser = try req.userCache.getUser(user)
@@ -1076,17 +1084,42 @@ extension ForumController {
 					.and(user.getBookmarkBarrel(of: .taggedForum, on: req)).flatMap { (readerPivot, favoriteForumBarrel) in
 				let clampedReadCount = min(readerPivot?.readCount ?? 0, postCount)
 				let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 1...Settings.shared.maximumForumPosts)
-				let defaultStart = (clampedReadCount / limit) * limit
-				let start = max((req.query[Int.self, at: "start"] ?? defaultStart), 0)
-				// Get the 'start' post without filtering blocks and mutes
-				return forum.$posts.query(on: req.db).sort(\.$createdAt, .ascending).range(start...start).first().flatMap { startPost in
+				var future: EventLoopFuture<(Int?, Int)>
+				if let startParam = req.query[Int.self, at: "start"] {
+					let startCount = max(startParam, 0)
+					// Get the 'start' post without filtering blocks and mutes
+					future = forum.$posts.query(on: req.db)
+							.sort(\.$createdAt, .ascending)
+							.range(startCount...startCount)
+							.first()
+							.flatMapThrowing { startPost in
+						return try (startPost?.requireID(), startCount)
+					}
+				}
+				else if let startPostIDParam = req.query[Int.self, at: "startPost"] {
+					future = forum.$posts.query(on: req.db).filter(\.$id < startPostIDParam).count().map { (startCount: Int) in
+						return (startPostIDParam, startCount)
+					}
+				}
+				else {
+					let defaultStart = max((clampedReadCount / limit) * limit, 0)
+					// Get the 'start' post without filtering blocks and mutes
+					future = forum.$posts.query(on: req.db)
+							.sort(\.$createdAt, .ascending)
+							.range(defaultStart...defaultStart)
+							.first()
+							.flatMapThrowing { startPost in
+						return try (startPost?.requireID(), defaultStart)
+					}
+				}
+				return future.throwingFlatMap { (resolvedStartPostID: Int?, start: Int) in
 					// filter posts
 					var query = forum.$posts.query(on: req.db)
 							.filter(\.$author.$id !~ cacheUser.getBlocks())
 							.filter(\.$author.$id !~ cacheUser.getMutes())
 							.sort(\.$createdAt, .ascending)
-					if let startPostID = startPost?.id {
-						query = query.range(0..<limit).filter(\.$id >= startPostID)
+					if let resolvedStartPostID = resolvedStartPostID {
+						query = query.range(0..<limit).filter(\.$id >= resolvedStartPostID)
 					}
 					else {
 						query = query.range(start...start + limit)

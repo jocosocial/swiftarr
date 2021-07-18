@@ -3,13 +3,13 @@
     	<div class="container-md ms-0 mt-2">
     		<div class="row align-items-end">
     			<div class="col col-auto">
-			    	<h6><b>Moderate Twarrt \##(modData.twarrt.twarrtID)</b></h6>
+			    	<h6><b>Moderate Forum Post \##(modData.forumPost.postID)</b></h6>
 				</div>
 			</div>
 			<div class="row mb-3">
-				<div class="col" data-reportabletype="twarrt" data-reportableid="#(modData.twarrt.twarrtID)">
+				<div class="col" data-reportabletype="forumpost" data-reportableid="#(modData.forumPost.postID)">
 					#if(!modData.isDeleted):
-						<a class="btn btn-primary btn-sm" href="/tweets/edit/#(modData.twarrt.twarrtID)">Edit</a>
+						<a class="btn btn-primary btn-sm" href="/forumpost/edit/#(modData.forumPost.postID)">Edit</a>
 						<button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="\#deleteModal">Delete</button>
 						<span class="dropdown">
 							<button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
@@ -31,7 +31,7 @@
 			</div>				
     		<div class="row">
     			#if(modData.isDeleted):
-					<h6><b>Twarrt has been Deleted.<br>Prior to delete, it looked like this:</b></h6>
+					<h6><b>Forum Post has been Deleted.<br>Prior to delete, it looked like this:</b></h6>
     			#else:
 					<h6><b>As it currently exists:</b></h6>
 				#endif
@@ -39,33 +39,33 @@
     		<div class="row">
     			<div class="col">
 					<ul class="container-md mx-0 px-0 list-group">
-						<li class="list-group-item bg-transparent" data-twarrtid="#(modData.twarrt.twarrtID)">				
+						<li class="list-group-item bg-transparent" data-modpostid="#(modData.forumPost.postID)">				
 							<div class="container-fluid mx-0 px-1">
 								<div class="row align-items-start justify-content-start">	
 									<div class="col g-0" style="flex: 0 0 40px;">
-										<a href="/user/#(modData.twarrt.author.userID)">		
-											#avatar(modData.twarrt.author.userImage)
+										<a href="/user/#(modData.forumPost.author.userID)">		
+											#avatar(modData.forumPost.author.userImage)
 										</a>
 									</div>
 									<div class="col">
 										<div class="row">	
 											<div class="col">
-												<a href="/user/#(modData.twarrt.author.userID)">		
-													<b>#elem(modData.twarrt.author.displayName)</b> @#elem(modData.twarrt.author.username)
+												<a href="/user/#(modData.forumPost.author.userID)">		
+													<b>#elem(modData.forumPost.author.displayName)</b> @#elem(modData.forumPost.author.username)
 												</a>
 											</div>
 											<div class="col-auto">
-												<span class="text-muted">#relativeTime(modData.twarrt.createdAt)</span>
+												<span class="text-muted">#relativeTime(modData.forumPost.createdAt)</span>
 											</div>
 										</div>
 										<div class="row">	
 											<div class="col">
-												#addJocomoji(modData.twarrt.text)
+												#addJocomoji(modData.forumPost.text)
 											</div>
 										</div>
-										#if(modData.twarrt.images):
+										#if(modData.forumPost.images):
 											<div class="row">	
-												#for(image in modData.twarrt.images):
+												#for(image in modData.forumPost.images):
 													<div class="col">
 														<img src="/api/v3/image/full/#(image)" height=200 alt="Post Image">
 													</div>
@@ -90,14 +90,14 @@
 			#endif
 			<div class="row my-3">
 				<div class="col">
-					<a class="btn btn-primary btn-sm" href="/tweets?after=#(modData.twarrt.twarrtID - 10)">View in Context</a>
+					<a class="btn btn-primary btn-sm" href="/forum/#(modData.forumPost.forumID)?startPost=#(modData.forumPost.postID)">View in Context</a>
 				</div>
 			</div>
 
 			#if(count(modData.edits) == 0):
 				<div class="row mb-3">
 					<div class="col">
-						<h6><b>No previous edits to this twarrt.</b></h6>
+						<h6><b>No previous edits to this forum post.</b></h6>
 					</div>
 				</div>
 			#else:
@@ -108,7 +108,7 @@
 					<div class="row">
 						<div class="col">
 							<ul class="container-md mx-0 px-0 list-group">
-								<li class="list-group-item bg-transparent" data-twarrtid="#(edit.twarrtID)">				
+								<li class="list-group-item bg-transparent" data-modpostid="#(edit.postID)">				
 									<div class="container-fluid mx-0 px-1">
 										<div class="row align-items-start justify-content-start">	
 											<div class="col g-0" style="flex: 0 0 40px;">
@@ -152,10 +152,10 @@
 			#endif
 			
 			#if(count(modData.reports) == 0):
-				<h6><b>No reports on this twarrt.</b></h6>
+				<h6><b>No reports on this forum post.</b></h6>
 			#else:				
 				<div class="row mt-3">
-					<h6><b>#count(modData.reports) reports on this twarrt:</b></h6>
+					<h6><b>#count(modData.reports) reports on this forum post:</b></h6>
 				</div>
 				<div class="row mb-3">
 					<div class="col">
@@ -165,17 +165,18 @@
 				</div>
 				<div class="list-group">
 					#for(report in modData.reports):
-						<li class="list-group-item list-group-item-action">
-								<div class="row " data-reportid="#(report.id)">
+						<a class="list-group-item list-group-item-action" href="#(report.contentURL)" data-reportid="#(report.id)">
+							<div class="container-fluid">
+								<div class="row">
 									<div class="col">
-										<b>Reported by @#elem(report.author.username)<br>#relativeTime(report.creationTime)</b>
+										<b>Reported by @#elem(report.author.username) #relativeTime(report.creationTime)</b>
 									</div>
-									<div class="col col-auto text-end">
-										#if(report.handledBy):
+									<div class="col col-auto">
+										#if(report.reports.handledBy):
 											#if(report.isClosed):
-												Closed<br>by #elem(report.handledBy.username)
+												Closed by #elem(report.reports.handledBy.username)
 											#else:
-												Being Handled<br>by #elem(report.handledBy.username)
+												Being Handled by #elem(report.handledBy.username)
 											#endif
 										#else:
 											#if(report.isClosed):
@@ -186,12 +187,30 @@
 										#endif
 									</div>
 								</div>
-								<div class="row">
-									<div class="col">
-										#elem(report.submitterMessage)
+								#if(report.submitterMessage):
+									<div class="row">
+										<div class="col">
+											#elem(report.submitterMessage)
+										</div>
 									</div>
-								</div>
-						</li>
+								#endif
+								#if(report.moderatorMemo):
+									<div class="row">
+										<div class="col">
+											<b>Moderator Memo:</b>
+										</div>
+									</div>
+									<div class="row">
+										<div class="col col-auto">
+											Moderator Memo:
+										</div>
+										<div class="col">
+											#elem(report.moderatorMemo)
+										</div>
+									</div>
+								#endif
+							</div>
+						</a>
 					#endfor
 				</div>
 			#endif
@@ -209,7 +228,7 @@
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-						<button type="button" class="btn btn-primary" data-action="deleteTwarrt" data-delete-postid="">Delete</button>
+						<button type="button" class="btn btn-primary" data-action="deletePost" data-delete-postid="#(modData.forumPost.postID)">Delete</button>
 					</div>
 					<div class="mx-3 pb-1 text-end text-danger" data-purpose="errordisplay">
 					</div>

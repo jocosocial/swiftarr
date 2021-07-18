@@ -20,9 +20,6 @@ public func configure(_ app: Application) throws {
 	ContentConfiguration.global.use(encoder: jsonEncoder, for: .json)
     ContentConfiguration.global.use(decoder: jsonDecoder, for: .json)
 
-	// Add lifecycle handlers early
-	app.lifecycle.use(Application.UserCacheStartup())
-
 	try configureSettings(app)
 	try HTTPServerConfiguration(app)
 	try databaseConnectionConfiguration(app)
@@ -31,6 +28,10 @@ public func configure(_ app: Application) throws {
 	try configureLeaf(app)
     try routes(app)
 	try configureMigrations(app)
+
+	// Add lifecycle handlers 
+	app.lifecycle.use(Application.UserCacheStartup())
+
 }
 
 func configureSettings(_ app: Application) throws {
@@ -39,8 +40,8 @@ func configureSettings(_ app: Application) throws {
 		Settings.shared.cruiseStartDate = Calendar.autoupdatingCurrent.date(from: DateComponents(calendar: Calendar.current, 
 			timeZone: TimeZone(abbreviation: "EST")!, year: 2020, month: 3, day: 7))!
 	}
-	else {
-		
+	else if app.environment == .development {
+		Logger(label: "app.swiftarr.configuration") .info("Starting up in Development mode.")
 	}
 }
 
@@ -159,8 +160,9 @@ func configureMigrations(_ app: Application) throws {
 	app.migrations.add(CreateReportSchema(), to: .psql)
 	app.migrations.add(CreateCategorySchema(), to: .psql)
 	app.migrations.add(CreateForumSchema(), to: .psql)
-	app.migrations.add(CreateForumPostSchema(), to: .psql)
 	app.migrations.add(CreateForumEditSchema(), to: .psql)
+	app.migrations.add(CreateForumPostSchema(), to: .psql)
+	app.migrations.add(CreateForumPostEditSchema(), to: .psql)
 	app.migrations.add(CreateForumReadersSchema(), to: .psql)
 	app.migrations.add(CreatePostLikesSchema(), to: .psql)
 	app.migrations.add(CreateEventSchema(), to: .psql)
@@ -177,14 +179,14 @@ func configureMigrations(_ app: Application) throws {
 	app.migrations.add(CreateRegistrationCodes(), to: .psql)
 	app.migrations.add(CreateEvents(), to: .psql)
 	app.migrations.add(CreateCategories(), to: .psql)
-	app.migrations.add(CreateForums(), to: .psql)
+//y	app.migrations.add(CreateForums(), to: .psql)
 	app.migrations.add(CreateEventForums(), to: .psql)
 	if (app.environment == .testing || app.environment == .development) {
 		app.migrations.add(CreateTestUsers(), to: .psql)
+		app.migrations.add(CreateTestData(), to: .psql)
 	}
 	
 	// Fourth, migrations that touch up initial state
-	app.migrations.add(CreateTestData(), to: .psql)
 	app.migrations.add(SetInitialCategoryForumCounts(), to: .psql)
 }
     

@@ -50,7 +50,8 @@ struct CreateCategorySchema: Migration {
 				.id()
 				.field("title", .string, .required)
 				.unique(on: "title")
-				.field("isRestricted", .bool, .required)
+				.field("view_access_level", .uint8, .required)
+				.field("create_access_level", .uint8, .required)
 				.field("forumCount", .int32, .required)
     			.field("created_at", .datetime)
     			.field("updated_at", .datetime)
@@ -132,17 +133,34 @@ struct CreateForumSchema: Migration {
 
 struct CreateForumEditSchema: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("forumedits")
+        database.schema("forum_edits")
+				.id()
+				.field("title", .string, .required)
+    			.field("created_at", .datetime)
+ 				.field("forum", .uuid, .required, .references("forums", "id"))
+ 				.field("editor", .uuid, .required, .references("users", "id"))
+				.create()
+	}
+	
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("forum_edits").delete()
+    }
+}
+
+struct CreateForumPostEditSchema: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("forum_post_edits")
 				.id()
 				.field("post_text", .string, .required)
 				.field("images", .array(of: .string))
     			.field("created_at", .datetime)
- 				.field("post_id", .int, .required, .references("forumposts", "id"))
+ 				.field("post", .int, .required, .references("forumposts", "id"))
+ 				.field("editor", .uuid, .required, .references("users", "id"))
 				.create()
     }
     
     func revert(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("forumedits").delete()
+        database.schema("forum_post_edits").delete()
     }
 }
 
@@ -235,6 +253,7 @@ struct CreateModeratorActionSchema: Migration {
 				.field("action_type", .string, .required)
 				.field("content_type", .string, .required)
 				.field("content_id", .string, .required)
+				.field("action_group", .uuid)
     			.field("created_at", .datetime)
  				.field("actor", .uuid, .required, .references("users", "id"))
  				.field("target_user", .uuid, .required, .references("users", "id"))
@@ -302,7 +321,7 @@ struct CreateReportSchema: Migration {
 				.field("reportType", .string, .required)
 				.field("reportedID", .string, .required)
 				.field("submitterMessage", .string, .required)
-				.field("moderator_memo", .string)
+				.field("action_group", .uuid)
 				.field("isClosed", .bool, .required)
     			.field("created_at", .datetime)
     			.field("updated_at", .datetime)
@@ -416,6 +435,8 @@ struct CreateUserSchema: Migration {
 					.field("roomNumber", .string)
 					.field("limitAccess", .bool, .required)
 					
+					.field("action_group", .uuid)
+
 					.field("created_at", .datetime)
 					.field("updated_at", .datetime)
 					.field("deleted_at", .datetime)

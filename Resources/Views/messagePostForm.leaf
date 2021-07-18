@@ -4,49 +4,52 @@
 			<div class="container-fluid">
 				#if(post.showForumTitle):
 					<div class="row mb-3"> 
-						<input type="text" class="form-control" name="forumTitle" id="forumTitle" placeholder="Forum Title">
+						<input type="text" class="form-control" name="forumTitle" id="forumTitle" placeholder="Forum Title" value="#elem(post.forumTitle)">
+
 					</div>
 				#endif
-				<div class="row mb-2"> 
-					<textarea class="form-control" maxlength="2000" rows="5" name="postText" id="postText" placeholder="Post Text">#elem(post.messageText)</textarea>
-				</div>
-				<div class="row mb-2">
-					Add up to 4 photos
-				</div>
-				<div class="row mb-2">
-					#for(fn in post.photoFilenames):
-						<div class="card px-0 col-6 col-md-4 col-lg-3">
-							<h5 class="card-header">Photo #(index + 1)</h5>
-							<div class="m-1 border img-for-upload-container">
-								<div class="ratio ratio-1x1">
-									<img class="img-for-upload" alt="">
-								</div>
-							</div>
-							<p class="text-center no-image-marker"><i>no photo selected</i></p>
-							<div class="container-fluid p-1">
-								<div class="row">
-									<div class="col">
-										<label class="btn btn-primary col-12 form-label">
-											<input class="image-upload-input d-none" type="file" accept="image/png, image/jpeg" name="localPhoto#(index + 1)">
-											Choose Photo
-										</label>
-										<input type="hidden" value="#elem(fn)" name="serverPhoto#(index + 1)">
+				#if(!post.onlyShowForumTitle):
+					<div class="row mb-2"> 
+						<textarea class="form-control" maxlength="2000" rows="5" name="postText" id="postText" placeholder="Post Text">#elem(post.messageText)</textarea>
+					</div>
+					<div class="row mb-2">
+						Add up to 4 photos
+					</div>
+					<div class="row mb-2">
+						#for(fn in post.photoFilenames):
+							<div class="card px-0 col-6 col-md-4 col-lg-3">
+								<h5 class="card-header">Photo #(index + 1)</h5>
+								<div class="m-1 border img-for-upload-container">
+									<div class="ratio ratio-1x1">
+										<img class="img-for-upload" alt="">
 									</div>
 								</div>
-								<div class="row justify-content-between m-0">
-									#if(index > 0):
-										<div class="col col-auto p-0 m-0">
-											<button type="button" class="btn btn-primary btn-sm twitarr-image-swap"><< Swap</button>
+								<p class="text-center no-image-marker"><i>no photo selected</i></p>
+								<div class="container-fluid p-1">
+									<div class="row">
+										<div class="col">
+											<label class="btn btn-primary col-12 form-label">
+												<input class="image-upload-input d-none" type="file" accept="image/png, image/jpeg" name="localPhoto#(index + 1)">
+												Choose Photo
+											</label>
+											<input type="hidden" value="#elem(fn)" name="serverPhoto#(index + 1)">
 										</div>
-									#endif
-									<div class="col col-auto p-0 m-0">
-										<button type="button" class="btn btn-primary btn-sm twitarr-image-remove">Remove</button>
+									</div>
+									<div class="row justify-content-between m-0">
+										#if(index > 0):
+											<div class="col col-auto p-0 m-0">
+												<button type="button" class="btn btn-primary btn-sm twitarr-image-swap"><< Swap</button>
+											</div>
+										#endif
+										<div class="col col-auto p-0 m-0">
+											<button type="button" class="btn btn-primary btn-sm twitarr-image-remove">Remove</button>
+										</div>
 									</div>
 								</div>
 							</div>
-						</div>
-					#endfor
-				</div>
+						#endfor
+					</div>
+				#endif
 				<div class="alert alert-danger mt-3 d-none" role="alert">
 				</div>				
 				<div class="row mb-2">
@@ -57,7 +60,7 @@
 						<button type="submit" class="btn btn-primary">Post</button>
 					</div>
 				</div>
-				#if(trunk.userIsMod):
+				#if(trunk.userIsMod && post.showModPostActions):
 					<div class="row justify-content-end mt-2">
 						<div class="col col-auto form-check">
 							<input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">

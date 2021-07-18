@@ -19,7 +19,18 @@ struct SiteModController: SiteControllerUtils {
 		let privateRoutes = getPrivateRoutes(app)
 		let modRoutes = privateRoutes.grouped(RequireModeratorMiddleware())
 		modRoutes.get("reports", use: reportsPageHandler)
-		modRoutes.get("moderate", "twarrt", twarrtIDParam,  use: moderateTwarrtContentPageHandler)
+		modRoutes.get("moderator", "log",  use: moderatorLogPageHandler)
+
+		modRoutes.get("moderate", "twarrt", twarrtIDParam, use: moderateTwarrtContentPageHandler)
+		modRoutes.get("moderate", "forumpost", postIDParam, use: moderateForumPostContentPageHandler)
+		modRoutes.get("moderate", "forum", forumIDParam, use: moderateForumContentPageHandler)
+
+		modRoutes.post("twarrt", twarrtIDParam, "setstate", modStateParam, use: setTwarrtModerationStatePostHandler)
+		modRoutes.post("forumpost", postIDParam, "setstate", modStateParam, use: setForumPostModerationStatePostHandler)
+		modRoutes.post("forum", forumIDParam, "setstate", modStateParam, use: setForumModerationStatePostHandler)
+
+		modRoutes.post("reports", reportIDParam, "handle",  use: beginProcessingReportsPostHandler)
+		modRoutes.post("reports", reportIDParam, "close",  use: closeReportsPostHandler)
 	}
 	
 	struct ReportContentGroup: Codable {
@@ -53,7 +64,7 @@ struct SiteModController: SiteControllerUtils {
 					case .twarrt: contentURL = "moderate/twarrt/\(report.reportedID)"
 					case .forumPost: contentURL = "moderate/forumpost/\(report.reportedID)"
 					case .forum: contentURL = "moderate/forum/\(report.reportedID)"
-					case .fezPost: contentURL = "moderate/fezPost/\(report.reportedID)"
+					case .fezPost: contentURL = "moderate/fezpost/\(report.reportedID)"
 					case .user: contentURL = "moderate/user/\(report.reportedID)"
 				}
 				var newGroup = ReportContentGroup(reportType: report.type, reportedID: report.reportedID, reportedUser: report.reportedUser, 
@@ -78,8 +89,43 @@ struct SiteModController: SiteControllerUtils {
     	}
 	}
 		
+	func beginProcessingReportsPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+    	guard let reportID = req.parameters.get(reportIDParam.paramString) else {
+            throw Abort(.badRequest, reason: "Missing search parameter.")
+    	}
+    	return apiQuery(req, endpoint: "/admin/reports/\(reportID)/handleall", method: .POST).map { response in
+			return response.status	
+		}
+	}
+	
+	func closeReportsPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+    	guard let reportID = req.parameters.get(reportIDParam.paramString) else {
+            throw Abort(.badRequest, reason: "Missing search parameter.")
+    	}
+    	return apiQuery(req, endpoint: "/admin/reports/\(reportID)/closeall", method: .POST).map { response in
+			return response.status	
+		}
+	}
+
+	func moderatorLogPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+		return apiQuery(req, endpoint: "/admin/moderationlog").throwingFlatMap { response in
+			let logData = try response.content.decode([ModeratorActionLogData].self)
+			struct LogContext : Encodable {
+				var trunk: TrunkContext
+				var log: [ModeratorActionLogData]
+				
+				init(_ req: Request, log: [ModeratorActionLogData]) throws {
+					trunk = .init(req, title: "Moderator Action Log")
+					self.log = log
+				}
+			}
+			let ctx = try LogContext(req, log: logData)
+			return req.view.render("moderation/moderatorActionLog", ctx)
+		}
+	}
+
 	/// This shows a view that focuses on the *content* that was reported, showing:
-	/// * The twarrt/post/forum/user/seamail that was reported
+	/// * The twarrt that was reported
 	/// * All reports made against this content
 	/// * All previous versions of this content
 	/// * (hopefully) Mod actions taken against this content already
@@ -93,11 +139,13 @@ struct SiteModController: SiteControllerUtils {
 			struct ReportContext : Encodable {
 				var trunk: TrunkContext
 				var modData: TwarrtModerationData
+				var firstReport: ReportAdminData?
 				var finalEditAuthor: UserHeader?
 				
 				init(_ req: Request, modData: TwarrtModerationData) throws {
 					trunk = .init(req, title: "Reports")
 					self.modData = modData
+					firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
 					finalEditAuthor = modData.edits.last?.author
 					if self.modData.edits.count > 1 {
 						for index in (0...self.modData.edits.count - 2).reversed() {
@@ -116,5 +164,121 @@ struct SiteModController: SiteControllerUtils {
 			return req.view.render("moderation/twarrtView", ctx)
 		}
 	}
+	
+	func setTwarrtModerationStatePostHandler(_ req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
+	    guard let twarrtID = req.parameters.get(twarrtIDParam.paramString) else {
+            throw Abort(.badRequest, reason: "Missing search parameter.")
+    	}
+	    guard let modState = req.parameters.get(modStateParam.paramString) else {
+            throw Abort(.badRequest, reason: "Missing search parameter.")
+    	}
+    	return apiQuery(req, endpoint: "/admin/twarrt/\(twarrtID)/setstate/\(modState)", method: .POST).map { response in
+    		return response.status
+    	}
+	}
 
+	/// This shows a view that focuses on the *content* that was reported, showing:
+	/// * The post that was reported
+	/// * All reports made against this content
+	/// * All previous versions of this content
+	/// * (hopefully) Mod actions taken against this content already
+	/// * 
+	func moderateForumPostContentPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+    	guard let postID = req.parameters.get(postIDParam.paramString) else {
+            throw Abort(.badRequest, reason: "Missing search parameter.")
+    	}
+    	return apiQuery(req, endpoint: "/admin/forumpost/\(postID)").throwingFlatMap { response in
+			let modData = try response.content.decode(ForumPostModerationData.self)
+			struct ReportContext : Encodable {
+				var trunk: TrunkContext
+				var modData: ForumPostModerationData
+				var firstReport: ReportAdminData?
+				var finalEditAuthor: UserHeader?
+				
+				init(_ req: Request, modData: ForumPostModerationData) throws {
+					trunk = .init(req, title: "Reports")
+					self.modData = modData
+					firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
+					finalEditAuthor = modData.edits.last?.author
+					if self.modData.edits.count > 1 {
+						for index in (0...self.modData.edits.count - 2).reversed() {
+							self.modData.edits[index + 1].author = self.modData.edits[index].author
+							self.modData.edits[index + 1].author.username = "\(self.modData.edits[index + 1].author.username) edited to:"
+						}
+					}
+					if self.modData.edits.count > 0 {
+						self.modData.edits[0].author = modData.forumPost.author
+						self.modData.edits[0].author.username = "\(self.modData.edits[0].author.username) initially wrote:"
+						
+					}
+				}
+			}
+			let ctx = try ReportContext(req, modData: modData)
+			return req.view.render("moderation/forumPostView", ctx)
+		}
+	}
+	
+	func setForumPostModerationStatePostHandler(_ req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
+	    guard let postID = req.parameters.get(postIDParam.paramString) else {
+            throw Abort(.badRequest, reason: "Missing search parameter.")
+    	}
+	    guard let modState = req.parameters.get(modStateParam.paramString) else {
+            throw Abort(.badRequest, reason: "Missing search parameter.")
+    	}
+    	return apiQuery(req, endpoint: "/admin/forumPost/\(postID)/setstate/\(modState)", method: .POST).map { response in
+    		return response.status
+    	}
+	}
+	
+	/// This shows a view that focuses on the *content* that was reported, showing:
+	/// * The forum that was reported
+	/// * All reports made against this content
+	/// * All previous versions of this content
+	/// * (hopefully) Mod actions taken against this content already
+	/// * 
+	func moderateForumContentPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+    	guard let forumID = req.parameters.get(forumIDParam.paramString) else {
+            throw Abort(.badRequest, reason: "Missing search parameter.")
+    	}
+    	return apiQuery(req, endpoint: "/admin/forum/\(forumID)").throwingFlatMap { response in
+			let modData = try response.content.decode(ForumModerationData.self)
+			struct ReportContext : Encodable {
+				var trunk: TrunkContext
+				var modData: ForumModerationData
+				var firstReport: ReportAdminData?
+				var finalEditAuthor: UserHeader?
+				
+				init(_ req: Request, modData: ForumModerationData) throws {
+					trunk = .init(req, title: "Reports")
+					self.modData = modData
+					firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
+					finalEditAuthor = modData.edits.last?.author
+					if self.modData.edits.count > 1 {
+						for index in (0...self.modData.edits.count - 2).reversed() {
+							self.modData.edits[index + 1].author = self.modData.edits[index].author
+							self.modData.edits[index + 1].author.username = "\(self.modData.edits[index + 1].author.username) edited to:"
+						}
+					}
+					if self.modData.edits.count > 0 {
+						self.modData.edits[0].author = modData.forum.creator
+						self.modData.edits[0].author.username = "\(self.modData.edits[0].author.username) initially wrote:"
+					}
+				}
+			}
+			let ctx = try ReportContext(req, modData: modData)
+			return req.view.render("moderation/forumView", ctx)
+		}
+	}
+	
+	func setForumModerationStatePostHandler(_ req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
+	    guard let forumID = req.parameters.get(forumIDParam.paramString) else {
+            throw Abort(.badRequest, reason: "Missing search parameter.")
+    	}
+	    guard let modState = req.parameters.get(modStateParam.paramString) else {
+            throw Abort(.badRequest, reason: "Missing search parameter.")
+    	}
+    	return apiQuery(req, endpoint: "/admin/forum/\(forumID)/setstate/\(modState)", method: .POST).map { response in
+    		return response.status
+    	}
+	}
 }

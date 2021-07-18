@@ -174,7 +174,7 @@ struct SiteSeamailController: SiteControllerUtils {
     		throw Abort(.badRequest, reason: "Missing fez_id")
     	}
 		let postStruct = try req.content.decode(MessagePostFormContent.self)
-		let postContent = PostContentData(text: postStruct.postText, images: [])
+		let postContent = PostContentData(text: postStruct.postText ?? "", images: [])
     	return apiQuery(req, endpoint: "/fez/\(fezID)/post", method: .POST, beforeSend: { req throws in
 			try req.content.encode(postContent)
 		}).flatMapThrowing { response in

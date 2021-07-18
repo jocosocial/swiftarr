@@ -51,9 +51,4 @@ enum UserAccessLevel: UInt8, Codable {
     func canModerateUsers() -> Bool {
     	return self.rawValue >= UserAccessLevel.moderator.rawValue
     }
-    
-    /// Returns TRUE iff the user is allowed to create forum threads in restricted forums.
-    func canCreateRestrictedForums() -> Bool {
-    	return hasAccess(.moderator)
-    }
 }

@@ -39,8 +39,9 @@ final class Report: Model {
     /// An optional message from the submitter.
     @Field(key: "submitterMessage") var submitterMessage: String
 
-    /// Memo by moderator detailing actions taken. Only visible to moderators.
-    @Field(key: "moderator_memo") var moderatorMemo: String?
+    /// Set to a new UUID() when a Moderator starts handling one or more reports. Any mod actions the mod takes until these reports are closed
+	/// get tagged with this UUID. Reports may be closed without ever setting an action group.
+    @Field(key: "action_group") var actionGroup: UUID?
     
     /// The status of the report.
     @Field(key: "isClosed") var isClosed: Bool

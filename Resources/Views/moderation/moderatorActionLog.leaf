@@ -1,0 +1,37 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 mt-2">
+    		<div class="row align-items-end">
+    			<div class="col col-auto">
+			    	<h6><b>Moderator Actions</b></h6>
+				</div>
+			</div>
+    		<div class="row">
+    			<div class="col">
+					<table class="table">
+						<thead>
+							<tr>
+								<th scope="col">Mod</th>
+								<th scope="col">Action</th>
+								<th scope="col">Content</th>
+								<th scope="col">Target</th>
+								<th scope="col">Time</th>
+							</tr>
+						</thead>
+						<tbody>
+						#for(report in log):
+							<tr>
+								<td>@#elem(report.moderator.username)</td>
+								<td>#(report.actionType)</td>
+								<td>#(report.contentType)</td>
+								<td>@#elem(report.targetUser.username)</td>
+								<td>#date(report.timestamp)</td>
+							</tr>
+						#endfor
+						</tbody
+					</table>
+				</div>
+			</div>
+		</div>
+    #endexport
+#endextend

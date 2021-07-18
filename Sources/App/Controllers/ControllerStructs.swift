@@ -123,7 +123,7 @@ struct CategoryData: Content {
     var categoryID: UUID
     /// The title of the category.
     var title: String
-    /// If TRUE, only mods can create/modify threads in this forum. Should be sorted to top of category list.
+    /// If TRUE, the user cannot create/modify threads in this forum. Should be sorted to top of category list.
     var isRestricted: Bool
     /// The number of threads in this category
     var numThreads: Int32
@@ -132,10 +132,10 @@ struct CategoryData: Content {
 }
 
 extension CategoryData {
-	init(_ cat: Category, forumThreads: [ForumListData]? = nil) throws {
+	init(_ cat: Category, restricted: Bool, forumThreads: [ForumListData]? = nil) throws {
 		categoryID = try cat.requireID()
 		title = cat.title
-		isRestricted = cat.isRestricted
+		isRestricted = restricted
 		numThreads = cat.forumCount
 		self.forumThreads = forumThreads
 	}
@@ -436,7 +436,7 @@ extension ForumData {
     
 		forumID = try forum.requireID()
 		categoryID = forum.$category.id
-		title = forum.title
+		title = forum.moderationStatus.showsContent() ? forum.title : "Forum Title is under moderator review"
 		self.creator = creator
 		isLocked = forum.moderationStatus == .locked
 		self.isFavorite = isFavorite
@@ -489,7 +489,7 @@ extension ForumListData {
     	}
 		self.forumID = try forum.requireID()
 		self.creator = creator
-		self.title = forum.title
+		self.title = forum.moderationStatus.showsContent() ? forum.title : "Forum Title is under moderator review"
 		self.postCount = postCount
 		self.readCount = readCount
 		self.createdAt = forum.createdAt ?? Date()
@@ -677,12 +677,12 @@ struct PostData: Content {
 }
 
 extension PostData {    
-    init(post: ForumPost, author: UserHeader, bookmarked: Bool, userLike: LikeType?, likeCount: Int) throws {
+    init(post: ForumPost, author: UserHeader, bookmarked: Bool, userLike: LikeType?, likeCount: Int, overrideQuarantine: Bool = false) throws {
 		postID = try post.requireID()
 		createdAt = post.createdAt ?? Date()
 		self.author = author
-		text = post.isQuarantined ? "This post is under moderator review." : post.text
-		images = post.isQuarantined ? nil : post.images
+		text = post.isQuarantined && !overrideQuarantine ? "This post is under moderator review." : post.text
+		images = post.isQuarantined && !overrideQuarantine ? nil : post.images
 		isBookmarked = bookmarked
 		self.userLike = userLike
 		self.likeCount = likeCount
@@ -729,6 +729,24 @@ struct PostDetailData: Content {
     var likes: [SeaMonkey]
     /// The seamonkeys with "love" reactions on the post.
     var loves: [SeaMonkey]
+}
+
+extension PostDetailData {
+	// Does not fill in isBookmarked, userLike, and reaction arrays.
+    init(post: ForumPost, author: UserHeader, overrideQuarantine: Bool = false) throws {
+		postID = try post.requireID()
+		forumID = post.$forum.id
+		createdAt = post.createdAt ?? Date()
+		self.author = author
+		text = post.isQuarantined && !overrideQuarantine ? "This post is under moderator review." : post.text
+		images = post.isQuarantined && !overrideQuarantine ? nil : post.images
+		isBookmarked = false
+		self.userLike = nil
+		laughs = []
+		likes = []
+		loves = []
+    }
+
 }
 
 /// Used to return a user's public profile contents. For viewing/editing a user's own profile, see `UserProfileData`.
@@ -783,53 +801,6 @@ extension ProfilePublicData {
 struct ReportData: Content {
     /// An optional message from the submitting user.
     var message: String
-}
-
-/// Used to return data about `Report`s submitted by users. Only Moderators and above have access.
-///
-/// Required by:
-/// * `GET /api/v3/admin/reports`
-struct ReportAdminData: Content {
-	/// The id of the report.
-	var id: UUID
-	/// The type of content being reported
-	var type: ReportType
-	/// The ID of the reported entity. Could resolve to an Int or a UUID, depending on the value of`type`.
-	var reportedID: String
-	/// The user that authored the content being reported..
-	var reportedUser: UserHeader
-	/// Text the report author wrote when submitting the report.
-	var submitterMessage: String?
-	/// Notes by the mod handling the report.
-	var moderatorMemo: String?
-	/// The user that submitted the report--NOT the user whose content is being reported.
-	var author: UserHeader
-	/// The mod who handled (or closed) the report. 
-	var handledBy: UserHeader?
-	/// TRUE if the report has been closed by moderators.
-	var isClosed: Bool
-	/// The time the submitter filed the report.
-	var creationTime: Date
-	/// The last time the report has been modified.
-	var updateTime: Date
-}
-
-extension ReportAdminData {
-	init(req: Request, report: Report) throws {
-		id = try report.requireID()
-		type = report.reportType
-		reportedID = report.reportedID
-		reportedUser = try req.userCache.getHeader(report.$reportedUser.id)
-		submitterMessage = report.submitterMessage
-		moderatorMemo = report.moderatorMemo
-		isClosed = report.isClosed
-		creationTime = report.createdAt ?? Date()
-		updateTime = report.updatedAt ?? Date()
-		author = try req.userCache.getHeader(report.$submitter.id)
-		if let modID = report.$handledBy.id {
-			handledBy = try req.userCache.getHeader(modID)
-		}
-	}
 }
 
 /// Returned by `Barrel`s as a unit representing a user.
@@ -965,55 +936,6 @@ extension TwarrtData {
     }
 }
 
-/// Used to return a `TwarrtEdit`'s data for moderators.
-///
-///	Included in:
-///	* `TwarrtModerationData`
-///	
-/// Returned by:
-/// * `GET /api/v3/admin/twarrt/id`
-struct TwarrtEditData: Content {
-	/// The ID of the twarrt.
-    var twarrtID: Int
-	/// The ID of the edit.
-    var editID: UUID
-    /// The timestamp of the twarrt.
-    var createdAt: Date
-    /// Who initiated the edit. Usually the twarrt author, but could be a moderator. Note that the saved edit shows the state BEFORE the edit,
-    /// therefore the 'author' here changed the contents to those of the NEXT edit (or to the current Twarrt state).
-    var author: UserHeader
-    /// The text of the twarrt.
-    var text: String
-    /// The filenames of the twarrt's optional images.
-    var images: [String]?
-}
-
-extension TwarrtEditData {
-    init(edit: TwarrtEdit, editor: UserHeader) throws {
-    	twarrtID = edit.$twarrt.id
-    	editID = try edit.requireID()
-    	createdAt = edit.createdAt ?? Date()
-    	author = editor
-    	text = edit.text
-    	images = edit.images    	
-    }
-}
-
-/// Used to return data a moderator needs to moderate a twarrt. 
-///	
-/// Returned by:
-/// * `GET /api/v3/admin/twarrt/id`
-///
-/// See `AdminController.twarrtModerationHandler(_:)`
-struct TwarrtModerationData: Content {
-	var twarrt: TwarrtData
-	var isDeleted: Bool
-	var moderationStatus: ContentModerationStatus
-	var edits: [TwarrtEditData]
-	var reports: [ReportAdminData]
-}
-
-// FIXME: needs bookmark, userLike too?
 /// Used to return a `Twarrt`'s data with full user `LikeType` info.
 ///
 /// Returned by: `GET /api/v3/twitarr/ID`
@@ -1034,6 +956,8 @@ struct TwarrtDetailData: Content {
     var replyToID: Int?
     /// Whether the current user has bookmarked the post.
     var isBookmarked: Bool
+    /// The current user's `LikeType` reaction on the twarrt.
+    var userLike: LikeType?
     /// The seamonkeys with "laugh" reactions on the post/twarrt.
     var laughs: [SeaMonkey]
     /// The seamonkeys with "like" reactions on the post/twarrt.

@@ -36,6 +36,7 @@
 					#if(trunk.userIsMod):
 						<hr class="dropdown-divider">
 						<a class="dropdown-item text-primary" href="/reports">Reports</a>
+						<a class="dropdown-item text-primary" href="/moderator/log">Moderator Log</a>
 					#endif
 					<li><hr class="dropdown-divider"></li>
 					#if(trunk.userIsLoggedIn):
@@ -54,6 +55,7 @@
 					#if(trunk.userIsMod):
 						<hr class="dropdown-divider">
 						<a class="dropdown-item text-primary" href="/reports">Reports</a>
+						<a class="dropdown-item text-primary" href="/moderator/log">Moderator Log</a>
 					#endif
 					<hr class="dropdown-divider">
 					#if(trunk.userIsLoggedIn):

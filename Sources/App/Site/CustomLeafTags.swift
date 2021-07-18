@@ -88,7 +88,8 @@ struct RelativeTimeTag: LeafTag {
 		}
 		
 		// If the date is Date.distantPast
-		if date.timeIntervalSinceNow < Double(0 - 60 * 60 * 24 * 365 * 100) {
+		let daySecs = 60 * 60 * 24
+		if date.timeIntervalSinceNow < Double(0 - daySecs * 365 * 100) {
 			return ""
 		}
 		

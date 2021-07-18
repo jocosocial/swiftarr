@@ -66,6 +66,7 @@ struct TwitarrController: RouteCollection {
     /// - Returns: `TwarrtDetaildata` containing the specified twarrt.
     func twarrtHandler(_ req: Request) throws -> EventLoopFuture<TwarrtDetailData> {
         let user = try req.auth.require(User.self)
+        let userID = try user.requireID()
  		let cachedUser = try req.userCache.getUser(user)
         return Twarrt.findFromParameter(twarrtIDParam, on: req).addModelID().flatMap { (twarrt, twartID) in
             // we have twarrt, but need to filter
@@ -90,12 +91,16 @@ struct TwitarrController: RouteCollection {
 							images: twarrt.isQuarantined ? nil : twarrt.images,
 							replyToID: twarrt.$replyTo.id,
 							isBookmarked: bookmarked,
+							userLike: nil,
 							laughs: [],
 							likes: [],
 							loves: []
 						)
 						// sort seamonkeys into like types
 						for (index, like) in twarrtLikes.enumerated() {
+							if seamonkeys[index].userID == userID {
+								twarrtDetailData.userLike = like.likeType
+							}
 							switch like.likeType {
 								case .laugh:
 									twarrtDetailData.laughs.append(seamonkeys[index])

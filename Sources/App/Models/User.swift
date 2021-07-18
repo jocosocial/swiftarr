@@ -94,6 +94,13 @@ final class User: Model {
     /// Limits viewing this profile's info (except `.username` and `.displayName`, which are
     /// always viewable) to logged-in users. Default is `false` (don't limit).
     @Field(key: "limitAccess") var limitAccess: Bool
+    
+// MARK: Moderator Only
+
+	/// If the user is a Moderator and is handling user reports, this will be set to the actionGroup of the reports. In this case, all the reports in the group
+	/// are reporting on the same piece of content, and all have the same actionGroup. Any moderator actions the mod takes while handling reports 
+	/// get set tot his UUID. When the reports are closed, this gets set to nil.
+    @Field(key: "action_group") var actionGroup: UUID?
 
 // Timestamps
     

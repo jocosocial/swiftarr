@@ -22,7 +22,7 @@
     	</div>
 		<ul class="container-md mx-0 px-0 list-group" data-listtype="tweets">
 		#for(tweet in tweets):
- 			<li class="list-group-item bg-transparent" data-postid="#(tweet.twarrtID)">				
+ 			<li class="list-group-item bg-transparent has-action-bar" data-postid="#(tweet.twarrtID)">				
 				<div class="container-fluid">
 					<div class="row align-items-start justify-content-start">	
 						<div class="col g-0" style="flex: 0 0 40px;">

@@ -3,7 +3,7 @@ import("/js/bootstrap.bundle.js");
 // Make the like/love/laugh buttons post their actions when tapped.
 for (let btn of document.querySelectorAll('[data-action]')) {
 	let action = btn.dataset.action;
-	if (action == "deletePost" || action == "deleteTwarrt") {
+	if (action == "deletePost" || action == "deleteTwarrt" || action == "deleteForum") {
 		btn.addEventListener("click", deleteAction);
 	}
 	else if (action == "laugh" || action == "like" || action == "love") {
@@ -113,9 +113,12 @@ function deleteAction() {
 	let postid = event.target.dataset.deletePostid;
 	let modal = event.target.closest('.modal');
 	let path = "";
-	if (event.target.dataset.action == "deleteTwarrt") {
+	let action = event.target.dataset.action
+	if (action == "deleteTwarrt") {
 		path = "/tweets/" + postid + "/delete";
 	}
+	else if (action == "deleteForum")
+		path = "/forum/" + postid + "/delete";
 	else {
 		path = "/forumpost/" + postid + "/delete";
 	}
@@ -123,7 +126,13 @@ function deleteAction() {
 	fetch(req).then(response => {
 		if (response.status < 300) {
 			bootstrap.Modal.getInstance(modal).hide()
-			document.querySelector('li[data-postid="' + postid + '"]')?.remove()
+			let deletedPost = document.querySelector('li[data-postid="' + postid + '"]');
+			if (deletedPost != null) {
+				deletedPost.remove()
+			}
+			else {
+				location.reload();
+			}	
 		}
 		else {
 			response.json().then( data => {
@@ -134,10 +143,10 @@ function deleteAction() {
 }
 
 // Make every post expand when first clicked, showing the previously hidden action bar.
-for (let posElement of document.querySelectorAll('[data-postid]')) {
+for (let posElement of document.querySelectorAll('.has-action-bar')) {
 	posElement.addEventListener("click", showActionBar);
 }
-for (let posElement of document.querySelectorAll('[data-eventid]')) {
+for (let posElement of document.querySelectorAll('.has-action-bar')) {
 	posElement.addEventListener("click", showActionBar);
 }
 function showActionBar() {

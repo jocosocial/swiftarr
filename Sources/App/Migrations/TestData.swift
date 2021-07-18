@@ -44,7 +44,7 @@ struct CreateTestData: Migration {
         		.unwrap(or: Abort(.internalServerError, reason: "No admin user"))
         		.flatMap { (admin) in
         	return Category.query(on: database).all().throwingFlatMap { categories in
-        		guard let category = categories.first(where: { $0.title == "Test 1" }) else {
+        		guard let category = categories.first(where: { $0.title == "Egype" }) else {
         			throw Abort(.internalServerError, reason: "Test category doesn't exist;, can't make test posts.")
         		}
 				let thread = try Forum(title: "Say Hello Here", category: category, creator: admin)
@@ -72,7 +72,7 @@ struct CreateTestData: Migration {
 			guard users.count == 4 else {
 				throw Abort(.internalServerError, reason: "Users for large test thread don't exist.")
 			}
-			return Category.query(on: database).filter(\.$title == "Test 1").first()
+			return Category.query(on: database).filter(\.$title == "Egype").first()
 					.unwrap(or: Abort(.internalServerError, reason: "Category 'Test 1' does not exist; can't make test posts."))
 					.throwingFlatMap { category in
 				let thread = try Forum(title: "Long Thread Is Long", category: category, creator: users[0])

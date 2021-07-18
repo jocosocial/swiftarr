@@ -124,7 +124,7 @@ struct SiteTwitarrController: SiteControllerUtils {
 				ImageUploadData(postStruct.serverPhoto2, postStruct.localPhoto2),
 				ImageUploadData(postStruct.serverPhoto3, postStruct.localPhoto3),
 				ImageUploadData(postStruct.serverPhoto4, postStruct.localPhoto4)].compactMap { $0 }
-		let postContent = PostContentData(text: postStruct.postText, images: images)
+		let postContent = PostContentData(text: postStruct.postText ?? "", images: images)
 		return apiQuery(req, endpoint: "/twitarr/create", method: .POST, beforeSend: { req throws in
 			try req.content.encode(postContent)
 		}).flatMapThrowing { response in
@@ -181,7 +181,7 @@ struct SiteTwitarrController: SiteControllerUtils {
 				ImageUploadData(postStruct.serverPhoto2, postStruct.localPhoto2),
 				ImageUploadData(postStruct.serverPhoto3, postStruct.localPhoto3),
 				ImageUploadData(postStruct.serverPhoto4, postStruct.localPhoto4)].compactMap { $0 }
-		let postContent = PostContentData(text: postStruct.postText, images: images)
+		let postContent = PostContentData(text: postStruct.postText ?? "", images: images)
  		return apiQuery(req, endpoint: "/twitarr/\(twarrtID)/reply", method: .POST, beforeSend: { req throws in
 			try req.content.encode(postContent)
 		}).flatMapThrowing { response in
@@ -228,7 +228,7 @@ struct SiteTwitarrController: SiteControllerUtils {
 				ImageUploadData(postStruct.serverPhoto2, postStruct.localPhoto2),
 				ImageUploadData(postStruct.serverPhoto3, postStruct.localPhoto3),
 				ImageUploadData(postStruct.serverPhoto4, postStruct.localPhoto4)].compactMap { $0 }
-		let postContent = PostContentData(text: postStruct.postText, images: images)
+		let postContent = PostContentData(text: postStruct.postText ?? "", images: images)
  		return apiQuery(req, endpoint: "/twitarr/\(twarrtID)/update", method: .POST, beforeSend: { req throws in
 			try req.content.encode(postContent)
 		}).flatMapThrowing { response in
