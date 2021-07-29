@@ -19,6 +19,9 @@ public func routes(_ app: Application) throws {
 	let adminController = AdminController()
 	try app.register(collection: adminController)
 
+	let alertController = AlertController()
+	try app.register(collection: alertController)
+	
 	let authController = AuthController()
 	try app.register(collection: authController)
 

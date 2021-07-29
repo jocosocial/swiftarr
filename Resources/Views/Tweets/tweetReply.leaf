@@ -28,7 +28,7 @@
 										</div>
 										<div class="row">	
 											<div class="col">
-												#addJocomoji(replyToTweet.text)
+												#formatPostText(replyToTweet.text)
 											</div>
 										</div>
 										#if(replyToTweet.images):

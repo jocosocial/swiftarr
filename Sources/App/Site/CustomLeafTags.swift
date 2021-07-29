@@ -44,12 +44,20 @@ struct ElementSanitizerTag: LeafTag {
 }
 
 /// Runs the element sanitizer on the given string, and then converts Jocomoji (specific string tags with the form :tag:)
-/// into inline images.
+/// into inline images. Generally, use this tag for user text that isn't posts.
 ///
 /// Usage: #addJocomoji(String) -> String
 struct AddJocomojiTag: LeafTag {
 	static let jocomoji = [ "buffet", "die-ship", "die", "fez", "hottub", "joco", "pirate", "ship-front",
 			"ship", "towel-monkey", "tropical-drink", "zombie" ]
+			
+	static func process(_ str: String) -> String {
+		var string = str
+		for emojiTag in AddJocomojiTag.jocomoji {
+			string = string.replacingOccurrences(of: ":\(emojiTag):", with: "<img src=\"/img/emoji/small/\(emojiTag).png\" width=18 height=18>")
+		}
+		return string
+	}
 
     func render(_ ctx: LeafContext) throws -> LeafData {
         try ctx.requireParameterCount(1)
@@ -59,15 +67,72 @@ struct AddJocomojiTag: LeafTag {
 		
 		// Sanitize first to remove any existing tags. Also ensure the inline <img> tags we're about to add don't get nuked
 		string = ElementSanitizerTag.sanitize(string)
-		for emojiTag in AddJocomojiTag.jocomoji {
-			string = string.replacingOccurrences(of: ":\(emojiTag):", with: "<img src=\"/img/emoji/small/\(emojiTag).png\" width=18 height=18>")
-		}
+		string = AddJocomojiTag.process(string)
 		
 		// Also convert newlines to HTML breaks.
 		string = string.replacingOccurrences(of: "\r", with: "<br>")
 		
 		return LeafData.string(string)
 	}
+}
+
+/// Runs the element sanitizer on the given string, converts Jocomoji (specific string tags with the form :tag:)
+/// into inline images, and then converts substrings of the forum "@username"  and "#hashtag" into links.
+///
+/// Usage: #formatPostText(String) -> String
+struct FormatPostTextTag: LeafTag {
+	static var nameRefStartCharacterSet: CharacterSet {
+		var x = CharacterSet()
+		x.insert("@")
+		return x
+	}
+
+    func render(_ ctx: LeafContext) throws -> LeafData {
+		try ctx.requireParameterCount(1)
+		guard var string = ctx.parameters[0].string else {
+			return LeafData.string("")
+		}
+		
+		// Sanitize, then add jocomoji.
+		string = ElementSanitizerTag.sanitize(string)
+		string = AddJocomojiTag.process(string)
+		
+		var words = string.split(separator: " ", omittingEmptySubsequences: false)
+		words = words.map {
+			if $0.hasPrefix("@") && $0.count <= 50 && $0.count >= 3 {
+				let scalars = $0.unicodeScalars
+				let firstValidUsernameIndex = scalars.index(scalars.startIndex, offsetBy: 1)
+				var firstNonUsernameIndex = firstValidUsernameIndex
+				// Move forward to the last char that's valid in a username
+				while firstNonUsernameIndex < scalars.endIndex, CharacterSet.validUsernameChars.contains(scalars[firstNonUsernameIndex]) {
+					scalars.formIndex(after: &firstNonUsernameIndex)		
+				}
+				// Separator chars can't be at the end. Move backward until we get a non-separator. This check fixes posts with 
+				// constructions like "Hello, @admin." where the period ends a sentence. 
+				while firstNonUsernameIndex > firstValidUsernameIndex, 
+						CharacterSet.usernameSeparators.contains(scalars[scalars.index(before: firstNonUsernameIndex)]) {
+					scalars.formIndex(before: &firstNonUsernameIndex)		
+				}
+				// After trimming, username must be >=2 chars, plus the @ sign makes 3.
+				if scalars.distance(from: scalars.startIndex, to: firstNonUsernameIndex) >= 3,
+						let name = String(scalars[firstValidUsernameIndex..<firstNonUsernameIndex])
+						.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) {
+					// We could in theory ask UserCache if the username actually exists. But that breaks separation
+					// between site and API, and every other method of checking the username is async. Even then, we may not
+					// have access to the Request from here.
+					let restOfString = String(scalars[firstNonUsernameIndex...])
+					return "<a class=\"link-primary\" href=\"/username/\(name)\">@\(name)</a>\(restOfString)"
+				}
+			}
+			return $0
+		}
+		string = words.joined(separator: " ")
+						
+		// Also convert newlines to HTML breaks.
+		string = string.replacingOccurrences(of: "\r", with: "<br>")
+		
+		return LeafData.string(string)
+    }
 }
 
 /// Turns a Date string into a relative date string. Argument is a ISO8601 formatted Date, or what JSON encoding 

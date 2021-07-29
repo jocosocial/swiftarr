@@ -60,7 +60,7 @@
 										</div>
 										<div class="row">	
 											<div class="col">
-												#addJocomoji(modData.forumPost.text)
+												#formatPostText(modData.forumPost.text)
 											</div>
 										</div>
 										#if(modData.forumPost.images):
@@ -129,7 +129,7 @@
 												</div>
 												<div class="row">	
 													<div class="col">
-														#addJocomoji(edit.text)
+														#formatPostText(edit.text)
 													</div>
 												</div>
 												#if(edit.images):

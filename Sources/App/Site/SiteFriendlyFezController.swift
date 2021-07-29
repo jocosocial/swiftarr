@@ -17,7 +17,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 	}
 	
 // MARK: - FriendlyFez
-	// Shows the root Seamail page, with a list of all conversations.
+	// Shows the root Fez page, with a list of all conversations.
 	func fezRootPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		return apiQuery(req, endpoint: "/fez/joined").throwingFlatMap { response in
 			let fezzes = try response.content.decode([FezData].self)
@@ -26,12 +26,12 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 				var fezzes: [FezData]
 				
 				init(_ req: Request, fezzes: [FezData]) throws {
-					trunk = .init(req, title: "Seamail")
+					trunk = .init(req, title: "FriendlyFez", tab: .none)
 					self.fezzes = fezzes
 				}
 			}
 			let ctx = try SeamailRootPageContext(req, fezzes: fezzes)
-			return req.view.render("fezRoot", ctx)
+			return req.view.render("Fez/fezRoot", ctx)
 		}
 	}
     
@@ -42,11 +42,11 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 			var post: MessagePostContext
 			
 			init(_ req: Request) throws {
-				trunk = .init(req, title: "New Seamail")
+				trunk = .init(req, title: "New FriendlyFez", tab: .none)
 				post = .init(forNewSeamail: true)
 			}
 		}
 		let ctx = try SeamaiCreatePageContext(req)
-		return req.view.render("fezCreate", ctx)
+		return req.view.render("Fez/fezCreate", ctx)
     }
 }

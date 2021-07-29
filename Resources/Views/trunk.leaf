@@ -1,79 +1,81 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
+<head>
+	<meta charset="utf-8">
 	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline';base-uri 'self';form-action 'self'">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="/css/bootstrap.css" rel="stylesheet">
-    <link href="/css/swiftarr.css" rel="stylesheet">
-    
-    #if(trunk.metaRedirectURL):
-    	<meta http-equiv="refresh" content="2;URL='#(trunk.metaRedirectURL)'" /> 
-    #endif
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link href="/css/bootstrap.css" rel="stylesheet">
+	<link href="/css/swiftarr.css" rel="stylesheet">
 
-    <title>Twit-arr!</title>
-  </head>
-  <body style="background-image: url('/img/background.png'); background-size: 100%;">
+	#if(trunk.metaRedirectURL):
+		<meta http-equiv="refresh" content="2;URL='#(trunk.metaRedirectURL)'" /> 
+	#endif
+
+	<title>Twit-arr!</title>
+</head>
+<body style="background-image: url('/img/background.png'); background-size: 100%;">
+
 	<nav class="navbar navbar-expand-md navbar-dark bg-light pt-3" style="background-image: url('/img/header-waves.png'); background-repeat: repeat-x;">
-	  <div class="container-fluid justify-content-start">
-		<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="\#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-		  <span class="navbar-toggler-icon"></span>
-		</button>
-		<a class="navbar-brand d-none d-md-block" href="/">Twit-arr</a>
-		<a class="nav-item nav-link px-1 active" aria-current="page" href="/tweets">Tweets</a>
-		<a class="nav-item nav-link px-1" href="/forums">Forums</a>
-		<a class="nav-item nav-link px-1" href="/seamail">Seamail</a>
-		<a class="nav-item nav-link px-1" href="/events">Schedule</a>
-		<ul class="navbar-nav d-none d-md-block">
-			<li class="nav-item dropdown">
-				<a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-					More
-				</a>
-				<ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-					<li><a class="dropdown-item text-primary" href="/fez">FriendlyFez</a></li>
-					<li><a class="dropdown-item" href="#">Games</a></li>
-					<li><a class="dropdown-item" href="#">Karaoke</a></li>
-					#if(trunk.userIsMod):
-						<hr class="dropdown-divider">
-						<a class="dropdown-item text-primary" href="/reports">Reports</a>
-						<a class="dropdown-item text-primary" href="/moderator/log">Moderator Log</a>
-					#endif
-					<li><hr class="dropdown-divider"></li>
-					#if(trunk.userIsLoggedIn):
-						<li><a class="dropdown-item" href="/logout">Logout #elem(trunk.username)</a></li>
-					#else:
-						<li><a class="dropdown-item" href="/login">Login</a></li>
-					#endif
-				</ul>
-			</li>
-		</ul>
-		<div class="collapse" id="navbarSupportedContent">
+		<div class="container-fluid justify-content-start">
+			<div class="row">
+				<div class="col pe-0 mt-1">	  
+					<span class="link-light navbar-brand me-2" data-bs-toggle="collapse" data-bs-target="\#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+						Twit-arr
+					</span>
+				</div>
+				<div class="col px-0">	  
+					<a class="nav-item nav-link link-light px-1 position-relative #if(trunk.tab == "twarrts"):active#endif" aria-current="page" href="/tweets">
+						<span #if(trunk.alertCounts.twarrtMentionCount > 0):class="border-bottom border-danger"#endif>
+							#if(trunk.tab == "twarrts"):<b>Tweets</b>#else:Tweets#endif				
+						</span>
+					</a>
+				</div>
+				<div class="col px-0">	  
+					<a class="nav-item nav-link link-light px-1" href="/forums">
+						<span #if(trunk.alertCounts.forumMentionCount > trunk.alertCounts.readForumMentionCount):class="border-bottom border-danger"#endif>
+							#if(trunk.tab == "forums"):<b>Forums</b>#else:Forums#endif
+						</span>
+					</a>
+				</div>
+				<div class="col px-0">	  
+					<a class="nav-item nav-link link-light px-1" href="/seamail">
+						#if(trunk.tab == "seamail"):<b>Seamail</b>#else:Seamail#endif
+					</a>
+				</div>
+				<div class="col px-0">	  
+					<a class="nav-item nav-link px-1 link-light" href="/events">
+						#if(trunk.tab == "events"):<b>Schedule</b>#else:Schedule#endif
+					</a>
+				</div>
+			</div>
+			<div class="collapse" id="navbarSupportedContent">
 				<div class="d-block d-md-none navbar-dark bg-transparent mb-3">
-					<a class="dropdown-item text-primary" href="/fez">FriendlyFez</a>
-					<a class="dropdown-item text-primary" href="#">Games</a>
-					<a class="dropdown-item text-primary" href="#">Karaoke</a>
+					<a class="dropdown-item link-light" href="/">Home</a>
+					<a class="dropdown-item link-light" href="/fez">FriendlyFez</a>
+					<a class="dropdown-item link-light" href="#">Games</a>
+					<a class="dropdown-item link-light" href="#">Karaoke</a>
 					#if(trunk.userIsMod):
 						<hr class="dropdown-divider">
-						<a class="dropdown-item text-primary" href="/reports">Reports</a>
-						<a class="dropdown-item text-primary" href="/moderator/log">Moderator Log</a>
+						<a class="dropdown-item link-light" href="/reports">Reports</a>
+						<a class="dropdown-item link-light" href="/moderator/log">Moderator Log</a>
 					#endif
 					<hr class="dropdown-divider">
 					#if(trunk.userIsLoggedIn):
-						<a class="dropdown-item text-primary" href="/logout">Logout #elem(trunk.username)</a>
+						<a class="dropdown-item link-light" href="/logout">Logout #elem(trunk.username)</a>
 					#else:
-						<a class="dropdown-item text-primary" href="/login">Login</a>
+						<a class="dropdown-item link-light" href="/login">Login</a>
 					#endif
 				</div>
-		  <form class="d-flex">
-			<input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
-			<button class="btn btn-outline-success" type="submit">Search</button>
-		  </form>
+				<form class="d-flex">
+					<input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
+					<button class="btn btn-outline-success" type="submit">Search</button>
+				</form>
+			</div>
 		</div>
-	  </div>
 	</nav>
 
-    #import("body")
+	#import("body")
 
-    <script src="/js/swiftarr.js"></script>
-  </body>
+	<script src="/js/swiftarr.js"></script>
+</body>
 </html>

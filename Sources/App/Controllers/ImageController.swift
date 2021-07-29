@@ -4,7 +4,6 @@ import FluentSQL
 import SwiftGD
 import Foundation
 
-// rcf Contents of this file are still being baked.
 struct ImageController: RouteCollection {
 	// Important that this stays a constant; changing after creation is not thread-safe.
 	// Also, since this is based on DirectdoryConfiguration, the value is process-wide, not Application-wide.
@@ -18,17 +17,8 @@ struct ImageController: RouteCollection {
     /// Required. Registers routes to the incoming router.
     func boot(routes: RoutesBuilder) throws {
         
-		// convenience route group for all /api/v3/auth endpoints
+		// convenience route group for all /api/v3/image endpoints
 		let imageRoutes = routes.grouped("api", "v3", "image")
-
-		// instantiate authentication middleware
-//		let basicAuthMiddleware = User.authenticator()
-//		let guardAuthMiddleware = User.guardMiddleware()
-//		let tokenAuthMiddleware = Token.authenticator()
-
-		// set protected route groups
-//		let basicAuthGroup = imageRoutes.grouped([basicAuthMiddleware, guardAuthMiddleware])
-//		let tokenAuthGroup = imageRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
 
 		// open access endpoints
 		imageRoutes.get("full", ":image_filename", use: getImage_FullHandler)

@@ -10,9 +10,14 @@ extension CharacterSet {
         separatorChars.insert(charactersIn: usernameSeparatorString)
         return separatorChars
     }
-}
+    
+    static var validUsernameChars: CharacterSet {
+        var usernameChars: CharacterSet = .init()
+        usernameChars.insert(charactersIn: usernameSeparatorString)
+    	usernameChars.formUnion(.alphanumerics)
+        return usernameChars
+    }
 
-extension CharacterSet {
     /// Defines a character set containing characters that might delineate hashtags or
     /// usernames within text content.
     static var contentSeparators: CharacterSet {

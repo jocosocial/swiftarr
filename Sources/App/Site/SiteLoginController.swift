@@ -31,7 +31,7 @@ struct SiteLoginController: SiteControllerUtils {
 		var operationName: String
 		
 		init(_ req: Request, errorStr: String? = nil) {
-			trunk = .init(req, title: "Login")
+			trunk = .init(req, title: "Login", tab: .none)
 			operationSuccess = false
 			operationName = "Login"
 			if let str = errorStr {
@@ -47,14 +47,14 @@ struct SiteLoginController: SiteControllerUtils {
 		var redirectURL: String?
 
 		init(_ req: Request, username: String, recoveryKey: String) {
-			trunk = .init(req, title: "Account Created")
+			trunk = .init(req, title: "Account Created", tab: .none)
 			self.username = username
 			self.recoveryKey = recoveryKey
 		}
 	}
 	
     func loginPageHandler(_ req: Request) -> EventLoopFuture<View> {
-		return req.view.render("login", LoginPageContext(req))
+		return req.view.render("Login/login", LoginPageContext(req))
 	}
 	    
     func loginPageLoginHandler(_ req: Request) -> EventLoopFuture<View> {
@@ -74,20 +74,20 @@ struct SiteLoginController: SiteControllerUtils {
 							var loginContext = LoginPageContext(req)
 							loginContext.trunk.metaRedirectURL = req.session.data["returnAfterLogin"] ?? "/tweets"
 							loginContext.operationSuccess = true
-							return req.view.render("login", loginContext)
+							return req.view.render("Login/login", loginContext)
 						}
 						.flatMapError { error in 
-							return req.view.render("login", LoginPageContext(req, errorStr: error.localizedDescription))
+							return req.view.render("Login/login", LoginPageContext(req, errorStr: error.localizedDescription))
 						}
 					}
 					else {
 						let errorResponse = try apiResponse.content.decode(ErrorResponse.self)
-						return req.view.render("login", LoginPageContext(req, errorStr: errorResponse.reason)) 
+						return req.view.render("Login/login", LoginPageContext(req, errorStr: errorResponse.reason)) 
 					}
 			}
 		}
 		catch {
-			return req.view.render("login", LoginPageContext(req, errorStr: error.localizedDescription))
+			return req.view.render("Login/login", LoginPageContext(req, errorStr: error.localizedDescription))
 		}
 	}
 	    
@@ -99,11 +99,11 @@ struct SiteLoginController: SiteControllerUtils {
 		loginContext.trunk.metaRedirectURL = "/login"
 		loginContext.operationSuccess = true
 		loginContext.operationName = "Logout"
-		return req.view.render("login", loginContext)
+		return req.view.render("Login/login", loginContext)
     }
     
     func createAccountPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-		return req.view.render("createAccount", LoginPageContext(req))
+		return req.view.render("Login/createAccount", LoginPageContext(req))
     }
     
     // Called when the Create Account form is POSTed.
@@ -118,7 +118,7 @@ struct SiteLoginController: SiteControllerUtils {
     	do {
 			let postStruct = try req.content.decode(PostStruct.self)
 			guard postStruct.password == postStruct.passwordConfirm else {
-				return req.view.render("createAccount", LoginPageContext(req, errorStr: "Password fields do not match"))
+				return req.view.render("Login/createAccount", LoginPageContext(req, errorStr: "Password fields do not match"))
 			}
 			return apiQuery(req, endpoint: "/user/create", method: .POST, beforeSend: { req throws in
 				let createData = UserCreateData(username: postStruct.username, password: postStruct.password, 
@@ -150,36 +150,36 @@ struct SiteLoginController: SiteControllerUtils {
 									var userCreatedContext = UserCreatedContext(req, username: createUserResponse.username, 
 											recoveryKey: createUserResponse.recoveryKey)
 									userCreatedContext.redirectURL = req.session.data["returnAfterLogin"]
-									return req.view.render("accountCreated", userCreatedContext)
+									return req.view.render("Login/accountCreated", userCreatedContext)
 								}.flatMapError { error in 
 									var userCreatedContext = UserCreatedContext(req, username: createUserResponse.username, 
 											recoveryKey: createUserResponse.recoveryKey)
 									userCreatedContext.redirectURL = req.session.data["returnAfterLogin"]
-									return req.view.render("accountCreated", userCreatedContext)
+									return req.view.render("Login/accountCreated", userCreatedContext)
 								}
 							}
 							else {
 								var userCreatedContext = UserCreatedContext(req, username: createUserResponse.username, 
 										recoveryKey: createUserResponse.recoveryKey)
 								userCreatedContext.redirectURL = req.session.data["returnAfterLogin"]
-								return req.view.render("accountCreated", userCreatedContext)
+								return req.view.render("Login/accountCreated", userCreatedContext)
 							}
 						}
 				}
 				else {
 					let errorResponse = try apiResponse.content.decode(ErrorResponse.self)
-					return req.view.render("createAccount", LoginPageContext(req, errorStr: errorResponse.reason))
+					return req.view.render("Login/createAccount", LoginPageContext(req, errorStr: errorResponse.reason))
 				}
 			}
 		}
 		catch {
-			return req.view.render("createAccount", LoginPageContext(req, errorStr: error.localizedDescription))
+			return req.view.render("Login/createAccount", LoginPageContext(req, errorStr: error.localizedDescription))
 		}
 	}
 	
 	// Uses password update if you're logged in, else uses the recover password flow.
     func resetPasswordPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-		return req.view.render("resetPassword", LoginPageContext(req))
+		return req.view.render("Login/resetPassword", LoginPageContext(req))
     }
 
 	// Change password for logged-in user
@@ -192,7 +192,7 @@ struct SiteLoginController: SiteControllerUtils {
     	do {
 			let postStruct = try req.content.decode(PostStruct.self)
 			guard postStruct.password == postStruct.confirmPassword else {
-				return req.view.render("resetPassword", LoginPageContext(req, errorStr: "Password fields do not match"))
+				return req.view.render("Login/resetPassword", LoginPageContext(req, errorStr: "Password fields do not match"))
 			}
 			return apiQuery(req, endpoint: "/user/password", method: .POST, beforeSend: { req throws in
 				let userPwData = UserPasswordData(currentPassword: postStruct.currentPassword, newPassword: postStruct.password)
@@ -208,13 +208,13 @@ struct SiteLoginController: SiteControllerUtils {
 					let errorResponse = try apiResponse.content.decode(ErrorResponse.self)
 					context.error = errorResponse
 				}
-				return req.view.render("resetPassword", context)
+				return req.view.render("Login/resetPassword", context)
 			}.flatMapError { error in 
-				return req.view.render("resetPassword", LoginPageContext(req, errorStr: error.localizedDescription))
+				return req.view.render("Login/resetPassword", LoginPageContext(req, errorStr: error.localizedDescription))
 			}
 		}
 		catch {
-			return req.view.render("resetPassword", LoginPageContext(req, errorStr: error.localizedDescription))
+			return req.view.render("Login/resetPassword", LoginPageContext(req, errorStr: error.localizedDescription))
 		}
     }
     
@@ -228,7 +228,7 @@ struct SiteLoginController: SiteControllerUtils {
     	do {
 			let postStruct = try req.content.decode(PostStruct.self)
 			guard postStruct.password == postStruct.confirmPassword else {
-				return req.view.render("resetPassword", LoginPageContext(req, errorStr: "Password fields do not match"))
+				return req.view.render("Login/resetPassword", LoginPageContext(req, errorStr: "Password fields do not match"))
 			}
 			return apiQuery(req, endpoint: "/auth/recovery", method: .POST, beforeSend: { req throws in
 				let recoveryData = UserRecoveryData(username: postStruct.username, recoveryKey: postStruct.regCode, 
@@ -242,20 +242,20 @@ struct SiteLoginController: SiteControllerUtils {
 						loginContext.trunk.metaRedirectURL = req.session.data["returnAfterLogin"] ?? "/tweets"
 						loginContext.operationSuccess = true
 						loginContext.operationName = "Password Change"
-						return req.view.render("login", loginContext)
+						return req.view.render("Login/login", loginContext)
 					}
 					.flatMapError { error in 
-						return req.view.render("resetPassword", LoginPageContext(req, errorStr: error.localizedDescription))
+						return req.view.render("Login/resetPassword", LoginPageContext(req, errorStr: error.localizedDescription))
 					}				
 				}
 				else {
 					let errorResponse = try apiResponse.content.decode(ErrorResponse.self)
-					return req.view.render("resetPassword", LoginPageContext(req, errorStr: errorResponse.reason))
+					return req.view.render("Login/resetPassword", LoginPageContext(req, errorStr: errorResponse.reason))
 				}
 			}
 		}
 		catch {
-			return req.view.render("resetPassword", LoginPageContext(req, errorStr: error.localizedDescription))
+			return req.view.render("Login/resetPassword", LoginPageContext(req, errorStr: error.localizedDescription))
 		}
     }
     

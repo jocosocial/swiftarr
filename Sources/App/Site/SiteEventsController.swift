@@ -52,7 +52,7 @@ struct SiteEventsController: SiteControllerUtils {
     			
     			init(_ req: Request, events: [EventData], day: String) {
     				self.events = events
-    				trunk = .init(req, title: "Events")
+    				trunk = .init(req, title: "Events", tab: .events)
     				self.day = day
     				isBeforeCruise = Date() < Settings.shared.cruiseStartDate
     				isAfterCruise = Date() > Calendar.autoupdatingCurrent.date(byAdding: .day, value: 8, 

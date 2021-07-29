@@ -13,37 +13,23 @@ struct ClientController: RouteCollection {
     
     /// Required. Registers routes to the incoming router.
     func boot(routes: RoutesBuilder) throws {
-        
-        // convenience route group for all /api/v3/client endpoints
-        let clientRoutes = routes.grouped("api", "v3", "client")
-        
-        // instantiate authentication middleware
-        let guardAuthMiddleware = User.guardMiddleware()
-        let tokenAuthMiddleware = Token.authenticator()
-        
-        // set protected route groups
-        let tokenAuthGroup = clientRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
-        
-        // open access endpoints
-        
-        // endpoints available only when not logged in
-        
-        // endpoints available whether logged in or out
-        
-        // endpoints available only when logged in
-        tokenAuthGroup.get("user", "updates", "since", ":date", use: userUpdatesHandler)
-        tokenAuthGroup.get("usersearch", use: userSearchHandler)
+
+		// convenience route group for all /api/v3/client endpoints
+		let clientRoutes = routes.grouped("api", "v3", "client")
+
+		// instantiate authentication middleware
+		let tokenAuthMiddleware = Token.authenticator()
+		let guardAuthMiddleware = User.guardMiddleware()
+
+		// set protected route groups
+		let tokenAuthGroup = clientRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
+
+		// endpoints available only when logged in
+		tokenAuthGroup.get("user", "updates", "since", ":date", use: userUpdatesHandler)
+		tokenAuthGroup.get("usersearch", use: userSearchHandler)
     }
     
     // MARK: - Open Access Handlers
-    
-    // MARK: - basicAuthGroup Handlers (not logged in)
-    // All handlers in this route group require a valid HTTP Basic Authentication
-    // header in the request.
-    
-    // MARK: - sharedAuthGroup Handlers (logged in or not)
-    // All handlers in this route group require a valid HTTP Basic Authentication
-    // *or* HTTP Bearer Authentication header in the request.
     
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication

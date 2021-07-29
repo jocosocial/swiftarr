@@ -99,10 +99,11 @@ func databaseConnectionConfiguration(_ app: Application) throws {
 
 }
 
+// register global middleware
 func configureMiddleware(_ app: Application) throws {
-	// register middleware
-//    app.middleware.use(FileMiddleware(publicDirectory: "Public/")) // serves files from `Public/` directory
-//	app.middleware.use(SwiftarrErrorMiddleware.default(environment: app.environment))
+	// By default, Vapor launches with 2 middlewares: RouteLoggingMiddleware and ErrorMiddleware.
+	// We want to replace the standard Error middleware with SwiftarrErrorMiddleware, and we do that by
+	// creating a new Middlewares().
 	var new = Middlewares()
 	new.use(RouteLoggingMiddleware(logLevel: .info))
 	new.use(SwiftarrErrorMiddleware.default(environment: app.environment))
@@ -136,6 +137,7 @@ func configureLeaf(_ app: Application) throws {
     // Custom Leaf tags
     app.leaf.tags["elem"] = ElementSanitizerTag()
     app.leaf.tags["addJocomoji"] = AddJocomojiTag()
+    app.leaf.tags["formatPostText"] = FormatPostTextTag()
     app.leaf.tags["relativeTime"] = RelativeTimeTag()
     app.leaf.tags["eventTime"] = EventTimeTag()
     app.leaf.tags["avatar"] = AvatarTag()
@@ -156,6 +158,7 @@ func configureMigrations(_ app: Application) throws {
 	app.migrations.add(CreateProfileEditSchema(), to: .psql)
 	app.migrations.add(CreateUserNoteSchema(), to: .psql)
 	app.migrations.add(CreateModeratorActionSchema(), to: .psql)
+	app.migrations.add(CreateAnnouncementSchema(), to: .psql)
 	app.migrations.add(CreateBarrelSchema(), to: .psql)
 	app.migrations.add(CreateReportSchema(), to: .psql)
 	app.migrations.add(CreateCategorySchema(), to: .psql)

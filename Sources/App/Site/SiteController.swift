@@ -8,14 +8,24 @@ struct TrunkContext: Encodable {
 	var metaRedirectURL: String?
 	
 	// current nav item
+	enum Tab: String, Codable {
+		case twarrts
+		case forums
+		case seamail
+		case events
+		case none
+	}
+	var tab: Tab
 	
 	var userIsLoggedIn: Bool
 	var userIsMod: Bool
 	var username: String
 	var userID: UUID
 	
+	var alertCounts: UserNotificationCountData?
 	
-	init(_ req: Request, title: String) {
+	
+	init(_ req: Request, title: String, tab: Tab) {
 		if let user = req.auth.get(User.self) {
 			userIsLoggedIn = true
 			userIsMod = user.accessLevel.hasAccess(.moderator)
@@ -28,7 +38,13 @@ struct TrunkContext: Encodable {
 			username = ""
 			userID = UUID(uuid: UUID_NULL)
 		}
+		if let alertsStr = req.session.data["alertCounts"], let alertData = alertsStr.data(using: .utf8) {
+			let alerts = try? JSONDecoder().decode(UserNotificationCountData.self, from: alertData)
+			alertCounts = alerts
+		}
+		
 		self.title = title
+		self.tab = tab
 	}
 }
 
@@ -229,7 +245,7 @@ struct ReportPageContext : Encodable {
 	
 	// For reporting a twarrt
 	init(_ req: Request, twarrtID: String) throws {
-		trunk = .init(req, title: "Report Twarrt")
+		trunk = .init(req, title: "Report Twarrt", tab: .twarrts)
 		reportTitle = "Report a Twarrt"
 		reportFormAction = "/tweets/report/\(twarrtID)"
 		reportSuccessURL = req.headers.first(name: "Referer") ?? "/tweets"
@@ -237,7 +253,7 @@ struct ReportPageContext : Encodable {
 	
 	// For reporting a forum post
 	init(_ req: Request, postID: String) throws {
-		trunk = .init(req, title: "Report Forum Post")
+		trunk = .init(req, title: "Report Forum Post", tab: .forums)
 		reportTitle = "Report a Forum Post"
 		reportFormAction = "/forumpost/report/\(postID)"
 		reportSuccessURL = req.headers.first(name: "Referer") ?? "/forums"
@@ -245,7 +261,7 @@ struct ReportPageContext : Encodable {
 	
 	// For reporting a forum title
 	init(_ req: Request, forumID: String) throws {
-		trunk = .init(req, title: "Report Forum Title")
+		trunk = .init(req, title: "Report Forum Title", tab: .forums)
 		reportTitle = "Report a Forum Title"
 		reportFormAction = "/forum/report/\(forumID)"
 		reportSuccessURL = req.headers.first(name: "Referer") ?? "/forums"
@@ -353,6 +369,7 @@ extension SiteControllerUtils {
 				app.sessions.middleware, 
 				User.sessionAuthenticator(),
 				Token.authenticator(),
+				NotificationsMiddleware(),
 				redirectMiddleware
 		])
 	}

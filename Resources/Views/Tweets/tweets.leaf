@@ -12,6 +12,17 @@
 				</div>
     			<div class="col">
 				</div>
+    			<div class="col col-auto">
+    				#if(trunk.alertCounts.twarrtMentionCount == trunk.alertCounts.readTwarrtMentionCount + 1):
+						<a class="btn btn-outline-danger btn-sm" href="/tweets?mentions=#(trunk.username)">1 New Mention</a>
+    				#elseif(trunk.alertCounts.twarrtMentionCount > trunk.alertCounts.readTwarrtMentionCount):
+						<a class="btn btn-outline-danger btn-sm" href="/tweets/mentions">#(trunk.alertCounts.twarrtMentionCount - trunk.alertCounts.readTwarrtMentionCount) New Mentions</a>
+					#elseif(trunk.alertCounts.twarrtMentionCount == 1):
+						<a class="btn btn-outline-primary btn-sm" href="/tweets/mentions">1 Mention</a>
+					#elseif(trunk.alertCounts.twarrtMentionCount > 0):
+						<a class="btn btn-outline-primary btn-sm" href="/tweets/mentions">#(trunk.alertCounts.twarrtMentionCount) Mentions</a>
+					#endif
+				</div>
     			<div class="col col-auto align-self-end">
 			    	<button class="btn btn-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="\#newPostBox" aria-expanded="false" aria-controls="newPostBox">New Post</button>
 				</div>
@@ -43,7 +54,7 @@
 							</div>
 							<div class="row">	
 								<div class="col">
-									#addJocomoji(tweet.text)
+									#formatPostText(tweet.text)
 								</div>
 							</div>
 							#if(tweet.images):

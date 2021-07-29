@@ -1,0 +1,41 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0">
+    		<div class="row align-items-center my-1">
+    			<div class="col col-auto">
+			    	<b>Forum Categories</b>
+				</div>
+    			<div class="col">
+				</div>
+    			<div class="col col-auto align-self-end">
+    				#if(trunk.alertCounts.forumMentionCount == trunk.alertCounts.readForumMentionCount + 1):
+						<a class="btn btn-outline-danger btn-sm" href="/forumpost/mentions">1 New Mention</a>
+    				#elseif(trunk.alertCounts.forumMentionCount > trunk.alertCounts.readForumMentionCount):
+						<a class="btn btn-outline-danger btn-sm" href="/forumpost/mentions">#(trunk.alertCounts.forumMentionCount - trunk.alertCounts.readForumMentionCount) New Mentions</a>
+					#elseif(trunk.alertCounts.forumMentionCount == 1):
+						<a class="btn btn-outline-primary btn-sm" href="/forumpost/mentions">1 Mention</a>
+					#elseif(trunk.alertCounts.forumMentionCount > 0):
+						<a class="btn btn-outline-primary btn-sm" href="/forumpost/mentions">#(trunk.alertCounts.forumMentionCount) Mentions</a>
+					#endif
+				</div>
+			</div>
+			<div class="list-group">
+			#for(cat in categories):
+				<a href="/forums/#(cat.categoryID)" class="list-group-item list-group-item-action">		
+					<div class="container-fluid">
+						<div class="row">
+							<div class="col">
+								#(cat.title)
+							</div>
+							<div class="col col-auto">
+								#(cat.numThreads) threads
+							</div>
+						</div>
+					</div>
+				</a>
+			#endfor
+			</div>
+		</div>
+    #endexport
+#endextend
+

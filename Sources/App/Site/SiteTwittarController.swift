@@ -41,12 +41,24 @@ struct SiteTwitarrController: SiteControllerUtils {
     			var laterPostsUrl: String?
     			
     			init(_ req: Request, tweets: [TwarrtData]) throws {
-    				trunk = .init(req, title: "Tweets")
+    				trunk = .init(req, title: "Tweets", tab: .twarrts)
     				post = .init()
     				self.tweets = tweets
     				filterDesc = "Tweets"
+					let queryStruct = try req.query.decode(TwarrtQuery.self)
+					if let mention = queryStruct.mentions {
+						filterDesc =  mention == trunk.username ? "Your Mentions" : "'\(mention)' Mentions"
+					}
+					else if let hashtag = queryStruct.hashtag {
+						filterDesc = "#\(hashtag)"
+					}
+					else if let byuser = queryStruct.byuser {
+						filterDesc = "Tweets by '\(byuser)'"
+					}
+					else if let search = queryStruct.search {
+						filterDesc = "Search: '\(search)'"
+					}
     				if tweets.count > 0 {
-    					let queryStruct = try req.query.decode(TwarrtQuery.self)
 						if queryStruct.directionIsNewer() {
 							laterPostsUrl = queryStruct.buildQuery(baseURL: "/tweets", startOffset: tweets.count)
 							earlierPostsUrl = queryStruct.buildQuery(baseURL: "/tweets", startOffset: 0 - queryStruct.computedLimit())
@@ -61,10 +73,10 @@ struct SiteTwitarrController: SiteControllerUtils {
     			}
     		}
     		let ctx = try TweetPageContext(req, tweets: tweets)
-			return req.view.render("tweets", ctx)
+			return req.view.render("Tweets/tweets", ctx)
     	}
     }
-    
+        
     // This is a passthrough for /api/v3/twitarr/ID, returning a TwarrtDetailData
 	func tweetGetDetailHandler(_ req: Request) throws -> EventLoopFuture<TwarrtDetailData> {
     	guard let twarrtID = req.parameters.get(twarrtIDParam.paramString) else {
@@ -148,13 +160,13 @@ struct SiteTwitarrController: SiteControllerUtils {
 		
 		// For editing
 		init(_ req: Request, editTweet: TwarrtDetailData) throws {
-			trunk = .init(req, title: "Edit Twarrt")
+			trunk = .init(req, title: "Edit Twarrt", tab: .twarrts)
 			self.post = .init(with: editTweet)
 		}
 		
 		// For replys
 		init(_ req: Request, replyToTweet: TwarrtDetailData) {
-			trunk = .init(req, title: "Reply to Twarrt")
+			trunk = .init(req, title: "Reply to Twarrt", tab: .twarrts)
 			self.replyToTweet = replyToTweet
 			post = .init()
 		}
@@ -168,7 +180,7 @@ struct SiteTwitarrController: SiteControllerUtils {
  			let tweet = try response.content.decode(TwarrtDetailData.self)
     		var ctx = TweetEditPageContext(req, replyToTweet: tweet)
     		ctx.post.formAction = "/tweets/reply/\(twarrtID)"
-			return req.view.render("tweetReply", ctx)
+			return req.view.render("Tweets/tweetReply", ctx)
     	}
     }
     
@@ -207,7 +219,7 @@ struct SiteTwitarrController: SiteControllerUtils {
     			var post: MessagePostContext
     			
     			init(_ req: Request, tweet: TwarrtDetailData) throws {
-    				trunk = .init(req, title: "Edit Twarrt")
+    				trunk = .init(req, title: "Edit Twarrt", tab: .twarrts)
     				self.post = .init(with: tweet)
     			}
     		}
@@ -215,7 +227,7 @@ struct SiteTwitarrController: SiteControllerUtils {
     		if ctx.trunk.userID != tweet.author.userID {
     			ctx.post.authorName = ctx.trunk.username
     		}
-			return req.view.render("tweetEdit", ctx)
+			return req.view.render("Tweets/tweetEdit", ctx)
     	}
     }
     

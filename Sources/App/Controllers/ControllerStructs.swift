@@ -701,6 +701,23 @@ extension PostData {
     }
 }
 
+/// Used to return info about a search for `ForumPost`s. Like forums, this returns an array of `PostData.`
+/// However, this gives the results of a search for posts across all the forums.
+///
+/// 
+struct PostSearchData: Content {
+	/// The search query used to create these results. 
+	var queryString: String
+    /// The total number of posts in the result set.
+	var totalPosts: Int
+	/// The index number of the first post in the `posts` array. 0 is the index of the first post in the forum. This number is usually  a multiple of `limit` and indicates the page of results.
+	var start: Int
+	/// The number of posts the server attempted to gather. posts.count may be less than this number if posts were filtered out by blocks/mutes, or if start + limit > totalPosts.
+	var limit: Int
+    /// The posts in the forum.
+    var posts: [PostData]
+}
+
 /// Used to return a `ForumPost`'s data with full user `LikeType` info.
 ///
 /// Returned by: `GET /api/v3/forum/post/ID`
@@ -1000,14 +1017,9 @@ extension UserCreateData: RCFValidatable {
     	tester.validate(username.count <= 50, forKey: .username, or: "username has a 50 character limit")
     	tester.validate(password.count >= 6, forKey: .password, or: "password has a 6 character minimum")
     	tester.validate(password.count <= 50, forKey: .password, or: "password has a 50 character limit")
-    	var cs = CharacterSet()
-    	cs.formUnion(.alphanumerics)
-    	cs.formUnion(.usernameSeparators)
-    	tester.validate(username.unicodeScalars.allSatisfy { cs.contains($0) }, forKey: .username, or:
-    			"username can only contain alphanumeric characters plus \"\(usernameSeparatorString)\"")
-    	if let firstChar = username.first, !(firstChar.isLetter || firstChar.isNumber) {
-    		tester.addValidationError(forKey: .username, errorString: "username must start with a letter or number")
-		}
+    	usernameValidations(username: username).forEach {
+    		tester.addValidationError(forKey: .username, errorString: $0)
+    	}
 		// Registration code can be nil, but if it isn't, it must be a properly formed code.
 		if let normalizedCode = verification?.lowercased().replacingOccurrences(of: " ", with: ""), normalizedCode.count > 0 {
 			if normalizedCode.rangeOfCharacter(from: CharacterSet.alphanumerics.inverted) != nil || normalizedCode.count != 6  {
@@ -1136,14 +1148,9 @@ extension UserRecoveryData: RCFValidatable {
     	tester.validate(username.count >= 2, forKey: .username, or: "username has a 2 character minimum")
     	tester.validate(username.count <= 50, forKey: .username, or: "username has a 50 character limit")
     	tester.validate(recoveryKey.count >= 6, forKey: .recoveryKey, or: "password/recovery code has a 6 character minimum")
-    	var cs = CharacterSet()
-    	cs.formUnion(.alphanumerics)
-    	cs.formUnion(.usernameSeparators)
-    	tester.validate(username.unicodeScalars.allSatisfy { cs.contains($0) }, forKey: .username, or:
-    			"username can only contain alphanumeric characters plus \"\(usernameSeparatorString)\"")
-    	if let firstChar = username.first, !(firstChar.isLetter || firstChar.isNumber) {
-    		tester.addValidationError(forKey: .username, errorString: "username must start with a letter or number")
-		}
+    	usernameValidations(username: username).forEach {
+    		tester.addValidationError(forKey: .username, errorString: $0)
+    	}
     	tester.validate(newPassword.count >= 6, forKey: .newPassword, or: "password has a 6 character minimum length")
     	tester.validate(newPassword.count <= 50, forKey: .newPassword, or: "password has a 50 character limit")
 	}
@@ -1178,14 +1185,9 @@ extension UserUsernameData: RCFValidatable {
     	let tester = try decoder.validator(keyedBy: CodingKeys.self)
     	tester.validate(username.count >= 2, forKey: .username, or: "username has a 2 character minimum")
     	tester.validate(username.count <= 50, forKey: .username, or: "username has a 50 character limit")
-    	var cs = CharacterSet()
-    	cs.formUnion(.alphanumerics)
-    	cs.formUnion(.usernameSeparators)
-    	tester.validate(username.unicodeScalars.allSatisfy { cs.contains($0) }, forKey: .username, or:
-    			"username can only contain alphanumeric characters plus \"\(usernameSeparatorString)\"")
-    	if let firstChar = username.first, !(firstChar.isLetter || firstChar.isNumber) {
-    		tester.addValidationError(forKey: .username, errorString: "username must start with a letter or number")
-		}
+    	usernameValidations(username: username).forEach {
+    		tester.addValidationError(forKey: .username, errorString: $0)
+    	}
 	}
 }
 
@@ -1206,3 +1208,24 @@ extension UserVerifyData: RCFValidatable {
     			or: "verification code is 6 letters long (with an optional space in the middle)")
 	}
 }
+
+// MARK: - Username Validation
+
+/// Three differernt POST structs contain username fields; this fn exists to ensure they all validate the username the same way. This fn is designed to return a list
+/// of validation failure strings--if it returns an empty array the username is valid.
+fileprivate func usernameValidations(username: String) -> [String] {
+	var errorStrings: [String] = []
+	if username.count < 2 { errorStrings.append("username has a 2 character minimum") }
+	if username.count > 50 { errorStrings.append("username has a 50 character limit") }
+	if !username.unicodeScalars.allSatisfy({ CharacterSet.validUsernameChars.contains($0) }) {
+		errorStrings.append("username can only contain alphanumeric characters plus \"\(usernameSeparatorString)\"")
+	}
+	if let firstChar = username.first, !(firstChar.isLetter || firstChar.isNumber) {
+		errorStrings.append("username must start with a letter or number")
+	}
+	if let lastChar = username.unicodeScalars.last, CharacterSet.usernameSeparators.contains(lastChar) {
+		errorStrings.append("Username separator chars (\(usernameSeparatorString)) can only be in the middle of a username string.")
+	}
+	return errorStrings
+}
+

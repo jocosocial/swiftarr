@@ -21,19 +21,15 @@ struct TwitarrController: RouteCollection {
         let twitarrRoutes = routes.grouped("api", "v3", "twitarr")
         
         // instantiate authentication middleware
-        let basicAuthMiddleware = User.authenticator()
         let tokenAuthMiddleware = Token.authenticator()
         let guardAuthMiddleware = User.guardMiddleware()
         
         // set protected route groups
-        let sharedAuthGroup = twitarrRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware, guardAuthMiddleware])
         let tokenAuthGroup = twitarrRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
         
-		// endpoints available whether logged in or not
-		sharedAuthGroup.get("", use: twarrtsHandler)
-		sharedAuthGroup.get(twarrtIDParam, use: twarrtHandler)
-        
 		// endpoints only available when logged in
+		tokenAuthGroup.get("", use: twarrtsHandler)
+		tokenAuthGroup.get(twarrtIDParam, use: twarrtHandler)
 		tokenAuthGroup.post(twarrtIDParam, "bookmark", use: bookmarkAddHandler)
 		tokenAuthGroup.post(twarrtIDParam, "bookmark", "remove", use: bookmarkRemoveHandler)
 		tokenAuthGroup.get("bookmarks", use: bookmarksHandler)
@@ -173,6 +169,7 @@ struct TwitarrController: RouteCollection {
 		// Query builder always filters out blocks and mutes, and the range always applies.
         let start = (req.query[Int.self, at: "start"] ?? 0)
         let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
+        var postFilterMentions: String? = nil
 		let futureTwarrts = Twarrt.query(on: req.db)
 				.filter(\.$author.$id !~ cachedUser.getBlocks())
 				.filter(\.$author.$id !~ cachedUser.getMutes())
@@ -218,6 +215,7 @@ struct TwitarrController: RouteCollection {
 			if !mentions.hasPrefix("@") {
 				mentions = "@\(mentions)"
 			}
+			postFilterMentions = mentions
 			futureTwarrts.filter(\.$text, .custom("ILIKE"), "%\(mentions)%")
 		}
 		if let byuser = req.query[String.self, at: "byuser"] {
@@ -249,8 +247,15 @@ struct TwitarrController: RouteCollection {
 				futureTwarrts.filter(\.$author.$id ~~ foundBarrel.modelUUIDs)
 			}
 			return futureTwarrts.sort(\.$id, sortDescending ? .descending : .ascending).all().flatMap { (twarrts) in
+				// The filter() for mentions will include usernames that are prefixes for other usernames and other false positives.
+				// This filters those out after the query. 
+				var postFilteredTwarrts = twarrts
+				if let postFilter = postFilterMentions {
+					postFilteredTwarrts = twarrts.compactMap { $0.filterForMention(of: postFilter) }
+				}
+			
 				// correct to descending order if necessary
-				let sortedTwarrts: [Twarrt] = sortDescending ? twarrts : twarrts.reversed()
+				let sortedTwarrts: [Twarrt] = sortDescending ? postFilteredTwarrts : postFilteredTwarrts.reversed()
 				return buildTwarrtData(from: sortedTwarrts, user: user, on: req, mutewords: cachedUser.mutewords)
 			}
 		}
@@ -365,62 +370,7 @@ struct TwitarrController: RouteCollection {
 				return buildTwarrtData(from: twarrts, user: user, on: req)
 		}
     }
-    
-    /// `GET /api/v3/twitarr/mentions`
-    ///
-    /// Retrieve all `Twarrt`s whose content mentions the user, in descending timestamp order.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[TwarrtData]` containing all twarrts containing mentions.
-    func mentionsHandler(_ req: Request) throws -> EventLoopFuture<[TwarrtData]> {
-        let user = try req.auth.require(User.self)
-        // get query parameters
-        let afterID = req.query[Int.self, at: "after"]
-        let afterDate = req.query[String.self, at: "afterdate"]
-        // respect blocks
-        let blocked = try req.userCache.getBlocks(user)
-
-		// get mention twarrts
-		var futureTwarrts: EventLoopFuture<[Twarrt]>
-		switch (afterID, afterDate) {
-			case (.some(let twarrtID), _):
-				futureTwarrts = Twarrt.query(on: req.db)
-					.filter(\.$author.$id !~ blocked)
-					.filter(\.$text, .custom("ILIKE"), "%@\(user.username)%")
-					.filter(\.$id > twarrtID)
-					.sort(\.$id, .descending)
-					.all()
-			case (_, .some(let twarrtDate)):
-				guard let date = TwitarrController.dateFromParameter(string: twarrtDate) else {
-					return req.eventLoop.makeFailedFuture(
-						Abort(.badRequest, reason: "not a recognized date format"))
-				}
-				futureTwarrts = Twarrt.query(on: req.db)
-					.filter(\.$author.$id !~ blocked)
-					.filter(\.$text, .custom("ILIKE"), "%@\(user.username)%")
-					.filter(\.$createdAt > date)
-					.sort(\.$createdAt, .descending)
-					.all()
-			default:
-				futureTwarrts = Twarrt.query(on: req.db)
-					.filter(\.$author.$id !~ blocked)
-					.filter(\.$text, .custom("ILIKE"), "%@\(user.username)%")
-					.sort(\.$createdAt, .descending)
-					.all()
-		}
-		return futureTwarrts.flatMap { (twarrts) in
-			// get exact username
-			let matches = twarrts.compactMap {
-				(twarrt) -> Twarrt? in
-				let text = twarrt.text.lowercased()
-				let words = text.components(separatedBy: .whitespacesAndNewlines + .contentSeparators)
-				return words.contains("@\(user.username)") ? twarrt : nil
-			}
-			// convert to TwarrtData
-			return buildTwarrtData(from: matches, user: user, on: req)
-		}
-    }
-    
+        
     /// `POST /api/v3/twitarr/ID/reply`
     ///
     /// Create a `Twarrt` as a reply to an existing twarrt. If the replyTo twarrt is in
@@ -445,6 +395,7 @@ struct TwitarrController: RouteCollection {
 				// create twarrt
 				let twarrt = try Twarrt(author: user, text: data.text, images: filenames, replyTo: replyTo)
 				return twarrt.save(on: req.db).flatMapThrowing { (savedTwarrt) in
+					processTwarrtMentions(twarrt: twarrt, editedText: nil, isCreate: true, on: req)
 					// return as TwarrtData with 201 status
 					let authorHeader = try req.userCache.getHeader(twarrt.$author.id)
 					let response = Response(status: .created)
@@ -473,6 +424,7 @@ struct TwitarrController: RouteCollection {
             // create twarrt
 			let twarrt = try Twarrt(author: user, text: data.text, images: filenames)
             return twarrt.save(on: req.db).flatMapThrowing { _ in
+				processTwarrtMentions(twarrt: twarrt, editedText: nil, isCreate: true, on: req)
                 // return as TwarrtData with 201 status
 				let authorHeader = try req.userCache.getHeader(twarrt.$author.id)
                 let response = Response(status: .created)
@@ -490,11 +442,12 @@ struct TwitarrController: RouteCollection {
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 403 error if the user is not permitted to delete.
-    /// - Returns: 204 No COntent on success.
+    /// - Returns: 204 No Content on success.
     func twarrtDeleteHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
         return Twarrt.findFromParameter(twarrtIDParam, on: req).throwingFlatMap { (twarrt) in
 			try user.guardCanModifyContent(twarrt, customErrorString: "user cannot delete twarrt")
+			processTwarrtMentions(twarrt: twarrt, editedText: nil, on: req)
 			twarrt.logIfModeratorAction(.delete, user: user, on: req)
             return twarrt.delete(on: req.db).transform(to: .noContent)
         }
@@ -634,6 +587,7 @@ struct TwitarrController: RouteCollection {
 			// update if there are changes
 			let normalizedText = data.text.replacingOccurrences(of: "\r\n", with: "\r")
 			if twarrt.text != normalizedText || twarrt.images != filenames {
+				processTwarrtMentions(twarrt: twarrt, editedText: normalizedText, on: req)
 				// stash current twarrt contents before modifying
 				let twarrtEdit = try TwarrtEdit(twarrt: twarrt, editor: user)
 				twarrt.text = normalizedText
@@ -696,7 +650,7 @@ extension TwitarrController {
 			// remove muteword twarrts
 			var filteredTwarrts = twarrts
 			if let mutewords = mutewords {
-				 filteredTwarrts = twarrts.compactMap { $0.filterMutewords(using: mutewords) }
+				 filteredTwarrts = twarrts.compactMap { $0.filterOutStrings(using: mutewords) }
 			}
 			
 			// get exact hashtag if we're matching on hashtag
@@ -740,6 +694,27 @@ extension TwitarrController {
 		}
 	}
 	
-	
+	// Scans the text of twarrts as they are created/edited/deleted, finds @mentions, updates mention counts for
+	// mentioned `User`s.
+	@discardableResult func processTwarrtMentions(twarrt: Twarrt, editedText: String?, 
+			isCreate: Bool = false, on req: Request) -> EventLoopFuture<Void> {	
+		let (subtracts, adds) = twarrt.getMentionsDiffs(editedString: editedText, isCreate: isCreate)
+		if subtracts.isEmpty && adds.isEmpty {
+			return req.eventLoop.future()
+		}
+		return User.query(on: req.db).filter(\.$username ~~ subtracts).all().flatMap { subtractUsers in
+			return User.query(on: req.db).filter(\.$username ~~ adds).all().flatMap { addUsers in
+				var saveFutures = subtractUsers.map { (user: User) -> EventLoopFuture<Void> in
+					user.twarrtMentions -= 1
+					return user.save(on: req.db)
+				}
+				addUsers.forEach {
+					$0.twarrtMentions += 1
+					saveFutures.append($0.save(on: req.db))
+				}
+				return saveFutures.flatten(on: req.eventLoop)
+			}
+		}
+	}
 }
 

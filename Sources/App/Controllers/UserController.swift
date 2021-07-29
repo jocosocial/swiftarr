@@ -110,32 +110,25 @@ struct UserController: RouteCollection {
         let userRoutes = routes.grouped("api", "v3", "user")
         
         // instantiate authentication middleware
-        let basicAuthMiddleware = User.authenticator()
-        let guardAuthMiddleware = User.guardMiddleware()
         let tokenAuthMiddleware = Token.authenticator()
+        let guardAuthMiddleware = User.guardMiddleware()
         
         // set protected route groups
-        let basicAuthGroup = userRoutes.grouped([basicAuthMiddleware, guardAuthMiddleware])
-        let sharedAuthGroup = userRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware, guardAuthMiddleware])
         let tokenAuthGroup = userRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
         
         // open access endpoints
         userRoutes.post("create", use: createHandler)
         
-        // endpoints available only when not logged in
-        basicAuthGroup.post("verify", use: verifyHandler)
-        
-        // endpoints available whether logged in or out
-        sharedAuthGroup.post("image", use: imageHandler)
-        sharedAuthGroup.post("image", "remove", use: imageRemoveHandler)
-        sharedAuthGroup.delete("image", use: imageRemoveHandler)
-        sharedAuthGroup.delete(":target_user", "image", use: imageRemoveHandler)
-        sharedAuthGroup.get("profile", use: profileHandler)
-        sharedAuthGroup.post("profile", use: profileUpdateHandler)
-        sharedAuthGroup.post(":target_user", "profile", use: profileUpdateHandler)
-        sharedAuthGroup.get("whoami", use: whoamiHandler)
-        
         // endpoints available only when logged in
+        tokenAuthGroup.post("verify", use: verifyHandler)
+        tokenAuthGroup.post("image", use: imageHandler)
+        tokenAuthGroup.post("image", "remove", use: imageRemoveHandler)
+        tokenAuthGroup.delete("image", use: imageRemoveHandler)
+        tokenAuthGroup.delete(":target_user", "image", use: imageRemoveHandler)
+        tokenAuthGroup.get("profile", use: profileHandler)
+        tokenAuthGroup.post("profile", use: profileUpdateHandler)
+        tokenAuthGroup.post(":target_user", "profile", use: profileUpdateHandler)
+        tokenAuthGroup.get("whoami", use: whoamiHandler)
         tokenAuthGroup.post("add", use: addHandler)
         tokenAuthGroup.get("alertwords", use: alertwordsHandler)
         tokenAuthGroup.post("alertwords", "add", alertwordParam, use: alertwordsAddHandler)

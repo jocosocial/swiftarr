@@ -80,7 +80,7 @@ struct SiteModController: SiteControllerUtils {
 				var reports: [ReportContentGroup]
 				
 				init(_ req: Request, reports: [ReportContentGroup]) throws {
-					trunk = .init(req, title: "Reports")
+					trunk = .init(req, title: "Reports", tab: .none)
 					self.reports = reports
 				}
 			}
@@ -115,7 +115,7 @@ struct SiteModController: SiteControllerUtils {
 				var log: [ModeratorActionLogData]
 				
 				init(_ req: Request, log: [ModeratorActionLogData]) throws {
-					trunk = .init(req, title: "Moderator Action Log")
+					trunk = .init(req, title: "Moderator Action Log", tab: .none)
 					self.log = log
 				}
 			}
@@ -143,7 +143,7 @@ struct SiteModController: SiteControllerUtils {
 				var finalEditAuthor: UserHeader?
 				
 				init(_ req: Request, modData: TwarrtModerationData) throws {
-					trunk = .init(req, title: "Reports")
+					trunk = .init(req, title: "Reports", tab: .none)
 					self.modData = modData
 					firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
 					finalEditAuthor = modData.edits.last?.author
@@ -196,7 +196,7 @@ struct SiteModController: SiteControllerUtils {
 				var finalEditAuthor: UserHeader?
 				
 				init(_ req: Request, modData: ForumPostModerationData) throws {
-					trunk = .init(req, title: "Reports")
+					trunk = .init(req, title: "Reports", tab: .none)
 					self.modData = modData
 					firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
 					finalEditAuthor = modData.edits.last?.author
@@ -249,7 +249,7 @@ struct SiteModController: SiteControllerUtils {
 				var finalEditAuthor: UserHeader?
 				
 				init(_ req: Request, modData: ForumModerationData) throws {
-					trunk = .init(req, title: "Reports")
+					trunk = .init(req, title: "Reports", tab: .none)
 					self.modData = modData
 					firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
 					finalEditAuthor = modData.edits.last?.author

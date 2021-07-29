@@ -25,7 +25,7 @@
 								<td>#(report.actionType)</td>
 								<td>#(report.contentType)</td>
 								<td>@#elem(report.targetUser.username)</td>
-								<td>#date(report.timestamp)</td>
+								<td>#date(report.timestamp, "MMM dd, hh:mm:ss a")</td>
 							</tr>
 						#endfor
 						</tbody

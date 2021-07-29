@@ -3,7 +3,7 @@
     	<div class="container-md ms-0 mt-2">
     		<div class="row mb-2 align-items-end">
     			<div class="col">
-    				Seamail
+    				<h6><b>Seamail</b></h6>
 				</div>
     			<div class="col col-auto align-self-end">
 			    	<a class="btn btn-primary btn-sm" role="button" href="/seamail/create">New Seamail</a>

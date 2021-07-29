@@ -17,24 +17,15 @@ struct EventController: RouteCollection {
         let eventRoutes = routes.grouped("api", "v3", "events")
         
         // instantiate authentication middleware
-        let basicAuthMiddleware = User.authenticator()
-        let guardAuthMiddleware = User.guardMiddleware()
         let tokenAuthMiddleware = Token.authenticator()
+        let guardAuthMiddleware = User.guardMiddleware()
         
-        // set unprotected route group
-        let openAuthGroup = eventRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware])
-
-        // set protected route groups
-//		let sharedAuthGroup = eventRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware, guardAuthMiddleware])
+        // set protected route group
         let tokenAuthGroup = eventRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
         
         // open access endpoints
-        openAuthGroup.get(use: eventsHandler)
-        openAuthGroup.get(eventIDParam, use: singleEventHandler)
-
-        // endpoints available only when not logged in
-        
-        // endpoints available whether logged in or out
+        eventRoutes.get(use: eventsHandler)
+        eventRoutes.get(eventIDParam, use: singleEventHandler)
         
         // endpoints available only when logged in
         tokenAuthGroup.post(eventIDParam, "favorite", use: favoriteAddHandler)

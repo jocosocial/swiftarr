@@ -45,7 +45,7 @@
 									</div>
 									<div class="row">	
 										<div class="col">
-											#addJocomoji(forumPost.text)
+											#formatPostText(forumPost.text)
 										</div>
 									</div>
 									#if(forumPost.images):

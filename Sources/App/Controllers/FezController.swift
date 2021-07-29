@@ -23,20 +23,16 @@ struct FezController: RouteCollection {
         let fezRoutes = routes.grouped("api", "v3", "fez")
         
         // instantiate authentication middleware
-        let basicAuthMiddleware = User.authenticator()
-        let guardAuthMiddleware = User.guardMiddleware()
         let tokenAuthMiddleware = Token.authenticator()
+        let guardAuthMiddleware = User.guardMiddleware()
         
         // set protected route groups
-        let sharedAuthGroup = fezRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware, guardAuthMiddleware])
         let tokenAuthGroup = fezRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
         
-        // endpoints available whether logged in or not
-        sharedAuthGroup.get("joined", use: joinedHandler)
-        sharedAuthGroup.get("open", use: openHandler)
-        sharedAuthGroup.get("types", use: typesHandler)
-        
         // endpoints available only when logged in
+        tokenAuthGroup.get("joined", use: joinedHandler)
+        tokenAuthGroup.get("open", use: openHandler)
+        tokenAuthGroup.get("types", use: typesHandler)
         tokenAuthGroup.get(fezIDParam, use: fezHandler)
         tokenAuthGroup.post(fezIDParam, "cancel", use: cancelHandler)
         tokenAuthGroup.post("create", use: createHandler)
@@ -51,11 +47,7 @@ struct FezController: RouteCollection {
         tokenAuthGroup.post(fezIDParam, "user", userIDParam, "remove", use: userRemoveHandler)
 		tokenAuthGroup.post("post", fezPostIDParam, "report", use: reportHandler)
     }
-    
-    // MARK: - sharedAuthGroup Handlers (logged in or not)
-    // All handlers in this route group require a valid HTTP Basic Authorization
-    // *or* HTTP Bearer Authorization header in the request.
-    
+        
     /// `GET /api/v3/fez/joined`
     ///
     /// Retrieve all the FriendlyFez chats that the user has joined.

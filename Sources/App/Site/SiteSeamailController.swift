@@ -30,12 +30,12 @@ struct SiteSeamailController: SiteControllerUtils {
     			var fezzes: [FezData]
     			
     			init(_ req: Request, fezzes: [FezData]) throws {
-    				trunk = .init(req, title: "Seamail")
+    				trunk = .init(req, title: "Seamail", tab: .seamail)
     				self.fezzes = fezzes
     			}
     		}
     		let ctx = try SeamailRootPageContext(req, fezzes: fezzes)
-			return req.view.render("seamails", ctx)
+			return req.view.render("Fez/seamails", ctx)
     	}
     }
     
@@ -46,12 +46,12 @@ struct SiteSeamailController: SiteControllerUtils {
 			var post: MessagePostContext
 			
 			init(_ req: Request) throws {
-				trunk = .init(req, title: "New Seamail")
+				trunk = .init(req, title: "New Seamail", tab: .seamail)
 				post = .init(forNewSeamail: true)
 			}
 		}
 		let ctx = try SeamaiCreatePageContext(req)
-		return req.view.render("seamailCreate", ctx)
+		return req.view.render("Fez/seamailCreate", ctx)
     }
     
     // Called by JS when searching for usernames to add to a seamail.
@@ -139,7 +139,7 @@ struct SiteSeamailController: SiteControllerUtils {
      			var post: MessagePostContext
    			    			
     			init(_ req: Request, fez: FezData) throws {
-    				trunk = .init(req, title: "Seamail")
+    				trunk = .init(req, title: "Seamail", tab: .seamail)
     				self.fez = fez
     				oldPosts = []
     				newPosts = []
@@ -165,7 +165,7 @@ struct SiteSeamailController: SiteControllerUtils {
     			}
     		}
     		let ctx = try SeamailThreadPageContext(req, fez: fez)
-			return req.view.render("seamailThread", ctx)
+			return req.view.render("Fez/seamailThread", ctx)
     	}
 	}
 	

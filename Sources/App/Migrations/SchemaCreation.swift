@@ -23,6 +23,23 @@ struct CreateCustomEnums: Migration {
     }
 }
 
+struct CreateAnnouncementSchema: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("announcements")
+				.field("id", .int, .identifier(auto: true))
+				.field("text", .string, .required)
+				.field("display_until", .datetime, .required)
+    			.field("created_at", .datetime)
+    			.field("updated_at", .datetime)
+    			.field("deleted_at", .datetime)
+				.field("author", .uuid, .required, .references("users", "id"))
+				.create()
+	}
+    
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("announcements").delete()
+    }
+}
 
 struct CreateBarrelSchema: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
@@ -434,6 +451,12 @@ struct CreateUserSchema: Migration {
 					.field("preferredPronoun", .string)
 					.field("roomNumber", .string)
 					.field("limitAccess", .bool, .required)
+					
+					.field("last_read_announcement", .int)
+					.field("twarrt_mentions", .int)
+					.field("twarrt_mentions_viewed", .int)
+					.field("forum_mentions", .int)
+					.field("forum_mentions_viewed", .int)
 					
 					.field("action_group", .uuid)
 

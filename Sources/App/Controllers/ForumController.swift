@@ -19,63 +19,65 @@ struct ForumController: RouteCollection {
         
 		// convenience route group for all /api/v3/forum endpoints
 		let forumRoutes = routes.grouped("api", "v3", "forum")
-		let eventRoutes = routes.grouped("api", "v3", "events")
 
 		// instantiate authentication middleware
-		let basicAuthMiddleware = User.authenticator()
-		let guardAuthMiddleware = User.guardMiddleware()
 		let tokenAuthMiddleware = Token.authenticator()
-
-		// set protected route groups
-		let eventSharedAuthGroup = eventRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware, guardAuthMiddleware])
-		let sharedAuthGroup = forumRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware, guardAuthMiddleware])
+		let guardAuthMiddleware = User.guardMiddleware()
 		let tokenAuthGroup = forumRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
 
 		// open access endpoints
 		forumRoutes.grouped(tokenAuthMiddleware).get("categories", use: categoriesHandler)
 
-		// endpoints available only when not logged in
+		tokenAuthGroup.get("forevent", ":event_id", use: eventForumHandler)
 
-		// endpoints available whether logged in or out
-		sharedAuthGroup.get(forumIDParam, use: forumHandler)
-		sharedAuthGroup.get("categories", categoryIDParam, use: categoryForumsHandler)
-		sharedAuthGroup.get("match", ":search_string", use: forumMatchHandler)
-		sharedAuthGroup.get("post", postIDParam, use: postHandler)
-		sharedAuthGroup.get("post", postIDParam, "forum", use: postForumHandler)
-		sharedAuthGroup.get("post", "hashtag", ":hashtag_string", use: postHashtagHandler)
-		sharedAuthGroup.get("post", "search", ":search_string", use: postSearchHandler)
-		sharedAuthGroup.get(forumIDParam, "search", ":search_string", use: forumSearchHandler)
+		// Forum Route Group, requires token
+		
+			// Categories
+		tokenAuthGroup.get("categories", categoryIDParam, use: categoryForumsHandler)
 
-		eventSharedAuthGroup.get(":event_id", "forum", use: eventForumHandler)
-
-		// endpoints available only when logged in
-		tokenAuthGroup.get("bookmarks", use: bookmarksHandler)
+			// Forums - CRUD first, then actions on forums
 		tokenAuthGroup.post("categories", categoryIDParam, "create", use: forumCreateHandler)
+		tokenAuthGroup.get(forumIDParam, use: forumHandler)
+		tokenAuthGroup.get("post", postIDParam, "forum", use: postForumHandler)			// Returns the forum a post is in.
+		tokenAuthGroup.post(forumIDParam, "rename", ":new_name", use: forumRenameHandler)
+		tokenAuthGroup.post(forumIDParam, "delete", use: forumDeleteHandler)
+		tokenAuthGroup.delete(forumIDParam, use: forumDeleteHandler)
+		
+		tokenAuthGroup.post(forumIDParam, "report", use: forumReportHandler)
+
+			// 'Favorite' applies to forums, while 'Bookmark' is for posts
+		tokenAuthGroup.get("favorites", use: favoritesHandler)
 		tokenAuthGroup.post(forumIDParam, "favorite", use: favoriteAddHandler)
 		tokenAuthGroup.post(forumIDParam, "favorite", "remove", use: favoriteRemoveHandler)
-		tokenAuthGroup.get("favorites", use: favoritesHandler)
-		tokenAuthGroup.get("likes", use: likesHandler)
-		tokenAuthGroup.get("mentions", use: mentionsHandler)
+		tokenAuthGroup.delete(forumIDParam, "favorite", use: favoriteRemoveHandler)
+
+		tokenAuthGroup.get("match", ":search_string", use: forumMatchHandler)
 		tokenAuthGroup.get("owner", use: ownerHandler)
-		tokenAuthGroup.post("post", postIDParam, "bookmark", use: bookmarkAddHandler)
-		tokenAuthGroup.post("post", postIDParam, "bookmark", "remove", use: bookmarkRemoveHandler)
+
+			// Posts - CRUD first, then actions on posts
 		tokenAuthGroup.post(forumIDParam, "create", use: postCreateHandler)
+		tokenAuthGroup.get("post", postIDParam, use: postHandler)
+		tokenAuthGroup.post("post", postIDParam, "update", use: postUpateHandler)
 		tokenAuthGroup.post("post", postIDParam, "delete", use: postDeleteHandler)
 		tokenAuthGroup.delete("post", postIDParam, use: postDeleteHandler)
+
 		tokenAuthGroup.post("post", postIDParam, "laugh", use: postLaughHandler)
 		tokenAuthGroup.post("post", postIDParam, "like", use: postLikeHandler)
 		tokenAuthGroup.post("post", postIDParam, "love", use: postLoveHandler)
-		tokenAuthGroup.post("post", postIDParam, "report", use: postReportHandler)
-		tokenAuthGroup.post("posts", use: postsHandler)
 		tokenAuthGroup.post("post", postIDParam, "unreact", use: postUnreactHandler)
 		tokenAuthGroup.delete("post", postIDParam, "laugh", use: postUnreactHandler)
 		tokenAuthGroup.delete("post", postIDParam, "like", use: postUnreactHandler)
 		tokenAuthGroup.delete("post", postIDParam, "love", use: postUnreactHandler)
-		tokenAuthGroup.post("post", postIDParam, "update", use: postUpateHandler)
-		tokenAuthGroup.post(forumIDParam, "rename", ":new_name", use: forumRenameHandler)
-		tokenAuthGroup.post(forumIDParam, "report", use: forumReportHandler)
-		tokenAuthGroup.post(forumIDParam, "delete", use: forumDeleteHandler)
-		tokenAuthGroup.delete(forumIDParam, use: forumDeleteHandler)
+		tokenAuthGroup.post("post", postIDParam, "report", use: postReportHandler)
+
+			// 'Favorite' applies to forums, while 'Bookmark' is for posts
+		tokenAuthGroup.get("bookmarks", use: bookmarksHandler)
+		tokenAuthGroup.post("post", postIDParam, "bookmark", use: bookmarkAddHandler)
+		tokenAuthGroup.post("post", postIDParam, "bookmark", "remove", use: bookmarkRemoveHandler)
+		tokenAuthGroup.delete("post", postIDParam, "bookmark", use: bookmarkRemoveHandler)
+
+			// ForumPost search. Takes a bunch of options.
+		tokenAuthGroup.get("post", "search", use: postSearchHandler)
 	}
     
     // MARK: - Open Access Handlers
@@ -113,11 +115,7 @@ struct ForumController: RouteCollection {
 			}
         }
     }
-    
-    // MARK: - basicAuthGroup Handlers (not logged in)
-    // All handlers in this route group require a valid HTTP Basic Authentication
-    // header in the request.
-    
+        
     // MARK: - sharedAuthGroup Handlers (logged in or not)
     // All handlers in this route group require a valid HTTP Basic Authorization
     // *or* HTTP Bearer Authorization header in the request.
@@ -246,37 +244,7 @@ struct ForumController: RouteCollection {
                 	}
             }
     }
-    
-    /// `GET /api/v3/forum/ID/search/STRING`
-    ///
-    /// Retrieve all `ForumPost`s in the specified `Forum` that contain the specified string.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[PostData]` containing all matching posts in the forum.
-    func forumSearchHandler(_ req: Request) throws -> EventLoopFuture<[PostData]> {
-        let user = try req.auth.require(User.self)
-        let cacheUser = try req.userCache.getUser(user)
-        guard var search = req.parameters.get("search_string") else {
-            throw Abort(.badRequest, reason: "Missing search parameter.")
-        }
-		// postgres "_" and "%" are wildcards, so escape for literals
-		search = search.replacingOccurrences(of: "_", with: "\\_")
-		search = search.replacingOccurrences(of: "%", with: "\\%")
-		search = search.trimmingCharacters(in: .whitespacesAndNewlines)
-		// get forum and cached blocks
-        return Forum.findFromParameter(forumIDParam, on: req).flatMap { forum in
-			// get posts
-			return forum.$posts.query(on: req.db)
-				.filter(\.$author.$id !~ cacheUser.getBlocks())
-				.filter(\.$author.$id !~ cacheUser.getMutes())
-				.filter(\.$text, .custom("ILIKE"), "%\(search)%")
-				.all()
-				.flatMap { (posts) in
-					return buildPostData(posts, user: user, on: req, mutewords: cacheUser.mutewords)
-				}
-		}
-    }
-    
+        
     /// `GET /api/v3/forum/post/ID/forum`
     ///
     /// Retrieve the `ForumData` of the specified `ForumPost`'s parent `Forum`.
@@ -364,71 +332,115 @@ struct ForumController: RouteCollection {
             }
 		}
     }
-    
-    /// `GET /api/v3/forum/post/hashtag/#STRING`
+        
+    /// `GET /api/v3/forum/post/search`
     ///
-    /// Retrieve all `ForumPost`s that contain the exact specified hashtag.
-    ///
-    /// - Note: By "exact" we mean the string cannot be a substring of another hashtag (there
-    ///   must be a trailing space), but the match is not case-sensitive. For example, `#joco`
-    ///   will not match `#joco2020` or `#joco#2020`, but will match `#JoCo`. Use the more
-    ///   generic `GET /api/v3/forum/post/search/STRING` endpoint with the same `#joco`
-    ///   parameter if you want that type of substring matching behavior.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Throws: 400 error if the specified string is not a hashtag.
-    /// - Returns: `[PostData]` containing all matching posts.
-    func postHashtagHandler(_ req: Request) throws -> EventLoopFuture<[PostData]> {
+    /// Search all `ForumPost`s that match the filters given in the URL query parameters:
+	/// 
+	/// * `?search=STRING` - Matches posts whose text contains the given search string.
+	/// * `?hashtag=STRING` - Matches posts whose text contains the given #hashtag. The leading # is optional in the query parameter.
+	/// * `?mentionname=STRING` - Matches posts whose text contains a @mention of the given username. The leading @ is optional in the query parameter.
+	/// * `?mentionid=UUID` - Matches posts whose text contains a @mention of the user with the given userID. Do not prefix userID with @.
+	/// * `?mentionself=true` - Matches posts whose text contains a @mention of the current user.
+	/// * `?ownreacts=true` - Matches posts the current user has reacted to.
+	/// * `?byuser=ID` - Matches posts the given user authored.
+	/// 
+	/// Additionally, you can constrain results to either posts in a specific category, or a specific forum. If both are specified, forum is ignored.
+	/// * `?forum=UUID` - Confines the search to posts in the given forum thread.
+	/// * `?category=UUID` - Confines the search to posts in the given forum category.
+	/// 
+	/// While `mentionname` does not test whether the @mention matches any user's username, `mentionid` does. Also `mentionname`, `mentionid`
+	/// and `mentionself` are mutually exclusive parameters.
+	/// 
+	/// * `?start=INT` - The index into the sorted list of forums to start returning results. 0 for first item, which is the default.
+	/// * `?limit=INT` - The max # of entries to return. Defaults to 50
+	func postSearchHandler(_ req: Request) throws -> EventLoopFuture<PostSearchData> {
         let user = try req.auth.require(User.self)
 		let cachedUser = try req.userCache.getUser(user)
-        guard var hashtag = req.parameters.get("hashtag_string") else {
-            throw Abort(.badRequest, reason: "Missing hashtag parameter.")
-        }
-        // ensure it's a hashtag
-        guard hashtag.hasPrefix("#") else {
-            throw Abort(.badRequest, reason: "hashtag parameter must start with '#'")
-        }
-        // postgres "_" and "%" are wildcards, so escape for literals
-        hashtag = hashtag.replacingOccurrences(of: "_", with: "\\_")
-        hashtag = hashtag.replacingOccurrences(of: "%", with: "\\%")
-        hashtag = hashtag.trimmingCharacters(in: .whitespacesAndNewlines)
-		// get posts
-		return ForumPost.query(on: req.db)
-			.filter(\.$author.$id !~ cachedUser.getBlocks())
-			.filter(\.$author.$id !~ cachedUser.getMutes())
-			.filter(\.$text, .custom("ILIKE"), "%\(hashtag) %")
-			.all()
-			.flatMap { (posts) in
-				return buildPostData(posts, user: user, on: req, mutewords: cachedUser.mutewords)
+        var postFilterMentions: String? = nil
+
+		// 
+		var query: FluentKit.QueryBuilder<ForumPost>
+		if let ownreacts = req.query[String.self, at: "ownreacts"], ownreacts == "true" {
+			query = user.$postLikes.query(on: req.db)
+		}
+		else {
+			query = ForumPost.query(on: req.db)
+		}
+
+		if let categoryStr = req.query[String.self, at: "category"] {
+			guard let categoryID = UUID(categoryStr) else {
+				throw Abort(.badRequest, reason: "category parameter requires a valid UUID")
 			}
-    }
-    
-    /// `GET /api/v3/forum/post/search/STRING`
-    ///
-    /// Retrieve all `ForumPost`s that contain the specified string.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[PostData]` containing all matching posts.
-    func postSearchHandler(_ req: Request) throws -> EventLoopFuture<[PostData]> {
-        let user = try req.auth.require(User.self)
-		let cachedUser = try req.userCache.getUser(user)
-        guard var search = req.parameters.get("search_string") else {
-            throw Abort(.badRequest, reason: "Missing search parameter.")
-        }
-        // postgres "_" and "%" are wildcards, so escape for literals
-        search = search.replacingOccurrences(of: "_", with: "\\_")
-        search = search.replacingOccurrences(of: "%", with: "\\%")
-        search = search.trimmingCharacters(in: .whitespacesAndNewlines)
-		// get posts
-		return ForumPost.query(on: req.db)
-			.filter(\.$author.$id !~ cachedUser.getBlocks())
-			.filter(\.$author.$id !~ cachedUser.getMutes())
-			.filter(\.$text, .custom("ILIKE"), "%\(search)%")
-			.all()
-			.flatMap { (posts) in
-				return buildPostData(posts, user: user, on: req, mutewords: cachedUser.mutewords)
+			query = query.join(Forum.self, on: \ForumPost.$forum.$id == \Forum.$id)
+					.filter(Forum.self, \.$category.$id == categoryID)
+		}
+		else if let forumID = req.query[UUID.self, at: "forum"] {
+			query = query.filter(\.$forum.$id == forumID)
+		}
+		
+		if var searchStr = req.query[String.self, at: "search"] {
+			searchStr = searchStr.replacingOccurrences(of: "_", with: "\\_")
+					.replacingOccurrences(of: "%", with: "\\%")
+					.trimmingCharacters(in: .whitespacesAndNewlines)
+			query = query.filter(\.$text, .custom("ILIKE"), "%\(searchStr)%")
+		}
+		if var hashtag = req.query[String.self, at: "hashtag"] {
+			// postgres "_" and "%" are wildcards, so escape for literals
+			hashtag = hashtag.replacingOccurrences(of: "_", with: "\\_")
+					.replacingOccurrences(of: "%", with: "\\%")
+					.trimmingCharacters(in: .whitespacesAndNewlines)
+			if !hashtag.hasPrefix("#") {
+				hashtag = "#\(hashtag)"
 			}
-    }
+			query.filter(\.$text, .custom("ILIKE"), "%\(hashtag)%")
+		}
+		if let mentionID = req.query[String.self, at: "mentionid"], let mentionUUID = UUID(mentionID),
+				let mentionedUser = req.userCache.getUser(mentionUUID) {
+			postFilterMentions = mentionedUser.username
+		}
+		else if let mentionName = req.query[String.self, at: "mentionname"] {
+			postFilterMentions = mentionName
+		}
+		else if let mentionSelf = req.query[String.self, at: "mentionself"], mentionSelf == "true" {
+			postFilterMentions = user.username
+			// TODO: Set user's mentionsViewed to == mentions
+		}
+		if var mentionName = postFilterMentions {
+			if !mentionName.hasPrefix("@") {
+				mentionName = "@\(mentionName)"
+			}
+			postFilterMentions = mentionName
+			query.filter(\.$text, .custom("ILIKE"), "%\(mentionName)%")
+		}
+		if let byuser = req.query[String.self, at: "byuser"] {
+			guard let authorUUID = UUID(byuser) else {
+				throw Abort(.badRequest, reason: "byuser parameter requires a valid UUID")
+			}
+			query.filter(\.$author.$id == authorUUID)
+		}
+		
+		query = query.filter(\.$author.$id !~ cachedUser.getBlocks())
+				.filter(\.$author.$id !~ cachedUser.getMutes())
+				.sort(\.$id, .descending)
+		return query.count().flatMap { totalPosts in
+			let start = (req.query[Int.self, at: "start"] ?? 0)
+			let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
+			return query.range(start..<(start + limit)).all().flatMap { posts in
+				// The filter() for mentions will include usernames that are prefixes for other usernames and other false positives.
+				// This filters those out after the query. 
+				var postFilteredPosts = posts
+				if let postFilter = postFilterMentions {
+					postFilteredPosts = posts.compactMap { $0.filterForMention(of: postFilter) }
+				}
+				return buildPostData(postFilteredPosts, user: user, on: req, mutewords: cachedUser.mutewords).map { postData in
+					return PostSearchData(queryString: req.url.query ?? "", totalPosts: totalPosts, 
+							start: start, limit: limit, posts: postData)
+				}
+			}
+		}
+	}
+
     
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
@@ -634,6 +646,8 @@ struct ForumController: RouteCollection {
                     		category.forumCount = Int32(count)
                     		return category.save(on: req.db)                    		
                     	}
+                    	// If the post @mentions anyone, update their mention counts
+                    	processForumMentions(post: forumPost, editedText: nil, isCreate: true, on: req)
                     
                     	let creatorHeader = try req.userCache.getHeader(user.requireID())
                     	let postData = try PostData(post: forumPost, author: creatorHeader, 
@@ -713,59 +727,23 @@ struct ForumController: RouteCollection {
 			return forum.$category.get(on: req.db).throwingFlatMap { category in
 				try user.guardCanModifyContent(forum)
 				forum.logIfModeratorAction(.delete, user: user, on: req)
-				return try ForumPost.query(on: req.db).filter(\.$forum.$id == forum.requireID()).delete().throwingFlatMap {
-					return forum.delete(on: req.db).flatMap { _ in
-						// Update Category
-						return category.$forums.query(on: req.db).count().flatMap { count in
-							category.forumCount = Int32(count)
-							return category.save(on: req.db).transform(to: .noContent)            		
+				return try ForumPost.query(on: req.db).filter(\.$forum.$id == forum.requireID()).all().throwingFlatMap { posts in
+					processThreadDeleteMentions(posts: posts, on: req)
+					let deleteFutures = posts.map { $0.delete(on: req.db) }
+					return deleteFutures.flatten(on: req.eventLoop).flatMap {
+						return forum.delete(on: req.db).flatMap { _ in
+							// Update Category
+							return category.$forums.query(on: req.db).count().flatMap { count in
+								category.forumCount = Int32(count)
+								return category.save(on: req.db).transform(to: .noContent)  
+							}
 						}
 					}
 				}
 			}
         }
     }
-    
-    /// `GET /api/v3/forum/likes`
-    ///
-    /// Retrieve all `ForumPost`s the user has liked.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[PostData]` containing all liked posts.
-    func likesHandler(_ req: Request) throws -> EventLoopFuture<[PostData]> {
-        let user = try req.auth.require(User.self)
-        // respect blocks
-        let blocked = try req.userCache.getBlocks(user)
-		// get liked posts
-		return user.$postLikes.query(on: req.db)
-			.filter(\.$author.$id !~ blocked)
-			.all()
-			.flatMap { (posts) in
-				return buildPostData(posts, user: user, on: req)
-        }
-    }
-    
-    /// `GET /api/v3/forum/mentions`
-    ///
-    /// Retrieve all `ForumPost`s whose content mentions the user.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[PostData]` containing all posts containing mentions.
-    func mentionsHandler(_ req: Request) throws -> EventLoopFuture<[PostData]> {
-        let user = try req.auth.require(User.self)
-        // respect blocks
-        let blocked = try req.userCache.getBlocks(user)
-		// get mention posts
-		return ForumPost.query(on: req.db)
-			.filter(\.$author.$id !~ blocked)
-			.filter(\.$text, .custom("ILIKE"), "%@\(user.username) %")
-			.sort(\.$createdAt, .ascending)
-			.all()
-			.flatMap { (posts) in
-				return buildPostData(posts, user: user, on: req)
-        }
-    }
-    
+	
     /// `GET /api/v3/forum/owner`
     /// `GET /api/v3/user/forums`
     ///
@@ -813,6 +791,8 @@ struct ForumController: RouteCollection {
 				// create post
 				let forumPost = try ForumPost(forum: forum, author: user, text: newPostData.text, images: filenames)
 				return forumPost.save(on: req.db).flatMapThrowing { (_) in
+					// If the post @mentions anyone, update their mention counts
+					processForumMentions(post: forumPost, editedText: nil, isCreate: true, on: req)
 					// return as PostData, with 201 status
 					let response = Response(status: .created)
 					try response.content.encode(PostData(post: forumPost, author: cacheUser.makeHeader()))
@@ -838,6 +818,7 @@ struct ForumController: RouteCollection {
         	return post.$forum.load(on: req.db).throwingFlatMap {
 				try guardUserCanPostInForum(user, in: post.forum, editingPost: post)
   				post.logIfModeratorAction(.delete, user: user, on: req)
+				processForumMentions(post: post, editedText: nil, on: req)
         	    return post.delete(on: req.db).transform(to: .noContent)
 			}
         }
@@ -918,23 +899,6 @@ struct ForumController: RouteCollection {
 			}
 		}
 	}
-
-    /// `GET /api/v3/forum/posts`
-    ///
-    /// Retrieve all `ForumPost`s authored by the user.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[PostData]` containing all posts authored by the user.
-    func postsHandler(_ req: Request) throws -> EventLoopFuture<[PostData]> {
-        let user = try req.auth.require(User.self)
-        // get posts
-        return user.$posts.query(on: req.db)
-            .sort(\.$createdAt, .ascending)
-            .all()
-            .flatMap { (posts) in
-				return buildPostData(posts, user: user, on: req)
-        	}
-    }
     
     /// `POST /api/v3/forum/post/ID/unreact`
     ///
@@ -993,6 +957,8 @@ struct ForumController: RouteCollection {
 					// update if there are changes
 					let normalizedText = newPostData.text.replacingOccurrences(of: "\r\n", with: "\r")
 					if post.text != normalizedText || post.images != filenames {
+                    	// If the post @mentions anyone, update their mention counts
+                    	processForumMentions(post: post, editedText: normalizedText, on: req)
 						// stash current contents first
 						let forumEdit = try ForumPostEdit(post: post)
 						post.text = normalizedText
@@ -1162,7 +1128,7 @@ extension ForumController {
 		// remove muteword posts
 		var filteredPosts = posts
 		if let mutes = mutewords {
-			 filteredPosts = posts.compactMap { $0.filterMutewords(using: mutes) }
+			 filteredPosts = posts.compactMap { $0.filterOutStrings(using: mutes) }
 		}
 		// convert to PostData
 		let postsData = filteredPosts.map { (filteredPost) -> EventLoopFuture<PostData> in
@@ -1189,5 +1155,49 @@ extension ForumController {
 			}
 		}
 		return postsData.flatten(on: req.eventLoop)
+	}
+	
+	// Scans the text of forum posts as they are created/edited/deleted, finds @mentions, updates mention counts for
+	// mentioned `User`s.
+	@discardableResult func processForumMentions(post: ForumPost, editedText: String?, 
+			isCreate: Bool = false, on req: Request) -> EventLoopFuture<Void> {	
+		let (subtracts, adds) = post.getMentionsDiffs(editedString: editedText, isCreate: isCreate)
+		if subtracts.isEmpty && adds.isEmpty {
+			return req.eventLoop.future()
+		}
+		return User.query(on: req.db).filter(\.$username ~~ subtracts).all().flatMap { subtractUsers in
+			return User.query(on: req.db).filter(\.$username ~~ adds).all().flatMap { addUsers in
+				var saveFutures = subtractUsers.map { (user: User) -> EventLoopFuture<Void> in
+					user.forumMentions -= 1
+					return user.save(on: req.db)
+				}
+				addUsers.forEach {
+					$0.forumMentions += 1
+					saveFutures.append($0.save(on: req.db))
+				}
+				return saveFutures.flatten(on: req.eventLoop)
+			}
+		}
+	}
+	
+	// Deleting a forum thread means we delete a bunch of posts at once. This fn coalesces the updates to User models
+	// so that each User is updated at most one time for a thread deletion.
+	@discardableResult func processThreadDeleteMentions(posts: [ForumPost], on req: Request) -> EventLoopFuture<Void> {
+		var mentionAdjustCounts = [String : Int]()
+		posts.forEach { post in
+			let (subtracts, _) = post.getMentionsDiffs(editedString: nil, isCreate: false)
+			subtracts.forEach { username in
+				var entry = mentionAdjustCounts[username] ?? 0
+				entry += 1
+				mentionAdjustCounts[username] = entry
+			}
+		}
+		return User.query(on: req.db).filter(\.$username ~~ mentionAdjustCounts.keys).all().flatMap { subtractUsers in
+			let saveFutures = subtractUsers.map { (user: User) -> EventLoopFuture<Void> in
+				user.forumMentions -= mentionAdjustCounts[user.username] ?? 0
+				return user.save(on: req.db)
+			}
+			return saveFutures.flatten(on: req.eventLoop)
+		}
 	}
 }

@@ -95,6 +95,24 @@ final class User: Model {
     /// always viewable) to logged-in users. Default is `false` (don't limit).
     @Field(key: "limitAccess") var limitAccess: Bool
     
+// MARK: User Notifications
+
+	/// Announcements are delivered globally, and their IDs are monotonically increasing Ints. This field tracks the most recent 
+	/// announcement ID the user has read. Any announcements with IDs greater than this number are new, unseen by this user.
+	@Field(key: "last_read_announcement") var lastReadAnnouncement: Int
+
+	/// Every time someone posts a twarrt and @mentions this user, we increment the value in this user's twarrtMentions. 
+	/// When the user views (technically: retrieves) their mentions, we se the twarrtMentionsViewed to equal twarrtMentions.
+	/// The difference between these two numbers is the number of mentions that this user hasn't seen.
+	@Field(key: "twarrt_mentions") var twarrtMentions: Int
+	@Field(key: "twarrt_mentions_viewed") var twarrtMentionsViewed: Int
+    
+	/// Every time someone posts a forumPost and @mentions this user, we increment the value in this user's forumMentions. 
+	/// When the user views (technically: retrieves) their mentions, we se the forumMentionsViewed to equal forumMentions.
+	/// The difference between these two numbers is the number of mentions that this user hasn't seen.
+	@Field(key: "forum_mentions") var forumMentions: Int
+	@Field(key: "forum_mentions_viewed") var forumMentionsViewed: Int
+    
 // MARK: Moderator Only
 
 	/// If the user is a Moderator and is handling user reports, this will be set to the actionGroup of the reports. In this case, all the reports in the group
@@ -201,6 +219,12 @@ final class User: Model {
         self.profileUpdatedAt = profileUpdatedAt
         self.limitAccess = false
         self.moderationStatus = .normal
+        
+        self.lastReadAnnouncement = 0
+        self.twarrtMentions = 0
+        self.twarrtMentionsViewed = 0
+        self.forumMentions = 0
+        self.forumMentionsViewed = 0
         
         buildUserSearchString()
     }

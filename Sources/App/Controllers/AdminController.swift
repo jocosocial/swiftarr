@@ -26,12 +26,10 @@ struct AdminController: RouteCollection {
 		
 		// instantiate authentication middleware
 		let tokenAuthMiddleware = Token.authenticator()
-//		let requireVerifiedMiddleware = RequireVerifiedMiddleware()
 		let requireModMiddleware = RequireModeratorMiddleware()
 		let guardAuthMiddleware = User.guardMiddleware()
 		
 		// set protected route groups
-//		let userAuthGroup = adminRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware, requireVerifiedMiddleware])
 		let moderatorAuthGroup = adminRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware, requireModMiddleware])
 				 
 		// endpoints available for Moderators only
@@ -48,21 +46,9 @@ struct AdminController: RouteCollection {
 		
 		moderatorAuthGroup.get("forum", forumIDParam, use: forumModerationHandler)
 		moderatorAuthGroup.post("forum", forumIDParam, "setstate", modStateParam, use: forumSetModerationStateHandler)
-
-
-
-//        tokenAuthGroup.get("user", ":user_id", use: userHandler)
 	}
-    
-    // MARK: - Open Access Handlers
-    
-    
-    // MARK: - basicAuthGroup Handlers (not logged in)
-    // All handlers in this route group require a valid HTTP Basic Authentication
-    // header in the request.
-    
-
-    // MARK: - tokenAuthGroup Handlers (logged in)
+        
+	// MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
     
@@ -312,7 +298,6 @@ struct AdminController: RouteCollection {
         }
     }
 
-	
     // MARK: - Helper Functions
 
 }

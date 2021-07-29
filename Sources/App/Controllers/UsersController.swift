@@ -24,40 +24,32 @@ struct UsersController: RouteCollection {
     
     /// Required. Registers routes to the incoming router.
     func boot(routes: RoutesBuilder) throws {
-        
-        // convenience route group for all /api/v3/users endpoints
-        let usersRoutes = routes.grouped("api", "v3", "users")
-        
-        // instantiate authentication middleware
-        let basicAuthMiddleware = User.authenticator()
-        let guardAuthMiddleware = User.guardMiddleware()
-        let tokenAuthMiddleware = Token.authenticator()
-        
-        // set protected route groups
-        let sharedAuthGroup = usersRoutes.grouped([basicAuthMiddleware, tokenAuthMiddleware, guardAuthMiddleware])
-        let tokenAuthGroup = usersRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
-        
-        // open access endpoints
-        
-        // endpoints available only when not logged in
-        
-        // endpoints available whether logged in or out
-        sharedAuthGroup.get("find", ":userSearchString", use: findHandler)
-        sharedAuthGroup.get(userIDParam, "profile", use: profileHandler)
-        sharedAuthGroup.get(userIDParam, use: headerHandler)
 
-        // endpoints available only when logged in
-        tokenAuthGroup.post(userIDParam, "block", use: blockHandler)
-        tokenAuthGroup.get("match", "allnames", searchStringParam, use: matchAllNamesHandler)
-        tokenAuthGroup.get("match", "username", searchStringParam, use: matchUsernameHandler)
-        tokenAuthGroup.post(userIDParam, "mute", use: muteHandler)
-        tokenAuthGroup.post(userIDParam, "note", use: noteCreateHandler)
-        tokenAuthGroup.post(userIDParam, "note", "delete", use: noteDeleteHandler)
-        tokenAuthGroup.delete(userIDParam, "note", use: noteDeleteHandler)
-        tokenAuthGroup.get(userIDParam, "note", use: noteHandler)
-        tokenAuthGroup.post(userIDParam, "report", use: reportHandler)
-        tokenAuthGroup.post(userIDParam, "unblock", use: unblockHandler)
-        tokenAuthGroup.post(userIDParam, "unmute", use: unmuteHandler)
+		// convenience route group for all /api/v3/users endpoints
+		let usersRoutes = routes.grouped("api", "v3", "users")
+
+		// instantiate authentication middleware
+		let tokenAuthMiddleware = Token.authenticator()
+		let guardAuthMiddleware = User.guardMiddleware()
+
+		// set protected route groups
+		let tokenAuthGroup = usersRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
+				
+		// endpoints available only when logged in
+		tokenAuthGroup.get("find", ":userSearchString", use: findHandler)
+		tokenAuthGroup.get(userIDParam, "profile", use: profileHandler)
+		tokenAuthGroup.get(userIDParam, use: headerHandler)
+		tokenAuthGroup.post(userIDParam, "block", use: blockHandler)
+		tokenAuthGroup.get("match", "allnames", searchStringParam, use: matchAllNamesHandler)
+		tokenAuthGroup.get("match", "username", searchStringParam, use: matchUsernameHandler)
+		tokenAuthGroup.post(userIDParam, "mute", use: muteHandler)
+		tokenAuthGroup.post(userIDParam, "note", use: noteCreateHandler)
+		tokenAuthGroup.post(userIDParam, "note", "delete", use: noteDeleteHandler)
+		tokenAuthGroup.delete(userIDParam, "note", use: noteDeleteHandler)
+		tokenAuthGroup.get(userIDParam, "note", use: noteHandler)
+		tokenAuthGroup.post(userIDParam, "report", use: reportHandler)
+		tokenAuthGroup.post(userIDParam, "unblock", use: unblockHandler)
+		tokenAuthGroup.post(userIDParam, "unmute", use: unmuteHandler)
     }
     
     // MARK: - Open Access Handlers

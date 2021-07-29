@@ -36,6 +36,7 @@ struct SiteForumController: SiteControllerUtils {
 		privateRoutes.get("forumpost", "report", postIDParam, use: forumPostReportPageHandler)
 		privateRoutes.post("forumpost", "report", postIDParam, use: forumPostReportPostHandler)
 		privateRoutes.get("forumpost", postIDParam, use: forumGetPostDetails)
+		privateRoutes.get("forumpost", "mentions", use: forumGetUserMentions)
 	}
 
 // Note: These groupings are roughly based on what type of URL parameters each method takes to identify its target:
@@ -51,12 +52,12 @@ struct SiteForumController: SiteControllerUtils {
     			var categories: [CategoryData]
     			
     			init(_ req: Request, cats: [CategoryData]) throws {
-    				trunk = .init(req, title: "Forum Categories")
+    				trunk = .init(req, title: "Forum Categories", tab: .forums)
     				self.categories = cats
     			}
     		}
     		let ctx = try ForumCatPageContext(req, cats: categories)
-			return req.view.render("forumCategories", ctx)
+			return req.view.render("Forums/forumCategories", ctx)
     	}
     }
     
@@ -76,7 +77,7 @@ struct SiteForumController: SiteControllerUtils {
 				var paginator: PaginatorContext
     			
     			init(_ req: Request, forums: CategoryData, start: Int, limit: Int) throws {
-    				trunk = .init(req, title: "Forum Threads")
+    				trunk = .init(req, title: "Forum Threads", tab: .forums)
     				self.forums = forums
 					paginator = .init(currentPage: start / limit, totalPages: (Int(forums.numThreads) + limit - 1) / limit) { pageIndex in
 						"/forums/\(forums.categoryID)?start=\(pageIndex * limit)&limit=\(limit)"
@@ -84,7 +85,7 @@ struct SiteForumController: SiteControllerUtils {
     			}
     		}
     		let ctx = try ForumsPageContext(req, forums: forums, start: start, limit: limit)
-			return req.view.render("forums", ctx)
+			return req.view.render("Forums/forums", ctx)
     	}
     }
     
@@ -102,7 +103,7 @@ struct SiteForumController: SiteControllerUtils {
 				var category: CategoryData
 				
 				init(_ req: Request, catID: String, cat: [CategoryData]) throws {
-					trunk = .init(req, title: "Create New Forum")
+					trunk = .init(req, title: "Create New Forum", tab: .forums)
 					self.categoryID = catID
 					self.post = .init(withCategoryID: catID)
 					if cat.count > 0 {
@@ -115,7 +116,7 @@ struct SiteForumController: SiteControllerUtils {
 				}
 			}
 			let ctx = try ForumCreateContext(req, catID: catID, cat: cats)
-			return req.view.render("forumCreate", ctx)
+			return req.view.render("Forums/forumCreate", ctx)
 		}
     }
     
@@ -168,7 +169,7 @@ struct SiteForumController: SiteControllerUtils {
 					var paginator: PaginatorContext
 					
 					init(_ req: Request, forum: ForumData, cat: [CategoryData]) throws {
-						trunk = .init(req, title: "Forum Thread")
+						trunk = .init(req, title: "Forum Thread", tab: .forums)
 						self.forum = forum
 						self.post = .init(withForumID: forum.forumID.uuidString)
 						if cat.count > 0 {
@@ -185,7 +186,7 @@ struct SiteForumController: SiteControllerUtils {
 					}
 				}
 				let ctx = try ForumPageContext(req, forum: forum, cat: cats)
-				return req.view.render("forum", ctx)
+				return req.view.render("Forums/forum", ctx)
 			}
 		}
     }
@@ -203,7 +204,7 @@ struct SiteForumController: SiteControllerUtils {
 				var post: MessagePostContext
 				
 				init(_ req: Request, forum: ForumData) throws {
-					trunk = .init(req, title: "Forum Thread")
+					trunk = .init(req, title: "Edit Forum Thread", tab: .forums)
 					self.forum = forum
 					self.post = .init(forEditingForum: forum)
 				}
@@ -212,7 +213,7 @@ struct SiteForumController: SiteControllerUtils {
     		if ctx.trunk.userID != forum.creator.userID {
     			ctx.post.authorName = forum.creator.username
     		}
-			return req.view.render("forumEdit", ctx)
+			return req.view.render("Forums/forumEdit", ctx)
 		}
     }
     
@@ -340,7 +341,7 @@ struct SiteForumController: SiteControllerUtils {
     			var post: MessagePostContext
     			
     			init(_ req: Request, post: PostDetailData) throws {
-    				trunk = .init(req, title: "Edit Forum Post")
+    				trunk = .init(req, title: "Edit Forum Post", tab: .forums)
     				self.post = .init(withForumPost: post)
     			}
     		}
@@ -348,7 +349,7 @@ struct SiteForumController: SiteControllerUtils {
     		if ctx.trunk.userID != post.author.userID {
     			ctx.post.authorName = post.author.username
     		}
-			return req.view.render("forumPostEdit", ctx)
+			return req.view.render("Forums/forumPostEdit", ctx)
     	}
     }
     
@@ -423,8 +424,8 @@ struct SiteForumController: SiteControllerUtils {
             throw Abort(.badRequest, reason: "Missing post_id parameter.")
     	}
  		return apiQuery(req, endpoint: "/forum/post/\(postID)").flatMapThrowing { response in
- 			let detailData = try response.content.decode(PostDetailData.self)
 			if response.status.code < 300 {
+ 				let detailData = try response.content.decode(PostDetailData.self)
 				return detailData
 			}
 			else {
@@ -434,6 +435,29 @@ struct SiteForumController: SiteControllerUtils {
 			}
 		}
     }
+
+	func forumGetUserMentions(_ req: Request) throws -> EventLoopFuture<View> {
+		return apiQuery(req, endpoint: "/forum/post/search?mentionself=true").throwingFlatMap { response in
+			let postData = try response.content.decode(PostSearchData.self)
+     		struct ForumUserMentionPageContext : Encodable {
+				var trunk: TrunkContext
+    			var postSearch: PostSearchData
+				var paginator: PaginatorContext
+    			
+    			init(_ req: Request, posts: PostSearchData) throws {
+    				trunk = .init(req, title: "User Mentions", tab: .forums)
+    				self.postSearch = posts
+    				let userID = trunk.userID
+					paginator = .init(currentPage: posts.start / posts.limit, 
+							totalPages: (Int(posts.totalPosts) + posts.limit - 1) / posts.limit) { pageIndex in
+						"/forum/post/search?mentionid=\(userID)&start=\(pageIndex * posts.limit)&limit=\(posts.limit)"
+					}
+    			}
+    		}
+    		let ctx = try ForumUserMentionPageContext(req, posts: postData)
+			return req.view.render("Forums/forumMentions", ctx)
+		}
+	}
 
 }
 
