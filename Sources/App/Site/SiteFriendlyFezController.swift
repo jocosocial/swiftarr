@@ -43,7 +43,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 			
 			init(_ req: Request) throws {
 				trunk = .init(req, title: "New FriendlyFez", tab: .none)
-				post = .init(forNewSeamail: true)
+				post = .init(forType: .seamail)
 			}
 		}
 		let ctx = try SeamaiCreatePageContext(req)

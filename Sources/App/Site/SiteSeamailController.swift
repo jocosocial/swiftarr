@@ -47,7 +47,7 @@ struct SiteSeamailController: SiteControllerUtils {
 			
 			init(_ req: Request) throws {
 				trunk = .init(req, title: "New Seamail", tab: .seamail)
-				post = .init(forNewSeamail: true)
+				post = .init(forType: .seamail)
 			}
 		}
 		let ctx = try SeamaiCreatePageContext(req)
@@ -144,7 +144,7 @@ struct SiteSeamailController: SiteControllerUtils {
     				oldPosts = []
     				newPosts = []
     				showDivider = false
-    				post = .init(forSeamail: fez)
+    				post = .init(forType: .seamailPost(fez))
     				if let posts = fez.posts {
 						let participantDictionary = fez.participants.reduce(into: [:]) { $0[$1.userID] = $1 }
 						for index in 0..<posts.count {

@@ -1,5 +1,16 @@
 import Vapor
 
+/// NotificationsMiddleware gets attached to Site routes, and periodically calls an API notification endpoint to get user notifications.
+/// The user notificaiton counts are then attached ot the user's Session.
+/// 
+/// This setup is not ideal as a user with multiple Sessions on different devices may see different notificaitons at different times. 
+///
+/// Currently this code breaks the UI/API layer separation somewhat by looking at the authenticated User. If we do need to build separate UI and API
+/// servers, we can either:
+/// 	* Stop inspecting the `updatedAt `property; notificaitons will be sligihtly less realtime.
+///		* Add a webSocket betwen the UI and API, pass usernames that have new notifications as they happen.
+///		* Really, the communication is one-way -- perhaps build a server endpoint in the UI code and the API layer acts as a client to call it?
+/// Via any method, Vapor Sessions aren't set up for finding sessions by user, or accessing any other Session at all, really. 
 struct NotificationsMiddleware: Middleware, SiteControllerUtils {
 	func registerRoutes(_ app: Application) throws {}
 	
@@ -7,14 +18,16 @@ struct NotificationsMiddleware: Middleware, SiteControllerUtils {
 		guard req.method == .GET else {
 			return next.respond(to: req)
 		}
-		if let lastCheckTimeStr = req.session.data["lastNotificationCheckTime"], 
-				let lastCheckInterval = Double(lastCheckTimeStr),
-				Date(timeIntervalSince1970: lastCheckInterval).timeIntervalSinceNow > -60.0 {
-			return next.respond(to: req)
-		}
-		if let _ = req.auth.get(User.self) {
+		if let user = req.auth.get(User.self), let userUpdateTime = user.updatedAt {
+			if let lastCheckTimeStr = req.session.data["lastNotificationCheckTime"], 
+					let lastCheckInterval = Double(lastCheckTimeStr) {
+				let lastCheckDate =	Date(timeIntervalSince1970: lastCheckInterval)
+				if lastCheckDate.timeIntervalSinceNow > -60.0 && lastCheckDate > userUpdateTime {
+					return next.respond(to: req)
+				}
+			}
 			req.session.data["lastNotificationCheckTime"] = String(Date().timeIntervalSince1970)
-			return apiQuery(req, endpoint: "/alerts/usercounts").throwingFlatMap { response in
+			return apiQuery(req, endpoint: "/notification/usercounts").throwingFlatMap { response in
 				if response.status == .ok {
 					// I dislike decoding the response JSON just to re-encode it into a string for session storage.
 					// response.body?.getString(at: 0, length: response.body!.capacity)

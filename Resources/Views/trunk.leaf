@@ -15,60 +15,89 @@
 </head>
 <body style="background-image: url('/img/background.png'); background-size: 100%;">
 
-	<nav class="navbar navbar-expand-md navbar-dark bg-light pt-3" style="background-image: url('/img/header-waves.png'); background-repeat: repeat-x;">
+	<nav class="navbar navbar-dark bg-light pt-3" style="background-image: url('/img/header-waves.png'); background-repeat: repeat-x;">
 		<div class="container-fluid justify-content-start">
 			<div class="row">
 				<div class="col pe-0 mt-1">	  
 					<span class="link-light navbar-brand me-2" data-bs-toggle="collapse" data-bs-target="\#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-						Twit-arr
+						<span class="#if(trunk.alertCounts.highestAnnouncementID > trunk.alertCounts.highestReadAnnouncementID):border-bottom border-danger#endif#if(trunk.tab == "twitarr"): fw-bold#endif">
+							Twit-arr			
+						</span>
 					</span>
 				</div>
 				<div class="col px-0">	  
-					<a class="nav-item nav-link link-light px-1 position-relative #if(trunk.tab == "twarrts"):active#endif" aria-current="page" href="/tweets">
-						<span #if(trunk.alertCounts.twarrtMentionCount > 0):class="border-bottom border-danger"#endif>
-							#if(trunk.tab == "twarrts"):<b>Tweets</b>#else:Tweets#endif				
+					<a class="nav-item nav-link link-light px-1 #if(trunk.tab == "twarrts"):active#endif" #if(trunk.tab == "twarrts"):aria-current="page"#endif href="/tweets">
+						<span class="#if(trunk.alertCounts.twarrtMentionCount > 0):border-bottom border-danger#endif">
+							Tweets			
 						</span>
 					</a>
 				</div>
 				<div class="col px-0">	  
-					<a class="nav-item nav-link link-light px-1" href="/forums">
-						<span #if(trunk.alertCounts.forumMentionCount > trunk.alertCounts.readForumMentionCount):class="border-bottom border-danger"#endif>
-							#if(trunk.tab == "forums"):<b>Forums</b>#else:Forums#endif
+					<a class="nav-item nav-link link-light px-1#if(trunk.tab == "forums"): active#endif" #if(trunk.tab == "forums"):aria-current="page"#endif href="/forums">
+						<span class="#if(trunk.alertCounts.forumMentionCount > trunk.alertCounts.readForumMentionCount):border-bottom border-danger#endif">
+							Forums
 						</span>
 					</a>
 				</div>
 				<div class="col px-0">	  
-					<a class="nav-item nav-link link-light px-1" href="/seamail">
-						#if(trunk.tab == "seamail"):<b>Seamail</b>#else:Seamail#endif
+					<a class="nav-item nav-link link-light px-1#if(trunk.tab == "seamail"): active#endif" #if(trunk.tab == "seamail"):aria-current="page"#endif href="/seamail">
+						<span #if(trunk.alertCounts.newFezMessageCount > 0):class="border-bottom border-danger"#endif>
+							Seamail
+						</span>
 					</a>
 				</div>
 				<div class="col px-0">	  
-					<a class="nav-item nav-link px-1 link-light" href="/events">
-						#if(trunk.tab == "events"):<b>Schedule</b>#else:Schedule#endif
+					<a class="nav-item nav-link link-light px-1 #if(trunk.tab == "events"): active#endif" #if(trunk.tab == "events"):aria-current="page"#endif href="/events">
+						<span #if(trunk.eventStartingSoon == true):class="border-bottom border-danger"#endif>
+							Schedule
+						</span>
 					</a>
 				</div>
 			</div>
-			<div class="collapse" id="navbarSupportedContent">
-				<div class="d-block d-md-none navbar-dark bg-transparent mb-3">
-					<a class="dropdown-item link-light" href="/">Home</a>
-					<a class="dropdown-item link-light" href="/fez">FriendlyFez</a>
-					<a class="dropdown-item link-light" href="#">Games</a>
-					<a class="dropdown-item link-light" href="#">Karaoke</a>
+			<div class="collapse navbar-collapse" id="navbarSupportedContent">
+				<ul class="navbar-nav navbar-dark bg-transparent mb-3">
+					<li class="nav-item d-flex align-items-center">
+						<a class="nav-link active" href="/">Home</a> <span class="text-muted"><i>#(trunk.alertCounts.highestAnnouncementID - trunk.alertCounts.highestReadAnnouncementID) New Announcements</i></span>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="/fez">FriendlyFez</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="/">Games</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="/">Karaoke</a>
+					</li>
 					#if(trunk.userIsMod):
 						<hr class="dropdown-divider">
-						<a class="dropdown-item link-light" href="/reports">Reports</a>
-						<a class="dropdown-item link-light" href="/moderator/log">Moderator Log</a>
+						<li class="nav-item">
+							<a class="nav-link" href="/reports">Reports</a>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link" href="/moderator/log">Moderator Log</a>
+						</li>
+					#endif
+					#if(trunk.userIsTHO):
+						<hr class="dropdown-divider">
+						<li class="nav-item">
+							<a class="nav-link" href="/admin/announcements">Announcement Admin</a>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link" href="/moderator/log">Server Settings</a>
+						</li>
 					#endif
 					<hr class="dropdown-divider">
+					<li class="nav-item">
 					#if(trunk.userIsLoggedIn):
-						<a class="dropdown-item link-light" href="/logout">Logout #elem(trunk.username)</a>
+						<a class="nav-link" href="/logout">Logout #elem(trunk.username)</a>
 					#else:
-						<a class="dropdown-item link-light" href="/login">Login</a>
+						<a class="nav-link" href="/login">Login</a>
 					#endif
-				</div>
+					</li>
+				</ul>
 				<form class="d-flex">
 					<input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
-					<button class="btn btn-outline-success" type="submit">Search</button>
+					<button class="btn btn-success" type="submit">Search</button>
 				</form>
 			</div>
 		</div>

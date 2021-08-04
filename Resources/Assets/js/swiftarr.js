@@ -3,7 +3,7 @@ import("/js/bootstrap.bundle.js");
 // Make the like/love/laugh buttons post their actions when tapped.
 for (let btn of document.querySelectorAll('[data-action]')) {
 	let action = btn.dataset.action;
-	if (action == "deletePost" || action == "deleteTwarrt" || action == "deleteForum") {
+	if (action == "deletePost" || action == "deleteTwarrt" || action == "deleteForum" || action == "deleteAnnouncement") {
 		btn.addEventListener("click", deleteAction);
 	}
 	else if (action == "laugh" || action == "like" || action == "love") {
@@ -20,6 +20,7 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 	}
 }
 
+// Click handler for the like/laugh/love buttons, for both tweets and forum posts
 function likeAction() {
 	let postid = event.target.closest('[data-postid]').dataset.postid;
 	let tappedButton = event.target;
@@ -56,6 +57,7 @@ function likeAction() {
 	});
 }
 
+// Updates button state for like/laugh/love buttons
 function setLikeButtonsState(buttons, tappedButton, state) {
 	let spinnerElem = tappedButton.labels[0]?.querySelector(".spinner-border");
 	if (state) {
@@ -75,6 +77,7 @@ function setLikeButtonsState(buttons, tappedButton, state) {
 	}
 }
 
+// Button handler for Schedule Follow btn; Marks a event followed/unfollowed
 function followEventAction() {
 	let eventid = event.target.closest('[data-eventid]').dataset.eventid;
 	let tappedButton = event.target;
@@ -102,6 +105,7 @@ function followEventAction() {
 	});
 }
 
+// Handler for the Delete Modal being shown. 
 document.getElementById('deleteModal')?.addEventListener('show.bs.modal', function(event) {
 	let postElem = event.relatedTarget.closest('[data-postid]');
 	let deleteBtn = event.target.querySelector('[data-delete-postid]');
@@ -109,7 +113,9 @@ document.getElementById('deleteModal')?.addEventListener('show.bs.modal', functi
 	event.target.querySelector('[data-purpose="errordisplay"]').innerHTML = ""
 })
 
+// Deletes forums, forumposts, and tweets. Delete btn handler inside Delete Modal.
 function deleteAction() {
+	console.log("meh");
 	let postid = event.target.dataset.deletePostid;
 	let modal = event.target.closest('.modal');
 	let path = "";
@@ -117,10 +123,19 @@ function deleteAction() {
 	if (action == "deleteTwarrt") {
 		path = "/tweets/" + postid + "/delete";
 	}
-	else if (action == "deleteForum")
+	else if (action == "deleteForum") {
 		path = "/forum/" + postid + "/delete";
-	else {
+	}
+	else if (action == "deletePost") {
 		path = "/forumpost/" + postid + "/delete";
+	}
+	else if (action == "deleteAnnouncement") {
+		path = "/admin/announcement/" + postid + "/delete";
+	console.log("check");
+	}
+	else {
+	console.log("hmm");
+		return;
 	}
 	let req = new Request(path, { method: 'POST' });
 	fetch(req).then(response => {
@@ -146,9 +161,6 @@ function deleteAction() {
 for (let posElement of document.querySelectorAll('.has-action-bar')) {
 	posElement.addEventListener("click", showActionBar);
 }
-for (let posElement of document.querySelectorAll('.has-action-bar')) {
-	posElement.addEventListener("click", showActionBar);
-}
 function showActionBar() {
 	let actionBar = event.currentTarget.querySelector('[data-label="actionbar"]');
 	if (!actionBar.classList.contains("show")) {
@@ -156,6 +168,7 @@ function showActionBar() {
 		updateLikeCounts(event.currentTarget);
 	}
 }
+// When a post is expanded, get like count details and update counts.
 function updateLikeCounts(postElement) {
 	let listType = postElement.closest('ul')?.dataset.listtype;
 	let postid = postElement.dataset.postid;
@@ -187,6 +200,8 @@ function updateLikeCounts(postElement) {
 
 
 // MARK: - messagePostForm Handlers
+
+// Updates a photo card when its file input field changes (mostly, shows the photo selected).
 for (let input of document.querySelectorAll('.image-upload-input')) {
 	updatePhotoCardState(input.closest('.card'));
 	input.addEventListener("change", function() { updatePhotoCardState(event.target.closest('.card')); })
@@ -227,6 +242,7 @@ function updatePhotoCardState(cardElement) {
 	}
 }
 
+// In photo cards, handles 'remove' button.
 for (let btn of document.querySelectorAll('.twitarr-image-remove')) {
 	btn.addEventListener("click", removeUploadImage);
 }
@@ -245,6 +261,7 @@ function removeUploadImage() {
 	updatePhotoCardState(lastCard);
 }
 
+// Handles photo card 'swap' button, which swaps image N with N-1.
 for (let btn of document.querySelectorAll('.twitarr-image-swap')) {
 	btn.addEventListener("click", swapUploadImage);
 }

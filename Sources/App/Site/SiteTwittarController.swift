@@ -42,7 +42,7 @@ struct SiteTwitarrController: SiteControllerUtils {
     			
     			init(_ req: Request, tweets: [TwarrtData]) throws {
     				trunk = .init(req, title: "Tweets", tab: .twarrts)
-    				post = .init()
+					post = .init(forType: .tweet)
     				self.tweets = tweets
     				filterDesc = "Tweets"
 					let queryStruct = try req.query.decode(TwarrtQuery.self)
@@ -161,14 +161,14 @@ struct SiteTwitarrController: SiteControllerUtils {
 		// For editing
 		init(_ req: Request, editTweet: TwarrtDetailData) throws {
 			trunk = .init(req, title: "Edit Twarrt", tab: .twarrts)
-			self.post = .init(with: editTweet)
+			self.post = .init(forType: .tweetEdit(editTweet))
 		}
 		
 		// For replys
 		init(_ req: Request, replyToTweet: TwarrtDetailData) {
 			trunk = .init(req, title: "Reply to Twarrt", tab: .twarrts)
 			self.replyToTweet = replyToTweet
-			post = .init()
+			post = .init(forType: .tweet)
 		}
 	}
 	
@@ -220,7 +220,7 @@ struct SiteTwitarrController: SiteControllerUtils {
     			
     			init(_ req: Request, tweet: TwarrtDetailData) throws {
     				trunk = .init(req, title: "Edit Twarrt", tab: .twarrts)
-    				self.post = .init(with: tweet)
+    				self.post = .init(forType: .tweetEdit(tweet))
     			}
     		}
     		var ctx = try TweetEditPageContext(req, tweet: tweet)

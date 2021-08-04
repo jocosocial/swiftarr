@@ -1,0 +1,18 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 mt-2">
+				#for(ann in announcements):
+					<div class="card mb-1">	
+						<div class="card-header bg-primary">
+							<span class="text-white">
+								<b>From:</b> <a href="/user/#(ann.author.userID)" class="link-light">@#(ann.author.username)</a>
+							</span>
+						</div>
+						<div class="card-body bg-light">
+							#(ann.text)
+						</div>
+					</div>
+				#endfor
+		</div>
+    #endexport
+#endextend

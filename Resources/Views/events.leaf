@@ -1,9 +1,50 @@
 #extend("trunk"):
     #export("body"):
     	<div class="container-md ms-0 my-1">
-    		<div class="row mb-1">
+    		#if(upcomingEvent):
+	    		<div class="row mb-1 align-items-center">
+	    			<div class="col">
+					</div>
+    			</div>
+	    		<div class="row mb-1 align-items-center">
+					<ul class="container-md mx-0 px-0 list-group">
+						<li class="list-group-item border border-danger collapse show has-action-bar bg-light" 
+								data-eventid="#(upcomingEvent.eventID)" 
+								data-eventfavorite=#if(upcomingEvent.isFavorite == true):"true"#else:"false"#endif
+								data-eventcategory="#(upcomingEvent.eventType)">				
+							<div class="container-fluid px-2">
+								<div class="text-center text-danger">An event you follow is starting soon™</div>
+								<div class="row">	
+									<div class="col">
+										<b>#(upcomingEvent.title)</b>
+									</div>
+								</div>
+								<div class="row">	
+									<div class="col-sm">
+										<span class="text-secondary"><i>#eventTime(upcomingEvent.startTime, upcomingEvent.endTime)</i></span>
+									</div>
+									<div class="col-sm text-sm-end">
+										#(upcomingEvent.location)
+									</div>
+								</div>
+								<div class="row collapse justify-content-end" data-label="actionbar">	
+									<div class="col-12">
+										#(upcomingEvent.description)
+									</div>
+									<div class="col col-auto btn-group btn-group-sm mt-1" role="group" aria-label="Event actions">
+										#if(upcomingEvent.forum):
+											<a class="btn btn-outline-primary" href="/forum/#(upcomingEvent.forum)">Forum</a>
+										#endif
+									</div>								
+								</div>
+							</div>
+						</li>
+					</ul>
+				</div>
+			#endif
+    		<div class="row mb-1 align-items-center">
     			<div class="col">
-    				<h6><b>Filters</b></h6>
+    				<b>Filters</b>
 				</div>
     			<div class="col col-auto">
 					<div class="dropdown">
@@ -34,14 +75,9 @@
 			</div>
     		<div class="row">
 				<div class="col btn-group btn-group-sm" role="group" aria-label="Event Filters">
-					<a class="btn btn-outline-primary #if(day == "sat" || day == "1sat"):active#endif" href="/events?day=1sat">Sat</a>
-					<a class="btn btn-outline-primary #if(day == "sun"):active#endif" href="/events?day=sun">Sun</a>
-					<a class="btn btn-outline-primary #if(day == "mon"):active#endif" href="/events?day=mon">Mon</a>
-					<a class="btn btn-outline-primary #if(day == "tue"):active#endif" href="/events?day=tue">Tue</a>
-					<a class="btn btn-outline-primary #if(day == "wed"):active#endif" href="/events?day=wed">Wed</a>
-					<a class="btn btn-outline-primary #if(day == "thu"):active#endif" href="/events?day=thu">Thu</a>
-					<a class="btn btn-outline-primary #if(day == "fri"):active#endif" href="/events?day=fri">Fri</a>
-					<a class="btn btn-outline-primary #if(day == "2sat"):active#endif" href="/events?day=2sat">Sat</a>
+					#for(cruiseDay in days):
+						<a class="btn btn-outline-primary #if(cruiseDay.activeDay):active#endif" href="/events?cruiseday=#(cruiseDay.index)">#(cruiseDay.name)</a>
+					#endfor
 				</div>								
 			</div>
 		</div>

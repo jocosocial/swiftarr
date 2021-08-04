@@ -240,6 +240,7 @@ public class ValidatingJSONDecoder {
 	
 	init(_ decoder: JSONDecoder = JSONDecoder()) {
 		jsonDecoder = decoder
+		jsonDecoder.dateDecodingStrategy = .iso8601ms
 	}
 	
 	func decode<Output>(_ type: Output.Type, from: JSONDecoder.Input) throws -> Output where Output : Decodable {

@@ -20,46 +20,82 @@ struct SiteEventsController: SiteControllerUtils {
 	/// Shows a day's worth events. Always attempts to show events from a day on the actual cruise. Uses `Settings.shared.cruiseStartDate`
 	/// for cruise dates; the ingested schedule should have events for that day and the next 7 days.
 	/// 
-	/// Use the 'day' query parameter to request which day to show. If no parameter given, uses the current day of week.
+	/// Use the 'day' or 'cruiseday' query parameter to request which day to show. If no parameter given, uses the current day of week.
 	///
 	/// Query Parameters:
 	/// - day=STRING			One of: "sun" ... "sat". Can also use "1sat" for first Saturday (embarkation day), or "2sat" for the next Saturday.
+	/// - cruiseday=INT		Generally 1...8, where 1 is embarkation day.
     func eventsPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-    	var weekday: String // = req.query["day"] ?? 
+    	var queryString: String
+    	var dayOfCruise: Int
     	if let weekdayParam = req.query[String.self, at: "day"] {
-    		weekday = weekdayParam
-		}
-		else {
-			switch Calendar.autoupdatingCurrent.component(.weekday, from: Date()) {
-			case 1: weekday = "sun"
-			case 2: weekday = "mon"
-			case 3: weekday = "tue"
-			case 4: weekday = "wed"
-			case 5: weekday = "thu"
-			case 6: weekday = "fri"
-			case 7: weekday = "1sat"
-			default: weekday = "1sat"
+    		queryString = "day=\(weekdayParam)"
+    		var dayOfWeek: Int
+			switch weekdayParam {
+			case "sun": dayOfWeek = 1
+			case "mon": dayOfWeek = 2
+			case "tue": dayOfWeek = 3
+			case "wed": dayOfWeek = 4
+			case "thu": dayOfWeek = 5
+			case "fri": dayOfWeek = 6
+			case "sat": dayOfWeek = 7
+			default: dayOfWeek = 7
 			}
+			dayOfCruise = (7 + dayOfWeek - Settings.shared.cruiseStartDayOfWeek) % 7 + 1
 		}
-		return apiQuery(req, endpoint: "/events?day=\(weekday)", passThroughQuery: false).throwingFlatMap { response in
+    	else if let cruisedayParam = req.query[Int.self, at: "cruiseday"] {
+    		queryString = "cruiseday=\(cruisedayParam)"
+    		dayOfCruise = cruisedayParam
+		}		
+		else {
+			let thisWeekday = Calendar.autoupdatingCurrent.component(.weekday, from: Date())
+			dayOfCruise = (7 + thisWeekday - Settings.shared.cruiseStartDayOfWeek) % 7 + 1
+    		queryString = "cruiseday=\(dayOfCruise)"
+		}
+		return apiQuery(req, endpoint: "/events?\(queryString)", passThroughQuery: false).throwingFlatMap { response in
  			let events = try response.content.decode([EventData].self)
      		struct EventPageContext : Encodable {
+     			struct CruiseDay : Encodable {
+     				var name: String
+     				var index: Int
+     				var activeDay: Bool
+     			}
 				var trunk: TrunkContext
     			var events: [EventData]
-    			var day: String
+    			var day: Int
+    			var days: [CruiseDay]
     			var isBeforeCruise: Bool
     			var isAfterCruise: Bool
+    			var upcomingEvent: EventData?
     			
-    			init(_ req: Request, events: [EventData], day: String) {
+    			init(_ req: Request, events: [EventData], dayOfCruise: Int) {
     				self.events = events
     				trunk = .init(req, title: "Events", tab: .events)
-    				self.day = day
+    				self.day = dayOfCruise
     				isBeforeCruise = Date() < Settings.shared.cruiseStartDate
-    				isAfterCruise = Date() > Calendar.autoupdatingCurrent.date(byAdding: .day, value: 8, 
+    				isAfterCruise = Date() > Calendar.autoupdatingCurrent.date(byAdding: .day, value: Settings.shared.cruiseLengthInDays, 
     						to: Settings.shared.cruiseStartDate) ?? Date()
+    				
+    				// Set up the day buttons, one for each day of the cruise.		
+					let daynames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+    				days = Array<CruiseDay>()
+    				for dayIndex in 1...Settings.shared.cruiseLengthInDays {
+    					let weekday = (Settings.shared.cruiseStartDayOfWeek + dayIndex - 2) % 7
+    					days.append(CruiseDay(name: daynames[weekday], index: dayIndex, activeDay: dayIndex == dayOfCruise))
+    				}
+    				
+    				if let _ = trunk.alertCounts.nextFollowedEventTime {
+    					let secondsPerWeek = 60 * 60 * 24 * 7
+    					let partialWeek = Int(Date().timeIntervalSince(Settings.shared.cruiseStartDate)) % secondsPerWeek
+    					let dateInCruiseWeek = Settings.shared.cruiseStartDate + TimeInterval(partialWeek)
+						upcomingEvent = events.first {
+							return $0.isFavorite 
+							// && ((-5 * 60)...(15 * 60)).contains(dateInCruiseWeek.timeIntervalSince($0.startTime))
+						}
+					}
     			}
     		}
-    		let eventContext = EventPageContext(req, events: events, day: weekday)
+    		let eventContext = EventPageContext(req, events: events, dayOfCruise: dayOfCruise)
 			return req.view.render("events", eventContext)
     	}
     }
@@ -85,6 +121,8 @@ struct SiteEventsController: SiteControllerUtils {
     		return response.status
     	}
     }
+    
+// MARK: - Utility fns
 
 	/// Creates a iCalendar data file describing the given event. iCalendar is also known as VCALENDAR or an .ics file.
 	/// It's the thing most calendar event importers have standardized on for data interchange.

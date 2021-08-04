@@ -9,6 +9,7 @@ struct TrunkContext: Encodable {
 	
 	// current nav item
 	enum Tab: String, Codable {
+		case twitarr
 		case twarrts
 		case forums
 		case seamail
@@ -19,28 +20,43 @@ struct TrunkContext: Encodable {
 	
 	var userIsLoggedIn: Bool
 	var userIsMod: Bool
+	var userIsTHO: Bool
 	var username: String
 	var userID: UUID
 	
-	var alertCounts: UserNotificationCountData?
-	
+	var alertCounts: UserNotificationCountData
+	var eventStartingSoon: Bool
 	
 	init(_ req: Request, title: String, tab: Tab) {
 		if let user = req.auth.get(User.self) {
 			userIsLoggedIn = true
 			userIsMod = user.accessLevel.hasAccess(.moderator)
+			userIsTHO = user.accessLevel.hasAccess(.tho)
 			username = user.username
 			userID = user.id!
 		}
 		else {
 			userIsLoggedIn = false
 			userIsMod = false
+			userIsTHO = false
 			username = ""
 			userID = UUID(uuid: UUID_NULL)
 		}
+		eventStartingSoon = false
 		if let alertsStr = req.session.data["alertCounts"], let alertData = alertsStr.data(using: .utf8) {
 			let alerts = try? JSONDecoder().decode(UserNotificationCountData.self, from: alertData)
-			alertCounts = alerts
+			alertCounts = alerts ?? UserNotificationCountData()
+			
+			// If we have a nextEventTime, and that event starts between 15 mins in the past -> 30 mins in the future,
+			// mark that we have an event starting soon
+			if let nextEventInterval = alerts?.nextFollowedEventTime?.timeIntervalSinceNow
+				//	((-15 * 60.0)...(30 * 60.0)).contains(nextEventInterval) 
+					{
+				eventStartingSoon = true	
+			}
+		}
+		else {
+			alertCounts = UserNotificationCountData()
 		}
 		
 		self.title = title
@@ -95,76 +111,98 @@ struct MessagePostContext: Encodable {
 	var forumTitle: String = ""
 	var messageText: String = ""
 	var photoFilenames: [String] = ["", "", "", ""]	// Must have 4 values to make Leaf templating work. Use "" as placeholder.
+	var displayUntil: String = ""					// Used by announcements.
+
 	var formAction: String
 	var postSuccessURL: String
 	var authorName: String?							// Nil if current user is also author. Non-nil therefore implies mod edit.
 	var showForumTitle: Bool = false
 	var onlyShowForumTitle: Bool = false
 	var showModPostOptions: Bool = false
-	
-	// For creating a new tweet
-	init() {
-		formAction = "/tweets/create"
-		postSuccessURL = "/tweets"
-		showModPostOptions = true
+	var isEdit: Bool = false
+
+	// Used as an parameter to the initializer	
+	enum InitType {
+		case tweet
+		case tweetEdit(TwarrtDetailData)
+		case forum(String)						// Category ID
+		case forumEdit(ForumData)
+		case forumPost(String)					// Forum ID
+		case forumPostEdit(PostDetailData)
+		case seamail
+		case seamailPost(FezData)
+		case announcement
+		case announcementEdit(AnnouncementData)
 	}
 	
-	// For editing a tweet
-	init(with tweet: TwarrtDetailData) {
-		messageText = tweet.text
-		photoFilenames = tweet.images ?? []
-		while photoFilenames.count < 4 {
-			photoFilenames.append("")
+	init(forType: InitType) {
+		switch forType {
+		// For creating a new tweet
+		case .tweet:
+			formAction = "/tweets/create"
+			postSuccessURL = "/tweets"
+			showModPostOptions = true
+		// For editing a tweet
+		case .tweetEdit(let tweet):
+			messageText = tweet.text
+			photoFilenames = tweet.images ?? []
+			while photoFilenames.count < 4 {
+				photoFilenames.append("")
+			}
+			formAction = "/tweets/edit/\(tweet.postID)"
+			postSuccessURL = "/tweets"
+			isEdit = true
+		// For creating a new forum in a category
+		case .forum(let catID):
+			formAction = "/forums/\(catID)/createForum"
+			postSuccessURL = "/forums/\(catID)"
+			showForumTitle = true
+			showModPostOptions = true
+		// For editing a forum title
+		case .forumEdit(let forum):
+			forumTitle = forum.title
+			formAction = "/forum/\(forum.forumID)/edit"
+			postSuccessURL = "/forum/\(forum.forumID)"
+			showForumTitle = true
+			onlyShowForumTitle = true
+			isEdit = true
+		// For creating a new post in a forum
+		case .forumPost(let forumID):
+			formAction = "/forum/\(forumID)/create"
+			postSuccessURL = "/forum/\(forumID)"
+			showModPostOptions = true
+		// For editing a post in a forum
+		case .forumPostEdit(let withForumPost):
+			messageText = withForumPost.text
+			photoFilenames = withForumPost.images ?? []
+			while photoFilenames.count < 4 {
+				photoFilenames.append("")
+			}
+			formAction = "/forumpost/edit/\(withForumPost.postID)"
+			postSuccessURL = "/forum/\(withForumPost.forumID)"
+			isEdit = true
+		// For creating a new Seamail thread
+		case .seamail:
+			formAction = "/seamail/create"
+			postSuccessURL = "/seamail"
+		// For posting in an existing Seamail thread
+		case .seamailPost(let forSeamail):
+			formAction = "/seamail/\(forSeamail.fezID)/post"
+			postSuccessURL = "/seamail/\(forSeamail.fezID)"
+		// For creating an announcement
+		case .announcement:
+			formAction = "/admin/announcement/create"
+			postSuccessURL = "/admin/announcements"
+		// For editing an announcement
+		case .announcementEdit(let announcementData):
+			messageText = announcementData.text
+			let dateFormatter = DateFormatter()
+			dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm"
+			displayUntil = dateFormatter.string(from: announcementData.displayUntil)
+			formAction = "/admin/announcement/\(announcementData.id)/edit"
+			postSuccessURL = "/admin/announcements"
+			isEdit = true
 		}
-		formAction = "/tweets/edit/\(tweet.postID)"
-		postSuccessURL = "/tweets"
-	}
-	
-	// For creating a new forum in a category
-	init(withCategoryID catID: String) {
-		formAction = "/forums/\(catID)/createForum"
-		postSuccessURL = "/forums/\(catID)"
-		showForumTitle = true
-		showModPostOptions = true
-	}
-	
-	// For editing a forum title
-	init(forEditingForum forum: ForumData) {
-		forumTitle = forum.title
-		formAction = "/forum/\(forum.forumID)/edit"
-		postSuccessURL = "/forum/\(forum.forumID)"
-		showForumTitle = true
-		onlyShowForumTitle = true
-	}
-	
-	// For creating a new post in a forum
-	init(withForumID forumID: String) {
-		formAction = "/forum/\(forumID)/create"
-		postSuccessURL = "/forum/\(forumID)"
-		showModPostOptions = true
-	}
-	
-	// For editing a post in a forum
-	init(withForumPost: PostDetailData) {
-		messageText = withForumPost.text
-		photoFilenames = withForumPost.images ?? []
-		while photoFilenames.count < 4 {
-			photoFilenames.append("")
-		}
-		formAction = "/forumpost/edit/\(withForumPost.postID)"
-		postSuccessURL = "/forum/\(withForumPost.forumID)"
-	}
-	
-	// For creating a new Seamail thread--parameter is not used
-	init(forNewSeamail: Bool) {
-		formAction = "/seamail/create"
-		postSuccessURL = "/seamail"
-	}
-	
-	// For posting in an existing Seamail thread
-	init(forSeamail: FezData) {
-		formAction = "/seamail/\(forSeamail.fezID)/post"
-		postSuccessURL = "/seamail/\(forSeamail.fezID)"
 	}
 }
 
@@ -181,6 +219,7 @@ struct MessagePostFormContent : Codable {
 	let serverPhoto3: String?
 	let localPhoto4: Data?
 	let serverPhoto4: String?
+	let displayUntil: String? 				// Used for announcements
 }
 
 // Used to build an URL query string.
@@ -276,18 +315,23 @@ struct SiteController: SiteControllerUtils {
 		// Routes that the user does not need to be logged in to access.
 		let openRoutes = getOpenRoutes(app)
         openRoutes.get(use: rootPageHandler)
-
-		// Routes that require login but are generally 'global' -- Two logged-in users could share this URL and both see the content
-		// Not for Seamails, pages for posting new content, mod pages, etc. Logged-out users given one of these links should get
-		// redirect-chained through /login and back.		
-//		let globalRoutes = getGlobalRoutes(app)
-
-		// Routes for non-shareable content. If you're not logged in we failscreen.
-//		let privateRoutes = getPrivateRoutes(app)
 	}
 	
     func rootPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-	    return req.view.render("login", ["name": "Leaf"])
+		return apiQuery(req, endpoint: "/notification/announcements").throwingFlatMap { response in
+ 			let announcements = try response.content.decode([AnnouncementData].self)
+			struct HomePageContext : Encodable {
+				var trunk: TrunkContext
+				var announcements: [AnnouncementData]
+				
+				init(_ req: Request, announcements: [AnnouncementData]) throws {
+					trunk = .init(req, title: "Twitarr", tab: .twitarr)
+					self.announcements = announcements
+				}
+			}
+			let ctx = try HomePageContext(req, announcements: announcements)
+			return req.view.render("home", ctx)
+		}
     }
     
 }
@@ -304,6 +348,7 @@ protocol SiteControllerUtils {
     var eventIDParam: PathComponent { get }
     var reportIDParam: PathComponent { get }
     var modStateParam: PathComponent { get }
+    var announcementIDParam: PathComponent { get }
 
 	func registerRoutes(_ app: Application) throws
 	func apiQuery(_ req: Request, endpoint: String, method: HTTPMethod, defaultHeaders: HTTPHeaders?, passThroughQuery: Bool,
@@ -321,6 +366,7 @@ extension SiteControllerUtils {
     var eventIDParam: PathComponent { PathComponent(":event_id") }
     var reportIDParam: PathComponent { PathComponent(":report_id") }
     var modStateParam: PathComponent { PathComponent(":mod_state") }
+    var announcementIDParam: PathComponent { PathComponent(":announcement_id") }
 
 	func apiQuery(_ req: Request, endpoint: String, method: HTTPMethod = .GET, defaultHeaders: HTTPHeaders? = nil,
 			passThroughQuery: Bool = true,
@@ -350,7 +396,8 @@ extension SiteControllerUtils {
 		return app.grouped( [
 				app.sessions.middleware, 
 				User.sessionAuthenticator(),
-				Token.authenticator()
+				Token.authenticator(),
+				NotificationsMiddleware()
 		])
 	}
 
@@ -383,18 +430,45 @@ extension SiteControllerUtils {
 				User.guardMiddleware()
 		])
 	}
-}
-
-
-/*	Navbar reqs
-		User logged in?
-		User is mod?
-		Username
-		Current page, for highlighting 
-		Title
-		Search target?
 	
+	// Convert a date string submitted by a client into a Date. Usually this comes from a form input field.
+	// https://www.w3.org/TR/NOTE-datetime specifies a subset of what the ISO 8601 spec allows for date formats.
+	// 
+	// In Swift's libs, both DateFormatter and ISO8601DateFormatter require specific formatting options be set that match
+	// the format of the input string--generally, they assume you know what a specific string is going to look like before
+	// conversion. We don't know this, as the browser formats the string and there's a bunch of possibiliites.
+	// 
+	// We could pre-parse the string and normalize it, but isn't it more fun to just complain about how Apple doesn't 
+	// include a general-purpose ISO 8601 string-to-date converter that accepts any valid ISO 8601 date string?
+	// (at least with the 2019 version of the spec; IIRC previous versions had ambiguities preventing general-case parsing).
+	func dateFromW3DatetimeString(_ dateStr: String) -> Date? {
+		let dateFormatter = DateFormatter()
+		dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSXXXXX"
+		if let date = dateFormatter.date(from: dateStr) {
+			return date
+		}
+		dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS"
+		if let date = dateFormatter.date(from: dateStr) {
+			return date
+		}
+		dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssXXXXX"
+		if let date = dateFormatter.date(from: dateStr) {
+			return date
+		}
+		dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+		if let date = dateFormatter.date(from: dateStr) {
+			return date
+		}
+		dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mmXXXXX"
+		if let date = dateFormatter.date(from: dateStr) {
+			return date
+		}
+		dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm"
+		if let date = dateFormatter.date(from: dateStr) {
+			return date
+		}
+		return nil
+	}
 
-*/
-
+}
 

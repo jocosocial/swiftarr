@@ -20,14 +20,13 @@ struct EventController: RouteCollection {
         let tokenAuthMiddleware = Token.authenticator()
         let guardAuthMiddleware = User.guardMiddleware()
         
-        // set protected route group
-        let tokenAuthGroup = eventRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
-        
-        // open access endpoints
-        eventRoutes.get(use: eventsHandler)
-        eventRoutes.get(eventIDParam, use: singleEventHandler)
+        // open access endpoints that behave differently for logged-in users
+        let optionalAuthGroup = eventRoutes.grouped([tokenAuthMiddleware])
+        optionalAuthGroup.get(use: eventsHandler)
+        optionalAuthGroup.get(eventIDParam, use: singleEventHandler)
         
         // endpoints available only when logged in
+        let tokenAuthGroup = eventRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
         tokenAuthGroup.post(eventIDParam, "favorite", use: favoriteAddHandler)
         tokenAuthGroup.post(eventIDParam, "favorite", "remove", use: favoriteRemoveHandler)
         tokenAuthGroup.delete(eventIDParam, "favorite", use: favoriteRemoveHandler)
@@ -44,6 +43,7 @@ struct EventController: RouteCollection {
     /// Retrieve a list of scheduled events. By default, this retrieves the entire event schedule.
 	/// 
 	/// Query Parameters:
+	/// - cruiseday=INT		Embarkation day is day 1, value should be  less than or equal to `Settings.shared.cruiseLengthInDays`, which will be 8 for the 2022 cruise.
 	/// - day=STRING			3 letter day of week abbreviation e.g. "TUE" .Returns events for that day *of the cruise in 2022* "SAT" returns events for embarkation day while 
 	/// 					the current date is earlier than embarkation day, then it returns events for disembarkation day.
 	/// - ?date=DATE			Returns events occurring on the given day. Empty list if there are no cruise events on that day.
@@ -61,6 +61,7 @@ struct EventController: RouteCollection {
     /// - Returns: `[EventData]` containing all events.
     func eventsHandler(_ req: Request) throws -> EventLoopFuture<[EventData]> {
     	struct QueryOptions: Content {
+			var cruiseday: Int?
 			var day: String?
 			var date: Date?
 			var time: Date?
@@ -89,7 +90,9 @@ struct EventController: RouteCollection {
 		}
 		var serverCalendar = Calendar(identifier: .gregorian)
 		serverCalendar.timeZone = req.application.environment == .testing ? TimeZone(abbreviation: "EST")! : TimeZone.autoupdatingCurrent
-		let cruiseStartDate = Settings.shared.cruiseStartDate
+		// For the purpose of events, 'days' start and end at 3 AM.
+		let cruiseStartDate = serverCalendar.date(byAdding: .hour, value: 3, to: Settings.shared.cruiseStartDate) ??
+				Settings.shared.cruiseStartDate
 		var searchStartTime: Date?
 		var searchEndTime: Date?
 		if let day = options.day {
@@ -108,6 +111,10 @@ struct EventController: RouteCollection {
 			}
 			searchStartTime = serverCalendar.date(byAdding: .day, value: cruiseDayIndex, to: cruiseStartDate)
 			searchEndTime = serverCalendar.date(byAdding: .day, value: cruiseDayIndex + 1, to: cruiseStartDate)
+		}
+		else if let cruiseday = options.cruiseday {
+			searchStartTime = serverCalendar.date(byAdding: .day, value: cruiseday - 1, to: cruiseStartDate)
+			searchEndTime = serverCalendar.date(byAdding: .day, value: cruiseday, to: cruiseStartDate)
 		}
 		else if let date = options.date {
 			searchStartTime = serverCalendar.date(byAdding: .hour, value: 3, to: serverCalendar.startOfDay(for: date))
@@ -294,20 +301,18 @@ struct EventController: RouteCollection {
     func favoritesHandler(_ req: Request) throws -> EventLoopFuture<[EventData]> {
         let user = try req.auth.require(User.self)
         // get user's taggedEvent barrel
-        return user.getBookmarkBarrel(of: .taggedEvent, on: req).flatMap {
-            (barrel) in
+        return user.getBookmarkBarrel(of: .taggedEvent, on: req).flatMap { (barrel) in
             guard let barrel = barrel else {
                 // return empty array
                 return req.eventLoop.future([EventData]())
             }
             // get events
             return Event.query(on: req.db)
-                .filter(\.$id ~~ barrel.modelUUIDs)
-                .sort(\.$startTime, .ascending)
-                .all()
-                .flatMapThrowing {
-                    (events) in
-                    return try events.map { try EventData($0, isFavorite: true) }
+					.filter(\.$id ~~ barrel.modelUUIDs)
+					.sort(\.$startTime, .ascending)
+					.all()
+					.flatMapThrowing { (events) in
+				return try events.map { try EventData($0, isFavorite: true) }
             }
         }
     }

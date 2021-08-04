@@ -11,6 +11,7 @@ hr.newline {
     text-align: center;
     margin-top: 10px;
     margin-bottom: 10px;
+    overflow: visible;
 }
 hr.newline:after {
 	content: "New";
@@ -24,3 +25,10 @@ hr.newline:after {
 	opacity: 100%;
 }
 
+.nav-item.nav-link.active {
+  font-weight: 700;
+}
+
+.navbar-nav a.nav-link {
+	flex: 0 0 180px;
+}

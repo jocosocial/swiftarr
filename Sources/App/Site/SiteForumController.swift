@@ -105,7 +105,7 @@ struct SiteForumController: SiteControllerUtils {
 				init(_ req: Request, catID: String, cat: [CategoryData]) throws {
 					trunk = .init(req, title: "Create New Forum", tab: .forums)
 					self.categoryID = catID
-					self.post = .init(withCategoryID: catID)
+					self.post = .init(forType: .forum(catID))
 					if cat.count > 0 {
 						category = cat[0]
 					}
@@ -171,7 +171,7 @@ struct SiteForumController: SiteControllerUtils {
 					init(_ req: Request, forum: ForumData, cat: [CategoryData]) throws {
 						trunk = .init(req, title: "Forum Thread", tab: .forums)
 						self.forum = forum
-						self.post = .init(withForumID: forum.forumID.uuidString)
+						self.post = .init(forType: .forumPost(forum.forumID.uuidString))
 						if cat.count > 0 {
 							category = cat[0]
 						}
@@ -206,7 +206,7 @@ struct SiteForumController: SiteControllerUtils {
 				init(_ req: Request, forum: ForumData) throws {
 					trunk = .init(req, title: "Edit Forum Thread", tab: .forums)
 					self.forum = forum
-					self.post = .init(forEditingForum: forum)
+					self.post = .init(forType: .forumEdit(forum))
 				}
 			}
 			var ctx = try ForumEditPageContext(req, forum: forum)
@@ -342,7 +342,7 @@ struct SiteForumController: SiteControllerUtils {
     			
     			init(_ req: Request, post: PostDetailData) throws {
     				trunk = .init(req, title: "Edit Forum Post", tab: .forums)
-    				self.post = .init(withForumPost: post)
+    				self.post = .init(forType: .forumPostEdit(post))
     			}
     		}
     		var ctx = try ForumPostEditPageContext(req, post: post)

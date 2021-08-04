@@ -8,25 +8,25 @@ import Fluent
 
 struct TwitarrController: RouteCollection {
     
-    // Vapor uses ":pathParam" to declare a parameterized path element, and "pathParam" (no colon) to get 
-    // the parameter value in route handlers. findFromParameter() has a variant that takes a PathComponent,
-    // and it's slightly more type-safe to do this rather than relying on string matching.
-    var twarrtIDParam = PathComponent(":twarrt_id")
+	// Vapor uses ":pathParam" to declare a parameterized path element, and "pathParam" (no colon) to get 
+	// the parameter value in route handlers. findFromParameter() has a variant that takes a PathComponent,
+	// and it's slightly more type-safe to do this rather than relying on string matching.
+	var twarrtIDParam = PathComponent(":twarrt_id")
     
 // MARK: RouteCollection Conformance
-    /// Required. Resisters routes to the incoming router.
-    func boot(routes: RoutesBuilder) throws {
+	/// Required. Resisters routes to the incoming router.
+	func boot(routes: RoutesBuilder) throws {
         
-        // convenience route group for all /api/v3/twitarr endpoints
-        let twitarrRoutes = routes.grouped("api", "v3", "twitarr")
-        
-        // instantiate authentication middleware
-        let tokenAuthMiddleware = Token.authenticator()
-        let guardAuthMiddleware = User.guardMiddleware()
-        
-        // set protected route groups
-        let tokenAuthGroup = twitarrRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
-        
+		// convenience route group for all /api/v3/twitarr endpoints
+		let twitarrRoutes = routes.grouped("api", "v3", "twitarr")
+
+		// instantiate authentication middleware
+		let tokenAuthMiddleware = Token.authenticator()
+		let guardAuthMiddleware = User.guardMiddleware()
+
+		// set protected route groups
+		let tokenAuthGroup = twitarrRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
+
 		// endpoints only available when logged in
 		tokenAuthGroup.get("", use: twarrtsHandler)
 		tokenAuthGroup.get(twarrtIDParam, use: twarrtHandler)
@@ -47,7 +47,7 @@ struct TwitarrController: RouteCollection {
 		tokenAuthGroup.delete(twarrtIDParam, "like", use: twarrtUnreactHandler)
 		tokenAuthGroup.delete(twarrtIDParam, "love", use: twarrtUnreactHandler)
 		tokenAuthGroup.post(twarrtIDParam, "update", use: twarrtUpdateHandler)
-   }
+	}
     
     // MARK: - sharedAuthGroup Handlers (logged in or not)
     // All handlers in this route group require a valid HTTP Basic Authorization

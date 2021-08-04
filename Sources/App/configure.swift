@@ -36,6 +36,7 @@ public func configure(_ app: Application) throws {
 
 func configureSettings(_ app: Application) throws {
 	if app.environment == .testing {
+		Logger(label: "app.swiftarr.configuration") .info("Starting up in Testing mode.")
 		// Until we get a proper 2022 schedule, we're using the 2020 schedule for testing. 
 		Settings.shared.cruiseStartDate = Calendar.autoupdatingCurrent.date(from: DateComponents(calendar: Calendar.current, 
 			timeZone: TimeZone(abbreviation: "EST")!, year: 2020, month: 3, day: 7))!
@@ -50,6 +51,9 @@ func HTTPServerConfiguration(_ app: Application) throws {
     let port = Int(Environment.get("PORT") ?? "8081")!
 	app.http.server.configuration.port = port
 	app.routes.defaultMaxBodySize = "10mb"
+	
+	// Enable HTTP response compression.
+	// app.http.server.configuration.responseCompression = .enabled
 	
 	// for testing
 	if app.environment == .development {
