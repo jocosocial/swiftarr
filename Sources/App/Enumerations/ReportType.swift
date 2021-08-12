@@ -11,6 +11,8 @@ enum ReportType: String, Codable {
     case twarrt
     /// A `User`, although it specifically refers to the user's profile fields.
     case user
+    /// a `FriendlyFez`
+    case fez
     /// a `FezPost`
     case fezPost
 }

@@ -1,0 +1,204 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 mt-2" data-fezid="#(fez.fezID)">
+    		<div class="row">
+				<nav aria-label="breadcrumb">
+				  <ol class="breadcrumb">
+					<li class="breadcrumb-item"><a href="/fez">Friendly Fez</a></li>
+					<li class="breadcrumb-item active" aria-current="page">#(fez.title)</li>
+				  </ol>
+				</nav>
+			</div>
+
+			<div class="row">
+				<div class="col">
+					Created by: @#(fez.owner.username)
+				</div>
+				<div class="col col-auto mb-auto text-muted">
+					#eventTime(fez.startTime, fez.endTime)
+				</div>
+			</div>
+
+			<div class="row">
+				<div class="col">
+					#if(fez.maxParticipants == 0):
+						#(fez.participantCount) attendee#if(fez.participantCount != 1):s#endif
+					#elseif(fez.participantCount > fez.maxParticipants):
+						Full; #(fez.participantCount - fez.maxParticipants) waitlisted
+					#else:
+						#(fez.participantCount)/#(fez.maxParticipants) attendees
+					#endif
+				</div>
+				<div class="col col-auto mb-auto text-muted">
+					#(fez.location)
+				</div>
+			</div>
+
+			<div class="row">
+				<div class="col">
+					<b>Event Info:</b> #(fez.info)
+				</div>
+			</div>
+			
+			#if(fez.members):
+				<div class="row mt-1 justify-content-end row-cols-auto ">
+					<div class="col btn-group btn-group-sm" role="group" aria-label="member actions">
+						#if(trunk.userIsMod):
+							<a class="btn btn-outline-primary" href="/moderate/fez/#(fez.fezID)">Mod</a>
+						#endif
+						#if(fez.owner.userID == trunk.userID):
+							<a class="btn btn-outline-primary" href="#">Add Users</a>
+							<a class="btn btn-outline-primary" href="#">Remove Users</a>
+							<a class="btn btn-outline-primary" href="/fez/#(fez.fezID)/update">Update</a>
+							<a class="btn btn-outline-primary" href="#">Cancel</a>
+						#else:
+							<a class="btn btn-outline-primary px-3" href="/fez/report/#(fez.fezID)">Report</a>
+							<button type="button" class="btn btn-outline-primary px-3" data-bs-toggle="modal" data-bs-target="\#leaveFezModal">Leave</button>
+						#endif
+					</div>								
+				</div>
+			
+			#else:
+				<div class="row mt-1 justify-content-end row-cols-auto ">
+					<div class="col btn-group btn-group-sm" role="group" aria-label="non-member actions">
+						#if(trunk.userIsMod):
+							<a class="btn btn-outline-primary" href="/moderate/fez/#(fez.fezID)">Mod</a>
+						#endif
+						<a class="btn btn-outline-primary" href="/fez/report/#(fez.fezID)">Report</a>
+						<button type="button" class="btn btn-primary px-4" data-action="joinfez">Join</a>
+					</div>								
+				</div>
+			#endif
+
+			<div class="row">
+				<div class="col text-end text-danger" data-purpose="errordisplay">
+				</div>
+			</div>	
+			
+			#if(fez.members):
+				<div class="row">
+					<b>Participants</b>
+				</div>
+				<div class="row mb-2 mx-0">
+					#for(participant in fez.members.participants):
+						<div class="col col-auto border">
+							#avatar(participant.userImage)
+							<span>#elem(participant.username)</span>
+						</div>				
+					#endfor
+				</div>
+				<div class="row align-items-center">
+					<div class="col">
+						<b>Posts</b>
+					</div>
+					<div class="col col-auto mb-auto">
+						<span class="badge rounded-pill bg-light text-dark">#(fez.members.postCount) posts</span>
+						#if(fez.members.readCount < fez.members.postCount):
+							<span class="badge rounded-pill bg-danger">#(fez.members.postCount - fez.members.readCount) new</span>
+						#endif
+					</div>
+				</div>
+				<ul class="list-group container-md mx-0 px-0">
+					#for(fezPost in oldPosts):
+						<li class="list-group-item bg-transparent">
+							<div class="container-fluid">
+								<div class="row align-items-start justify-content-start">	
+									<div class="col g-0" style="flex: 0 0 40px;">
+										#avatar(fezPost.author.userImage)
+									</div>
+									<div class="col">
+										<div class="row">	
+											<div class="col">
+												<b>#elem(fezPost.author.displayName) @#elem(fezPost.author.username)</b>
+											</div>
+											<div class="col-auto">
+												<span class="text-muted">#relativeTime(fezPost.timestamp)</span>
+											</div>
+										</div>
+										<div class="row">	
+											<div class="col">
+												#formatPostText(fezPost.text)
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</li>
+					#endfor
+					#if(showDivider):
+						<hr class="newline">
+					#endif
+					<span id="newposts"></span>
+					#for(fezPost in newPosts):
+						<li class="list-group-item bg-transparent">
+							<div class="container-fluid">
+								<div class="row align-items-start justify-content-start">	
+									<div class="col g-0" style="flex: 0 0 40px;">
+										#avatar(fezPost.author.userImage)
+									</div>
+									<div class="col">
+										<div class="row">	
+											<div class="col">
+												<b>#elem(fezPost.author.displayName) @#elem(fezPost.author.username)</b>
+											</div>
+											<div class="col-auto">
+												<span class="text-muted">#relativeTime(fezPost.timestamp)</span>
+											</div>
+										</div>
+										<div class="row">	
+											<div class="col">
+												#formatPostText(fezPost.text)
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</li>
+					#endfor
+				</ul>
+				<ul class="container-md mt-2 mx-0 px-0 list-group">
+					<li class="list-group-item bg-transparent mb-3">				
+						<form class="ajax" action="#(post.formAction)" enctype="multipart/form-data" method="POST" data-successurl="#(post.postSuccessURL)">
+							<div class="container-fluid">
+								<div class="row mb-2"> 
+									<textarea class="form-control" maxlength="500" rows="3" name="postText" placeholder="Send a message"></textarea>
+								</div>
+								<div class="row mb-2">
+									<div class="col gx-0">
+										<small>Please remember to abide by the<br><a href="/codeOfConduct">Code of Conduct</a></small>
+									</div>
+									<div class="col col-auto gx-0">
+										<button type="submit" class="btn btn-primary">Post</button>
+									</div>
+								</div>
+								<div class="alert alert-danger mt-3 d-none" role="alert">
+								</div>				
+							</div>
+						</form>
+					</li>
+				</ul>
+			#endif
+		</div>
+
+		<div class="modal fade" id="leaveFezModal" tabindex="-1" aria-labelledby="leave fez modal" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="leave fez modal">Leave Fez</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						Are you sure you want to leave the fez? You'll be giving up your spot--fezzes with limited space are first-come, first-served.
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+						<button type="button" class="btn btn-primary" data-action="leaveFez" data-fezid="#(fez.fezID)">Leave</button>
+					</div>
+					<div class="mx-3 pb-1 text-end text-danger" data-purpose="errordisplay">
+					</div>
+				</div>
+			</div>
+		</div>
+    #endexport
+#endextend
+

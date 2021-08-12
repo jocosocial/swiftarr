@@ -46,7 +46,7 @@ extension Application {
 	}
 }
 
-extension RouteCollection {
+extension APIRouteCollection {
 
 	/// Returns the file system path for the given image filename. Makes sure all image directories in the path exist.
 	/// 

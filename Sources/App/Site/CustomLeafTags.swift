@@ -191,7 +191,7 @@ struct EventTimeTag: LeafTag {
 	func render(_ ctx: LeafContext) throws -> LeafData {
         try ctx.requireParameterCount(2)
 		guard let startTimeDouble = ctx.parameters[0].double, let endTimeDouble = ctx.parameters[1].double else {
-            throw "Unable to convert parameter to double for date"
+            throw "Leaf: Unable to convert parameter to double for date"
 		}
 
 		let dateFormatter = DateFormatter()

@@ -221,28 +221,49 @@ struct CreateForumPostSchema: Migration {
 
 struct CreateFriendlyFezSchema: Migration {
 	func prepare(on database: Database) -> EventLoopFuture<Void> {
-		database.schema("friendlyfez")
-				.id()
-				.field("fezType", .string, .required)
-				.field("title", .string, .required)
-				.field("info", .string, .required)
-				.field("location", .string)
-				.field("start_time", .datetime)
-				.field("end_time", .datetime)
-				.field("min_capacity", .int, .required)
-				.field("max_capacity", .int, .required)
-				.field("post_count", .int, .required)
-				.field("cancelled", .bool, .required)
-				.field("participant_array", .array(of: .uuid), .required)
-				.field("owner", .uuid, .required, .references("users", "id", onDelete: .cascade))
-    			.field("created_at", .datetime)
-    			.field("updated_at", .datetime)
-    			.field("deleted_at", .datetime)
-				.create()
+		database.enum("moderation_status").read().flatMap { modStatusEnum in
+			database.schema("friendlyfez")
+					.id()
+					.field("fezType", .string, .required)
+					.field("title", .string, .required)
+					.field("info", .string, .required)
+					.field("location", .string)
+					.field("mod_status", modStatusEnum, .required)
+					.field("start_time", .datetime)
+					.field("end_time", .datetime)
+					.field("min_capacity", .int, .required)
+					.field("max_capacity", .int, .required)
+					.field("post_count", .int, .required)
+					.field("cancelled", .bool, .required)
+					.field("participant_array", .array(of: .uuid), .required)
+					.field("owner", .uuid, .required, .references("users", "id", onDelete: .cascade))
+					.field("created_at", .datetime)
+					.field("updated_at", .datetime)
+					.field("deleted_at", .datetime)
+					.create()
+		}
 	}
  
     func revert(on database: Database) -> EventLoopFuture<Void> {
         database.schema("friendlyfez").delete()
+    }
+}
+
+struct CreateFriendlyFezEditSchema: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("fez_edits")
+				.id()
+				.field("title", .string, .required)
+				.field("info", .string, .required)
+				.field("location", .string, .required)
+    			.field("created_at", .datetime)
+ 				.field("fez", .uuid, .required, .references("friendlyfez", "id"))
+ 				.field("editor", .uuid, .required, .references("users", "id"))
+				.create()
+	}
+	
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("fez_edits").delete()
     }
 }
 

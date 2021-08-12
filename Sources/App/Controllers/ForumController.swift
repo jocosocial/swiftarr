@@ -6,31 +6,20 @@ import Fluent
 /// The collection of `/api/v3/forum/*` route endpoints and handler functions related
 /// to forums.
 
-struct ForumController: RouteCollection {
-    // MARK: RouteCollection Conformance
+struct ForumController: APIRouteCollection {
         
-	// Route path parameters. This trick only works for params that are database IDs and can use findFromParameter().
-	let categoryIDParam = PathComponent(":category_id")
-	let forumIDParam = PathComponent(":forum_id")
-	let postIDParam = PathComponent(":post_id")
-
 	/// Required. Registers routes to the incoming router.
-	func boot(routes: RoutesBuilder) throws {
+	func registerRoutes(_ app: Application) throws {
         
 		// convenience route group for all /api/v3/forum endpoints
-		let forumRoutes = routes.grouped("api", "v3", "forum")
-
-		// instantiate authentication middleware
-		let tokenAuthMiddleware = Token.authenticator()
-		let guardAuthMiddleware = User.guardMiddleware()
-		let tokenAuthGroup = forumRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
+		let forumRoutes = app.grouped("api", "v3", "forum")
 
 		// open access endpoints
-		forumRoutes.grouped(tokenAuthMiddleware).get("categories", use: categoriesHandler)
-
-		tokenAuthGroup.get("forevent", ":event_id", use: eventForumHandler)
+		let openAuthGroup = addOpenAuthGroup(to: forumRoutes)
+		openAuthGroup.get("categories", use: categoriesHandler)
 
 		// Forum Route Group, requires token
+		let tokenAuthGroup = addTokenAuthGroup(to: forumRoutes)
 		
 			// Categories
 		tokenAuthGroup.get("categories", categoryIDParam, use: categoryForumsHandler)
@@ -42,6 +31,7 @@ struct ForumController: RouteCollection {
 		tokenAuthGroup.post(forumIDParam, "rename", ":new_name", use: forumRenameHandler)
 		tokenAuthGroup.post(forumIDParam, "delete", use: forumDeleteHandler)
 		tokenAuthGroup.delete(forumIDParam, use: forumDeleteHandler)
+		tokenAuthGroup.get("forevent", ":event_id", use: eventForumHandler)
 		
 		tokenAuthGroup.post(forumIDParam, "report", use: forumReportHandler)
 
@@ -84,7 +74,10 @@ struct ForumController: RouteCollection {
 
     /// `GET /api/v3/forum/categories`
     ///
-    /// Retrieve a list of  forum `Category`s, sorted by type (admin, user) and title. 
+    /// Retrieve a list of  forum `Category`s, sorted by type (admin, user) and title. Access to certain categories is restricted to users of an appropriate
+	/// access level, which implies those categories won't be shown if you don't provide a login token. Without a token, the 'accessible to anyone' categories
+	/// are returned. You'll still need to be logged in to see the contents of the categories, or post, or do much anything else.
+	/// 
 	/// Requiest parameters:
 	/// - `?cat=UUID` Only return information about the given category. Will still return an array of `CategoryData`.
     ///
@@ -116,10 +109,10 @@ struct ForumController: RouteCollection {
         }
     }
         
-    // MARK: - sharedAuthGroup Handlers (logged in or not)
-    // All handlers in this route group require a valid HTTP Basic Authorization
-    // *or* HTTP Bearer Authorization header in the request.
-    
+    // MARK: - tokenAuthGroup Handlers (logged in)
+    // All handlers in this route group require a valid HTTP Bearer Authentication
+    // header in the request.
+        
     /// `GET /api/v3/forum/catgories/ID`
     ///
     /// Retrieve a list of forums in the specifiec `Category`. Will not return forums created by blocked users.
@@ -440,11 +433,6 @@ struct ForumController: RouteCollection {
 			}
 		}
 	}
-
-    
-    // MARK: - tokenAuthGroup Handlers (logged in)
-    // All handlers in this route group require a valid HTTP Bearer Authentication
-    // header in the request.
     
     /// `POST /api/v3/forum/post/ID/bookmark`
     ///

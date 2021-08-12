@@ -24,10 +24,12 @@ struct SiteModController: SiteControllerUtils {
 		modRoutes.get("moderate", "twarrt", twarrtIDParam, use: moderateTwarrtContentPageHandler)
 		modRoutes.get("moderate", "forumpost", postIDParam, use: moderateForumPostContentPageHandler)
 		modRoutes.get("moderate", "forum", forumIDParam, use: moderateForumContentPageHandler)
+		modRoutes.get("moderate", "fez", fezIDParam, use: moderateFezContentPageHandler)
 
 		modRoutes.post("twarrt", twarrtIDParam, "setstate", modStateParam, use: setTwarrtModerationStatePostHandler)
 		modRoutes.post("forumpost", postIDParam, "setstate", modStateParam, use: setForumPostModerationStatePostHandler)
 		modRoutes.post("forum", forumIDParam, "setstate", modStateParam, use: setForumModerationStatePostHandler)
+		modRoutes.post("fez", fezIDParam, "setstate", modStateParam, use: setFezModerationStatePostHandler)
 
 		modRoutes.post("reports", reportIDParam, "handle",  use: beginProcessingReportsPostHandler)
 		modRoutes.post("reports", reportIDParam, "close",  use: closeReportsPostHandler)
@@ -44,7 +46,7 @@ struct SiteModController: SiteControllerUtils {
 	}
 	
 	func reportsPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-    	return apiQuery(req, endpoint: "/admin/reports").throwingFlatMap { response in
+    	return apiQuery(req, endpoint: "/mod/reports").throwingFlatMap { response in
 			let reports = try response.content.decode([ReportAdminData].self)
 			
 			var reportedContentArray = [ReportContentGroup]()
@@ -61,11 +63,12 @@ struct SiteModController: SiteControllerUtils {
 				}
 				var contentURL: String
 				switch report.type {
-					case .twarrt: contentURL = "moderate/twarrt/\(report.reportedID)"
-					case .forumPost: contentURL = "moderate/forumpost/\(report.reportedID)"
-					case .forum: contentURL = "moderate/forum/\(report.reportedID)"
-					case .fezPost: contentURL = "moderate/fezpost/\(report.reportedID)"
-					case .user: contentURL = "moderate/user/\(report.reportedID)"
+					case .twarrt: 		contentURL = "moderate/twarrt/\(report.reportedID)"
+					case .forumPost: 	contentURL = "moderate/forumpost/\(report.reportedID)"
+					case .forum: 		contentURL = "moderate/forum/\(report.reportedID)"
+					case .fez: 			contentURL = "moderate/fez/\(report.reportedID)"
+					case .fezPost: 		contentURL = "moderate/fezpost/\(report.reportedID)"
+					case .user: 		contentURL = "moderate/user/\(report.reportedID)"
 				}
 				var newGroup = ReportContentGroup(reportType: report.type, reportedID: report.reportedID, reportedUser: report.reportedUser, 
 						firstReportTime: Date(), openCount: 0, contentURL: contentURL, reports: [report])
@@ -93,7 +96,7 @@ struct SiteModController: SiteControllerUtils {
     	guard let reportID = req.parameters.get(reportIDParam.paramString) else {
             throw Abort(.badRequest, reason: "Missing search parameter.")
     	}
-    	return apiQuery(req, endpoint: "/admin/reports/\(reportID)/handleall", method: .POST).map { response in
+    	return apiQuery(req, endpoint: "/mod/reports/\(reportID)/handleall", method: .POST).map { response in
 			return response.status	
 		}
 	}
@@ -102,13 +105,13 @@ struct SiteModController: SiteControllerUtils {
     	guard let reportID = req.parameters.get(reportIDParam.paramString) else {
             throw Abort(.badRequest, reason: "Missing search parameter.")
     	}
-    	return apiQuery(req, endpoint: "/admin/reports/\(reportID)/closeall", method: .POST).map { response in
+    	return apiQuery(req, endpoint: "/mod/reports/\(reportID)/closeall", method: .POST).map { response in
 			return response.status	
 		}
 	}
 
 	func moderatorLogPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-		return apiQuery(req, endpoint: "/admin/moderationlog").throwingFlatMap { response in
+		return apiQuery(req, endpoint: "/mod/moderationlog").throwingFlatMap { response in
 			let logData = try response.content.decode([ModeratorActionLogData].self)
 			struct LogContext : Encodable {
 				var trunk: TrunkContext
@@ -134,7 +137,7 @@ struct SiteModController: SiteControllerUtils {
     	guard let twarrtID = req.parameters.get(twarrtIDParam.paramString) else {
             throw Abort(.badRequest, reason: "Missing search parameter.")
     	}
-    	return apiQuery(req, endpoint: "/admin/twarrt/\(twarrtID)").throwingFlatMap { response in
+    	return apiQuery(req, endpoint: "/mod/twarrt/\(twarrtID)").throwingFlatMap { response in
 			let modData = try response.content.decode(TwarrtModerationData.self)
 			struct ReportContext : Encodable {
 				var trunk: TrunkContext
@@ -172,7 +175,7 @@ struct SiteModController: SiteControllerUtils {
 	    guard let modState = req.parameters.get(modStateParam.paramString) else {
             throw Abort(.badRequest, reason: "Missing search parameter.")
     	}
-    	return apiQuery(req, endpoint: "/admin/twarrt/\(twarrtID)/setstate/\(modState)", method: .POST).map { response in
+    	return apiQuery(req, endpoint: "/mod/twarrt/\(twarrtID)/setstate/\(modState)", method: .POST).map { response in
     		return response.status
     	}
 	}
@@ -187,7 +190,7 @@ struct SiteModController: SiteControllerUtils {
     	guard let postID = req.parameters.get(postIDParam.paramString) else {
             throw Abort(.badRequest, reason: "Missing search parameter.")
     	}
-    	return apiQuery(req, endpoint: "/admin/forumpost/\(postID)").throwingFlatMap { response in
+    	return apiQuery(req, endpoint: "/mod/forumpost/\(postID)").throwingFlatMap { response in
 			let modData = try response.content.decode(ForumPostModerationData.self)
 			struct ReportContext : Encodable {
 				var trunk: TrunkContext
@@ -225,7 +228,7 @@ struct SiteModController: SiteControllerUtils {
 	    guard let modState = req.parameters.get(modStateParam.paramString) else {
             throw Abort(.badRequest, reason: "Missing search parameter.")
     	}
-    	return apiQuery(req, endpoint: "/admin/forumPost/\(postID)/setstate/\(modState)", method: .POST).map { response in
+    	return apiQuery(req, endpoint: "/mod/forumPost/\(postID)/setstate/\(modState)", method: .POST).map { response in
     		return response.status
     	}
 	}
@@ -240,7 +243,7 @@ struct SiteModController: SiteControllerUtils {
     	guard let forumID = req.parameters.get(forumIDParam.paramString) else {
             throw Abort(.badRequest, reason: "Missing search parameter.")
     	}
-    	return apiQuery(req, endpoint: "/admin/forum/\(forumID)").throwingFlatMap { response in
+    	return apiQuery(req, endpoint: "/mod/forum/\(forumID)").throwingFlatMap { response in
 			let modData = try response.content.decode(ForumModerationData.self)
 			struct ReportContext : Encodable {
 				var trunk: TrunkContext
@@ -277,8 +280,60 @@ struct SiteModController: SiteControllerUtils {
 	    guard let modState = req.parameters.get(modStateParam.paramString) else {
             throw Abort(.badRequest, reason: "Missing search parameter.")
     	}
-    	return apiQuery(req, endpoint: "/admin/forum/\(forumID)/setstate/\(modState)", method: .POST).map { response in
+    	return apiQuery(req, endpoint: "/mod/forum/\(forumID)/setstate/\(modState)", method: .POST).map { response in
     		return response.status
     	}
+	}
+	
+	/// This shows a view that focuses on the *content* that was reported, showing:
+	/// * The Fez that was reported
+	/// * All reports made against this content
+	/// * All previous versions of this content
+	/// * (hopefully) Mod actions taken against this content already
+	/// * 
+	func moderateFezContentPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+    	guard let fezID = req.parameters.get(fezIDParam.paramString) else {
+            throw Abort(.badRequest, reason: "Missing search parameter.")
+    	}
+    	return apiQuery(req, endpoint: "/mod/fez/\(fezID)").throwingFlatMap { response in
+			let modData = try response.content.decode(FezModerationData.self)
+			struct ReportContext : Encodable {
+				var trunk: TrunkContext
+				var modData: FezModerationData
+				var firstReport: ReportAdminData?
+				var finalEditAuthor: UserHeader?
+				
+				init(_ req: Request, modData: FezModerationData) throws {
+					trunk = .init(req, title: "Reports", tab: .none)
+					self.modData = modData
+					firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
+					finalEditAuthor = modData.edits.last?.author
+					if self.modData.edits.count > 1 {
+						for index in (0...self.modData.edits.count - 2).reversed() {
+							self.modData.edits[index + 1].author = self.modData.edits[index].author
+							self.modData.edits[index + 1].author.username = "\(self.modData.edits[index + 1].author.username) edited to:"
+						}
+					}
+					if self.modData.edits.count > 0 {
+						self.modData.edits[0].author = modData.fez.owner
+						self.modData.edits[0].author.username = "\(self.modData.edits[0].author.username) initially wrote:"
+					}
+				}
+			}
+			let ctx = try ReportContext(req, modData: modData)
+			return req.view.render("moderation/fezView", ctx)
+		}
+	}
+	
+	func setFezModerationStatePostHandler(_ req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
+		guard let fezID = req.parameters.get(fezIDParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing search parameter.")
+		}
+		guard let modState = req.parameters.get(modStateParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing search parameter.")
+		}
+		return apiQuery(req, endpoint: "/mod/fez/\(fezID)/setstate/\(modState)", method: .POST).map { response in
+			return response.status
+		}
 	}
 }

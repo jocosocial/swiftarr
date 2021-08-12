@@ -7,15 +7,15 @@ import FluentSQL
 ///
 /// - Note: These endpoints are **NOT** intended as API for client development.
 
-struct TestController: RouteCollection {
+struct TestController: APIRouteCollection {
     
     // MARK: RouteCollection Conformance
     
     /// Required. Registers routes to the incoming router.
-    func boot(routes: RoutesBuilder) throws {
+    func registerRoutes(_ app: Application) throws {
         
         // convenience route group for all /api/v3/users endpoints
-        let testRoutes = routes.grouped("api", "v3", "test")
+//		let testRoutes = app.grouped("api", "v3", "test")
         
         // instantiate authentication middleware
 //        let basicAuthMiddleware = User.basicAuthMiddleware(using: BCryptDigest())

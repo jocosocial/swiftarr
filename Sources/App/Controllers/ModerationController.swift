@@ -2,37 +2,23 @@ import Vapor
 import Crypto
 import FluentSQL
 
-/// The collection of `/api/v3/admin/*` route endpoints and handler functions related
-/// to a user's own data.
+/// The collection of `/api/v3/mod/*` route endpoints and handler functions related to moderation tasks..
 ///
-/// Separating these from the endpoints related to users in general helps make for a
-/// cleaner collection, since use of `User.parameter` in the paths here can be avoided
-/// entirely.
-
-struct AdminController: RouteCollection {
+/// All routes in this group should be restricted to users with moderation priviliges. This controller returns data of 
+/// a privledged nature, including contents of user reports, edit histories of user content, and log data about moderation actions.
+struct ModerationController: APIRouteCollection {
     
-	var twarrtIDParam = PathComponent(":twarrt_id")
-	let forumIDParam = PathComponent(":forum_id")
-	let postIDParam = PathComponent(":post_id")
-	let modStateParam = PathComponent(":mod_state")
-
-// MARK: RouteCollection Conformance
-
 	/// Required. Registers routes to the incoming router.
-	func boot(routes: RoutesBuilder) throws {
+	func registerRoutes(_ app: Application) throws {
 		
-		// convenience route group for all /api/v3/admin endpoints
-		let adminRoutes = routes.grouped("api", "v3", "admin")
+		// convenience route group for all /api/v3/mod endpoints
+		let modRoutes = app.grouped("api", "v3", "mod")
 		
 		// instantiate authentication middleware
-		let tokenAuthMiddleware = Token.authenticator()
 		let requireModMiddleware = RequireModeratorMiddleware()
-		let guardAuthMiddleware = User.guardMiddleware()
-		
-		// set protected route groups
-		let moderatorAuthGroup = adminRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware, requireModMiddleware])
-				 
+						 
 		// endpoints available for Moderators only
+		let moderatorAuthGroup = addTokenAuthGroup(to: modRoutes).grouped([requireModMiddleware])
 		moderatorAuthGroup.get("reports", use: reportsHandler)
 		moderatorAuthGroup.post("reports", ":report_id", "handleall", use: beginProcessingReportsHandler)
 		moderatorAuthGroup.post("reports", ":report_id", "closeall", use: closeReportsHandler)
@@ -46,13 +32,16 @@ struct AdminController: RouteCollection {
 		
 		moderatorAuthGroup.get("forum", forumIDParam, use: forumModerationHandler)
 		moderatorAuthGroup.post("forum", forumIDParam, "setstate", modStateParam, use: forumSetModerationStateHandler)
+
+		moderatorAuthGroup.get("fez", fezIDParam, use: fezModerationHandler)
+		moderatorAuthGroup.post("fez", fezIDParam, "setstate", modStateParam, use: fezSetModerationStateHandler)
 	}
         
 	// MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
     
-    /// `GET /api/v3/admin/user/ID`
+    /// `GET /api/v3/mod/user/ID`
     ///
     /// Retrieves the full `User` model of the specified user.
     ///
@@ -67,7 +56,7 @@ struct AdminController: RouteCollection {
         return User.findFromParameter("user_id", on: req)
     }
     
-    /// `GET /api/v3/admin/reports`
+    /// `GET /api/v3/mod/reports`
     ///
     /// Retrieves the full `Report` model of all reports.
     ///
@@ -84,7 +73,7 @@ struct AdminController: RouteCollection {
         }
     }
     
-    /// `POST /api/v3/admin/reports/ID/handleall`
+    /// `POST /api/v3/mod/reports/ID/handleall`
     /// 
     /// This call is how a Moderator can take a user Report off the queue and begin handling it. More correctly, it takes all user reports referring to the same
 	/// piece of content and marks them all handled at once.
@@ -119,7 +108,7 @@ struct AdminController: RouteCollection {
 		}
     }
     
-    /// `POST /api/v3/admin/reports/ID/closeall`
+    /// `POST /api/v3/mod/reports/ID/closeall`
     ///
     /// Closes all reports filed against the same piece of content as the given report.
     func closeReportsHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
@@ -145,7 +134,7 @@ struct AdminController: RouteCollection {
 		}
     }
     
-    /// `GET /api/v3/admin/moderationlog`
+    /// `GET /api/v3/mod/moderationlog`
     ///
     /// Retrieves ModeratorAction recoreds. These records are a log of Mods using their Mod powers.
 	/// 
@@ -295,6 +284,45 @@ struct AdminController: RouteCollection {
         	try forum.moderationStatus.setFromParameterString(modState)
 			forum.logIfModeratorAction(ModeratorActionType.setFromModerationStatus(forum.moderationStatus), user: user, on: req)
         	return forum.save(on: req.db).transform(to: .ok)
+        }
+    }
+    
+	/// Moderator only. Returns info admins and moderators need to review a Fez. Works if fez has been deleted. Shows
+	/// fez's quarantine and reviewed states.
+    func fezModerationHandler(_ req: Request) throws -> EventLoopFuture<FezModerationData> {
+		guard let fezIDString = req.parameters.get(fezIDParam.paramString), let fezID = UUID(fezIDString) else {
+            throw Abort(.badRequest, reason: "Request parameter \(fezIDParam.paramString) is missing.")
+        }
+		return FriendlyFez.query(on: req.db).filter(\.$id == fezID).withDeleted().first()
+        		.unwrap(or: Abort(.notFound, reason: "no FriendlyFez found for identifier '\(fezID)'")).flatMap { fez in
+   			return Report.query(on: req.db)
+   					.filter(\.$reportType == .fez)
+   					.filter(\.$reportedID == fezIDString)
+   					.sort(\.$createdAt, .descending).all().flatMap { reports in
+				return fez.$edits.query(on: req.db).sort(\.$createdAt, .ascending).all().flatMapThrowing { edits in
+					let ownerHeader = try req.userCache.getHeader(fez.$owner.id)
+					let fezData = try FezData(fez: fez, owner: ownerHeader)
+					let editData: [FezEditLogData] = try edits.map {
+						return try FezEditLogData($0, on: req)
+					}
+					let reportData = try reports.map { try ReportAdminData.init(req: req, report: $0) }
+					let modData = FezModerationData(fez: fezData, isDeleted: fez.deletedAt != nil, 
+							moderationStatus: fez.moderationStatus, edits: editData, reports: reportData)
+					return modData
+				}
+			}
+        }
+	}
+    
+    func fezSetModerationStateHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+        let user = try req.auth.require(User.self)
+  		guard let modState = req.parameters.get(modStateParam.paramString) else {
+            throw Abort(.badRequest, reason: "Request parameter `Moderation_State` is missing.")
+        }
+        return FriendlyFez.findFromParameter(fezIDParam, on: req).throwingFlatMap { fez in
+        	try fez.moderationStatus.setFromParameterString(modState)
+			fez.logIfModeratorAction(ModeratorActionType.setFromModerationStatus(fez.moderationStatus), user: user, on: req)
+        	return fez.save(on: req.db).transform(to: .ok)
         }
     }
 

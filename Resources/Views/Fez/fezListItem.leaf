@@ -1,0 +1,50 @@
+<a class="list-group-item list-group-item-action" href="/fez/#(fez.fezID)">		
+	<div class="row">
+		<div class="col">
+			<b>#elem(fez.title)</b>
+		</div>
+		<div class="col col-auto">
+			<span class="text-muted">#eventTime(fez.startTime, fez.endTime)</span>
+		</div>
+	</div>
+
+	<div class="row">
+		<div class="col">
+			by: @#elem(fez.owner.username)
+		</div>
+		<div class="col col-auto">
+			#if(fez.maxParticipants == 0):
+				#(fez.participantCount) attendee#if(fez.participantCount != 1):s#endif
+			#elseif(fez.participantCount > fez.maxParticipants):
+				Full; #(fez.participantCount - fez.maxParticipants) waitlisted
+			#else:
+				#(fez.participantCount)/#(fez.maxParticipants) attendees
+			#endif
+		</div>
+	</div>
+
+	<div class="row">
+		<div class="col">
+			#(fez.fezType)
+		</div>
+		#if(fez.members):
+			<div class="col col-auto">
+				<span class="badge rounded-pill bg-light text-dark">#(fez.members.postCount) posts</span>
+				#if(fez.members.readCount < fez.members.postCount):
+					<span class="badge rounded-pill bg-danger">#(fez.members.postCount - fez.members.readCount) new</span>
+				#endif
+			</div>
+		#endif
+	</div>
+	
+	<div class="row d-none">
+		<div class="col">
+			#elem(fez.location)
+		</div>
+	</div>
+	<div class="row d-none">
+		<div class="col">
+			#formatPostText(fez.info)
+		</div>
+	</div>
+</a>

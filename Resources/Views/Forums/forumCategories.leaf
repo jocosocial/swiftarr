@@ -8,10 +8,10 @@
     			<div class="col">
 				</div>
     			<div class="col col-auto align-self-end">
-    				#if(trunk.alertCounts.forumMentionCount == trunk.alertCounts.readForumMentionCount + 1):
+    				#if(trunk.alertCounts.newForumMentionCount == 1):
 						<a class="btn btn-outline-danger btn-sm" href="/forumpost/mentions">1 New Mention</a>
-    				#elseif(trunk.alertCounts.forumMentionCount > trunk.alertCounts.readForumMentionCount):
-						<a class="btn btn-outline-danger btn-sm" href="/forumpost/mentions">#(trunk.alertCounts.forumMentionCount - trunk.alertCounts.readForumMentionCount) New Mentions</a>
+    				#elseif(trunk.alertCounts.newForumMentionCount > 1):
+						<a class="btn btn-outline-danger btn-sm" href="/forumpost/mentions">#(trunk.alertCounts.newForumMentionCount) New Mentions</a>
 					#elseif(trunk.alertCounts.forumMentionCount == 1):
 						<a class="btn btn-outline-primary btn-sm" href="/forumpost/mentions">1 Mention</a>
 					#elseif(trunk.alertCounts.forumMentionCount > 0):

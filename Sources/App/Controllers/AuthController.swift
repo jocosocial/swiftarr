@@ -44,32 +44,25 @@ import FluentSQL
 /// explicitly logs out on *any* client on *any* device, the token is deleted and the
 /// `/api/v3/auth/login` endpoint will need to be hit again to generate a new one.
 
-struct AuthController: RouteCollection {
+struct AuthController: APIRouteCollection {
     
     // MARK: RouteCollection Conformance
     
     /// Required. Registers routes to the incoming router.
-    func boot(routes: RoutesBuilder) throws {
+    func registerRoutes(_ app: Application) throws {
         
         // convenience route group for all /api/v3/auth endpoints
-        let authRoutes = routes.grouped("api", "v3", "auth")
-        
-        // instantiate authentication middleware
-        let basicAuthMiddleware = User.authenticator()
-        let guardAuthMiddleware = User.guardMiddleware()
-        let tokenAuthMiddleware = Token.authenticator()
-        
-        // set protected route groups
-        let basicAuthGroup = authRoutes.grouped([basicAuthMiddleware, guardAuthMiddleware])
-        let tokenAuthGroup = authRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
+        let authRoutes = app.grouped("api", "v3", "auth")
         
         // open access endpoints
         authRoutes.post("recovery", use: recoveryHandler)
         
         // endpoints available only when not logged in
+        let basicAuthGroup = addBasicAuthGroup(to: authRoutes)
         basicAuthGroup.post("login", use: loginHandler)
         
         // endpoints available only when logged in
+        let tokenAuthGroup = addTokenAuthGroup(to: authRoutes)
         tokenAuthGroup.post("logout", use: logoutHandler)
     }
     

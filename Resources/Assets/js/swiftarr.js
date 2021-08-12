@@ -3,7 +3,7 @@ import("/js/bootstrap.bundle.js");
 // Make the like/love/laugh buttons post their actions when tapped.
 for (let btn of document.querySelectorAll('[data-action]')) {
 	let action = btn.dataset.action;
-	if (action == "deletePost" || action == "deleteTwarrt" || action == "deleteForum" || action == "deleteAnnouncement") {
+	if (action == "delete") {
 		btn.addEventListener("click", deleteAction);
 	}
 	else if (action == "laugh" || action == "like" || action == "love") {
@@ -17,6 +17,12 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 	}
 	else if (action == "filterEventType") {
 		btn.addEventListener("click", eventFilterDropdownTappedAction);
+	}
+	else if (action == "joinfez") {
+		btn.addEventListener("click", joinFezTappedAction);
+	}
+	else if (action == "leaveFez") {
+		btn.addEventListener("click", leaveFezTappedAction);
 	}
 }
 
@@ -115,28 +121,10 @@ document.getElementById('deleteModal')?.addEventListener('show.bs.modal', functi
 
 // Deletes forums, forumposts, and tweets. Delete btn handler inside Delete Modal.
 function deleteAction() {
-	console.log("meh");
 	let postid = event.target.dataset.deletePostid;
+	let deleteType = event.target.dataset.deleteType;
 	let modal = event.target.closest('.modal');
-	let path = "";
-	let action = event.target.dataset.action
-	if (action == "deleteTwarrt") {
-		path = "/tweets/" + postid + "/delete";
-	}
-	else if (action == "deleteForum") {
-		path = "/forum/" + postid + "/delete";
-	}
-	else if (action == "deletePost") {
-		path = "/forumpost/" + postid + "/delete";
-	}
-	else if (action == "deleteAnnouncement") {
-		path = "/admin/announcement/" + postid + "/delete";
-	console.log("check");
-	}
-	else {
-	console.log("hmm");
-		return;
-	}
+	let path = "/" + deleteType + "/" + postid + "/delete";
 	let req = new Request(path, { method: 'POST' });
 	fetch(req).then(response => {
 		if (response.status < 300) {
@@ -393,4 +381,40 @@ function filterEvents(category, onlyFollowing) {
 			new bootstrap.Collapse(listItem)
 		}
 	}
+}
+
+// MARK: - Fez Handlers
+
+function joinFezTappedAction() {
+	let fezID = event.target.closest('[data-fezid]').dataset.fezid;
+	let tappedButton = event.target;
+	let req = new Request("/fez/" + fezID + "/join", { method: 'POST' });
+	let errorDiv = tappedButton.closest('[data-fezid]').querySelector('[data-purpose="errordisplay"]');
+	fetch(req).then(function(response) {
+		if (response.ok) {
+			location.reload();
+		}
+		else {
+			errorDiv.textContent = "Could not join fez";
+		}
+	}).catch(error => {
+		errorDiv.textContent = "Could not join fez";
+	});
+}
+
+function leaveFezTappedAction() {
+	let fezID = event.target.dataset.fezid;
+	let tappedButton = event.target;
+	let req = new Request("/fez/" + fezID + "/leave", { method: 'POST' });
+	let errorDiv = tappedButton.closest('.modal-dialog').querySelector('[data-purpose="errordisplay"]');
+	fetch(req).then(function(response) {
+		if (response.ok) {
+			location.reload();
+		}
+		else {
+			errorDiv.textContent = "Error attempting to leave fez";
+		}
+	}).catch(error => {
+		errorDiv.textContent = "Error attempting to leave fez";
+	});
 }

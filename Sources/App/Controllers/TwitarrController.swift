@@ -6,28 +6,17 @@ import Fluent
 /// The collection of `/api/v3/twitarr/*` route endpoint and handler functions related
 /// to the twit-arr stream.
 
-struct TwitarrController: RouteCollection {
-    
-	// Vapor uses ":pathParam" to declare a parameterized path element, and "pathParam" (no colon) to get 
-	// the parameter value in route handlers. findFromParameter() has a variant that takes a PathComponent,
-	// and it's slightly more type-safe to do this rather than relying on string matching.
-	var twarrtIDParam = PathComponent(":twarrt_id")
-    
+struct TwitarrController: APIRouteCollection {
+        
 // MARK: RouteCollection Conformance
 	/// Required. Resisters routes to the incoming router.
-	func boot(routes: RoutesBuilder) throws {
+	func registerRoutes(_ app: Application) throws {
         
 		// convenience route group for all /api/v3/twitarr endpoints
-		let twitarrRoutes = routes.grouped("api", "v3", "twitarr")
-
-		// instantiate authentication middleware
-		let tokenAuthMiddleware = Token.authenticator()
-		let guardAuthMiddleware = User.guardMiddleware()
-
-		// set protected route groups
-		let tokenAuthGroup = twitarrRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
+		let twitarrRoutes = app.grouped("api", "v3", "twitarr")
 
 		// endpoints only available when logged in
+		let tokenAuthGroup = addTokenAuthGroup(to: twitarrRoutes)
 		tokenAuthGroup.get("", use: twarrtsHandler)
 		tokenAuthGroup.get(twarrtIDParam, use: twarrtHandler)
 		tokenAuthGroup.post(twarrtIDParam, "bookmark", use: bookmarkAddHandler)
@@ -49,10 +38,10 @@ struct TwitarrController: RouteCollection {
 		tokenAuthGroup.post(twarrtIDParam, "update", use: twarrtUpdateHandler)
 	}
     
-    // MARK: - sharedAuthGroup Handlers (logged in or not)
-    // All handlers in this route group require a valid HTTP Basic Authorization
-    // *or* HTTP Bearer Authorization header in the request.
-        
+    // MARK: - tokenAuthGroup Handlers (logged in)
+    // All handlers in this route group require a valid HTTP Bearer Authentication
+    // header in the request.
+            
     /// `GET /api/v3/twitarr/ID`
     ///
     /// Retrieve the specfied `Twarrt` with full user `LikeType` data.
@@ -261,10 +250,6 @@ struct TwitarrController: RouteCollection {
 		}
     }
         
-    // MARK: - tokenAuthGroup Handlers (logged in)
-    // All handlers in this route group require a valid HTTP Bearer Authentication
-    // header in the request.
-    
     /// `POST /api/v3/twitarr/ID/bookmark`
     ///
     /// Add a bookmark of the specified `Twarrt`.

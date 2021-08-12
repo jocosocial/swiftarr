@@ -23,7 +23,7 @@ struct SiteSeamailController: SiteControllerUtils {
 // MARK: - Seamail
 	// Shows the root Seamail page, with a list of all conversations.
     func seamailRootPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-		return apiQuery(req, endpoint: "/fez/joined").throwingFlatMap { response in
+		return apiQuery(req, endpoint: "/fez/joined?type=closed").throwingFlatMap { response in
  			let fezzes = try response.content.decode([FezData].self)
      		struct SeamailRootPageContext : Encodable {
 				var trunk: TrunkContext
@@ -109,20 +109,6 @@ struct SiteSeamailController: SiteControllerUtils {
     	}
     }
     
-    struct LeafFezPostData: Codable {
-    	var postID: Int
-    	var author: UserHeader
-    	var text: String
-    	var timestamp: Date
-    	
-    	init(post: FezPostData, author: UserHeader) {
-    		self.postID = post.postID
-    		self.author = author
-    		self.text = post.text
-    		self.timestamp = post.timestamp
-    	}
-    }
-    
     // Shows a seamail thread. Participants up top, then a list of messages, then a form for composing.
 	func seamailViewPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
     	guard let fezID = req.parameters.get(fezIDParam.paramString) else {
@@ -145,11 +131,11 @@ struct SiteSeamailController: SiteControllerUtils {
     				newPosts = []
     				showDivider = false
     				post = .init(forType: .seamailPost(fez))
-    				if let posts = fez.posts {
-						let participantDictionary = fez.participants.reduce(into: [:]) { $0[$1.userID] = $1 }
+    				if let members = fez.members, let posts = members.posts {
+						let participantDictionary = members.participants.reduce(into: [:]) { $0[$1.userID] = $1 }
 						for index in 0..<posts.count {
 							let post = posts[index]
-							if index < fez.readCount {
+							if index < members.readCount {
 								if let author = participantDictionary[post.authorID] {
 									oldPosts.append(LeafFezPostData(post: post, author: author))
 								}

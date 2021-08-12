@@ -21,6 +21,9 @@ final class FriendlyFez: Model {
 	/// Where the fez is happening.
 	@Field(key: "location") var location: String?
 	
+    /// Moderators can set several statuses on fezPosts that modify editability and visibility.
+    @Enum(key: "mod_status") var moderationStatus: ContentModerationStatus
+        
 	/// Start time for the fez. Only meaningful for public fezzes that are organizing an activity.
 	@Field(key: "start_time") var startTime: Date?
 
@@ -57,6 +60,9 @@ final class FriendlyFez: Model {
 	/// The posts participants have made in the fez.
 	@Children(for: \.$fez) var fezPosts: [FezPost]	
 	
+    /// The child `FriendlyFezEdit` accountability records of the fez.
+    @Children(for: \.$fez) var edits: [FriendlyFezEdit]
+
 // MARK: Record-keeping
     /// Timestamp of the model's creation, set automatically.
     @Timestamp(key: "created_at", on: .create) var createdAt: Date?
@@ -96,6 +102,7 @@ final class FriendlyFez: Model {
         self.title = title
         self.info = info
         self.location = location
+        self.moderationStatus = .normal
         self.startTime = startTime
         self.endTime = endTime
         self.minCapacity = minCapacity
@@ -114,6 +121,7 @@ final class FriendlyFez: Model {
         self.title = ""
         self.info = ""
         self.location = nil
+        self.moderationStatus = .normal
         self.minCapacity = 0
         self.maxCapacity = 0
         self.postCount = 0

@@ -43,6 +43,9 @@ func configureSettings(_ app: Application) throws {
 	}
 	else if app.environment == .development {
 		Logger(label: "app.swiftarr.configuration") .info("Starting up in Development mode.")
+		// Until we get a proper 2022 schedule, we're using the 2020 schedule for testing. 
+		Settings.shared.cruiseStartDate = Calendar.autoupdatingCurrent.date(from: DateComponents(calendar: Calendar.current, 
+			timeZone: TimeZone(abbreviation: "EST")!, year: 2020, month: 3, day: 7))!
 	}
 }
 
@@ -110,7 +113,8 @@ func configureMiddleware(_ app: Application) throws {
 	// creating a new Middlewares().
 	var new = Middlewares()
 	new.use(RouteLoggingMiddleware(logLevel: .info))
-	new.use(SwiftarrErrorMiddleware.default(environment: app.environment))
+	new.use(SwiftarrErrorMiddleware(environment: app.environment))
+	new.use(SiteErrorMiddleware(environment: app.environment))
 	new.use(FileMiddleware(publicDirectory: "Resources/Assets")) // serves files from `Public/` directory
 	app.middleware = new
 }
@@ -179,6 +183,7 @@ func configureMigrations(_ app: Application) throws {
 	app.migrations.add(CreateFriendlyFezSchema(), to: .psql)
 	app.migrations.add(CreateFezParticipantSchema(), to: .psql)
 	app.migrations.add(CreateFezPostSchema(), to: .psql)
+	app.migrations.add(CreateFriendlyFezEditSchema(), to: .psql)
 	
 	// Third, migrations that seed the db with initial data
 	app.migrations.add(CreateAdminUser(), to: .psql)

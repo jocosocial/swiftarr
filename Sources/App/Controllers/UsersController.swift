@@ -12,30 +12,16 @@ import RediStack
 /// cleaner collection, since use of `User.parameter` in the paths here can be avoided
 /// entirely.
 
-struct UsersController: RouteCollection {
-    
-    // Vapor uses ":pathParam" to declare a parameterized path element, and "pathParam" (no colon) to get 
-    // the parameter value in route handlers. findFromParameter() has a variant that takes a PathComponent,
-    // and it's slightly more type-safe to do this rather than relying on string matching.
-    var userIDParam = PathComponent(":user_id")
-    var searchStringParam = PathComponent(":search_string")
-
-// MARK: RouteCollection Conformance
-    
+struct UsersController: APIRouteCollection {
+        
     /// Required. Registers routes to the incoming router.
-    func boot(routes: RoutesBuilder) throws {
+    func registerRoutes(_ app: Application) throws {
 
 		// convenience route group for all /api/v3/users endpoints
-		let usersRoutes = routes.grouped("api", "v3", "users")
-
-		// instantiate authentication middleware
-		let tokenAuthMiddleware = Token.authenticator()
-		let guardAuthMiddleware = User.guardMiddleware()
-
-		// set protected route groups
-		let tokenAuthGroup = usersRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
+		let usersRoutes = app.grouped("api", "v3", "users")
 				
 		// endpoints available only when logged in
+		let tokenAuthGroup = addTokenAuthGroup(to: usersRoutes)
 		tokenAuthGroup.get("find", ":userSearchString", use: findHandler)
 		tokenAuthGroup.get(userIDParam, "profile", use: profileHandler)
 		tokenAuthGroup.get(userIDParam, use: headerHandler)
@@ -51,16 +37,10 @@ struct UsersController: RouteCollection {
 		tokenAuthGroup.post(userIDParam, "unblock", use: unblockHandler)
 		tokenAuthGroup.post(userIDParam, "unmute", use: unmuteHandler)
     }
-    
-    // MARK: - Open Access Handlers
-    
-    // MARK: - basicAuthGroup Handlers (not logged in)
-    // All handlers in this route group require a valid HTTP Basic Authentication
+        
+    // MARK: - tokenAuthGroup Handlers (logged in)
+    // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
-    
-    // MARK: - sharedAuthGroup Handlers (logged in or not)
-    // All handlers in this route group require a valid HTTP Basic Authorization
-    // *or* HTTP Bearer Authorization header in the request.
     
     /// `GET /api/v3/users/find/STRING`
     ///
@@ -177,10 +157,6 @@ struct UsersController: RouteCollection {
 		}
     }
         
-    // MARK: - tokenAuthGroup Handlers (logged in)
-    // All handlers in this route group require a valid HTTP Bearer Authentication
-    // header in the request.
-    
     /// `POST /api/v3/users/ID/block`
     ///
     /// Blocks the specified `User`. The blocking user and any sub-accounts will not be able

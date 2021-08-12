@@ -271,7 +271,7 @@ extension FezContentData: RCFValidatable {
 
 /// Used to return a `FriendlyFez`'s data.
 ///
-/// Returned by these methods, with `posts` set to nil.
+/// Returned by these methods, with `members` set to nil.
 /// * `POST /api/v3/fez/create`
 /// * `POST /api/v3/fez/ID/join`
 /// * `POST /api/v3/fez/ID/unjoin`
@@ -282,7 +282,7 @@ extension FezContentData: RCFValidatable {
 /// * `POST /api/v3/fez/ID/user/ID/remove`
 /// * `POST /api/v3/fez/ID/cancel`
 /// 
-/// Returned by these  methods, with `posts` populated.
+/// Returned by these  methods, with `members` populated.
 /// * `GET /api/v3/fez/ID`
 /// * `POST /api/v3/fez/ID/post`
 /// * `POST /api/v3/fex/ID/post/ID/delete`
@@ -295,8 +295,8 @@ extension FezContentData: RCFValidatable {
 struct FezData: Content, ResponseEncodable {
     /// The ID of the fez.
     var fezID: UUID
-    /// The ID of the fez's owner.
-    var ownerID: UUID
+    /// The fez's owner.
+    var owner: UserHeader
     /// The `FezType` .label of the fez.
     var fezType: FezType
     /// The title of the fez.
@@ -309,38 +309,50 @@ struct FezData: Content, ResponseEncodable {
     var endTime: Date?
     /// The location for the fez.
     var location: String?
-    /// The users participating in the fez.
-    var participants: [UserHeader]
-    /// The users on a waiting list for the fez.
-    var waitingList: [UserHeader]
-    /// How many posts the user can see in the fez. The count is returned even for calls that don't return the actual posts, but is not returned for 
-    /// fezzes where the user is not a member. PostCount does not include posts from blocked/muted users.
-	var postCount: Int
-    /// How many posts the user has read. If postCount > readCount, there's posts to be read. UI can also use readCount to set the initial view 
-    /// to the first unread message.ReadCount does not include posts from blocked/muted users.
-	var readCount: Int
+    /// How many users are currently members of the fez. Can be larger than maxParticipants; which indicates a waitlist.
+	var participantCount: Int
+    /// The min number of people for the activity. Set by the host. Fezzes may?? auto-cancel if the minimum participant count isn't met when the fez is scheduled to start.
+	var minParticipants: Int
+    /// The max number of people for the activity. Set by the host.
+	var maxParticipants: Int
 	/// The most recent of: Creation time for the fez, time of the last post (may not exactly match post time), user add/remove, or update to fezzes' fields. 
 	var lastModificationTime: Date
-    /// The FezPosts in the fez discussion. Only populated for some calls; see above.
-    var posts: [FezPostData]?
+    
+    /// FezData.MembersOnlyData returns data only available to participants in a Fez. 
+    struct MembersOnlyData: Content, ResponseEncodable {
+		/// The users participating in the fez.
+		var participants: [UserHeader]
+		/// The users on a waiting list for the fez.
+		var waitingList: [UserHeader]
+		/// How many posts the user can see in the fez. The count is returned even for calls that don't return the actual posts, but is not returned for 
+		/// fezzes where the user is not a member. PostCount does not include posts from blocked/muted users.
+		var postCount: Int
+		/// How many posts the user has read. If postCount > readCount, there's posts to be read. UI can also use readCount to set the initial view 
+		/// to the first unread message.ReadCount does not include posts from blocked/muted users.
+		var readCount: Int
+		/// The FezPosts in the fez discussion. Methods that return arrays of Fezzes, or that add or remove users, do not populate this field (it will be nil).
+		var posts: [FezPostData]?
+	}
+	
+	/// Will be nil if user is not a member of the fez (in the participant or waiting lists).
+	var members: MembersOnlyData?
 }
 
 extension FezData {
-	init(fez: FriendlyFez) throws {
+	init(fez: FriendlyFez, owner: UserHeader) throws {
 		self.fezID = try fez.requireID()
-		self.ownerID = fez.$owner.id
+		self.owner = owner
 		self.fezType = fez.fezType
-		self.title = fez.title
-		self.info = fez.info
+		self.title = fez.moderationStatus.showsContent() ? fez.title : "Fez Title is under moderator review"
+		self.info = fez.moderationStatus.showsContent() ? fez.info : "Fez Information field is under moderator review"
 		self.startTime = fez.startTime
 		self.endTime = fez.endTime
-		self.location = fez.location
-		self.participants = []
-		self.waitingList = []
-		self.postCount = 0
-		self.readCount = 0
+		self.location = fez.moderationStatus.showsContent() ? fez.location : "Fez Location field is under moderator review"
 		self.lastModificationTime = fez.updatedAt ?? Date()
-		self.posts = nil
+		self.participantCount = fez.participantArray.count
+		self.minParticipants = fez.minCapacity
+		self.maxParticipants = fez.maxCapacity
+		self.members = nil
 	}
 }
 

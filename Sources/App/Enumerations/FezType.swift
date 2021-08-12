@@ -11,7 +11,7 @@ enum FezType: String, CaseIterable, Codable {
     /// A gaming LFG.
     case gaming
     /// A general meetup.
-    case meeetup
+    case meetup
     /// A music-related LFG.
     case music
     /// Some other type of LFG.
@@ -25,11 +25,24 @@ enum FezType: String, CaseIterable, Codable {
             case .activity: return "Activity"
             case .dining: return "Dining"
             case .gaming: return "Gaming"
-            case .meeetup: return "Meetup"
+            case .meetup: return "Meetup"
             case .music: return "Music"
             case .shore: return "Shore"
             case .closed: return "Private"
             default: return "Other"
         }
+    }
+    
+    /// This gives us a bit more control than `init(rawValue:)`. Since the strings for FezTypes are part of the API (specifically, they're URL query values), 
+    /// they should be somewhat abstracted from internal representation. 
+    static func fromAPIString(_ str: String) -> Self? {
+    	let lcString = str.lowercased()
+    	if lcString == "private" {
+    		return .closed
+    	}
+    	if let result = FezType(rawValue: lcString) {
+    		return result
+    	}
+    	return nil
     }
 }

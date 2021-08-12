@@ -1,6 +1,8 @@
 #extend("trunk"):
     #export("body"):
     	<div class="container-md ms-0 mt-2">
+			#if(count(announcements) > 0):
+				<h6><b>Announcements</b><h6>
 				#for(ann in announcements):
 					<div class="card mb-1">	
 						<div class="card-header bg-primary">
@@ -13,6 +15,21 @@
 						</div>
 					</div>
 				#endfor
+			#endif
+			#if(trunk.alertCounts.newTwarrtMentionCount > 0 || trunk.alertCounts.newForumMentionCount > 0):
+				<h6><b>Notifications</b></h6>
+			#endif
+			<div class="list-group">
+			#if(trunk.alertCounts.newTwarrtMentionCount > 0):
+				<a class="list-group-item list-group-item-action" href="/tweets?mentions=#(trunk.username)">
+					You have #(trunk.alertCounts.newTwarrtMentionCount) new tweet @mentions
+				</a>
+			#endif
+			#if(trunk.alertCounts.newForumMentionCount > 0):
+				<a class="list-group-item list-group-item-action" href="/forumpost/mentions">
+					You have #(trunk.alertCounts.newForumMentionCount) new forum @mentions
+				</a>
+			#endif
 		</div>
     #endexport
 #endextend

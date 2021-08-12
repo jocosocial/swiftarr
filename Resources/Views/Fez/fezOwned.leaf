@@ -1,0 +1,22 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 mt-2">
+			#extend("fez/fezNavbar")
+			<a class="btn btn-primary btn-sm mb-2" role="button" href="/fez/create">New Fez</a>
+			<div class="list-group">
+				#if(count(fezzes) == 0):
+					<div class="row">
+						<div class="col">
+							<li class="list-group-item">You haven't created any Friendly Fezzes yet, but you can create one by tapping "New Fez".</li>
+						</div>
+					</div>
+				#else:
+					#for(fez in fezzes):
+						#extend("fez/fezListItem")
+					#endfor
+				#endif
+			</div>
+		</div>
+    #endexport
+#endextend
+

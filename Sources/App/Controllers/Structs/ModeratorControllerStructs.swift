@@ -1,5 +1,56 @@
 import Vapor
 
+/// Used to return `FriendlyFezEdit` data for moderators. The only primary data an edit stores is the title, info, and location text fields.
+///
+///	Included in:
+///	* `FezModerationData`
+///	
+/// Returned by:
+/// * `GET /api/v3/mod/fez/ID`
+struct FezEditLogData: Content {
+	/// The ID of the fez.
+    var fezID: UUID
+	/// The ID of the edit.
+    var editID: UUID
+    /// The timestamp of the edit.
+    var createdAt: Date
+    /// Who initiated the edit. Usually the fez creator, but could be a moderator. Note that the saved edit shows the state BEFORE the edit,
+    /// therefore the 'author' here changed the contents to those of the NEXT edit (or to the current state).
+    var author: UserHeader
+    /// The title of the fez just before `author` edited it.
+    var title: String
+    /// The info field just before `author` edited it.
+    var info: String
+    /// The location field just before `author` edited it.
+    var location: String
+}
+
+extension FezEditLogData {
+	init(_ edit: FriendlyFezEdit, on req: Request) throws {
+		fezID = edit.$fez.id
+		editID = try edit.requireID()
+		createdAt = edit.createdAt ?? Date()
+		author = try req.userCache.getHeader(edit.$editor.id)
+		title = edit.title
+		info = edit.info
+		location = edit.location
+	}
+}
+/// Used to return data a moderator needs to moderate a fez. 
+///	
+/// Returned by:
+/// * `GET /api/v3/mod/fez/id`
+///
+/// See `ModerationController.forumModerationHandler(_:)`
+struct FezModerationData: Content {
+	var fez: FezData
+	var isDeleted: Bool
+	var moderationStatus: ContentModerationStatus
+	var edits: [FezEditLogData]
+	var reports: [ReportAdminData]
+}
+
+
 struct ForumAdminData: Content {
     /// The forum's ID.
     var forumID: UUID
@@ -31,7 +82,7 @@ extension ForumAdminData {
 ///	* `TwarrtModerationData`
 ///	
 /// Returned by:
-/// * `GET /api/v3/admin/twarrt/id`
+/// * `GET /api/v3/mod/twarrt/id`
 struct ForumEditLogData: Content {
 	/// The ID of the forum.
     var forumID: UUID
@@ -59,9 +110,9 @@ extension ForumEditLogData {
 /// Used to return data a moderator needs to moderate a twarrt. 
 ///	
 /// Returned by:
-/// * `GET /api/v3/admin/forum/id`
+/// * `GET /api/v3/mod/forum/id`
 ///
-/// See `AdminController.forumModerationHandler(_:)`
+/// See `ModerationController.forumModerationHandler(_:)`
 struct ForumModerationData: Content {
 	var forum: ForumAdminData
 	var isDeleted: Bool
@@ -73,9 +124,9 @@ struct ForumModerationData: Content {
 /// Used to return data a moderator needs to moderate a twarrt. 
 ///	
 /// Returned by:
-/// * `GET /api/v3/admin/forumPost/id`
+/// * `GET /api/v3/mod/forumPost/id`
 ///
-/// See `AdminController.forumPostModerationHandler(_:)`
+/// See `ModerationController.forumPostModerationHandler(_:)`
 struct ForumPostModerationData: Content {
 	var forumPost: PostDetailData
 	var isDeleted: Bool
@@ -121,7 +172,7 @@ extension ModeratorActionLogData {
 ///	* `TwarrtModerationData`
 ///	
 /// Returned by:
-/// * `GET /api/v3/admin/twarrt/id`
+/// * `GET /api/v3/mod/twarrt/id`
 struct PostEditLogData: Content {
 	/// The ID of the post. Depending on context, could be a twarrtID or a forumPostID.
     var postID: Int
@@ -161,7 +212,7 @@ extension PostEditLogData {
 /// Used to return data about `Report`s submitted by users. Only Moderators and above have access.
 ///
 /// Required by:
-/// * `GET /api/v3/admin/reports`
+/// * `GET /api/v3/mod/reports`
 struct ReportAdminData: Content {
 	/// The id of the report.
 	var id: UUID
@@ -205,9 +256,9 @@ extension ReportAdminData {
 /// Used to return data a moderator needs to moderate a twarrt. 
 ///	
 /// Returned by:
-/// * `GET /api/v3/admin/twarrt/id`
+/// * `GET /api/v3/mod/twarrt/id`
 ///
-/// See `AdminController.twarrtModerationHandler(_:)`
+/// See `ModerationController.twarrtModerationHandler(_:)`
 struct TwarrtModerationData: Content {
 	var twarrt: TwarrtData
 	var isDeleted: Bool

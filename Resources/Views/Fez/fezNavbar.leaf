@@ -1,0 +1,16 @@
+<div class="row mb-2">
+	<ul class="nav nav-tabs">
+		<li class="nav-item">
+			<a class="nav-link disabled"><b>Friendly Fez</b></a>
+		</li>
+		<li class="nav-item">
+			<a class="nav-link#if(tab == "find"): active#endif" #if(tab == "find"):aria-current="page"#endif href="/fez">Find</a>
+		</li>
+		<li class="nav-item">
+			<a class="nav-link#if(tab == "joined"): active#endif" #if(tab == "joined"):aria-current="page"#endif href="/fez/joined">Joined</a>
+		</li>
+		<li class="nav-item">
+			<a class="nav-link#if(tab == "owned"): active#endif" #if(tab == "owned"):aria-current="page"#endif href="/fez/owned">Owned</a>
+		</li>
+	</ul>
+</div>

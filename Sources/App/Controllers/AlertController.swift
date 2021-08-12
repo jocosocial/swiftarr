@@ -14,29 +14,21 @@ import FluentSQL
 ///		- getting public address-style announcements,,
 ///		- getting notifications on alertwords,
 ///		- getting notificaitons on incoming Fez messages.
-struct AlertController: RouteCollection {
-	// Vapor uses ":pathParam" to declare a parameterized path element, and "pathParam" (no colon) to get 
-	// the parameter value in route handlers. findFromParameter() has a variant that takes a PathComponent,
-	// and it's slightly more type-safe to do this rather than relying on string matching.
-	var announcementIDParam = PathComponent(":announce_id")
+struct AlertController: APIRouteCollection {
 
 	/// Required. Registers routes to the incoming router.
-	func boot(routes: RoutesBuilder) throws {
+	func registerRoutes(_ app: Application) throws {
         
 		// convenience route group for all /api/v3/alert endpoints
-		let alertRoutes = routes.grouped("api", "v3", "notification")
-
-		// instantiate authentication middleware
-		let tokenAuthMiddleware = Token.authenticator()
-		let guardAuthMiddleware = User.guardMiddleware()
+		let alertRoutes = app.grouped("api", "v3", "notification")
 
 		// open access endpoints -- login not required, although calls may act differently if logged in
-		let openAuthGroup = alertRoutes.grouped([tokenAuthMiddleware])
+		let openAuthGroup = addOpenAuthGroup(to: alertRoutes)
 //		alertRoutes.get("notifications", use: globalNotificationHandler)
 		openAuthGroup.get("announcements", use: getAnnouncements)
 
 		// endpoints available only when logged in
-		let tokenAuthGroup = alertRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
+		let tokenAuthGroup = addTokenAuthGroup(to: alertRoutes)
 //		tokenAuthGroup.get("user", "notifications", use: userNotificationHandler)
 		tokenAuthGroup.get("usercounts", use: userCountNotificationHandler)
 		tokenAuthGroup.get("announcement", announcementIDParam, use: getSingleAnnouncement)
@@ -108,11 +100,12 @@ struct AlertController: RouteCollection {
 					}
 				}
 				return Announcement.query(on: req.db)
-						.filter(\.$id > user.lastReadAnnouncement)
+						.field(\.$id)
 						.filter(\.$displayUntil > Date())
-						.count().map { numNewAnnouncements in
+						.all().map { actives in
+					let newAnnouncements = actives.reduce(0) { ($1.id ?? 0) > user.lastReadAnnouncement ? $0 + 1 : $0 }
 					return UserNotificationCountData(user: user, newFezCount: unreadFezCount, newSeamailCount: unreadSeamailCount,
-							highestAnnouncementID: numNewAnnouncements, nextEvent: nextEventDate)
+							newAnnouncementCount: newAnnouncements, activeAnnouncementCount: actives.count, nextEvent: nextEventDate)
 				}
 			}
 		}
@@ -312,18 +305,24 @@ struct UserNotificationData: Content {
 }
 
 struct UserNotificationCountData: Content {
-	//
-	var highestAnnouncementID: Int
-	/// Any announcements whose `id` is greater than this number are new announcements that haven't been seen by this user.
-	var highestReadAnnouncementID: Int
+	/// Count of announcements the user has not yet seen.
+	var newAnnouncementCount: Int
+	/// Count of all active announcements.
+	var activeAnnouncementCount: Int
 	
+	/// Number of twarrts that @mention the user.
 	var twarrtMentionCount: Int
-	var readTwarrtMentionCount: Int
 	
+	/// Number of twarrt @mentions that the user has not read (by visiting the twarrt mentions endpoint; reading twarrts in the regular feed doesn't count).
+	var newTwarrtMentionCount: Int
+	
+	/// Number of forum posts that @mention the user.
 	var forumMentionCount: Int
-	var readForumMentionCount: Int
 	
-	/// Count of # of Seamails with new messages
+	/// Number of forum post @mentions the user has not read.
+	var newForumMentionCount: Int
+	
+	/// Count of # of Seamail threads with new messages. NOT total # of new messages-a single seamail thread with 10 new messages counts as 1.
 	var newSeamailMessageCount: Int
 	
 	/// Count of # of Fezzes with new messages
@@ -337,13 +336,13 @@ struct UserNotificationCountData: Content {
 }
 
 extension UserNotificationCountData	{
-	init(user: User, newFezCount: Int, newSeamailCount: Int, highestAnnouncementID: Int, nextEvent: Date?) {
-		self.highestAnnouncementID = highestAnnouncementID
-		self.highestReadAnnouncementID = user.lastReadAnnouncement
+	init(user: User, newFezCount: Int, newSeamailCount: Int, newAnnouncementCount: Int, activeAnnouncementCount: Int, nextEvent: Date?) {
+		self.activeAnnouncementCount = activeAnnouncementCount
+		self.newAnnouncementCount = newAnnouncementCount
 		self.twarrtMentionCount = user.twarrtMentions
-		self.readTwarrtMentionCount = user.twarrtMentionsViewed
+		self.newTwarrtMentionCount = max(user.twarrtMentions - user.twarrtMentionsViewed, 0)
 		self.forumMentionCount = user.forumMentions
-		self.readForumMentionCount = user.forumMentionsViewed
+		self.newForumMentionCount = max(user.forumMentions - user.forumMentionsViewed, 0)
 		self.newSeamailMessageCount = newSeamailCount
 		self.newFezMessageCount = newFezCount
 		self.nextFollowedEventTime = nextEvent
@@ -351,12 +350,12 @@ extension UserNotificationCountData	{
 	
 	// Initializes an empty struct, because Leaf doesn't handle optional structs well.
 	init() {
-		self.highestAnnouncementID = 0
-		self.highestReadAnnouncementID = 0
+		self.newAnnouncementCount = 0
+		self.activeAnnouncementCount = 0
 		self.twarrtMentionCount = 0
-		self.readTwarrtMentionCount = 0
+		self.newTwarrtMentionCount = 0
 		self.forumMentionCount = 0
-		self.readForumMentionCount = 0
+		self.newForumMentionCount = 0
 		self.newSeamailMessageCount = 0
 		self.newFezMessageCount = 0
 		self.nextFollowedEventTime = nil

@@ -7,30 +7,22 @@ import Redis
 /// The collection of `/api/v3/client/*` route endpoints and handler functions that provide
 /// bulk retrieval services for registered API clients.
 
-struct ClientController: RouteCollection {
+struct ClientController: APIRouteCollection {
     
     // MARK: RouteCollection Conformance
     
     /// Required. Registers routes to the incoming router.
-    func boot(routes: RoutesBuilder) throws {
+	func registerRoutes(_ app: Application) throws {
 
 		// convenience route group for all /api/v3/client endpoints
-		let clientRoutes = routes.grouped("api", "v3", "client")
-
-		// instantiate authentication middleware
-		let tokenAuthMiddleware = Token.authenticator()
-		let guardAuthMiddleware = User.guardMiddleware()
-
-		// set protected route groups
-		let tokenAuthGroup = clientRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
+		let clientRoutes = app.grouped("api", "v3", "client")
 
 		// endpoints available only when logged in
+		let tokenAuthGroup = addTokenAuthGroup(to: clientRoutes)
 		tokenAuthGroup.get("user", "updates", "since", ":date", use: userUpdatesHandler)
 		tokenAuthGroup.get("usersearch", use: userSearchHandler)
     }
-    
-    // MARK: - Open Access Handlers
-    
+
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.

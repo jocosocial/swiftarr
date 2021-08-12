@@ -10,7 +10,7 @@ import Fluent
 /// cleaner collection, since use of `User.parameter` in the paths here can be avoided
 /// entirely.
 
-struct UserController: RouteCollection {
+struct UserController: APIRouteCollection {
 
     // MARK: Properties
         
@@ -93,33 +93,18 @@ struct UserController: RouteCollection {
         "yarn", "year", "yellow", "yummy", "zealous", "zebra", "zesty", "zippy",
         "zombie"
     ]
-    
-    // Vapor uses ":pathParam" to declare a parameterized path element, and "pathParam" (no colon) to get 
-    // the parameter value in route handlers. findFromParameter() has a variant that takes a PathComponent,
-    // and it's slightly more type-safe to do this rather than relying on string matching.
-    var barrelIDParam = PathComponent(":barrel_id")
-    var alertwordParam = PathComponent(":alert_word")
-    var mutewordParam = PathComponent(":mute_word")
-
-    // MARK: RouteCollection Conformance
-    
+        
     /// Required. Registers routes to the incoming router.
-    func boot(routes: RoutesBuilder) throws {
+    func registerRoutes(_ app: Application) throws {
         
         // convenience route group for all /api/v3/user endpoints
-        let userRoutes = routes.grouped("api", "v3", "user")
-        
-        // instantiate authentication middleware
-        let tokenAuthMiddleware = Token.authenticator()
-        let guardAuthMiddleware = User.guardMiddleware()
-        
-        // set protected route groups
-        let tokenAuthGroup = userRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
+        let userRoutes = app.grouped("api", "v3", "user")
         
         // open access endpoints
         userRoutes.post("create", use: createHandler)
         
         // endpoints available only when logged in
+		let tokenAuthGroup = addTokenAuthGroup(to: userRoutes)
         tokenAuthGroup.post("verify", use: verifyHandler)
         tokenAuthGroup.post("image", use: imageHandler)
         tokenAuthGroup.post("image", "remove", use: imageRemoveHandler)
@@ -183,101 +168,87 @@ struct UserController: RouteCollection {
 		let data = try ValidatingJSONDecoder().decode(UserCreateData.self, fromBodyOf: req)
         // check for existing username so we can return 409 Conflict status instead
         // of the default super-unfriendly 500 for unique constraint violation
-        return User.query(on: req.db)
-            .filter(\.$username == data.username)
-            .first()
-            .throwingFlatMap { (existingUser) in
-				// abort if name is already taken
-				guard existingUser == nil else {
-					throw Abort(.conflict, reason: "username '\(data.username)' is not available")
+        return User.query(on: req.db).filter(\.$username == data.username).first().throwingFlatMap { (existingUser) in
+			// abort if name is already taken
+			guard existingUser == nil else {
+				throw Abort(.conflict, reason: "username '\(data.username)' is not available")
+			}
+			
+			// create recovery key
+			var recoveryKey = ""
+			_ = try UserController.generateRecoveryKey(on: req).map { (resolvedKey) in
+				recoveryKey = resolvedKey
+			}
+			let normalizedKey = recoveryKey.lowercased().replacingOccurrences(of: " ", with: "")
+			
+			// create user
+			let passwordHash = try Bcrypt.hash(data.password)
+			let recoveryHash = try Bcrypt.hash(normalizedKey)
+			let user = User(username: data.username, password: passwordHash, recoveryKey: recoveryHash,
+					verification: nil, parent: nil, accessLevel: .unverified)
+			
+			// We don't need a reg code to make a user, but a malformed code is an error.
+			var normalizedCode = data.verification?.lowercased().replacingOccurrences(of: " ", with: "")
+			if normalizedCode?.count == 0 {
+				normalizedCode = nil
+			}
+			if let code = normalizedCode {
+				guard code.rangeOfCharacter(from: CharacterSet.alphanumerics.inverted) == nil && code.count == 6 else {
+					throw Abort(.badRequest, reason: "Malformed verification code. Verification code " +
+							"must be 6 alphanumeric letters; spaces optional.")
 				}
-				
-				// create recovery key
-				var recoveryKey = ""
-				_ = try UserController.generateRecoveryKey(on: req).map { (resolvedKey) in
-					recoveryKey = resolvedKey
-				}
-				let normalizedKey = recoveryKey.lowercased().replacingOccurrences(of: " ", with: "")
-				
-				// create user
-				let passwordHash = try Bcrypt.hash(data.password)
-				let recoveryHash = try Bcrypt.hash(normalizedKey)
-				let user = User(
-					username: data.username,
-					password: passwordHash,
-					recoveryKey: recoveryHash,
-					verification: nil,
-					parent: nil,
-					accessLevel: .unverified
-				)
-				
-				// We don't need a reg code to make a user, but a malformed code is an error.
-				var normalizedCode = data.verification?.lowercased().replacingOccurrences(of: " ", with: "")
-				if normalizedCode?.count == 0 {
-					normalizedCode = nil
-				}
+			}
+			
+			// wrap in a transaction to ensure each user has an associated profile
+			return req.db.transaction { (database) in
+				var result: EventLoopFuture<RegistrationCode?>
 				if let code = normalizedCode {
-					guard code.rangeOfCharacter(from: CharacterSet.alphanumerics.inverted) == nil &&
-							code.count == 6 else {
-						throw Abort(.badRequest, reason: "Malformed verification code. Verification code " +
-								"must be 6 alphanumeric letters; spaces optional.")
-					}
+					result = RegistrationCode.query(on: database).filter(\.$code == code).first()
 				}
-				
-				// wrap in a transaction to ensure each user has an associated profile
-				return req.db.transaction { (database) in
-					var result: EventLoopFuture<RegistrationCode?>
-					if let code = normalizedCode {
-						result = RegistrationCode.query(on: database).filter(\.$code == code).first()
-					}
-					else {
-						result = database.eventLoop.future(nil)
-					}
-					return result.throwingFlatMap { (regCode) in
-						// normalizedCode is from request body, regCode is from RegistrationCode table lookup
-						if normalizedCode != nil {
-							guard let registrationCode = regCode else {
-								throw Abort(.badRequest, reason: "registration code not found")
-							}
-							guard registrationCode.user == nil else {
-							   throw Abort(.conflict, reason: "registration code has already been used")
-							}
-							user.accessLevel = .verified
-							user.verification = registrationCode.code
-						}
-						return user.save(on: database).throwingFlatMap {
-							var saveRegCode: EventLoopFuture<Void> = database.eventLoop.future()
-							if let registrationCode = regCode {
-								registrationCode.$user.id = try user.requireID()
-								saveRegCode = registrationCode.save(on: database)
-							}
-							
-							// initialize default barrels and profile with our new user.
-							let barrels = self.createDefaultBarrels(for: user, on: database)
-							return database.eventLoop.flatten([barrels, saveRegCode])
-						}
-					}
+				else {
+					result = database.eventLoop.future(nil)
 				}
-				.throwingFlatMap {
-					return try req.userCache.updateUser(user.requireID()).flatMapThrowing { (_) in
-						// return user data as .created
-						let createdUserData = try CreatedUserData(
-							userID: user.requireID(),
-							username: user.username,
-							recoveryKey: recoveryKey
-						)
-							let response = Response(status: .created)
-							try response.content.encode(createdUserData)
-							return response
+				return result.throwingFlatMap { (regCode) in
+					// normalizedCode is from request body, regCode is from RegistrationCode table lookup
+					if normalizedCode != nil {
+						guard let registrationCode = regCode else {
+							throw Abort(.badRequest, reason: "registration code not found")
+						}
+						guard registrationCode.user == nil else {
+						   throw Abort(.conflict, reason: "registration code has already been used")
+						}
+						user.accessLevel = .verified
+						user.verification = registrationCode.code
+					}
+					return user.save(on: database).throwingFlatMap {
+						var saveRegCode: EventLoopFuture<Void> = database.eventLoop.future()
+						if let registrationCode = regCode {
+							registrationCode.$user.id = try user.requireID()
+							saveRegCode = registrationCode.save(on: database)
+						}
+						
+						// initialize default barrels and profile with our new user.
+						let barrels = self.createDefaultBarrels(for: user, on: database)
+						return database.eventLoop.flatten([barrels, saveRegCode])
 					}
 				}
 			}
+			.throwingFlatMap {
+				return try req.userCache.updateUser(user.requireID()).flatMapThrowing { (_) in
+					// return user data as .created
+					let createdUserData = try CreatedUserData(userID: user.requireID(), username: user.username, recoveryKey: recoveryKey)
+					let response = Response(status: .created)
+					try response.content.encode(createdUserData)
+					return response
+				}
+			}
+		}
     }
     
-    // MARK: - basicAuthGroup Handlers (not logged in)
-    // All handlers in this route group require a valid HTTP Basic Authentication
+    // MARK: - tokenAuthGroup Handlers (logged in)
+    // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
-    
+        
     /// `POST /api/v3/user/verify`
     ///
     /// Changes a `User.accessLevel` from `.unverified` to `.verified` on successful submission
@@ -302,31 +273,27 @@ struct UserController: RouteCollection {
 		let data = try ValidatingJSONDecoder().decode(UserVerifyData.self, fromBodyOf: req)
         let normalizedCode = data.verification.lowercased().replacingOccurrences(of: " ", with: "")
         return RegistrationCode.query(on: req.db)
-            .filter(\.$code == normalizedCode)
-            .first()
-            .unwrap(or: Abort(.badRequest, reason: "registration code not found"))
-            .throwingFlatMap { (registrationCode) in
-                // abort if code is already used
-                guard registrationCode.user == nil else {
-                   throw Abort(.conflict, reason: "registration code has already been used")
-                }
-                // update models and return 200
-                return req.db.transaction { (database) in
-                    // update registrationCode
-                    registrationCode.$user.id = userID
-                    return registrationCode.save(on: database).flatMap {
-                        // update user
-                        user.accessLevel = .verified
-                        user.verification = registrationCode.code
-                        return user.save(on: database).transform(to: .ok)
-                    }
-                }
+				.filter(\.$code == normalizedCode)
+				.first()
+				.unwrap(or: Abort(.badRequest, reason: "registration code not found"))
+				.throwingFlatMap { (registrationCode) in
+			// abort if code is already used
+			guard registrationCode.user == nil else {
+			   throw Abort(.conflict, reason: "registration code has already been used")
+			}
+			// update models and return 200
+			return req.db.transaction { (database) in
+				// update registrationCode
+				registrationCode.$user.id = userID
+				return registrationCode.save(on: database).flatMap {
+					// update user
+					user.accessLevel = .verified
+					user.verification = registrationCode.code
+					return user.save(on: database).transform(to: .ok)
+				}
+			}
         }
     }
-    
-    // MARK: - sharedAuthGroup Handlers (logged in or not)
-    // All handlers in this route group require a valid HTTP Basic Authorization
-    // *or* HTTP Bearer Authorization header in the request.
     
     /// `POST /api/v3/user/image`
     ///
@@ -519,10 +486,6 @@ struct UserController: RouteCollection {
         )
         return req.eventLoop.future(currentUserData)
     }
-    
-    // MARK: - tokenAuthGroup Handlers (logged in)
-    // All handlers in this route group require a valid HTTP Bearer Authentication
-    // header in the request.
     
     /// `POST /api/v3/user/add`
     ///

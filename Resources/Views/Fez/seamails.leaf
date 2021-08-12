@@ -28,7 +28,7 @@
 								</div>
 							</div>
 							<div class="row">
-								#for(participant in fez.participants):
+								#for(participant in fez.members.participants):
 									#if(participant.userID != trunk.userID):
 										<div class="col col-auto border">
 											#avatar(participant.userImage)
@@ -39,12 +39,12 @@
 							</div>
 							<div class="row">
 								<div class="col">
-									<span class="text-muted">#relativeTime(forum.lastPostAt)</span>
+									<span class="text-muted">#relativeTime(fez.lastModificationTime)</span>
 								</div>
 								<div class="col col-auto">
-									<span class="badge rounded-pill bg-light text-dark">#(fez.postCount) posts</span>
-									#if(fez.readCount < fez.postCount):
-										<span class="badge rounded-pill bg-danger">#(fez.postCount - fez.readCount) new</span>
+									<span class="badge rounded-pill bg-light text-dark">#(fez.members.postCount) posts</span>
+									#if(fez.members.readCount < fez.members.postCount):
+										<span class="badge rounded-pill bg-danger">#(fez.members.postCount - fez.members.readCount) new</span>
 									#endif
 								</div>
 							</div>

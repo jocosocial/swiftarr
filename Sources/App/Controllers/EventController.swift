@@ -6,27 +6,21 @@ import Fluent
 /// The collection of `/api/v3/events/*` route endpoints and handler functions related
 /// to the event schedule.
 
-struct EventController: RouteCollection {
-     var eventIDParam: PathComponent { PathComponent(":event_id") }
+struct EventController: APIRouteCollection {
 
-// MARK: RouteCollection Conformance
     /// Required. Registers routes to the incoming router.
-    func boot(routes: RoutesBuilder) throws {
+    func registerRoutes(_ app: Application) throws {
         
         // convenience route group for all /api/v3/users endpoints
-        let eventRoutes = routes.grouped("api", "v3", "events")
-        
-        // instantiate authentication middleware
-        let tokenAuthMiddleware = Token.authenticator()
-        let guardAuthMiddleware = User.guardMiddleware()
+        let eventRoutes = app.grouped("api", "v3", "events")
         
         // open access endpoints that behave differently for logged-in users
-        let optionalAuthGroup = eventRoutes.grouped([tokenAuthMiddleware])
+        let optionalAuthGroup = addOpenAuthGroup(to: eventRoutes)
         optionalAuthGroup.get(use: eventsHandler)
         optionalAuthGroup.get(eventIDParam, use: singleEventHandler)
         
         // endpoints available only when logged in
-        let tokenAuthGroup = eventRoutes.grouped([tokenAuthMiddleware, guardAuthMiddleware])
+        let tokenAuthGroup = addTokenAuthGroup(to: eventRoutes)
         tokenAuthGroup.post(eventIDParam, "favorite", use: favoriteAddHandler)
         tokenAuthGroup.post(eventIDParam, "favorite", "remove", use: favoriteRemoveHandler)
         tokenAuthGroup.delete(eventIDParam, "favorite", use: favoriteRemoveHandler)

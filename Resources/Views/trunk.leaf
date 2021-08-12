@@ -20,21 +20,21 @@
 			<div class="row">
 				<div class="col pe-0 mt-1">	  
 					<span class="link-light navbar-brand me-2" data-bs-toggle="collapse" data-bs-target="\#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-						<span class="#if(trunk.alertCounts.highestAnnouncementID > trunk.alertCounts.highestReadAnnouncementID):border-bottom border-danger#endif#if(trunk.tab == "twitarr"): fw-bold#endif">
+						<span class="#if(trunk.alertCounts.newAnnouncementCount > 0):border-bottom border-danger#endif#if(trunk.tab == "twitarr"): fw-bold#endif">
 							Twit-arr			
 						</span>
 					</span>
 				</div>
 				<div class="col px-0">	  
 					<a class="nav-item nav-link link-light px-1 #if(trunk.tab == "twarrts"):active#endif" #if(trunk.tab == "twarrts"):aria-current="page"#endif href="/tweets">
-						<span class="#if(trunk.alertCounts.twarrtMentionCount > 0):border-bottom border-danger#endif">
+						<span class="#if(trunk.alertCounts.newTwarrtMentionCount > 0):border-bottom border-danger#endif">
 							Tweets			
 						</span>
 					</a>
 				</div>
 				<div class="col px-0">	  
 					<a class="nav-item nav-link link-light px-1#if(trunk.tab == "forums"): active#endif" #if(trunk.tab == "forums"):aria-current="page"#endif href="/forums">
-						<span class="#if(trunk.alertCounts.forumMentionCount > trunk.alertCounts.readForumMentionCount):border-bottom border-danger#endif">
+						<span class="#if(trunk.alertCounts.newForumMentionCount > 0):border-bottom border-danger#endif">
 							Forums
 						</span>
 					</a>
@@ -57,7 +57,16 @@
 			<div class="collapse navbar-collapse" id="navbarSupportedContent">
 				<ul class="navbar-nav navbar-dark bg-transparent mb-3">
 					<li class="nav-item d-flex align-items-center">
-						<a class="nav-link active" href="/">Home</a> <span class="text-muted"><i>#(trunk.alertCounts.highestAnnouncementID - trunk.alertCounts.highestReadAnnouncementID) New Announcements</i></span>
+						<a class="nav-link active" href="/">Home</a> 
+						#if(trunk.alertCounts.newAnnouncementCount > 1):
+							<span class="text-muted"><i>#(trunk.alertCounts.newAnnouncementCount) New Announcements</i></span>
+						#elseif(trunk.alertCounts.newAnnouncementCount == 1):
+							<span class="text-muted"><i>1 New Announcement</i></span>
+						#elseif(trunk.alertCounts.activeAnnouncementCount > 1):
+							<span class="text-muted"><i>#(trunk.alertCounts.activeAnnouncementCount) Announcements</i></span>
+						#elseif(trunk.alertCounts.activeAnnouncementCount == 1):
+							<span class="text-muted"><i>1 Announcement</i></span>
+						#endif
 					</li>
 					<li class="nav-item">
 						<a class="nav-link" href="/fez">FriendlyFez</a>
@@ -69,7 +78,7 @@
 						<a class="nav-link" href="/">Karaoke</a>
 					</li>
 					#if(trunk.userIsMod):
-						<hr class="dropdown-divider">
+						<hr class="main-menu-divider">
 						<li class="nav-item">
 							<a class="nav-link" href="/reports">Reports</a>
 						</li>
@@ -78,7 +87,7 @@
 						</li>
 					#endif
 					#if(trunk.userIsTHO):
-						<hr class="dropdown-divider">
+						<hr class="main-menu-divider">
 						<li class="nav-item">
 							<a class="nav-link" href="/admin/announcements">Announcement Admin</a>
 						</li>
@@ -86,7 +95,7 @@
 							<a class="nav-link" href="/moderator/log">Server Settings</a>
 						</li>
 					#endif
-					<hr class="dropdown-divider">
+					<hr class="main-menu-divider">
 					<li class="nav-item">
 					#if(trunk.userIsLoggedIn):
 						<a class="nav-link" href="/logout">Logout #elem(trunk.username)</a>

@@ -43,7 +43,7 @@ struct TrunkContext: Encodable {
 			userID = UUID(uuid: UUID_NULL)
 		}
 		eventStartingSoon = false
-		if let alertsStr = req.session.data["alertCounts"], let alertData = alertsStr.data(using: .utf8) {
+		if req.route != nil, let alertsStr = req.session.data["alertCounts"], let alertData = alertsStr.data(using: .utf8) {
 			let alerts = try? JSONDecoder().decode(UserNotificationCountData.self, from: alertData)
 			alertCounts = alerts ?? UserNotificationCountData()
 			
@@ -131,6 +131,7 @@ struct MessagePostContext: Encodable {
 		case forumPostEdit(PostDetailData)
 		case seamail
 		case seamailPost(FezData)
+		case fezPost(FezData)
 		case announcement
 		case announcementEdit(AnnouncementData)
 	}
@@ -189,6 +190,10 @@ struct MessagePostContext: Encodable {
 		case .seamailPost(let forSeamail):
 			formAction = "/seamail/\(forSeamail.fezID)/post"
 			postSuccessURL = "/seamail/\(forSeamail.fezID)"
+		// For posting in an existing Fez thread
+		case .fezPost(let forFez):
+			formAction = "/fez/\(forFez.fezID)/post"
+			postSuccessURL = "/fez/\(forFez.fezID)"
 		// For creating an announcement
 		case .announcement:
 			formAction = "/admin/announcement/create"
@@ -305,6 +310,15 @@ struct ReportPageContext : Encodable {
 		reportFormAction = "/forum/report/\(forumID)"
 		reportSuccessURL = req.headers.first(name: "Referer") ?? "/forums"
 	}
+	
+	// For reporting a fez (The fez itself: title, info, location)
+	init(_ req: Request, fezID: String) throws {
+		trunk = .init(req, title: "Report Friendly Fez", tab: .none)
+		reportTitle = "Report a Friendly Fez"
+		reportFormAction = "/fez/report/\(fezID)"
+		reportSuccessURL = req.headers.first(name: "Referer") ?? "/fez"
+	}
+	
 }
     
 
