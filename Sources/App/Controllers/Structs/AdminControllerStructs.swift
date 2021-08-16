@@ -13,3 +13,14 @@ struct DailyThemeUploadData: Content {
 	/// Day of cruise, counted from `Settings.shared.cruiseStartDate`. 0 is embarkation day. Values could be negative (e.g. Day -1 is "Anticipation Day")
 	var cruiseDay: Int32				
 }
+
+/// Used to update the `Event` database.
+///
+/// Required by: `POST /api/v3/events/update`
+///
+/// See `EventController.eventsUpdateHandler(_:data:)`.
+struct EventsUpdateData: Content {
+    /// The `.ics` event schedule file.
+    var schedule: String
+}
+

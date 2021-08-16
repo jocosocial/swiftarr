@@ -12,7 +12,7 @@
 
 			<div class="row">
 				<div class="col">
-					Created by: @#(fez.owner.username)
+					@#(fez.owner.username)
 				</div>
 				<div class="col col-auto mb-auto text-muted">
 					#eventTime(fez.startTime, fez.endTime)

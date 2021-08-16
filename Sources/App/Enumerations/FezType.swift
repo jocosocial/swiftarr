@@ -35,6 +35,7 @@ enum FezType: String, CaseIterable, Codable {
     
     /// This gives us a bit more control than `init(rawValue:)`. Since the strings for FezTypes are part of the API (specifically, they're URL query values), 
     /// they should be somewhat abstracted from internal representation. 
+    /// URL Parameters that take a FezType string should use this function to make a `FezType` from the input.
     static func fromAPIString(_ str: String) -> Self? {
     	let lcString = str.lowercased()
     	if lcString == "private" {

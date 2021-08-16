@@ -169,6 +169,9 @@ struct CurrentUserData: Content {
     var isLoggedIn: Bool
 }
 
+/// Used to return the day's theme.
+///
+/// Returned by: `GET /api/v3/notifications/dailythemes`
 ///
 struct DailyThemeData: Content {
     /// The theme's ID Probably only useful for admins in order to edit or delete themes.
@@ -236,16 +239,6 @@ extension EventData {
 		forum = event.$forum.id
 		self.isFavorite = isFavorite
 	}
-}
-
-/// Used to update the `Event` database.
-///
-/// Required by: `POST /api/v3/events/update`
-///
-/// See `EventController.eventsUpdateHandler(_:data:)`.
-struct EventsUpdateData: Content {
-    /// The `.ics` event schedule file.
-    var schedule: String
 }
 
 /// Used to create or update a `FriendlyFez`.
@@ -740,6 +733,7 @@ extension PostData {
 /// Used to return info about a search for `ForumPost`s. Like forums, this returns an array of `PostData.`
 /// However, this gives the results of a search for posts across all the forums.
 ///
+/// Returned by: `GET /api/v3/forum/post/search`
 /// 
 struct PostSearchData: Content {
 	/// The search query used to create these results. 

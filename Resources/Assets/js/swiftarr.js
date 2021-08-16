@@ -24,6 +24,14 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 	else if (action == "leaveFez") {
 		btn.addEventListener("click", leaveFezTappedAction);
 	}
+	else if (action == "filterFezDay") {
+		dropdownButtonSetup(btn);
+		btn.addEventListener("click", fezDayFilterDropdownTappedAction);
+	}
+	else if (action == "filterFezType") {
+		dropdownButtonSetup(btn);
+		btn.addEventListener("click", fezTypeFilterDropdownTappedAction);
+	}
 }
 
 // Click handler for the like/laugh/love buttons, for both tweets and forum posts
@@ -184,6 +192,24 @@ function updateLikeCounts(postElement) {
 				}
 			}
 		});
+}
+
+function dropdownButtonSetup(menuItemBtn) {
+	if (menuItemBtn.classList.contains("active")) {
+		let dropdownBtn = menuItemBtn.closest('.dropdown').querySelector('[data-bs-toggle="dropdown"]');
+		dropdownBtn.innerHTML = menuItemBtn.innerHTML;
+		dropdownBtn.dataset.selected = menuItemBtn.dataset.selection;
+	}
+}
+
+function updateDropdownButton(menuItemBtn) {
+	let dropdownBtn = menuItemBtn.closest('.dropdown').querySelector('[data-bs-toggle="dropdown"]');
+	dropdownBtn.innerHTML = menuItemBtn.innerHTML;
+	dropdownBtn.dataset.selected = menuItemBtn.dataset.selection;
+	for (menuItem of dropdownBtn.parentElement.querySelectorAll('[data-action]')) {
+		menuItem.classList.remove("active");
+	}
+	menuItemBtn.classList.add("active");
 }
 
 
@@ -356,15 +382,9 @@ function filterFollowingEventAction() {
 }
 
 function eventFilterDropdownTappedAction() {
-	let categoryButton = document.getElementById("eventFilterMenu");
+	updateDropdownButton(event.target);
 	let followingButton = document.getElementById("eventFollowingFilter");
 	let category = event.target.dataset.category;
-	categoryButton.innerHTML = event.target.innerHTML;
-	categoryButton.dataset.category = category;
-	for (menuItem of categoryButton.parentElement.querySelectorAll('[data-action]')) {
-		menuItem.classList.remove("active");
-	}
-	event.target.classList.add("active");
 	filterEvents(category, followingButton.classList.contains("active"));
 }
 
@@ -373,11 +393,9 @@ function filterEvents(category, onlyFollowing) {
 		let hideEvent = (onlyFollowing && listItem.dataset.eventfavorite == "false") ||
 				(category && category != "all" && category != listItem.dataset.eventcategory);
 		if (hideEvent && listItem.classList.contains("show")) {
-//			listItem.classList.remove("show")
 			new bootstrap.Collapse(listItem)
 		}
 		else if (!hideEvent && !listItem.classList.contains("show")) {
-//			listItem.classList.add("show")
 			new bootstrap.Collapse(listItem)
 		}
 	}
@@ -417,4 +435,32 @@ function leaveFezTappedAction() {
 	}).catch(error => {
 		errorDiv.textContent = "Error attempting to leave fez";
 	});
+}
+
+function fezDayFilterDropdownTappedAction() {
+	updateDropdownButton(event.target);
+	applyFezSearchFilters();
+}
+
+function fezTypeFilterDropdownTappedAction() {
+	updateDropdownButton(event.target);
+	applyFezSearchFilters();
+}
+
+function applyFezSearchFilters() {
+	let typeSelection = document.getElementById("fezTypeFilterMenu").dataset.selected;
+	let queryString = ""
+	if (typeSelection != "all") {
+		queryString = "?type=" + typeSelection;
+	}
+	let daySelection = document.getElementById("fezDayFilterMenu").dataset.selected;
+	if (daySelection != "all") {
+		if (queryString.length > 0) {
+			queryString = queryString + "&cruiseday=" + daySelection;
+		}
+		else {
+			queryString = "?cruiseday=" + daySelection;
+		}
+	}
+	window.location.href = "/fez" + queryString;
 }

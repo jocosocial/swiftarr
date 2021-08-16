@@ -106,6 +106,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		case find, joined, owned
 	}
 
+	// GET /fez
 	// Shows the root Fez page, with a list of all conversations.
 	func fezRootPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		return apiQuery(req, endpoint: "/fez/open").throwingFlatMap { response in
@@ -114,11 +115,15 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 				var trunk: TrunkContext
 				var fezzes: [FezData]
 				var tab: FezTab
+				var typeSelection: String
+				var daySelection: Int?
 				
 				init(_ req: Request, fezzes: [FezData]) throws {
 					trunk = .init(req, title: "FriendlyFez", tab: .none)
 					self.fezzes = fezzes
 					tab = .find
+					typeSelection = req.query[String.self, at: "type"] ?? "all"
+					daySelection = req.query[Int.self, at: "cruiseday"]
 				}
 			}
 			let ctx = try FezRootPageContext(req, fezzes: fezzes)

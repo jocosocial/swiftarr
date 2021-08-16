@@ -55,8 +55,13 @@ struct FezController: APIRouteCollection {
     
     /// `GET /api/v3/fez/open`
     ///
-    /// Retrieve all FriendlyFezzes with open slots and a startTime of no earlier than
-    /// one hour ago.
+    /// Retrieve FriendlyFezzes with open slots and a startTime of no earlier than one hour ago. Results are returned sorted by start time, then by title.
+	/// 
+	/// URL Query Parameters:
+	/// * `?cruiseday=INT` - Only return fezzes occuring on this day of the cruise. Embarkation Day is day 0.
+	/// * `?type=STRING` - Only return fezzes of this type, there STRING is a `FezType.fromAPIString()` string.
+	/// * `?start=INT` - The offset to the first result to return in the filtered + sorted array of results.
+	/// * `?limit=INT` - The maximum number of fezzes to return; defaults to 50.
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
@@ -65,14 +70,31 @@ struct FezController: APIRouteCollection {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
 		let blocked = try req.userCache.getBlocks(user)
-		return FriendlyFez.query(on: req.db)
+        let start = (req.query[Int.self, at: "start"] ?? 0)
+        let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
+		let futureFezzes = FriendlyFez.query(on: req.db)
 				.filter(\.$fezType != .closed)
 				.filter(\.$owner.$id !~ blocked)
 				.filter(\.$startTime > Date().addingTimeInterval(-3600))
-				.all()
-				.flatMapThrowing { (fezzes) in
+				.sort(\.$startTime, .ascending)
+				.sort(\.$title, .ascending)
+				.range(start..<(start + limit))
+		if let typeFilterStr = req.query[String.self, at: "type"] {
+			guard let typeFilter = FezType.fromAPIString(typeFilterStr) else {
+				throw Abort(.badRequest, reason: "Could not map 'type' query parameter to FezType.")
+			}
+			futureFezzes.filter(\.$fezType == typeFilter)
+		}
+		if let dayFilter = req.query[Int.self, at: "cruiseday"] {
+			let dayStart = Calendar.autoupdatingCurrent.date(byAdding: .day, value: dayFilter, to: Settings.shared.cruiseStartDate) ??
+					Settings.shared.cruiseStartDate
+			let dayEnd = Calendar.autoupdatingCurrent.date(byAdding: .day, value: dayFilter, to: dayStart) ??
+					Date()
+			futureFezzes.filter(\.$startTime > dayStart).filter(\.$startTime < dayEnd)
+		}
+		return futureFezzes.all().flatMapThrowing { (fezzes) in
 			return try fezzes.compactMap { fez in
-				if (fez.maxCapacity == 0 || fez.participantArray.count < fez.maxCapacity) &&
+				if (fez.maxCapacity == 0 || fez.participantArray.count < Int(Double(fez.maxCapacity) * 1.5)) &&
 						!fez.participantArray.contains(userID) {
 					return try buildFezData(from: fez, with: nil, for: user, on: req)
 				}
