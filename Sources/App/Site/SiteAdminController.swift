@@ -4,17 +4,29 @@ import FluentSQL
 
 struct SiteAdminController: SiteControllerUtils {
 
+	var dailyThemeParam = PathComponent(":theme_id")
+
 	func registerRoutes(_ app: Application) throws {
 		// Routes for non-shareable content. If you're not logged in we failscreen.
-		let privateRoutes = getPrivateRoutes(app).grouped("admin")
-		privateRoutes.get("announcements", use: announcementsAdminPageHandler)
-		privateRoutes.get("announcement", "create", use: announcementCreatePageHandler)
-		privateRoutes.post("announcement", "create", use: announcementCreatePostHandler)
-		privateRoutes.get("announcement", announcementIDParam, "edit", use: announcementEditPageHandler)
-		privateRoutes.post("announcement", announcementIDParam, "edit", use: announcementEditPostHandler)
-		privateRoutes.post("announcement", announcementIDParam, "delete", use: announcementDeletePostHandler)
+		let privateAdminRoutes = getPrivateRoutes(app).grouped(RequireAdminMiddleware()).grouped("admin")
+		
+		privateAdminRoutes.get("", use: adminRootPageHandler)
+
+		privateAdminRoutes.get("announcements", use: announcementsAdminPageHandler)
+		privateAdminRoutes.get("announcement", "create", use: announcementCreatePageHandler)
+		privateAdminRoutes.post("announcement", "create", use: announcementCreatePostHandler)
+		privateAdminRoutes.get("announcement", announcementIDParam, "edit", use: announcementEditPageHandler)
+		privateAdminRoutes.post("announcement", announcementIDParam, "edit", use: announcementEditPostHandler)
+		privateAdminRoutes.post("announcement", announcementIDParam, "delete", use: announcementDeletePostHandler)
+
+		privateAdminRoutes.get("dailythemes", use: dailyThemesViewHandler)
+		privateAdminRoutes.get("dailytheme", "create", use: dailyThemeCreateViewHandler)
+		privateAdminRoutes.post("dailytheme", "create", use: dailyThemeCreatePostHandler)
+		privateAdminRoutes.get("dailytheme", dailyThemeParam, "edit", use: dailyThemeEditViewHandler)
+		privateAdminRoutes.post("dailytheme", dailyThemeParam, "edit", use: dailyThemeEditPostHandler)
+		privateAdminRoutes.post("dailytheme", dailyThemeParam, "delete", use: dailyThemeDeletePostHandler)
+		privateAdminRoutes.delete("dailytheme", dailyThemeParam, use: dailyThemeDeletePostHandler)
 	}
-	
 	
 // MARK: - Admin Pages
 
@@ -38,6 +50,21 @@ struct SiteAdminController: SiteControllerUtils {
 			isExpired = from.displayUntil < Date()
 		}
 	}
+	
+	// GET /admin
+	// Shows the root admin page, which just shows links to other pages.
+	func adminRootPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+		struct AdminRootPageContext : Encodable {
+			var trunk: TrunkContext
+			
+			init(_ req: Request) throws {
+				trunk = .init(req, title: "Server Admin", tab: .none)
+			}
+		}
+		let ctx = try AdminRootPageContext(req)
+		return req.view.render("admin/root", ctx)
+	}
+
 
 	// GET /admin/announcements
 	// Shows a list of all existing announcements
@@ -160,6 +187,110 @@ struct SiteAdminController: SiteControllerUtils {
 		}
 		return apiQuery(req, endpoint: "/notification/announcement/\(announcementID)", method: .DELETE).map { response in
 			return response.status
+		}
+	}
+	
+	// GET /admin/dailythemes
+	// Shows all daily themes
+	func dailyThemesViewHandler(_ req: Request) throws -> EventLoopFuture<View> {
+		return apiQuery(req, endpoint: "/notification/dailythemes").throwingFlatMap { response in
+ 			let themeData = try response.content.decode([DailyThemeData].self)
+			
+			struct ThemeDataViewContext : Encodable {
+				var trunk: TrunkContext
+				var themes: [DailyThemeData]
+
+				init(_ req: Request, data: [DailyThemeData]) throws {
+					trunk = .init(req, title: "Daily Tmemes", tab: .none)
+					themes = data
+				}
+			}
+			let ctx = try ThemeDataViewContext(req, data: themeData)
+			return req.view.render("admin/dailyThemes", ctx)
+		}
+	}
+	
+	// GET /admin/dailytheme/create
+	func dailyThemeCreateViewHandler(_ req: Request) throws -> EventLoopFuture<View> {
+		struct ThemeCreateViewContext : Encodable {
+			var trunk: TrunkContext
+			var post: MessagePostContext
+			var breadcrumb: String
+
+			init(_ req: Request) throws {
+				trunk = .init(req, title: "Create New Daily Theme", tab: .none)
+				post = .init(forType: .theme)
+				breadcrumb = "Create New Daily Theme"
+			}
+		}
+		let ctx = try ThemeCreateViewContext(req)
+		return req.view.render("admin/themeCreate", ctx)
+	}
+	
+	// POST /admin/dailytheme/create
+	func dailyThemeCreatePostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+		let postStruct = try req.content.decode(MessagePostFormContent.self)
+		let postContent = DailyThemeUploadData(title: postStruct.forumTitle ?? "", info: postStruct.postText ?? "", 
+				image: ImageUploadData(postStruct.serverPhoto1, postStruct.localPhoto1), cruiseDay: postStruct.cruiseDay ?? 0)
+		return apiQuery(req, endpoint: "/admin/dailytheme/create", method: .POST, beforeSend: { req throws in
+			try req.content.encode(postContent)
+		}).flatMapThrowing { response in
+			return .created
+		}
+	}
+	
+	// GET /admin/dailytheme/ID/edit
+	func dailyThemeEditViewHandler(_ req: Request) throws -> EventLoopFuture<View> {
+    	guard let themeIDStr = req.parameters.get(dailyThemeParam.paramString), let themeID = UUID(themeIDStr) else {
+    		throw "Invalid daily theme ID"
+    	}
+		return apiQuery(req, endpoint: "/notification/dailythemes").throwingFlatMap { response in
+ 			let themeData = try response.content.decode([DailyThemeData].self)
+			guard let themeToEdit = themeData.first(where: { $0.themeID == themeID }) else {
+				throw Abort(.badRequest, reason: "No Daily Theme found with id \(themeID).")
+			}
+		
+			struct ThemeEditViewContext : Encodable {
+				var trunk: TrunkContext
+				var post: MessagePostContext
+				var breadcrumb: String
+				
+
+				init(_ req: Request, _ theme: DailyThemeData) throws {
+					trunk = .init(req, title: "Edit Daily Theme", tab: .none)
+					post = .init(forType: .themeEdit(theme))
+					breadcrumb = "Edit Daily Theme"
+				}
+			}
+			let ctx = try ThemeEditViewContext(req, themeToEdit)
+			return req.view.render("admin/themeCreate", ctx)
+		}
+	}
+	
+	// POST /admin/dailytheme/ID/edit
+	func dailyThemeEditPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+    	guard let themeID = req.parameters.get(dailyThemeParam.paramString) else {
+    		throw "Invalid daily theme ID"
+    	}
+		let postStruct = try req.content.decode(MessagePostFormContent.self)
+		let postContent = DailyThemeUploadData(title: postStruct.forumTitle ?? "", info: postStruct.postText ?? "", 
+				image: ImageUploadData(postStruct.serverPhoto1, postStruct.localPhoto1), cruiseDay: postStruct.cruiseDay ?? 0)
+		return apiQuery(req, endpoint: "/admin/dailytheme/\(themeID)/edit", method: .POST, beforeSend: { req throws in
+			try req.content.encode(postContent)
+		}).flatMapThrowing { response in
+			 return .created
+		}
+	}
+	
+	// POST /admin/dailytheme/ID/delete
+	// DELETE /admin/dailytheme/ID
+	// Deletes a daily theme record.
+	func dailyThemeDeletePostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+    	guard let themeID = req.parameters.get(dailyThemeParam.paramString) else {
+    		throw "Invalid daily theme ID"
+    	}
+		return apiQuery(req, endpoint: "/admin/dailytheme/\(themeID)", method: .DELETE).map { response in
+			return .noContent
 		}
 	}
 }

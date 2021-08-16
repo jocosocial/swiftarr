@@ -13,6 +13,8 @@ enum ImageHandlerType: String {
     case fezPost
     /// The image is for a `User`'s profile.
     case userProfile
+    /// The image is for a `DailyTheme`.
+    case dailyTheme
 }
 
 enum ImageSize: String {

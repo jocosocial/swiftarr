@@ -2,6 +2,15 @@
     #export("body"):
     	<div class="container-md ms-0 my-1">
 			<div class="row">
+    			<div class="col">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+							<li class="breadcrumb-item"><a href="/admin/announcements">Announcements</a></li>
+							<li class="breadcrumb-item active" aria-current="page">Create/Edit</li>
+						</ol>
+					</nav>
+				</div>
 				<div class="col col-auto">
 					<b>#if(post.isEdit):Edit#else:Create#endif Announcement</b>
 				</div>

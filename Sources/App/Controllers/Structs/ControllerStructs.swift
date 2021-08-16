@@ -169,6 +169,30 @@ struct CurrentUserData: Content {
     var isLoggedIn: Bool
 }
 
+///
+struct DailyThemeData: Content {
+    /// The theme's ID Probably only useful for admins in order to edit or delete themes.
+    var themeID: UUID
+	/// A short string describing the day's theme. e.g. "Cosplay Day", or "Pajamas Day", or "Science Day".
+	var title: String
+	/// A longer string describing the theme, possibly with a call to action for users to participate.
+	var info: String
+	/// An image that relates to the theme.
+	var image: String?
+	/// Day of cruise, counted from `Settings.shared.cruiseStartDate`. 0 is embarkation day. Values could be negative (e.g. Day -1 is "Anticipation Day")
+	var cruiseDay: Int32				
+}
+
+extension DailyThemeData {
+	init(_ theme: DailyTheme) throws {
+		self.themeID = try theme.requireID()
+        self.title = theme.title
+        self.info = theme.info
+        self.image = theme.image
+        self.cruiseDay = theme.cruiseDay
+	}
+}
+
 /// Used to obtain an event's details.
 ///
 /// Returned by:

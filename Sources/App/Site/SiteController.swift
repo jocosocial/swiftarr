@@ -109,7 +109,9 @@ struct PaginatorContext: Codable {
 // Leaf data used by the messagePostForm.
 struct MessagePostContext: Encodable {
 	var forumTitle: String = ""
+	var forumTitlePlaceholder: String = "Forum Title"
 	var messageText: String = ""
+	var messageTextPlaceholder: String = "Post Text"
 	var photoFilenames: [String] = ["", "", "", ""]	// Must have 4 values to make Leaf templating work. Use "" as placeholder.
 	var displayUntil: String = ""					// Used by announcements.
 
@@ -119,6 +121,7 @@ struct MessagePostContext: Encodable {
 	var showForumTitle: Bool = false
 	var onlyShowForumTitle: Bool = false
 	var showModPostOptions: Bool = false
+	var showCruiseDaySelector: Bool = false
 	var isEdit: Bool = false
 
 	// Used as an parameter to the initializer	
@@ -134,6 +137,8 @@ struct MessagePostContext: Encodable {
 		case fezPost(FezData)
 		case announcement
 		case announcementEdit(AnnouncementData)
+		case theme
+		case themeEdit(DailyThemeData)
 	}
 	
 	init(forType: InitType) {
@@ -207,6 +212,27 @@ struct MessagePostContext: Encodable {
 			formAction = "/admin/announcement/\(announcementData.id)/edit"
 			postSuccessURL = "/admin/announcements"
 			isEdit = true
+		// For creating a daily theme
+		case .theme:
+			formAction = "/admin/dailytheme/create"
+			postSuccessURL = "/admin/dailythemes"
+			photoFilenames = [""]
+			showForumTitle = true
+			showCruiseDaySelector = true
+			forumTitlePlaceholder = "Daily Theme Title"
+			messageTextPlaceholder = "Info about Daily Theme"
+		// For editing a daily theme
+		case .themeEdit(let theme):
+			formAction = "/admin/dailytheme/\(theme.themeID)/edit"
+			postSuccessURL = "/admin/dailythemes"
+			forumTitle = theme.title
+			messageText = theme.info
+			photoFilenames = theme.image != nil ? [theme.image!] : [""]
+			displayUntil = String(theme.cruiseDay)
+			showForumTitle = true
+			showCruiseDaySelector = true
+			forumTitlePlaceholder = "Daily Theme Title"
+			messageTextPlaceholder = "Info about Daily Theme"
 		}
 	}
 }
@@ -225,6 +251,7 @@ struct MessagePostFormContent : Codable {
 	let localPhoto4: Data?
 	let serverPhoto4: String?
 	let displayUntil: String? 				// Used for announcements
+	let cruiseDay: Int32? 					// Used for Daily Themes
 }
 
 // Used to build an URL query string.
@@ -334,17 +361,42 @@ struct SiteController: SiteControllerUtils {
     func rootPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		return apiQuery(req, endpoint: "/notification/announcements").throwingFlatMap { response in
  			let announcements = try response.content.decode([AnnouncementData].self)
-			struct HomePageContext : Encodable {
-				var trunk: TrunkContext
-				var announcements: [AnnouncementData]
-				
-				init(_ req: Request, announcements: [AnnouncementData]) throws {
-					trunk = .init(req, title: "Twitarr", tab: .twitarr)
-					self.announcements = announcements
+			return apiQuery(req, endpoint: "/notification/dailythemes").throwingFlatMap { themeResponse in
+ 				let themes = try themeResponse.content.decode([DailyThemeData].self)
+ 				let cal = Calendar.autoupdatingCurrent
+				let components = cal.dateComponents([.day], from: cal.startOfDay(for: Settings.shared.cruiseStartDate), 
+						to: cal.startOfDay(for: Date()))
+				let cruiseDay = Int32(components.day ?? 0)
+				var backupTheme: DailyThemeData
+				if cruiseDay < 0 {
+					backupTheme = DailyThemeData(themeID: UUID(), title: "\(0 - cruiseDay) Days before Boat", info: "Soon™", 
+							image: nil, cruiseDay: cruiseDay)
 				}
+				else if cruiseDay < Settings.shared.cruiseLengthInDays {
+					backupTheme = DailyThemeData(themeID: UUID(), title: "Cruise Day \(cruiseDay + 1): No Theme Day", info: 
+							"A wise man once said, \"A day without a theme is like a guitar ever-so-slightly out of tune. " +
+							"You can play it however you want, and it will be great, but someone out there will know " +
+							"that if only there was a theme, everything would be in tune.\"", 
+							image: nil, cruiseDay: cruiseDay)
+				} else {
+					backupTheme = DailyThemeData(themeID: UUID(), title: "\(cruiseDay + 1 - Int32(Settings.shared.cruiseLengthInDays)) Days after Boat", 
+							info: "JoCo Cruise has ended. Hope you're enjoying being back in the real world.", image: nil, cruiseDay: cruiseDay)
+				}
+				let dailyTheme: DailyThemeData = themes.first { $0.cruiseDay == cruiseDay } ?? backupTheme
+				struct HomePageContext : Encodable {
+					var trunk: TrunkContext
+					var announcements: [AnnouncementData]
+					var dailyTheme: DailyThemeData?
+					
+					init(_ req: Request, announcements: [AnnouncementData], theme: DailyThemeData) throws {
+						trunk = .init(req, title: "Twitarr", tab: .twitarr)
+						self.announcements = announcements
+						self.dailyTheme = theme
+					}
+				}
+				let ctx = try HomePageContext(req, announcements: announcements, theme: dailyTheme)
+				return req.view.render("home", ctx)
 			}
-			let ctx = try HomePageContext(req, announcements: announcements)
-			return req.view.render("home", ctx)
 		}
     }
     
@@ -402,7 +454,13 @@ extension SiteControllerUtils {
 	    		urlStr.append("?\(queryStr)")
 			}
     	}
-    	return req.client.send(method, headers: headers, to: URI(string: urlStr), beforeSend: beforeSend)
+    	return req.client.send(method, headers: headers, to: URI(string: urlStr), beforeSend: beforeSend).flatMapThrowing { response in
+			guard response.status.code < 300 else {
+				let errorResponse = try response.content.decode(ErrorResponse.self)
+				throw errorResponse
+			}
+			return response
+    	}
 	}
 	
 	// Routes that the user does not need to be logged in to access.

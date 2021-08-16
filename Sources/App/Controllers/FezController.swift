@@ -528,7 +528,9 @@ struct FezController: APIRouteCollection {
         return FriendlyFez.findFromParameter(fezIDParam, on: req).throwingFlatMap { fez in
 			try user.guardCanModifyContent(fez)
 			fez.logIfModeratorAction(.delete, user: user, on: req)
-			return fez.delete(on: req.db).transform(to: .noContent)  
+			return fez.$participants.detachAll(on: req.db).flatMap { _ in
+				return fez.delete(on: req.db).transform(to: .noContent)
+			}
         }
     }
 	

@@ -8,6 +8,7 @@ public func routes(_ app: Application) throws {
 	//
 	// API routes generally use Tokens to auth, do not use sessions, and use Fluent and Redis to access the underlying databases.
 	let apiControllers: [APIRouteCollection] = [
+			AdminController(),
 			ModerationController(),
 			AlertController(),
 			AuthController(),

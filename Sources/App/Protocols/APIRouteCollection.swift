@@ -3,58 +3,59 @@ import Crypto
 import FluentSQL
 
 protocol APIRouteCollection {
-    var categoryIDParam: PathComponent { get }
-    var twarrtIDParam: PathComponent { get }
-    var forumIDParam: PathComponent { get }
-    var postIDParam: PathComponent { get }
-    var fezIDParam: PathComponent { get }
-    var fezPostIDParam: PathComponent { get }
-    var userIDParam: PathComponent { get }
-    var eventIDParam: PathComponent { get }
-    var reportIDParam: PathComponent { get }
-    var modStateParam: PathComponent { get }
-    var announcementIDParam: PathComponent { get }
-    var barrelIDParam: PathComponent { get }
-    var alertwordParam: PathComponent { get }
-    var mutewordParam: PathComponent { get }
-    var searchStringParam: PathComponent { get }
+	var categoryIDParam: PathComponent { get }
+	var twarrtIDParam: PathComponent { get }
+	var forumIDParam: PathComponent { get }
+	var postIDParam: PathComponent { get }
+	var fezIDParam: PathComponent { get }
+	var fezPostIDParam: PathComponent { get }
+	var userIDParam: PathComponent { get }
+	var eventIDParam: PathComponent { get }
+	var reportIDParam: PathComponent { get }
+	var modStateParam: PathComponent { get }
+	var announcementIDParam: PathComponent { get }
+	var barrelIDParam: PathComponent { get }
+	var alertwordParam: PathComponent { get }
+	var mutewordParam: PathComponent { get }
+	var searchStringParam: PathComponent { get }
 
 	func registerRoutes(_ app: Application) throws
 }
 
 extension APIRouteCollection {
 
-    var categoryIDParam: PathComponent { PathComponent(":category_id") }
-    var twarrtIDParam: PathComponent { PathComponent(":twarrt_id") }
-    var forumIDParam: PathComponent { PathComponent(":forum_id") }
-    var postIDParam: PathComponent { PathComponent(":post_id") }
-    var fezIDParam: PathComponent { PathComponent(":fez_id") }
-    var fezPostIDParam: PathComponent { PathComponent(":fezPost_id") }
-    var userIDParam: PathComponent { PathComponent(":user_id") }
-    var eventIDParam: PathComponent { PathComponent(":event_id") }
-    var reportIDParam: PathComponent { PathComponent(":report_id") }
-    var modStateParam: PathComponent { PathComponent(":mod_state") }
-    var announcementIDParam: PathComponent { PathComponent(":announcement_id") }
-    var barrelIDParam: PathComponent { PathComponent(":barrel_id") }
-    var alertwordParam: PathComponent { PathComponent(":alert_word") }
-    var mutewordParam: PathComponent { PathComponent(":mute_word") }
-    var searchStringParam: PathComponent { PathComponent(":search_string") }
-    
-    /// Adds Open Auth to a route. This route can be accessed without a token (while not logged in), but `req.auth.get(User.self)` will still
-    /// return a user if one is logged in.
-    func addOpenAuthGroup(to: RoutesBuilder) -> RoutesBuilder {
-    	return to.grouped([Token.authenticator()])
-    }
+	var categoryIDParam: PathComponent { PathComponent(":category_id") }
+	var twarrtIDParam: PathComponent { PathComponent(":twarrt_id") }
+	var forumIDParam: PathComponent { PathComponent(":forum_id") }
+	var postIDParam: PathComponent { PathComponent(":post_id") }
+	var fezIDParam: PathComponent { PathComponent(":fez_id") }
+	var fezPostIDParam: PathComponent { PathComponent(":fezPost_id") }
+	var userIDParam: PathComponent { PathComponent(":user_id") }
+	var eventIDParam: PathComponent { PathComponent(":event_id") }
+	var reportIDParam: PathComponent { PathComponent(":report_id") }
+	var modStateParam: PathComponent { PathComponent(":mod_state") }
+	var announcementIDParam: PathComponent { PathComponent(":announcement_id") }
+	var barrelIDParam: PathComponent { PathComponent(":barrel_id") }
+	var alertwordParam: PathComponent { PathComponent(":alert_word") }
+	var mutewordParam: PathComponent { PathComponent(":mute_word") }
+	var searchStringParam: PathComponent { PathComponent(":search_string") }
+	var dailyThemeIDParam: PathComponent { PathComponent(":daily_theme_id") }
+	 
+	/// Adds Open Auth to a route. This route can be accessed without a token (while not logged in), but `req.auth.get(User.self)` will still
+	/// return a user if one is logged in.
+	func addOpenAuthGroup(to: RoutesBuilder) -> RoutesBuilder {
+		return to.grouped([Token.authenticator()])
+	}
 
 	/// For routes that require HTTP Basic Auth. Tokens won't work. Generally, this is only for the login route.
-    func addBasicAuthGroup(to: RoutesBuilder) -> RoutesBuilder {
-    	return to.grouped([User.authenticator(), User.guardMiddleware()])
-    }
-    
+	func addBasicAuthGroup(to: RoutesBuilder) -> RoutesBuilder {
+		return to.grouped([User.authenticator(), User.guardMiddleware()])
+	}
+
 	/// For routes that require a logged-in user. Applying this auth group to a route will make requests that don't have a valid token fail with a HTTP 401 error.
-    func addTokenAuthGroup(to: RoutesBuilder) -> RoutesBuilder {
-    	return to.grouped([Token.authenticator(), User.guardMiddleware()])
-    }
+	func addTokenAuthGroup(to: RoutesBuilder) -> RoutesBuilder {
+		return to.grouped([Token.authenticator(), User.guardMiddleware()])
+	}
 
 
 	

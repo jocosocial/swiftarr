@@ -26,6 +26,7 @@ struct AlertController: APIRouteCollection {
 		let openAuthGroup = addOpenAuthGroup(to: alertRoutes)
 //		alertRoutes.get("notifications", use: globalNotificationHandler)
 		openAuthGroup.get("announcements", use: getAnnouncements)
+		openAuthGroup.get("dailythemes", use: getDailyThemes)
 
 		// endpoints available only when logged in
 		let tokenAuthGroup = addTokenAuthGroup(to: alertRoutes)
@@ -37,18 +38,26 @@ struct AlertController: APIRouteCollection {
 		tokenAuthGroup.post("announcement", announcementIDParam, "edit", use: editAnnouncement)
 		tokenAuthGroup.post("announcement", announcementIDParam, "delete", use: deleteAnnouncement)
 		tokenAuthGroup.delete("announcement", announcementIDParam, use: deleteAnnouncement)
+
 	}
 	
 	func globalNotificationHandler(_ req: Request) throws -> EventLoopFuture<GlobalNotificationData> {
 		
-		throw "wut"
+		throw "not done yet"
 	}
 
 	func userNotificationHandler(_ req: Request) throws -> EventLoopFuture<UserNotificationData> {
 		
-		throw "wut"
+		throw "not done yet"
 	}
 	
+    /// `GET /api/v3/notification/usercounts`
+    ///
+    /// Retrieve info on the number of each type of notification supported by Swiftarr. 
+	/// 
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: `UserNotificationCountData` containing all the fezzes joined by the user.
 	func userCountNotificationHandler(_ req: Request) throws -> EventLoopFuture<UserNotificationCountData> {
         let user = try req.auth.require(User.self)
 		// get user's taggedEvent barrel, and from it get next event being followed
@@ -182,7 +191,6 @@ struct AlertController: APIRouteCollection {
 			let authorHeader = try req.userCache.getHeader(announcement.$author.id)
 			return try AnnouncementData(from: announcement, authorHeader: authorHeader) 
 		}
-
 	}
 	
     /// `POST /api/v3/notification/announcement/ID/edit`
@@ -236,6 +244,20 @@ struct AlertController: APIRouteCollection {
 			announcement.delete(on: req.db).transform(to: .noContent)
 		}
 	}
+	
+    /// `GET /api/v3/notification/dailythemes`
+	/// 
+	///  Returns information about all the daily themes currently registered.
+    ///
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: 403 error if the user is not permitted to delete.
+    /// - Returns: An array of DailyThemeData on success.
+	func getDailyThemes(_ req: Request) throws -> EventLoopFuture<[DailyThemeData]> {
+		return DailyTheme.query(on: req.db).sort(\.$cruiseDay, .ascending).all().flatMapThrowing { themes in
+			return try themes.map { try DailyThemeData($0) }
+		}
+	}
+	
 }
 
 // move to controllerStructs
@@ -328,10 +350,10 @@ struct UserNotificationCountData: Content {
 	/// Count of # of Fezzes with new messages
 	var newFezMessageCount: Int
 	
-	///
+	/// The start time of the earliest event that the user has followed with a start time > now. 
 	var nextFollowedEventTime: Date?
 	
-	/// I see where alert words can be set, but nowhere do I see alert words implemented to actually alert a user.
+	// I see where alert words can be set, but nowhere do I see alert words implemented to actually alert a user.
 //	let alertWordNotificationCount: Int
 }
 

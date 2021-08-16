@@ -61,14 +61,14 @@ struct TwitarrController: APIRouteCollection {
 			}
 			return twarrt.$likes.$pivots.get(on: req.db).flatMap { twarrtLikes in
 				return user.hasBookmarked(twarrt, on: req).flatMapThrowing { bookmarked in
-						// get users
-						let userUUIDs = twarrtLikes.map { $0.$user.id }
-						let seamonkeys = req.userCache.getHeaders(userUUIDs).map { SeaMonkey(header: $0) }
-						// init return struct
-						guard let author = req.userCache.getUser(twarrt.$author.id)?.makeHeader() else {
-							throw Abort(.internalServerError, reason: "Could not find author of twarrt.")
-						}
-						var twarrtDetailData = try TwarrtDetailData(
+					// get users
+					let userUUIDs = twarrtLikes.map { $0.$user.id }
+					let seamonkeys = req.userCache.getHeaders(userUUIDs).map { SeaMonkey(header: $0) }
+					// init return struct
+					guard let author = req.userCache.getUser(twarrt.$author.id)?.makeHeader() else {
+						throw Abort(.internalServerError, reason: "Could not find author of twarrt.")
+					}
+					var twarrtDetailData = try TwarrtDetailData(
 							postID: twarrt.requireID(),
 							createdAt: twarrt.createdAt ?? Date(),
 							author: author,
@@ -80,24 +80,24 @@ struct TwitarrController: APIRouteCollection {
 							laughs: [],
 							likes: [],
 							loves: []
-						)
-						// sort seamonkeys into like types
-						for (index, like) in twarrtLikes.enumerated() {
-							if seamonkeys[index].userID == userID {
-								twarrtDetailData.userLike = like.likeType
-							}
-							switch like.likeType {
-								case .laugh:
-									twarrtDetailData.laughs.append(seamonkeys[index])
-								case .like:
-									twarrtDetailData.likes.append(seamonkeys[index])
-								case .love:
-									twarrtDetailData.loves.append(seamonkeys[index])
-								default: continue
-							}
+					)
+					// sort seamonkeys into like types
+					for (index, like) in twarrtLikes.enumerated() {
+						if seamonkeys[index].userID == userID {
+							twarrtDetailData.userLike = like.likeType
 						}
-						return twarrtDetailData
+						switch like.likeType {
+							case .laugh:
+								twarrtDetailData.laughs.append(seamonkeys[index])
+							case .like:
+								twarrtDetailData.likes.append(seamonkeys[index])
+							case .love:
+								twarrtDetailData.loves.append(seamonkeys[index])
+							default: continue
+						}
 					}
+					return twarrtDetailData
+				}
 			}
         }
     }

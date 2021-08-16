@@ -81,6 +81,23 @@ struct CreateCategorySchema: Migration {
     }
 }
 
+struct CreateDailyThemeSchema: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("daily_theme")
+				.id()
+				.field("title", .string, .required)
+				.field("info", .string, .required)
+				.field("image", .string)
+				.field("cruise_day", .int32, .required)
+				.unique(on: "cruise_day")
+				.create()
+	}
+    
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("daily_theme").delete()
+    }
+}
+
 struct CreateEventSchema: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
         database.schema("events")

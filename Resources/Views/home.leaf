@@ -1,8 +1,9 @@
 #extend("trunk"):
     #export("body"):
     	<div class="container-md ms-0 mt-2">
+
 			#if(count(announcements) > 0):
-				<h6><b>Announcements</b><h6>
+				<h4><b>Announcements</b><h4>
 				#for(ann in announcements):
 					<div class="card mb-1">	
 						<div class="card-header bg-primary">
@@ -16,6 +17,23 @@
 					</div>
 				#endfor
 			#endif
+			
+			<div class="row mb-2">
+				<div class="col">
+					<h4><b>Today's Theme: #(dailyTheme.title)</b><h4>
+				</div>
+			</div>
+			<div class="row mb-2">
+				<div class="col">
+					#(dailyTheme.info)
+				</div>
+				#if(dailyTheme.image):
+					<div class="col">
+						<img src="/api/v3/image/full/#(dailyTheme.image)" height=200 alt="Daily Theme Image">
+					</div>
+				#endif
+			</div>
+			
 			#if(trunk.alertCounts.newTwarrtMentionCount > 0 || trunk.alertCounts.newForumMentionCount > 0):
 				<h6><b>Notifications</b></h6>
 			#endif

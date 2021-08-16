@@ -89,10 +89,7 @@
 					#if(trunk.userIsTHO):
 						<hr class="main-menu-divider">
 						<li class="nav-item">
-							<a class="nav-link" href="/admin/announcements">Announcement Admin</a>
-						</li>
-						<li class="nav-item">
-							<a class="nav-link" href="/moderator/log">Server Settings</a>
+							<a class="nav-link" href="/admin">Admin Pages</a>
 						</li>
 					#endif
 					<hr class="main-menu-divider">

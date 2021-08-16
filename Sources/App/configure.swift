@@ -184,6 +184,7 @@ func configureMigrations(_ app: Application) throws {
 	app.migrations.add(CreateFezParticipantSchema(), to: .psql)
 	app.migrations.add(CreateFezPostSchema(), to: .psql)
 	app.migrations.add(CreateFriendlyFezEditSchema(), to: .psql)
+	app.migrations.add(CreateDailyThemeSchema(), to: .psql)
 	
 	// Third, migrations that seed the db with initial data
 	app.migrations.add(CreateAdminUser(), to: .psql)
