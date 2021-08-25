@@ -1,13 +1,17 @@
 import Vapor
 import Fluent
 
+/**
+	Every day during the cruise, there's a theme. This model lets us store the themes for each day, with a bit of text explaining the theme
+	and an image related to the theme somehow.
 
-/// Every day during the cruise, there's a theme. This model lets us store the themes for each day, with a bit of text explaining the theme
-/// and an image related to the theme somehow.
-/// 
-/// For an 8 day cruise, there shouldn't be more than ~10 of these records. Each day of the cruise tends to have an 'officall' theme day,
-/// and it might be appropriate to add unofficial themes for a day or two before embarkation? 
-
+	For an 8 day cruise, there shouldn't be more than ~10 of these records. Each day of the cruise tends to have an 'officall' theme day,
+	and it might be appropriate to add unofficial themes for a day or two before embarkation? 
+	
+	- See Also: [DailyThemeData](DailyThemeData) the DTO for returning info on DailyThemes.
+	- See Also: [DailyThemeUploadData](DailyThemeUploadData) the DTO for mutating DailyThemes..
+	- See Also: [CreateDailyThemeSchema](CreateDailyThemeSchema) the Migration for creating the DailyTheme table in the database.
+*/
 final class DailyTheme: Model {
 	static let schema = "daily_theme"
 	

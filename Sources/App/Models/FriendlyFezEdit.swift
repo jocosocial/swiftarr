@@ -2,12 +2,17 @@ import Vapor
 import Fluent
 
 
-/// When the TEXT FIELDS of a `FriendlyFez` are edited, a `FriendlyFezEdit` is created to save the previous values of its text fields.
-/// Edits that only modify other fields of a fez--start/end time, type of fez, min/max number of participants--do not cause a FriendlyFezEdit to be created.
-///
-/// This is done for accountability purposes and the data collected is intended to be viewable
-/// only by users with an access level of `.moderator` or above.
 
+/**
+	When the TEXT FIELDS of a `FriendlyFez` are edited, a `FriendlyFezEdit` is created to save the previous values of its text fields.
+	Edits that only modify other fields of a fez--start/end time, type of fez, min/max number of participants--do not cause a FriendlyFezEdit to be created.
+
+	This is done for accountability purposes and the data collected is intended to be viewable only by moderators.
+
+	- See Also: [FezModerationData](FezModerationData) the DTO for returning data moderators need to moderate fezzes. Specifically, the
+	sub-struct [FezEditLogData](FezEditLogData) delivers values from the `FriendlyFezEdit` .
+	- See Also: [CreateFriendlyFezEditSchema](CreateFriendlyFezEditSchema) the Migration for creating the FriendlyFezEdit table in the database.
+*/
 final class FriendlyFezEdit: Model {
 	static let schema = "fez_edits"
     

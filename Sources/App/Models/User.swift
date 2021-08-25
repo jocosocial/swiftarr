@@ -90,11 +90,7 @@ final class User: Model {
     
     /// An optional cabin number.
     @OptionalField(key: "roomNumber") var roomNumber: String?
-    
-    /// Limits viewing this profile's info (except `.username` and `.displayName`, which are
-    /// always viewable) to logged-in users. Default is `false` (don't limit).
-    @Field(key: "limitAccess") var limitAccess: Bool
-    
+        
 // MARK: User Notifications
 
 	/// Announcements are delivered globally, and their IDs are monotonically increasing Ints. This field tracks the most recent 
@@ -217,7 +213,6 @@ final class User: Model {
         self.recoveryAttempts = recoveryAttempts
         self.reports = reports
         self.profileUpdatedAt = profileUpdatedAt
-        self.limitAccess = false
         self.moderationStatus = .normal
         
         self.lastReadAnnouncement = 0

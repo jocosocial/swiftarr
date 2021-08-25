@@ -1,5 +1,4 @@
 import Vapor
-import SwiftGD
 
 /// The type of model for which an `ImageHandler` is processing. This defines the
 /// size of the thumbnail produced.
@@ -129,7 +128,7 @@ extension APIRouteCollection {
     /// - Returns: The generated name of the stored file, or nil.
     func processImage(data: Data?, usage: ImageHandlerType, on req: Request) -> EventLoopFuture<String?> {
 		do {
-			guard let data = data else {
+			guard let data = data, !data.isEmpty else {
 				// Not an error, just nothing to do.
 				return req.eventLoop.future(nil)
 			}
@@ -140,16 +139,16 @@ extension APIRouteCollection {
 			return req.application.threadPool.runIfActive(eventLoop: req.eventLoop) {
 				let imageTypes: [ImportableFormat] = [.jpg, .png, .gif, .webp, .tiff, .bmp, .wbmp]
 				var foundType: ImportableFormat? = nil
-				var foundImage: Image?
+				var foundImage: GDImage?
 				for type in imageTypes {
-					foundImage = try? Image(data: data, as: type) 
+					foundImage = try? GDImage(data: data, as: type) 
 					if foundImage != nil{
 						foundType = type
 						break
 					}
 				}
 				guard var image = foundImage, let imageType = foundType else {
-					throw Error.invalidImage(reason: "No matching raster formatter for given image found")
+					throw GDError.invalidImage(reason: "No matching raster formatter for given image found")
 				}
 				var outputType = imageType
 				
@@ -157,11 +156,11 @@ extension APIRouteCollection {
 				// "ha ha you have to scroll past this"). Also disallow extremely large widths and heights.
 				let sourceSize = image.size
 				if sourceSize.width > 10000 || sourceSize.height > 10000 {
-					throw Error.invalidImage(reason: "Image dimensions too large")
+					throw GDError.invalidImage(reason: "Image dimensions too large")
 				}
 				let aspectRatio = Double(sourceSize.width) / Double(sourceSize.height)
 				if aspectRatio < 0.1 || aspectRatio > 10.0 {
-					throw Error.invalidImage(reason: "Invalid image aspect ratio. ")
+					throw GDError.invalidImage(reason: "Invalid image aspect ratio. ")
 				}
 												
 				// attempt to crop to square if profile image

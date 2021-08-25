@@ -4,13 +4,13 @@
 			<div class="container-fluid">
 				#if(post.showForumTitle):
 					<div class="row mb-3"> 
-						<input type="text" class="form-control" name="forumTitle" id="forumTitle" placeholder="#(post.forumTitlePlaceholder)" value="#elem(post.forumTitle)">
+						<input type="text" class="form-control" name="forumTitle" id="forumTitle" placeholder="#(post.forumTitlePlaceholder)" value="#(post.forumTitle)">
 
 					</div>
 				#endif
 				#if(!post.onlyShowForumTitle):
 					<div class="row mb-2"> 
-						<textarea class="form-control" maxlength="2000" rows="5" name="postText" id="postText" placeholder="#(post.messageTextPlaceholder)">#elem(post.messageText)</textarea>
+						<textarea class="form-control" maxlength="2000" rows="5" name="postText" id="postText" placeholder="#(post.messageTextPlaceholder)">#(post.messageText)</textarea>
 					</div>
 					<div class="row mb-2">
 						Add up to #count(post.photoFilenames) photos
@@ -32,7 +32,7 @@
 												<input class="image-upload-input d-none" type="file" accept="image/png, image/jpeg" name="localPhoto#(index + 1)">
 												Choose Photo
 											</label>
-											<input type="hidden" value="#elem(fn)" name="serverPhoto#(index + 1)">
+											<input type="hidden" value="#(fn)" name="serverPhoto#(index + 1)">
 										</div>
 									</div>
 									<div class="row justify-content-between m-0">

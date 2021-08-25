@@ -28,6 +28,46 @@ struct AlertKeywordData: Content {
     var keywords: [String]
 }
 
+/// An announcement to display to all users. 
+/// 
+/// - Note: Admins can modify Announcements, but should only do so to correct typos or change the displayUntil time. Therefore if a user has seen an announcement,
+/// they need not be notified again if the announcement is edited. Any material change to the content of an announcement should be done via a **new** announcement, 
+/// so that user notifications work correctly.
+///
+/// Returned by:
+/// * `GET /api/v3/notification/announcements`
+/// * `GET /api/v3/notification/announcement/ID` for admins/THO only.
+struct AnnouncementData: Content {
+	/// Only THO and admins need to send Announcement IDs back to the API (to modify or delete announcements, for example), but caching clients can still use the ID
+	/// to correlate announcements returned by the API with cached ones.
+	var id: Int
+	/// The author of the announcement.
+	var author: UserHeader
+	/// The contents of the announcement.
+	var text: String
+	/// When the announcement was last modified.
+	var updatedAt: Date
+	/// Announcements are considered 'active' until this time. After this time, `GET /api/v3/notification/announcements` will no longer return the announcement,
+	/// and caching clients should stop showing it to users.
+	var displayUntil: Date
+	/// TRUE if the announcement has been deleted. Only THO/admins can fetch deleted announcements; will always be FALSE for other users.
+	var isDeleted: Bool
+}
+
+extension AnnouncementData {
+	init(from: Announcement, authorHeader: UserHeader) throws {
+		id = try from.requireID()
+		author = authorHeader
+		text = from.text
+		updatedAt = from.updatedAt ?? Date()
+		displayUntil = from.displayUntil
+		isDeleted = false
+		if let deleteTime = from.deletedAt, deleteTime < Date() {
+			isDeleted = true
+		}
+	}
+}
+
 /// Used to create a new user-owned `.seamonkey` or `.userWords` `Barrel`.
 ///
 /// Required by: `POST /api/v3/user/barrel`
@@ -549,10 +589,10 @@ struct ImageUploadData: Content {
 extension ImageUploadData {
 	/// Failable initializer; either filename or image must be non-nil and non-empty.
 	init?(_ filename: String?, _ image: Data?) {
-		if let fn = filename, fn.count > 0 {
+		if let fn = filename, !fn.isEmpty {
 			self.filename = fn
 		}
-		if let img = image, img.count > 0 {
+		if let img = image, !img.isEmpty {
 			self.image = img
 		}
 		if self.filename == nil && self.image == nil {
@@ -956,8 +996,8 @@ struct TwarrtData: Content {
     var text: String
     /// The filenames of the twarrt's optional images.
     var images: [String]?
-    /// The ID of the twarrt to which this twarrt is a reply.
-    var replyToID: Int?
+    /// If this twarrt is part of a Reply Group, the ID of the group. If replyGroupID == twarrtID, this twarrt is the start of a Reply Group.
+    var replyGroupID: Int?
     /// Whether the current user has bookmarked the twarrt.
     var isBookmarked: Bool
     /// The current user's `LikeType` reaction on the twarrt.
@@ -976,7 +1016,7 @@ extension TwarrtData {
 		self.author = creator
 		text = twarrt.isQuarantined && !overrideQuarantine ? "This post is under moderator review." : twarrt.text
 		images = twarrt.isQuarantined && !overrideQuarantine ? nil : twarrt.images
-		replyToID = twarrt.$replyTo.id
+		replyGroupID = twarrt.$replyGroup.id
 		self.isBookmarked = isBookmarked
 		self.userLike = userLike
 		self.likeCount = likeCount
@@ -1000,7 +1040,7 @@ struct TwarrtDetailData: Content {
     /// The filenames of the post/twarrt's optional images.
     var images: [String]?
     /// The ID of the twarrt to which this twarrt is a reply.
-    var replyToID: Int?
+    var replyGroupID: Int?
     /// Whether the current user has bookmarked the post.
     var isBookmarked: Bool
     /// The current user's `LikeType` reaction on the twarrt.
@@ -1011,16 +1051,6 @@ struct TwarrtDetailData: Content {
     var likes: [SeaMonkey]
     /// The seamonkeys with "love" reactions on the post/twarrt.
     var loves: [SeaMonkey]
-}
-
-/// Used to return a filename for an uploaded image.
-///
-/// Returned by: `POST /api/v3/user/image`
-///
-/// See `UserController.imageHandler(_:data:)`
-struct UploadedImageData: Content {
-    /// The generated name of the uploaded image.
-    var filename: String
 }
 
 /// Used to create a new account or sub-account.
@@ -1121,12 +1151,12 @@ extension UserPasswordData: RCFValidatable {
 ///
 /// See `UserController.profileHandler(_:)`, `UserController.profileUpdateHandler(_:data:)`.
 struct UserProfileData: Content {
-    /// The user's username. [not editable here]
-    let username: String
+    /// Basic info about the user--their ID, username, displayname, and avatar image. May be nil on POST.
+    var header: UserHeader?
+    /// The displayName, again. Will be equal to header.displayName in results. When POSTing, set this field to update displayName.
+    var displayName: String?
     /// An optional blurb about the user.
     var about: String?
-    /// An optional name for display alongside the username.
-    var displayName: String?
     /// An optional email address.
     var email: String?
     /// An optional home location (e.g. city).
@@ -1139,13 +1169,11 @@ struct UserProfileData: Content {
     var realName: String?
     /// An optional ship cabin number.
     var roomNumber: String?
-    /// Whether display of the optional fields' data should be limited to logged in users.
-    var limitAccess: Bool
 }
 
 extension UserProfileData {
 	init(user: User) throws {
-		self.username = user.username
+		self.header = try UserHeader(user: user)
 		self.displayName = user.displayName
 		self.about = user.about
 		self.email = user.email
@@ -1154,7 +1182,6 @@ extension UserProfileData {
 		self.preferredPronoun = user.preferredPronoun
 		self.realName = user.realName
 		self.roomNumber = user.roomNumber
-		self.limitAccess = user.limitAccess
 	}
 }
 

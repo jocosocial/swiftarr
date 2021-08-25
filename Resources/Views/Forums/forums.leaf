@@ -21,7 +21,7 @@
 				<a href="/forum/#(forum.forumID)" class="list-group-item list-group-item-action">		
 					<div class="row">
 						<div class="col">
-							#elem(forum.title)
+							#(forum.title)
 						</div>
 						<div class="col col-auto">
 							<span class="text-muted">#relativeTime(forum.lastPostAt)</span>
@@ -32,7 +32,7 @@
 							#(forum.postCount) posts#if(forum.readCount < forum.postCount):, #(forum.postCount - forum.readCount) new#endif
 						</div>
 						<div class="col col-auto">
-							<span class="text-muted">Last post: @#elem(forum.lastPoster.username)</span>
+							<span class="text-muted">Last post: @#(forum.lastPoster.username)</span>
 						</div>
 					</div>
 				</a>

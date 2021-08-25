@@ -15,39 +15,39 @@ import Foundation
 /// See https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
 ///
 /// Usage: #elem(String) -> String
-struct ElementSanitizerTag: LeafTag {
-	static func sanitize(_ str: String) -> String {
-		var string = str
-		// This isn't ~optimized~, but I think it optimizes for the case where no changes need to be made to the string.
-		for ch in string.indices.reversed() {
-			switch string[ch] {
-			case "&": string.replaceSubrange(ch..<string.index(after:ch), with: "&amp;")
-			case "<": string.replaceSubrange(ch..<string.index(after:ch), with: "&lt;")
-			case ">": string.replaceSubrange(ch..<string.index(after:ch), with: "&gt;")
-			case "'": string.replaceSubrange(ch..<string.index(after:ch), with: "&#x27;")
-			case "\"": string.replaceSubrange(ch..<string.index(after:ch), with: "&quot;")
-			case "/": string.replaceSubrange(ch..<string.index(after:ch), with: "&#x2F;")
-			default: continue
-			}
-		}
-		
-        return string
-	}
-
-    func render(_ ctx: LeafContext) throws -> LeafData {
-        try ctx.requireParameterCount(1)
-		guard let string = ctx.parameters[0].string else {
-			return LeafData.string("")
-		}
-		return LeafData.string(ElementSanitizerTag.sanitize(string))
-    }
-}
+//struct ElementSanitizerTag: LeafTag {
+//	static func sanitize(_ str: String) -> String {
+//		var string = str
+//		// This isn't ~optimized~, but I think it optimizes for the case where no changes need to be made to the string.
+//		for ch in string.indices.reversed() {
+//			switch string[ch] {
+//			case "&": string.replaceSubrange(ch..<string.index(after:ch), with: "&amp;")
+//			case "<": string.replaceSubrange(ch..<string.index(after:ch), with: "&lt;")
+//			case ">": string.replaceSubrange(ch..<string.index(after:ch), with: "&gt;")
+//			case "'": string.replaceSubrange(ch..<string.index(after:ch), with: "&#x27;")
+//			case "\"": string.replaceSubrange(ch..<string.index(after:ch), with: "&quot;")
+//			case "/": string.replaceSubrange(ch..<string.index(after:ch), with: "&#x2F;")
+//			default: continue
+//			}
+//		}
+//		
+//        return string
+//	}
+//
+//    func render(_ ctx: LeafContext) throws -> LeafData {
+//        try ctx.requireParameterCount(1)
+//		guard let string = ctx.parameters[0].string else {
+//			return LeafData.string("")
+//		}
+//		return LeafData.string(ElementSanitizerTag.sanitize(string))
+//    }
+//}
 
 /// Runs the element sanitizer on the given string, and then converts Jocomoji (specific string tags with the form :tag:)
 /// into inline images. Generally, use this tag for user text that isn't posts.
 ///
 /// Usage: #addJocomoji(String) -> String
-struct AddJocomojiTag: LeafTag {
+struct AddJocomojiTag: UnsafeUnescapedLeafTag {
 	static let jocomoji = [ "buffet", "die-ship", "die", "fez", "hottub", "joco", "pirate", "ship-front",
 			"ship", "towel-monkey", "tropical-drink", "zombie" ]
 			
@@ -66,8 +66,7 @@ struct AddJocomojiTag: LeafTag {
 		}
 		
 		// Sanitize first to remove any existing tags. Also ensure the inline <img> tags we're about to add don't get nuked
-		string = ElementSanitizerTag.sanitize(string)
-		string = AddJocomojiTag.process(string)
+		string = AddJocomojiTag.process(string.htmlEscaped())
 		
 		// Also convert newlines to HTML breaks.
 		string = string.replacingOccurrences(of: "\r", with: "<br>")
@@ -80,7 +79,7 @@ struct AddJocomojiTag: LeafTag {
 /// into inline images, and then converts substrings of the forum "@username"  and "#hashtag" into links.
 ///
 /// Usage: #formatPostText(String) -> String
-struct FormatPostTextTag: LeafTag {
+struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 	static var nameRefStartCharacterSet: CharacterSet {
 		var x = CharacterSet()
 		x.insert("@")
@@ -94,8 +93,7 @@ struct FormatPostTextTag: LeafTag {
 		}
 		
 		// Sanitize, then add jocomoji.
-		string = ElementSanitizerTag.sanitize(string)
-		string = AddJocomojiTag.process(string)
+		string = AddJocomojiTag.process(string.htmlEscaped())
 		
 		var words = string.split(separator: " ", omittingEmptySubsequences: false)
 		words = words.map {
@@ -186,6 +184,7 @@ struct RelativeTimeTag: LeafTag {
 }
 
 /// Returns a string descibing when an event is taking place. Shows both the start and end time.
+/// 
 /// Usage in Leaf templates:: #eventTime(startTime, endTime) -> String
 struct EventTimeTag: LeafTag {
 	func render(_ ctx: LeafContext) throws -> LeafData {
@@ -212,18 +211,39 @@ struct EventTimeTag: LeafTag {
 /// First parameter is the file name of the image, second optional parameter is the size of the <img> to produce. This tag will select the best size image to reference
 /// based on the size of  the image tag it is being placed in. Only produces square image views.
 ///
-/// Useage: #avatar(imageFilename), #avatar(imageFilename, 800)
-struct AvatarTag: LeafTag {
+/// Usage: #avatar(imageFilename), #avatar(imageFilename, 800)
+struct AvatarTag: UnsafeUnescapedLeafTag {
     func render(_ ctx: LeafContext) throws -> LeafData {
 		var imgSize = 40
 		if ctx.parameters.count > 1, let tempSize = ctx.parameters[1].int {
 			imgSize = tempSize
 		}
-    	var imagePath = "/img/NoAvatarUser.png"
-		if ctx.parameters.count > 0, let userImageString = ctx.parameters[0].string {
-			let imgLoadSize = imgSize > 100 ? "full" : "thumb"
-			imagePath = "/api/v3/image/\(imgLoadSize)/\(userImageString)"	
+		guard ctx.parameters.count >= 1, let userHeader = ctx.parameters[0].dictionary,
+			  let userID = userHeader["userID"]?.string else {
+			throw "Leaf: avatarTag tag unable to get user header."
 		}
+		let imgLoadSize = imgSize > 100 ? "full" : "thumb"
+		let imagePath = "/api/v3/image/user/\(imgLoadSize)/\(userID)"
 		return LeafData.string("<img src=\"\(imagePath)\" width=\(imgSize) height=\(imgSize) alt=\"Avatar\">")
+	}
+}
+
+/// Inserts an <a> tag with the given user's display name and username, linking to the user's profile page. As an UnsafeUnescaped tag, needs to
+/// sanitize user-provided text itself.
+///
+/// Usage: #userByline(userHeader)
+struct UserBylineTag: UnsafeUnescapedLeafTag {
+    func render(_ ctx: LeafContext) throws -> LeafData {
+		guard ctx.parameters.count == 1, let userHeader = ctx.parameters[0].dictionary,
+			  let userID = userHeader["userID"]?.string,
+			  let username = userHeader["username"]?.string?.htmlEscaped() else {
+			throw "Leaf: userByline tag unable to get user header."
+		}		
+		if let displayName = userHeader["displayName"]?.string?.htmlEscaped() {
+			return LeafData.string("<a href=\"/user/\(userID)\"><b>\(displayName)</b> @\(username)</a>")
+		}
+		else {
+			return LeafData.string("<a href=\"/user/\(userID)\">@\(username)</a>")
+		}
 	}
 }

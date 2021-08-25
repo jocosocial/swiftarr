@@ -143,12 +143,12 @@ func configureLeaf(_ app: Application) throws {
     app.views.use(.leaf)
     
     // Custom Leaf tags
-    app.leaf.tags["elem"] = ElementSanitizerTag()
     app.leaf.tags["addJocomoji"] = AddJocomojiTag()
     app.leaf.tags["formatPostText"] = FormatPostTextTag()
     app.leaf.tags["relativeTime"] = RelativeTimeTag()
     app.leaf.tags["eventTime"] = EventTimeTag()
     app.leaf.tags["avatar"] = AvatarTag()
+    app.leaf.tags["userByline"] = UserBylineTag()
 }
 	
 func configureMigrations(_ app: Application) throws {

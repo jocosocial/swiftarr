@@ -1,12 +1,16 @@
 import Vapor
 import Fluent
 
+/**
+	When a `ForumPost` is edited, a `ForumPostEdit` is created and associated with the post.
 
-/// When a `ForumPost` is edited, a `ForumPostEdit` is created and associated with the profile.
-///
-/// This is done for accountability purposes and the data collected is intended to be viewable
-/// only by users with an access level of `.moderator` or above.
-
+	This is done for accountability purposes and the data collected is intended to be viewable
+	only by users with an access level of `.moderator` or above.
+	
+	- See Also: [ForumPostModerationData](ForumPostModerationData) the DTO for returning data moderators need to moderate ForumPosts.
+	Specifically, see the [PostEditLogData](PostEditLogData) sub-struct.
+	- See Also: [CreateForumPostEditSchema](CreateForumPostEditSchema) the Migration for creating the ForumPostEdit table in the database.
+*/
 final class ForumPostEdit: Model {
 	static let schema = "forum_post_edits"
 

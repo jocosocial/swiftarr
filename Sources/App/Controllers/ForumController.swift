@@ -14,9 +14,9 @@ struct ForumController: APIRouteCollection {
 		// convenience route group for all /api/v3/forum endpoints
 		let forumRoutes = app.grouped("api", "v3", "forum")
 
-		// open access endpoints
-		let openAuthGroup = addOpenAuthGroup(to: forumRoutes)
-		openAuthGroup.get("categories", use: categoriesHandler)
+		// Flex access endpoints
+		let flexAuthGroup = addFlexAuthGroup(to: forumRoutes)
+		flexAuthGroup.get("categories", use: categoriesHandler)
 
 		// Forum Route Group, requires token
 		let tokenAuthGroup = addTokenAuthGroup(to: forumRoutes)

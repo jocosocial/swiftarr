@@ -3,22 +3,6 @@ import Crypto
 import FluentSQL
 
 protocol APIRouteCollection {
-	var categoryIDParam: PathComponent { get }
-	var twarrtIDParam: PathComponent { get }
-	var forumIDParam: PathComponent { get }
-	var postIDParam: PathComponent { get }
-	var fezIDParam: PathComponent { get }
-	var fezPostIDParam: PathComponent { get }
-	var userIDParam: PathComponent { get }
-	var eventIDParam: PathComponent { get }
-	var reportIDParam: PathComponent { get }
-	var modStateParam: PathComponent { get }
-	var announcementIDParam: PathComponent { get }
-	var barrelIDParam: PathComponent { get }
-	var alertwordParam: PathComponent { get }
-	var mutewordParam: PathComponent { get }
-	var searchStringParam: PathComponent { get }
-
 	func registerRoutes(_ app: Application) throws
 }
 
@@ -41,9 +25,14 @@ extension APIRouteCollection {
 	var searchStringParam: PathComponent { PathComponent(":search_string") }
 	var dailyThemeIDParam: PathComponent { PathComponent(":daily_theme_id") }
 	 
-	/// Adds Open Auth to a route. This route can be accessed without a token (while not logged in), but `req.auth.get(User.self)` will still
-	/// return a user if one is logged in.
-	func addOpenAuthGroup(to: RoutesBuilder) -> RoutesBuilder {
+	/// Adds Flexible Auth to a route. This route can be accessed without a token (while not logged in), but `req.auth.get(User.self)` will still
+	/// return a user if one is logged in. Route handlers for these routes should not call `req.auth.require(User.self)`. A route with no auth 
+	/// middleware will not auth any user and `.get(User.self)` will always return nil. The Basic and Token auth groups will throw an error if 
+	/// no user gets authenticated (specifically:` User.guardMiddleware` throws).
+	///
+	/// So, use this auth group for routes that can be accessed while not logged in, but which provide more (or different) data when a logged-in user
+	/// accesses the route.
+	func addFlexAuthGroup(to: RoutesBuilder) -> RoutesBuilder {
 		return to.grouped([Token.authenticator()])
 	}
 

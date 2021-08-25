@@ -44,15 +44,13 @@
 								<div class="row align-items-start justify-content-start">	
 									<div class="col g-0" style="flex: 0 0 40px;">
 										<a href="/user/#(modData.twarrt.author.userID)">		
-											#avatar(modData.twarrt.author.userImage)
+											#avatar(modData.twarrt.author)
 										</a>
 									</div>
 									<div class="col">
 										<div class="row">	
 											<div class="col">
-												<a href="/user/#(modData.twarrt.author.userID)">		
-													<b>#elem(modData.twarrt.author.displayName)</b> @#elem(modData.twarrt.author.username)
-												</a>
+												#userByline(modData.twarrt.author)
 											</div>
 											<div class="col-auto">
 												<span class="text-muted">#relativeTime(modData.twarrt.createdAt)</span>
@@ -82,8 +80,7 @@
 			#if(finalEditAuthor):
 				<div class="row">
 					<div class="col">
-						<i>Last edit by <a href="/user/#(finalEditAuthor.userID)">		
-							<b>#elem(finalEditAuthor.displayName)</b> @#elem(finalEditAuthor.username)</a>
+						<i>Last edit by #userByline(finalEditAuthor)
 						</i>
 					</div>
 				</div>
@@ -113,15 +110,13 @@
 										<div class="row align-items-start justify-content-start">	
 											<div class="col g-0" style="flex: 0 0 40px;">
 												<a href="/user/#(edit.author.userID)">		
-													#avatar(edit.author.userImage)
+													#avatar(edit.author)
 												</a>
 											</div>
 											<div class="col">
 												<div class="row">	
 													<div class="col">
-														<a href="/user/#(edit.author.userID)">		
-															<b>#elem(edit.author.displayName)</b> @#elem(edit.author.username)
-														</a>
+														#userByline(edit.author)
 													</div>
 													<div class="col-auto">
 														<span class="text-muted">#relativeTime(edit.createdAt)</span>
@@ -168,14 +163,14 @@
 						<li class="list-group-item list-group-item-action">
 								<div class="row " data-reportid="#(report.id)">
 									<div class="col">
-										<b>Reported by @#elem(report.author.username)<br>#relativeTime(report.creationTime)</b>
+										<b>Reported by #userByline(report.author)<br>#relativeTime(report.creationTime)</b>
 									</div>
 									<div class="col col-auto text-end">
 										#if(report.handledBy):
 											#if(report.isClosed):
-												Closed<br>by #elem(report.handledBy.username)
+												Closed<br>by #userByline(report.handledBy)
 											#else:
-												Being Handled<br>by #elem(report.handledBy.username)
+												Being Handled<br>by #userByline(report.handledBy)
 											#endif
 										#else:
 											#if(report.isClosed):
@@ -188,7 +183,7 @@
 								</div>
 								<div class="row">
 									<div class="col">
-										#elem(report.submitterMessage)
+										#(report.submitterMessage)
 									</div>
 								</div>
 						</li>

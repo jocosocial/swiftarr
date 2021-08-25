@@ -21,10 +21,10 @@
 						<tbody>
 						#for(report in log):
 							<tr>
-								<td>@#elem(report.moderator.username)</td>
+								<td>#userByline(report.moderator)</td>
 								<td>#(report.actionType)</td>
 								<td>#(report.contentType)</td>
-								<td>@#elem(report.targetUser.username)</td>
+								<td>#userByline(report.targetUser)</td>
 								<td>#date(report.timestamp, "MMM dd, hh:mm:ss a")</td>
 							</tr>
 						#endfor

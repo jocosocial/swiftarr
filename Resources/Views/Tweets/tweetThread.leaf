@@ -1,14 +1,14 @@
 #extend("trunk"):
     #export("body"):
     	<div class="container-md ms-0 my-1">
-    		<div class="row align-items-center">
-				#if(topMorePostsURL):
+    		<div class="row align-items-end">
+				#if(earlierPostsUrl):
 					<div class="col col-auto">
-						<a class="btn btn-outline-primary btn-sm" href="#(topMorePostsURL)">#(topMorePostsLabel)</a>
+						<button type="button" class="btn btn-outline-primary btn-sm">Older</button>
 					</div>
 				#endif
     			<div class="col col-auto">
-			    	<b>#(filterDesc)</b>
+			    	<h6><b>#(filterDesc)</b></h6>
 				</div>
     			<div class="col">
 				</div>
@@ -23,42 +23,25 @@
 						<a class="btn btn-outline-primary btn-sm" href="/tweets/mentions">#(trunk.alertCounts.twarrtMentionCount) Mentions</a>
 					#endif
 				</div>
-				#if(!isReplyGroup):
-					<div class="col col-auto align-self-end">
-						<button class="btn btn-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="\#newPostBox" aria-expanded="false" aria-controls="newPostBox">New Post</button>
-					</div>
-				#endif
 			</div>
 		</div>
-		#if(!isReplyGroup):
-			<div class="collapse" id="newPostBox">
-				#extend("messagePostForm")
-			</div>
-		#endif
 		<ul class="container-md mx-0 px-0 list-group" data-listtype="tweets">
 			#for(tweet in tweets):
 				#extend("tweets/tweetListItem")
 			#endfor
 		</ul>				
-		#if(bottomMorePostsURL):
+		#if(laterPostsUrl):
     		<div class="container-md ms-0 my-1">
     			<div class="row">
 					<div class="col">
-						<a class="btn btn-outline-primary btn-sm" href="#(bottomMorePostsURL)">#(bottomMorePostsLabel)</a>
+						<button type="button" class="btn btn-outline-primary btn-sm">Newer</button>
 					</div>
 				</div>
 			</div>
 		#endif
-		#if(isReplyGroup):
-			<div class="container-md ms-0 mt-2">
-				<div class="row">
-					<div class="col">
-						<b>Post a new reply:</b>
-					</div>
-				</div>
-				#extend("messagePostForm")
-			</div>
-		#endif
+		<div class="row" id="newPostBox">
+			#extend("messagePostForm")
+    	</div>
 		
 		<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
 			<div class="modal-dialog">

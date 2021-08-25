@@ -418,7 +418,7 @@ struct CreateTwarrtSchema: Migration {
 					.field("updated_at", .datetime)
 					.field("deleted_at", .datetime)
 					.field("author", .uuid, .required, .references("users", "id"))
-					.field("reply_to", .int, .references("twarrts", "id"))
+					.field("reply_group", .int, .references("twarrts", "id"))
 					.create()
 		}
     }
@@ -488,7 +488,6 @@ struct CreateUserSchema: Migration {
 					.field("message", .string)
 					.field("preferredPronoun", .string)
 					.field("roomNumber", .string)
-					.field("limitAccess", .bool, .required)
 					
 					.field("last_read_announcement", .int)
 					.field("twarrt_mentions", .int)

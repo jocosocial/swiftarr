@@ -4,7 +4,7 @@
     		<div class="row">
     			<div class="col col-auto">
 					#if(post.authorName):
-				    	<h6><b>Mod Edit #elem(post.authorName)'s Forum Title</b></h6>
+				    	<h6><b>Mod Edit #(post.authorName)'s Forum Title</b></h6>
 					#else:
 				    	<h6><b>Edit Forum Title</b></h6>
 					#endif

@@ -1,10 +1,18 @@
 import Vapor
 import Fluent
 
+/**
+	An individual post within a `Forum`. A ForumPost must contain text content and may also contain image content.
+	
+	Posts have a `moderationStatus` that moderators can change to perform moderation actdions.
+	
+	When a post is edited, a `ForumPostEdit` is created to save the pre-edit state of the post.
 
-/// An individual post within a `Forum`. A ForumPost must contain either text
-/// content or image content, or both.
-
+	- See Also: [PostData](PostData) the DTO for returning basic data on ForumPosts.
+	- See Also: [PostDetailData](PostDetailData) the DTO for returning extended data on ForumPosts.
+	- See Also: [PostContentData](PostContentData) the DTO for creating ForumPosts.
+	- See Also: [CreateForumPostSchema](CreateForumPostSchema) the Migration for creating the ForumPost table in the database.
+*/
 final class ForumPost: Model {
 	static let schema = "forumposts"
 	

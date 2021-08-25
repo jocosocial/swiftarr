@@ -1,11 +1,16 @@
 import Vapor
 import Fluent
 
-
-/// Categories are used to organize Twit-arr `Forum`s into a managable structure. All `Forum`s
-/// belong to a single `Category`. A category is classified as one of two types: "admin"
-/// (an administratively controlled set of forums) or "user" (users can create forums).
-
+/**
+	Categories are used to organize Twit-arr `Forum`s into a managable structure. All `Forum`s
+	belong to a single `Category`.
+	
+	Each `Category` has a minimum userAccessLevel required to view the Category or view forums in the Category.
+	Each `Category` also has a minimum userAccessLevel required to create new forums in the Category. 
+	
+	- See Also: [CategoryData](CategoryData) the DTO for returning info on Categories.
+	- See Also: [CreateCategorySchema](CreateCategorySchema) the Migration for creating the Category table in the database.
+*/
 final class Category: Model {
 	static let schema = "categories"
 	

@@ -2,6 +2,24 @@ import Vapor
 import Foundation
 import Fluent
 
+/**
+	A FriendlyFez (Fez for short) is a multi person chat facilty.
+	
+	Broadly speaking, Fezzes may be open or closed, chosen at creation time.
+	- Open fezzes generally have a publicly stated purpose, and may be for an event at a specific time and place. Open fezzes allow users to join and leave
+	the fez at any time. Open fezzes may have posts with images, and can get moderated by mods. There is a search API for finding and joining public fezzes.
+	- Closed fezzes have a membership set at creation time (by the fez creator), and cannot have images in posts. Closed fezzes are very similar to V2's Seamail facility.
+	
+	Considered but not yet built are semi-open fezzes:
+	
+	- A semi-open fez would allow users to join after creation, but either the creator would have to invite new members or perhaps users could join via an invite link.
+	Semi-open fezzes would not be searchable, would not be moderated, could not have images. Importantly, semi-open fezzes would indicate their semi-open state
+	to their members, so that current members would know the membership list could change. New members to a semi-open fez would be able to read all past messages.
+	
+	- See Also: [FezData](FezData) the DTO for returning basic data on Fezzes.
+	- See Also: [FezContentData](FezContentData) the DTO for creating or editing Fezzes.
+	- See Also: [CreateFriendlyFezSchema](CreateFriendlyFezSchema) the Migration for creating the Fez table in the database.
+*/
 final class FriendlyFez: Model {
 	static let schema = "friendlyfez"
 	

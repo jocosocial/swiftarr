@@ -22,11 +22,11 @@ struct AlertController: APIRouteCollection {
 		// convenience route group for all /api/v3/alert endpoints
 		let alertRoutes = app.grouped("api", "v3", "notification")
 
-		// open access endpoints -- login not required, although calls may act differently if logged in
-		let openAuthGroup = addOpenAuthGroup(to: alertRoutes)
+		// Flexible access endpoints -- login not required, although calls may act differently if logged in
+		let flexAuthGroup = addFlexAuthGroup(to: alertRoutes)
 //		alertRoutes.get("notifications", use: globalNotificationHandler)
-		openAuthGroup.get("announcements", use: getAnnouncements)
-		openAuthGroup.get("dailythemes", use: getDailyThemes)
+		flexAuthGroup.get("announcements", use: getAnnouncements)
+		flexAuthGroup.get("dailythemes", use: getDailyThemes)
 
 		// endpoints available only when logged in
 		let tokenAuthGroup = addTokenAuthGroup(to: alertRoutes)
@@ -40,6 +40,8 @@ struct AlertController: APIRouteCollection {
 		tokenAuthGroup.delete("announcement", announcementIDParam, use: deleteAnnouncement)
 
 	}
+	
+	// MARK: - Notifications
 	
 	func globalNotificationHandler(_ req: Request) throws -> EventLoopFuture<GlobalNotificationData> {
 		
@@ -120,6 +122,8 @@ struct AlertController: APIRouteCollection {
 		}
 	}
 	
+	// MARK: - Announcements
+
     /// `POST /api/v3/announcement/create`
     ///
     /// Create a new announcement. Requires THO access and above. When a new announcement is created the notification endpoints will start 
@@ -245,6 +249,8 @@ struct AlertController: APIRouteCollection {
 		}
 	}
 	
+	// MARK: - Daily Themes
+
     /// `GET /api/v3/notification/dailythemes`
 	/// 
 	///  Returns information about all the daily themes currently registered.
@@ -261,43 +267,6 @@ struct AlertController: APIRouteCollection {
 }
 
 // move to controllerStructs
-
-struct AnnouncementCreateData: Content {
-	var text: String
-	var displayUntil: Date
-}
-
-extension AnnouncementCreateData: RCFValidatable {
-    func runValidations(using decoder: ValidatingDecoder) throws {
-    	let tester = try decoder.validator(keyedBy: CodingKeys.self)
-    	tester.validate(!text.isEmpty, forKey: .text, or: "Text cannot be empty")
-    	tester.validate(text.count < 2000, forKey: .text, or: "Announcement text has a 2000 char limit")
-    	tester.validate(displayUntil > Date(), forKey: .displayUntil, or: "Announcement DisplayUntil date must be in the future.")
-	}
-}
-
-struct AnnouncementData: Content {
-	var id: Int
-	var author: UserHeader
-	var text: String
-	var updatedAt: Date
-	var displayUntil: Date
-	var isDeleted: Bool
-}
-
-extension AnnouncementData {
-	init(from: Announcement, authorHeader: UserHeader) throws {
-		id = try from.requireID()
-		author = authorHeader
-		text = from.text
-		updatedAt = from.updatedAt ?? Date()
-		displayUntil = from.displayUntil
-		isDeleted = false
-		if let deleteTime = from.deletedAt, deleteTime < Date() {
-			isDeleted = true
-		}
-	}
-}
 
 struct GlobalNotificationData: Content {
 	/// Always UTC with milliseconds, like "2020-03-07T12:00:00.001Z"
@@ -334,19 +303,16 @@ struct UserNotificationCountData: Content {
 	
 	/// Number of twarrts that @mention the user.
 	var twarrtMentionCount: Int
-	
 	/// Number of twarrt @mentions that the user has not read (by visiting the twarrt mentions endpoint; reading twarrts in the regular feed doesn't count).
 	var newTwarrtMentionCount: Int
 	
 	/// Number of forum posts that @mention the user.
 	var forumMentionCount: Int
-	
 	/// Number of forum post @mentions the user has not read.
 	var newForumMentionCount: Int
 	
 	/// Count of # of Seamail threads with new messages. NOT total # of new messages-a single seamail thread with 10 new messages counts as 1.
 	var newSeamailMessageCount: Int
-	
 	/// Count of # of Fezzes with new messages
 	var newFezMessageCount: Int
 	

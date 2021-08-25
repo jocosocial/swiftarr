@@ -141,9 +141,9 @@ struct SiteLoginController: SiteControllerUtils {
 										// Set displayname; ignore result. We *could* direct errors here to show an alert in the 
 										// accountCreated webpage, but don't allow failures at this point to prevent showing the page.
 										_ = apiQuery(req, endpoint: "/user/profile", method: .POST, beforeSend: { req throws in
-											let profileData = UserProfileData(username: postStruct.username, about: nil, 
-													displayName: displayname, email: nil, homeLocation: nil, message: nil, 
-													preferredPronoun: nil, realName: nil, roomNumber: nil, limitAccess: false)
+											let profileData = UserProfileData(header: nil, displayName: displayname, about: nil, 
+													email: nil, homeLocation: nil, message: nil, 
+													preferredPronoun: nil, realName: nil, roomNumber: nil)
 											try req.content.encode(profileData)
 										})
 									}

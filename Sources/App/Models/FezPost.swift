@@ -2,9 +2,14 @@ import Vapor
 import Fluent
 
 
-/// An individual post within a `FriendlyFez` discussion. A FezPost must contain
-/// either text content or image content, or both.
-
+/**
+	An individual post within a `FriendlyFez` discussion. A FezPost must contain
+	text content and may also contain image content, unless the Fez is of type `FezType.closed`,
+	in which case the post may not contain images.
+	
+	- See Also: [FezPostData](FezPostData) the DTO for returning info on FezPosts. FezPostData is also a member of `FezData`.
+	- See Also: [CreateFezPostSchema](CreateFezPostSchema) the Migration for creating the FezPost table in the database.
+*/
 final class FezPost: Model {
 	static let schema = "fezposts"
 	
@@ -41,7 +46,7 @@ final class FezPost: Model {
 
     // MARK: Initialization
     
-    // Used by Fluent
+    /// Used by Fluent
  	init() { }
  	
     /// Initializes a new FezPost.

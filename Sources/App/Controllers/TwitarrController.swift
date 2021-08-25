@@ -74,7 +74,7 @@ struct TwitarrController: APIRouteCollection {
 							author: author,
 							text: twarrt.isQuarantined ? "This twarrt is under moderator review." : twarrt.text,
 							images: twarrt.isQuarantined ? nil : twarrt.images,
-							replyToID: twarrt.$replyTo.id,
+							replyGroupID: twarrt.$replyGroup.id,
 							isBookmarked: bookmarked,
 							userLike: nil,
 							laughs: [],
@@ -101,56 +101,59 @@ struct TwitarrController: APIRouteCollection {
 			}
         }
     }
-    
-    /// `GET /api/v3/twitarr`
-    ///
-    /// Retrieve an array of `Twarrt`s. This query supports several optional query parameters.
-	/// 
-	/// Parameters that filter the set of returned `Twarrt`s. These may be combined (but only one instance of each); 
-	/// the result set will match all provided filters.
-	/// * `?search=STRING` - Only return twarrts whose text contains the search string.
-	/// * `?hashtag=STRING` - Only return twarrts whose text contains the given #hashtag. The # is not required in the  value.
-	/// * `?mentions=STRING` - Only return twarrts that @mention the given username. The @ is not required in the value.
-	/// * `?byuser=ID` - Only return twarrts authored by the given user.
-	/// * `?inbarrel=ID` - Only return twarrts authored by any user in the given `.seamonkey` type `Barrel`.
-    ///
-	/// Parameters that set the anchor. The anchor can be a specific `Twarrt`, a `Date`, or the first or last twarrt in the stream.
-	/// These parameters are mutually exclusive. The default anchor if none is specified is `?from=last`. 
-	/// If you specify a twarrt ID as an anchor, that twarrt does not need to pass the filter params (see above).
-    /// * `?after=ID` - the ID of the twarrt *after* which the retrieval should start (newer).
-    /// * `?before=ID` - the ID of the twarrt *before* which the retrieval should start (older).
-    /// * `?afterdate=DATE` - the timestamp *after* which the retrieval should start (newer).
-    /// * `?beforedate=DATE` - the timestamp *before* which the retrieval should start (older).
-    /// * `?from=STRING` - retrieve starting from "first" or "last".
-	///
-	/// These parameters operate on the filtered set of twarrts, starting at the anchor, above. These parameters can be used
-	/// to implement paging that is invariant to new results being added while displaying filtered twarrts. That is, for an initial call
-	/// with `?hashtag=joco&from=last`, on subsequent calls you can call `?hashtag=joco&before=<id of first result>&start=50`
-	/// and you will get the 50 twarrts containing the #joco hashtag, occuring immediately before the 50 results returned in the first call--
-	/// even if there have been more twarrts posted with the hashtag in the interim.
-	/// * `?start=INT` - the offset from the anchor to start. Offset only counts twarrts that pass the filters.
-    /// * `?limit=INT` - the maximum number of twarrts to retrieve: 1-200, default is 50
-	///
-    /// A query without additional parameters defaults to `?limit=50&from=last`, the 50 most
-    /// recent twarrts.
-    ///
-    /// `DATE` values can be either `TimeInterval` values (Doubles) since epoch, or ISO8601
-    /// string representations including milliseconds ("yyyy-MM-dd'T'HH:mm:ss.SSSXXXXX"). The
-    /// numeric value method is recommended.
-    ///
-    /// - Note: It is *highly* recommended that clients use `after=ID` or `before=ID` where
-    ///   possible. `Twarrt` ID's are Int values and thus unambiguous. `DATE` values are
-    ///   accurate only within 1 millisecond and are therefore prone to rounding errors. To
-    ///   ensure that all twarrts of interest are returned when sending a date based on the
-    ///   value found in a twarrt's timestamp, it is recommended that 1 millisecond be added
-    ///   (if retrieving older) or subtracted (if retrieving newer) from that value for the
-    ///   query. You will almost certainly receive the original anchor twarrt again, but it will
-    ///   also ensure that any others possibly created within the same millisecond will not be
-    ///   omitted.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Throws: 400 error if a date parameter was supplied and is in an unknown format.
-    /// - Returns: `[TwarrtData]` containing the requested twarrts.
+ 
+/**
+	`GET /api/v3/twitarr`
+
+	Retrieve an array of `Twarrt`s. This query supports several optional query parameters.
+
+	Parameters that filter the set of returned `Twarrt`s. These may be combined (but only one instance of each); 
+	the result set will match all provided filters.
+	* `?search=STRING` - Only return twarrts whose text contains the search string.
+	* `?hashtag=STRING` - Only return twarrts whose text contains the given #hashtag. The # is not required in the value.
+	* `?mentions=STRING` - Only return twarrts that @mention the given username. The @ is not required in the value.
+	* `?byuser=ID` - Only return twarrts authored by the given user.
+	* `?inbarrel=ID` - Only return twarrts authored by any user in the given `.seamonkey` type `Barrel`.
+	* `?replyGroup=ID` - Only return twarrts in the given replyGroup. The twarrt whose twarrtID == ID is always considered to be in the reply group,
+	even if there are no replies to it.
+
+	Parameters that set the anchor. The anchor can be a specific `Twarrt`, a `Date`, or the first or last twarrt in the stream.
+	These parameters are mutually exclusive. The default anchor if none is specified is `?from=last`. 
+	If you specify a twarrt ID as an anchor, that twarrt does not need to pass the filter params (see above).
+	* `?after=ID` - the ID of the twarrt *after* which the retrieval should start (newer).
+	* `?before=ID` - the ID of the twarrt *before* which the retrieval should start (older).
+	* `?afterdate=DATE` - the timestamp *after* which the retrieval should start (newer).
+	* `?beforedate=DATE` - the timestamp *before* which the retrieval should start (older).
+	* `?from=STRING` - retrieve starting from "first" or "last".
+
+	These parameters operate on the filtered set of twarrts, starting at the anchor, above. These parameters can be used
+	to implement paging that is invariant to new results being added while displaying filtered twarrts. That is, for an initial call
+	with `?hashtag=joco&from=last`, on subsequent calls you can call `?hashtag=joco&before=<id of first result>&start=50`
+	and you will get the 50 twarrts containing the #joco hashtag, occuring immediately before the 50 results returned in the first call--
+	even if there have been more twarrts posted with the hashtag in the interim.
+	* `?start=INT` - the offset from the anchor to start. Offset only counts twarrts that pass the filters.
+	* `?limit=INT` - the maximum number of twarrts to retrieve: 1-200, default is 50
+
+	A query without additional parameters defaults to `?limit=50&from=last`, the 50 most recent twarrts.
+
+	`DATE` values can be either `TimeInterval` values (Doubles) since epoch, or ISO8601
+	string representations including milliseconds ("yyyy-MM-dd'T'HH:mm:ss.SSSXXXXX"). The
+	numeric value method is recommended.
+
+	- Note: It is *highly* recommended that clients use `after=ID` or `before=ID` where
+	  possible. `Twarrt` ID's are Int values and thus unambiguous. `DATE` values are
+	  accurate only within 1 millisecond and are therefore prone to rounding errors. To
+	  ensure that all twarrts of interest are returned when sending a date based on the
+	  value found in a twarrt's timestamp, it is recommended that 1 millisecond be added
+	  (if retrieving older) or subtracted (if retrieving newer) from that value for the
+	  query. You will almost certainly receive the original anchor twarrt again, but it will
+	  also ensure that any others possibly created within the same millisecond will not be
+	  omitted.
+
+	- Parameter req: The incoming `Request`, provided automatically.
+	- Throws: 400 error if a date parameter was supplied and is in an unknown format.
+	- Returns: `[TwarrtData]` containing the requested twarrts.
+*/
     func twarrtsHandler(_ req: Request) throws -> EventLoopFuture<[TwarrtData]> {
         let user = try req.auth.require(User.self)
  		let cachedUser = try req.userCache.getUser(user)
@@ -165,10 +168,13 @@ struct TwitarrController: APIRouteCollection {
 				.range(start..<(start + limit))
 		
 		// Process query params that set an anchor twarrt and search direction.
+		// SearchDescending refers to the sort order in the database query, which affects start and limit.
+		// SortDescending refers to the ordering of the returned twarrts.
+		var searchDescending = true
 		var sortDescending = true
 		if let afterID = req.query[Int.self, at: "after"] {
 			futureTwarrts.filter(\.$id > afterID)
-			sortDescending = false
+			searchDescending = false
 		}
 		else if let beforeID = req.query[Int.self, at: "before"]{
 			futureTwarrts.filter(\.$id < beforeID)
@@ -178,7 +184,7 @@ struct TwitarrController: APIRouteCollection {
 				throw Abort(.badRequest, reason: "not a recognized date format")
 			}
 			futureTwarrts.filter(\.$createdAt > date)
-			sortDescending = false
+			searchDescending = false
 		}
 		else if let beforeDate = req.query[String.self, at: "beforedate"] {
 			guard let date = TwitarrController.dateFromParameter(string: beforeDate) else {
@@ -187,7 +193,7 @@ struct TwitarrController: APIRouteCollection {
 			futureTwarrts.filter(\.$createdAt < date)
 		}
 		else if let from = req.query[String.self, at: "from"]?.lowercased(), from == "first" {
-			sortDescending = false
+			searchDescending = false
 		}
 		
 		// Process query params that filter for specific content.
@@ -213,6 +219,12 @@ struct TwitarrController: APIRouteCollection {
 			}
 			futureTwarrts.filter(\.$author.$id == authorUUID)
 		}
+		if let replyGroup = req.query[Int.self, at: "replyGroup"] {
+			futureTwarrts.group(.or) { group in
+				group.filter(\.$replyGroup.$id == replyGroup).filter(\.$id == replyGroup)
+			}
+			sortDescending = false
+		}
 		
 		var barrelFinder: EventLoopFuture<Barrel?> = req.eventLoop.future(nil)
 		if let inBarrel = req.query[String.self, at: "inbarrel"] {
@@ -235,7 +247,7 @@ struct TwitarrController: APIRouteCollection {
 			if let foundBarrel = barrel {
 				futureTwarrts.filter(\.$author.$id ~~ foundBarrel.modelUUIDs)
 			}
-			return futureTwarrts.sort(\.$id, sortDescending ? .descending : .ascending).all().flatMap { (twarrts) in
+			return futureTwarrts.sort(\.$id, searchDescending ? .descending : .ascending).all().flatMap { (twarrts) in
 				// The filter() for mentions will include usernames that are prefixes for other usernames and other false positives.
 				// This filters those out after the query. 
 				var postFilteredTwarrts = twarrts
@@ -243,8 +255,8 @@ struct TwitarrController: APIRouteCollection {
 					postFilteredTwarrts = twarrts.compactMap { $0.filterForMention(of: postFilter) }
 				}
 			
-				// correct to descending order if necessary
-				let sortedTwarrts: [Twarrt] = sortDescending ? postFilteredTwarrts : postFilteredTwarrts.reversed()
+				// correct sort order if necessary
+				let sortedTwarrts: [Twarrt] = searchDescending == sortDescending ? postFilteredTwarrts : postFilteredTwarrts.reversed()
 				return buildTwarrtData(from: sortedTwarrts, user: user, on: req, mutewords: cachedUser.mutewords)
 			}
 		}
@@ -358,8 +370,7 @@ struct TwitarrController: APIRouteCollection {
         
     /// `POST /api/v3/twitarr/ID/reply`
     ///
-    /// Create a `Twarrt` as a reply to an existing twarrt. If the replyTo twarrt is in
-    /// quarantine, the post is rejected.
+    /// Create a `Twarrt` as a reply to an existing twarrt. If the replyTo twarrt is in quarantine, the post is rejected.
     ///
     /// - Requires: `PostContentData` payload in the HTTP body.
     /// - Parameters:
@@ -381,6 +392,11 @@ struct TwitarrController: APIRouteCollection {
 				let twarrt = try Twarrt(author: user, text: data.text, images: filenames, replyTo: replyTo)
 				return twarrt.save(on: req.db).flatMapThrowing { (savedTwarrt) in
 					processTwarrtMentions(twarrt: twarrt, editedText: nil, isCreate: true, on: req)
+					if replyTo.$replyGroup.id == nil {
+						// If the replyTo twarrt wasn't in a replyGroup, it becomes the head of a new one.
+						replyTo.$replyGroup.id = replyTo.id
+						_ = replyTo.save(on: req.db)
+					}
 					// return as TwarrtData with 201 status
 					let authorHeader = try req.userCache.getHeader(twarrt.$author.id)
 					let response = Response(status: .created)
@@ -594,24 +610,6 @@ struct TwitarrController: APIRouteCollection {
 		}
     }
     
-    /// `GET /api/v3/twitarr/user`
-    ///
-    /// Retrieve all `Twarrt`s authored by the user.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[TwarrtData]` containing all twarrts containing mentions.
-    func userHandler(_ req: Request) throws -> EventLoopFuture<[TwarrtData]> {
-        let user = try req.auth.require(User.self)
-        // get twarrts
-        return user.$twarrts.query(on: req.db)
-            .sort(\.$createdAt, .ascending)
-            .all()
-            .flatMap { (twarrts) in
-                // convert to TwarrtData
-				return buildTwarrtData(from: twarrts, user: user, on: req)
-        	}
-    }
-
 }
 
 // MARK: -

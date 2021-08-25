@@ -3,7 +3,7 @@
     	<div class="container-md ms-0 mt-2">
     		<div class="row align-items-end">
     			<div class="col col-auto">
-			    	<h6><b>Moderate Forum \##(modData.forum.forumID)</br>Titled: #elem(modData.forum.title)</b></h6>
+			    	<h6><b>Moderate Forum \##(modData.forum.forumID)</br>Titled: #(modData.forum.title)</b></h6>
 				</div>
 			</div>
 			<div class="row mb-3">
@@ -41,7 +41,7 @@
 					<div class="list-group-item list-group-item-action">		
 						<div class="row">
 							<div class="col">
-								#elem(modData.forum.title)
+								#(modData.forum.title)
 							</div>
 						</div>
 					</div>
@@ -50,9 +50,7 @@
 			#if(finalEditAuthor):
 				<div class="row">
 					<div class="col">
-						<i>Last edit by <a href="/user/#(finalEditAuthor.userID)">		
-							<b>#elem(finalEditAuthor.displayName)</b> @#elem(finalEditAuthor.username)</a>
-						</i>
+						<i>Last edit by #userByline(finalEditAuthor)</i>
 					</div>
 				</div>
 			#endif
@@ -78,9 +76,7 @@
 							<div class="list-group-item list-group-item-action">		
 								<div class="row">	
 									<div class="col">
-										<a href="/user/#(edit.author.userID)">		
-											<b>#elem(edit.author.displayName)</b> @#elem(edit.author.username)
-										</a>
+										#userByline(edit.author)
 									</div>
 									<div class="col-auto">
 										<span class="text-muted">Edited at: #date(edit.createdAt)</span>
@@ -88,7 +84,7 @@
 								</div>
 								<div class="row">
 									<div class="col">
-										#elem(edit.title)
+										#(edit.title)
 									</div>
 								</div>
 							</div>
@@ -115,14 +111,14 @@
 							<div class="container-fluid">
 								<div class="row">
 									<div class="col">
-										<b>Reported by @#elem(report.author.username) #relativeTime(report.creationTime)</b>
+										<b>Reported by #userByline(report.author) #relativeTime(report.creationTime)</b>
 									</div>
 									<div class="col col-auto">
 										#if(report.handledBy):
 											#if(report.isClosed):
-												Closed by #elem(report.handledBy.username)
+												Closed by #userByline(report.handledBy)
 											#else:
-												Being Handled by #elem(report.handledBy.username)
+												Being Handled by #userByline(report.handledBy)
 											#endif
 										#else:
 											#if(report.isClosed):
@@ -136,7 +132,7 @@
 								#if(report.submitterMessage):
 									<div class="row">
 										<div class="col">
-											#elem(report.submitterMessage)
+											#(report.submitterMessage)
 										</div>
 									</div>
 								#endif
@@ -151,7 +147,7 @@
 											Moderator Memo:
 										</div>
 										<div class="col">
-											#elem(report.moderatorMemo)
+											#(report.moderatorMemo)
 										</div>
 									</div>
 								#endif

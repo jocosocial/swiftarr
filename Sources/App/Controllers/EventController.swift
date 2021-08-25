@@ -14,8 +14,8 @@ struct EventController: APIRouteCollection {
         // convenience route group for all /api/v3/users endpoints
         let eventRoutes = app.grouped("api", "v3", "events")
         
-        // open access endpoints that behave differently for logged-in users
-        let optionalAuthGroup = addOpenAuthGroup(to: eventRoutes)
+        // Flexible access endpoints that behave differently for logged-in users
+        let optionalAuthGroup = addFlexAuthGroup(to: eventRoutes)
         optionalAuthGroup.get(use: eventsHandler)
         optionalAuthGroup.get(eventIDParam, use: singleEventHandler)
         

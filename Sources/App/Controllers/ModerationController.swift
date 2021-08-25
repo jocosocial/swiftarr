@@ -2,10 +2,17 @@ import Vapor
 import Crypto
 import FluentSQL
 
-/// The collection of `/api/v3/mod/*` route endpoints and handler functions related to moderation tasks..
-///
-/// All routes in this group should be restricted to users with moderation priviliges. This controller returns data of 
-/// a privledged nature, including contents of user reports, edit histories of user content, and log data about moderation actions.
+/**
+	The collection of `/api/v3/mod/` route endpoints and handler functions related to moderation tasks..
+	
+	All routes in this group should be restricted to users with moderation priviliges. This controller returns data of 
+	a privledged nature, including contents of user reports, edit histories of user content, and log data about moderation actions.
+	
+	The routes in this controller that return data on various Reportable content types are designed to return everything a Mod might need
+	to make moderation decisions, all in one call. In many cases that means calls return multiple array types with no paging or array limits.
+	In non-degenerate cases the arrays should less than ~20 elements. Additionally, there are few moderators and they won't be calling these
+	methods multiple times per second.	
+*/
 struct ModerationController: APIRouteCollection {
 
 	/// Required. Registers routes to the incoming router.

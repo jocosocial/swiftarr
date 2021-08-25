@@ -108,12 +108,7 @@ struct UsersController: APIRouteCollection {
     /// `GET /api/v3/users/ID/profile`
     ///
     /// Retrieves the specified user's profile, as a `ProfilePublicData` object.
-    ///
-    /// This endpoint can be reached with either Basic or Bearer authenticaton. If using Basic
-    /// (requesting user is *not* logged in), the data returned may be a limited subset if the
-    /// profile user's `.limitAccess` setting is `true`, and the `.message` field will contain
-    /// text to inform the viewing user of that fact.
-    ///
+	///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 404 error if the profile is not available. A 5xx response should be reported
     ///   as a likely bug, please and thank you.
@@ -133,9 +128,8 @@ struct UsersController: APIRouteCollection {
 					throw Abort(.notFound, reason: "profile is not available")
 				}
 				var publicProfile = try ProfilePublicData(user: profiledUser, note: nil)
-				// if auth type is Basic, requester is not logged in, so hide info if
-				// `.limitAccess` is true or requester is .banned
-				if (req.headers.basicAuthorization != nil && profiledUser.limitAccess) || requester.accessLevel == .banned {
+				// if requester is .banned, hide info
+				if requester.accessLevel == .banned {
 					publicProfile.about = ""
 					publicProfile.email = ""
 					publicProfile.homeLocation = ""

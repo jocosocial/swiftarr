@@ -1,13 +1,15 @@
 import Vapor
 import Fluent
 
+/**
+	When a `UserProfile` is edited, a `ProfileEdit` is created and associated with the
+	profile. The `ProfileEdit` records the state of the profile just before the edit occurred.
+	
+	This is done for accountability purposes and the data collected is intended to be viewable
+	only by users with an access level of `.moderator` or above.
 
-/// When a `UserProfile` is edited, a `ProfileEdit` is created and associated with the
-/// profile. The `ProfileEdit` records the state of the profile just before the edit occurred.
-///
-/// This is done for accountability purposes and the data collected is intended to be viewable
-/// only by users with an access level of `.moderator` or above.
-
+	- See Also: [CreateProfileEditSchema](CreateProfileEditSchema) the Migration for creating the ProfileEdit table in the database.
+*/
 final class ProfileEdit: Model {
 	static let schema = "profileedits"
 	

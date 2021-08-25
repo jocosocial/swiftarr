@@ -20,7 +20,7 @@
 					<form class="ajax" action="#(post.formAction)" enctype="multipart/form-data" method="POST" data-successurl="#(post.postSuccessURL)" id="messagePostForm">
 						<div class="container-fluid">
 							<div class="row mb-2"> 
-								<textarea class="form-control" maxlength="2000" rows="5" name="postText" id="postText" placeholder="Announcement Text">#elem(post.messageText)</textarea>
+								<textarea class="form-control" maxlength="2000" rows="5" name="postText" id="postText" placeholder="Announcement Text">#(post.messageText)</textarea>
 							</div>
 							<div class="row mb-2">
 								<div class="col">

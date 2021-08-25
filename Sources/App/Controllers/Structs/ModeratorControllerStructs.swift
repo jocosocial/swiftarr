@@ -82,7 +82,7 @@ extension ForumAdminData {
 ///	* `TwarrtModerationData`
 ///	
 /// Returned by:
-/// * `GET /api/v3/mod/twarrt/id`
+/// * `GET /api/v3/mod/forum/id`
 struct ForumEditLogData: Content {
 	/// The ID of the forum.
     var forumID: UUID
@@ -107,7 +107,7 @@ extension ForumEditLogData {
 	}
 }
 
-/// Used to return data a moderator needs to moderate a twarrt. 
+/// Used to return data a moderator needs to moderate a forum. 
 ///	
 /// Returned by:
 /// * `GET /api/v3/mod/forum/id`

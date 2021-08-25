@@ -82,8 +82,8 @@
 				<div class="row mb-2 mx-0">
 					#for(participant in fez.members.participants):
 						<div class="col col-auto border">
-							#avatar(participant.userImage)
-							<span>#elem(participant.username)</span>
+							#avatar(participant)
+							<span>#(participant.username)</span>
 						</div>				
 					#endfor
 				</div>
@@ -104,12 +104,12 @@
 							<div class="container-fluid">
 								<div class="row align-items-start justify-content-start">	
 									<div class="col g-0" style="flex: 0 0 40px;">
-										#avatar(fezPost.author.userImage)
+										#avatar(fezPost.author)
 									</div>
 									<div class="col">
 										<div class="row">	
 											<div class="col">
-												<b>#elem(fezPost.author.displayName) @#elem(fezPost.author.username)</b>
+												#userByline(fezPost.author)
 											</div>
 											<div class="col-auto">
 												<span class="text-muted">#relativeTime(fezPost.timestamp)</span>
@@ -134,12 +134,12 @@
 							<div class="container-fluid">
 								<div class="row align-items-start justify-content-start">	
 									<div class="col g-0" style="flex: 0 0 40px;">
-										#avatar(fezPost.author.userImage)
+										#avatar(fezPost.author)
 									</div>
 									<div class="col">
 										<div class="row">	
 											<div class="col">
-												<b>#elem(fezPost.author.displayName) @#elem(fezPost.author.username)</b>
+												#userByline(fezPost.author)
 											</div>
 											<div class="col-auto">
 												<span class="text-muted">#relativeTime(fezPost.timestamp)</span>

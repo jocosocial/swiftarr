@@ -95,7 +95,7 @@
 					<hr class="main-menu-divider">
 					<li class="nav-item">
 					#if(trunk.userIsLoggedIn):
-						<a class="nav-link" href="/logout">Logout #elem(trunk.username)</a>
+						<a class="nav-link" href="/logout">Logout #(trunk.username)</a>
 					#else:
 						<a class="nav-link" href="/login">Login</a>
 					#endif

@@ -12,7 +12,7 @@
 					<div class="container-fluid">
 						<div class="row">
 							<div class="col">
-								#(report.reportType) by @#elem(report.reportedUser.username)
+								#(report.reportType) by #userByline(report.reportedUser)
 							</div>
 							<div class="col col-auto">
 								reported #relativeTime(report.firstReportTime)
@@ -23,9 +23,9 @@
 								#if(count(report.reports) == 1):
 									#if(report.reports.handledBy):
 										#if(report.isClosed):
-											Closed by #elem(report.reports.handledBy.username)
+											Closed by #userByline(report.reports.handledBy)
 										#else:
-											Being Handled by #elem(report.handledBy.username)
+											Being Handled by #userByline(report.handledBy)
 										#endif
 									#else:
 										#if(report.isClosed):

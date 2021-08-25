@@ -2,16 +2,21 @@ import Vapor
 import Fluent
 
 
-/// Admins can create Announcements, which are text strings intended to be shown to all users. All announcements have a 'display until' time,
-/// and are considered 'active' until their display until time expires. 
-/// 
-/// Announcement IDs are ints, and increase with each announcement created. The `User` model stores the highest Announcement ID the user
-/// has seen.
-///
-/// Announcements are global, and are retrieveable while logged out. However, endpoints returning announcement data will only return all active
-/// announcements for logged-out users. Logged-in users will additionally get data indicating which announcements are unread. Clients may implement
-/// local solutions for determining which announcements are unread for logged-out users.
+/**
+	Admins can create Announcements, which are text strings intended to be shown to all users. All announcements have a 'display until' time,
+	and are considered 'active' until their display until time expires. 
 
+	Announcement IDs are ints, and increase with each announcement created. The `User` model stores the highest Announcement ID the user
+	has seen.
+
+	Announcements are global, and are retrieveable while logged out. However, endpoints returning announcement data will only return all active
+	announcements for logged-out users. Logged-in users will additionally get data indicating which announcements are unread. Clients may implement
+	local solutions for determining which announcements are unread for logged-out users.
+
+	- See Also: [AnnouncementData](AnnouncementData) the DTO for returning info on Announcements.
+	- See Also: [AnnouncementCreateData](AnnouncementCreateData) the DTO for creating and editing Announcements.
+	- See Also: [CreateAnnouncementSchema](CreateAnnouncementSchema) the Migration that creates the Announcement table in the database.
+*/
 final class Announcement: Model {
 	static let schema = "announcements"
 	
@@ -42,7 +47,7 @@ final class Announcement: Model {
         
     // MARK: Initialization
     
-    // Used by Fluent
+    /// Used by Fluent
  	init() { }
  	
     /// Initializes a new Announcement.

@@ -297,42 +297,46 @@ struct UserController: APIRouteCollection {
     
     /// `POST /api/v3/user/image`
     ///
-    /// Sets the user's profile image to the file uploaded in the HTTP body.
+    /// Sets the user's profile image to the `ImageUploadData` uploaded in the HTTP body. 
+	/// 
+	/// - If the `ImageUploadData` contains image data in the `image` member, that data is processed, saved, and set to user's new image
+	/// - If the `ImageUploadData` contains a filename in the `filename` member, the user's avatar is set to that image file on the server. We don't check whether the file exists.
+	/// - If both members are nil, the user's avatar image is set to nil, which will cause the default image be returned.
     ///
     /// - Requires: `ImageUpdloadData` payload in the HTTP body.
     /// - Parameters:
     ///   - req: The incoming `Request`, provided automatically.
     ///   - data: `ImageUploadData` containg the filename and image file.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: `UploadedImageData` containing the generated image identifier string.
-    func imageHandler(_ req: Request) throws -> EventLoopFuture<UploadedImageData> {
+    /// - Returns: `UserHeader` containing the generated image identifier string.
+    func imageHandler(_ req: Request) throws -> EventLoopFuture<UserHeader> {
         let user = try req.auth.require(User.self)
         try user.guardCanEditProfile()
         let data = try req.content.decode(ImageUploadData.self)
         // get generated filename
         return processImage(data: data.image, usage: .userProfile, on: req)
-        	.unwrap(or: Abort(.badRequest, reason: "No image data in request."))
-        	.throwingFlatMap { (filename) in
-				// replace existing image
-				if let existingImage = user.userImage, !existingImage.isEmpty {
+        	.throwingFlatMap { filename in
+        		let newImageName = filename ?? data.filename
+				// Save a thumbnail of existing image if there was one and we're changing it.
+				if let existingImage = user.userImage, !existingImage.isEmpty, existingImage != newImageName {
 					// create ProfileEdit record
 					let profileEdit = try ProfileEdit(target: user, editor: user)
 					// archive thumbnail
 					DispatchQueue.global(qos: .background).async {
 						self.archiveImage(existingImage, on: req)
 					}
-					return profileEdit.save(on: req.db).transform(to: filename)
+					return profileEdit.save(on: req.db).transform(to: newImageName)
 				}
-				return req.eventLoop.future(filename) 
+				return req.eventLoop.future(newImageName) 
 			}
-			.flatMap { (filename: String) in
-				// add new image
+			.flatMap { (filename: String?) in
+				// Set new image
 				user.userImage = filename
 				user.profileUpdatedAt = Date()
-				return user.save(on: req.db).flatMapThrowing {
-					try req.userCache.updateUser(user.requireID())
-					let result = UploadedImageData(filename: filename)
-					return result
+				return user.save(on: req.db).throwingFlatMap {
+					return try req.userCache.updateUser(user.requireID()).map { userCacheData in
+						return userCacheData.makeHeader()
+					}
 				}
 			}
     }
@@ -384,10 +388,7 @@ struct UserController: APIRouteCollection {
     /// `GET /api/v3/user/profile`
     ///
     /// Retrieves the user's own profile data for editing, as a `UserProfileData` object.
-    ///
-    /// This endpoint can be reached with either Basic or Bearer authenticaton, so that a user
-    /// can customize their profile even if they do not yet have their registration code.
-    ///
+	///
     /// - Note: The `.username` and `.displayedName` properties of the returned object
     ///   are for display convenience only. A username must be changed using the
     ///   `POST /api/v3/user/username` endpoint. The displayedName property is generated from
@@ -449,7 +450,6 @@ struct UserController: APIRouteCollection {
 			targetUser.preferredPronoun = data.preferredPronoun?.isEmpty == true ? nil : data.preferredPronoun
 			targetUser.realName = data.realName?.isEmpty == true ? nil : data.realName
 			targetUser.roomNumber = data.roomNumber?.isEmpty == true ? nil : data.roomNumber
-			targetUser.limitAccess = data.limitAccess
 			
 			// build .userSearch value
 			targetUser.buildUserSearchString()

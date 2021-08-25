@@ -21,7 +21,7 @@
 						<a href="/seamail/#(fez.fezID)" class="list-group-item list-group-item-action">		
 							<div class="row">
 								<div class="col">
-									#elem(fez.title)
+									#(fez.title)
 								</div>
 								<div class="col col-auto">
 									<span class="text-muted">#relativeTime(fez.lastModificationTime)</span>
@@ -31,8 +31,8 @@
 								#for(participant in fez.members.participants):
 									#if(participant.userID != trunk.userID):
 										<div class="col col-auto border">
-											#avatar(participant.userImage)
-											<span>#elem(participant.username)</span>
+											#avatar(participant)
+											<span>#(participant.username)</span>
 										</div>	
 									#endif			
 								#endfor

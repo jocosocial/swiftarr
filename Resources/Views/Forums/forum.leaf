@@ -29,15 +29,13 @@
 							<div class="row align-items-start justify-content-start">	
 								<div class="col g-0" style="flex: 0 0 40px;">
 									<a href="/user/#(forumPost.author.userID)">
-										#avatar(forumPost.author.userImage)
+										#avatar(forumPost.author)
 									</a>
 								</div>
 								<div class="col">
 									<div class="row">	
 										<div class="col">
-											<a href="/user/#(forumPost.author.userID)">
-												<b>#elem(forumPost.author.displayName)</b> @#elem(forumPost.author.username)
-											</a>
+											#userByline(forumPost.author)
 										</div>
 										<div class="col-auto">
 											<span class="text-muted">#relativeTime(forumPost.createdAt)</span>

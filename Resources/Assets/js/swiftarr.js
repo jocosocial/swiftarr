@@ -236,7 +236,12 @@ function updatePhotoCardState(cardElement) {
 		hiddenFormElem.value = "";
 	}
 	else if (hiddenFormElem.value) {
-		imgElem.src = "/api/v3/image/thumb/" + hiddenFormElem.value;
+		if (hiddenFormElem.value.startsWith('/api/v3')) {
+			imgElem.src = hiddenFormElem.value;
+		}
+		else {
+			imgElem.src = "/api/v3/image/thumb/" + hiddenFormElem.value;
+		}
 		imgContainer.style.display = "block";
 		noImgElem.style.display = "none";
 	}
@@ -249,7 +254,9 @@ function updatePhotoCardState(cardElement) {
 	if (imageSwapButton) {
 		imageSwapButton.disabled = !imageVisible;
 	}
-	imageRemoveButton.disabled = !imageVisible;
+	if (imageRemoveButton) {
+		imageRemoveButton.disabled = !imageVisible;
+	}
 	let nextCard = cardElement.nextElementSibling;
 	if (nextCard != null) {
 		nextCard.style.display = imgContainer.style.display;
@@ -463,4 +470,28 @@ function applyFezSearchFilters() {
 		}
 	}
 	window.location.href = "/fez" + queryString;
+}
+
+// MARK: - User Profile Handlers
+
+// In Edit User Avatar photo card, handles 'Reset and 'Default' buttons
+for (let btn of document.querySelectorAll('.twitarr-image-reset')) {
+	btn.addEventListener("click", resetAvatarImage);
+}
+function resetAvatarImage() {
+	let cardElement = event.target.closest('.card');
+	cardElement.querySelector('.image-upload-input').value = null
+	let hiddenElem = cardElement.querySelector('input[type="hidden"]');
+	hiddenElem.value = hiddenElem.dataset.originalvalue;
+	updatePhotoCardState(cardElement);
+}
+for (let btn of document.querySelectorAll('.twitarr-image-default')) {
+	btn.addEventListener("click", setDefaultAvatarImage);
+}
+function setDefaultAvatarImage() {
+	let cardElement = event.target.closest('.card');
+	cardElement.querySelector('.image-upload-input').value = null
+	let hiddenElem = cardElement.querySelector('input[type="hidden"]');
+	hiddenElem.value = hiddenElem.dataset.defaultvalue;
+	updatePhotoCardState(cardElement);
 }

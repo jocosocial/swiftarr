@@ -3,44 +3,44 @@
     	<div class="container-md ms-0 mt-2">
     		<div class="row justify-content-center">
     			<div class="col col-auto">
-    				User Profile for: <b>@#elem(profile.header.username)</b>
+    				User Profile for: <b>@#(profile.header.username)</b>
 				</div>
 			</div>
 			<div class="row justify-content-center align-items-center mx-1 mb-3">
     			<div class="col col-auto p-1 border">
-    				#avatar(profile.header.userImage, 200)
+    				#avatar(profile.header, 200)
 				</div>
 				<div class="col-sm">
 					#if(profile.header.displayName && profile.header.displayName != ""):
-						Display Name: <b>#elem(profile.header.displayName)</b><br>
+						Display Name: <b>#(profile.header.displayName)</b><br>
 					#endif
 					#if(profile.realName != ""):
-						Real Name: <b>#elem(profile.realName)</b><br>
+						Real Name: <b>#(profile.realName)</b><br>
 					#endif
 					#if(profile.roomNumber != ""):
-						Room #: <b>#elem(profile.roomNumber)</b><br>
+						Room #: <b>#(profile.roomNumber)</b><br>
 					#endif
 					#if(profile.email != ""):
-						Email: <b>#elem(profile.email)</b><br>
+						Email: <b>#(profile.email)</b><br>
 					#endif
 					#if(profile.homeLocation != ""):
-						Home Town: <b>#elem(profile.homeLocation)</b><br>
+						Home Town: <b>#(profile.homeLocation)</b><br>
 					#endif
 					#if(profile.preferredPronoun != ""):
-						Pronouns: <b>#elem(profile.preferredPronoun)</b><br>
+						Pronouns: <b>#(profile.preferredPronoun)</b><br>
 					#endif
 				</div>
 			</div>
 			<div class="row mx-1 mb-3 border">
     			<div class="col col-auto p-1">
-    				<h6><b>About @#elem(profile.header.username)&#58;</b></h6>
-					#elem(profile.about)
+    				<h6><b>About @#(profile.header.username)&#58;</b></h6>
+					#(profile.about)
 				</div>				
 			</div>
 			<div class="row">
 				<div class="col">
 					#if(trunk.userID == profile.header.userID):
-						<a class="btn btn-primary btn-sm" href="#">Edit Profile</a>
+						<a class="btn btn-primary btn-sm" href="/profile/edit">Edit Profile</a>
 					#endif
 				</div>
 			</div>

@@ -3,8 +3,13 @@ import Vapor
 import Fluent
 
 
-/// An `Event` on the official schedule, imported from sched.com's `.ics` format.
-
+/**
+	 An `Event` on the official schedule, imported from sched.com's `.ics` format.
+	 
+	 - See Also: [EventData](EventData) the DTO for returning info on Events.
+	 - See Also: [CreateEventSchema](CreateEventSchema) the Migration for creating the Event table in the database.
+	 - See Also: [EventType](EventType)
+*/
 final class Event: Model {
 	static let schema = "events"
 	

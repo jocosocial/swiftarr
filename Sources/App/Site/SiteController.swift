@@ -127,6 +127,7 @@ struct MessagePostContext: Encodable {
 	// Used as an parameter to the initializer	
 	enum InitType {
 		case tweet
+		case tweetReply(Int)					// replyGroup ID, or TwarrtID
 		case tweetEdit(TwarrtDetailData)
 		case forum(String)						// Category ID
 		case forumEdit(ForumData)
@@ -147,6 +148,11 @@ struct MessagePostContext: Encodable {
 		case .tweet:
 			formAction = "/tweets/create"
 			postSuccessURL = "/tweets"
+			showModPostOptions = true
+		// For replying to a tweet
+		case .tweetReply(let replyGroup):
+			formAction = "/tweets/reply/\(replyGroup)"
+			postSuccessURL = "/tweets?replyGroup=\(replyGroup)"
 			showModPostOptions = true
 		// For editing a tweet
 		case .tweetEdit(let tweet):
@@ -268,11 +274,12 @@ struct TwarrtQuery: Content {
 	var from: String?
 	var start: Int?
 	var limit: Int?
+	var replyGroup: Int?
 	
 	// TRUE if the 'next' tweets in this query are going to be newer or older than the current ones.
 	// For instance, by default the 'anchor' is the most recent tweet and the direction is towards older tweets.
 	func directionIsNewer() -> Bool {
-		return (after != nil) || (afterdate != nil)  || (from == "first")
+		return (after != nil) || (afterdate != nil)  || (from == "first") || (replyGroup != nil)
 	}
 	
 	func computedLimit() -> Int {
@@ -281,9 +288,6 @@ struct TwarrtQuery: Content {
 	
 	func buildQuery(baseURL: String, startOffset: Int) -> String? {
 		
-		guard startOffset >= 0 || (self.start ?? 0) > 0 else {
-			return nil
-		}
 		guard var components = URLComponents(string: baseURL) else {
 			return nil
 		}
@@ -302,6 +306,7 @@ struct TwarrtQuery: Content {
 		let newOffset = max(start ?? 0 + startOffset, 0)
 		if newOffset != 0 { elements.append(URLQueryItem(name: "start", value: String(newOffset))) }
 		if let limit = limit { elements.append(URLQueryItem(name: "limit", value: String(limit))) }
+		if let replyGroup = replyGroup { elements.append(URLQueryItem(name: "replyGroup", value: String(replyGroup))) }
 
 		components.queryItems = elements
 		return components.string

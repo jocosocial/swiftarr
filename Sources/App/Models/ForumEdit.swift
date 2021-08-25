@@ -1,12 +1,15 @@
 import Vapor
 import Fluent
 
+/**
+	When a `Forum` is edited, a `ForumEdit` is created to save the previous title text.
 
-/// When a `Forum` is edited, a `ForumEdit` is created to save the previous title text.
-///
-/// This is done for accountability purposes and the data collected is intended to be viewable
-/// only by users with an access level of `.moderator` or above.
+	This is done for accountability purposes and the data collected is intended to be viewable
+	only by users with an access level of `.moderator` or above.
 
+	- See Also: [ForumModerationData](ForumModerationData) the DTO for returning data moderators need to moderate forums.
+	- See Also: [CreateForumEditSchema](CreateForumEditSchema) the Migration for creating the ForumEdit table in the database.
+*/
 final class ForumEdit: Model {
 	static let schema = "forum_edits"
 

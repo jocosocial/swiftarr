@@ -1,14 +1,15 @@
 import Vapor
 import Fluent
 
+/**
+	A collection of `ForumPost`s on a single topic. Only the forum's creator or a moderator can edit a forum's title.
+	Only moderators can can change a forum's `moderationStatus`.
 
-/// A collection of `ForumPost`s on a single topic. Only the `.creatorID` user
-/// or one with .accessLevel of `.moderator` or above can edit a forum's title
-/// or place it into a locked state.
-///
-/// - Note: A locked state (`.isLocked` == true) means that the forum is currently
-///   read-only and is distinct from a forum's removal by soft-deletion.
-
+	- See Also: [ForumData](ForumData) the DTO for returning detailed info on Forums.
+	- See Also: [ForumListData](ForumListData) the DTO for returning basic info on Forums. Mostly, ForumListData does not include posts.
+	- See Also: [ForumCreateData](ForumCreateData) the DTO for creating forums.
+	- See Also: [CreateForumSchema](CreateForumSchema) the Migration for creating the Forum table in the database.
+*/
 final class Forum: Model {
 	static let schema = "forums"
 
