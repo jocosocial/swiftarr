@@ -438,6 +438,7 @@ extension SiteControllerUtils {
     var reportIDParam: PathComponent { PathComponent(":report_id") }
     var modStateParam: PathComponent { PathComponent(":mod_state") }
     var announcementIDParam: PathComponent { PathComponent(":announcement_id") }
+    var imageIDParam: PathComponent { PathComponent(":image_id") }
 
 	func apiQuery(_ req: Request, endpoint: String, method: HTTPMethod = .GET, defaultHeaders: HTTPHeaders? = nil,
 			passThroughQuery: Bool = true,
@@ -461,8 +462,10 @@ extension SiteControllerUtils {
     	}
     	return req.client.send(method, headers: headers, to: URI(string: urlStr), beforeSend: beforeSend).flatMapThrowing { response in
 			guard response.status.code < 300 else {
-				let errorResponse = try response.content.decode(ErrorResponse.self)
-				throw errorResponse
+				if let errorResponse = try? response.content.decode(ErrorResponse.self) {
+					throw errorResponse
+				}
+				throw Abort(response.status)
 			}
 			return response
     	}

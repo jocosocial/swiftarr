@@ -68,7 +68,6 @@ struct ValidatingKeyedContainer<Key: CodingKey>: KeyedDecodingContainerProtocol 
 		wrappingDecoder = decoder
 	}
 	
-
 	func validate(_ test: Bool, forKey: Key, or errorString: String? = nil) {
 		if !test {
 			let path = codingPath.map { $0.stringValue }.joined(separator: ".")
@@ -77,6 +76,52 @@ struct ValidatingKeyedContainer<Key: CodingKey>: KeyedDecodingContainerProtocol 
 			addValidationError(forKey: forKey, errorString: errorStr)
 		}
 	}
+	
+	func validateStrLenOptional(_ str: String?, nilOkay: Bool = true, min: Int = 0, max: Int = Int.max, forKey: Key, 
+			fieldName: String? = nil, or errorString: String? = nil) {
+		if let internalStr = str, !internalStr.isEmpty {
+			validateStrLen(internalStr, min: min, max: max, forKey: forKey, fieldName: fieldName, or: errorString)
+		}
+		else if !nilOkay {
+			var errorStr = errorString ?? ""
+			if errorStr.isEmpty {
+				if let field = fieldName {
+					errorStr = "\(field) must have a value and cannot be nil"
+				}
+				else {
+					let path = codingPath.map { $0.stringValue }.joined(separator: ".")
+					let pathString = path == "" ? "" : "at path \(path)"
+					errorStr = "\"\(forKey.stringValue)\" \(pathString) must have a value and cannot be nil"
+				}
+			}
+			addValidationError(forKey: forKey, errorString: errorStr)
+		}
+	}
+	
+	func validateStrLen(_ str: String, min: Int = 0, max: Int = Int.max, forKey: Key, fieldName: String? = nil,
+			or errorString: String? = nil) {
+		let len = str.count
+		if len < min || len > max {
+			var errorStr = errorString ?? ""
+			if errorStr.isEmpty {
+				if let field = fieldName {
+					errorStr = len < min ? "\(field) has a \(min) character minimum" : "\(field) has a \(max) character maximum"
+				}
+				else {
+					let path = codingPath.map { $0.stringValue }.joined(separator: ".")
+					let pathString = path == "" ? "" : "at path \(path)"
+					if len < min {
+						errorStr = "\"\(forKey.stringValue)\" \(pathString) has a \(min) character minimum"
+					}
+					else {
+						errorStr = "\"\(forKey.stringValue)\" \(pathString)  has a \(max) character maximum"
+					}
+				}
+			}
+			addValidationError(forKey: forKey, errorString: errorStr)
+		}
+	}
+	
 	func addValidationError(forKey: Key?, errorString: String) {
 		let path = codingPath.map { $0.stringValue }.joined(separator: ".")
 		let error = ValidationFailure(path: path, field: forKey?.stringValue, errorString: errorString)

@@ -844,35 +844,58 @@ extension PostDetailData {
 struct ProfilePublicData: Content {
     /// Basic info abou thte user--their ID, username, displayname, and avatar image.
     var header: UserHeader
+    /// An optional real world name of the user.
+    var realName: String
+    /// An optional preferred pronoun or form of address.
+    var preferredPronoun: String
+    /// An optional home location for the user.
+    var homeLocation: String
+    /// An optional cabin number for the user.
+    var roomNumber: String
+    /// An optional email address for the user.
+    var email: String
     /// An optional blurb about the user.
     var about: String
     /// An optional greeting/message to visitors of the profile.
     var message: String
-    /// An optional email address for the user.
-    var email: String
-    /// An optional home location for the user.
-    var homeLocation: String
-    /// An optional preferred pronoun or form of address.
-    var preferredPronoun: String
-    /// An optional real world name of the user.
-    var realName: String
-    /// An optional cabin number for the user.
-    var roomNumber: String
     /// A UserNote owned by the visiting user, about the profile's user (see `UserNote`).
     var note: String?
 }
 
 extension ProfilePublicData {
-	init(user: User, note: String?) throws {
+	init(user: User, note: String?, requester: User) throws {
 		self.header = try UserHeader(user: user)
-		self.about = user.about ?? ""
-		self.email = user.email ?? ""
-		self.homeLocation = user.homeLocation ?? ""
-		self.message = user.message ?? ""
-		self.preferredPronoun = user.preferredPronoun ?? ""
-		self.realName = user.realName ?? ""
-		self.roomNumber = user.roomNumber ?? ""
-		self.note = note
+		if !user.moderationStatus.showsContent() && !requester.accessLevel.hasAccess(.moderator) { 
+			self.header.displayName = nil
+			self.header.userImage = nil 
+			self.about = ""
+			self.email = ""
+			self.homeLocation = ""
+			self.message = "This profile is under moderator review"
+			self.preferredPronoun = ""
+			self.realName = ""
+			self.roomNumber = ""
+			self.note = note
+		}
+		else if requester.accessLevel == .banned {
+			self.about = ""
+			self.email = ""
+			self.homeLocation = ""
+			self.message = "You must be logged in to view this user's Profile details."
+			self.preferredPronoun = ""
+			self.realName = ""
+			self.roomNumber = ""
+		}
+		else {
+			self.about = user.about ?? ""
+			self.email = user.email ?? ""
+			self.homeLocation = user.homeLocation ?? ""
+			self.message = user.message ?? ""
+			self.preferredPronoun = user.preferredPronoun ?? ""
+			self.realName = user.realName ?? ""
+			self.roomNumber = user.roomNumber ?? ""
+			self.note = note
+		}
 	}
 }
 
@@ -1073,8 +1096,6 @@ struct UserCreateData: Content {
 extension UserCreateData: RCFValidatable {
     func runValidations(using decoder: ValidatingDecoder) throws {
     	let tester = try decoder.validator(keyedBy: CodingKeys.self)
-    	tester.validate(username.count >= 2, forKey: .username, or: "username has a 2 character minimum")
-    	tester.validate(username.count <= 50, forKey: .username, or: "username has a 50 character limit")
     	tester.validate(password.count >= 6, forKey: .password, or: "password has a 6 character minimum")
     	tester.validate(password.count <= 50, forKey: .password, or: "password has a 50 character limit")
     	usernameValidations(username: username).forEach {
@@ -1140,7 +1161,7 @@ extension UserPasswordData: RCFValidatable {
 	}
 }
 
-/// Used to edit the current user's profile contents. For profile data on other users, see `ProfilePublicData`.
+/// Used to edit the current user's profile contents. For profile data on users, see `ProfilePublicData`.
 ///
 /// Required by: 
 /// * `POST /api/v3/user/profile`
@@ -1150,28 +1171,28 @@ extension UserPasswordData: RCFValidatable {
 /// * `POST /api/v3/user/profile`
 ///
 /// See `UserController.profileHandler(_:)`, `UserController.profileUpdateHandler(_:data:)`.
-struct UserProfileData: Content {
+struct UserProfileUploadData: Content {
     /// Basic info about the user--their ID, username, displayname, and avatar image. May be nil on POST.
     var header: UserHeader?
     /// The displayName, again. Will be equal to header.displayName in results. When POSTing, set this field to update displayName.
     var displayName: String?
-    /// An optional blurb about the user.
-    var about: String?
-    /// An optional email address.
-    var email: String?
-    /// An optional home location (e.g. city).
-    var homeLocation: String?
-    /// An optional greeting/message to visitors of the profile.
-    var message: String?
-    /// An optional preferred form of address.
-    var preferredPronoun: String?
     /// An optional real name of the user.
     var realName: String?
+    /// An optional preferred form of address.
+    var preferredPronoun: String?
+    /// An optional home location (e.g. city).
+    var homeLocation: String?
     /// An optional ship cabin number.
     var roomNumber: String?
+    /// An optional email address.
+    var email: String?
+     /// An optional short greeting/message to visitors of the profile.
+    var message: String?
+   /// An optional blurb about the user.
+    var about: String?
 }
 
-extension UserProfileData {
+extension UserProfileUploadData {
 	init(user: User) throws {
 		self.header = try UserHeader(user: user)
 		self.displayName = user.displayName
@@ -1184,6 +1205,21 @@ extension UserProfileData {
 		self.roomNumber = user.roomNumber
 	}
 }
+
+extension UserProfileUploadData: RCFValidatable {
+    func runValidations(using decoder: ValidatingDecoder) throws {
+    	let tester = try decoder.validator(keyedBy: CodingKeys.self)
+    	tester.validateStrLenOptional(displayName, min: 2, max: 50, forKey: .displayName, fieldName: "display name")
+    	tester.validateStrLenOptional(realName, min: 2, max: 50, forKey: .realName, fieldName: "real name")
+    	tester.validateStrLenOptional(preferredPronoun, min: 2, max: 50, forKey: .preferredPronoun, fieldName: "pronouns field")
+    	tester.validateStrLenOptional(homeLocation, min: 2, max: 50, forKey: .homeLocation, fieldName: "home location")
+    	tester.validateStrLenOptional(roomNumber, min: 4, max: 20, forKey: .roomNumber, fieldName: "cabin number")
+    	tester.validateStrLenOptional(email, min: 4, max: 50, forKey: .email, fieldName: "email address")
+    	tester.validateStrLenOptional(message, min: 4, max: 80, forKey: .message, fieldName: "message field")
+    	tester.validateStrLenOptional(about, min: 4, max: 400, forKey: .about, fieldName: "about field")
+	}
+}
+
 
 /// Used to attempt to recover an account in a forgotten-password type scenario.
 ///
@@ -1202,8 +1238,6 @@ struct UserRecoveryData: Content {
 extension UserRecoveryData: RCFValidatable {
     func runValidations(using decoder: ValidatingDecoder) throws {
     	let tester = try decoder.validator(keyedBy: CodingKeys.self)
-    	tester.validate(username.count >= 2, forKey: .username, or: "username has a 2 character minimum")
-    	tester.validate(username.count <= 50, forKey: .username, or: "username has a 50 character limit")
     	tester.validate(recoveryKey.count >= 6, forKey: .recoveryKey, or: "password/recovery code has a 6 character minimum")
     	usernameValidations(username: username).forEach {
     		tester.addValidationError(forKey: .username, errorString: $0)
@@ -1240,8 +1274,6 @@ struct UserUsernameData: Content {
 extension UserUsernameData: RCFValidatable {
     func runValidations(using decoder: ValidatingDecoder) throws {
     	let tester = try decoder.validator(keyedBy: CodingKeys.self)
-    	tester.validate(username.count >= 2, forKey: .username, or: "username has a 2 character minimum")
-    	tester.validate(username.count <= 50, forKey: .username, or: "username has a 50 character limit")
     	usernameValidations(username: username).forEach {
     		tester.addValidationError(forKey: .username, errorString: $0)
     	}

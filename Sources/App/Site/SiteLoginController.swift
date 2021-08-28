@@ -30,12 +30,21 @@ struct SiteLoginController: SiteControllerUtils {
 		var operationSuccess: Bool
 		var operationName: String
 		
-		init(_ req: Request, errorStr: String? = nil) {
+		init(_ req: Request, error: Error? = nil) {
 			trunk = .init(req, title: "Login", tab: .none)
 			operationSuccess = false
 			operationName = "Login"
-			if let str = errorStr {
-				error = ErrorResponse(error: true, reason: str)
+			switch error {
+				case nil:
+					break
+				case let abort as Abort:
+					self.error = ErrorResponse(error: true, status: abort.status.code, reason: abort.reason, fieldErrors: nil)
+				case let errorResponse as ErrorResponse:
+					self.error = errorResponse
+				case let errorStr as String:
+					self.error = ErrorResponse(error: true, status: 500, reason: errorStr, fieldErrors: nil)
+				default:
+					self.error = ErrorResponse(error: true, status: 500, reason: error?.localizedDescription ?? "Internal Error")
 			}
 		}
 	}
@@ -67,27 +76,22 @@ struct SiteLoginController: SiteControllerUtils {
 			let credentials = "\(postStruct.username):\(postStruct.password)".data(using: .utf8)!.base64EncodedString()
 			let headers = HTTPHeaders([("Authorization", "Basic \(credentials)")])
 			return apiQuery(req, endpoint: "/auth/login", method: .POST, defaultHeaders: headers)
-				.throwingFlatMap { apiResponse in
-					if apiResponse.status.code < 300 {
-						let tokenResponse = try apiResponse.content.decode(TokenStringData.self)
-						return loginUser(with: tokenResponse, on: req).flatMap {
-							var loginContext = LoginPageContext(req)
-							loginContext.trunk.metaRedirectURL = req.session.data["returnAfterLogin"] ?? "/tweets"
-							loginContext.operationSuccess = true
-							return req.view.render("Login/login", loginContext)
-						}
-						.flatMapError { error in 
-							return req.view.render("Login/login", LoginPageContext(req, errorStr: error.localizedDescription))
-						}
-					}
-					else {
-						let errorResponse = try apiResponse.content.decode(ErrorResponse.self)
-						return req.view.render("Login/login", LoginPageContext(req, errorStr: errorResponse.reason)) 
-					}
+					.throwingFlatMap { apiResponse in
+				let tokenResponse = try apiResponse.content.decode(TokenStringData.self)
+				return loginUser(with: tokenResponse, on: req).flatMap {
+					var loginContext = LoginPageContext(req)
+					loginContext.trunk.metaRedirectURL = req.session.data["returnAfterLogin"] ?? "/tweets"
+					loginContext.operationSuccess = true
+					return req.view.render("Login/login", loginContext)
+				}.flatMapError { error in 
+					return req.view.render("Login/login", LoginPageContext(req, error: error))
+				}
+			}.flatMapError { error in
+				return req.view.render("Login/login", LoginPageContext(req, error: error)) 
 			}
 		}
 		catch {
-			return req.view.render("Login/login", LoginPageContext(req, errorStr: error.localizedDescription))
+			return req.view.render("Login/login", LoginPageContext(req, error: error))
 		}
 	}
 	    
@@ -118,62 +122,56 @@ struct SiteLoginController: SiteControllerUtils {
     	do {
 			let postStruct = try req.content.decode(PostStruct.self)
 			guard postStruct.password == postStruct.passwordConfirm else {
-				return req.view.render("Login/createAccount", LoginPageContext(req, errorStr: "Password fields do not match"))
+				return req.view.render("Login/createAccount", LoginPageContext(req, error: "Password fields do not match"))
 			}
 			return apiQuery(req, endpoint: "/user/create", method: .POST, beforeSend: { req throws in
 				let createData = UserCreateData(username: postStruct.username, password: postStruct.password, 
 						verification: postStruct.regcode)
 				try req.content.encode(createData)
 			}).throwingFlatMap { apiResponse in
-				if apiResponse.status.code < 300 {
-					let createUserResponse = try apiResponse.content.decode(CreatedUserData.self)
-					
-					// Try to login immediately after account creation, but if login fails, still show the 
-					// AccountCreated page with the Recovery Key. The user can login manually later.
-					let credentials = "\(postStruct.username):\(postStruct.password)".data(using: .utf8)!.base64EncodedString()
-					let headers = HTTPHeaders([("Authorization", "Basic \(credentials)")])
-					return apiQuery(req, endpoint: "/auth/login", method: .POST, defaultHeaders: headers)
+				let createUserResponse = try apiResponse.content.decode(CreatedUserData.self)
+				
+				// Try to login immediately after account creation, but if login fails, still show the 
+				// AccountCreated page with the Recovery Key. The user can login manually later.
+				let credentials = "\(postStruct.username):\(postStruct.password)".data(using: .utf8)!.base64EncodedString()
+				let headers = HTTPHeaders([("Authorization", "Basic \(credentials)")])
+				return apiQuery(req, endpoint: "/auth/login", method: .POST, defaultHeaders: headers)
 						.throwingFlatMap { apiResponse in
-							if apiResponse.status.code < 300 {
-								let tokenResponse = try apiResponse.content.decode(TokenStringData.self)
-								return loginUser(with: tokenResponse, on: req).flatMap {
-									if let displayname = postStruct.displayname {
-										// Set displayname; ignore result. We *could* direct errors here to show an alert in the 
-										// accountCreated webpage, but don't allow failures at this point to prevent showing the page.
-										_ = apiQuery(req, endpoint: "/user/profile", method: .POST, beforeSend: { req throws in
-											let profileData = UserProfileData(header: nil, displayName: displayname, about: nil, 
-													email: nil, homeLocation: nil, message: nil, 
-													preferredPronoun: nil, realName: nil, roomNumber: nil)
-											try req.content.encode(profileData)
-										})
-									}
-									var userCreatedContext = UserCreatedContext(req, username: createUserResponse.username, 
-											recoveryKey: createUserResponse.recoveryKey)
-									userCreatedContext.redirectURL = req.session.data["returnAfterLogin"]
-									return req.view.render("Login/accountCreated", userCreatedContext)
-								}.flatMapError { error in 
-									var userCreatedContext = UserCreatedContext(req, username: createUserResponse.username, 
-											recoveryKey: createUserResponse.recoveryKey)
-									userCreatedContext.redirectURL = req.session.data["returnAfterLogin"]
-									return req.view.render("Login/accountCreated", userCreatedContext)
-								}
-							}
-							else {
-								var userCreatedContext = UserCreatedContext(req, username: createUserResponse.username, 
-										recoveryKey: createUserResponse.recoveryKey)
-								userCreatedContext.redirectURL = req.session.data["returnAfterLogin"]
-								return req.view.render("Login/accountCreated", userCreatedContext)
-							}
+					let tokenResponse = try apiResponse.content.decode(TokenStringData.self)
+					return loginUser(with: tokenResponse, on: req).flatMap {
+						if let displayname = postStruct.displayname {
+							// Set displayname; ignore result. We *could* direct errors here to show an alert in the 
+							// accountCreated webpage, but don't allow failures at this point to prevent showing the page.
+							_ = apiQuery(req, endpoint: "/user/profile", method: .POST, beforeSend: { req throws in
+								let profileData = UserProfileUploadData(header: nil, displayName: displayname, realName: nil,
+										preferredPronoun: nil, homeLocation: nil, roomNumber: nil, 
+										email: nil, message: nil, about: nil)
+								try req.content.encode(profileData)
+							})
 						}
+						var userCreatedContext = UserCreatedContext(req, username: createUserResponse.username, 
+								recoveryKey: createUserResponse.recoveryKey)
+						userCreatedContext.redirectURL = req.session.data["returnAfterLogin"]
+						return req.view.render("Login/accountCreated", userCreatedContext)
+					}.flatMapError { error in 
+						var userCreatedContext = UserCreatedContext(req, username: createUserResponse.username, 
+								recoveryKey: createUserResponse.recoveryKey)
+						userCreatedContext.redirectURL = req.session.data["returnAfterLogin"]
+						return req.view.render("Login/accountCreated", userCreatedContext)
+					}
+				}.flatMapError { error in
+					// We created the account, but couldn't log them in.
+					var userCreatedContext = UserCreatedContext(req, username: createUserResponse.username, 
+							recoveryKey: createUserResponse.recoveryKey)
+					userCreatedContext.redirectURL = req.session.data["returnAfterLogin"]
+					return req.view.render("Login/accountCreated", userCreatedContext)
 				}
-				else {
-					let errorResponse = try apiResponse.content.decode(ErrorResponse.self)
-					return req.view.render("Login/createAccount", LoginPageContext(req, errorStr: errorResponse.reason))
-				}
+			}.flatMapError { error in
+				return req.view.render("Login/createAccount", LoginPageContext(req, error: error))
 			}
 		}
 		catch {
-			return req.view.render("Login/createAccount", LoginPageContext(req, errorStr: error.localizedDescription))
+			return req.view.render("Login/createAccount", LoginPageContext(req, error: error))
 		}
 	}
 	
@@ -192,7 +190,7 @@ struct SiteLoginController: SiteControllerUtils {
     	do {
 			let postStruct = try req.content.decode(PostStruct.self)
 			guard postStruct.password == postStruct.confirmPassword else {
-				return req.view.render("Login/resetPassword", LoginPageContext(req, errorStr: "Password fields do not match"))
+				return req.view.render("Login/resetPassword", LoginPageContext(req, error: "Password fields do not match"))
 			}
 			return apiQuery(req, endpoint: "/user/password", method: .POST, beforeSend: { req throws in
 				let userPwData = UserPasswordData(currentPassword: postStruct.currentPassword, newPassword: postStruct.password)
@@ -200,21 +198,15 @@ struct SiteLoginController: SiteControllerUtils {
 			}).throwingFlatMap { apiResponse in
 				var context = LoginPageContext(req)
 				context.operationName = "Change Password"
-				if apiResponse.status.code < 300 {
-					context.operationSuccess = true
-					context.trunk.metaRedirectURL = "/"
-				}
-				else {
-					let errorResponse = try apiResponse.content.decode(ErrorResponse.self)
-					context.error = errorResponse
-				}
+				context.operationSuccess = true
+				context.trunk.metaRedirectURL = "/"
 				return req.view.render("Login/resetPassword", context)
 			}.flatMapError { error in 
-				return req.view.render("Login/resetPassword", LoginPageContext(req, errorStr: error.localizedDescription))
+				return req.view.render("Login/resetPassword", LoginPageContext(req, error: error))
 			}
 		}
 		catch {
-			return req.view.render("Login/resetPassword", LoginPageContext(req, errorStr: error.localizedDescription))
+			return req.view.render("Login/resetPassword", LoginPageContext(req, error: error))
 		}
     }
     
@@ -228,34 +220,29 @@ struct SiteLoginController: SiteControllerUtils {
     	do {
 			let postStruct = try req.content.decode(PostStruct.self)
 			guard postStruct.password == postStruct.confirmPassword else {
-				return req.view.render("Login/resetPassword", LoginPageContext(req, errorStr: "Password fields do not match"))
+				return req.view.render("Login/resetPassword", LoginPageContext(req, error: "Password fields do not match"))
 			}
 			return apiQuery(req, endpoint: "/auth/recovery", method: .POST, beforeSend: { req throws in
 				let recoveryData = UserRecoveryData(username: postStruct.username, recoveryKey: postStruct.regCode, 
 						newPassword: postStruct.password)
 				try req.content.encode(recoveryData)
 			}).throwingFlatMap { apiResponse in
-				if apiResponse.status.code < 300 {
-					let tokenResponse = try apiResponse.content.decode(TokenStringData.self)
-					return loginUser(with: tokenResponse, on: req).flatMap {
-						var loginContext = LoginPageContext(req)
-						loginContext.trunk.metaRedirectURL = req.session.data["returnAfterLogin"] ?? "/tweets"
-						loginContext.operationSuccess = true
-						loginContext.operationName = "Password Change"
-						return req.view.render("Login/login", loginContext)
-					}
-					.flatMapError { error in 
-						return req.view.render("Login/resetPassword", LoginPageContext(req, errorStr: error.localizedDescription))
-					}				
-				}
-				else {
-					let errorResponse = try apiResponse.content.decode(ErrorResponse.self)
-					return req.view.render("Login/resetPassword", LoginPageContext(req, errorStr: errorResponse.reason))
-				}
+				let tokenResponse = try apiResponse.content.decode(TokenStringData.self)
+				return loginUser(with: tokenResponse, on: req).flatMap {
+					var loginContext = LoginPageContext(req)
+					loginContext.trunk.metaRedirectURL = req.session.data["returnAfterLogin"] ?? "/tweets"
+					loginContext.operationSuccess = true
+					loginContext.operationName = "Password Change"
+					return req.view.render("Login/login", loginContext)
+				}.flatMapError { error in 
+					return req.view.render("Login/resetPassword", LoginPageContext(req, error: error))
+				}				
+			}.flatMapError { error in
+				return req.view.render("Login/resetPassword", LoginPageContext(req, error: error))
 			}
 		}
 		catch {
-			return req.view.render("Login/resetPassword", LoginPageContext(req, errorStr: error.localizedDescription))
+			return req.view.render("Login/resetPassword", LoginPageContext(req, error: error))
 		}
     }
     

@@ -3,7 +3,11 @@
     	<div class="container-md ms-0 mt-2">
     		<div class="row justify-content-center">
     			<div class="col col-auto">
-    				User Profile for: <b>@#(profile.header.username)</b>
+    				#if(profile.message != ""):
+    					#(profile.message)
+					#else:
+	    				User Profile for: <b>@#(profile.header.username)</b>
+					#endif
 				</div>
 			</div>
 			<div class="row justify-content-center align-items-center mx-1 mb-3">
@@ -17,8 +21,8 @@
 					#if(profile.realName != ""):
 						Real Name: <b>#(profile.realName)</b><br>
 					#endif
-					#if(profile.roomNumber != ""):
-						Room #: <b>#(profile.roomNumber)</b><br>
+					#if(profile.preferredPronoun != ""):
+						Pronouns: <b>#(profile.preferredPronoun)</b><br>
 					#endif
 					#if(profile.email != ""):
 						Email: <b>#(profile.email)</b><br>
@@ -26,21 +30,45 @@
 					#if(profile.homeLocation != ""):
 						Home Town: <b>#(profile.homeLocation)</b><br>
 					#endif
-					#if(profile.preferredPronoun != ""):
-						Pronouns: <b>#(profile.preferredPronoun)</b><br>
+					#if(profile.roomNumber != ""):
+						Room #: <b>#(profile.roomNumber)</b><br>
 					#endif
 				</div>
 			</div>
-			<div class="row mx-1 mb-3 border">
-    			<div class="col col-auto p-1">
-    				<h6><b>About @#(profile.header.username)&#58;</b></h6>
-					#(profile.about)
-				</div>				
-			</div>
-			<div class="row">
-				<div class="col">
+			#if(profile.about != ""):
+				<div class="row mx-1 mb-3 border">
+					<div class="col col-auto p-1">
+						<h6><b>About @#(profile.header.username)&#58;</b></h6>
+						#(profile.about)
+					</div>				
+				</div>
+			#endif
+			#if(profile.header.userID != trunk.userID):
+				<form class="ajax" action="#(noteFormAction)" enctype="multipart/form-data" method="POST"">
+					<div class="row mx-1 pb-2 border">
+						<div class="col col-12 p-1">
+							<b>Your private note about @#(profile.header.username) (only visible to you):</b><br>
+							<textarea class="form-control" maxlength="2000" rows="5" name="noteText" id=noteText" placeholder="">#(profile.note)</textarea>
+						</div>				
+						<div class="col col-12">
+							<div class="alert alert-danger mt-3 d-none" role="alert">
+							</div>				
+						</div>				
+						<div class="col col-auto me-auto">
+						</div>
+						<div class="col col-auto">
+							<button type="submit" class="btn btn-primary btn-sm">Save</button>
+						</div>
+					</div>
+				</form>
+			#endif
+			<div class="row mt-2">
+				<div class="col btn-group btn-group-sm col-auto mx-1" role="group" aria-label="Profile actions">
 					#if(trunk.userID == profile.header.userID):
-						<a class="btn btn-primary btn-sm" href="/profile/edit">Edit Profile</a>
+						<a class="btn btn-sm btn-outline-primary" href="/profile/edit">Edit Profile</a>
+					#endif
+					#if(trunk.userIsMod):
+						<a class="btn btn-sm btn-outline-primary" href="/moderate/user/#(profile.header.userID)">Mod</a>
 					#endif
 				</div>
 			</div>

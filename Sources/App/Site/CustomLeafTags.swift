@@ -223,7 +223,8 @@ struct AvatarTag: UnsafeUnescapedLeafTag {
 			throw "Leaf: avatarTag tag unable to get user header."
 		}
 		let imgLoadSize = imgSize > 100 ? "full" : "thumb"
-		let imagePath = "/api/v3/image/user/\(imgLoadSize)/\(userID)"
+//		let imagePath = "/api/v3/image/user/\(imgLoadSize)/\(userID)"
+		let imagePath = "/avatar/\(imgLoadSize)/\(userID)"
 		return LeafData.string("<img src=\"\(imagePath)\" width=\(imgSize) height=\(imgSize) alt=\"Avatar\">")
 	}
 }
@@ -232,18 +233,24 @@ struct AvatarTag: UnsafeUnescapedLeafTag {
 /// sanitize user-provided text itself.
 ///
 /// Usage: #userByline(userHeader)
+/// Or: #userByline(userHeader, "css-class") to style the link
+/// Or: #userByline(userHeader, "short") to display a shorter link (only the username, no displayname). 
 struct UserBylineTag: UnsafeUnescapedLeafTag {
     func render(_ ctx: LeafContext) throws -> LeafData {
-		guard ctx.parameters.count == 1, let userHeader = ctx.parameters[0].dictionary,
+		guard ctx.parameters.count >= 1, let userHeader = ctx.parameters[0].dictionary,
 			  let userID = userHeader["userID"]?.string,
 			  let username = userHeader["username"]?.string?.htmlEscaped() else {
 			throw "Leaf: userByline tag unable to get user header."
-		}		
-		if let displayName = userHeader["displayName"]?.string?.htmlEscaped() {
-			return LeafData.string("<a href=\"/user/\(userID)\"><b>\(displayName)</b> @\(username)</a>")
+		}
+		var styling = ""
+		if ctx.parameters.count >= 2, let newStyle = ctx.parameters[1].string {
+			styling = newStyle
+		}
+		if styling != "short", let displayName = userHeader["displayName"]?.string?.htmlEscaped() {
+			return LeafData.string("<a class=\"\(styling)\" href=\"/user/\(userID)\"><b>\(displayName)</b> @\(username)</a>")
 		}
 		else {
-			return LeafData.string("<a href=\"/user/\(userID)\">@\(username)</a>")
+			return LeafData.string("<a class=\"\(styling)\" href=\"/user/\(userID)\">@\(username)</a>")
 		}
 	}
 }

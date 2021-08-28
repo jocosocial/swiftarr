@@ -20,19 +20,39 @@ struct SiteModController: SiteControllerUtils {
 		let modRoutes = privateRoutes.grouped(RequireModeratorMiddleware())
 		modRoutes.get("reports", use: reportsPageHandler)
 		modRoutes.get("moderator", "log",  use: moderatorLogPageHandler)
+		modRoutes.get("archivedimage", imageIDParam, use: archivedImageHandler)
 
 		modRoutes.get("moderate", "twarrt", twarrtIDParam, use: moderateTwarrtContentPageHandler)
 		modRoutes.get("moderate", "forumpost", postIDParam, use: moderateForumPostContentPageHandler)
 		modRoutes.get("moderate", "forum", forumIDParam, use: moderateForumContentPageHandler)
 		modRoutes.get("moderate", "fez", fezIDParam, use: moderateFezContentPageHandler)
+		modRoutes.get("moderate", "user", userIDParam, use: moderateUserContentPageHandler)
 
 		modRoutes.post("twarrt", twarrtIDParam, "setstate", modStateParam, use: setTwarrtModerationStatePostHandler)
 		modRoutes.post("forumpost", postIDParam, "setstate", modStateParam, use: setForumPostModerationStatePostHandler)
 		modRoutes.post("forum", forumIDParam, "setstate", modStateParam, use: setForumModerationStatePostHandler)
 		modRoutes.post("fez", fezIDParam, "setstate", modStateParam, use: setFezModerationStatePostHandler)
+		modRoutes.post("userprofile", userIDParam, "setstate", modStateParam, use: setUserProfileModerationStatePostHandler)
 
 		modRoutes.post("reports", reportIDParam, "handle",  use: beginProcessingReportsPostHandler)
 		modRoutes.post("reports", reportIDParam, "close",  use: closeReportsPostHandler)
+	}
+	
+	/// `GET /archivedimage/ID`
+	///
+	/// Moderators only. Returns an image from the image archive (user images that have been replaced by subsequent edits).
+	func archivedImageHandler(_ req: Request) throws -> EventLoopFuture<Response> {
+		guard let imageID = req.parameters.get(imageIDParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing image_id parameter.")
+		}
+		return apiQuery(req, endpoint: "/image/archive/\(imageID)").flatMapThrowing { apiResponse in
+			var body = Response.Body.empty
+			if let apiResponseBody = apiResponse.body {
+				body = Response.Body(buffer: apiResponseBody)
+			}
+			let response = Response(status: apiResponse.status, headers: apiResponse.headers, body: body)
+			return response
+		}
 	}
 	
 	struct ReportContentGroup: Codable {
@@ -45,8 +65,11 @@ struct SiteModController: SiteControllerUtils {
 		var reports: [ReportAdminData]
 	}
 	
+	/// `GET /reports`
+	///
+	/// Shows moderators a summary of user-submitted reports, grouped by the content that was reported.
 	func reportsPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-    	return apiQuery(req, endpoint: "/mod/reports").throwingFlatMap { response in
+		return apiQuery(req, endpoint: "/mod/reports").throwingFlatMap { response in
 			let reports = try response.content.decode([ReportAdminData].self)
 			
 			var reportedContentArray = [ReportContentGroup]()
@@ -68,7 +91,7 @@ struct SiteModController: SiteControllerUtils {
 					case .forum: 		contentURL = "moderate/forum/\(report.reportedID)"
 					case .fez: 			contentURL = "moderate/fez/\(report.reportedID)"
 					case .fezPost: 		contentURL = "moderate/fezpost/\(report.reportedID)"
-					case .user: 		contentURL = "moderate/user/\(report.reportedID)"
+					case .userProfile: 	contentURL = "moderate/user/\(report.reportedID)"
 				}
 				var newGroup = ReportContentGroup(reportType: report.type, reportedID: report.reportedID, reportedUser: report.reportedUser, 
 						firstReportTime: Date(), openCount: 0, contentURL: contentURL, reports: [report])
@@ -89,23 +112,31 @@ struct SiteModController: SiteControllerUtils {
 			}
 			let ctx = try ReportsContext(req, reports: openReportContent)
 			return req.view.render("moderation/reports", ctx)			
-    	}
+		}
 	}
-		
+	
+	/// `POST /reports/ID/handle`
+	/// 
+	/// Marks all reports reporting a specific piece of content as being handled by the current user. While a moderator is handling a report, any 
+	/// moderation actions taken get tied to the report being handled. Also, reports being handled are marked as such so other moderators can
+	/// hopefully avoid duplicate work. Mods should close reports when they're done to complete the flow.
 	func beginProcessingReportsPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-    	guard let reportID = req.parameters.get(reportIDParam.paramString) else {
-            throw Abort(.badRequest, reason: "Missing search parameter.")
-    	}
-    	return apiQuery(req, endpoint: "/mod/reports/\(reportID)/handleall", method: .POST).map { response in
+		guard let reportID = req.parameters.get(reportIDParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing search parameter.")
+		}
+		return apiQuery(req, endpoint: "/mod/reports/\(reportID)/handleall", method: .POST).map { response in
 			return response.status	
 		}
 	}
 	
+	/// `POST /reports/ID/close`
+	///
+	/// Sets the state of all reports 
 	func closeReportsPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-    	guard let reportID = req.parameters.get(reportIDParam.paramString) else {
-            throw Abort(.badRequest, reason: "Missing search parameter.")
-    	}
-    	return apiQuery(req, endpoint: "/mod/reports/\(reportID)/closeall", method: .POST).map { response in
+		guard let reportID = req.parameters.get(reportIDParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing search parameter.")
+		}
+		return apiQuery(req, endpoint: "/mod/reports/\(reportID)/closeall", method: .POST).map { response in
 			return response.status	
 		}
 	}
@@ -134,10 +165,10 @@ struct SiteModController: SiteControllerUtils {
 	/// * (hopefully) Mod actions taken against this content already
 	/// * 
 	func moderateTwarrtContentPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-    	guard let twarrtID = req.parameters.get(twarrtIDParam.paramString) else {
-            throw Abort(.badRequest, reason: "Missing search parameter.")
-    	}
-    	return apiQuery(req, endpoint: "/mod/twarrt/\(twarrtID)").throwingFlatMap { response in
+		guard let twarrtID = req.parameters.get(twarrtIDParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing search parameter.")
+		}
+		return apiQuery(req, endpoint: "/mod/twarrt/\(twarrtID)").throwingFlatMap { response in
 			let modData = try response.content.decode(TwarrtModerationData.self)
 			struct ReportContext : Encodable {
 				var trunk: TrunkContext
@@ -169,15 +200,15 @@ struct SiteModController: SiteControllerUtils {
 	}
 	
 	func setTwarrtModerationStatePostHandler(_ req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
-	    guard let twarrtID = req.parameters.get(twarrtIDParam.paramString) else {
-            throw Abort(.badRequest, reason: "Missing search parameter.")
-    	}
-	    guard let modState = req.parameters.get(modStateParam.paramString) else {
-            throw Abort(.badRequest, reason: "Missing search parameter.")
-    	}
-    	return apiQuery(req, endpoint: "/mod/twarrt/\(twarrtID)/setstate/\(modState)", method: .POST).map { response in
-    		return response.status
-    	}
+		guard let twarrtID = req.parameters.get(twarrtIDParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing search parameter.")
+		}
+		guard let modState = req.parameters.get(modStateParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing search parameter.")
+		}
+		return apiQuery(req, endpoint: "/mod/twarrt/\(twarrtID)/setstate/\(modState)", method: .POST).map { response in
+			return response.status
+		}
 	}
 
 	/// This shows a view that focuses on the *content* that was reported, showing:
@@ -187,10 +218,10 @@ struct SiteModController: SiteControllerUtils {
 	/// * (hopefully) Mod actions taken against this content already
 	/// * 
 	func moderateForumPostContentPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-    	guard let postID = req.parameters.get(postIDParam.paramString) else {
-            throw Abort(.badRequest, reason: "Missing search parameter.")
-    	}
-    	return apiQuery(req, endpoint: "/mod/forumpost/\(postID)").throwingFlatMap { response in
+		guard let postID = req.parameters.get(postIDParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing search parameter.")
+		}
+		return apiQuery(req, endpoint: "/mod/forumpost/\(postID)").throwingFlatMap { response in
 			let modData = try response.content.decode(ForumPostModerationData.self)
 			struct ReportContext : Encodable {
 				var trunk: TrunkContext
@@ -222,15 +253,15 @@ struct SiteModController: SiteControllerUtils {
 	}
 	
 	func setForumPostModerationStatePostHandler(_ req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
-	    guard let postID = req.parameters.get(postIDParam.paramString) else {
-            throw Abort(.badRequest, reason: "Missing search parameter.")
-    	}
-	    guard let modState = req.parameters.get(modStateParam.paramString) else {
-            throw Abort(.badRequest, reason: "Missing search parameter.")
-    	}
-    	return apiQuery(req, endpoint: "/mod/forumPost/\(postID)/setstate/\(modState)", method: .POST).map { response in
-    		return response.status
-    	}
+		guard let postID = req.parameters.get(postIDParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing search parameter.")
+		}
+		guard let modState = req.parameters.get(modStateParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing search parameter.")
+		}
+		return apiQuery(req, endpoint: "/mod/forumPost/\(postID)/setstate/\(modState)", method: .POST).map { response in
+			return response.status
+		}
 	}
 	
 	/// This shows a view that focuses on the *content* that was reported, showing:
@@ -240,10 +271,10 @@ struct SiteModController: SiteControllerUtils {
 	/// * (hopefully) Mod actions taken against this content already
 	/// * 
 	func moderateForumContentPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-    	guard let forumID = req.parameters.get(forumIDParam.paramString) else {
-            throw Abort(.badRequest, reason: "Missing search parameter.")
-    	}
-    	return apiQuery(req, endpoint: "/mod/forum/\(forumID)").throwingFlatMap { response in
+		guard let forumID = req.parameters.get(forumIDParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing search parameter.")
+		}
+		return apiQuery(req, endpoint: "/mod/forum/\(forumID)").throwingFlatMap { response in
 			let modData = try response.content.decode(ForumModerationData.self)
 			struct ReportContext : Encodable {
 				var trunk: TrunkContext
@@ -274,15 +305,15 @@ struct SiteModController: SiteControllerUtils {
 	}
 	
 	func setForumModerationStatePostHandler(_ req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
-	    guard let forumID = req.parameters.get(forumIDParam.paramString) else {
-            throw Abort(.badRequest, reason: "Missing search parameter.")
-    	}
-	    guard let modState = req.parameters.get(modStateParam.paramString) else {
-            throw Abort(.badRequest, reason: "Missing search parameter.")
-    	}
-    	return apiQuery(req, endpoint: "/mod/forum/\(forumID)/setstate/\(modState)", method: .POST).map { response in
-    		return response.status
-    	}
+		guard let forumID = req.parameters.get(forumIDParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing search parameter.")
+		}
+		guard let modState = req.parameters.get(modStateParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing search parameter.")
+		}
+		return apiQuery(req, endpoint: "/mod/forum/\(forumID)/setstate/\(modState)", method: .POST).map { response in
+			return response.status
+		}
 	}
 	
 	/// This shows a view that focuses on the *content* that was reported, showing:
@@ -292,10 +323,10 @@ struct SiteModController: SiteControllerUtils {
 	/// * (hopefully) Mod actions taken against this content already
 	/// * 
 	func moderateFezContentPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-    	guard let fezID = req.parameters.get(fezIDParam.paramString) else {
-            throw Abort(.badRequest, reason: "Missing search parameter.")
-    	}
-    	return apiQuery(req, endpoint: "/mod/fez/\(fezID)").throwingFlatMap { response in
+		guard let fezID = req.parameters.get(fezIDParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing search parameter.")
+		}
+		return apiQuery(req, endpoint: "/mod/fez/\(fezID)").throwingFlatMap { response in
 			let modData = try response.content.decode(FezModerationData.self)
 			struct ReportContext : Encodable {
 				var trunk: TrunkContext
@@ -304,7 +335,7 @@ struct SiteModController: SiteControllerUtils {
 				var finalEditAuthor: UserHeader?
 				
 				init(_ req: Request, modData: FezModerationData) throws {
-					trunk = .init(req, title: "Reports", tab: .none)
+					trunk = .init(req, title: "Fez Moderation", tab: .none)
 					self.modData = modData
 					firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
 					finalEditAuthor = modData.edits.last?.author
@@ -336,4 +367,55 @@ struct SiteModController: SiteControllerUtils {
 			return response.status
 		}
 	}
+	
+	/// 
+	/// Info from user's profile. Previous profile versions, reports against the user
+	func moderateUserContentPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+		guard let userID = req.parameters.get(userIDParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing search parameter.")
+		}
+		return apiQuery(req, endpoint: "/mod/profile/\(userID)").throwingFlatMap { response in
+			let modData = try response.content.decode(ProfileModerationData.self)
+			struct UserModContext : Encodable {
+				var trunk: TrunkContext
+				var modData: ProfileModerationData
+				var firstReport: ReportAdminData?
+				var finalEditAuthor: UserHeader?
+				
+				init(_ req: Request, modData: ProfileModerationData) throws {
+					trunk = .init(req, title: "User Profile Moderation", tab: .none)
+					self.modData = modData
+					firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
+					finalEditAuthor = modData.edits.last?.author
+					if self.modData.edits.count > 1 {
+						for index in (0...self.modData.edits.count - 2).reversed() {
+							self.modData.edits[index + 1].author = self.modData.edits[index].author
+							self.modData.edits[index + 1].author.username = "\(self.modData.edits[index + 1].author.username) edited to:"
+						}
+					}
+					if self.modData.edits.count > 0 {
+						if let firstEditor = modData.profile.header {
+							self.modData.edits[0].author = firstEditor
+						}
+						self.modData.edits[0].author.username = "\(self.modData.edits[0].author.username) initially wrote:"
+					}
+				}
+			}
+			let ctx = try UserModContext(req, modData: modData)
+			return req.view.render("moderation/profileView", ctx)
+		}
+	}
+	
+	func setUserProfileModerationStatePostHandler(_ req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
+		guard let userID = req.parameters.get(userIDParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing search parameter.")
+		}
+		guard let modState = req.parameters.get(modStateParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing search parameter.")
+		}
+		return apiQuery(req, endpoint: "/mod/profile/\(userID)/setstate/\(modState)", method: .POST).map { response in
+			return response.status
+		}
+	}
+	
 }

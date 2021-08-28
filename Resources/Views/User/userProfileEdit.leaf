@@ -20,20 +20,20 @@
 						<h5 class="card-header">New Avatar</h5>
 						<div class="m-1 border img-for-upload-container">
 							<div class="ratio ratio-1x1">
-								<img class="img-for-upload" alt="">
+								<img class="img-for-upload" alt="New Avatar">
 							</div>
 						</div>
 						<p class="text-center no-image-marker"><i>no photo selected</i></p>
 						<div class="container-fluid p-1">
 							<div class="row">
 								<div class="col">
-									<label class="btn btn-primary col-12 form-label">
-										<input class="image-upload-input d-none" type="file" accept="image/png, image/jpeg" name="avatarPhotoInput">
+									<label class="btn btn-primary col-12 form-label #if(trunk.userID != profile.header.userID):disabled#endif">
+										<input class="image-upload-input" type="file" accept="image/*" name="avatarPhotoInput">
 										Choose Photo
 									</label>
-									<input type="hidden" value="/api/v3/image/user/full/#(profile.header.userID)" 
+									<input type="hidden" value="/avatar/full/#(profile.header.userID)" 
 											data-defaultvalue="/api/v3/image/user/identicon/#(profile.header.userID)" 
-											data-originalvalue="/api/v3/image/user/full/#(profile.header.userID)" 
+											data-originalvalue="/avatar/full/#(profile.header.userID)" 
 											name="serverAvatarPhoto">
 								</div>
 							</div>
@@ -54,7 +54,7 @@
 						<label for="displayname" class="text-start text-sm-end d-block">Display Name:</label>
 					</div>
 					<div class="col col-12 col-sm-8">
-						<input type="text" class="form-control" id="displayname" name="displayName" placeholder="Display Name" value="#(profile.displayName)">
+						<input type="text" class="form-control" id="displayname" name="displayName" placeholder="Display Name" value="#(profile.header.displayName)">
 					</div>
 				</div>
 
@@ -69,10 +69,10 @@
 
 				<div class="row mx-1 mb-3 align-items-center">
 					<div class="col col-12 col-sm-4">
-						<label for="email" class="text-start text-sm-end d-block">Email:</label>
+						<label for="preferredPronoun" class="text-start text-sm-end d-block">Pronouns:</label>
 					</div>
 					<div class="col col-12 col-sm-8">
-						<input type="text" class="form-control" id="email" name="email" placeholder="Email" value="#(profile.email)">
+						<input type="text" class="form-control" id="preferredPronoun" name="preferredPronoun" placeholder="Pronouns" value="#(profile.preferredPronoun)">
 					</div>
 				</div>
 
@@ -87,6 +87,24 @@
 
 				<div class="row mx-1 mb-3 align-items-center">
 					<div class="col col-12 col-sm-4">
+						<label for="roomNumber" class="text-start text-sm-end d-block">Cabin Number:</label>
+					</div>
+					<div class="col col-12 col-sm-8">
+						<input type="text" class="form-control" id="roomNumber" name="roomNumber" placeholder="Cabin Number" value="#(profile.roomNumber)">
+					</div>
+				</div>
+
+				<div class="row mx-1 mb-3 align-items-center">
+					<div class="col col-12 col-sm-4">
+						<label for="email" class="text-start text-sm-end d-block">Email:</label>
+					</div>
+					<div class="col col-12 col-sm-8">
+						<input type="text" class="form-control" id="email" name="email" placeholder="Email" value="#(profile.email)">
+					</div>
+				</div>
+
+				<div class="row mx-1 mb-3 align-items-center">
+					<div class="col col-12 col-sm-4">
 						<label for="message" class="text-start text-sm-end d-block">Welcome Message:</label>
 					</div>
 					<div class="col col-12 col-sm-8">
@@ -96,21 +114,19 @@
 
 				<div class="row mx-1 mb-3 align-items-center">
 					<div class="col col-12 col-sm-4">
-						<label for="preferredPronoun" class="text-start text-sm-end d-block">Pronouns:</label>
+						<label for="about" class="text-start text-sm-end d-block">About You:</label>
 					</div>
 					<div class="col col-12 col-sm-8">
-						<input type="text" class="form-control" id="preferredPronoun" name="preferredPronoun" placeholder="Pronouns" value="#(profile.preferredPronoun)">
+						<textarea class="form-control" maxlength="2000" rows="5" name="about" id="about" placeholder="Short paragraph about you">#(profile.about)</textarea>
 					</div>
 				</div>
 
-				<div class="row mx-1 mb-3 align-items-center">
-					<div class="col col-12 col-sm-4">
-						<label for="roomNumber" class="text-start text-sm-end d-block">Cabin Number:</label>
-					</div>
-					<div class="col col-12 col-sm-8">
-						<input type="text" class="form-control" id="roomNumber" name="roomNumber" placeholder="Cabin Number" value="#(profile.roomNumber)">
-					</div>
-				</div>
+				<div class="row">
+					<div class="col">
+						<div class="alert alert-danger mt-3 d-none" role="alert">
+						</div>				
+					</div>				
+				</div>				
 
 				<div class="row justify-content-end mb-5">
 					<div class="col col-auto me-3">

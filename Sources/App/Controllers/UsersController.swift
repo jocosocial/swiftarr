@@ -127,17 +127,8 @@ struct UsersController: APIRouteCollection {
 				if profiledUser.accessLevel == .banned && !requester.accessLevel.hasAccess(.moderator) {
 					throw Abort(.notFound, reason: "profile is not available")
 				}
-				var publicProfile = try ProfilePublicData(user: profiledUser, note: nil)
-				// if requester is .banned, hide info
-				if requester.accessLevel == .banned {
-					publicProfile.about = ""
-					publicProfile.email = ""
-					publicProfile.homeLocation = ""
-					publicProfile.message = "You must be logged in to view this user's Profile details."
-					publicProfile.preferredPronoun = ""
-					publicProfile.realName = ""
-					publicProfile.roomNumber = ""
-				}
+				// Profile hidden if user quarantined and requester not mod, or if requester is banned.
+				var publicProfile = try ProfilePublicData(user: profiledUser, note: nil, requester: requester)
 				// include UserNote if any, then return
 				return try requester.$notes.query(on: req.db)
 					.filter(\.$noteSubject.$id == profiledUser.requireID())
@@ -342,24 +333,23 @@ struct UsersController: APIRouteCollection {
         // FIXME: account for banned user
         let requester = try req.auth.require(User.self)
         let data = try req.content.decode(NoteCreateData.self)        
-        return User.findFromParameter(userIDParam, on: req)
-			.throwingFlatMap { (targetUser) in
+        return User.findFromParameter(userIDParam, on: req) .throwingFlatMap { (targetUser) in
             // profile shouldn't be visible, but just in case
             guard targetUser.accessLevel != .banned else {
                 throw Abort(.badRequest, reason: "notes are unavailable for profile")
             }
 			// check for existing note
 			return try requester.$notes.query(on: req.db)
-				.filter(\.$noteSubject.$id == targetUser.requireID())
-				.first()
-				.throwingFlatMap { (existingNote) in
-					let note = try existingNote ?? UserNote(author: requester, subject: targetUser, note: data.note)
-					note.note = data.note
-					// return note's data with 201 response
-					return note.save(on: req.db).throwingFlatMap { _ in
-						let createdNoteData = try NoteData(note: note, targetUser: targetUser)
-						return createdNoteData.encodeResponse(status: .created, for: req)
-					}
+					.filter(\.$noteSubject.$id == targetUser.requireID())
+					.first()
+					.throwingFlatMap { (existingNote) in
+				let note = try existingNote ?? UserNote(author: requester, subject: targetUser, note: data.note)
+				note.note = data.note
+				// return note's data with 201 response
+				return note.save(on: req.db).throwingFlatMap { _ in
+					let createdNoteData = try NoteData(note: note, targetUser: targetUser)
+					return createdNoteData.encodeResponse(status: .created, for: req)
+				}
 			}
 		}
     }
@@ -413,12 +403,12 @@ struct UsersController: APIRouteCollection {
             throw Abort(.badRequest, reason: "No user ID in request.")
         }
 		return requester.$notes.query(on: req.db)
-			.filter(\.$noteSubject.$id == targetUserID)
-			.with(\.$noteSubject)
-			.first()
-			.unwrap(or: Abort(.badRequest, reason: "no existing note found"))
-			.flatMapThrowing { (note) in
-				return try NoteData(note: note, targetUser: note.noteSubject)
+				.filter(\.$noteSubject.$id == targetUserID)
+				.with(\.$noteSubject)
+				.first()
+				.unwrap(or: Abort(.badRequest, reason: "no existing note found"))
+				.flatMapThrowing { (note) in
+			return try NoteData(note: note, targetUser: note.noteSubject)
 		}
     }
     

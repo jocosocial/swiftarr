@@ -7,8 +7,8 @@
 				</div>
 			</div>
     		<div class="row">
-    			<div class="col">
-					<table class="table">
+    			<div class="col px-0">
+					<table class="table table-striped table-sm">
 						<thead>
 							<tr>
 								<th scope="col">Mod</th>
@@ -21,10 +21,10 @@
 						<tbody>
 						#for(report in log):
 							<tr>
-								<td>#userByline(report.moderator)</td>
+								<td>#userByline(report.moderator, "short")</td>
 								<td>#(report.actionType)</td>
 								<td>#(report.contentType)</td>
-								<td>#userByline(report.targetUser)</td>
+								<td>#userByline(report.targetUser, "short")</td>
 								<td>#date(report.timestamp, "MMM dd, hh:mm:ss a")</td>
 							</tr>
 						#endfor

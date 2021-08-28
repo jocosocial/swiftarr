@@ -9,6 +9,9 @@ import Vapor
 struct ErrorResponse: Codable, Error {
 	/// Always `true` to indicate this is a non-typical JSON response.
 	var error: Bool
+	
+	/// The HTTP status
+	var status: UInt
 
 	/// The reason for the error.
 	var reason: String
@@ -42,7 +45,7 @@ public final class SwiftarrErrorMiddleware: Middleware {
 		case let resp as ErrorResponse:
 			// A call that returns an ErrorResponse on failure could get parsed and then thrown by a higher level API call
 			reason = resp.reason
-			status = .badRequest
+			status = HTTPStatus(statusCode: Int(resp.status))
 			headers = [:]
 			fieldErrors = resp.fieldErrors
 		default:
@@ -61,7 +64,7 @@ public final class SwiftarrErrorMiddleware: Middleware {
 
 		// attempt to serialize the error to json
 		do {
-			let errorResponse = ErrorResponse(error: true, reason: reason, fieldErrors: fieldErrors)
+			let errorResponse = ErrorResponse(error: true, status: status.code, reason: reason, fieldErrors: fieldErrors)
 			response.body = try .init(data: JSONEncoder().encode(errorResponse))
 			response.headers.replaceOrAdd(name: .contentType, value: "application/json; charset=utf-8")
 		} catch {

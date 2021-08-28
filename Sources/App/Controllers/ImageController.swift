@@ -26,10 +26,17 @@ struct ImageController: APIRouteCollection {
 		// open access endpoints
 		imageRoutes.get("full", ":image_filename", use: getImage_FullHandler)
 		imageRoutes.get("thumb", ":image_filename", use: getImage_ThumbnailHandler)
-		
-		imageRoutes.get("user", "full", userIDParam, use: getUserAvatarHandler)
-		imageRoutes.get("user", "thumb", userIDParam, use: getUserAvatarHandler)
 		imageRoutes.get("user", "identicon", userIDParam, use: getUserIdenticonHandler)
+		
+		// Flex access endpoints. 
+		let flexRoutes = addFlexAuthGroup(to: imageRoutes)
+		flexRoutes.get("user", "full", userIDParam, use: getUserAvatarHandler)
+		flexRoutes.get("user", "thumb", userIDParam, use: getUserAvatarHandler)
+
+		// Moderator-only endpoints
+		let requireModMiddleware = RequireModeratorMiddleware()
+		let tokenAuthGroup = addTokenAuthGroup(to: imageRoutes).grouped(requireModMiddleware)
+		tokenAuthGroup.get("archive", ":image_filename", use: getImage_ArchivedlHandler)
 	}
 	
     /// `GET /api/v3/image/full/STRING`
@@ -48,13 +55,13 @@ struct ImageController: APIRouteCollection {
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: Image data
 	func getImage_FullHandler(_ req: Request) throws -> Response {
-		return try getUserUploadedImage(req, typeStr: "full")
+		return try getUserUploadedImage(req, sizeGroup: .full)
 	}
 	
     /// `GET /api/v3/image/thumb/STRING`
     ///
-    /// Returns a user-created image previously uploaded to the server. This includes images in Twitarr posts, ForumPosts, FezPosts, User Avatars, and Daily Theme images.
-	/// Even though the path for this API call says 'full', images may be downsized when uploaded (currently, images get downsized to a max edge length of 2048).
+    /// Returns a user-created image thumbnail previously uploaded to the server. This includes images in Twitarr posts, ForumPosts, 
+	/// FezPosts, User Avatars, and Daily Theme images. The exact size of the thumbnail may vary based on the usage given at upload time.
 	/// 
 	/// Image filenames should have a form of: `UUIDString.typeExtension` where the UUIDString matches the output of `UUID().string` and `typeExtension`
 	/// matches one of : "bmp", "gif", "jpg", "png", "tiff", "wbmp", "webp". Example: `F818D809-AAB9-4C92-8AAD-6AE483C8AB82.jpg`. The `thumb` and `full`
@@ -67,14 +74,34 @@ struct ImageController: APIRouteCollection {
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: Image data
 	func getImage_ThumbnailHandler(_ req: Request) throws -> Response {
-		return try getUserUploadedImage(req, typeStr: "thumb")
+		return try getUserUploadedImage(req, sizeGroup: .thumbnail)
+	}
+	
+    /// `GET /api/v3/image/archive/STRING`
+    ///
+    /// Returns an archived user-created image previously uploaded to the server, and then previously deleted/replaced. This includes images in Twitarr posts,
+	/// ForumPosts, FezPosts, User Avatars, and Daily Theme images. Archived images are only accessible by Moderators and above.
+	/// 
+	/// Image filenames should have a form of: `UUIDString.typeExtension` where the UUIDString matches the output of `UUID().string` and `typeExtension`
+	/// matches one of : "bmp", "gif", "jpg", "png", "tiff", "wbmp", "webp". Example: `F818D809-AAB9-4C92-8AAD-6AE483C8AB82.jpg`. The `thumb` and `full`
+	/// versions of this call return differently-sized versions of the same image when called with the same filename.
+	/// 
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: Image data
+	func getImage_ArchivedlHandler(_ req: Request) throws -> Response {
+		return try getUserUploadedImage(req, sizeGroup: .archive)
 	}
 	
     /// `GET /api/v3/image/user/full/ID`
     /// `GET /api/v3/image/user/thumb/ID`
     ///
-	///  Gets the avatar image for the given user. If the user has a custom avatar, result is the same as if you called `/api/v3/image/<thumb|full>/<user.userImage>`
-	///  If the user has no custom avatar, returns a 40x40 Identicon image specific to the given userID.
+	///  Gets the avatar image for the given user. If the given user's profile is quarantined and the requester is not a mod and requester != given user, returns an identicon.
+	///  Otherwise, if the user has a custom avatar, result is the same as if you called `/api/v3/image/<thumb|full>/<user.userImage>`
+	///  If the user has no custom avatar, returns a 40x40 Identicon image specific to the given userID. 
+	///  
+	///  Note: You don't need to pass an auth token to this method, but if you don't we assume the requestor is not a moderator and will show the default identicon for any
+	///  quarantined user.
 	///  
 	///  Barring severe errors, this method will always return an image--either a user's custom avatar or their default identicon. A consequence of this is that you cannot tell
 	///  whether a user has a custom avatar set or not when calling this method.
@@ -86,13 +113,15 @@ struct ImageController: APIRouteCollection {
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: Image data, or `304 notModified` if client's ETag matches.
 	func getUserAvatarHandler(_ req: Request) throws -> EventLoopFuture<Response> {
+        let user = req.auth.get(User.self)
         guard let userID = req.parameters.get(userIDParam.paramString, as: UUID.self) else {
             throw Abort(.badRequest, reason: "Missing user ID parameter.")
         }
-        let isThumbnail = req.url.path.hasPrefix("/api/v3/image/user/thumb")
+        let sizeGroup: ImageSizeGroup = req.url.path.hasPrefix("/api/v3/image/user/thumb") ? .thumbnail : .full
 		return User.find(userID, on: req.db).unwrap(or: Abort(.badRequest, reason: "User not found")).flatMapThrowing { targetUser in
-			if let filename = targetUser.userImage {
-				return try getUserUploadedImage(req, typeStr: isThumbnail ? "thumb" : "full", imageFilename: filename)
+			if let filename = targetUser.userImage, try !targetUser.isQuarantined || (user?.accessLevel.hasAccess(.moderator) ?? false) ||
+					targetUser.requireID() == user?.requireID() {
+				return try getUserUploadedImage(req, sizeGroup: sizeGroup, imageFilename: filename)
 			}
 			var headers: HTTPHeaders = [:]
 
@@ -138,7 +167,7 @@ struct ImageController: APIRouteCollection {
 	}
 	
 // MARK: - Utilities
-	func getUserUploadedImage(_ req: Request, typeStr: String, imageFilename: String? = nil) throws -> Response {
+	func getUserUploadedImage(_ req: Request, sizeGroup: ImageSizeGroup, imageFilename: String? = nil) throws -> Response {
 		let inputFilename = imageFilename ?? req.parameters.get("image_filename")
 		guard let fileParam = inputFilename else {
 			throw Abort(.badRequest, reason: "No image file specified.")
@@ -166,7 +195,7 @@ struct ImageController: APIRouteCollection {
 		// this will give us 128 subdirs.
 		let subDirName = String(fileParam.prefix(2))
 			
-        let fileURL = imagesDirectory.appendingPathComponent(typeStr)
+        let fileURL = imagesDirectory.appendingPathComponent(sizeGroup.rawValue)
         		.appendingPathComponent(subDirName)
         		.appendingPathComponent(fileUUID.uuidString + "." + fileExtension)
 		return req.fileio.streamFile(at: fileURL.path)

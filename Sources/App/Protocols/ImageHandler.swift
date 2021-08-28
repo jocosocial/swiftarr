@@ -1,9 +1,7 @@
 import Vapor
 
-/// The type of model for which an `ImageHandler` is processing. This defines the
-/// size of the thumbnail produced.
-
-enum ImageHandlerType: String {
+/// The type of model for which an `ImageHandler` is processing. This defines the size of the thumbnail produced.
+enum ImageUsage: String {
     /// The image is for a `ForumPost`.
     case forumPost
     /// The image is for a `Twarrt`
@@ -16,7 +14,9 @@ enum ImageHandlerType: String {
     case dailyTheme
 }
 
-enum ImageSize: String {
+/// Internally, the Image Handler stores images at multiple sizes upon image upload. The exact sizes stored for each sizeGroup
+/// may vary based on `ImageUsage`. Request images at roughly the size you need.
+enum ImageSizeGroup: String {
 	case thumbnail = "thumb"
 //	case medium
 	case full = "full"
@@ -54,7 +54,7 @@ extension APIRouteCollection {
 	/// Currently, this fn returns paths in the form:
 	///		<WorkingDir>/images/<full/thumb>/<xx>/<filename>.jpg
 	/// where "xx" is the first 2 characters of the filename.
-	func getImagePath(for image: String, format: String? = nil, usage: ImageHandlerType, size: ImageSize, on req: Request) throws -> URL {
+	func getImagePath(for image: String, format: String? = nil, usage: ImageUsage, size: ImageSizeGroup, on req: Request) throws -> URL {
 		let baseImagesDirectory = req.application.baseImagesDirectory ?? 
 				URL(fileURLWithPath: DirectoryConfiguration.detect().workingDirectory).appendingPathComponent("images")
 		
@@ -99,7 +99,7 @@ extension APIRouteCollection {
     ///   - usage: The type of model using the image content.
     ///    - req: The incoming `Request`, on which this processing must run.
     /// - Returns: The generated names of the stored files.
-	func processImages(_ images: [ImageUploadData], usage: ImageHandlerType, on req: Request) -> EventLoopFuture<[String]> {
+	func processImages(_ images: [ImageUploadData], usage: ImageUsage, on req: Request) -> EventLoopFuture<[String]> {
 		guard images.count <= 4 else {
 			return req.eventLoop.makeFailedFuture(Abort(.badRequest, reason: "Too many image attachments"))
 		}
@@ -126,12 +126,23 @@ extension APIRouteCollection {
     ///   - usage: The type of model using the image content.
     ///    - req: The incoming `Request`, on which this processing must run.
     /// - Returns: The generated name of the stored file, or nil.
-    func processImage(data: Data?, usage: ImageHandlerType, on req: Request) -> EventLoopFuture<String?> {
+    func processImage(data: Data?, usage: ImageUsage, on req: Request) -> EventLoopFuture<String?> {
 		do {
 			guard let data = data, !data.isEmpty else {
 				// Not an error, just nothing to do.
 				return req.eventLoop.future(nil)
 			}
+			
+			// For debugging. Saves the uploaded image to the /images directory. Useful when you need to 
+			// see the image as it gets uploaded, which may not be the same as the image on the client device,
+			// nor is it the same as the image we save. Replace the test with whatever criteria needed to catch
+			// the file you're looking for.
+//			if false {
+//				let p = URL(fileURLWithPath: DirectoryConfiguration.detect().workingDirectory)
+//						.appendingPathComponent("images").appendingPathComponent("testfile.jpg")
+//				try? data.write(to: p)
+//			}
+			
 			guard data.count < Settings.shared.maxImageSize else {
 				let maxMegabytes = Settings.shared.maxImageSize / 1024 * 1024
 				throw Abort(.badRequest, reason: "Image too large. Size limit is \(maxMegabytes)MB.")

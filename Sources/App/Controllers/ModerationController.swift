@@ -42,6 +42,9 @@ struct ModerationController: APIRouteCollection {
 
 		moderatorAuthGroup.get("fez", fezIDParam, use: fezModerationHandler)
 		moderatorAuthGroup.post("fez", fezIDParam, "setstate", modStateParam, use: fezSetModerationStateHandler)
+		
+		moderatorAuthGroup.get("profile", userIDParam, use: profileModerationHandler)
+		moderatorAuthGroup.post("profile", userIDParam, "setstate", modStateParam, use: profileSetModerationStateHandler)
 	}
 	
 	// MARK: - tokenAuthGroup Handlers (logged in)
@@ -385,6 +388,64 @@ struct ModerationController: APIRouteCollection {
 			try fez.moderationStatus.setFromParameterString(modState)
 			fez.logIfModeratorAction(ModeratorActionType.setFromModerationStatus(fez.moderationStatus), user: user, on: req)
 			return fez.save(on: req.db).transform(to: .ok)
+		}
+	}
+	
+	/// ` GET /api/v3/mod/profile/ID`
+	///
+	/// Moderator only. Returns info admins and moderators need to review a User Profile. The returned info pertains to the user's profile and avatar image --
+	/// for example, the web site puts the button allowing mods to edit a user's profile fields on this page.
+	///
+	/// The `ProfileModerationData` contains:
+	/// * The user's profile info and avatar
+	/// * Previous edits of the profile and avatar
+	/// * Reports against the user's profile
+	/// * The user's current  moderation status.
+	/// 
+	/// - Parameter req: The incoming `Request`, provided automatically.
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: `FezModerationData` containing a bunch of data pertinient to moderating the forum.
+	func profileModerationHandler(_ req: Request) throws -> EventLoopFuture<ProfileModerationData> {
+		guard let targetUserIDString = req.parameters.get(userIDParam.paramString), let targetUserID = UUID(targetUserIDString) else {
+			throw Abort(.badRequest, reason: "Request parameter \(userIDParam.paramString) is missing or isn't a UUID.")
+		}
+		return User.query(on: req.db).filter(\.$id == targetUserID).withDeleted().first()
+				.unwrap(or: Abort(.notFound, reason: "no User found for identifier '\(targetUserID)'")).flatMap { targetUser in
+			return Report.query(on: req.db)
+					.filter(\.$reportType == .userProfile)
+					.filter(\.$reportedID == targetUserIDString)
+					.sort(\.$createdAt, .descending).all().flatMap { reports in
+				return targetUser.$edits.query(on: req.db).sort(\.$createdAt, .descending).all().flatMapThrowing { edits in
+					let userProfileData = try UserProfileUploadData(user: targetUser)
+					let editData: [ProfileEditLogData] = try edits.map {
+						return try ProfileEditLogData($0, on: req)
+					}
+					let reportData = try reports.map { try ReportAdminData.init(req: req, report: $0) }
+					let modData = ProfileModerationData(profile: userProfileData, accessLevel: targetUser.accessLevel,
+							moderationStatus: targetUser.moderationStatus, edits: editData, reports: reportData)
+					return modData
+				}
+			}
+		}
+	}
+	
+	/// ` POST /api/v3/mod/profile/ID/setstate/STRING`
+	///
+	/// Moderator only. Sets the moderation state enum on the profile idententified by userID to the `ModerationState` in STRING.
+	/// Logs the action to the moderator log unless the moderator is changing state on their own profile.. 
+	///
+	/// - Parameter req: The incoming `Request`, provided automatically.
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: `HTTPStatus` .ok if the requested moderation status was set.
+	func profileSetModerationStateHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+		let user = try req.auth.require(User.self)
+		guard let modState = req.parameters.get(modStateParam.paramString) else {
+			throw Abort(.badRequest, reason: "Request parameter `Moderation_State` is missing.")
+		}
+		return User.findFromParameter(userIDParam, on: req).throwingFlatMap { targetUser in
+			try targetUser.moderationStatus.setFromParameterString(modState)
+			targetUser.logIfModeratorAction(ModeratorActionType.setFromModerationStatus(targetUser.moderationStatus), user: user, on: req)
+			return targetUser.save(on: req.db).transform(to: .ok)
 		}
 	}
 

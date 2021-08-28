@@ -1,75 +1,75 @@
 #extend("trunk"):
     #export("body"):
-	  <div class="container-fluid">
-		#if(operationSuccess):
-			<div class="alert alert-primary mt-3" role="alert">
-				<div class="d-flex align-items-center">
-					<b>#(operationName) Successful. Redirecting...</b>
-					<div class="spinner-border ms-2" role="status">
-						<span class="visually-hidden">Loading...</span>
+		<div class="container-fluid">
+			#if(operationSuccess):
+				<div class="alert alert-primary mt-3" role="alert">
+					<div class="d-flex align-items-center">
+						<b>#(operationName) Successful. Redirecting...</b>
+						<div class="spinner-border ms-2" role="status">
+							<span class="visually-hidden">Loading...</span>
+						</div>
 					</div>
 				</div>
-			</div>
-		#elseif(trunk.userIsLoggedIn):
-			<div class="container-fluid mt-3">
-				<div class="row">
-					<h6>Currently logged in as user "#(trunk.username)"<h6>
+			#elseif(trunk.userIsLoggedIn):
+				<div class="container-fluid mt-3">
+					<div class="row">
+						<h6>Currently logged in as user "#(trunk.username)"<h6>
+					</div>
+					<div class="row">
+						<form action="/logout" method="POST">
+							<button class="btn btn-primary" type="submit">Logout</button>
+						</form>
+					</div>
 				</div>
-				<div class="row">
-					<form action="/logout" method="POST">
-						<button class="btn btn-primary" type="submit">Logout</button>
+			#else:			
+				<div class="container-fluid mt-3">
+					<div class="row">
+						<h5>Preliminary niceties...</h5>
+						<p>By signing up for and using Twit-arr, you agree to abide by the JoCo Cruise 2019 Code of Conduct / harassment policy that all JoCo Cruise attendees must sign. (The short version: everyone play nice!)</p>
+						<p>In the event that you encounter someone on Twit-arr not behaving in accordance with the Code of Conduct, please seek a Helper Monkey for assistance, who will in turn work with the Twit-arr tech team to effect any necessary changes within the Twit-arr platform.</p>
+						<p>Your Twit-arr registration code was sent to you via e-mail. If you did not receive your registration code or do not have access to your e-mail, go to the JoCo Cruise Info Desk for assistance. Please enter your code below. Your registration code can only be used once, so do not share it with others. You will be held accountable for the actions of ANYONE using your code. If you need an additional code to create an additional account, please request one at the JoCo Cruise Info Desk.</p>
+					</div>
+					<form action="/createAccount" method="POST">
+						<div class="row mb-3 ms-2 col-6">
+							<label for="regcode" class="form-label">Registration Code</label>
+							<input type="text" class="form-control" id="regcode" name="regcode" spellcheck="false">
+							<label for="username" class="form-label">Username</label>
+							<input type="text" class="form-control" id="username" name="username" spellcheck="false">
+							<label for="displayname" class="form-label">Display Name (optional)</label>
+							<input type="text" class="form-control" id="displayname" name="displayname" spellcheck="false">
+						</div>
+						<div class="row">
+							<p>Due to technical restrictions, the security available on the ship is akin to <b>writing your password on a post-it and placing the post-it on your forehead.</b> At least, it is to anyone skilled and motivated to do such things.</p>
+							<p><b>DO NOT USE the same password that you have used for ANYTHING ELSE.</b></p>
+							<p>Really not kidding here. Please don't do it. If you do, you are risking the security of any account that uses the same password.</p>
+						</div>
+						<div class="row ms-2 mb-3 col-6">
+							<label for="password" class="form-label">Password</label>
+							<input type="password" class="form-control" id="password" name="password">
+							<label for="passwordConfirm" class="form-label">Confirm Password</label>
+							<input type="password" class="form-control" id="passwordConfirm" name="passwordConfirm">
+						</div>
+						#if(error):
+							<div class="alert alert-danger mt-3" role="alert">
+								<b>Error:</b> #(error.reason)
+							</div>
+						#endif
+						<button type="submit" class="btn btn-primary">Create Account</button>
 					</form>
 				</div>
-			</div>
-		#else:			
-			<div class="container-fluid mt-3">
-				<div class="row">
-					<h5>Preliminary niceties...</h5>
-					<p>By signing up for and using Twit-arr, you agree to abide by the JoCo Cruise 2019 Code of Conduct / harassment policy that all JoCo Cruise attendees must sign. (The short version: everyone play nice!)</p>
-					<p>In the event that you encounter someone on Twit-arr not behaving in accordance with the Code of Conduct, please seek a Helper Monkey for assistance, who will in turn work with the Twit-arr tech team to effect any necessary changes within the Twit-arr platform.</p>
-					<p>Your Twit-arr registration code was sent to you via e-mail. If you did not receive your registration code or do not have access to your e-mail, go to the JoCo Cruise Info Desk for assistance. Please enter your code below. Your registration code can only be used once, so do not share it with others. You will be held accountable for the actions of ANYONE using your code. If you need an additional code to create an additional account, please request one at the JoCo Cruise Info Desk.</p>
-				</div>
-				<form action="/createAccount" method="POST">
-				  <div class="row mb-3 ms-2 col-6">
-					<label for="regcode" class="form-label">Registration Code</label>
-					<input type="text" class="form-control" id="regcode" name="regcode" spellcheck="false">
-					<label for="username" class="form-label">Username</label>
-					<input type="text" class="form-control" id="username" name="username" spellcheck="false">
-					<label for="displayname" class="form-label">Display Name (optional)</label>
-					<input type="text" class="form-control" id="displayname" name="displayname" spellcheck="false">
-				  </div>
-				  <div class="row">
-					<p>Due to technical restrictions, the security available on the ship is akin to <b>writing your password on a post-it and placing the post-it on your forehead.</b> At least, it is to anyone skilled and motivated to do such things.</p>
-					<p><b>DO NOT USE the same password that you have used for ANYTHING ELSE.</b></p>
-					<p>Really not kidding here. Please don't do it. If you do, you are risking the security of any account that uses the same password.</p>
-				  </div>
-				  <div class="row ms-2 mb-3 col-6">
-					<label for="password" class="form-label">Password</label>
-					<input type="password" class="form-control" id="password" name="password">
-					<label for="passwordConfirm" class="form-label">Confirm Password</label>
-					<input type="password" class="form-control" id="passwordConfirm" name="passwordConfirm">
-				  </div>
-				  <button type="submit" class="btn btn-primary">Create Account</button>
-				</form>
-			</div>
 			
-			#if(error):
-			<div class="alert alert-danger mt-3" role="alert">
-				<b>Error:</b> #(error.reason)
-			</div>
+				<div class="container-fluid mt-3">
+					<div class="row nav-item">
+						<a class="nav-link" href="/login">Actually, just let me log in.</a>
+					</div>
+					<div class="row nav-item">
+						<a class="nav-link" href="/resetPassword">I forgot my password!</a>
+					</div>
+					<div class="row nav-item">
+						<a class="nav-link" href="/codeOfConduct">I want to read the Code of Conduct and Twit-arr Rules!</a>
+					</div>
+				</div>
 			#endif
-			<div class="container-fluid mt-3">
-				<div class="row nav-item">
-					<a class="nav-link" href="/login">Actually, just let me log in.</a>
-				</div>
-				<div class="row nav-item">
-					<a class="nav-link" href="/resetPassword">I forgot my password!</a>
-				</div>
-				<div class="row nav-item">
-					<a class="nav-link" href="/codeOfConduct">I want to read the Code of Conduct and Twit-arr Rules!</a>
-				</div>
-			</div>
-		#endif
-	  </div>
-    #endexport
+		</div>
+	#endexport
 #endextend

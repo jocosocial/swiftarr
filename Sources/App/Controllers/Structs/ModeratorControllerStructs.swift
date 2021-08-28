@@ -137,7 +137,7 @@ struct ForumPostModerationData: Content {
 
 /// Returns data about an instance of a moderator using their mod powers to edit/delete a user's content, edit a user's profile fields, or change a user's privledges.
 struct ModeratorActionLogData: Content {
-	/// 
+	/// The ID of this log entry
 	var id: UUID
 	/// 
 	var actionType: ModeratorActionType
@@ -207,6 +207,38 @@ extension PostEditLogData {
     	text = edit.postText
     	images = edit.images    	
     }
+}
+
+/// Used to return data moderators need to view previous edits a user made to their profile. 
+/// This structure will have either the `profileData` or `profileImage` field populated.
+/// An array of these stucts is placed inside `ProfileModerationData`.
+struct ProfileEditLogData: Content {
+	var editID: UUID
+	var createdAt: Date
+	var author: UserHeader
+	var profileData: UserProfileUploadData?
+	var profileImage: String?
+}
+
+extension ProfileEditLogData {
+	init(_ edit: ProfileEdit, on req: Request) throws {
+		editID = try edit.requireID()
+		createdAt = edit.createdAt ?? Date()
+		author = try req.userCache.getHeader(edit.$editor.id)
+		profileData = edit.profileData
+		profileImage = edit.profileImage
+	}
+}
+
+/// Used to return data moderators need to evaluate a user's profile. Shows the user's current profile values, past edits, reports made against
+/// the profile, the user's profile moderationStatus, and the user's accessLevel.
+struct ProfileModerationData: Content {
+	var profile: UserProfileUploadData
+	var accessLevel: UserAccessLevel
+	var moderationStatus: ContentModerationStatus
+	var edits: [ProfileEditLogData]
+	var reports: [ReportAdminData]
+
 }
 
 /// Used to return data about `Report`s submitted by users. Only Moderators and above have access.

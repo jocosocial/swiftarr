@@ -1,39 +1,37 @@
 #extend("trunk"):
     #export("body"):
-    	<div class="container-md ms-0 mt-2">
+    	<div class="container-md ms-0 mt-2 mb-5">
+			<div class="card mb-2">	
+				<div class="card-header bg-primary">
+					<span class="text-white">
+						<b>Today's Theme: #(dailyTheme.title)</b>
+					</span>
+				</div>
+				<div class="card-body bg-light">
+					#(dailyTheme.info)
+				</div>
+				#if(dailyTheme.image):
+					<img class="card-img-bottom" src="/api/v3/image/full/#(dailyTheme.image)" height=200 alt="Daily Theme Image">
+				#endif
+			</div>
 
 			#if(count(announcements) > 0):
-				<h4><b>Announcements</b><h4>
+				<h4><b>Announcements</b></h4>
 				#for(ann in announcements):
-					<div class="card mb-1">	
-						<div class="card-header bg-primary">
+					<div class="card mb-2">	
+						<div class="card-header bg-success">
 							<span class="text-white">
-								<b>From:</b> <a href="/user/#(ann.author.userID)" class="link-light">@#(ann.author.username)</a>
+								<b>From:</b> #userByline(ann.author, "link-light")
 							</span>
 						</div>
 						<div class="card-body bg-light">
-							#(ann.text)
+							#(ann.text)<br>
+							<span class="text-muted"><i>Display Until #date(ann.displayUntil, "MMM dd, hh:mm:ss a")</i></span>
 						</div>
 					</div>
 				#endfor
 			#endif
-			
-			<div class="row mb-2">
-				<div class="col">
-					<h4><b>Today's Theme: #(dailyTheme.title)</b><h4>
-				</div>
-			</div>
-			<div class="row mb-2">
-				<div class="col">
-					#(dailyTheme.info)
-				</div>
-				#if(dailyTheme.image):
-					<div class="col">
-						<img src="/api/v3/image/full/#(dailyTheme.image)" height=200 alt="Daily Theme Image">
-					</div>
-				#endif
-			</div>
-			
+						
 			#if(trunk.alertCounts.newTwarrtMentionCount > 0 || trunk.alertCounts.newForumMentionCount > 0):
 				<h6><b>Notifications</b></h6>
 			#endif
@@ -47,6 +45,20 @@
 				<a class="list-group-item list-group-item-action" href="/forumpost/mentions">
 					You have #(trunk.alertCounts.newForumMentionCount) new forum @mentions
 				</a>
+			#endif
+			#if(trunk.userIsLoggedIn):
+				<div class="row mb-2">
+					<div class="col">
+						<h4><b>Things to Do:</b></h4>
+					</div>
+				</div>
+				<div class="row mb-2">
+					<div class="col">
+						<ul class="list-group">
+							<li class="list-group-item"><a href="/profile">View your User Profile</a></li>
+						</ul>
+					</div>
+				</div>
 			#endif
 		</div>
     #endexport

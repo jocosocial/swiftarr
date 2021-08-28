@@ -387,42 +387,37 @@ struct UserController: APIRouteCollection {
     
     /// `GET /api/v3/user/profile`
     ///
-    /// Retrieves the user's own profile data for editing, as a `UserProfileData` object.
+    /// Retrieves the user's own profile data for editing, as a `ProfilePublicData` object.
 	///
-    /// - Note: The `.username` and `.displayedName` properties of the returned object
+    /// - Note: The `.header.username` and `.header.displayName` properties of the returned object
     ///   are for display convenience only. A username must be changed using the
-    ///   `POST /api/v3/user/username` endpoint. The displayedName property is generated from
-    ///   the username and displayName values.
+    ///   `POST /api/v3/user/username` endpoint. 
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 403 error if the user is banned. A 5xx response should be reported as a likely
     ///   bug, please and thank you.
     /// - Returns: `UserProfileData` containing the editable properties of the profile.
-    func profileHandler(_ req: Request) throws -> UserProfileData {
+    func profileHandler(_ req: Request) throws -> ProfilePublicData {
         let user = try req.auth.require(User.self)
-        return try UserProfileData(user: user)
+        return try ProfilePublicData(user: user, note: nil, requester: user)
     }
     
     /// `POST /api/v3/user/profile`
 	/// `POST /api/v3/user/ID/profile` 				- for moderator use
     ///
     /// Updates the user's profile.
-    ///
-    /// This endpoint can be reached with either Basic or Bearer authenticaton, so that a user
-    /// can customize their profile even if they do not yet have their registration code.
-    ///
-    /// - Note: All fields of the `UserProfileData` structure being submitted **must** be
+	///
+    /// - Note: All fields of the `UserProfileUploadData` structure being submitted **must** be
     ///   present. While the properties of the profile itself are optional, the
     ///   submitted values all *replace* the existing propety values. Submitting a value of `""`
     ///   resets its respective profile property to `nil`.
     ///
-    /// - Requires: `UserProfileData` payload in the HTTP body.
+    /// - Requires: `UserProfileUploadData` payload in the HTTP body.
     /// - Parameters:
     ///   - req: The incoming `Request`, provided automatically.
-    ///   - data: `UserProfileData` struct containing the editable properties of the profile.
     /// - Throws: 403 error if the user is banned.
-    /// - Returns: `UserProfileData` containing the updated editable properties of the profile.
-    func profileUpdateHandler(_ req: Request) throws -> EventLoopFuture<UserProfileData> {
+    /// - Returns: `ProfilePublicData` containing the updated editable properties of the profile.
+    func profileUpdateHandler(_ req: Request) throws -> EventLoopFuture<ProfilePublicData> {
         let user = try req.auth.require(User.self)
         let targetUserID = req.parameters.get("target_user", as: UUID.self)
 		return User.find(targetUserID, on: req.db).throwingFlatMap { foundTargetUser in
@@ -435,7 +430,7 @@ struct UserController: APIRouteCollection {
 			// If a user is editing their own image, foundTargetUser == nil.
 			let targetUser = foundTargetUser ?? user
 			try user.guardCanEditProfile(ofUser: targetUser)
-			let data = try req.content.decode(UserProfileData.self)
+			let data = try ValidatingJSONDecoder().decode(UserProfileUploadData.self, fromBodyOf: req)
 			
 			// record update for accountability
 			let oldProfileEdit = try ProfileEdit(target: targetUser, editor: user)
@@ -456,7 +451,7 @@ struct UserController: APIRouteCollection {
 			
 			return targetUser.save(on: req.db).flatMapThrowing {
 				try req.userCache.updateUser(targetUser.requireID())
-				return try UserProfileData(user: targetUser)
+				return try ProfilePublicData(user: targetUser, note: nil, requester: user)
 			}
 		}
     }

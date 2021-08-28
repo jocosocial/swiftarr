@@ -236,7 +236,7 @@ function updatePhotoCardState(cardElement) {
 		hiddenFormElem.value = "";
 	}
 	else if (hiddenFormElem.value) {
-		if (hiddenFormElem.value.startsWith('/api/v3')) {
+		if (hiddenFormElem.value.startsWith('/api/v3') || hiddenFormElem.value.startsWith('/avatar')) {
 			imgElem.src = hiddenFormElem.value;
 		}
 		else {
@@ -319,8 +319,10 @@ function submitAJAXForm(formElement, event) {
 		else {
 			var data = JSON.parse(this.responseText);
 			let alertElement = formElement.querySelector('.alert');
-			alertElement.innerHTML = "<b>Error:</b> " + data.reason;
-			alertElement.classList.remove("d-none")
+			if (alertElement) {
+				alertElement.innerHTML = "<b>Error:</b> " + data.reason;
+				alertElement.classList.remove("d-none")
+			}
 		}
 	}
 	req.onerror = function() {

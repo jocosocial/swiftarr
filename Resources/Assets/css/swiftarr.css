@@ -4,6 +4,10 @@
 	object-fit: contain;
 }
 
+.image-upload-input {
+	display: none;
+}
+
 hr.newline {
 	background-color: #A00000;
 	opacity: 100%;

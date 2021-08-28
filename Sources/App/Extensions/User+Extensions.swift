@@ -169,7 +169,7 @@ extension User {
 extension User: Reportable {
 	
     /// The report type for `User` reports.
-	var reportType: ReportType { .user }
+	var reportType: ReportType { .userProfile }
     
 	var authorUUID: UUID { id ?? UUID() }
 
