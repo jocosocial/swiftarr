@@ -414,7 +414,7 @@ struct UsersController: APIRouteCollection {
     
     /// `POST /api/v3/users/ID/report`
     ///
-    /// Creates a `Report` regarding the specified `User`.
+    /// Creates a `Report` regarding the specified user's profile, either the text fields or the avatar image.
     ///
     /// - Note: The accompanying report message is optional on the part of the submitting user,
     ///   but the `ReportData` is mandatory in order to allow one. If there is no message,

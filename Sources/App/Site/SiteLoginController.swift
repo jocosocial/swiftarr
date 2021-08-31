@@ -265,7 +265,7 @@ struct SiteLoginController: SiteControllerUtils {
 			req.auth.login(user)
 			req.session.data["token"] = tokenResponse.token
 						
-//			req.session.data["accessLevel"] = String(tokenResponse.accessLevel.rawValue)				
+//			req.session.data["accessLevel"] = tokenResponse.accessLevel.rawValue			
 		}
 	}
 }

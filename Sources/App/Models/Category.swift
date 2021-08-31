@@ -24,12 +24,12 @@ final class Category: Model {
     
     /// Minimum access level to view posts in this category. Usually set to `.quarantined`. But, a category reserved for moderators only
     /// could have this set to `.moderator`.
-    @Field(key: "view_access_level") var accessLevelToView: UserAccessLevel
+    @Enum(key: "view_access_level") var accessLevelToView: UserAccessLevel
     
     /// Minimum access level to create threads in this category. Usually set to `.verified`.  Setting this to a value less than verified won't work as
     /// those users cannot create any content. This setting does not govern posting in existing threads. An admin could create a thread in an admin-only
     /// forum and leave it unlocked so that anyone that can see the thread can post in it. Or, they could lock the thread, preventing posting.
-    @Field(key: "create_access_level") var accessLevelToCreate: UserAccessLevel
+    @Enum(key: "create_access_level") var accessLevelToCreate: UserAccessLevel
     
     /// The number of forums containted in this Category. Should always be equal to forums.count.
     @Field(key: "forumCount") var forumCount: Int32

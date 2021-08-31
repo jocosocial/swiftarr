@@ -351,6 +351,14 @@ struct ReportPageContext : Encodable {
 		reportSuccessURL = req.headers.first(name: "Referer") ?? "/fez"
 	}
 	
+	// For reporting a user profile 
+	init(_ req: Request, userID: String) throws {
+		trunk = .init(req, title: "Report User Profile", tab: .none)
+		reportTitle = "Report a User's Profile"
+		reportFormAction = "/profile/report/\(userID)"
+		reportSuccessURL = req.headers.first(name: "Referer") ?? "/user/\(userID)"
+	}
+	
 }
     
 
@@ -439,6 +447,7 @@ extension SiteControllerUtils {
     var modStateParam: PathComponent { PathComponent(":mod_state") }
     var announcementIDParam: PathComponent { PathComponent(":announcement_id") }
     var imageIDParam: PathComponent { PathComponent(":image_id") }
+    var accessLevelParam: PathComponent { PathComponent(":access_level") }
 
 	func apiQuery(_ req: Request, endpoint: String, method: HTTPMethod = .GET, defaultHeaders: HTTPHeaders? = nil,
 			passThroughQuery: Bool = true,

@@ -66,9 +66,11 @@
 				<div class="col btn-group btn-group-sm col-auto mx-1" role="group" aria-label="Profile actions">
 					#if(trunk.userID == profile.header.userID):
 						<a class="btn btn-sm btn-outline-primary" href="/profile/edit">Edit Profile</a>
-					#endif
-					#if(trunk.userIsMod):
-						<a class="btn btn-sm btn-outline-primary" href="/moderate/user/#(profile.header.userID)">Mod</a>
+					#else:
+						<a class="btn btn-outline-primary" href="/profile/report/#(profile.header.userID)">Report</a>
+						#if(trunk.userIsMod):
+							<a class="btn btn-sm btn-outline-primary" href="/moderate/userprofile/#(profile.header.userID)">Mod</a>
+						#endif
 					#endif
 				</div>
 			</div>

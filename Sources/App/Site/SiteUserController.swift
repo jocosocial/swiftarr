@@ -52,6 +52,8 @@ struct SiteUserController: SiteControllerUtils {
         privateRoutes.post("profile", "edit", use: userProfileEditPostHandler)
         privateRoutes.post("profile", "edit", userIDParam, use: userProfileEditPostHandler)
         privateRoutes.post("profile", "note", userIDParam, use: userNotePostHandler)
+        privateRoutes.get("profile", "report", userIDParam, use: profileReportPageHandler)
+        privateRoutes.post("profile", "report", userIDParam, use: profileReportPostHandler)
 	}
 	
 	/// GET /avatar/full/ID
@@ -254,4 +256,32 @@ struct SiteUserController: SiteControllerUtils {
 			return .ok
 		}
 	}
+	
+	/// `GET /profile/report/ID`
+	///
+	/// Reports content in a user's profile, either the profile text fields or the avatar image. NOTE: This isn't reporting the **user**, you can't report
+	/// users directly, just content they create. 
+    func profileReportPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+    	guard let targetUserID = req.parameters.get(userIDParam.paramString) else {
+    		throw "Invalid userID parameter"
+    	}
+		let ctx = try ReportPageContext(req, userID: targetUserID)
+    	return req.view.render("reportCreate", ctx)
+    }
+    
+	/// `POST /profile/report/ID`
+	///
+	func profileReportPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+    	guard let targetUserID = req.parameters.get(userIDParam.paramString) else {
+    		throw "Invalid userID parameter"
+    	}
+    	// The only field in ReportData is the message; we can use it as both the form data from the reportCreate webpage
+    	// and the DTO for the API layer.
+		let postStruct = try req.content.decode(ReportData.self)
+ 		return apiQuery(req, endpoint: "/users/\(targetUserID)/report", method: .POST, beforeSend: { req throws in
+			try req.content.encode(postStruct)
+		}).flatMapThrowing { response in
+			return .created
+		}
+    }
 }

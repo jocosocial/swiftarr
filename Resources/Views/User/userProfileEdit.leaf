@@ -54,7 +54,7 @@
 						<label for="displayname" class="text-start text-sm-end d-block">Display Name:</label>
 					</div>
 					<div class="col col-12 col-sm-8">
-						<input type="text" class="form-control" id="displayname" name="displayName" placeholder="Display Name" value="#(profile.header.displayName)">
+						<input type="text" class="form-control" id="displayname" name="displayName" placeholder="Display Name" value="#(profile.header.displayName)" spellcheck="false" autocapitalize="none">
 					</div>
 				</div>
 
@@ -63,7 +63,7 @@
 						<label for="realName" class="text-start text-sm-end d-block">Real Name:</label>
 					</div>
 					<div class="col col-12 col-sm-8">
-						<input type="text" class="form-control" id="realName" name="realName" placeholder="Real Name" value="#(profile.realName)">
+						<input type="text" class="form-control" id="realName" name="realName" placeholder="Real Name" value="#(profile.realName)" spellcheck="false" autocapitalize="words">
 					</div>
 				</div>
 
@@ -72,7 +72,7 @@
 						<label for="preferredPronoun" class="text-start text-sm-end d-block">Pronouns:</label>
 					</div>
 					<div class="col col-12 col-sm-8">
-						<input type="text" class="form-control" id="preferredPronoun" name="preferredPronoun" placeholder="Pronouns" value="#(profile.preferredPronoun)">
+						<input type="text" class="form-control" id="preferredPronoun" name="preferredPronoun" placeholder="Pronouns" value="#(profile.preferredPronoun)" spellcheck="false" autocapitalize="none">
 					</div>
 				</div>
 
@@ -99,7 +99,7 @@
 						<label for="email" class="text-start text-sm-end d-block">Email:</label>
 					</div>
 					<div class="col col-12 col-sm-8">
-						<input type="text" class="form-control" id="email" name="email" placeholder="Email" value="#(profile.email)">
+						<input type="email" class="form-control" id="email" name="email" placeholder="Email" value="#(profile.email)">
 					</div>
 				</div>
 

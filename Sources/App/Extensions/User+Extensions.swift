@@ -165,7 +165,8 @@ extension User {
 	}
 }
 
-// users can be reported
+/// Technically, you're not reporting the User themselves, you're reporting on their profile. Either the avatar image or profile images 
+/// have a code of conduct problem.
 extension User: Reportable {
 	
     /// The report type for `User` reports.

@@ -8,14 +8,26 @@ import Fluent
 // custom types to define enum-valued fields.
 struct CreateCustomEnums: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-		database.enum("moderation_status")
-			.case("normal")
-			.case("autoQuarantined")
-			.case("quarantined")
-			.case("modReviewed")
-			.case("locked")
-			.create()
-			.transform(to: database.eventLoop.future())			
+		let enums = [
+			database.enum("moderation_status")
+				.case("normal")
+				.case("autoQuarantined")
+				.case("quarantined")
+				.case("modReviewed")
+				.case("locked")
+				.create(),
+			database.enum("user_access_level")
+				.case("unverified")
+				.case("banned")
+				.case("quarantined")
+				.case("verified")
+				.case("client")
+				.case("moderator")
+				.case("tho")
+				.case("admin")
+				.create()
+		]
+		return enums.flatten(on: database.eventLoop).transform(to: database.eventLoop.future())			
 	}
     
     func revert(on database: Database) -> EventLoopFuture<Void> {
@@ -63,17 +75,19 @@ struct CreateBarrelSchema: Migration {
 
 struct CreateCategorySchema: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
-        database.schema("categories")
-				.id()
-				.field("title", .string, .required)
-				.unique(on: "title")
-				.field("view_access_level", .uint8, .required)
-				.field("create_access_level", .uint8, .required)
-				.field("forumCount", .int32, .required)
-    			.field("created_at", .datetime)
-    			.field("updated_at", .datetime)
-    			.field("deleted_at", .datetime)
-				.create()
+		database.enum("user_access_level").read().flatMap { userAccessLevel in
+			database.schema("categories")
+					.id()
+					.field("title", .string, .required)
+					.unique(on: "title")
+					.field("view_access_level", userAccessLevel, .required)
+					.field("create_access_level", userAccessLevel, .required)
+					.field("forumCount", .int32, .required)
+					.field("created_at", .datetime)
+					.field("updated_at", .datetime)
+					.field("deleted_at", .datetime)
+					.create()
+		}
 	}
     
     func revert(on database: Database) -> EventLoopFuture<Void> {
@@ -464,6 +478,7 @@ struct CreateTwarrtLikesSchema: Migration {
 struct CreateUserSchema: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
 		database.enum("moderation_status").read().flatMap { modStatusEnum in
+		database.enum("user_access_level").read().flatMap { userAccessLevel in
 			database.schema("users")
 					.id()
 					.field("username", .string, .required)
@@ -475,11 +490,11 @@ struct CreateUserSchema: Migration {
 					.field("password", .string, .required)
 					.field("recoveryKey", .string, .required)
 					.field("verification", .string)
-					.field("accessLevel", .int8, .required)
+					.field("accessLevel", userAccessLevel, .required)
 					.field("moderationStatus", modStatusEnum, .required)
 					.field("recoveryAttempts", .int, .required)
 					.field("reports", .int, .required)
-					.field("tempQuarantineUntil", .date)
+					.field("tempQuarantineUntil", .datetime)
 					
 					.field("userImage", .string)
 					.field("about", .string)
@@ -503,6 +518,7 @@ struct CreateUserSchema: Migration {
 					.field("profileUpdatedAt", .datetime, .required)
 					.field("parent", .uuid, .references("users", "id"))
 					.create()
+		}
 		}
     }
     

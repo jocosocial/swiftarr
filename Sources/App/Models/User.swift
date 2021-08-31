@@ -49,7 +49,7 @@ final class User: Model {
     
     /// The user's `UserAccessLevel`, set to `.unverified` at time of creation,
     /// or to the parent's access level if a sub-account.
-    @Field(key: "accessLevel") var accessLevel: UserAccessLevel
+    @Enum(key: "accessLevel") var accessLevel: UserAccessLevel
     
     /// Only refers to the user's ability to change their profile. Think of the profile fields as content, and mods can quarantine or lock that content,
     /// separate from outright banning a user.

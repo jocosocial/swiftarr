@@ -376,6 +376,7 @@ struct UserController: APIRouteCollection {
 					targetUser.profileUpdatedAt = Date()
 					return targetUser.save(on: req.db).flatMapThrowing {
 						try req.userCache.updateUser(targetUser.requireID())
+						targetUser.logIfModeratorAction(.delete, user: user, on: req)
 						return .noContent
 					}
 				}
@@ -451,6 +452,7 @@ struct UserController: APIRouteCollection {
 			
 			return targetUser.save(on: req.db).flatMapThrowing {
 				try req.userCache.updateUser(targetUser.requireID())
+				targetUser.logIfModeratorAction(.edit, user: user, on: req)
 				return try ProfilePublicData(user: targetUser, note: nil, requester: user)
 			}
 		}

@@ -47,7 +47,7 @@ struct FezModerationData: Content {
 	var isDeleted: Bool
 	var moderationStatus: ContentModerationStatus
 	var edits: [FezEditLogData]
-	var reports: [ReportAdminData]
+	var reports: [ReportModerationData]
 }
 
 
@@ -118,7 +118,7 @@ struct ForumModerationData: Content {
 	var isDeleted: Bool
 	var moderationStatus: ContentModerationStatus
 	var edits: [ForumEditLogData]
-	var reports: [ReportAdminData]
+	var reports: [ReportModerationData]
 }
 
 /// Used to return data a moderator needs to moderate a twarrt. 
@@ -132,7 +132,7 @@ struct ForumPostModerationData: Content {
 	var isDeleted: Bool
 	var moderationStatus: ContentModerationStatus
 	var edits: [PostEditLogData]
-	var reports: [ReportAdminData]
+	var reports: [ReportModerationData]
 }
 
 /// Returns data about an instance of a moderator using their mod powers to edit/delete a user's content, edit a user's profile fields, or change a user's privledges.
@@ -231,21 +231,19 @@ extension ProfileEditLogData {
 }
 
 /// Used to return data moderators need to evaluate a user's profile. Shows the user's current profile values, past edits, reports made against
-/// the profile, the user's profile moderationStatus, and the user's accessLevel.
+/// the profile, and the user's profile moderationStatus.
 struct ProfileModerationData: Content {
 	var profile: UserProfileUploadData
-	var accessLevel: UserAccessLevel
 	var moderationStatus: ContentModerationStatus
 	var edits: [ProfileEditLogData]
-	var reports: [ReportAdminData]
-
+	var reports: [ReportModerationData]
 }
 
 /// Used to return data about `Report`s submitted by users. Only Moderators and above have access.
 ///
 /// Required by:
 /// * `GET /api/v3/mod/reports`
-struct ReportAdminData: Content {
+struct ReportModerationData: Content {
 	/// The id of the report.
 	var id: UUID
 	/// The type of content being reported
@@ -268,7 +266,7 @@ struct ReportAdminData: Content {
 	var updateTime: Date
 }
 
-extension ReportAdminData {
+extension ReportModerationData {
 	init(req: Request, report: Report) throws {
 		id = try report.requireID()
 		type = report.reportType
@@ -296,5 +294,24 @@ struct TwarrtModerationData: Content {
 	var isDeleted: Bool
 	var moderationStatus: ContentModerationStatus
 	var edits: [PostEditLogData]
-	var reports: [ReportAdminData]
+	var reports: [ReportModerationData]
+}
+
+struct UserModerationData: Content {
+	var header: UserHeader
+	var accessLevel: UserAccessLevel
+	var tempQuarantineEndTime: Date?
+	var reports: [ReportModerationData]
+}
+
+extension UserModerationData {
+	init(user: User, reports: [ReportModerationData]) throws {
+		header = try UserHeader(user: user)
+		accessLevel = user.accessLevel
+		tempQuarantineEndTime =  nil
+		if let endTime = user.tempQuarantineUntil, endTime > Date() {
+			tempQuarantineEndTime = user.tempQuarantineUntil
+		}
+		self.reports = reports
+	}
 }

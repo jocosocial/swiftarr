@@ -29,7 +29,7 @@
 				<form action="/login" method="POST">
 				  <div class="mb-3 col-7">
 					<label for="username" class="form-label">Username</label>
-					<input type="text" class="form-control" id="username" name="username">
+					<input type="text" class="form-control" id="username" name="username" spellcheck="off" autocapitalize="none">
 				  </div>
 				  <div class="mb-3 col-7">
 					<label for="password" class="form-label">Password</label>

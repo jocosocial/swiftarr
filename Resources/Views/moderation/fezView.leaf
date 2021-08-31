@@ -9,8 +9,8 @@
 			<div class="row mb-3">
 				<div class="col" data-reportabletype="fez" data-reportableid="#(modData.fez.fezID)" data-postid="#(modData.fez.fezID)">
 					#if(!modData.isDeleted):
-						<a class="btn btn-primary btn-sm" href="/fez/#(modData.fez.fezID)/edit">Edit</a>
-						<button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="\#deleteModal">Delete</button>
+						<a class="btn btn-outline-primary btn-sm" href="/fez/#(modData.fez.fezID)/edit">Edit</a>
+						<button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="\#deleteModal">Delete</button>
 						<span class="dropdown">
 							<button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
 								Set State
@@ -29,6 +29,11 @@
 			</div>
 			<div class="alert alert-danger mt-3 d-none" role="alert" id="ModerateContentErrorAlert">
 			</div>				
+    		<div class="row">
+    			<div class="col col-auto">
+					<a class="btn btn-outline-primary btn-sm" href="/moderate/user/#(modData.fez.owner.userID)">Mod User</a>
+				</div>
+			</div>
     		<div class="row">
     			#if(modData.isDeleted):
 					<h6><b>Fez has been Deleted.<br>Prior to delete, it looked like this:</b></h6>

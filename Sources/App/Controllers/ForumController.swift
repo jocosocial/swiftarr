@@ -95,16 +95,16 @@ struct ForumController: APIRouteCollection {
         return futureCategories.all().flatMapThrowing { (categories) in
 			let sortedCats = categories.sorted {
 				if $0.accessLevelToView != $1.accessLevelToView {
-					return $0.accessLevelToView.rawValue > $1.accessLevelToView.rawValue
+					return $0.accessLevelToView > $1.accessLevelToView
 				}
 				if $0.accessLevelToCreate != $1.accessLevelToCreate {
-					return $0.accessLevelToCreate.rawValue > $1.accessLevelToCreate.rawValue
+					return $0.accessLevelToCreate > $1.accessLevelToCreate
 				}
 				return $0.title < $1.title
 			}
 			// return as CategoryData
 			return try sortedCats.map {
-				try CategoryData($0, restricted: $0.accessLevelToCreate.rawValue > effectiveAccessLevel.rawValue)
+				try CategoryData($0, restricted: $0.accessLevelToCreate > effectiveAccessLevel)
 			}
         }
     }
@@ -169,7 +169,7 @@ struct ForumController: APIRouteCollection {
 			}
 			return query.all().flatMap { (forums) in
 				return buildForumListData(forums, on: req, userID: userID, favoritesBarrel: barrel).flatMapThrowing { forumList in
-					return try CategoryData(category, restricted: category.accessLevelToCreate.rawValue > user.accessLevel.rawValue,
+					return try CategoryData(category, restricted: category.accessLevelToCreate > user.accessLevel,
 							forumThreads: forumList)
 				}
 			}

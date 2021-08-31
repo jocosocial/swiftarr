@@ -13,23 +13,16 @@ protocol Reportable: Model {
 
 	/// Things that can get reported can get moderated by the mod team. This shows the moderation status of the reportable item.
 	var moderationStatus: ContentModerationStatus { get set }
-	
-	// TRUE if the content's moderation state is .quarantined or .autoquarantined. If true, the content should be hidden from
-	// users without moderator access level, replaced with something like "This content is under review."
-	var isQuarantined: Bool { get }
-	
+		
 	/// The database ID of the content. Depending on `reportType`, this could encode either a UUID or an Int. Don't use this for concrete types
 	/// where the actual @id type is available.
 	func reportableContentID() throws -> String
-	
-	/// Creates a `Report` in the database, where the receiver is the reported content.
-	func fileReport(submitter: User, submitterMessage: String, on req: Request) throws -> EventLoopFuture<HTTPStatus>
-	
-	@discardableResult func logIfModeratorAction(_ action: ModeratorActionType, user: User, on req: Request) -> EventLoopFuture<Void>
 }
 
 extension Reportable {
 
+	// TRUE if the content's moderation state is .quarantined or .autoquarantined. If true, the content should be hidden from
+	// users without moderator access level, replaced with something like "This content is under review."
 	var isQuarantined: Bool { self.moderationStatus == .quarantined || self.moderationStatus == .autoQuarantined }
 	
 	/// Creates and saves a Report. Reports are always submitted by the parent account of any sub-account. 

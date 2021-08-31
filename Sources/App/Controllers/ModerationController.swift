@@ -3,10 +3,14 @@ import Crypto
 import FluentSQL
 
 /**
-	The collection of `/api/v3/mod/` route endpoints and handler functions related to moderation tasks..
+	The collection of `/api/v3/mod/` route endpoints and handler functions related to moderation tasks.
 	
 	All routes in this group should be restricted to users with moderation priviliges. This controller returns data of 
 	a privledged nature, including contents of user reports, edit histories of user content, and log data about moderation actions.
+	
+	Note that some moderation actions aren't in this file. Most such endpoints have a handler method allowing a user
+	to operate on their own content, but also allowing a mod to operate on other users' content. For example, `twarrtUpdateHandler` lets
+	a user edit a twarrt they wrote, but also lets mods edit any user's twarrt.
 	
 	The routes in this controller that return data on various Reportable content types are designed to return everything a Mod might need
 	to make moderation decisions, all in one call. In many cases that means calls return multiple array types with no paging or array limits.
@@ -45,6 +49,10 @@ struct ModerationController: APIRouteCollection {
 		
 		moderatorAuthGroup.get("profile", userIDParam, use: profileModerationHandler)
 		moderatorAuthGroup.post("profile", userIDParam, "setstate", modStateParam, use: profileSetModerationStateHandler)
+
+		moderatorAuthGroup.get("user", userIDParam, use: userModerationHandler)
+		moderatorAuthGroup.post("user", userIDParam, "setaccesslevel", accessLevelParam, use: userSetAccessLevelHandler)
+		moderatorAuthGroup.post("user", userIDParam, "tempquarantine", ":quarantine_length", use: applyUserTempQuarantine)
 	}
 	
 	// MARK: - tokenAuthGroup Handlers (logged in)
@@ -58,13 +66,13 @@ struct ModerationController: APIRouteCollection {
 	/// - Parameter req: The incoming `Request`, provided automatically.
 	/// - Throws: 403 error if the user is not an admin.
 	/// - Returns: `[Report]`.
-	func reportsHandler(_ req: Request) throws -> EventLoopFuture<[ReportAdminData]> {
+	func reportsHandler(_ req: Request) throws -> EventLoopFuture<[ReportModerationData]> {
 		let user = try req.auth.require(User.self)
 		guard user.accessLevel.hasAccess(.moderator) else {
 			throw Abort(.forbidden, reason: "Moderators only")
 		}
 		return Report.query(on: req.db).sort(\.$createdAt, .descending).all().flatMapThrowing { reports in
-			return try reports.map { try ReportAdminData.init(req: req, report: $0) }
+			return try reports.map { try ReportModerationData.init(req: req, report: $0) }
 		}
 	}
 
@@ -184,7 +192,7 @@ struct ModerationController: APIRouteCollection {
 						let editAuthorHeader = try req.userCache.getHeader($0.$editor.id)
 						return try PostEditLogData(edit: $0, editor: editAuthorHeader)
 					}
-					let reportData = try reports.map { try ReportAdminData.init(req: req, report: $0) }
+					let reportData = try reports.map { try ReportModerationData.init(req: req, report: $0) }
 					let modData = TwarrtModerationData(twarrt: twarrtData, isDeleted: twarrt.deletedAt != nil, 
 							moderationStatus: twarrt.moderationStatus, edits: editData, reports: reportData)
 					return modData
@@ -244,7 +252,7 @@ struct ModerationController: APIRouteCollection {
 						let editAuthorHeader = try req.userCache.getHeader($0.$editor.id)
 						return try PostEditLogData(edit: $0, editor: editAuthorHeader)
 					}
-					let reportData = try reports.map { try ReportAdminData.init(req: req, report: $0) }
+					let reportData = try reports.map { try ReportModerationData.init(req: req, report: $0) }
 					let modData = ForumPostModerationData(forumPost: postData, isDeleted: post.deletedAt != nil, 
 							moderationStatus: post.moderationStatus, edits: editData, reports: reportData)
 					return modData
@@ -303,7 +311,7 @@ struct ModerationController: APIRouteCollection {
 					let editData: [ForumEditLogData] = try edits.map {
 						return try ForumEditLogData($0, on: req)
 					}
-					let reportData = try reports.map { try ReportAdminData.init(req: req, report: $0) }
+					let reportData = try reports.map { try ReportModerationData.init(req: req, report: $0) }
 					let modData = ForumModerationData(forum: forumData, isDeleted: forum.deletedAt != nil, 
 							moderationStatus: forum.moderationStatus, edits: editData, reports: reportData)
 					return modData
@@ -362,7 +370,7 @@ struct ModerationController: APIRouteCollection {
 					let editData: [FezEditLogData] = try edits.map {
 						return try FezEditLogData($0, on: req)
 					}
-					let reportData = try reports.map { try ReportAdminData.init(req: req, report: $0) }
+					let reportData = try reports.map { try ReportModerationData.init(req: req, report: $0) }
 					let modData = FezModerationData(fez: fezData, isDeleted: fez.deletedAt != nil, 
 							moderationStatus: fez.moderationStatus, edits: editData, reports: reportData)
 					return modData
@@ -420,8 +428,8 @@ struct ModerationController: APIRouteCollection {
 					let editData: [ProfileEditLogData] = try edits.map {
 						return try ProfileEditLogData($0, on: req)
 					}
-					let reportData = try reports.map { try ReportAdminData.init(req: req, report: $0) }
-					let modData = ProfileModerationData(profile: userProfileData, accessLevel: targetUser.accessLevel,
+					let reportData = try reports.map { try ReportModerationData.init(req: req, report: $0) }
+					let modData = ProfileModerationData(profile: userProfileData,
 							moderationStatus: targetUser.moderationStatus, edits: editData, reports: reportData)
 					return modData
 				}
@@ -448,6 +456,104 @@ struct ModerationController: APIRouteCollection {
 			return targetUser.save(on: req.db).transform(to: .ok)
 		}
 	}
+	
+	/// ` GET /api/v3/mod/user/ID`
+	///
+	/// Moderator only. Returns info admins and moderators need to review a User. 
+	///
+	/// The `UserModerationData` contains:
+	/// * Reports against the user's content, for all content types (twarrt, forum posts, profile, user image)
+	/// * The user's current  access lavel
+	/// * Any temp ban the user has.
+	/// 
+	/// - Parameter req: The incoming `Request`, provided automatically.
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: `FezModerationData` containing a bunch of data pertinient to moderating the forum.
+	func userModerationHandler(_ req: Request) throws -> EventLoopFuture<UserModerationData> {
+		return User.findFromParameter(userIDParam, on: req).throwingFlatMap { targetUser in
+			return try Report.query(on: req.db)
+					.filter(\.$reportedUser.$id == targetUser.requireID())
+					.sort(\.$createdAt, .descending).all().flatMapThrowing { reports in
+				let reportData = try reports.map { try ReportModerationData.init(req: req, report: $0) }
+				let modData = try UserModerationData(user: targetUser, reports: reportData)
+				return modData
+			}
+		}
+	}
+	
+	/// ` POST /api/v3/mod/user/ID/setaccesslevel/STRING`
+	///
+	/// Moderator only. Sets the accessLevel enum on the user idententified by userID to the `UserAccessLevel` in STRING.
+	/// Moderators (and above) cannot use this method to change the access level of other mods (and above). Nor can they use this to
+	/// reduce their own access level to non-moderator status.
+	///
+	/// - Parameter req: The incoming `Request`, provided automatically.
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: `HTTPStatus` .ok if the requested access level was set.
+	func userSetAccessLevelHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+		let user = try req.auth.require(User.self)
+		guard user.accessLevel.canModerateUsers() else {
+			throw Abort(.badRequest, reason: "This user cannot set access levels.")
+		}
+		guard let accessLevelString = req.parameters.get(accessLevelParam.paramString), 
+				let targetAccessLevel = UserAccessLevel.fromRawString(accessLevelString),
+				[.unverified, .banned, .quarantined, .verified].contains(targetAccessLevel) else {
+			throw Abort(.badRequest, reason: "Invalid target accessLevel. Must be one of unverified, banned, quarantined, verified.")
+		}
+		return User.findFromParameter(userIDParam, on: req).throwingFlatMap { targetUser in
+			guard targetUser.accessLevel < UserAccessLevel.moderator,
+					targetUser.accessLevel != UserAccessLevel.client else {
+				throw Abort(.badRequest, reason: "You cannot modify user access level of Target user.")
+			}
+			targetUser.accessLevel = targetAccessLevel
+			if let modSettableAccessLevel = ModeratorActionType.setFromAccessLevel(targetAccessLevel) {
+				targetUser.logIfModeratorAction(modSettableAccessLevel, user: user, on: req)
+			}
+			return targetUser.save(on: req.db).transform(to: .ok)
+		}
+	}
+	
+	/// ` POST /api/v3/mod/user/ID/tempquarantine/INT`
+	///
+	/// Moderator only. Applies a tempory quarantine on a user for INT hours, starting immediately. While quarantined, the user may not 
+	/// create or edit content, but can still read others' content. They can still talk in private Seamail chats.
+	///
+	/// - Parameter req: The incoming `Request`, provided automatically.
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: `HTTPStatus` .ok if the requested access level was set.
+	func applyUserTempQuarantine(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+		let user = try req.auth.require(User.self)
+		guard user.accessLevel.canModerateUsers() else {
+			throw Abort(.badRequest, reason: "This user cannot set access levels.")
+		}
+		guard let quarantineHours = req.parameters.get("quarantine_length", as: Int.self),
+				quarantineHours >= 0, quarantineHours < 200 else {
+			throw Abort(.badRequest, reason: "Invalid temp quarantine length.")
+		}
+		return User.findFromParameter(userIDParam, on: req).throwingFlatMap { targetUser in
+			guard targetUser.accessLevel < UserAccessLevel.moderator,
+					targetUser.accessLevel != UserAccessLevel.client else {
+				throw Abort(.badRequest, reason: "You cannot temp quarantine Target user.")
+			}
+			if quarantineHours == 0 {
+				if targetUser.tempQuarantineUntil != nil {
+					targetUser.tempQuarantineUntil = nil
+					targetUser.logIfModeratorAction(.tempQuarantineCleared, user: user, on: req)
+					return targetUser.save(on: req.db).transform(to: .ok)
+				}
+			} 
+			if let endDate = Calendar.autoupdatingCurrent.date(byAdding: .hour, value: quarantineHours, to: Date()) {
+				targetUser.tempQuarantineUntil = endDate
+			}
+			else {
+				// Do it the old way
+				targetUser.tempQuarantineUntil = Date() + Double(quarantineHours) * 60.0 * 60.0
+			}
+			targetUser.logIfModeratorAction(.tempQuarantine, user: user, on: req)
+			return targetUser.save(on: req.db).transform(to: .ok)
+		}
+	}
+	
 
 	// MARK: - Helper Functions
 

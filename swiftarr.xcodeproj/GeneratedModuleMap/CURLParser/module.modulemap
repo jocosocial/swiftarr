@@ -1,0 +1,4 @@
+module CURLParser {
+    umbrella "/Users/cfry/Code/swiftarr/.build/checkouts/vapor/Sources/CURLParser/include"
+    export *
+}

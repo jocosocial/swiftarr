@@ -27,6 +27,11 @@
 			<div class="alert alert-danger mt-3 d-none" role="alert" id="ModerateContentErrorAlert">
 			</div>				
     		<div class="row">
+    			<div class="col col-auto">
+					<a class="btn btn-outline-primary btn-sm" href="/moderate/user/#(modData.profile.header.userID)">Mod User</a>
+				</div>
+			</div>
+    		<div class="row">
 				<h6><b>As it currently exists:</b></h6>
 			</div>
     		<div class="row align-items-center">

@@ -32,11 +32,11 @@
 					<form action="/createAccount" method="POST">
 						<div class="row mb-3 ms-2 col-6">
 							<label for="regcode" class="form-label">Registration Code</label>
-							<input type="text" class="form-control" id="regcode" name="regcode" spellcheck="false">
+							<input type="text" class="form-control" id="regcode" name="regcode" spellcheck="false" autocapitalize="none">
 							<label for="username" class="form-label">Username</label>
-							<input type="text" class="form-control" id="username" name="username" spellcheck="false">
+							<input type="text" class="form-control" id="username" name="username" spellcheck="false" autocapitalize="none">
 							<label for="displayname" class="form-label">Display Name (optional)</label>
-							<input type="text" class="form-control" id="displayname" name="displayname" spellcheck="false">
+							<input type="text" class="form-control" id="displayname" name="displayname" spellcheck="false" autocapitalize="none">
 						</div>
 						<div class="row">
 							<p>Due to technical restrictions, the security available on the ship is akin to <b>writing your password on a post-it and placing the post-it on your forehead.</b> At least, it is to anyone skilled and motivated to do such things.</p>

@@ -1,0 +1,4 @@
+module CBacktrace {
+    umbrella "/Users/cfry/Code/swiftarr/.build/checkouts/swift-backtrace/Sources/CBacktrace/include"
+    export *
+}

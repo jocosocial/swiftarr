@@ -10,6 +10,12 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 	else if (action == "setModState") {
 		btn.addEventListener("click", setModerationStateAction);
 	}
+	else if (action == "setAccessLevel") {
+		btn.addEventListener("click", setUserAccessLevelAction);
+	}
+	else if (action == "clearTempBan") {
+		btn.addEventListener("click", clearTempQuarantineAction);
+	}
 }
 
 function handleAllReportsAction() {
@@ -63,4 +69,41 @@ function setModerationStateAction() {
 		errorDiv.innerHTML = "<b>Error:</b> " + error;
 		errorDiv.classList.remove("d-none");
 	});
+}
+
+function setUserAccessLevelAction() {
+	let newstate = event.target.dataset.newstate;
+	let userID = event.target.closest('[data-userid]').dataset.userid;
+	let errorDiv = document.getElementById("ModerateContentErrorAlert");
+	let req = new Request("/moderate/user/" + userID + "/setaccesslevel/" + newstate, { method: 'POST' });
+	fetch(req).then(function(response) {
+		if (response.ok) {
+			location.reload();
+		}
+		else {
+			response.json().then( data => {
+				errorDiv.innerHTML = "<b>Error:</b> " + response.status + " " + data.reason;
+				errorDiv.classList.remove("d-none");
+			});
+		}
+	}).catch(error => {
+		errorDiv.innerHTML = "<b>Error:</b> " + error;
+		errorDiv.classList.remove("d-none");
+	});
+}
+
+function clearTempQuarantineAction() {
+	let path = event.target.dataset.path
+	if (path == null) {
+		return;
+	}
+	let req = new Request(path, { method: 'POST' });
+	fetch(req).then(function(response) {
+		if (response.ok) {
+			location.reload();
+		}
+		else {
+			console.log(response);
+		}
+	})
 }
