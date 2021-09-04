@@ -3,6 +3,7 @@ import Crypto
 import FluentSQL
 import Fluent
 import Redis
+import Metrics
 
 /// The collection of `/api/v3/client/*` route endpoints and handler functions that provide
 /// bulk retrieval services for registered API clients.
@@ -21,6 +22,10 @@ struct ClientController: APIRouteCollection {
 		let tokenAuthGroup = addTokenAuthGroup(to: clientRoutes)
 		tokenAuthGroup.get("user", "updates", "since", ":date", use: userUpdatesHandler)
 		tokenAuthGroup.get("usersearch", use: userSearchHandler)
+		
+		// Endpoints available with HTTP Basic auth. I'd prefer token auth for this, but setting that up looks difficult.
+		let basicAuthGroup = addBasicAuthGroup(to: clientRoutes)
+		basicAuthGroup.get("metrics", use: prometheusMetricsSource)
     }
 
     // MARK: - tokenAuthGroup Handlers (logged in)
@@ -116,6 +121,19 @@ struct ClientController: APIRouteCollection {
 				return try req.userCache.getHeaders(fromDate: date, forUser: user)
         }
     }
+    
+	func prometheusMetricsSource(_ req: Request) -> EventLoopFuture<String> {
+		let promise = req.eventLoop.makePromise(of: String.self)
+		DispatchQueue.global().async {
+			do {
+				try MetricsSystem.prometheus().collect(into: promise)
+			} catch {
+				promise.fail(error)
+			}
+		}
+		return promise.futureResult
+	}
+
     
     // MARK: - Helper Functions
 }

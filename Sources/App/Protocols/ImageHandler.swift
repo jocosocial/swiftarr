@@ -163,6 +163,11 @@ extension APIRouteCollection {
 				}
 				var outputType = imageType
 				
+				// We've modified SwiftGD to call methods in gd_jpeg_custom.c instead of the gd_jpeg.c in the GD library.
+				// The customized .c file has extra code to save the image orientation in the gdImage struct.
+				// It's definitely a hack, as polyAllocated is not for this purpose.
+				let origOrientation = image.internalImage.pointee.polyAllocated
+				
 				// Disallow images with an aspect ratio > 10:1, as they're too often malicious (even if by 'malicious' it means
 				// "ha ha you have to scroll past this"). Also disallow extremely large widths and heights.
 				let sourceSize = image.size
@@ -209,6 +214,10 @@ extension APIRouteCollection {
 				let outputExtension = ExportableFormat(outputType).fileExtension()
 				let fullPath = try self.getImagePath(for: name, format: outputExtension, usage: usage, size: .full, on: req)
 				let thumbPath = try self.getImagePath(for: name, format: outputExtension, usage: usage, size: .thumbnail, on: req)
+				
+				// Put the orientation value into the polyAllocated field, so that our code in the customized gd_jpeg.c file
+				// can store the original image orientation back in the jpeg as exif data.
+				image.internalImage.pointee.polyAllocated = origOrientation
 			
 				// save full image. If we didn't have to modify the input image, save the original in its original format.
 				// Jpeg images always get exported, to ensure the Q value isn't needlessly high.

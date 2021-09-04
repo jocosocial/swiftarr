@@ -3,6 +3,9 @@ import Redis
 import Fluent
 import FluentPostgresDriver
 import Leaf
+import Metrics
+import Prometheus
+import gd
 
 /// Called before your application initializes. Calls several other config methos do its work. Sub functions are only
 /// here for easier organization. If order-of-initialization issues arise, rearrange as necessary.
@@ -26,8 +29,11 @@ public func configure(_ app: Application) throws {
 	try configureMiddleware(app)
 	try configureSessions(app)
 	try configureLeaf(app)
+	try configurePrometheus(app)
     try routes(app)
 	try configureMigrations(app)
+	
+	try configureImageHandling(app)
 
 	// Add lifecycle handlers 
 	app.lifecycle.use(Application.UserCacheStartup())
@@ -150,6 +156,11 @@ func configureLeaf(_ app: Application) throws {
     app.leaf.tags["avatar"] = AvatarTag()
     app.leaf.tags["userByline"] = UserBylineTag()
 }
+
+func configurePrometheus(_ app: Application) throws {
+	let myProm = PrometheusClient()
+	MetricsSystem.bootstrap(PrometheusMetricsFactory(client: myProm))
+}
 	
 func configureMigrations(_ app: Application) throws {
 
@@ -202,9 +213,17 @@ func configureMigrations(_ app: Application) throws {
 	// Fourth, migrations that touch up initial state
 	app.migrations.add(SetInitialCategoryForumCounts(), to: .psql)
 }
-    
-    // add Fluent commands for CLI migration and revert
-//    var commandConfig = CommandConfig.default()
-//    commandConfig.useFluentCommands()
-//    services.register(commandConfig)
-
+  
+/// Mostly, this looks at what image formats we're likely to be able to use.
+func configureImageHandling(_ app: Application) throws {
+	// gd, gd2, xbm, xpm, wbmp, some other useless formats culled.
+	let fileTypes = [".gif", ".bmp", ".tga", ".png", ".jpg", ".heif", ".heix", ".avif", ".tif", ".webp"]
+	let supportedInputTypes = fileTypes.filter { gdSupportsFileType($0, 0) != 0 }
+	let supportedOutputTypes = fileTypes.filter { gdSupportsFileType($0, 1) != 0 }
+	Settings.shared.validInputTypes = supportedInputTypes
+	Settings.shared.validInputTypes = supportedOutputTypes
+	
+	// On my machine: heif, heix, avif not supported
+	// [".gif", ".bmp", ".tga", ".png", ".jpg", ".tif", ".webp"] inputs
+	// [".gif", ".bmp",         ".png", ".jpg", ".tif", ".webp"] outputs
+}

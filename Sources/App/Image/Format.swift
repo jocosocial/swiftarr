@@ -159,10 +159,10 @@ private struct JPGFormatter: LibGdParametrizableFormatter {
     }
 
     /// Function pointer to libgd's built-in jpeg image create function
-    fileprivate let importFunction: (Int32, UnsafeMutableRawPointer) -> gdImagePtr? = gdImageCreateFromJpegPtr
+    fileprivate let importFunction: (Int32, UnsafeMutableRawPointer) -> gdImagePtr? = rcf_gdImageCreateFromJpegPtr
 
     /// Function pointer to libgd's built-in jpeg image export function
-    fileprivate let exportFunction: (gdImagePtr, UnsafeMutablePointer<Int32>, Int32) -> UnsafeMutableRawPointer? = gdImageJpegPtr
+    fileprivate let exportFunction: (gdImagePtr, UnsafeMutablePointer<Int32>, Int32) -> UnsafeMutableRawPointer? = rcf_gdImageJpegPtr
 }
 
 /// Defines a formatter to be used on PNG import & export conversions

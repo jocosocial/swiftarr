@@ -62,4 +62,13 @@ final class Settings {
 
 	/// The length in days of the cruise, includes partial days. A cruise that embarks on Saturday and returns the next Saturday should have a value of 8.
 	@SettingsValue var cruiseLengthInDays: Int = 8
+	
+// MARK: Images
+	/// The  set of image file types that we can parse with the GD library. I believe GD hard-codes these values on install based on what ./configure finds.
+	/// If our server app is moved to a new machine after it's built, the valid input types will likely differ.
+	@SettingsValue var validInputTypes: [String] = []
+
+	/// The  set of image file types that we can create with the GD library. I believe GD hard-codes these values on install based on what ./configure finds.
+	/// If our server app is moved to a new machine after it's built, the valid input types will likely differ.
+	@SettingsValue var validOutputTypes: [String] = []
 }
