@@ -1,7 +1,7 @@
 #extend("trunk"):
     #export("body"):
     	<div class="container-md ms-0 mt-2">
-			#extend("fez/fezNavbar")
+			#extend("Fez/fezNavbar")
 			<div class="list-group">
 				#if(count(fezzes) == 0):
 					<div class="row">

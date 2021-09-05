@@ -1,7 +1,7 @@
 #extend("trunk"):
     #export("body"):
     	<div class="container-md ms-0 mt-2">
-			#extend("fez/fezNavbar")
+			#extend("Fez/fezNavbar")
 			<div class="row align-items-center justify-content-end mb-2">
 				<div class="col col-auto">
 					Filter by:

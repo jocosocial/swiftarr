@@ -1,7 +1,7 @@
 #extend("trunk"):
     #export("body"):
     	<div class="container-md ms-0 mt-2">
-			#extend("fez/fezNavbar")
+			#extend("Fez/fezNavbar")
 			<a class="btn btn-primary btn-sm mb-2" role="button" href="/fez/create">New Fez</a>
 			<div class="list-group">
 				#if(count(fezzes) == 0):

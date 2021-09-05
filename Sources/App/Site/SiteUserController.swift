@@ -105,7 +105,7 @@ struct SiteUserController: SiteControllerUtils {
 				}
 			}
 			let ctx = try UserProfileContext(req, profile: profile)
-			return req.view.render("user/userProfile", ctx)			
+			return req.view.render("User/userProfile", ctx)			
     	}
 	}
 
@@ -119,7 +119,7 @@ struct SiteUserController: SiteControllerUtils {
     	return apiQuery(req, endpoint: "/users/\(userID)/profile").throwingFlatMap { response in
 			let profile = try response.content.decode(ProfilePublicData.self)
 			let ctx = try PublicProfileContext(req, profile: profile)
-			return req.view.render("user/userProfile", ctx)			
+			return req.view.render("User/userProfile", ctx)			
     	}
 	}
 
@@ -136,7 +136,7 @@ struct SiteUserController: SiteControllerUtils {
 			return apiQuery(req, endpoint: "/users/\(userHeader.userID)/profile").throwingFlatMap { response in
 				let profile = try response.content.decode(ProfilePublicData.self)
 				let ctx = try PublicProfileContext(req, profile: profile)
-				return req.view.render("user/userProfile", ctx)			
+				return req.view.render("User/userProfile", ctx)			
 			}
 		}
 	}
@@ -161,7 +161,7 @@ struct SiteUserController: SiteControllerUtils {
 				}
 			}
 			let ctx = try UserProfileEditContext(req, profile: profile)
-			return req.view.render("user/userProfileEdit", ctx)			
+			return req.view.render("User/userProfileEdit", ctx)			
 		}
 	}
 	
@@ -193,7 +193,7 @@ struct SiteUserController: SiteControllerUtils {
 				}
 			}
 			let ctx = try PublicProfileEditContext(req, profile: profile, targetUserID: targetUserID)
-			return req.view.render("user/userProfileEdit", ctx)			
+			return req.view.render("User/userProfileEdit", ctx)			
 		}
 	}
 	
