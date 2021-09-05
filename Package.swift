@@ -17,7 +17,6 @@ let package = Package(
 		.package(url: "https://github.com/vapor/leaf.git", from: "4.0.0"),
         .package(url: "https://github.com/MrLotU/SwiftPrometheus.git", from: "1.0.0-alpha")
 	],
-	cLanguageStandard: .c11,
 	targets: [
         .systemLibrary(name: "gd", pkgConfig: "gdlib", providers: [.apt(["libgd-dev"]), .brew(["gd"])]),
         .systemLibrary(name: "jpeg", pkgConfig: "libjpeg"),
@@ -34,5 +33,6 @@ let package = Package(
 											]),
 		.target(name: "Run", dependencies: ["App"]),
 		.testTarget(name: "AppTests", dependencies: ["App"])
-	]
+	],
+	cLanguageStandard: .c11
 )
