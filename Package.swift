@@ -20,8 +20,10 @@ let package = Package(
 	targets: [
         .systemLibrary(name: "gd", pkgConfig: "gdlib", providers: [.apt(["libgd-dev"]), .brew(["gd"])]),
         .systemLibrary(name: "jpeg", pkgConfig: "libjpeg"),
+        .target(name: "gdOverrides", dependencies: ["gd", "jpeg"]),
 		.target(name: "App", dependencies: ["gd",
 											"jpeg",
+											"gdOverrides",
 											.product(name: "Fluent", package: "fluent"),
 											.product(name: "FluentPostgresDriver", package: "fluent-postgres-driver"),
 											.product(name: "Vapor", package: "vapor"),
