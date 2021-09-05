@@ -51,7 +51,7 @@
 					<li class="list-group-item">No Fezzes match the current filters.</li>
 				#else:
 					#for(fez in fezzes):
-						#extend("fez/fezListItem")
+						#extend("Fez/fezListItem")
 					#endfor
 				#endif
 			</div>

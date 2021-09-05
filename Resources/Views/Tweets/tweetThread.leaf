@@ -27,7 +27,7 @@
 		</div>
 		<ul class="container-md mx-0 px-0 list-group" data-listtype="tweets">
 			#for(tweet in tweets):
-				#extend("tweets/tweetListItem")
+				#extend("Tweets/tweetListItem")
 			#endfor
 		</ul>				
 		#if(laterPostsUrl):
