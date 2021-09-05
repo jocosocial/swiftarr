@@ -45,6 +45,7 @@
 /* Begin PBXBuildFile section */
 		EAB6D7F926E20DC5007F6376 /* Resources in CopyFiles */ = {isa = PBXBuildFile; fileRef = OBJ_2645 /* Resources */; };
 		EAB6D7FA26E20DC9007F6376 /* seeds in CopyFiles */ = {isa = PBXBuildFile; fileRef = OBJ_2648 /* seeds */; };
+		EACF37C826E45B8A007F02E3 /* gd_jpeg_custom.c in Sources */ = {isa = PBXBuildFile; fileRef = EACF37C626E45B8A007F02E3 /* gd_jpeg_custom.c */; };
 		OBJ_2661 /* AdminController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_10 /* AdminController.swift */; };
 		OBJ_2662 /* AlertController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* AlertController.swift */; };
 		OBJ_2663 /* AuthController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* AuthController.swift */; };
@@ -7974,6 +7975,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		EACF37C626E45B8A007F02E3 /* gd_jpeg_custom.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = gd_jpeg_custom.c; sourceTree = "<group>"; };
+		EACF37C726E45B8A007F02E3 /* gd_jpeg_custom.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = gd_jpeg_custom.h; sourceTree = "<group>"; };
 		OBJ_10 /* AdminController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminController.swift; sourceTree = "<group>"; };
 		OBJ_100 /* UserBookmarkable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserBookmarkable.swift; sourceTree = "<group>"; };
 		OBJ_1000 /* Router.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Router.swift; sourceTree = "<group>"; };
@@ -11394,6 +11397,16 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		EACF37C526E45B8A007F02E3 /* gdOverrides */ = {
+			isa = PBXGroup;
+			children = (
+				EACF37C626E45B8A007F02E3 /* gd_jpeg_custom.c */,
+				EACF37C726E45B8A007F02E3 /* gd_jpeg_custom.h */,
+			);
+			name = gdOverrides;
+			path = Sources/gdOverrides;
+			sourceTree = "<group>";
+		};
 		OBJ_1003 /* swift-crypto 1.1.6 */ = {
 			isa = PBXGroup;
 			children = (
@@ -15574,7 +15587,7 @@
 			path = Database;
 			sourceTree = "<group>";
 		};
-		OBJ_5 /*  */ = {
+		OBJ_5 = {
 			isa = PBXGroup;
 			children = (
 				OBJ_6 /* Package.swift */,
@@ -15592,7 +15605,6 @@
 				OBJ_2654 /* README.md */,
 				OBJ_2655 /* CONTRIBUTING.md */,
 			);
-			name = "";
 			sourceTree = "<group>";
 		};
 		OBJ_505 /* Schema */ = {
@@ -16096,6 +16108,7 @@
 				OBJ_8 /* App */,
 				OBJ_118 /* Run */,
 				OBJ_120 /* gd */,
+				EACF37C526E45B8A007F02E3 /* gdOverrides */,
 				OBJ_123 /* jpeg */,
 			);
 			name = Sources;
@@ -19011,7 +19024,7 @@
 			knownRegions = (
 				en,
 			);
-			mainGroup = OBJ_5 /*  */;
+			mainGroup = OBJ_5;
 			productRefGroup = OBJ_2584 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -19201,6 +19214,7 @@
 				OBJ_2743 /* CustomLeafTags.swift in Sources */,
 				OBJ_2744 /* NotificationsMiddleware.swift in Sources */,
 				OBJ_2745 /* SiteErrorMiddleware.swift in Sources */,
+				EACF37C826E45B8A007F02E3 /* gd_jpeg_custom.c in Sources */,
 				OBJ_2746 /* SiteAdminController.swift in Sources */,
 				OBJ_2747 /* SiteController.swift in Sources */,
 				OBJ_2748 /* SiteEventsController.swift in Sources */,
