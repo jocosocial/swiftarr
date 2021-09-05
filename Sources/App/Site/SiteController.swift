@@ -459,7 +459,8 @@ extension SiteControllerUtils {
 //    	var urlStr = "http://localhost:8081/api/v3" + endpoint
 		let hostname = req.application.http.server.configuration.hostname
 		let port = req.application.http.server.configuration.port
-    	var urlStr = "http://\(hostname):\(port)/api/v3" + endpoint
+		let host: String = req.headers.first(name: "Host") ?? "\(hostname):\(port)"
+    	var urlStr = "http://\(host)/api/v3" + endpoint
     	if passThroughQuery, let queryStr = req.url.query {
     		// FIXME: Chintzy. Should convert to URLComponents and back.
     		if urlStr.contains("?") {

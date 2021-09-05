@@ -53,6 +53,16 @@ func configureSettings(_ app: Application) throws {
 		Settings.shared.cruiseStartDate = Calendar.autoupdatingCurrent.date(from: DateComponents(calendar: Calendar.current, 
 			timeZone: TimeZone(abbreviation: "EST")!, year: 2020, month: 3, day: 7))!
 	}
+	else if app.environment == .production {
+		Logger(label: "app.swiftarr.configuration") .info("Starting up in Production mode.")
+		Settings.shared.cruiseStartDate = Calendar.autoupdatingCurrent.date(from: DateComponents(calendar: Calendar.current, 
+			timeZone: TimeZone(abbreviation: "EST")!, year: 2022, month: 3, day: 5))!
+	}
+	else {
+		Logger(label: "app.swiftarr.configuration") .info("Starting up in Custom \"\(app.environment.name)\" mode.")
+		Settings.shared.cruiseStartDate = Calendar.autoupdatingCurrent.date(from: DateComponents(calendar: Calendar.current, 
+			timeZone: TimeZone(abbreviation: "EST")!, year: 2022, month: 3, day: 5))!
+	}
 }
 
 func HTTPServerConfiguration(_ app: Application) throws {
@@ -64,12 +74,17 @@ func HTTPServerConfiguration(_ app: Application) throws {
 	// Enable HTTP response compression.
 	// app.http.server.configuration.responseCompression = .enabled
 	
-	// for testing
-	if app.environment == .development {
+	if let host = Environment.get("hostname") {
+		app.http.server.configuration.hostname = host
+	}
+	else if app.environment == .development {
 		app.http.server.configuration.hostname = "192.168.0.19"
 	}
 	else if app.environment == .production {
 		app.http.server.configuration.hostname = "joco.hollandamerica.com"
+	}
+	else if app.environment.name == "heroku" {
+		app.http.server.configuration.hostname = "swiftarr.herokuapp.com"
 	}
 }
 
