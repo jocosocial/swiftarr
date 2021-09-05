@@ -102,7 +102,8 @@ func databaseConnectionConfiguration(_ app: Application) throws {
     
     // configure Redis connection
     // support for Heroku environment
-    if let redisString = Environment.get("REDIS_URL"), let redisURL = URL(string: redisString) {
+ //   if let redisString = Environment.get("REDIS_URL"), let redisURL = URL(string: redisString) {
+    if let redisString = Environment.get("REDIS_TLS_URL"), let redisURL = URL(string: redisString) {
 		app.redis.configuration = try RedisConfiguration(url: redisURL)
     } else 
     {
