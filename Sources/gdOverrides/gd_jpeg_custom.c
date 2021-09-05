@@ -48,6 +48,9 @@
 
 #ifdef HAVE_LIBJPEG
 
+typedef unsigned int uint32_t;
+typedef unsigned short uint16_t;
+
 // RCF: gdhelpers appears to an internal header. Commenting out and inserting the only stuff we use from the .h and .c files.
 //#include "gdhelpers.h"
 #define DPCM2DPI(dpcm) (unsigned int)((dpcm)*2.54 + 0.5)
