@@ -158,7 +158,8 @@ struct RelativeTimeTag: LeafTag {
 		
 		let hour = 60.0 * 60.0
 		let day = hour * 24.0
-		let month = day * 31.0
+		let month = day * 30.0
+		let year = day * 365.0
 		
 		// Fix for a really annoying DateFormatter bug. For successive allowedUnits A, B, and C, if the interval
 		// is > 1B - .5A but < 1B, DateFormatter will return "0 C" instead of "1 B". 
@@ -170,16 +171,27 @@ struct RelativeTimeTag: LeafTag {
 		default: break
 		}
 		
-		let formatter = DateComponentsFormatter()
-		formatter.unitsStyle = .full
-		formatter.maximumUnitCount = 1
-	//	formatter.allowsFractionalUnits = true
-		formatter.allowedUnits = [.second, .minute, .hour, .day, .month, .year]
-		if let relativeTimeStr = formatter.string(from: interval) {
-			let resultStr = relativeTimeStr + " ago"
-			return LeafData.string(resultStr)
+		switch interval {
+			case 0..<1: return "just now"
+			case 1..<60: let secs = Int(interval); return LeafData.string("\(secs) second\(secs == 1 ? "" : "s") ago")
+			case 60..<hour: let mins = Int(interval / 60.0); return LeafData.string("\(mins) minute\(mins == 1 ? "" : "s") ago")
+			case hour..<day: let hours = Int(interval / hour); return LeafData.string("\(hours) hour\(hours == 1 ? "" : "s") ago")
+			case day..<month: let days = Int(interval / day); return LeafData.string("\(days) day\(days == 1 ? "" : "s") ago")
+			case month..<year: let months = Int(interval / month); return LeafData.string("\(months) month\(months == 1 ? "" : "s") ago")
+			case year..<year * 10: let years = Int(interval / year); return LeafData.string("\(years) year\(years == 1 ? "" : "s") ago")
+			default: return "some time ago"
 		}
-		return "some time ago"
+		
+//		let formatter = DateComponentsFormatter()
+//		formatter.unitsStyle = .full
+//		formatter.maximumUnitCount = 1
+//	//	formatter.allowsFractionalUnits = true
+//		formatter.allowedUnits = [.second, .minute, .hour, .day, .month, .year]
+//		if let relativeTimeStr = formatter.string(from: interval) {
+//			let resultStr = relativeTimeStr + " ago"
+//			return LeafData.string(resultStr)
+//		}
+//		return "some time ago"
 	}
 }
 

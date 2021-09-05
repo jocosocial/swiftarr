@@ -40,7 +40,7 @@ struct TrunkContext: Encodable {
 			userIsMod = false
 			userIsTHO = false
 			username = ""
-			userID = UUID(uuid: UUID_NULL)
+			userID = UUID()
 		}
 		eventStartingSoon = false
 		if req.route != nil, let alertsStr = req.session.data["alertCounts"], let alertData = alertsStr.data(using: .utf8) {

@@ -288,7 +288,8 @@ public class ValidatingJSONDecoder {
 		jsonDecoder.dateDecodingStrategy = .iso8601ms
 	}
 	
-	func decode<Output>(_ type: Output.Type, from: JSONDecoder.Input) throws -> Output where Output : Decodable {
+//	func decode<Output>(_ type: Output.Type, from: JSONDecoder.Input) throws -> Output where Output : Decodable {
+	func decode<Output>(_ type: Output.Type, from: Data) throws -> Output where Output : Decodable {
 		let wrapper = try jsonDecoder.decode(DecoderProxy<Output>.self, from: from)
 		return wrapper.result
 	}
