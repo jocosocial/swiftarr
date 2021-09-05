@@ -77,8 +77,10 @@ func databaseConnectionConfiguration(_ app: Application) throws {
 	// configure PostgreSQL connection
     // note: environment variable nomenclature is vapor.cloud compatible
     // support for Heroku environment
-    if let postgresURL = Environment.get("DATABASE_URL") {
-		try app.databases.use(.postgres(url: postgresURL), as: .psql)
+	if let databaseURL = Environment.get("DATABASE_URL"), var postgresConfig = PostgresConfiguration(url: databaseURL) {
+		postgresConfig.tlsConfiguration = .makeClientConfiguration()
+		postgresConfig.tlsConfiguration?.certificateVerification = .none
+		app.databases.use(.postgres(configuration: postgresConfig), as: .psql)
     } else 
     {
         // otherwise
