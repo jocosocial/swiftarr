@@ -10,7 +10,7 @@
 
 	<div class="row">
 		<div class="col">
-			by: #userByline(fez.owner)
+			by: #userByline(fez.owner, "nolink")
 		</div>
 		<div class="col col-auto">
 			#if(fez.maxParticipants == 0):

@@ -229,6 +229,7 @@ struct AvatarTag: UnsafeUnescapedLeafTag {
 /// Usage: #userByline(userHeader)
 /// Or: #userByline(userHeader, "css-class") to style the link
 /// Or: #userByline(userHeader, "short") to display a shorter link (only the username, no displayname). 
+/// Or: #userByline(userHeader, "nolink") to display the username and displayname, without a link
 struct UserBylineTag: UnsafeUnescapedLeafTag {
     func render(_ ctx: LeafContext) throws -> LeafData {
 		guard ctx.parameters.count >= 1, let userHeader = ctx.parameters[0].dictionary,
@@ -240,7 +241,10 @@ struct UserBylineTag: UnsafeUnescapedLeafTag {
 		if ctx.parameters.count >= 2, let newStyle = ctx.parameters[1].string {
 			styling = newStyle
 		}
-		if styling != "short", let displayName = userHeader["displayName"]?.string?.htmlEscaped() {
+		if styling == "nolink" {
+			let displayName = userHeader["displayName"]?.string?.htmlEscaped() ?? ""
+			return LeafData.string("<b>\(displayName)</b> @\(username)")
+		} else if styling != "short", let displayName = userHeader["displayName"]?.string?.htmlEscaped() {
 			return LeafData.string("<a class=\"\(styling)\" href=\"/user/\(userID)\"><b>\(displayName)</b> @\(username)</a>")
 		}
 		else {
