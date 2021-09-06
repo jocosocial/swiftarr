@@ -112,52 +112,7 @@
 				</div>
 				<div class="list-group">
 					#for(report in modData.reports):
-						<a class="list-group-item list-group-item-action" href="#(report.contentURL)" data-reportid="#(report.id)">
-							<div class="container-fluid">
-								<div class="row">
-									<div class="col">
-										<b>Reported by #userByline(report.author) #relativeTime(report.creationTime)</b>
-									</div>
-									<div class="col col-auto">
-										#if(report.handledBy):
-											#if(report.isClosed):
-												Closed by #userByline(report.handledBy)
-											#else:
-												Being Handled by #userByline(report.handledBy)
-											#endif
-										#else:
-											#if(report.isClosed):
-												Closed 
-											#else:
-												Open
-											#endif
-										#endif
-									</div>
-								</div>
-								#if(report.submitterMessage):
-									<div class="row">
-										<div class="col">
-											#(report.submitterMessage)
-										</div>
-									</div>
-								#endif
-								#if(report.moderatorMemo):
-									<div class="row">
-										<div class="col">
-											<b>Moderator Memo:</b>
-										</div>
-									</div>
-									<div class="row">
-										<div class="col col-auto">
-											Moderator Memo:
-										</div>
-										<div class="col">
-											#(report.moderatorMemo)
-										</div>
-									</div>
-								#endif
-							</div>
-						</a>
+						#extend("moderation/reportListItem")
 					#endfor
 				</div>
 			#endif

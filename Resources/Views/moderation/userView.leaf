@@ -43,9 +43,9 @@
 						#endif
 					</div>
 				</div>
+				<div class="alert alert-danger mt-3 d-none" role="alert" id="ModerateContentErrorAlert">
+				</div>				
 			</form>
-			<div class="alert alert-danger mt-3 d-none" role="alert" id="ModerateContentErrorAlert">
-			</div>				
 			
 			#if(count(reportGroups) == 0):
 				<h6><b>No reports on this user.</b></h6>
