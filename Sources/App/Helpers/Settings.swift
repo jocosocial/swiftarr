@@ -66,9 +66,12 @@ final class Settings {
 // MARK: Images
 	/// The  set of image file types that we can parse with the GD library. I believe GD hard-codes these values on install based on what ./configure finds.
 	/// If our server app is moved to a new machine after it's built, the valid input types will likely differ.
-	@SettingsValue var validInputTypes: [String] = []
+	@SettingsValue var validImageInputTypes: [String] = []
 
 	/// The  set of image file types that we can create with the GD library. I believe GD hard-codes these values on install based on what ./configure finds.
 	/// If our server app is moved to a new machine after it's built, the valid input types will likely differ.
-	@SettingsValue var validOutputTypes: [String] = []
+	@SettingsValue var validImageOutputTypes: [String] = []
+	
+	/// If FALSE, animated images are converted into static jpegs upon upload. Does not affect already uploaded images.
+	@SettingsValue var allowAnimatedImages: Bool = true
 }

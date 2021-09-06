@@ -3,13 +3,13 @@
     	<div class="container-md ms-0 mt-2">
     		<div class="row align-items-end">
     			<div class="col col-auto">
-			    	<h6><b>Moderate Forum \##(modData.forum.forumID)</br>Titled: #(modData.forum.title)</b></h6>
+			    	<h6><b>Moderate Forum \##(modData.forumID)</br>Titled: #(modData.title)</b></h6>
 				</div>
 			</div>
 			<div class="row mb-3">
-				<div class="col" data-reportabletype="forum" data-reportableid="#(modData.forum.forumID)" data-postid="#(modData.forum.forumID)">
+				<div class="col" data-reportabletype="forum" data-reportableid="#(modData.forumID)" data-postid="#(modData.forumID)">
 					#if(!modData.isDeleted):
-						<a class="btn btn-outline-primary btn-sm" href="/forum/#(modData.forum.forumID)/edit">Edit</a>
+						<a class="btn btn-outline-primary btn-sm" href="/forum/#(modData.forumID)/edit">Edit</a>
 						<button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="\#deleteModal">Delete</button>
 						<span class="dropdown">
 							<button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
@@ -31,7 +31,7 @@
 			</div>				
     		<div class="row">
     			<div class="col col-auto">
-					<a class="btn btn-outline-primary btn-sm" href="/moderate/user/#(modData.forum.creator.userID)">Mod User</a>
+					<a class="btn btn-outline-primary btn-sm" href="/moderate/user/#(modData.creator.userID)">Mod User</a>
 				</div>
 			</div>
     		<div class="row">
@@ -46,7 +46,7 @@
 					<div class="list-group-item list-group-item-action">		
 						<div class="row">
 							<div class="col">
-								#(modData.forum.title)
+								#(modData.title)
 							</div>
 						</div>
 					</div>
@@ -61,7 +61,7 @@
 			#endif
 			<div class="row my-3">
 				<div class="col">
-					<a class="btn btn-primary btn-sm" href="/forum/#(modData.forum.forumID)?start=0">View in Context</a>
+					<a class="btn btn-primary btn-sm" href="/forum/#(modData.forumID)?start=0">View in Context</a>
 				</div>
 			</div>
 
@@ -175,7 +175,7 @@
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-						<button type="button" class="btn btn-primary" data-action="delete" data-delete-type="forum" data-delete-postid="#(modData.forum.forumID)">Delete</button>
+						<button type="button" class="btn btn-primary" data-action="delete" data-delete-type="forum" data-delete-postid="#(modData.forumID)">Delete</button>
 					</div>
 					<div class="mx-3 pb-1 text-end text-danger" data-purpose="errordisplay">
 					</div>

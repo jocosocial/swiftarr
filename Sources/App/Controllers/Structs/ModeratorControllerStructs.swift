@@ -36,6 +36,7 @@ extension FezEditLogData {
 		location = edit.location
 	}
 }
+
 /// Used to return data a moderator needs to moderate a fez. 
 ///	
 /// Returned by:
@@ -48,31 +49,6 @@ struct FezModerationData: Content {
 	var moderationStatus: ContentModerationStatus
 	var edits: [FezEditLogData]
 	var reports: [ReportModerationData]
-}
-
-
-struct ForumAdminData: Content {
-    /// The forum's ID.
-    var forumID: UUID
-    /// The forum's creator.
-	var creator: UserHeader
-    /// The forum's title.
-    var title: String
-    /// Time forum was created.
-    var createdAt: Date
-    /// Whether the forum is in read-only state.
-    var moderationStatus: ContentModerationStatus
-}
-
-extension ForumAdminData {
-	init(_ forum: Forum, on req: Request) throws {
-		forumID = try forum.requireID()
-		creator = try req.userCache.getHeader(forum.$creator.id)
-		title = forum.title
-		createdAt = forum.createdAt ?? Date()
-		moderationStatus = forum.moderationStatus
-		
-	}
 }
 
 /// Used to return `ForumEdit` data for moderators. The only primary data a ForumEdit stores is the title the forum had before the edit.
@@ -114,11 +90,38 @@ extension ForumEditLogData {
 ///
 /// See `ModerationController.forumModerationHandler(_:)`
 struct ForumModerationData: Content {
-	var forum: ForumAdminData
+    /// The forum's ID.
+    var forumID: UUID
+    /// The forum's creator.
+	var creator: UserHeader
+    /// The forum's title.
+    var title: String
+    /// Time forum was created.
+    var createdAt: Date
+    /// Whether the forum is in read-only state, or is quarantined.
+    var moderationStatus: ContentModerationStatus
+    /// TRUE if the forum has been soft-deleted
 	var isDeleted: Bool
-	var moderationStatus: ContentModerationStatus
+	/// Previous edits to the forum title
 	var edits: [ForumEditLogData]
+	/// User reports against this forum
 	var reports: [ReportModerationData]
+}
+
+extension ForumModerationData {
+	init(_ forum: Forum, edits: [ForumEditLogData], reports: [ReportModerationData], on req: Request) throws {
+		forumID = try forum.requireID()
+		creator = try req.userCache.getHeader(forum.$creator.id)
+		title = forum.title
+		createdAt = forum.createdAt ?? Date()
+		moderationStatus = forum.moderationStatus
+		isDeleted = false
+		if let deleteTime = forum.deletedAt, deleteTime < Date() {
+			isDeleted = true
+		}
+		self.edits = edits
+		self.reports = reports
+	}
 }
 
 /// Used to return data a moderator needs to moderate a twarrt. 
@@ -128,10 +131,16 @@ struct ForumModerationData: Content {
 ///
 /// See `ModerationController.forumPostModerationHandler(_:)`
 struct ForumPostModerationData: Content {
+	/// The post in question
 	var forumPost: PostDetailData
+	/// TRUE if the post has been soft-deleted (A soft-deleted post appears deleted, doesn't appear in its forum or in searches,
+	// but can still be viewed by moderators when accessed via a report or a moderationAction).
 	var isDeleted: Bool
+	/// The moderation status of this post. Whether the post has been locked or quarantined.
 	var moderationStatus: ContentModerationStatus
+	/// Previous edits to the post, along with the editors and timestamps.
 	var edits: [PostEditLogData]
+	/// User reports against this post.
 	var reports: [ReportModerationData]
 }
 
@@ -139,17 +148,17 @@ struct ForumPostModerationData: Content {
 struct ModeratorActionLogData: Content {
 	/// The ID of this log entry
 	var id: UUID
-	/// 
+	/// What action the moderator took.
 	var actionType: ModeratorActionType
-	///
+	/// The type of content that got moderated: Twarrt, forum, forum post, fez, fez post, or user profile.
 	var contentType: ReportType
-	///
+	/// The ID of the content. Could be an Int or a UUID, dpeeneding on `contentType`
 	var contentID: String
-	///
+	/// When the moderation actdion happened.
 	var timestamp: Date
-	///
+	/// The user that did the action
 	var moderator: UserHeader
-	///
+	/// The original author of the content that was moderated.
 	var targetUser: UserHeader
 }
 

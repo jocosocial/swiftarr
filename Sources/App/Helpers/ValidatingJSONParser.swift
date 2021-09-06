@@ -288,6 +288,8 @@ public class ValidatingJSONDecoder {
 		jsonDecoder.dateDecodingStrategy = .iso8601ms
 	}
 	
+	// JSONDecoder.Input is the correct input type for current Mac implementations. Linux doesn't have this type
+	// yet, and really, the type is just an alias for Data.
 //	func decode<Output>(_ type: Output.Type, from: JSONDecoder.Input) throws -> Output where Output : Decodable {
 	func decode<Output>(_ type: Output.Type, from: Data) throws -> Output where Output : Decodable {
 		let wrapper = try jsonDecoder.decode(DecoderProxy<Output>.self, from: from)

@@ -24,14 +24,13 @@ struct AlertController: APIRouteCollection {
 
 		// Flexible access endpoints -- login not required, although calls may act differently if logged in
 		let flexAuthGroup = addFlexAuthGroup(to: alertRoutes)
-//		alertRoutes.get("notifications", use: globalNotificationHandler)
+		flexAuthGroup.get("global", use: globalNotificationHandler)
+		flexAuthGroup.get("user", use: globalNotificationHandler)
 		flexAuthGroup.get("announcements", use: getAnnouncements)
 		flexAuthGroup.get("dailythemes", use: getDailyThemes)
 
 		// endpoints available only when logged in
 		let tokenAuthGroup = addTokenAuthGroup(to: alertRoutes)
-//		tokenAuthGroup.get("user", "notifications", use: userNotificationHandler)
-		tokenAuthGroup.get("usercounts", use: userCountNotificationHandler)
 		tokenAuthGroup.get("announcement", announcementIDParam, use: getSingleAnnouncement)
 
 		tokenAuthGroup.post("announcement", "create", use: createAnnouncement)
@@ -42,26 +41,23 @@ struct AlertController: APIRouteCollection {
 	}
 	
 	// MARK: - Notifications
-	
-	func globalNotificationHandler(_ req: Request) throws -> EventLoopFuture<GlobalNotificationData> {
 		
-		throw "not done yet"
-	}
-
-	func userNotificationHandler(_ req: Request) throws -> EventLoopFuture<UserNotificationData> {
-		
-		throw "not done yet"
-	}
-	
-    /// `GET /api/v3/notification/usercounts`
+    /// `GET /api/v3/notification/global`
+    /// `GET /api/v3/notification/user`
     ///
     /// Retrieve info on the number of each type of notification supported by Swiftarr. 
 	/// 
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `UserNotificationCountData` containing all the fezzes joined by the user.
-	func userCountNotificationHandler(_ req: Request) throws -> EventLoopFuture<UserNotificationCountData> {
-        let user = try req.auth.require(User.self)
+	func globalNotificationHandler(_ req: Request) throws -> EventLoopFuture<UserNotificationData> {
+        guard let user = req.auth.get(User.self) else {
+			return Announcement.query(on: req.db).filter(\.$displayUntil > Date()).count().map { activeAnnouncements in
+				var result = UserNotificationData()
+				result.activeAnnouncementCount = activeAnnouncements
+				return result
+			}
+        }
 		// get user's taggedEvent barrel, and from it get next event being followed
 		return user.getBookmarkBarrel(of: .taggedEvent, on: req).flatMap { barrel in
 			guard let barrel = barrel else {
@@ -115,8 +111,9 @@ struct AlertController: APIRouteCollection {
 						.filter(\.$displayUntil > Date())
 						.all().map { actives in
 					let newAnnouncements = actives.reduce(0) { ($1.id ?? 0) > user.lastReadAnnouncement ? $0 + 1 : $0 }
-					return UserNotificationCountData(user: user, newFezCount: unreadFezCount, newSeamailCount: unreadSeamailCount,
-							newAnnouncementCount: newAnnouncements, activeAnnouncementCount: actives.count, nextEvent: nextEventDate)
+					return UserNotificationData(user: user, newFezCount: unreadFezCount, newSeamailCount: unreadSeamailCount,
+							newAnnouncementCount: newAnnouncements, activeAnnouncementCount: actives.count, nextEvent: nextEventDate,
+							disabledFeatures: [])
 				}
 			}
 		}
@@ -263,90 +260,4 @@ struct AlertController: APIRouteCollection {
 			return try themes.map { try DailyThemeData($0) }
 		}
 	}
-	
 }
-
-// move to controllerStructs
-
-struct GlobalNotificationData: Content {
-	/// Always UTC with milliseconds, like "2020-03-07T12:00:00.001Z"
-	let serverTime: Date
-	/// ISO 8601 time zone offset, like "-05:00"
-	let serverTimeOffset: String
-	/// Human-readable time zone name, like "EDT"
-	let serverTimeZone: String
-	/// All active announcements 
-//	let activeAnnouncements: [AnnouncementData]
-	let latestAnnouncementIndex: Int
-}
-
-struct UserNotificationData: Content {
-	/// Include all the global notification data
-	var globalNotifications: GlobalNotificationData
-	/// Any announcements whose `id` is greater than this number are new announcements that haven't been seen by this user.
-	var highestReadAnnouncementID: Int
-	/// Twarrts that @mention the active user.
-	let twarrtMentions: [UUID]
-	/// Forum posts that @mention the active user
-	let forumPostMentions: [Int]
-	/// Count of unseen Fez messages. --or perhaps this should be # of Fezzes with new messages?
-	let newFezMessageCount: Int
-	/// I see where alert words can be set, but nowhere do I see alert words implemented to actually alert a user.
-//	let alertWordNotifications: Int
-}
-
-struct UserNotificationCountData: Content {
-	/// Count of announcements the user has not yet seen.
-	var newAnnouncementCount: Int
-	/// Count of all active announcements.
-	var activeAnnouncementCount: Int
-	
-	/// Number of twarrts that @mention the user.
-	var twarrtMentionCount: Int
-	/// Number of twarrt @mentions that the user has not read (by visiting the twarrt mentions endpoint; reading twarrts in the regular feed doesn't count).
-	var newTwarrtMentionCount: Int
-	
-	/// Number of forum posts that @mention the user.
-	var forumMentionCount: Int
-	/// Number of forum post @mentions the user has not read.
-	var newForumMentionCount: Int
-	
-	/// Count of # of Seamail threads with new messages. NOT total # of new messages-a single seamail thread with 10 new messages counts as 1.
-	var newSeamailMessageCount: Int
-	/// Count of # of Fezzes with new messages
-	var newFezMessageCount: Int
-	
-	/// The start time of the earliest event that the user has followed with a start time > now. 
-	var nextFollowedEventTime: Date?
-	
-	// I see where alert words can be set, but nowhere do I see alert words implemented to actually alert a user.
-//	let alertWordNotificationCount: Int
-}
-
-extension UserNotificationCountData	{
-	init(user: User, newFezCount: Int, newSeamailCount: Int, newAnnouncementCount: Int, activeAnnouncementCount: Int, nextEvent: Date?) {
-		self.activeAnnouncementCount = activeAnnouncementCount
-		self.newAnnouncementCount = newAnnouncementCount
-		self.twarrtMentionCount = user.twarrtMentions
-		self.newTwarrtMentionCount = max(user.twarrtMentions - user.twarrtMentionsViewed, 0)
-		self.forumMentionCount = user.forumMentions
-		self.newForumMentionCount = max(user.forumMentions - user.forumMentionsViewed, 0)
-		self.newSeamailMessageCount = newSeamailCount
-		self.newFezMessageCount = newFezCount
-		self.nextFollowedEventTime = nextEvent
-	}
-	
-	// Initializes an empty struct, because Leaf doesn't handle optional structs well.
-	init() {
-		self.newAnnouncementCount = 0
-		self.activeAnnouncementCount = 0
-		self.twarrtMentionCount = 0
-		self.newTwarrtMentionCount = 0
-		self.forumMentionCount = 0
-		self.newForumMentionCount = 0
-		self.newSeamailMessageCount = 0
-		self.newFezMessageCount = 0
-		self.nextFollowedEventTime = nil
-	}
-}
-

@@ -236,6 +236,20 @@ extension DailyThemeData {
 	}
 }
 
+/// A feature that has been turned off by the server. If the `appName` is `all`, the indicated `featureName` is disabled at the API level for 
+/// this feature and all relevant endpoints will return errors. For any other value of appName, the API still works, but the indicated client apps should
+/// not allow the feature to be accessed. The goal is to be able to disable code that is impacting server stability or performance without shutting down
+/// the server entirely or disallowing specific clients entirely. 
+///
+/// Used in `UserNotificationData`.
+struct DisabledFeature: Content {
+	/// AppName and featureName act as a grid, allowing a specific feature to be disabled only in a specific app. If the appName is `all`, the server
+	/// code for the feature may be causing the issue, requiring the feature be disabled for all clients.
+	var appName: SwiftarrClientApp
+	/// The feature to disable. Features roughly match API controller groups. 
+	var featureName: SwiftarrFeature
+}
+
 /// Used to obtain an event's details.
 ///
 /// Returned by:
@@ -1139,6 +1153,88 @@ extension UserHeader {
 	
 	static var Blocked: UserHeader { .init(userID: Settings.shared.blockedUserID, username: "BlockedUser", 
 			displayName: "BlockedUser", userImage: "") }
+}
+
+/// Provides updates about server global state and the logged in user's notifications. 
+/// `userNotificationHandler()` is intended to be called frequently by clients (I mean, don't call it once a second).
+/// 
+/// Returned by AlertController.userNotificationHandler()
+struct UserNotificationData: Content {
+	/// Always an ISO 8601 date in UTC, like "2020-03-07T12:00:00Z"
+	var serverTime: String
+	/// Server Time Zone offset, in seconds from UTC. One hour before UTC is -3600. EST  timezone is -18000.
+	var serverTimeOffset: Int
+	/// Human-readable time zone name, like "EDT"
+	var serverTimeZone: String
+	/// Features that are turned off by the server. If the `appName` for a feature is `all`, the feature is disabled at the API layer.
+	/// For all other appName values, the disable is just a notification that the client should not show the feature to users.
+	/// If the list is empty, no features have been deisabled. 
+	var disabledFeatures: [DisabledFeature]
+
+	/// Count of all active announcements 
+	var activeAnnouncementCount: Int
+	
+/// All fields below this line will be 0 or null if called when not logged in.
+	
+	/// Count of announcements the user has not yet seen. 0 if not logged in.
+	var newAnnouncementCount: Int
+	
+	/// Number of twarrts that @mention the user. 0 if not logged in.
+	var twarrtMentionCount: Int
+	/// Number of twarrt @mentions that the user has not read (by visiting the twarrt mentions endpoint; reading twarrts in the regular feed doesn't count). 0 if not logged in.
+	var newTwarrtMentionCount: Int
+	
+	/// Number of forum posts that @mention the user. 0 if not logged in.
+	var forumMentionCount: Int
+	/// Number of forum post @mentions the user has not read. 0 if not logged in.
+	var newForumMentionCount: Int
+	
+	/// Count of # of Seamail threads with new messages. NOT total # of new messages-a single seamail thread with 10 new messages counts as 1. 0 if not logged in.
+	var newSeamailMessageCount: Int
+	/// Count of # of Fezzes with new messages. 0 if not logged in.
+	var newFezMessageCount: Int
+	
+	/// The start time of the earliest event that the user has followed with a start time > now. nil if not logged in.
+	var nextFollowedEventTime: Date?
+	
+	// I see where alert words can be set, but nowhere do I see alert words implemented to actually alert a user.
+//	let alertWordNotificationCount: Int
+}
+
+extension UserNotificationData	{
+	init(user: User, newFezCount: Int, newSeamailCount: Int, newAnnouncementCount: Int, activeAnnouncementCount: Int, 
+			nextEvent: Date?, disabledFeatures: [DisabledFeature]) {
+		serverTime = ISO8601DateFormatter().string(from: Date())
+		serverTimeOffset = TimeZone.autoupdatingCurrent.secondsFromGMT()
+		serverTimeZone = TimeZone.autoupdatingCurrent.abbreviation() ?? ""
+		self.disabledFeatures = disabledFeatures
+		self.activeAnnouncementCount = activeAnnouncementCount
+		self.newAnnouncementCount = newAnnouncementCount
+		self.twarrtMentionCount = user.twarrtMentions
+		self.newTwarrtMentionCount = max(user.twarrtMentions - user.twarrtMentionsViewed, 0)
+		self.forumMentionCount = user.forumMentions
+		self.newForumMentionCount = max(user.forumMentions - user.forumMentionsViewed, 0)
+		self.newSeamailMessageCount = newSeamailCount
+		self.newFezMessageCount = newFezCount
+		self.nextFollowedEventTime = nextEvent
+	}
+	
+	// Initializes an dummy struct, for when there's no user logged in.
+	init() {
+		serverTime = ISO8601DateFormatter().string(from: Date())
+		serverTimeOffset = TimeZone.autoupdatingCurrent.secondsFromGMT()
+		serverTimeZone = TimeZone.autoupdatingCurrent.abbreviation() ?? ""
+		self.disabledFeatures = []
+		self.activeAnnouncementCount = 0
+		self.newAnnouncementCount = 0
+		self.twarrtMentionCount = 0
+		self.newTwarrtMentionCount = 0
+		self.forumMentionCount = 0
+		self.newForumMentionCount = 0
+		self.newSeamailMessageCount = 0
+		self.newFezMessageCount = 0
+		self.nextFollowedEventTime = nil
+	}
 }
 
 /// Used to change a user's password. Even when already logged in, users need to provide their current password to set a new password.

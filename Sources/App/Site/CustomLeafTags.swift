@@ -160,17 +160,10 @@ struct RelativeTimeTag: LeafTag {
 		let day = hour * 24.0
 		let month = day * 30.0
 		let year = day * 365.0
+		let interval = Date().timeIntervalSince(date)
 		
-		// Fix for a really annoying DateFormatter bug. For successive allowedUnits A, B, and C, if the interval
-		// is > 1B - .5A but < 1B, DateFormatter will return "0 C" instead of "1 B". 
-		var interval = Date().timeIntervalSince(date)
-		switch interval {
-		case (hour - 30.0)...hour: interval = hour			// = 1hr for everything above 59.5 minutes
-		case (day - hour / 2)...day: interval = day			// = 1day for everything above 23.5 hours
-		case (month - day / 2)...month: interval = month	// = 1mo for everything above 30.5 days
-		default: break
-		}
-		
+		// Initially I'd just used DateComponentsFormatter to produce human-readable relative time strings. 
+		// However, swift-corelibs-foundation doesn't support DateComponentsFormatter as yet, which means Linux builds fail.
 		switch interval {
 			case 0..<1: return "just now"
 			case 1..<60: let secs = Int(interval); return LeafData.string("\(secs) second\(secs == 1 ? "" : "s") ago")
@@ -181,17 +174,6 @@ struct RelativeTimeTag: LeafTag {
 			case year..<year * 10: let years = Int(interval / year); return LeafData.string("\(years) year\(years == 1 ? "" : "s") ago")
 			default: return "some time ago"
 		}
-		
-//		let formatter = DateComponentsFormatter()
-//		formatter.unitsStyle = .full
-//		formatter.maximumUnitCount = 1
-//	//	formatter.allowsFractionalUnits = true
-//		formatter.allowedUnits = [.second, .minute, .hour, .day, .month, .year]
-//		if let relativeTimeStr = formatter.string(from: interval) {
-//			let resultStr = relativeTimeStr + " ago"
-//			return LeafData.string(resultStr)
-//		}
-//		return "some time ago"
 	}
 }
 

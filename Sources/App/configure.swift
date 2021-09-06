@@ -116,7 +116,8 @@ func databaseConnectionConfiguration(_ app: Application) throws {
     }
     
     // configure Redis connection
-    // support for Heroku environment
+    // support for Heroku environment. Heroku also provides "REDIS_TLS_URL", but Vapor's Redis package 
+    // may not yet support TLS database connections.
 	if let redisString = Environment.get("REDIS_URL"), let redisURL = URL(string: redisString) {
 		app.redis.configuration = try RedisConfiguration(url: redisURL)
     } else 
@@ -135,7 +136,6 @@ func configureMiddleware(_ app: Application) throws {
 	// We want to replace the standard Error middleware with SwiftarrErrorMiddleware, and we do that by
 	// creating a new Middlewares().
 	var new = Middlewares()
-	new.use(RouteLoggingMiddleware(logLevel: .info))
 	new.use(SwiftarrErrorMiddleware(environment: app.environment))
 	new.use(SiteErrorMiddleware(environment: app.environment))
 	new.use(FileMiddleware(publicDirectory: "Resources/Assets")) // serves files from `Public/` directory
@@ -158,8 +158,8 @@ func configureSessions(_ app: Application) throws {
 		)
 	}
 	
-	// .memory is the default, but we'll eventually want to use Redis to store sessions.
-//	app.sessions.use(.redis)
+	// Use Redis to store sessions
+	app.sessions.use(.redis)
 }
 
 func configureLeaf(_ app: Application) throws {
@@ -237,8 +237,8 @@ func configureImageHandling(_ app: Application) throws {
 	let fileTypes = [".gif", ".bmp", ".tga", ".png", ".jpg", ".heif", ".heix", ".avif", ".tif", ".webp"]
 	let supportedInputTypes = fileTypes.filter { gdSupportsFileType($0, 0) != 0 }
 	let supportedOutputTypes = fileTypes.filter { gdSupportsFileType($0, 1) != 0 }
-	Settings.shared.validInputTypes = supportedInputTypes
-	Settings.shared.validInputTypes = supportedOutputTypes
+	Settings.shared.validImageInputTypes = supportedInputTypes
+	Settings.shared.validImageOutputTypes = supportedOutputTypes
 	
 	// On my machine: heif, heix, avif not supported
 	// [".gif", ".bmp", ".tga", ".png", ".jpg", ".tif", ".webp"] inputs

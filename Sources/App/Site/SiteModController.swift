@@ -310,7 +310,7 @@ struct SiteModController: SiteControllerUtils {
 						}
 					}
 					if self.modData.edits.count > 0 {
-						self.modData.edits[0].author = modData.forum.creator
+						self.modData.edits[0].author = modData.creator
 						self.modData.edits[0].author.username = "\(self.modData.edits[0].author.username) initially wrote:"
 					}
 				}

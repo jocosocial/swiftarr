@@ -181,6 +181,7 @@ extension APIRouteCollection {
 												
 				// attempt to crop to square if profile image
 				if usage == .userProfile {
+					// Disallow animated avatars; make them always be jpegs
 					outputType = .jpg
 					if image.size.height != image.size.width {
 						let size = min(image.size.height, image.size.width)
@@ -207,6 +208,12 @@ extension APIRouteCollection {
 							height: Int(Double(image.size.height) * resizeAmt)) {
 						image = resizedImage		
 					}
+				}
+				
+				// If allowAnimatedImages == false, force jpeg output if the input file could be an animation. 
+				// This transocdes the first image of the input file (whether it's an animation or not) into a static jpeg.
+				if outputType == .gif || outputType == .webp, !Settings.shared.allowAnimatedImages {
+					outputType = .jpg
 				}
 
 				// ensure directories exist

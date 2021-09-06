@@ -46,6 +46,7 @@
 		EAB6D7F926E20DC5007F6376 /* Resources in CopyFiles */ = {isa = PBXBuildFile; fileRef = OBJ_2645 /* Resources */; };
 		EAB6D7FA26E20DC9007F6376 /* seeds in CopyFiles */ = {isa = PBXBuildFile; fileRef = OBJ_2648 /* seeds */; };
 		EACF37C826E45B8A007F02E3 /* gd_jpeg_custom.c in Sources */ = {isa = PBXBuildFile; fileRef = EACF37C626E45B8A007F02E3 /* gd_jpeg_custom.c */; };
+		EACF37CA26E5E9BE007F02E3 /* AppFeatures.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACF37C926E5E9BD007F02E3 /* AppFeatures.swift */; };
 		OBJ_2661 /* AdminController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_10 /* AdminController.swift */; };
 		OBJ_2662 /* AlertController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* AlertController.swift */; };
 		OBJ_2663 /* AuthController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* AuthController.swift */; };
@@ -7977,6 +7978,7 @@
 /* Begin PBXFileReference section */
 		EACF37C626E45B8A007F02E3 /* gd_jpeg_custom.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = gd_jpeg_custom.c; sourceTree = "<group>"; };
 		EACF37C726E45B8A007F02E3 /* gd_jpeg_custom.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = gd_jpeg_custom.h; sourceTree = "<group>"; };
+		EACF37C926E5E9BD007F02E3 /* AppFeatures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppFeatures.swift; sourceTree = "<group>"; };
 		OBJ_10 /* AdminController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminController.swift; sourceTree = "<group>"; };
 		OBJ_100 /* UserBookmarkable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserBookmarkable.swift; sourceTree = "<group>"; };
 		OBJ_1000 /* Router.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Router.swift; sourceTree = "<group>"; };
@@ -11532,9 +11534,9 @@
 			isa = PBXGroup;
 			children = (
 				OBJ_102 /* CustomLeafTags.swift */,
+				OBJ_107 /* SiteController.swift */,
 				OBJ_103 /* Middleware */,
 				OBJ_106 /* SiteAdminController.swift */,
-				OBJ_107 /* SiteController.swift */,
 				OBJ_108 /* SiteEventsController.swift */,
 				OBJ_109 /* SiteForumController.swift */,
 				OBJ_110 /* SiteFriendlyFezController.swift */,
@@ -15124,6 +15126,7 @@
 		OBJ_27 /* Enumerations */ = {
 			isa = PBXGroup;
 			children = (
+				EACF37C926E5E9BD007F02E3 /* AppFeatures.swift */,
 				OBJ_28 /* BarrelType.swift */,
 				OBJ_29 /* EventType.swift */,
 				OBJ_30 /* FezType.swift */,
@@ -16539,6 +16542,7 @@
 		OBJ_9 /* Controllers */ = {
 			isa = PBXGroup;
 			children = (
+				OBJ_19 /* Structs */,
 				OBJ_10 /* AdminController.swift */,
 				OBJ_11 /* AlertController.swift */,
 				OBJ_12 /* AuthController.swift */,
@@ -16548,7 +16552,6 @@
 				OBJ_16 /* ForumController.swift */,
 				OBJ_17 /* ImageController.swift */,
 				OBJ_18 /* ModerationController.swift */,
-				OBJ_19 /* Structs */,
 				OBJ_23 /* TestController.swift */,
 				OBJ_24 /* TwitarrController.swift */,
 				OBJ_25 /* UserController.swift */,
@@ -19216,6 +19219,7 @@
 				OBJ_2745 /* SiteErrorMiddleware.swift in Sources */,
 				EACF37C826E45B8A007F02E3 /* gd_jpeg_custom.c in Sources */,
 				OBJ_2746 /* SiteAdminController.swift in Sources */,
+				EACF37CA26E5E9BE007F02E3 /* AppFeatures.swift in Sources */,
 				OBJ_2747 /* SiteController.swift in Sources */,
 				OBJ_2748 /* SiteEventsController.swift in Sources */,
 				OBJ_2749 /* SiteForumController.swift in Sources */,

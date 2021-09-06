@@ -24,7 +24,7 @@ struct TrunkContext: Encodable {
 	var username: String
 	var userID: UUID
 	
-	var alertCounts: UserNotificationCountData
+	var alertCounts: UserNotificationData
 	var eventStartingSoon: Bool
 	
 	init(_ req: Request, title: String, tab: Tab) {
@@ -44,8 +44,8 @@ struct TrunkContext: Encodable {
 		}
 		eventStartingSoon = false
 		if req.route != nil, let alertsStr = req.session.data["alertCounts"], let alertData = alertsStr.data(using: .utf8) {
-			let alerts = try? JSONDecoder().decode(UserNotificationCountData.self, from: alertData)
-			alertCounts = alerts ?? UserNotificationCountData()
+			let alerts = try? JSONDecoder().decode(UserNotificationData.self, from: alertData)
+			alertCounts = alerts ?? UserNotificationData()
 			
 			// If we have a nextEventTime, and that event starts between 15 mins in the past -> 30 mins in the future,
 			// mark that we have an event starting soon
@@ -56,7 +56,7 @@ struct TrunkContext: Encodable {
 			}
 		}
 		else {
-			alertCounts = UserNotificationCountData()
+			alertCounts = UserNotificationData()
 		}
 		
 		self.title = title
@@ -113,6 +113,7 @@ struct MessagePostContext: Encodable {
 	var messageText: String = ""
 	var messageTextPlaceholder: String = "Post Text"
 	var photoFilenames: [String] = ["", "", "", ""]	// Must have 4 values to make Leaf templating work. Use "" as placeholder.
+	var allowedImageTypes: String
 	var displayUntil: String = ""					// Used by announcements.
 
 	var formAction: String
@@ -143,6 +144,7 @@ struct MessagePostContext: Encodable {
 	}
 	
 	init(forType: InitType) {
+		allowedImageTypes = Settings.shared.validImageInputTypes.joined(separator: ", ")
 		switch forType {
 		// For creating a new tweet
 		case .tweet:
@@ -449,6 +451,12 @@ extension SiteControllerUtils {
     var imageIDParam: PathComponent { PathComponent(":image_id") }
     var accessLevelParam: PathComponent { PathComponent(":access_level") }
 
+	/// Call the Swiftarr API. This method pulls a user's token from their session data and adds it to the API call. By default it also forwards URL query parameters
+	/// from the Site-level request to the API-level request. 
+	/// Previously, this method used the hostname and port from `application.http.server.configuration` to set the hostname and port to call.
+	/// However, if Swiftarr is launched with command line overrides for the host and port, the HTTPServer startup code uses those overrides instead of the 
+	/// values in the publicly accessible configuration, but does not update the values in the configuration. So, instead, we attempt to use the site-level Request's
+	/// `Host` header to get these values.
 	func apiQuery(_ req: Request, endpoint: String, method: HTTPMethod = .GET, defaultHeaders: HTTPHeaders? = nil,
 			passThroughQuery: Bool = true,
 			beforeSend: (inout ClientRequest) throws -> () = { _ in }) -> EventLoopFuture<ClientResponse> {
@@ -456,7 +464,6 @@ extension SiteControllerUtils {
     	if let token = req.session.data["token"], !headers.contains(name: "Authorization") {
    			headers.add(name: "Authorization", value: "Bearer \(token)")
     	}
-//    	var urlStr = "http://localhost:8081/api/v3" + endpoint
 		let hostname = req.application.http.server.configuration.hostname
 		let port = req.application.http.server.configuration.port
 		let host: String = req.headers.first(name: "Host") ?? "\(hostname):\(port)"

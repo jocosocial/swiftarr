@@ -48,6 +48,7 @@
 
 #ifdef HAVE_LIBJPEG
 
+// RCF: Somehow, the Heroku build system hasn't heard of these 22 year old additions to the C specification. C99 people!
 typedef unsigned int uint32_t;
 typedef unsigned short uint16_t;
 

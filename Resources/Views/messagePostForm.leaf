@@ -29,7 +29,7 @@
 									<div class="row">
 										<div class="col">
 											<label class="btn btn-primary col-12 form-label">
-												<input class="image-upload-input d-none" type="file" accept="image/png, image/jpeg" name="localPhoto#(index + 1)">
+												<input class="image-upload-input d-none" type="file" accept="#(post.allowedImageTypes)" name="localPhoto#(index + 1)">
 												Choose Photo
 											</label>
 											<input type="hidden" value="#(fn)" name="serverPhoto#(index + 1)">

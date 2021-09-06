@@ -27,11 +27,11 @@ struct NotificationsMiddleware: Middleware, SiteControllerUtils {
 				}
 			}
 			req.session.data["lastNotificationCheckTime"] = String(Date().timeIntervalSince1970)
-			return apiQuery(req, endpoint: "/notification/usercounts").throwingFlatMap { response in
+			return apiQuery(req, endpoint: "/notification/user").throwingFlatMap { response in
 				if response.status == .ok {
 					// I dislike decoding the response JSON just to re-encode it into a string for session storage.
 					// response.body?.getString(at: 0, length: response.body!.capacity)
-					let alertCounts = try response.content.decode(UserNotificationCountData.self)
+					let alertCounts = try response.content.decode(UserNotificationData.self)
 					let alertCountsJSON = try JSONEncoder().encode(alertCounts)
 					let alertCountStr = String(data: alertCountsJSON, encoding: .utf8)
 					req.session.data["alertCounts"] = alertCountStr

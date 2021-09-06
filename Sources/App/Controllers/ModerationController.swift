@@ -307,13 +307,11 @@ struct ModerationController: APIRouteCollection {
 					.filter(\.$reportedID == forumIDString)
 					.sort(\.$createdAt, .descending).all().flatMap { reports in
 				return forum.$edits.query(on: req.db).sort(\.$createdAt, .ascending).all().flatMapThrowing { edits in
-					let forumData = try ForumAdminData(forum, on: req)
 					let editData: [ForumEditLogData] = try edits.map {
 						return try ForumEditLogData($0, on: req)
 					}
 					let reportData = try reports.map { try ReportModerationData.init(req: req, report: $0) }
-					let modData = ForumModerationData(forum: forumData, isDeleted: forum.deletedAt != nil, 
-							moderationStatus: forum.moderationStatus, edits: editData, reports: reportData)
+					let modData = try ForumModerationData(forum, edits: editData, reports: reportData, on: req)
 					return modData
 				}
 			}

@@ -58,6 +58,7 @@ public final class SwiftarrErrorMiddleware: Middleware {
 
 		// Report the error to logger.
 		req.logger.report(error: error)
+		req.logger.log(level: .info, "\(req.method) \(req.url.path.removingPercentEncoding ?? req.url.path) -> \(status)")
 
 		// create a Response with appropriate status
 		let response = Response(status: status, headers: headers)
@@ -80,7 +81,10 @@ public final class SwiftarrErrorMiddleware: Middleware {
 
 	/// See `Middleware`.
 	public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
-		return next.respond(to: request).flatMapErrorThrowing { error in
+		return next.respond(to: request).map { response in
+			request.logger.log(level: .info, "\(request.method) \(request.url.path.removingPercentEncoding ?? request.url.path) -> \(response.status)")
+			return response
+		}.flatMapErrorThrowing { error in
 			return self.handleError(req: request, error: error)
 		}
 	}
