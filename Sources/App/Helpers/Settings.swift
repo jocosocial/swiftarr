@@ -1,12 +1,13 @@
 import Vapor
+import Redis
 
 /// A (hopefully) thread-safe singleton that provides modifiable global settings.
 
-final class Settings {
+final class Settings : Encodable {
     
-    /// Wraps settings properties, making them thread-safe.
-	@propertyWrapper class SettingsValue<T> {
-		private var internalValue: T
+    /// Wraps settings properties, making them thread-safe. All access to the internalValue 
+	@propertyWrapper class SettingsValue<T>: Encodable where T: Encodable {
+		fileprivate var internalValue: T
 		var wrappedValue: T {
 			get { return Settings.settingsQueue.sync { internalValue } }
 			set { Settings.settingsQueue.async { self.internalValue = newValue } }
@@ -15,42 +16,78 @@ final class Settings {
 		init(wrappedValue: T) {
 			internalValue = wrappedValue
 		}
+		
+		func encode(to encoder: Encoder) throws {
+			var container = encoder.singleValueContainer();
+			try container.encode(wrappedValue)
+		}
+	}
+
+    /// Wraps settings properties, making them thread-safe. Contains methods for loading/storing values from a Redis hash.
+    /// Use this for settings that should be database-backed.
+	@propertyWrapper class StoredSettingsValue<T>: SettingsValue<T>, StoredSetting where T : Encodable & RESPValueConvertible {
+		var projectedValue: StoredSettingsValue<T> { self }
+		var redisField: String
+		override var wrappedValue: T {
+			get { return Settings.settingsQueue.sync { internalValue } }
+			set { Settings.settingsQueue.async { self.internalValue = newValue } }
+		}
+		
+		init(_ field: String, defaultValue: T) {
+			self.redisField = field
+			super.init(wrappedValue: defaultValue)
+		}
+				
+		func readFromRedis(redis: RedisClient) -> EventLoopFuture<Void> {
+			return redis.hget(redisField, from: "Settings").map { result in
+				if let value = T(fromRESP: result) { 
+					self.wrappedValue = value
+				} 
+			}
+		}
+		
+		// Call after setting value
+		func writeToRedis(redis: RedisClient) -> EventLoopFuture<Bool> {
+			return redis.hset(redisField, to: wrappedValue, in: "Settings")
+		}
 	}
 	
-    /// The shared instance for this singleton.
-    static let shared = Settings()
-    
+	/// The shared instance for this singleton.
+	static let shared = Settings()
+        
     /// DispatchQueue to use for thread-safety synchronization.
     fileprivate static let settingsQueue = DispatchQueue(label: "settingsQueue")
     
-    /// Required initializer.
-    private init() {}
-        
     /// The ID of the blocked user placeholder.
     @SettingsValue var blockedUserID: UUID = UUID()
 
     /// The ID of the FriendlyFez user placeholder.
 	@SettingsValue var friendlyFezID: UUID = UUID()
+	
+// MARK: Sections / Features / Apps
+
+	/// Each key-value pair is a feature that's tu
+	@StoredSettingsValue("disabledFeatures", defaultValue: DisabledFeaturesGroup(value: [:])) var disabledFeatures: DisabledFeaturesGroup
     
 // MARK: Limits
     /// The maximum number of twartts allowed per request.
-    @SettingsValue var maximumTwarrts: Int = 200
+    @StoredSettingsValue("maximumTwarrts", defaultValue: 200) var maximumTwarrts: Int
 
     /// The maximum number of twartts allowed per request.
-    @SettingsValue var maximumForumPosts: Int = 200
+    @StoredSettingsValue("maximumForumPosts", defaultValue: 200) var maximumForumPosts: Int
 
 	/// Largest image we allow to be uploaded, in bytes.
-    @SettingsValue var maxImageSize: Int = 20 * 1024 * 1024
+    @StoredSettingsValue("maxImageSize", defaultValue: 20 * 1024 * 1024) var maxImageSize: Int
 
 // MARK: Quarantine
     /// The number of reports to trigger forum auto-quarantine.
-    @SettingsValue var forumAutoQuarantineThreshold: Int = 3
+    @StoredSettingsValue("forumAutoQuarantineThreshold", defaultValue: 3) var forumAutoQuarantineThreshold: Int
     
     /// The number of reports to trigger post/twarrt auto-quarantine.
-	@SettingsValue var postAutoQuarantineThreshold: Int = 3
+	@StoredSettingsValue("postAutoQuarantineThreshold", defaultValue: 3) var postAutoQuarantineThreshold: Int
     
     /// The number of reports to trigger user auto-quarantine.
-    @SettingsValue var userAutoQuarantineThreshold: Int = 5
+    @StoredSettingsValue("userAutoQuarantineThreshold", defaultValue: 5) var userAutoQuarantineThreshold: Int
     
 // MARK: Dates
 	/// A Date set to midnight on the day the cruise ship leaves port, in the timezone the ship leaves from. Used by the Events Controller for date arithimetic.
@@ -73,5 +110,70 @@ final class Settings {
 	@SettingsValue var validImageOutputTypes: [String] = []
 	
 	/// If FALSE, animated images are converted into static jpegs upon upload. Does not affect already uploaded images.
-	@SettingsValue var allowAnimatedImages: Bool = true
+	@StoredSettingsValue("allowAnimatedImages", defaultValue: true) var allowAnimatedImages: Bool
+}
+
+protocol StoredSetting {
+	func readFromRedis(redis: RedisClient) -> EventLoopFuture<Void>
+	func writeToRedis(redis: RedisClient) -> EventLoopFuture<Bool>
+}
+
+extension Settings {
+	// Reads settings from Redis
+	func readStoredSettings(app: Application) throws {
+		let futures = Mirror(reflecting: self).children.compactMap { child -> EventLoopFuture<Void>? in
+			guard let storedSetting = child.value as? StoredSetting else {
+				return nil
+			}
+			return storedSetting.readFromRedis(redis: app.redis)
+		}
+		let _ = futures.flatten(on: app.eventLoopGroup.next())
+	}
+	
+	// Stores all settings to Redis
+	func storeSettings(on req: Request) throws -> EventLoopFuture<[Bool]> {
+		let futures = Mirror(reflecting: self).children.compactMap { child -> EventLoopFuture<Bool>? in
+			guard let storedSetting = child.value as? StoredSetting else {
+				return nil
+			}
+			return storedSetting.writeToRedis(redis: req.redis)
+		}
+		return futures.flatten(on: req.eventLoop)
+	}
+}
+
+extension Bool: RESPValueConvertible {
+	public init?(fromRESP value: RESPValue) {
+		self = value.int != 0
+	}
+	
+	public func convertedToRESPValue() -> RESPValue {
+		return RESPValue(from: self == true ? 1 : 0)
+	}
+}
+
+// To maintain thread safety, this 1-value struct needs to be immutable, so that mutating Settings.disabledFeatures
+// can only be done by swapping out this entire struct.
+struct DisabledFeaturesGroup: Codable, RESPValueConvertible {
+	let value: [SwiftarrClientApp : Set<SwiftarrFeature>]
+	
+	init(value: [SwiftarrClientApp : Set<SwiftarrFeature>]) {
+		self.value = value
+	}
+	
+	init?(fromRESP value: RESPValue) {
+		guard let encodedData = value.string?.data(using: .utf8), 
+				let val = try? JSONDecoder().decode([SwiftarrClientApp : Set<SwiftarrFeature>].self, from: encodedData) else {
+			return nil
+		}
+		self.value = val
+	}
+	
+	func convertedToRESPValue() -> RESPValue {
+		guard let encodedData = try? JSONEncoder().encode(value), let encodedStr = String(data: encodedData, encoding: .utf8) else {
+			return RESPValue(from: "")
+		}
+		return RESPValue(from: encodedStr) 
+	}
+	
 }

@@ -47,6 +47,7 @@
 		EAB6D7FA26E20DC9007F6376 /* seeds in CopyFiles */ = {isa = PBXBuildFile; fileRef = OBJ_2648 /* seeds */; };
 		EACF37C826E45B8A007F02E3 /* gd_jpeg_custom.c in Sources */ = {isa = PBXBuildFile; fileRef = EACF37C626E45B8A007F02E3 /* gd_jpeg_custom.c */; };
 		EACF37CA26E5E9BE007F02E3 /* AppFeatures.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACF37C926E5E9BD007F02E3 /* AppFeatures.swift */; };
+		EACF37CC26E76F64007F02E3 /* DisabledSectionMiddleware.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACF37CB26E76F64007F02E3 /* DisabledSectionMiddleware.swift */; };
 		OBJ_2661 /* AdminController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_10 /* AdminController.swift */; };
 		OBJ_2662 /* AlertController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* AlertController.swift */; };
 		OBJ_2663 /* AuthController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* AuthController.swift */; };
@@ -7979,6 +7980,7 @@
 		EACF37C626E45B8A007F02E3 /* gd_jpeg_custom.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = gd_jpeg_custom.c; sourceTree = "<group>"; };
 		EACF37C726E45B8A007F02E3 /* gd_jpeg_custom.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = gd_jpeg_custom.h; sourceTree = "<group>"; };
 		EACF37C926E5E9BD007F02E3 /* AppFeatures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppFeatures.swift; sourceTree = "<group>"; };
+		EACF37CB26E76F64007F02E3 /* DisabledSectionMiddleware.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisabledSectionMiddleware.swift; sourceTree = "<group>"; };
 		OBJ_10 /* AdminController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminController.swift; sourceTree = "<group>"; };
 		OBJ_100 /* UserBookmarkable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserBookmarkable.swift; sourceTree = "<group>"; };
 		OBJ_1000 /* Router.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Router.swift; sourceTree = "<group>"; };
@@ -15504,6 +15506,7 @@
 		OBJ_46 /* Helpers */ = {
 			isa = PBXGroup;
 			children = (
+				EACF37CB26E76F64007F02E3 /* DisabledSectionMiddleware.swift */,
 				OBJ_47 /* EventParser.swift */,
 				OBJ_48 /* Settings.swift */,
 				OBJ_49 /* SwiftarrErrorMiddleware.swift */,
@@ -19229,6 +19232,7 @@
 				OBJ_2753 /* SiteSeamailController.swift in Sources */,
 				OBJ_2754 /* SiteTwittarController.swift in Sources */,
 				OBJ_2755 /* SiteUserController.swift in Sources */,
+				EACF37CC26E76F64007F02E3 /* DisabledSectionMiddleware.swift in Sources */,
 				OBJ_2756 /* configure.swift in Sources */,
 				OBJ_2757 /* routes.swift in Sources */,
 			);

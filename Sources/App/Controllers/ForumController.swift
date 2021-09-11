@@ -12,7 +12,7 @@ struct ForumController: APIRouteCollection {
 	func registerRoutes(_ app: Application) throws {
         
 		// convenience route group for all /api/v3/forum endpoints
-		let forumRoutes = app.grouped("api", "v3", "forum")
+		let forumRoutes = app.grouped(DisabledAPISectionMiddleware(feature: .forums)).grouped("api", "v3", "forum")
 
 		// Flex access endpoints
 		let flexAuthGroup = addFlexAuthGroup(to: forumRoutes)

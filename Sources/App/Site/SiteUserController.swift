@@ -32,20 +32,20 @@ struct SiteUserController: SiteControllerUtils {
 	func registerRoutes(_ app: Application) throws {
 		
 		// Routes that the user does not need to be logged in to access.
-		let flexRoutes = getOpenRoutes(app)
+		let flexRoutes = getOpenRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .images))
         flexRoutes.get("avatar", "full", userIDParam, use: userAvatarHandler)
         flexRoutes.get("avatar", "thumb", userIDParam, use: userAvatarHandler)
 	
 		// Routes that require login but are generally 'global' -- Two logged-in users could share this URL and both see the content
 		// Not for Seamails, pages for posting new content, mod pages, etc. Logged-out users given one of these links should get
 		// redirect-chained through /login and back.		
-		let globalRoutes = getGlobalRoutes(app)
+		let globalRoutes = getGlobalRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .users))
         globalRoutes.get("user", userIDParam, use: userProfilePageHandler)
         globalRoutes.get("username", ":username", use: usernameProfilePageHandler)
         globalRoutes.get("profile", ":username", use: usernameProfilePageHandler)
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
-		let privateRoutes = getPrivateRoutes(app)
+		let privateRoutes = getPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .users))
         privateRoutes.get("profile", use: selfProfilePageHandler)
         privateRoutes.get("profile", "edit", use: selfProfileEditPageHandler)
         privateRoutes.get("profile", "edit", userIDParam, use: userProfileEditPageHandler)

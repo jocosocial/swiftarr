@@ -23,6 +23,9 @@ struct AdminController: APIRouteCollection {
 		adminAuthGroup.post("dailytheme", dailyThemeIDParam, "edit", use: editDailyThemeHandler)
 		adminAuthGroup.post("dailytheme", dailyThemeIDParam, "delete", use: deleteDailyThemeHandler)
 		adminAuthGroup.delete("dailytheme", dailyThemeIDParam, use: deleteDailyThemeHandler)
+		
+		adminAuthGroup.get("serversettings", use: settingsHandler)
+		adminAuthGroup.post("serversettings", "update", use: settingsUpdateHandler)
 	}
 
     /// `POST /api/v3/admin/dailytheme/create`
@@ -87,6 +90,78 @@ struct AdminController: APIRouteCollection {
 		return DailyTheme.findFromParameter(dailyThemeIDParam, on: req).flatMap { theme in
 			return theme.delete(on: req.db).transform(to: .noContent)
 		}
+	}
+	
+    /// `GET /api/v3/admin/serversettings`
+    ///
+    ///  Returns the current state of the server's Settings structure.
+	/// 
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: `SettingsAdminData`
+	func settingsHandler(_ req: Request) throws -> SettingsAdminData {
+		let user = try req.auth.require(User.self)
+		guard user.accessLevel.hasAccess(.admin) else {
+			throw Abort(.forbidden, reason: "Admin only")
+		}
+		return SettingsAdminData(Settings.shared)
+	}
+	
+    /// `POST /api/v3/admin/serversettings/update`
+    ///
+    ///  Updates a bunch of settings in the Settings.shared object.
+	/// 
+    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+    /// - Returns: `HTTP 201 Created` if the theme was added successfully.
+	func settingsUpdateHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+		let user = try req.auth.require(User.self)
+		guard user.accessLevel.hasAccess(.admin) else {
+			throw Abort(.forbidden, reason: "Admin only")
+		}
+ 		let data = try ValidatingJSONDecoder().decode(SettingsUpdateData.self, fromBodyOf: req)
+ 		if let value = data.maximumTwarrts {
+ 			Settings.shared.maximumTwarrts = value
+ 		}
+ 		if let value = data.maximumForumPosts {
+ 			Settings.shared.maximumForumPosts = value
+ 		}
+ 		if let value = data.maxImageSize {
+ 			Settings.shared.maxImageSize = value
+ 		}
+ 		if let value = data.forumAutoQuarantineThreshold {
+ 			Settings.shared.forumAutoQuarantineThreshold = value
+ 		}
+ 		if let value = data.postAutoQuarantineThreshold {
+ 			Settings.shared.postAutoQuarantineThreshold = value
+ 		}
+ 		if let value = data.userAutoQuarantineThreshold {
+ 			Settings.shared.userAutoQuarantineThreshold = value
+ 		}
+ 		if let value = data.allowAnimatedImages {
+ 			Settings.shared.allowAnimatedImages = value
+ 		}
+ 		var localDisables = Settings.shared.disabledFeatures.value
+ 		for pair in data.enableFeatures {
+ 			if let app = SwiftarrClientApp(rawValue: pair.app), let feature = SwiftarrFeature(rawValue: pair.feature) {
+				localDisables[app]?.remove(feature)
+				if let featureSet = localDisables[app], featureSet.isEmpty {
+					localDisables.removeValue(forKey: app)
+				}
+			}
+ 		}
+ 		for pair in data.disableFeatures {
+ 			if let app = SwiftarrClientApp(rawValue: pair.app), let feature = SwiftarrFeature(rawValue: pair.feature) {
+ 				if localDisables[app] == nil {
+					localDisables[app] = Set(arrayLiteral: feature)
+ 				}
+ 				else {
+					localDisables[app]?.insert(feature)
+				}
+			}
+ 		}
+ 		Settings.shared.disabledFeatures = DisabledFeaturesGroup(value: localDisables)
+		return try Settings.shared.storeSettings(on: req).transform(to: HTTPStatus.ok)
 	}
 }
 

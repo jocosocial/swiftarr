@@ -12,7 +12,7 @@ struct EventController: APIRouteCollection {
     func registerRoutes(_ app: Application) throws {
         
         // convenience route group for all /api/v3/users endpoints
-        let eventRoutes = app.grouped("api", "v3", "events")
+        let eventRoutes = app.grouped(DisabledAPISectionMiddleware(feature: .schedule)).grouped("api", "v3", "events")
         
         // Flexible access endpoints that behave differently for logged-in users
         let optionalAuthGroup = addFlexAuthGroup(to: eventRoutes)

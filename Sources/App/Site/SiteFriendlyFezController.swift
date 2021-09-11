@@ -65,6 +65,8 @@ struct FezCreateUpdatePageContext : Encodable {
 			trunk = .init(req, title: "New FriendlyFez", tab: .none)
 			pageTitle = "Create a New Friendly Fez"
 			formAction = "/fez/create"
+			minPeople = 2
+			maxPeople = 2
 		}
 	}
 }
@@ -75,14 +77,14 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 
 	func registerRoutes(_ app: Application) throws {
 		// Routes that require login but are generally 'global' -- Two logged-in users could share this URL and both see the content
-		let globalRoutes = getGlobalRoutes(app)
+		let globalRoutes = getGlobalRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .friendlyfez))
         globalRoutes.get("fez", use: fezRootPageHandler)
         globalRoutes.get("fez", "joined", use: joinedFezPageHandler)
         globalRoutes.get("fez", "owned", use: ownedFezPageHandler)
         globalRoutes.get("fez", fezIDParam, use: singleFezPageHandler)
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
-		let privateRoutes = getPrivateRoutes(app)
+		let privateRoutes = getPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .friendlyfez))
         privateRoutes.get("fez", "create", use: fezCreatePageHandler)
         privateRoutes.get("fez", fezIDParam, "update", use: fezUpdatePageHandler)
         privateRoutes.get("fez", fezIDParam, "edit", use: fezUpdatePageHandler)

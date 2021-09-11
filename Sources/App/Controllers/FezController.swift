@@ -12,7 +12,7 @@ struct FezController: APIRouteCollection {
     func registerRoutes(_ app: Application) throws {
         
         // convenience route group for all /api/v3/fez endpoints
-        let fezRoutes = app.grouped("api", "v3", "fez")
+        let fezRoutes = app.grouped(DisabledAPISectionMiddleware(feature: .friendlyfez)).grouped("api", "v3", "fez")
                 
         // endpoints available only when logged in
         let tokenAuthGroup = addTokenAuthGroup(to: fezRoutes)

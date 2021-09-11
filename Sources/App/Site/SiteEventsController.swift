@@ -6,12 +6,12 @@ struct SiteEventsController: SiteControllerUtils {
 
 	func registerRoutes(_ app: Application) throws {
 		// Routes that the user does not need to be logged in to access.
-		let openRoutes = getOpenRoutes(app)
+		let openRoutes = getOpenRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .schedule))
         openRoutes.get("events", use: eventsPageHandler)
         openRoutes.get("events", eventIDParam, "calendarevent", use: eventsDownloadICSHandler)
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
-		let privateRoutes = getPrivateRoutes(app)
+		let privateRoutes = getPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .schedule))
         privateRoutes.post("events", eventIDParam, "favorite", use: eventsAddRemoveFavoriteHandler)
         privateRoutes.delete("events", eventIDParam, "favorite", use: eventsAddRemoveFavoriteHandler)
 	}

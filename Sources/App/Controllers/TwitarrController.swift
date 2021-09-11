@@ -13,7 +13,7 @@ struct TwitarrController: APIRouteCollection {
 	func registerRoutes(_ app: Application) throws {
         
 		// convenience route group for all /api/v3/twitarr endpoints
-		let twitarrRoutes = app.grouped("api", "v3", "twitarr")
+		let twitarrRoutes = app.grouped(DisabledAPISectionMiddleware(feature: .tweets)).grouped("api", "v3", "twitarr")
 
 		// endpoints only available when logged in
 		let tokenAuthGroup = addTokenAuthGroup(to: twitarrRoutes)

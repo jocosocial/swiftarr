@@ -26,6 +26,9 @@ struct SiteAdminController: SiteControllerUtils {
 		privateAdminRoutes.post("dailytheme", dailyThemeParam, "edit", use: dailyThemeEditPostHandler)
 		privateAdminRoutes.post("dailytheme", dailyThemeParam, "delete", use: dailyThemeDeletePostHandler)
 		privateAdminRoutes.delete("dailytheme", dailyThemeParam, use: dailyThemeDeletePostHandler)
+		
+		privateAdminRoutes.get("serversettings", use: settingsViewHandler)
+		privateAdminRoutes.post("serversettings", use: settingsPostHandler)
 	}
 	
 // MARK: - Admin Pages
@@ -292,6 +295,81 @@ struct SiteAdminController: SiteControllerUtils {
 		return apiQuery(req, endpoint: "/admin/dailytheme/\(themeID)", method: .DELETE).map { response in
 			return .noContent
 		}
+	}
+	
+	// GET /admin/serversettings
+	//
+	// Show a page for editing server settings values.
+	func settingsViewHandler(_ req: Request) throws -> EventLoopFuture<View> {
+		return apiQuery(req, endpoint: "/admin/serversettings", method: .GET).throwingFlatMap { response in
+ 			let settings = try response.content.decode(SettingsAdminData.self)
+			struct SettingsViewContext : Encodable {
+				var trunk: TrunkContext
+				var settings: SettingsAdminData
+				var clientAppNames: [String]
+				var appFeatureNames: [String]
+
+				init(_ req: Request, settings: SettingsAdminData) throws {
+					trunk = .init(req, title: "Edit Daily Theme", tab: .none)
+					self.settings = settings
+					clientAppNames = SwiftarrClientApp.allCases.compactMap { $0 == .unknown ? nil : $0.rawValue }
+					appFeatureNames = SwiftarrFeature.allCases.compactMap { $0 == .unknown ? nil : $0.rawValue }
+				}
+			}
+			let ctx = try SettingsViewContext(req, settings: settings)
+			return req.view.render("admin/serversettings", ctx)
+		}
+	}
+	
+	// POST /admin/serversettings
+	//
+	// Updates server settings.
+	func settingsPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+		// The web form decodes into this from a multipart-form
+		struct SettingsPostFormContent: Decodable {
+			var maximumTwarrts: Int
+			var maximumForumPosts: Int
+			var maxImageSize: Int
+			var forumAutoQuarantineThreshold: Int
+			var postAutoQuarantineThreshold: Int
+			var userAutoQuarantineThreshold: Int
+			var allowAnimatedImages: String?
+			var disableAppName: String
+			var disableFeatureName: String
+			// In the .leaf file, the name property for the select that sets this is "reenable[]". 
+			// The "[]" in the name is magic, somewhere in multipart-kit. It collects all form-data value with the same name into an array.
+			var reenable: [String]?				
+		}
+		let postStruct = try req.content.decode(SettingsPostFormContent.self)
+		
+		// The API lets us apply multiple app:feature disables at once, but the UI can only add one at a time.
+		var enablePairs: [SettingsAppFeaturePair] = []
+		var disablePairs: [SettingsAppFeaturePair] = []
+		if !postStruct.disableAppName.isEmpty && !postStruct.disableFeatureName.isEmpty	{
+			disablePairs.append(SettingsAppFeaturePair(app: postStruct.disableAppName, feature: postStruct.disableFeatureName))
+		}
+		
+		if let reenables = postStruct.reenable {
+			for pair in reenables {
+				let parts = pair.split(separator: ":")
+				if parts.count != 2 { continue }
+				enablePairs.append(SettingsAppFeaturePair(app: String(parts[0]), feature: String(parts[1])))
+			}
+		}
+
+		let apiPostContent = SettingsUpdateData(maximumTwarrts: postStruct.maximumTwarrts,
+				maximumForumPosts: postStruct.maximumForumPosts, 
+				maxImageSize: postStruct.maxImageSize * 1048576, 
+				forumAutoQuarantineThreshold: postStruct.forumAutoQuarantineThreshold, 
+				postAutoQuarantineThreshold: postStruct.postAutoQuarantineThreshold, 
+				userAutoQuarantineThreshold: postStruct.userAutoQuarantineThreshold, 
+				allowAnimatedImages: postStruct.allowAnimatedImages == "on",
+				enableFeatures: enablePairs, disableFeatures: disablePairs)
+		return apiQuery(req, endpoint: "/admin/serversettings/update", method: .POST, beforeSend: { req throws in
+			try req.content.encode(apiPostContent)
+		}).flatMapThrowing { response in
+			return .ok
+		}	
 	}
 }
 

@@ -22,14 +22,15 @@ struct ImageController: APIRouteCollection {
         
 		// convenience route group for all /api/v3/image endpoints
 		let imageRoutes = app.grouped("api", "v3", "image")
+		let userImageRoutes = imageRoutes.grouped(DisabledAPISectionMiddleware(feature: .images))
 
 		// open access endpoints
-		imageRoutes.get("full", ":image_filename", use: getImage_FullHandler)
-		imageRoutes.get("thumb", ":image_filename", use: getImage_ThumbnailHandler)
-		imageRoutes.get("user", "identicon", userIDParam, use: getUserIdenticonHandler)
+		userImageRoutes.get("full", ":image_filename", use: getImage_FullHandler)
+		userImageRoutes.get("thumb", ":image_filename", use: getImage_ThumbnailHandler)
+		userImageRoutes.get("user", "identicon", userIDParam, use: getUserIdenticonHandler)
 		
 		// Flex access endpoints. 
-		let flexRoutes = addFlexAuthGroup(to: imageRoutes)
+		let flexRoutes = addFlexAuthGroup(to: userImageRoutes)
 		flexRoutes.get("user", "full", userIDParam, use: getUserAvatarHandler)
 		flexRoutes.get("user", "thumb", userIDParam, use: getUserAvatarHandler)
 

@@ -114,12 +114,12 @@ struct SiteTwitarrController: SiteControllerUtils {
 		// Routes that require login but are generally 'global' -- Two logged-in users could share this URL and both see the content
 		// Not for Seamails, pages for posting new content, mod pages, etc. Logged-out users given one of these links should get
 		// redirect-chained through /login and back.		
-		let globalRoutes = getGlobalRoutes(app)
+		let globalRoutes = getGlobalRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .tweets))
         globalRoutes.get("tweets", use: tweetsPageHandler)
         globalRoutes.get("tweets", twarrtIDParam, use: tweetGetDetailHandler)
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
-		let privateRoutes = getPrivateRoutes(app)
+		let privateRoutes = getPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .tweets))
         privateRoutes.post("tweets", twarrtIDParam, "like", use: tweetLikeActionHandler)
         privateRoutes.post("tweets", twarrtIDParam, "laugh", use: tweetLaughActionHandler)
         privateRoutes.post("tweets", twarrtIDParam, "love", use: tweetLoveActionHandler)

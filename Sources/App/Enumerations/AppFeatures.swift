@@ -3,7 +3,7 @@ import Vapor
 
 /// Names of clients that consume the Swiftarr client API. Used in the `DisabledFeature` struct.
 /// Clients: Be sure to anticipate server values not listed here. 
-enum SwiftarrClientApp: String, Content {
+enum SwiftarrClientApp: String, Content, CaseIterable {
 	/// The website, but NOT the API layer
 	case swiftarr
 	
@@ -31,7 +31,7 @@ enum SwiftarrClientApp: String, Content {
 
 /// Functional areas of the Swiftarr API. Used in the `DisabledFeature` struct.
 /// Clients: Be sure to anticipate server values not listed here. 
-enum SwiftarrFeature: String, Content {
+enum SwiftarrFeature: String, Content, CaseIterable {
 	case tweets
 	case forums
 	case seamail
@@ -39,6 +39,8 @@ enum SwiftarrFeature: String, Content {
 	case friendlyfez
 	case karaoke
 	case gameslist
+	case images
+	case users
 	case all
 	
 	/// For clients use. Clients need to be prepared for additional values to be added serverside. Those new values get decoded as 'unknown'.

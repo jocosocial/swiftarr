@@ -23,9 +23,9 @@ public func configure(_ app: Application) throws {
 	ContentConfiguration.global.use(encoder: jsonEncoder, for: .json)
     ContentConfiguration.global.use(decoder: jsonDecoder, for: .json)
 
-	try configureSettings(app)
-	try HTTPServerConfiguration(app)
+	// Remember: Settings are not available during configuration.
 	try databaseConnectionConfiguration(app)
+	try HTTPServerConfiguration(app)
 	try configureMiddleware(app)
 	try configureSessions(app)
 	try configureLeaf(app)
@@ -33,59 +33,13 @@ public func configure(_ app: Application) throws {
     try routes(app)
 	try configureMigrations(app)
 	
-	try configureImageHandling(app)
-
 	// Add lifecycle handlers 
 	app.lifecycle.use(Application.UserCacheStartup())
-
-}
-
-func configureSettings(_ app: Application) throws {
-	if app.environment == .testing {
-		Logger(label: "app.swiftarr.configuration") .info("Starting up in Testing mode.")
-		// Until we get a proper 2022 schedule, we're using the 2020 schedule for testing. 
-		Settings.shared.cruiseStartDate = Calendar.autoupdatingCurrent.date(from: DateComponents(calendar: Calendar.current, 
-			timeZone: TimeZone(abbreviation: "EST")!, year: 2020, month: 3, day: 7))!
-	}
-	else if app.environment == .development {
-		Logger(label: "app.swiftarr.configuration") .info("Starting up in Development mode.")
-		// Until we get a proper 2022 schedule, we're using the 2020 schedule for testing. 
-		Settings.shared.cruiseStartDate = Calendar.autoupdatingCurrent.date(from: DateComponents(calendar: Calendar.current, 
-			timeZone: TimeZone(abbreviation: "EST")!, year: 2020, month: 3, day: 7))!
-	}
-	else if app.environment == .production {
-		Logger(label: "app.swiftarr.configuration") .info("Starting up in Production mode.")
-		Settings.shared.cruiseStartDate = Calendar.autoupdatingCurrent.date(from: DateComponents(calendar: Calendar.current, 
-			timeZone: TimeZone(abbreviation: "EST")!, year: 2022, month: 3, day: 5))!
-	}
-	else {
-		Logger(label: "app.swiftarr.configuration") .info("Starting up in Custom \"\(app.environment.name)\" mode.")
-		Settings.shared.cruiseStartDate = Calendar.autoupdatingCurrent.date(from: DateComponents(calendar: Calendar.current, 
-			timeZone: TimeZone(abbreviation: "EST")!, year: 2022, month: 3, day: 5))!
-	}
-}
-
-func HTTPServerConfiguration(_ app: Application) throws {
-	// run API on port 8081 by default and set a 10MB hard limit on file size
-    let port = Int(Environment.get("PORT") ?? "8081")!
-	app.http.server.configuration.port = port
-	app.routes.defaultMaxBodySize = "10mb"
 	
-	// Enable HTTP response compression.
-	// app.http.server.configuration.responseCompression = .enabled
-	
-	if let host = Environment.get("hostname") {
-		app.http.server.configuration.hostname = host
-	}
-	else if app.environment == .development {
-		app.http.server.configuration.hostname = "192.168.0.19"
-	}
-	else if app.environment == .production {
-		app.http.server.configuration.hostname = "joco.hollandamerica.com"
-	}
-	else if app.environment.name == "heroku" {
-		app.http.server.configuration.hostname = "swiftarr.herokuapp.com"
-	}
+	// Settings loads values from Redis during startup, and Redis isn't available until app.boot() completes.
+	// Posts on RedisKit's github bug db say the solution is to call boot() early. 
+	try app.boot()
+	try configureSettings(app)
 }
 
 func databaseConnectionConfiguration(_ app: Application) throws {
@@ -128,6 +82,72 @@ func databaseConnectionConfiguration(_ app: Application) throws {
 		app.redis.configuration = try RedisConfiguration(hostname: redisHostname, port: redisPort)
     }
 
+}
+
+func configureSettings(_ app: Application) throws {
+	try Settings.shared.readStoredSettings(app: app)
+
+	// Set the cruise start date to a date that works with the Schedule.ics file that we have. Until we have
+	// a 2022 schedule, we're using the 2020 schedule. Development builds by default will date-shift the current date
+	// into a day of the cruise week (the time the schedule covers) for Events methods, because 'No Events Today' 
+	// makes testing schedule features difficult.
+	if app.environment == .testing {
+		Logger(label: "app.swiftarr.configuration") .info("Starting up in Testing mode.")
+		// Until we get a proper 2022 schedule, we're using the 2020 schedule for testing. 
+		Settings.shared.cruiseStartDate = Calendar.autoupdatingCurrent.date(from: DateComponents(calendar: Calendar.current, 
+			timeZone: TimeZone(abbreviation: "EST")!, year: 2020, month: 3, day: 7))!
+	}
+	else if app.environment == .development {
+		Logger(label: "app.swiftarr.configuration") .info("Starting up in Development mode.")
+		// Until we get a proper 2022 schedule, we're using the 2020 schedule for testing. 
+		Settings.shared.cruiseStartDate = Calendar.autoupdatingCurrent.date(from: DateComponents(calendar: Calendar.current, 
+			timeZone: TimeZone(abbreviation: "EST")!, year: 2020, month: 3, day: 7))!
+	}
+	else if app.environment == .production {
+		Logger(label: "app.swiftarr.configuration") .info("Starting up in Production mode.")
+		Settings.shared.cruiseStartDate = Calendar.autoupdatingCurrent.date(from: DateComponents(calendar: Calendar.current, 
+			timeZone: TimeZone(abbreviation: "EST")!, year: 2022, month: 3, day: 5))!
+	}
+	else {
+		Logger(label: "app.swiftarr.configuration") .info("Starting up in Custom \"\(app.environment.name)\" mode.")
+		Settings.shared.cruiseStartDate = Calendar.autoupdatingCurrent.date(from: DateComponents(calendar: Calendar.current, 
+			timeZone: TimeZone(abbreviation: "EST")!, year: 2022, month: 3, day: 5))!
+	}
+	
+	// Ask the GD Image library what filetypes are available on the local machine.
+	// gd, gd2, xbm, xpm, wbmp, some other useless formats culled.
+	let fileTypes = [".gif", ".bmp", ".tga", ".png", ".jpg", ".heif", ".heix", ".avif", ".tif", ".webp"]
+	let supportedInputTypes = fileTypes.filter { gdSupportsFileType($0, 0) != 0 }
+	let supportedOutputTypes = fileTypes.filter { gdSupportsFileType($0, 1) != 0 }
+	Settings.shared.validImageInputTypes = supportedInputTypes
+	Settings.shared.validImageOutputTypes = supportedOutputTypes
+	
+	// On my machine: heif, heix, avif not supported
+	// [".gif", ".bmp", ".tga", ".png", ".jpg", ".tif", ".webp"] inputs
+	// [".gif", ".bmp",         ".png", ".jpg", ".tif", ".webp"] outputs
+}
+
+func HTTPServerConfiguration(_ app: Application) throws {
+	// run API on port 8081 by default and set a 10MB hard limit on file size
+    let port = Int(Environment.get("PORT") ?? "8081")!
+	app.http.server.configuration.port = port
+	app.routes.defaultMaxBodySize = "10mb"
+	
+	// Enable HTTP response compression.
+	// app.http.server.configuration.responseCompression = .enabled
+	
+	if let host = Environment.get("hostname") {
+		app.http.server.configuration.hostname = host
+	}
+	else if app.environment == .development {
+		app.http.server.configuration.hostname = "192.168.0.19"
+	}
+	else if app.environment == .production {
+		app.http.server.configuration.hostname = "joco.hollandamerica.com"
+	}
+	else if app.environment.name == "heroku" {
+		app.http.server.configuration.hostname = "swiftarr.herokuapp.com"
+	}
 }
 
 // register global middleware
@@ -231,16 +251,3 @@ func configureMigrations(_ app: Application) throws {
 	app.migrations.add(SetInitialCategoryForumCounts(), to: .psql)
 }
   
-/// Mostly, this looks at what image formats we're likely to be able to use.
-func configureImageHandling(_ app: Application) throws {
-	// gd, gd2, xbm, xpm, wbmp, some other useless formats culled.
-	let fileTypes = [".gif", ".bmp", ".tga", ".png", ".jpg", ".heif", ".heix", ".avif", ".tif", ".webp"]
-	let supportedInputTypes = fileTypes.filter { gdSupportsFileType($0, 0) != 0 }
-	let supportedOutputTypes = fileTypes.filter { gdSupportsFileType($0, 1) != 0 }
-	Settings.shared.validImageInputTypes = supportedInputTypes
-	Settings.shared.validImageOutputTypes = supportedOutputTypes
-	
-	// On my machine: heif, heix, avif not supported
-	// [".gif", ".bmp", ".tga", ".png", ".jpg", ".tif", ".webp"] inputs
-	// [".gif", ".bmp",         ".png", ".jpg", ".tif", ".webp"] outputs
-}

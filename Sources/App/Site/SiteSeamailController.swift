@@ -8,11 +8,11 @@ struct SiteSeamailController: SiteControllerUtils {
 		// Routes that require login but are generally 'global' -- Two logged-in users could share this URL and both see the content
 		// Not for Seamails, pages for posting new content, mod pages, etc. Logged-out users given one of these links should get
 		// redirect-chained through /login and back.		
-		let globalRoutes = getGlobalRoutes(app)
+		let globalRoutes = getGlobalRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .seamail))
         globalRoutes.get("seamail", use: seamailRootPageHandler)
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
-		let privateRoutes = getPrivateRoutes(app)
+		let privateRoutes = getPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .seamail))
         privateRoutes.get("seamail", "create", use: seamailCreatePageHandler)
         privateRoutes.get("seamail", "usernames", "search", ":searchString", use: seamailUsernameAutocompleteHandler)
         privateRoutes.post("seamail", "create", use: seamailCreatePostHandler)

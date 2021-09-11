@@ -12,8 +12,8 @@ public final class SiteErrorMiddleware: Middleware {
 			}
 		}
 		else {
-			// If we didn't match a route, only return an HTML page for 404 errors.
-			guard let abortError = error as? AbortError, abortError.status == .notFound else {
+			// If we didn't match a route, only return an HTML page for 404 errors on GET methods.
+			guard let abortError = error as? AbortError, abortError.status == .notFound, req.method == .GET else {
 				throw error
 			}
 			// And, if it appears the client was trying (but failed) to find an API route, don't return an HTML page,

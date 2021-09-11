@@ -1,0 +1,103 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0">
+    		<div class="row justify-content-between align-items-center my-1">
+    			<div class="col">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+							<li class="breadcrumb-item active" aria-current="page">Server Settings</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+			<form class="ajax" action="/admin/serversettings" enctype="multipart/form-data" method="POST" data-successurl="/admin/serversettings" id="serverSettingsForm">
+				<div class="row my-1">
+					<div class="col">
+						<label for="maximumTwarrts">Maximum Twarrts per request</label>
+						<input type="number" id="maximumTwarrts" name="maximumTwarrts" min="1" max="1000" value="#(settings.maximumTwarrts)">
+					</div>
+				</div>
+				<div class="row my-1">
+					<div class="col">
+						<label for="maximumForumPosts">Maximum ForumPosts per request</label>
+						<input type="number" id="maximumForumPosts" name="maximumForumPosts" min="1" max="1000" value="#(settings.maximumForumPosts)">
+					</div>
+				</div>
+				<div class="row my-1">
+					<div class="col">
+						<label for="maxImageSize">Maximum image size</label>
+						<input type="number" id="maxImageSize" name="maxImageSize" min="1" max="1000" value="#(settings.maxImageSize / 1048576)"> MB
+					</div>
+				</div>
+				<div class="row my-1">
+					<div class="col">
+						<label for="forumAutoQuarantineThreshold">Reports to trigger auto-quarantine on a Forum</label>
+						<input type="number" id="forumAutoQuarantineThreshold" name="forumAutoQuarantineThreshold" min="1" max="1000" value="#(settings.forumAutoQuarantineThreshold)">
+					</div>
+				</div>
+				<div class="row my-1">
+					<div class="col">
+						<label for="postAutoQuarantineThreshold">Reports to trigger auto-quarantine on a Twarrt or Forum Post</label>
+						<input type="number" id="postAutoQuarantineThreshold" name="postAutoQuarantineThreshold" min="1" max="1000" value="#(settings.postAutoQuarantineThreshold)">
+					</div>
+				</div>
+				<div class="row my-1">
+					<div class="col">
+						<label for="userAutoQuarantineThreshold">Reports to trigger auto-quarantine on a User</label>
+						<input type="number" id="userAutoQuarantineThreshold" name="userAutoQuarantineThreshold" min="1" max="1000" value="#(settings.userAutoQuarantineThreshold)">
+					</div>
+				</div>
+				<div class="row my-1">
+					<div class="col">
+						<input type="checkbox" id="allowAnimatedImages" name="allowAnimatedImages" #if(settings.allowAnimatedImages):checked#endif>
+						<label for="allowAnimatedImages">Allow animated image uploads</label>
+					</div>
+				</div>
+				<div class="row my-1">
+					<div class="col">
+						<b>Currently Disabled Features</b><br> Select app-feature pairs to re-enable:
+					</div>
+				</div>
+				<div class="row my-2">
+					<div class="col col-auto">
+						<select class="form-select" multiple name="reenable[]">
+							#for(disabled in settings.disabledFeatures):
+								<option value="#(disabled.app):#(disabled.feature)">#(disabled.app) - #(disabled.feature)</option>
+							#endfor
+						</select
+					</div>
+				</div>
+				<div class="row my-2">
+					<div class="col col-auto">
+						<b>Disable a feature:</b>
+					</div>
+					<div class="col col-12 col-sm-4">
+						<select class="form-select" name="disableAppName" aria-label="Disable feature app selector">
+							<option value="" selected>Choose App</option>
+							#for(app in clientAppNames):
+								<option value="#(app)">#(app)</option>
+							#endfor
+						</select>
+					</div>
+					<div class="col col-12 col-sm-4">
+						<select class="form-select" name="disableFeatureName" aria-label="Feature selector for Disable Feature">
+							<option value="" selected>Choose Feature</option>
+							#for(feature in appFeatureNames):
+								<option value="#(feature)">#(feature)</option>
+							#endfor
+						</select>
+					</div>
+				</div>
+				<div class="alert alert-danger mt-3 d-none" role="alert">
+				</div>				
+				<div class="row mb-2">
+					<div class="col col-auto">
+						<button type="submit" class="btn btn-primary">Save</button>
+					</div>
+				</div>
+
+			</form>
+		</div>
+    #endexport
+#endextend

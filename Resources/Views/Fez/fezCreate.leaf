@@ -53,8 +53,8 @@
 								</div>
 								<div class="row mb-2">
 									<div class="col">
-										Needs at least <input type="number" name="minimum" min="1" max="50" step="1" value="#(minPeople)"> 
-										and at most <input type="number" name="maximum" min="1" max="50" step="1" value="#(maxPeople)">  attendees
+										Needs at least <input type="number" name="minimum" min="2" max="50" step="1" value="#(minPeople)"> 
+										and at most <input type="number" name="maximum" min="2" max="50" step="1" value="#(maxPeople)"> attendees
 									</div>
 								</div>
 								<div class="row mb-2">

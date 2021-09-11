@@ -26,7 +26,7 @@ public final class SwiftarrErrorMiddleware: Middleware {
 	func handleError(req: Request, error: Error) -> Response {
 		// variables to determine
 		let status: HTTPResponseStatus
-		let reason: String
+		var reason: String
 		let headers: HTTPHeaders
 		var fieldErrors: [String : String]?
 
@@ -42,6 +42,9 @@ public final class SwiftarrErrorMiddleware: Middleware {
 			reason = abort.reason
 			status = abort.status
 			headers = abort.headers
+			if status == .notFound {
+				reason = "404 Not Found - There's nothing at this URL path"
+			}
 		case let resp as ErrorResponse:
 			// A call that returns an ErrorResponse on failure could get parsed and then thrown by a higher level API call
 			reason = resp.reason

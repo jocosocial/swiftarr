@@ -41,3 +41,72 @@ struct EventsUpdateData: Content {
     var schedule: String
 }
 
+/// Used to enable/disable features. A featurePair with name: "kraken" and feature: "schedule" indicates the Schedule feature of the Kraken app.
+/// When the server indicates this app:feature pair is disabled, the client app should not show the feature to users, and should avoid calling API calls
+/// related to that feature. Either the app or feature field could be 'all'.
+///
+/// Used in: `SettingsAdminData`, `SettingsUpdateData`
+struct SettingsAppFeaturePair: Content {
+	/// Should match a SwiftarrClientApp.rawValue
+	var app: String
+	/// Should match a SwiftarrFeature.rawValue
+	var feature: String
+}
+
+/// Used to return the current `Settings` values. Doesn't update everything--some values aren't meant to be updated live, and others are 
+///
+/// Required by: `POST /api/v3/events/update`
+///
+/// See `EventController.eventsUpdateHandler(_:data:)`.
+struct SettingsAdminData: Content {
+	var maximumTwarrts: Int
+	var maximumForumPosts: Int
+	/// Max Image size in bytes. Images larger than this are rejected. The server separately enforces maximum x and y image dimensions, downsizing the 
+	/// image if possible. Mostly this option is designed to reject very large gif images.
+	var maxImageSize: Int
+	var forumAutoQuarantineThreshold: Int
+	var postAutoQuarantineThreshold: Int
+	var userAutoQuarantineThreshold: Int
+	var allowAnimatedImages: Bool
+	/// Currently disabled app:feature pairs.
+	var disabledFeatures: [SettingsAppFeaturePair]
+}
+
+extension SettingsAdminData {
+	init(_ settings: Settings) {
+		self.maximumTwarrts = settings.maximumTwarrts
+		self.maximumForumPosts = settings.maximumForumPosts
+		self.maxImageSize = settings.maxImageSize
+		self.forumAutoQuarantineThreshold = settings.forumAutoQuarantineThreshold
+		self.postAutoQuarantineThreshold = settings.postAutoQuarantineThreshold
+		self.userAutoQuarantineThreshold = settings.userAutoQuarantineThreshold
+		self.allowAnimatedImages = settings.allowAnimatedImages
+		disabledFeatures = []
+		for (app, features) in settings.disabledFeatures.value {
+			for feature in features {
+				disabledFeatures.append(SettingsAppFeaturePair(app: app.rawValue, feature: feature.rawValue))
+			}
+		}
+	}
+}
+
+/// Used to update the `Settings` values. Doesn't update everything--some values aren't meant to be updated live. The updated values are saved so
+/// that they'll persist through app launches.
+///
+/// Required by: `POST /api/v3/events/update`
+///
+/// See `EventController.eventsUpdateHandler(_:data:)`.
+struct SettingsUpdateData: Content {
+	var maximumTwarrts: Int?
+	var maximumForumPosts: Int?
+	var maxImageSize: Int?
+	var forumAutoQuarantineThreshold: Int?
+	var postAutoQuarantineThreshold: Int?
+	var userAutoQuarantineThreshold: Int?
+	var allowAnimatedImages: Bool?
+	/// Currently disabled app:feature pairs to enable. Note that `all` is treated as just another value here; you can't disable `all:forums` and then
+	/// enable `swiftarr:forums` to disable forums everywhere but swiftarr. Only list deltas here; don't add every possible app:feature pair to this array.
+	var enableFeatures: [SettingsAppFeaturePair]
+	/// App:feature pairs to disable. Only list deltas here; no need to re-list currently disabled app:feature pairs..
+	var disableFeatures: [SettingsAppFeaturePair]
+}
