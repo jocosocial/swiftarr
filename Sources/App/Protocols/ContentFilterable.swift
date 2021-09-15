@@ -106,17 +106,27 @@ extension ContentFilterable {
     }
     
     /// Fluent queries can filter for strings in text fields, but @mentions require more specific filtering.
-    /// This fn tests that the given username is @mentioned in the reciever's content.
+    /// This fn tests that the given username is @mentioned in the receiver's content. It's specifically looking for cases where one name is a substring of another.
+	/// Example: both @John and @John.Doe are users. Simple string search returns @John.Doe results in a search for @John.
+	/// Also, if a user is @mentioned at the end of a sentence, the period is a valid username char, but is not valid at the end of a username (must have a following alphanumeric).
     func filterForMention(of username: String) -> Self? {
 		for contentString in contentTextStrings() {
 			var searchRange: Range<String.Index> = contentString.startIndex..<contentString.endIndex
 			while !searchRange.isEmpty, let foundRange = contentString.range(of: username, options: [.caseInsensitive], range: searchRange) { 
 				searchRange = foundRange.upperBound..<contentString.endIndex
-				if foundRange.upperBound < contentString.endIndex,
-						CharacterSet.validUsernameChars.contains(contentString.unicodeScalars[foundRange.upperBound]) {
-					continue
+				var pastNameIndex = foundRange.upperBound
+				while pastNameIndex < contentString.endIndex {
+					if !CharacterSet.validUsernameChars.contains(contentString.unicodeScalars[pastNameIndex]) {
+						return self
+					}
+					if CharacterSet.alphanumerics.contains(contentString.unicodeScalars[pastNameIndex]) {
+						break
+					}
+					contentString.formIndex(after: &pastNameIndex)
+					if pastNameIndex == contentString.endIndex {
+						return self
+					}
 				}
-				return self
 			}
 		}
 		

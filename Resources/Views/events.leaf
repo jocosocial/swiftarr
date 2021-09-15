@@ -44,40 +44,47 @@
 			#endif
     		<div class="row mb-1 align-items-center">
     			<div class="col">
-    				<b>Filters</b>
+    				<b>#(filterString)</b>
 				</div>
     			<div class="col col-auto">
 					<div class="dropdown">
-						<button class="btn btn-outline-primary dropdown-toggle btn-sm" type="button" id="eventFilterMenu" data-bs-toggle="dropdown" data-category="all" aria-expanded="false">
+						<button class="btn btn-outline-primary dropdown-toggle btn-sm" type="button" id="eventFilterMenu" data-bs-toggle="dropdown" data-selected="all" aria-expanded="false">
 							All Events
 						</button>
 						<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="eventFilterMenu">
-							<li><button class="dropdown-item active" type="button" data-action="filterEventType" data-category="all">All Events</button></li>
+							<li><button class="dropdown-item active" type="button" data-action="filterEventType" data-selection="all">All Events</button></li>
  							<li><hr class="dropdown-divider"></li>
 							<li><h6 class="dropdown-header">Only show:</h6></li>
- 							<li><button class="dropdown-item" type="button" data-action="filterEventType" data-category="Gaming">Gaming</button></li>
-							<li><button class="dropdown-item" type="button" data-action="filterEventType" data-category="Official">General</button></li>
-							<li><button class="dropdown-item" type="button" data-action="filterEventType" data-category="Live Podcast">Live Podcast</button></li>
-							<li><button class="dropdown-item" type="button" data-action="filterEventType" data-category="Main Concert">Main Concert</button></li>
-							<li><button class="dropdown-item" type="button" data-action="filterEventType" data-category="Office Hours">Office Hours</button></li>
-							<li><button class="dropdown-item" type="button" data-action="filterEventType" data-category="Party">Party</button></li>
-							<li><button class="dropdown-item" type="button" data-action="filterEventType" data-category="qaPanel">Q&A/Panel</button></li>
-							<li><button class="dropdown-item" type="button" data-action="filterEventType" data-category="Reading/Performance">Reading Performance</button></li>
-							<li><button class="dropdown-item" type="button" data-action="filterEventType" data-category="Shadow Event">Shadow Event</button></li>
-							<li><button class="dropdown-item" type="button" data-action="filterEventType" data-category="Signing">Signing</button></li>
-							<li><button class="dropdown-item" type="button" data-action="filterEventType" data-category="Workshop">Workshop</button></li>
+ 							<li><button class="dropdown-item" type="button" data-action="filterEventType" data-selection="Gaming">Gaming</button></li>
+							<li><button class="dropdown-item" type="button" data-action="filterEventType" data-selection="Official">General</button></li>
+							<li><button class="dropdown-item" type="button" data-action="filterEventType" data-selection="Live Podcast">Live Podcast</button></li>
+							<li><button class="dropdown-item" type="button" data-action="filterEventType" data-selection="Main Concert">Main Concert</button></li>
+							<li><button class="dropdown-item" type="button" data-action="filterEventType" data-selection="Office Hours">Office Hours</button></li>
+							<li><button class="dropdown-item" type="button" data-action="filterEventType" data-selection="Party">Party</button></li>
+							<li><button class="dropdown-item" type="button" data-action="filterEventType" data-selection="qaPanel">Q&A/Panel</button></li>
+							<li><button class="dropdown-item" type="button" data-action="filterEventType" data-selection="Reading/Performance">Reading Performance</button></li>
+							<li><button class="dropdown-item" type="button" data-action="filterEventType" data-selection="Shadow Event">Shadow Event</button></li>
+							<li><button class="dropdown-item" type="button" data-action="filterEventType" data-selection="Signing">Signing</button></li>
+							<li><button class="dropdown-item" type="button" data-action="filterEventType" data-selection="Workshop">Workshop</button></li>
 						</ul>
 					</div>
 				</div>
 				<div class="col btn-group btn-group-sm col-auto" role="group" aria-label="Event Filters">
-					<button class="btn btn-outline-primary #if(!trunk.userIsLoggedIn):d-none#endif" type="button" data-bs-toggle="button" data-action="filterfollowing" id="eventFollowingFilter">Following</button>
+					<button class="btn btn-outline-primary #if(!trunk.userIsLoggedIn):d-none#endif" type="button" data-bs-toggle="button" data-action="eventFiltersChanged" id="eventFollowingFilter">Following</button>
 				</div>								
 			</div>
     		<div class="row">
-				<div class="col btn-group btn-group-sm" role="group" aria-label="Event Filters">
-					#for(cruiseDay in days):
-						<a class="btn btn-outline-primary #if(cruiseDay.activeDay):active#endif" href="/events?cruiseday=#(cruiseDay.index)">#(cruiseDay.name)</a>
-					#endfor
+				<div class="col btn-group btn-group-sm" role="group" aria-label="Event Filters" id="cruiseDayButtonGroup">
+					#if(useAllDays):
+						#for(cruiseDay in days):
+							<input type="checkbox" class="btn-check" data-action="eventFiltersChanged" data-cruiseday="#(cruiseDay.index)" id="#(cruiseDay.name)" autocomplete="off">
+							<label class="btn btn-outline-primary" for="#(cruiseDay.name)">#(cruiseDay.name)</label>
+						#endfor
+					#else:
+						#for(cruiseDay in days):
+							<a class="btn btn-outline-primary #if(cruiseDay.activeDay):active#endif" href="/events?cruiseday=#(cruiseDay.index + 1)">#(cruiseDay.name)</a>
+						#endfor
+					#endif
 				</div>								
 			</div>
 		</div>
@@ -109,7 +116,8 @@
 				<li class="list-group-item bg-transparent collapse show has-action-bar" 
 						data-eventid="#(event.eventID)" 
 						data-eventfavorite=#if(event.isFavorite == true):"true"#else:"false"#endif
-						data-eventcategory="#(event.eventType)">				
+						data-eventcategory="#(event.eventType)"
+						data-cruiseday="#cruiseDayIndex(event.startTime)">				
 					<div class="container-fluid">
 						<div class="row">	
 							<div class="col">
@@ -132,7 +140,7 @@
 								#if(event.forum):
 									<a class="btn btn-outline-primary" href="/forum/#(event.forum)">Forum</a>
 								#endif
-								<a class="btn btn-outline-primary" href="/events/#(event.eventID)/calendarevent">Add to Calendar</a>
+								<a class="btn btn-outline-primary" href="/events/#(event.eventID)/calendarevent.ics">Add to Calendar</a>
 								#if(trunk.userIsLoggedIn):
 									<input type="checkbox" class="btn-check" autocomplete="off" data-action="follow" id="#(event.eventID)_follow"
 										#if(event.isFavorite):checked#endif>

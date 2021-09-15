@@ -2,6 +2,69 @@ import Vapor
 import Crypto
 import FluentSQL
 
+// Used to show a single forum on a page
+struct ForumPageContext : Encodable {
+	var trunk: TrunkContext
+	var forum: ForumData
+	var post: MessagePostContext
+	var category: CategoryData
+	var paginator: PaginatorContext
+	
+	init(_ req: Request, forum: ForumData, cat: [CategoryData]) throws {
+		trunk = .init(req, title: "Forum Thread", tab: .forums, search: "Search")
+		self.forum = forum
+		self.post = .init(forType: .forumPost(forum.forumID.uuidString))
+		if cat.count > 0 {
+			category = cat[0]
+		}
+		else {
+			category = CategoryData(categoryID: UUID(), title: "Unknown Category", 
+					isRestricted: false, numThreads: 0, forumThreads: nil)
+		}
+		paginator = .init(currentPage: forum.start / forum.limit, 
+				totalPages: (forum.totalPosts + forum.limit - 1) / forum.limit) { pageIndex in
+			"/forum/\(forum.forumID)?start=\(pageIndex * forum.limit)&limit=\(forum.limit)"
+		}
+	}
+}
+
+// Used for Forum Search, Favorite Forums, and Forums You Created pages.
+struct ForumsSearchPageContext : Encodable {
+	var trunk: TrunkContext
+	var forums: ForumSearchData
+	var paginator: PaginatorContext
+	var filterDescription: String
+	
+	init(_ req: Request, forums: ForumSearchData, title: String, filterDesc: String) throws {
+		trunk = .init(req, title: title, tab: .forums, search: "Search")
+		self.forums = forums
+		paginator = .init(currentPage: forums.start / forums.limit, 
+				totalPages: (Int(forums.numThreads) + forums.limit - 1) / forums.limit) { pageIndex in
+			"/forum/favorites?start=\(pageIndex * forums.limit)&limit=\(forums.limit)"
+		}
+		filterDescription = filterDesc
+	}
+}
+
+// Used for Post Search, BookmaredPosts, and Posts Mentioning You pages.
+struct PostSearchPageContext : Encodable {
+	var trunk: TrunkContext
+	var postSearch: PostSearchData
+	var paginator: PaginatorContext
+	var filterDescription: String
+	
+	init(_ req: Request, posts: PostSearchData, title: String, filter: String) throws {
+		trunk = .init(req, title: title, tab: .forums, search: "Search")
+		self.postSearch = posts
+		let userID = trunk.userID
+		paginator = .init(currentPage: posts.start / posts.limit, 
+				totalPages: (Int(posts.totalPosts) + posts.limit - 1) / posts.limit) { pageIndex in
+			"/forum/post/search?mentionid=\(userID)&start=\(pageIndex * posts.limit)&limit=\(posts.limit)"
+		}
+		filterDescription = filter
+	}
+}
+
 struct SiteForumController: SiteControllerUtils {
 
 	func registerRoutes(_ app: Application) throws {
@@ -12,6 +75,7 @@ struct SiteForumController: SiteControllerUtils {
 		globalRoutes.get("forums", use: forumCategoriesPageHandler)
 		globalRoutes.get("forums", categoryIDParam, use: forumPageHandler)
 		globalRoutes.get("forum", forumIDParam, use: forumThreadPageHandler)
+		globalRoutes.get("forum", "containingpost", postIDParam, use: forumThreadFromPostPageHandler)
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let privateRoutes = getPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .forums))
@@ -27,8 +91,15 @@ struct SiteForumController: SiteControllerUtils {
 		privateRoutes.get("forum", forumIDParam, "edit", use: forumEditViewHandler)
 		privateRoutes.post("forum", forumIDParam, "edit", use: forumEditTitlePostHandler)
 		privateRoutes.post("forum", forumIDParam, "delete", use: forumDeleteHandler)
+		
 		privateRoutes.get("forum", "report", forumIDParam, use: forumReportPageHandler)
 		privateRoutes.post("forum", "report", forumIDParam, use: forumReportPostHandler)
+		
+		privateRoutes.get("forum", "search", use: forumSearchPageHandler)
+		privateRoutes.get("forum", "favorites", use: forumFavoritesPageHandler)
+		privateRoutes.post("forum", "favorite", "add", forumIDParam, use: forumAddFavoritePostHandler)
+		privateRoutes.post("forum", "favorite", "remove", forumIDParam, use: forumRemoveFavoritePostHandler)
+		privateRoutes.get("forum", "owned", use: forumsByUserPageHandler)
 
 		privateRoutes.get("forumpost", "edit", postIDParam, use: forumPostEditPageHandler)
 		privateRoutes.post("forumpost", "edit", postIDParam, use: forumPostEditPostHandler)
@@ -37,12 +108,15 @@ struct SiteForumController: SiteControllerUtils {
 		privateRoutes.post("forumpost", "report", postIDParam, use: forumPostReportPostHandler)
 		privateRoutes.get("forumpost", postIDParam, use: forumGetPostDetails)
 		privateRoutes.get("forumpost", "mentions", use: forumGetUserMentions)
+		
 	}
 
 // Note: These groupings are roughly based on what type of URL parameters each method takes to identify its target:
 // category/forum/post
 // MARK: - Categories
 
+	// GET /forums
+	//
 	// Shows a list of forum categories
     func forumCategoriesPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		return apiQuery(req, endpoint: "/forum/categories").throwingFlatMap { response in
@@ -52,7 +126,7 @@ struct SiteForumController: SiteControllerUtils {
     			var categories: [CategoryData]
     			
     			init(_ req: Request, cats: [CategoryData]) throws {
-    				trunk = .init(req, title: "Forum Categories", tab: .forums)
+    				trunk = .init(req, title: "Forum Categories", tab: .forums, search: "Search")
     				self.categories = cats
     			}
     		}
@@ -61,9 +135,11 @@ struct SiteForumController: SiteControllerUtils {
     	}
     }
     
+    // GET /forums/:cat_ID
+    // 
     // Shows a page of forum threads in a category
     func forumPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-    	guard let catID = req.parameters.get(categoryIDParam.paramString) else {
+    	guard let catID = req.parameters.get(categoryIDParam.paramString)?.percentEncodeFilePathEntry() else {
     		throw "Invalid forum category ID"
     	}
         let start = (req.query[Int.self, at: "start"] ?? 0)
@@ -77,7 +153,7 @@ struct SiteForumController: SiteControllerUtils {
 				var paginator: PaginatorContext
     			
     			init(_ req: Request, forums: CategoryData, start: Int, limit: Int) throws {
-    				trunk = .init(req, title: "Forum Threads", tab: .forums)
+    				trunk = .init(req, title: "Forum Threads", tab: .forums, search: "Search")
     				self.forums = forums
 					paginator = .init(currentPage: start / limit, totalPages: (Int(forums.numThreads) + limit - 1) / limit) { pageIndex in
 						"/forums/\(forums.categoryID)?start=\(pageIndex * limit)&limit=\(limit)"
@@ -89,9 +165,11 @@ struct SiteForumController: SiteControllerUtils {
     	}
     }
     
+    // GET /forums/:cat_ID/createForum
+    //
     // Shows the page for creating a new forum thread in a category.
     func forumCreateViewHandler(_ req: Request) throws -> EventLoopFuture<View> {
-    	guard let catID = req.parameters.get(categoryIDParam.paramString) else {
+    	guard let catID = req.parameters.get(categoryIDParam.paramString)?.percentEncodeFilePathEntry() else {
     		throw "Invalid category ID"
     	}
 		return apiQuery(req, endpoint: "/forum/categories?cat=\(catID)").throwingFlatMap { catResponse in
@@ -103,7 +181,7 @@ struct SiteForumController: SiteControllerUtils {
 				var category: CategoryData
 				
 				init(_ req: Request, catID: String, cat: [CategoryData]) throws {
-					trunk = .init(req, title: "Create New Forum", tab: .forums)
+					trunk = .init(req, title: "Create New Forum", tab: .forums, search: "Search")
 					self.categoryID = catID
 					self.post = .init(forType: .forum(catID))
 					if cat.count > 0 {
@@ -120,9 +198,11 @@ struct SiteForumController: SiteControllerUtils {
 		}
     }
     
-	// POST handler for creating a new forum in a category.
+	// POST /forums/:cat_ID/createForum
+    //
+    // POST handler for creating a new forum in a category.
     func forumCreateForumPostHandler(_ req: Request) throws -> EventLoopFuture<Response> {
-    	guard let catID = req.parameters.get(categoryIDParam.paramString) else {
+    	guard let catID = req.parameters.get(categoryIDParam.paramString)?.percentEncodeFilePathEntry() else {
     		throw "Invalid category ID"
     	}
 		let postStruct = try req.content.decode(MessagePostFormContent.self)
@@ -151,9 +231,11 @@ struct SiteForumController: SiteControllerUtils {
     
 // MARK: - Forums
 
+	//	GET /forum/:forum_ID
+	//
     // Shows an individual forum thread
     func forumThreadPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-    	guard let forumID = req.parameters.get(forumIDParam.paramString) else {
+    	guard let forumID = req.parameters.get(forumIDParam.paramString)?.percentEncodeFilePathEntry() else {
     		throw "Invalid forum category ID"
     	}
 		return apiQuery(req, endpoint: "/forum/\(forumID)").throwingFlatMap { response in
@@ -161,39 +243,35 @@ struct SiteForumController: SiteControllerUtils {
  			return apiQuery(req, endpoint: "/forum/categories?cat=\(forum.categoryID)", 
  					passThroughQuery: false).throwingFlatMap { catResponse in
  				let cats = try catResponse.content.decode([CategoryData].self)
-				struct ForumPageContext : Encodable {
-					var trunk: TrunkContext
-					var forum: ForumData
-					var post: MessagePostContext
-					var category: CategoryData
-					var paginator: PaginatorContext
-					
-					init(_ req: Request, forum: ForumData, cat: [CategoryData]) throws {
-						trunk = .init(req, title: "Forum Thread", tab: .forums)
-						self.forum = forum
-						self.post = .init(forType: .forumPost(forum.forumID.uuidString))
-						if cat.count > 0 {
-							category = cat[0]
-						}
-						else {
-							category = CategoryData(categoryID: UUID(), title: "Unknown Category", 
-									isRestricted: false, numThreads: 0, forumThreads: nil)
-						}
-						paginator = .init(currentPage: forum.start / forum.limit, 
-								totalPages: (forum.totalPosts + forum.limit - 1) / forum.limit) { pageIndex in
-							"/forum/\(forum.forumID)?start=\(pageIndex * forum.limit)&limit=\(forum.limit)"
-						}
-					}
-				}
 				let ctx = try ForumPageContext(req, forum: forum, cat: cats)
 				return req.view.render("Forums/forum", ctx)
 			}
 		}
     }
     
-    /// Returns a view with a form for editing a forum's title.
+	//	GET /forum/containingpost/:post_ID
+	//
+    // Shows an individual forum thread, referenced by a post *in* that thread.
+    func forumThreadFromPostPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+    	guard let postID = req.parameters.get(postIDParam.paramString)?.percentEncodeFilePathEntry() else {
+    		throw "Invalid post ID"
+    	}
+		return apiQuery(req, endpoint: "/forum/post/\(postID)/forum").throwingFlatMap { response in
+ 			let forum = try response.content.decode(ForumData.self)
+ 			return apiQuery(req, endpoint: "/forum/categories?cat=\(forum.categoryID)", 
+ 					passThroughQuery: false).throwingFlatMap { catResponse in
+ 				let cats = try catResponse.content.decode([CategoryData].self)
+				let ctx = try ForumPageContext(req, forum: forum, cat: cats)
+				return req.view.render("Forums/forum", ctx)
+			}
+		}
+    }    
+    
+    // GET /forum/:forum_ID/edit 
+    // 
+    // Returns a view with a form for editing a forum's title.
     func forumEditViewHandler(_ req: Request) throws -> EventLoopFuture<View> {
-    	guard let forumID = req.parameters.get(forumIDParam.paramString) else {
+    	guard let forumID = req.parameters.get(forumIDParam.paramString)?.percentEncodeFilePathEntry() else {
     		throw "Invalid forum ID"
     	}
 		return apiQuery(req, endpoint: "/forum/\(forumID)").throwingFlatMap { response in
@@ -204,7 +282,7 @@ struct SiteForumController: SiteControllerUtils {
 				var post: MessagePostContext
 				
 				init(_ req: Request, forum: ForumData) throws {
-					trunk = .init(req, title: "Edit Forum Thread", tab: .forums)
+					trunk = .init(req, title: "Edit Forum Thread", tab: .forums, search: "Search")
 					self.forum = forum
 					self.post = .init(forType: .forumEdit(forum))
 				}
@@ -217,9 +295,11 @@ struct SiteForumController: SiteControllerUtils {
 		}
     }
     
-    /// Handles the POST that edits a forum's title.
+    // POST /forum/:forum_ID/edit
+    // 
+    // Handles the POST that edits a forum's title.
     func forumEditTitlePostHandler(_ req: Request) throws -> EventLoopFuture<Response> {
-    	guard let forumID = req.parameters.get(forumIDParam.paramString) else {
+    	guard let forumID = req.parameters.get(forumIDParam.paramString)?.percentEncodeFilePathEntry() else {
     		throw "While editing forum title: Invalid forum ID"
     	}
 		let formStruct = try req.content.decode(MessagePostFormContent.self)
@@ -239,9 +319,11 @@ struct SiteForumController: SiteControllerUtils {
 		}
     }
 
-	/// Handles the POST of a delete request for a forum.
+	// POST /forum/:forum_ID/delete
+	//
+	// Handles a delete request for a forum.
     func forumDeleteHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-    	guard let forumID = req.parameters.get(forumIDParam.paramString) else {
+    	guard let forumID = req.parameters.get(forumIDParam.paramString)?.percentEncodeFilePathEntry() else {
     		throw "While deleting forum: Invalid forum ID"
     	}
     	return apiQuery(req, endpoint: "/forum/\(forumID)", method: .DELETE).map { response in
@@ -249,9 +331,11 @@ struct SiteForumController: SiteControllerUtils {
     	}
     }
     
+    // POST /forum/:forum_ID/create
+    // 
 	// POST handler for creating a new forum post.
     func forumPostPostHandler(_ req: Request) throws -> EventLoopFuture<Response> {
-    	guard let forumID = req.parameters.get(forumIDParam.paramString) else {
+    	guard let forumID = req.parameters.get(forumIDParam.paramString)?.percentEncodeFilePathEntry() else {
     		throw "Invalid forum ID"
     	}
 		let postStruct = try req.content.decode(MessagePostFormContent.self)
@@ -263,19 +347,14 @@ struct SiteForumController: SiteControllerUtils {
 		return apiQuery(req, endpoint: "/forum/\(forumID)/create", method: .POST, beforeSend: { req throws in
 			try req.content.encode(postContent)
 		}).flatMapThrowing { response in
-			if response.status.code < 300 {
-				return Response(status: .created)
-			}
-			else {
-				// This is that thing where we decode an error response from the API and then make it into an exception.
-				let error = try response.content.decode(ErrorResponse.self)
-				throw error
-			}
+			return Response(status: .created)
 		}
     }
     
-    /// Shows a page that lets a user file a report against a Forum (NOT a forum's posts, the forum itself, which should mean the forum's title,
-    /// but users will likely assume means 'the whole forum is bad'.
+    // GET /forum/report/:forum_ID
+    //
+    // Shows a page that lets a user file a report against a Forum (NOT a forum's posts, the forum itself, 
+    // which should mean the forum's title, but users will likely assume means 'the whole forum is bad'.
 	func forumReportPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
     	guard let forumID = req.parameters.get(forumIDParam.paramString) else {
             throw Abort(.badRequest, reason: "Missing forum_id parameter.")
@@ -284,28 +363,68 @@ struct SiteForumController: SiteControllerUtils {
     	return req.view.render("reportCreate", ctx)
     }
     
-    /// Handles the POST of a report on a forum
+    // POST /forum/report/:forum_ID
+    //
+    // Handles the POST of a report on a forum.
 	func forumReportPostHandler(_ req: Request) throws -> EventLoopFuture<Response> {
-    	guard let forumID = req.parameters.get(forumIDParam.paramString) else {
+    	guard let forumID = req.parameters.get(forumIDParam.paramString)?.percentEncodeFilePathEntry() else {
             throw Abort(.badRequest, reason: "Missing forum_id parameter.")
     	}
 		let postStruct = try req.content.decode(ReportData.self)
  		return apiQuery(req, endpoint: "/forum/\(forumID)/report", method: .POST, beforeSend: { req throws in
 			try req.content.encode(postStruct)
 		}).flatMapThrowing { response in
-			if response.status.code < 300 {
-				return Response(status: .created)
-			}
-			else {
-				// This is that thing where we decode an error response from the API and then make it into an exception.
-				let error = try response.content.decode(ErrorResponse.self)
-				throw error
-			}
+			return Response(status: .created)
 		}
     }
+    
+    // GET /forum/favorites
+    //
+    // Displays a list of the user's favorited forums.
+    // URL QueryParameters start, limit are passed through.
+	func forumFavoritesPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+		return apiQuery(req, endpoint: "/forum/favorites").throwingFlatMap { response in
+ 			let forums = try response.content.decode(ForumSearchData.self)    	
+    		let ctx = try ForumsSearchPageContext(req, forums: forums, title: "Favorite Forums", filterDesc: "Favorites")
+			return req.view.render("Forums/forumsList", ctx)
+    	}
+	}
+	
+    // POST /forum/favorite/add/:forum_ID
+    //
+    // Adds a forum to the user's favorites list.
+	func forumAddFavoritePostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+    	guard let forumID = req.parameters.get(forumIDParam.paramString)?.percentEncodeFilePathEntry() else {
+            throw Abort(.badRequest, reason: "Missing forum_id parameter.")
+    	}
+		return apiQuery(req, endpoint: "/forum/\(forumID)/favorite", method: .POST).flatMapThrowing { response in
+			return .created
+		}
+	}
+	
+    // POST /forum/favorite/remove/:forum_ID
+    //
+    // Removes a forum from the user's favorites list.
+	func forumRemoveFavoritePostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+    	guard let forumID = req.parameters.get(forumIDParam.paramString)?.percentEncodeFilePathEntry() else {
+            throw Abort(.badRequest, reason: "Missing forum_id parameter.")
+    	}
+		return apiQuery(req, endpoint: "/forum/\(forumID)/favorite/remove", method: .POST).flatMapThrowing { response in
+			return .noContent
+		}
+	}
+	
+	func forumsByUserPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+		return apiQuery(req, endpoint: "/forum/owner").throwingFlatMap { response in
+ 			let forums = try response.content.decode(ForumSearchData.self)    	
+    		let ctx = try ForumsSearchPageContext(req, forums: forums, title: "Forums You Created", filterDesc: "Your Forums")
+			return req.view.render("Forums/forumsList", ctx)
+    	}
+	}
 
 // MARK: - Posts
 
+	// POST /forumpost/:forumpost_ID/like and friends
     func forumPostLikeActionHandler(_ req: Request) throws -> EventLoopFuture<PostData> {
 		return try forumPostPostReactionHandler(req, reactionType: "like")
     }
@@ -320,7 +439,7 @@ struct SiteForumController: SiteControllerUtils {
     }
     
     func forumPostPostReactionHandler(_ req: Request, reactionType: String) throws -> EventLoopFuture<PostData> {
-    	guard let postID = req.parameters.get(postIDParam.paramString) else {
+    	guard let postID = req.parameters.get(postIDParam.paramString)?.percentEncodeFilePathEntry() else {
             throw Abort(.badRequest, reason: "Missing post_id parameter.")
     	}
     	return apiQuery(req, endpoint: "/forum/post/\(postID)/\(reactionType)", method: .POST).flatMapThrowing { response in
@@ -329,9 +448,11 @@ struct SiteForumController: SiteControllerUtils {
     	}
     }
 
+	// GET /forumpost/edit/:forumpost_ID
+	// 
     // Shows the page for editing a post.
 	func forumPostEditPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-    	guard let postID = req.parameters.get(postIDParam.paramString) else {
+    	guard let postID = req.parameters.get(postIDParam.paramString)?.percentEncodeFilePathEntry() else {
             throw Abort(.badRequest, reason: "Missing post_id parameter--we can't tell which post you want to edit.")
     	}
     	return apiQuery(req, endpoint: "/forum/post/\(postID)").throwingFlatMap { response in
@@ -341,7 +462,7 @@ struct SiteForumController: SiteControllerUtils {
     			var post: MessagePostContext
     			
     			init(_ req: Request, post: PostDetailData) throws {
-    				trunk = .init(req, title: "Edit Forum Post", tab: .forums)
+    				trunk = .init(req, title: "Edit Forum Post", tab: .forums, search: "Search")
     				self.post = .init(forType: .forumPostEdit(post))
     			}
     		}
@@ -353,10 +474,12 @@ struct SiteForumController: SiteControllerUtils {
     	}
     }
     
+	// POST /forumpost/edit/:forumpost_ID
+	// 
     // ?? Yeah. Reading the fn name right to left:
     //	--> "The handler that gets called when you POST the results of an edit to an existing post in a forum"
     func forumPostEditPostHandler(_ req: Request) throws -> EventLoopFuture<Response> {
-    	guard let postID = req.parameters.get(postIDParam.paramString) else {
+    	guard let postID = req.parameters.get(postIDParam.paramString)?.percentEncodeFilePathEntry() else {
             throw Abort(.badRequest, reason: "Missing post_id parameter.")
     	}
 		let postStruct = try req.content.decode(MessagePostFormContent.self)
@@ -379,9 +502,11 @@ struct SiteForumController: SiteControllerUtils {
 		}
     }
     
-	/// Handles the POST of a delete request for a forum post.
+	// POST /forumpost/:forumpost_ID/delete
+	// 
+	// Handles the POST of a delete request for a forum post.
     func forumPostDeleteHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-    	guard let postID = req.parameters.get(postIDParam.paramString) else {
+    	guard let postID = req.parameters.get(postIDParam.paramString)?.percentEncodeFilePathEntry() else {
             throw Abort(.badRequest, reason: "Missing post_id parameter.")
     	}
     	return apiQuery(req, endpoint: "/forum/post/\(postID)", method: .DELETE).map { response in
@@ -389,7 +514,9 @@ struct SiteForumController: SiteControllerUtils {
     	}
     }
     
-	/// Shows a page that lets a user file a report against a forum post.
+    // GET /forumpost/report/:forumpost_ID
+    //
+	// Shows a page that lets a user file a report against a forum post.
 	func forumPostReportPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
     	guard let postID = req.parameters.get(postIDParam.paramString) else {
             throw Abort(.badRequest, reason: "Missing post_id parameter.")
@@ -398,9 +525,11 @@ struct SiteForumController: SiteControllerUtils {
     	return req.view.render("reportCreate", ctx)
     }
     
-    /// Handles the POST of a report on a forum post.
+    // POST /forumpost/report/:forumpost_ID
+    //
+    // Handles the POST of a report on a forum post.
 	func forumPostReportPostHandler(_ req: Request) throws -> EventLoopFuture<Response> {
-    	guard let postID = req.parameters.get(postIDParam.paramString) else {
+    	guard let postID = req.parameters.get(postIDParam.paramString)?.percentEncodeFilePathEntry() else {
             throw Abort(.badRequest, reason: "Missing post_id parameter.")
     	}
 		let postStruct = try req.content.decode(ReportData.self)
@@ -418,9 +547,11 @@ struct SiteForumController: SiteControllerUtils {
 		}
     }
     
-    /// Returns a `PostDetailData` on a specific post. This struct gives more detail on like counts.
+    // GET /forumpost/:forumpost_ID
+    //
+    // Returns a `PostDetailData` on a specific post. This struct gives more detail on like counts.
     func forumGetPostDetails(_ req: Request) throws -> EventLoopFuture<PostDetailData> {
-    	guard let postID = req.parameters.get(postIDParam.paramString) else {
+    	guard let postID = req.parameters.get(postIDParam.paramString)?.percentEncodeFilePathEntry() else {
             throw Abort(.badRequest, reason: "Missing post_id parameter.")
     	}
  		return apiQuery(req, endpoint: "/forum/post/\(postID)").flatMapThrowing { response in
@@ -436,30 +567,51 @@ struct SiteForumController: SiteControllerUtils {
 		}
     }
 
+    // GET /forumpost/mentions
+    //
+    // Gets forum posts that @mention the current user.
 	func forumGetUserMentions(_ req: Request) throws -> EventLoopFuture<View> {
 		return apiQuery(req, endpoint: "/forum/post/search?mentionself=true").throwingFlatMap { response in
 			let postData = try response.content.decode(PostSearchData.self)
-     		struct ForumUserMentionPageContext : Encodable {
-				var trunk: TrunkContext
-    			var postSearch: PostSearchData
-				var paginator: PaginatorContext
-    			
-    			init(_ req: Request, posts: PostSearchData) throws {
-    				trunk = .init(req, title: "User Mentions", tab: .forums)
-    				self.postSearch = posts
-    				let userID = trunk.userID
-					paginator = .init(currentPage: posts.start / posts.limit, 
-							totalPages: (Int(posts.totalPosts) + posts.limit - 1) / posts.limit) { pageIndex in
-						"/forum/post/search?mentionid=\(userID)&start=\(pageIndex * posts.limit)&limit=\(posts.limit)"
-					}
-    			}
-    		}
-    		let ctx = try ForumUserMentionPageContext(req, posts: postData)
-			return req.view.render("Forums/forumMentions", ctx)
+    		let ctx = try PostSearchPageContext(req, posts: postData, title: "User Mentions", filter: "Posts Mentioning You")
+			return req.view.render("Forums/forumPostsList", ctx)
+		}
+	}
+	
+// MARK: - Search
+
+    // GET /forum/search
+    //
+    // Shows results of forum or post searches.
+	func forumSearchPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+		struct FormData : Content {
+			var search: String
+			var searchType: String
+		}
+		let formData = try req.query.decode(FormData.self)
+		if formData.searchType == "forums" {
+			guard let pathSearch = formData.search.percentEncodeFilePathEntry() else {
+				throw Abort(.badRequest, reason: "Invalid search string.")
+			}
+			return apiQuery(req, endpoint: "/forum/match/\(pathSearch)", passThroughQuery: false).throwingFlatMap { response in
+				let responseData = try response.content.decode(ForumSearchData.self)
+    			let ctx = try ForumsSearchPageContext(req, forums: responseData, title: "Forum Search", filterDesc: "\(responseData.numThreads) Forums with \"\(formData.search)\"")
+				return req.view.render("Forums/forumsList", ctx)
+			}
+		}
+		else {
+			// search for posts
+			guard let querySearch = formData.search.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+				throw Abort(.badRequest, reason: "Invalid search string.")
+			}
+			return apiQuery(req, endpoint: "/forum/post/search?search=\(querySearch)").throwingFlatMap { response in
+				let responseData = try response.content.decode(PostSearchData.self)
+    			let ctx = try PostSearchPageContext(req, posts: responseData, title: "ForumPost Search", filter: "\(responseData.totalPosts) Posts with \"\(formData.search)\"")
+				return req.view.render("Forums/forumPostsList", ctx)
+			}
 		}
 	}
 
 }
 
     
-

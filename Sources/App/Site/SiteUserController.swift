@@ -62,7 +62,7 @@ struct SiteUserController: SiteControllerUtils {
 	/// Gets a user's avatar image. Calls through to `/api/v3/image/user/SIZE/ID`, and, if called with session credentials, will
 	/// pass through the creds (which mostly affects quarantined users and moderators). 
 	func userAvatarHandler(_ req: Request) throws -> EventLoopFuture<Response> {
-    	guard let userID = req.parameters.get(userIDParam.paramString) else {
+    	guard let userID = req.parameters.get(userIDParam.paramString)?.percentEncodeFilePathEntry() else {
     		throw "Invalid userID parameter"
     	}
     	let sizeType = req.url.path.hasPrefix("/avatar/full") ? "full" : "thumb"
@@ -113,7 +113,7 @@ struct SiteUserController: SiteControllerUtils {
 	//
 	// Shows a user profile page; the user is specified by their ID
 	func userProfilePageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-    	guard let userID = req.parameters.get(userIDParam.paramString) else {
+    	guard let userID = req.parameters.get(userIDParam.paramString)?.percentEncodeFilePathEntry() else {
     		throw "Invalid user ID"
     	}
     	return apiQuery(req, endpoint: "/users/\(userID)/profile").throwingFlatMap { response in
@@ -128,7 +128,7 @@ struct SiteUserController: SiteControllerUtils {
 	// Shows a user profile page; the user is specified by username. Since usernames can be changed, 
 	// `/user/ID` is preferable if you have the userID.
 	func usernameProfilePageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-    	guard let username = req.parameters.get("username") else {
+    	guard let username = req.parameters.get("username")?.percentEncodeFilePathEntry() else {
     		throw "Invalid username parameter"
     	}
     	return apiQuery(req, endpoint: "/users/find/\(username)").throwingFlatMap { headerResponse in
@@ -242,7 +242,7 @@ struct SiteUserController: SiteControllerUtils {
 	// POST /profile/note/ID
 	//
 	func userNotePostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-    	guard let targetUserID = req.parameters.get(userIDParam.paramString) else {
+    	guard let targetUserID = req.parameters.get(userIDParam.paramString, as: UUID.self) else {
     		throw "Invalid userID parameter"
     	}
 		struct ProfileNoteFormContent: Content {
@@ -272,7 +272,7 @@ struct SiteUserController: SiteControllerUtils {
 	/// `POST /profile/report/ID`
 	///
 	func profileReportPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-    	guard let targetUserID = req.parameters.get(userIDParam.paramString) else {
+    	guard let targetUserID = req.parameters.get(userIDParam.paramString, as: UUID.self) else {
     		throw "Invalid userID parameter"
     	}
     	// The only field in ReportData is the message; we can use it as both the form data from the reportCreate webpage

@@ -132,7 +132,7 @@ struct SiteAdminController: SiteControllerUtils {
 	
 	// GET /admin/announcement/ID/edit
 	func announcementEditPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-		guard let announcementID = req.parameters.get(announcementIDParam.paramString) else {
+		guard let announcementID = req.parameters.get(announcementIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing announcement_id parameter.")
 		}
 		return apiQuery(req, endpoint: "/notification/announcement/\(announcementID)").throwingFlatMap { response in
@@ -156,7 +156,7 @@ struct SiteAdminController: SiteControllerUtils {
 	
 	// POST /admin/announcement/ID/edit
 	func announcementEditPostHandler(_ req: Request) throws -> EventLoopFuture<Response> {
-		guard let announcementID = req.parameters.get(announcementIDParam.paramString) else {
+		guard let announcementID = req.parameters.get(announcementIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing announcement_id parameter.")
 		}
 		let postStruct = try req.content.decode(MessagePostFormContent.self)
@@ -185,7 +185,7 @@ struct SiteAdminController: SiteControllerUtils {
 	//
 	// Deletes an announcement.
 	func announcementDeletePostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-		guard let announcementID = req.parameters.get(announcementIDParam.paramString) else {
+		guard let announcementID = req.parameters.get(announcementIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
 		return apiQuery(req, endpoint: "/notification/announcement/\(announcementID)", method: .DELETE).map { response in
@@ -272,7 +272,7 @@ struct SiteAdminController: SiteControllerUtils {
 	
 	// POST /admin/dailytheme/ID/edit
 	func dailyThemeEditPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-    	guard let themeID = req.parameters.get(dailyThemeParam.paramString) else {
+    	guard let themeID = req.parameters.get(dailyThemeParam.paramString)?.percentEncodeFilePathEntry() else {
     		throw "Invalid daily theme ID"
     	}
 		let postStruct = try req.content.decode(MessagePostFormContent.self)
@@ -289,7 +289,7 @@ struct SiteAdminController: SiteControllerUtils {
 	// DELETE /admin/dailytheme/ID
 	// Deletes a daily theme record.
 	func dailyThemeDeletePostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-    	guard let themeID = req.parameters.get(dailyThemeParam.paramString) else {
+    	guard let themeID = req.parameters.get(dailyThemeParam.paramString)?.percentEncodeFilePathEntry() else {
     		throw "Invalid daily theme ID"
     	}
 		return apiQuery(req, endpoint: "/admin/dailytheme/\(themeID)", method: .DELETE).map { response in
@@ -328,6 +328,7 @@ struct SiteAdminController: SiteControllerUtils {
 		// The web form decodes into this from a multipart-form
 		struct SettingsPostFormContent: Decodable {
 			var maximumTwarrts: Int
+			var maximumForums: Int
 			var maximumForumPosts: Int
 			var maxImageSize: Int
 			var forumAutoQuarantineThreshold: Int
@@ -358,6 +359,7 @@ struct SiteAdminController: SiteControllerUtils {
 		}
 
 		let apiPostContent = SettingsUpdateData(maximumTwarrts: postStruct.maximumTwarrts,
+				maximumForums: postStruct.maximumForums, 
 				maximumForumPosts: postStruct.maximumForumPosts, 
 				maxImageSize: postStruct.maxImageSize * 1048576, 
 				forumAutoQuarantineThreshold: postStruct.forumAutoQuarantineThreshold, 

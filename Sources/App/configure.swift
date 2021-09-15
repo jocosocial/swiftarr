@@ -192,6 +192,7 @@ func configureLeaf(_ app: Application) throws {
     app.leaf.tags["eventTime"] = EventTimeTag()
     app.leaf.tags["avatar"] = AvatarTag()
     app.leaf.tags["userByline"] = UserBylineTag()
+    app.leaf.tags["cruiseDayIndex"] = CruiseDayIndexTag()
 }
 
 func configurePrometheus(_ app: Application) throws {

@@ -6,15 +6,10 @@
 					<nav aria-label="breadcrumb">
 						<ol class="breadcrumb mb-0">
 							<li class="breadcrumb-item" aria-current="page"><a href="/forums">Forums</a></li>
-							<li class="breadcrumb-item active" aria-current="page">#(forums.title)</li>
+							<li class="breadcrumb-item active" aria-current="page">#(filterDescription)</li>
 						</ol>
 					</nav>
 				</div>
-				#if(!forums.isRestricted):
-					<div class="col col-auto">
-						<a class="btn btn-primary btn-sm" href="/forums/#(forums.categoryID)/createForum">New Thread</a>
-					</div>
-				#endif
 			</div>
 			<div class="list-group">
 				#if(count(forums.forumThreads) > 0):
@@ -39,8 +34,14 @@
 						</a>
 					#endfor
 				#else:
-					<div class="list-group-item"> 
-						There aren't any forums in this category yet.
+					<div class="list-group-item">
+						#if(filterDescription == "Favorites"):
+							You haven't favorited any forums yet.
+						#elseif(filterDescription == "Your Forums"):
+							You haven't created any forums yet.
+						#else:
+							There aren't any forums to show.
+						#endif
 					</div>
 				#endif
 			</div>

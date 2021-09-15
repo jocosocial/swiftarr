@@ -143,7 +143,7 @@ struct ForumController: APIRouteCollection {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
         let start = (req.query[Int.self, at: "start"] ?? 0)
-        let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...200)
+        let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
         // get user's taggedForum barrel, and category
         return user.getBookmarkBarrel(of: .taggedForum, on: req)
         	.and(Category.findFromParameter(categoryIDParam, on: req).addModelID()).flatMap { (barrel, categoryTuple) in
@@ -211,31 +211,38 @@ struct ForumController: APIRouteCollection {
     ///
     /// Retrieve all `Forum`s in all categories whose title contains the specified string.
     ///
+	/// Query parameters:
+	/// * `?start=INT` - The index into the array of forums to start returning results. 0 for first forum.
+	/// * `?limit=INT` - The max # of entries to return. Defaults to 50. Clamped to a max value set in Settings.
+	///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Returns: `[ForumListData]` containing all matching forums.
-    func forumMatchHandler(_ req: Request) throws -> EventLoopFuture<[ForumListData]> {
+    func forumMatchHandler(_ req: Request) throws -> EventLoopFuture<ForumSearchData> {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
         guard var search = req.parameters.get("search_string") else {
             throw Abort(.badRequest, reason: "Missing search parameter.")
         }
+        let start = (req.query[Int.self, at: "start"] ?? 0)
+        let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
         // postgres "_" and "%" are wildcards, so escape for literals
         search = search.replacingOccurrences(of: "_", with: "\\_")
         search = search.replacingOccurrences(of: "%", with: "\\%")
         search = search.trimmingCharacters(in: .whitespacesAndNewlines)
 		// get user's blocks and taggedForum barrel
-		return user.getBookmarkBarrel(of: .taggedForum, on: req)
-     		.throwingFlatMap { (barrel) in
-                // get forums, remove blocks
-        		let blocked = try req.userCache.getBlocks(user)
-                return Forum.query(on: req.db)
-                    .filter(\.$creator.$id !~ blocked)
-                    .filter(\.$title, .custom("ILIKE"), "%\(search)%")
-                    .all()
-                    .flatMap { (forums) in
-                    	return buildForumListData(forums, on: req, userID: userID, favoritesBarrel: barrel)
-                	}
-            }
+		return user.getBookmarkBarrel(of: .taggedForum, on: req).throwingFlatMap { (barrel) in
+			// get forums, remove blocks
+			let blocked = try req.userCache.getBlocks(user)
+			let countQuery = Forum.query(on: req.db).filter(\.$creator.$id !~ blocked).filter(\.$title, .custom("ILIKE"), "%\(search)%")
+					.join(Category.self, on: \Forum.$category.$id == \Category.$id)
+					.filter(Category.self, \.$accessLevelToView <= user.accessLevel)
+			let resultQuery = countQuery.sort(\.$createdAt, .descending).range(start..<(start + limit))
+			return countQuery.count().and(resultQuery.all()).flatMap { (forumCount, forums) in
+				return buildForumListData(forums, on: req, userID: userID, favoritesBarrel: barrel).map { forumList in
+					return ForumSearchData(start: start, limit: limit, numThreads: forumCount, forumThreads: forumList)
+				}
+			}
+		}
     }
         
     /// `GET /api/v3/forum/post/ID/forum`
@@ -261,7 +268,7 @@ struct ForumController: APIRouteCollection {
     func postForumHandler(_ req: Request) throws -> EventLoopFuture<ForumData> {
 		return ForumPost.findFromParameter(postIDParam, on: req).flatMap { post in
 			return post.$forum.get(on: req.db).throwingFlatMap { forum in
-				return try buildForumData(forum, on: req)
+				return try buildForumData(forum, on: req, startPostID: post.requireID())
 			}
 		}
 	}
@@ -416,9 +423,12 @@ struct ForumController: APIRouteCollection {
 		query = query.filter(\.$author.$id !~ cachedUser.getBlocks())
 				.filter(\.$author.$id !~ cachedUser.getMutes())
 				.sort(\.$id, .descending)
+				.join(Forum.self, on: \ForumPost.$forum.$id == \Forum.$id)
+				.join(Category.self, on: \Forum.$category.$id == \Category.$id)
+				.filter(Category.self, \.$accessLevelToView <= user.accessLevel)
 		return query.count().flatMap { totalPosts in
 			let start = (req.query[Int.self, at: "start"] ?? 0)
-			let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
+			let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForumPosts)
 			return query.range(start..<(start + limit)).all().flatMap { posts in
 				// The filter() for mentions will include usernames that are prefixes for other usernames and other false positives.
 				// This filters those out after the query. 
@@ -534,14 +544,16 @@ struct ForumController: APIRouteCollection {
         let userID = try user.requireID()
         // get forum and barrel
         return Forum.findFromParameter(forumIDParam, on: req).addModelID()
-        	.and(user.getBookmarkBarrel(of: .taggedForum, on: req)
-        			.unwrap(orReplace: Barrel(ownerID: userID, barrelType: .taggedForum)))
-        	.flatMap { (arg0, barrel) in
-        		let (_, forumID) = arg0
-				// add forum and return 201
+        		.and(user.getBookmarkBarrel(of: .taggedForum, on: req)
+				.unwrap(orReplace: Barrel(ownerID: userID, barrelType: .taggedForum)))
+        		.flatMap { (arg0, barrel) in
+			let (_, forumID) = arg0
+			// add forum and return 201
+			if !barrel.modelUUIDs.contains(forumID) {
 				barrel.modelUUIDs.append(forumID)
-				return barrel.save(on: req.db).transform(to: .created)
-            }
+			}
+			return barrel.save(on: req.db).transform(to: .created)
+		}
     }
     
     /// `POST /api/v3/forum/ID/favorite/remove`
@@ -555,45 +567,56 @@ struct ForumController: APIRouteCollection {
         let user = try req.auth.require(User.self)
         // get forum
         return Forum.findFromParameter(forumIDParam, on: req).addModelID()
-			.and(user.getBookmarkBarrel(of: .taggedForum, on: req))
-        	.flatMap { (arg0, forumBarrel) in
-        		let (_, forumID) = arg0
-				guard let barrel = forumBarrel else {
-					return req.eventLoop.makeFailedFuture(Abort(.badRequest, reason: "user has not tagged any forums"))
-				}
-				// remove event
-				guard let index = barrel.modelUUIDs.firstIndex(of: forumID) else {
-					return req.eventLoop.makeFailedFuture(Abort(.badRequest, reason: "forum was not tagged"))
-				}
-				barrel.modelUUIDs.remove(at: index)
-				return barrel.save(on: req.db).transform(to: .noContent)
-            }
+				.and(user.getBookmarkBarrel(of: .taggedForum, on: req))
+				.flatMap { (arg0, forumBarrel) in
+			let (_, forumID) = arg0
+			guard let barrel = forumBarrel else {
+				return req.eventLoop.makeFailedFuture(Abort(.badRequest, reason: "user has not tagged any forums"))
+			}
+			// remove event
+			guard let index = barrel.modelUUIDs.firstIndex(of: forumID) else {
+				return req.eventLoop.makeFailedFuture(Abort(.badRequest, reason: "forum was not tagged"))
+			}
+			barrel.modelUUIDs.remove(at: index)
+			return barrel.save(on: req.db).transform(to: .noContent)
+		}
     }
     
     /// `GET /api/v3/forum/favorites`
     ///
     /// Retrieve the `Forum`s in the user's taggedForum barrel, sorted by title.
+	/// 
+	/// URL Parameters:
+	/// * `?sort=STRING` - Sort forums by `create`, `update`, or `title`. Create and update return newest forums first.
+	/// * `?start=INT` - The index into the sorted list of forums to start returning results. 0 for first item, which is the default.
+	/// * `?limit=INT` - The max # of entries to return. Defaults to 50
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Returns: `[ForumListData]` containing the user's favorited forums.
-    func favoritesHandler(_ req: Request) throws -> EventLoopFuture<[ForumListData]> {
+    func favoritesHandler(_ req: Request) throws -> EventLoopFuture<ForumSearchData> {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
+        let start = (req.query[Int.self, at: "start"] ?? 0)
+        let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
         // get user's taggedForum barrel
         return user.getBookmarkBarrel(of: .taggedForum, on: req).flatMap { (barrel) in
             guard let barrel = barrel else {
-                 return req.eventLoop.future([])
+                 return req.eventLoop.future(ForumSearchData(start: start, limit: limit, numThreads: 0, forumThreads: []))
             }
             // respect blocks
             let blocked = req.userCache.getBlocks(userID)
 			// get forums
-			return Forum.query(on: req.db)
-				.filter(\.$id ~~ barrel.modelUUIDs)
-				.filter(\.$creator.$id !~ blocked)
-				.sort(\.$title, .ascending)
-				.all()
-				.flatMap { (forums) in
-					return buildForumListData(forums, on: req, userID: userID, forceIsFavorite: true)
+			let countQuery = Forum.query(on: req.db).filter(\.$id ~~ barrel.modelUUIDs).filter(\.$creator.$id !~ blocked)
+			let rangeQuery = countQuery.range(start..<(start + limit))
+			switch req.query[String.self, at: "sort"] {
+				case "update": _ = rangeQuery.sort(\.$updatedAt, .descending);
+				case "title": _ = rangeQuery.sort(\.$title, .ascending)
+				default: _ = rangeQuery.sort(\.$createdAt, .descending)
+			}
+			return countQuery.count().and(rangeQuery.all()).flatMap { (forumCount, forums) in
+				return buildForumListData(forums, on: req, userID: userID, forceIsFavorite: true).map { forumList in
+					return ForumSearchData(start: start, limit: limit, numThreads: forumCount, forumThreads: forumList)
+				}
             }
         }
     }
@@ -737,19 +760,26 @@ struct ForumController: APIRouteCollection {
     ///
     /// Retrieve a list of all `Forum`s created by the user, sorted by title.
     ///
+	/// Query parameters:
+	/// * `?start=INT` - The index into the array of forums to start returning results. 0 for first forum.
+	/// * `?limit=INT` - The max # of entries to return. Defaults to 50. Clamped to a max value set in Settings.
+	///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Returns: `[ForumListData]` containing all forums created by the user.
-    func ownerHandler(_ req: Request) throws-> EventLoopFuture<[ForumListData]> {
+    func ownerHandler(_ req: Request) throws-> EventLoopFuture<ForumSearchData> {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
+        let start = (req.query[Int.self, at: "start"] ?? 0)
+        let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
         // get user's taggedForum barrel
         return user.getBookmarkBarrel(of: .taggedForum, on: req).flatMap { (barrel) in
-            return user.$forums.query(on: req.db)
-                .sort(\.$title, .ascending)
-                .all()
-                .flatMap { (forums) in
-					return buildForumListData(forums, on: req, userID: userID, favoritesBarrel: barrel)
-            	}
+            let countQuery = user.$forums.query(on: req.db)
+            let resultQuery = countQuery.sort(\.$title, .ascending).range(start..<(start + limit))
+			return countQuery.count().and(resultQuery.all()).flatMap { (forumCount, forums) in
+				return buildForumListData(forums, on: req, userID: userID, favoritesBarrel: barrel).map { forumList in
+					return ForumSearchData(start: start, limit: limit, numThreads: forumCount, forumThreads: forumList)
+				}
+			}
         }
     }
     
@@ -1053,6 +1083,11 @@ extension ForumController {
 				else if let startPostIDParam = req.query[Int.self, at: "startPost"] {
 					future = forum.$posts.query(on: req.db).filter(\.$id < startPostIDParam).count().map { (startCount: Int) in
 						return (startPostIDParam, startCount)
+					}
+				}
+				else if let directStartPostID = startPostID {
+					future = forum.$posts.query(on: req.db).filter(\.$id < directStartPostID).count().map { (startCount: Int) in
+						return (directStartPostID, startCount)
 					}
 				}
 				else {

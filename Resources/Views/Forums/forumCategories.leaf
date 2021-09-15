@@ -20,21 +20,66 @@
 				</div>
 			</div>
 			<div class="list-group">
-			#for(cat in categories):
-				<a href="/forums/#(cat.categoryID)" class="list-group-item list-group-item-action">		
-					<div class="container-fluid">
-						<div class="row">
-							<div class="col">
-								#(cat.title)
-							</div>
-							<div class="col col-auto">
-								#(cat.numThreads) threads
+				#for(cat in categories):
+					<a href="/forums/#(cat.categoryID)" class="list-group-item list-group-item-action">		
+						<div class="container-fluid">
+							<div class="row">
+								<div class="col">
+									#(cat.title)
+								</div>
+								<div class="col col-auto">
+									#(cat.numThreads) threads
+								</div>
 							</div>
 						</div>
-					</div>
-				</a>
-			#endfor
+					</a>
+				#endfor
 			</div>
+			#if(trunk.userIsLoggedIn):
+				<div class="row align-items-center my-1">
+					<div class="col col-auto">
+						<b>Personal Categories</b>
+					</div>
+				</div>
+				<div class="list-group">
+					<a href="/forum/favorites" class="list-group-item list-group-item-action">		
+						<div class="container-fluid">
+							<div class="row">
+								<div class="col">
+									Favorite Forums
+								</div>
+							</div>
+						</div>
+					</a>
+					<a href="/forum/owned" class="list-group-item list-group-item-action">		
+						<div class="container-fluid">
+							<div class="row">
+								<div class="col">
+									Forums You Created
+								</div>
+							</div>
+						</div>
+					</a>
+					<a href="/forumposts/bookmarked" class="list-group-item list-group-item-action">		
+						<div class="container-fluid">
+							<div class="row">
+								<div class="col">
+									Bookmarked Posts
+								</div>
+							</div>
+						</div>
+					</a>
+					<a href="/forumpost/mentions" class="list-group-item list-group-item-action">		
+						<div class="container-fluid">
+							<div class="row">
+								<div class="col">
+									Posts Mentioning You
+								</div>
+							</div>
+						</div>
+					</a>
+				</div>
+			#endif
 		</div>
     #endexport
 #endextend

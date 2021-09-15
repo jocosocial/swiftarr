@@ -25,7 +25,10 @@ struct EventController: APIRouteCollection {
         tokenAuthGroup.post(eventIDParam, "favorite", "remove", use: favoriteRemoveHandler)
         tokenAuthGroup.delete(eventIDParam, "favorite", use: favoriteRemoveHandler)
         tokenAuthGroup.get("favorites", use: favoritesHandler)
-        tokenAuthGroup.post("update", use: eventsUpdateHandler)
+        
+        // Endpoints for admins only
+		let adminAuthGroup = addTokenAuthGroup(to: app.grouped("api", "v3", "events")).grouped(RequireAdminMiddleware())
+        adminAuthGroup.post("update", use: eventsUpdateHandler)
     }
     
     // MARK: - Open Access Handlers
@@ -43,7 +46,7 @@ struct EventController: APIRouteCollection {
 	/// - ?date=DATE			Returns events occurring on the given day. Empty list if there are no cruise events on that day.
 	/// - ?time=DATE			Returns events whose startTime is earlier (or equal) to DATE and endTime is later than DATE. Note that this will often include 'all day' events.
 	/// - ?type=[official, shadow]	Only returns events matching the selected type. 
-	/// - ?match=STRING		Returns events whose title or description contain the given string.
+	/// - ?search=STRING		Returns events whose title or description contain the given string.
 	/// 
 	/// The `?day=STRING` query parameter is intended to make it easy to get schedule events returned even when the cruise is not occurring, for ease of testing.. 
 	/// The day and date parameters actually return events from 3AM on the given day until 3AM the next day--some events start after midnight and tend to get lost by those
@@ -60,11 +63,11 @@ struct EventController: APIRouteCollection {
 			var date: Date?
 			var time: Date?
 			var type: String?
-			var match: String?
+			var search: String?
     	}
     	let options = try req.query.decode(QueryOptions.self)
     	let query = Event.query(on: req.db).sort(\.$startTime, .ascending)
-        if var search = options.match {
+        if var search = options.search {
 			// postgres "_" and "%" are wildcards, so escape for literals
 			search = search.replacingOccurrences(of: "_", with: "\\_")
 			search = search.replacingOccurrences(of: "%", with: "\\%")

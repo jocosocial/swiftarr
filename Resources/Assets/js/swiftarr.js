@@ -1,6 +1,6 @@
 import("/js/bootstrap.bundle.js");
 
-// Make the like/love/laugh buttons post their actions when tapped.
+// Make buttons with data-action properties post their actions when tapped.
 for (let btn of document.querySelectorAll('[data-action]')) {
 	let action = btn.dataset.action;
 	if (action == "delete") {
@@ -9,11 +9,14 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 	else if (action == "laugh" || action == "like" || action == "love") {
 		btn.addEventListener("click", likeAction);
 	}
+	else if (action == "favoriteForum") {
+		btn.addEventListener("click", favoriteForumTappedAction);
+	}
 	else if (action == "follow") {
 		btn.addEventListener("click", followEventAction);
 	}
-	else if (action == "filterfollowing") {
-		btn.addEventListener("click", filterFollowingEventAction);
+	else if (action == "eventFiltersChanged") {
+		btn.addEventListener("click", filterEvents);
 	}
 	else if (action == "filterEventType") {
 		btn.addEventListener("click", eventFilterDropdownTappedAction);
@@ -89,34 +92,6 @@ function setLikeButtonsState(buttons, tappedButton, state) {
 		}
 		if (spinnerElem !== null) spinnerElem.classList.remove("d-none");
 	}
-}
-
-// Button handler for Schedule Follow btn; Marks a event followed/unfollowed
-function followEventAction() {
-	let eventid = event.target.closest('[data-eventid]').dataset.eventid;
-	let tappedButton = event.target;
-	let actionStr = tappedButton.checked ? 'POST' : 'DELETE';
-	let req = new Request('/events/' + eventid + '/favorite', { method: actionStr });
-	let spinnerElem = tappedButton.labels[0]?.querySelector(".spinner-border");
-	if (spinnerElem !== null) spinnerElem.classList.remove("d-none");
-	let errorDiv = tappedButton.closest('[data-eventid]').querySelector('[data-purpose="errordisplay"]');
-	fetch(req).then(function(response) {
-		if (response.ok) {
-			errorDiv.innerHTML = "";
-			tappedButton.closest('[data-eventfavorite]').dataset.eventfavorite = tappedButton.checked ? "true": "false";
-		}
-		else {
-			response.json().then( data => {
-				errorDiv.innerHTML = "<b>Error:</b> " + data.reason
-			});
-		}
-		setTimeout(() => {
-			if (spinnerElem !== null) spinnerElem.classList.add("d-none");
-		}, 1000);
-	}).catch(error => {
-		if (spinnerElem !== null) spinnerElem.classList.add("d-none");
-		errorDiv.innerHTML = "<b>Error:</b> " + error;
-	});
 }
 
 // Handler for the Delete Modal being shown. 
@@ -212,6 +187,31 @@ function updateDropdownButton(menuItemBtn) {
 	menuItemBtn.classList.add("active");
 }
 
+function favoriteForumTappedAction() {
+	let tappedButton = event.target;
+	let forumID = event.target.dataset.forumid;
+	let path = "/forum/favorite/add/"
+	if (!tappedButton.checked) {
+		path = "/forum/favorite/remove/"
+	}
+	let req = new Request(path + forumID, { method: 'POST' });
+	let errorDiv = tappedButton.closest('.row').querySelector('[data-purpose="errordisplay"]');
+	setLikeButtonsState([tappedButton], tappedButton, false);
+	fetch(req).then(function(response) {
+		if (response.ok) {
+			errorDiv.textContent = "";
+		}
+		else {
+			errorDiv.textContent = "Could not add/remove favorite";
+		}
+		setTimeout(() => {
+			setLikeButtonsState([tappedButton], tappedButton, true);
+		}, 1000)
+	}).catch(error => {
+		errorDiv.textContent = "Could not add/remove favorite";
+		setLikeButtonsState([tappedButton], tappedButton, true);
+	});
+}
 
 // MARK: - messagePostForm Handlers
 
@@ -334,73 +334,27 @@ function submitAJAXForm(formElement, event) {
     req.send(new FormData(formElement));
 }
 
-
-// Populates username completions for a partial username. 
-let userSearchAPICallTimeout = null;
-let userSearch = document.querySelector('input.user-autocomplete');
-userSearch?.addEventListener('input', function(event) {
-	if (userSearchAPICallTimeout) {
-		clearTimeout(userSearchAPICallTimeout);
-	}
-	userSearchAPICallTimeout = setTimeout(() => {
-		userSearchAPICallTimeout = null;
-		let searchString = userSearch.value?.replace(/\s+/g, '');
-		if (searchString.length < 2) { return }
-		fetch("/seamail/usernames/search/" + encodeURIComponent(searchString))
-			.then(response => response.json())
-			.then(userHeaders => {
-				let suggestionDiv = document.getElementById('name_suggestions');
-				suggestionDiv.innerHTML = "";
-				for (user of userHeaders) {
-					let nameDiv = document.createElement("div");
-					nameDiv.classList.add("col-auto", "border");
-					nameDiv.dataset.uuid = user.userID;
-					nameDiv.appendChild(document.createTextNode("@" + user.username));
-					suggestionDiv.append(nameDiv);
-					nameDiv.addEventListener('click', function(event) {
-						let participantsDiv = document.getElementById('named_participants');
-						for (index = 0; index < participantsDiv.children.length; ++index) {
-							if (participantsDiv.children[index].dataset['uuid'] == nameDiv.dataset.uuid) {
-								return;
-							}
-						} 
-						let divCopy = nameDiv.cloneNode(true);
-						participantsDiv.append(divCopy);
-						divCopy.addEventListener('click', function(event) {
-							divCopy.remove();
-						});
-						let names = [];
-						for (index = 1; index < participantsDiv.children.length; ++index) {
-							names.push(participantsDiv.children[index].dataset['uuid']);
-						} 
-						let hiddenFormElem = document.getElementById('participants_hidden');
-						hiddenFormElem.value = names;
-					});
-				}
-			})
-		
-	}, 200);
-})
-
 // MARK: - Schedule Page Handlers
-
-function filterFollowingEventAction() {
-	let category = document.getElementById("eventFilterMenu").dataset.category;
-	let followingOnly = document.getElementById("eventFollowingFilter").classList.contains("active");
-	filterEvents(category, followingOnly);
-}
 
 function eventFilterDropdownTappedAction() {
 	updateDropdownButton(event.target);
-	let followingButton = document.getElementById("eventFollowingFilter");
-	let category = event.target.dataset.category;
-	filterEvents(category, followingButton.classList.contains("active"));
+	filterEvents();
 }
 
-function filterEvents(category, onlyFollowing) {
+function filterEvents() {
+	let onlyFollowing = document.getElementById("eventFollowingFilter").classList.contains("active")
+	let category = document.getElementById("eventFilterMenu").dataset.selected;
+	let dayCheckboxes = document.getElementById("cruiseDayButtonGroup").querySelectorAll('input');
+	let selectedDays = [];
+	for (let checkbox of dayCheckboxes) {
+		if (checkbox.checked) {
+			selectedDays.push(checkbox.dataset.cruiseday);
+		}
+	}
 	for (let listItem of document.querySelectorAll('[data-eventid]')) {
 		let hideEvent = (onlyFollowing && listItem.dataset.eventfavorite == "false") ||
-				(category && category != "all" && category != listItem.dataset.eventcategory);
+				(category && category != "all" && category != listItem.dataset.eventcategory) ||
+				(selectedDays.length > 0 && !selectedDays.includes(listItem.dataset.cruiseday))
 		if (hideEvent && listItem.classList.contains("show")) {
 			new bootstrap.Collapse(listItem)
 		}
@@ -408,6 +362,34 @@ function filterEvents(category, onlyFollowing) {
 			new bootstrap.Collapse(listItem)
 		}
 	}
+}
+
+// Button handler for Schedule Follow btn; Marks a event followed/unfollowed
+function followEventAction() {
+	let eventid = event.target.closest('[data-eventid]').dataset.eventid;
+	let tappedButton = event.target;
+	let actionStr = tappedButton.checked ? 'POST' : 'DELETE';
+	let req = new Request('/events/' + eventid + '/favorite', { method: actionStr });
+	let spinnerElem = tappedButton.labels[0]?.querySelector(".spinner-border");
+	if (spinnerElem !== null) spinnerElem.classList.remove("d-none");
+	let errorDiv = tappedButton.closest('[data-eventid]').querySelector('[data-purpose="errordisplay"]');
+	fetch(req).then(function(response) {
+		if (response.ok) {
+			errorDiv.innerHTML = "";
+			tappedButton.closest('[data-eventfavorite]').dataset.eventfavorite = tappedButton.checked ? "true": "false";
+		}
+		else {
+			response.json().then( data => {
+				errorDiv.innerHTML = "<b>Error:</b> " + data.reason
+			});
+		}
+		setTimeout(() => {
+			if (spinnerElem !== null) spinnerElem.classList.add("d-none");
+		}, 1000);
+	}).catch(error => {
+		if (spinnerElem !== null) spinnerElem.classList.add("d-none");
+		errorDiv.innerHTML = "<b>Error:</b> " + error;
+	});
 }
 
 // MARK: - Fez Handlers
@@ -473,6 +455,53 @@ function applyFezSearchFilters() {
 	}
 	window.location.href = "/fez" + queryString;
 }
+
+// Populates username completions for a partial username. 
+let userSearchAPICallTimeout = null;
+let userSearch = document.querySelector('input.user-autocomplete');
+userSearch?.addEventListener('input', function(event) {
+	if (userSearchAPICallTimeout) {
+		clearTimeout(userSearchAPICallTimeout);
+	}
+	userSearchAPICallTimeout = setTimeout(() => {
+		userSearchAPICallTimeout = null;
+		let searchString = userSearch.value?.replace(/\s+/g, '');
+		if (searchString.length < 2) { return }
+		fetch("/seamail/usernames/search/" + encodeURIComponent(searchString))
+			.then(response => response.json())
+			.then(userHeaders => {
+				let suggestionDiv = document.getElementById('name_suggestions');
+				suggestionDiv.innerHTML = "";
+				for (user of userHeaders) {
+					let nameDiv = document.createElement("div");
+					nameDiv.classList.add("col-auto", "border");
+					nameDiv.dataset.uuid = user.userID;
+					nameDiv.appendChild(document.createTextNode("@" + user.username));
+					suggestionDiv.append(nameDiv);
+					nameDiv.addEventListener('click', function(event) {
+						let participantsDiv = document.getElementById('named_participants');
+						for (index = 0; index < participantsDiv.children.length; ++index) {
+							if (participantsDiv.children[index].dataset['uuid'] == nameDiv.dataset.uuid) {
+								return;
+							}
+						} 
+						let divCopy = nameDiv.cloneNode(true);
+						participantsDiv.append(divCopy);
+						divCopy.addEventListener('click', function(event) {
+							divCopy.remove();
+						});
+						let names = [];
+						for (index = 1; index < participantsDiv.children.length; ++index) {
+							names.push(participantsDiv.children[index].dataset['uuid']);
+						} 
+						let hiddenFormElem = document.getElementById('participants_hidden');
+						hiddenFormElem.value = names;
+					});
+				}
+			})
+		
+	}, 200);
+})
 
 // MARK: - User Profile Handlers
 

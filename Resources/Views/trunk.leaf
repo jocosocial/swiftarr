@@ -101,16 +101,33 @@
 					#endif
 					</li>
 				</ul>
-				<form class="d-flex">
-					<input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
-					<button class="btn btn-success" type="submit">Search</button>
-				</form>
+				#if(trunk.searchPrompt):
+					#if(trunk.tab == "forums"):
+						<form class="d-flex" action="/forum/search">
+							<div class="input-group btn-group" role="group" aria-label="Search bar and options">
+								<input class="form-control" type="search" name="search" placeholder="#(trunk.searchPrompt)" aria-label="Search" autocapitalize="off" required>
+								<input type="radio" class="btn-check" name="searchType" value="forums" id="forumsButton" autocomplete="off" checked>
+								<label class="btn btn-outline-success flex-grow-0" for="forumsButton">Forums</label>
+								<input type="radio" class="btn-check" name="searchType" value="posts" id="postsButton" autocomplete="off">
+								<label class="btn btn-outline-success flex-grow-0" for="postsButton">Posts</label>
+							</div>
+							<button class="btn btn-success ms-2" type="submit">Search</button>
+						</form>
+					#else:
+						<form class="d-flex">
+							<input class="form-control" type="search" name="search" placeholder="#(trunk.searchPrompt)" aria-label="Search" autocapitalize="off" required>
+							<button class="btn btn-success ms-2" type="submit">Search</button>
+						</form>
+					#endif
+				#endif
 			</div>
 		</div>
 	</nav>
 
 	#import("body")
 
+	<div class="row mb-5">
+	</div>
 	<script src="/js/swiftarr.js"></script>
 </body>
 </html>

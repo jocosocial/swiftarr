@@ -581,8 +581,28 @@ extension ForumListData {
 		self.isLocked = forum.moderationStatus == .locked
 		self.isFavorite = isFavorite
     }
-
 }
+
+/// Used to return a (partial) list of forums along with the number of forums in the found set. Similar to CategoryData, but the 
+/// forums need not be from the same category. Instead, this returns forums that match a common attribute acoss all categores.
+///
+/// Returned by:
+/// * `GET /api/v3/forum/match/STRING`
+/// * `GET /api/v3/forum/favorites`
+/// * `GET /api/v3/forum/owner`
+///
+/// See `ForumController.categoriesHandler(_:)`
+struct ForumSearchData: Content {
+	/// The index number of the first post in the `posts` array. 0 is the index of the first post in the forum. This number is usually  a multiple of `limit` and indicates the page of results.
+	var start: Int
+	/// The number of posts the server attempted to gather. posts.count may be less than this number if posts were filtered out by blocks/mutes, or if start + limit > totalPosts.
+	var limit: Int
+    /// The number of threads in this category
+    var numThreads: Int
+    ///The threads in the category. Only populated for /categories/ID.
+    var forumThreads: [ForumListData]
+}
+
 
 /// Used to upload an image file or refer to an already-uploaded image. Either `filename` or `image` should always be set. 
 /// If both are set, `filename` is ignored and `image` is processed and saved with a new name. A more Swift-y way to do this

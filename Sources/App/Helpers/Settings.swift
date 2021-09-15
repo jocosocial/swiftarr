@@ -74,6 +74,9 @@ final class Settings : Encodable {
     @StoredSettingsValue("maximumTwarrts", defaultValue: 200) var maximumTwarrts: Int
 
     /// The maximum number of twartts allowed per request.
+    @StoredSettingsValue("maximumForums", defaultValue: 200) var maximumForums: Int
+
+    /// The maximum number of twartts allowed per request.
     @StoredSettingsValue("maximumForumPosts", defaultValue: 200) var maximumForumPosts: Int
 
 	/// Largest image we allow to be uploaded, in bytes.

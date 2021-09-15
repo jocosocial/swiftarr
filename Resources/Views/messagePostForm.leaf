@@ -5,7 +5,6 @@
 				#if(post.showForumTitle):
 					<div class="row mb-3"> 
 						<input type="text" class="form-control" name="forumTitle" id="forumTitle" placeholder="#(post.forumTitlePlaceholder)" value="#(post.forumTitle)">
-
 					</div>
 				#endif
 				#if(!post.onlyShowForumTitle):

@@ -123,6 +123,9 @@ struct AdminController: APIRouteCollection {
  		if let value = data.maximumTwarrts {
  			Settings.shared.maximumTwarrts = value
  		}
+ 		if let value = data.maximumForums {
+ 			Settings.shared.maximumForums = value
+ 		}
  		if let value = data.maximumForumPosts {
  			Settings.shared.maximumForumPosts = value
  		}

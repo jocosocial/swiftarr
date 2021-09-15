@@ -57,7 +57,7 @@ struct SiteModController: SiteControllerUtils {
 	///
 	/// Moderators only. Returns an image from the image archive (user images that have been replaced by subsequent edits).
 	func archivedImageHandler(_ req: Request) throws -> EventLoopFuture<Response> {
-		guard let imageID = req.parameters.get(imageIDParam.paramString) else {
+		guard let imageID = req.parameters.get(imageIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing image_id parameter.")
 		}
 		return apiQuery(req, endpoint: "/image/archive/\(imageID)").flatMapThrowing { apiResponse in
@@ -126,7 +126,7 @@ struct SiteModController: SiteControllerUtils {
 	/// moderation actions taken get tied to the report being handled. Also, reports being handled are marked as such so other moderators can
 	/// hopefully avoid duplicate work. Mods should close reports when they're done to complete the flow.
 	func beginProcessingReportsPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-		guard let reportID = req.parameters.get(reportIDParam.paramString) else {
+		guard let reportID = req.parameters.get(reportIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
 		return apiQuery(req, endpoint: "/mod/reports/\(reportID)/handleall", method: .POST).map { response in
@@ -139,7 +139,7 @@ struct SiteModController: SiteControllerUtils {
 	/// Sets the state of all reports in a group to Closed. Although it takes an ID of one report, it finds all reports that refer to the same pirce
 	/// of content, and closes all of them.
 	func closeReportsPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-		guard let reportID = req.parameters.get(reportIDParam.paramString) else {
+		guard let reportID = req.parameters.get(reportIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
 		return apiQuery(req, endpoint: "/mod/reports/\(reportID)/closeall", method: .POST).map { response in
@@ -175,7 +175,7 @@ struct SiteModController: SiteControllerUtils {
 	/// * All previous versions of this content
 	/// * (hopefully) Mod actions taken against this content already
 	func moderateTwarrtContentPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-		guard let twarrtID = req.parameters.get(twarrtIDParam.paramString) else {
+		guard let twarrtID = req.parameters.get(twarrtIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
 		return apiQuery(req, endpoint: "/mod/twarrt/\(twarrtID)").throwingFlatMap { response in
@@ -213,10 +213,10 @@ struct SiteModController: SiteControllerUtils {
 	///
 	/// Sets the moderation state of the given twarrt. Moderation states include "locked" and "quarantined", as well as a few others.
 	func setTwarrtModerationStatePostHandler(_ req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
-		guard let twarrtID = req.parameters.get(twarrtIDParam.paramString) else {
+		guard let twarrtID = req.parameters.get(twarrtIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
-		guard let modState = req.parameters.get(modStateParam.paramString) else {
+		guard let modState = req.parameters.get(modStateParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
 		return apiQuery(req, endpoint: "/mod/twarrt/\(twarrtID)/setstate/\(modState)", method: .POST).map { response in
@@ -231,7 +231,7 @@ struct SiteModController: SiteControllerUtils {
 	/// * (hopefully) Mod actions taken against this content already
 	/// * 
 	func moderateForumPostContentPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-		guard let postID = req.parameters.get(postIDParam.paramString) else {
+		guard let postID = req.parameters.get(postIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
 		return apiQuery(req, endpoint: "/mod/forumpost/\(postID)").throwingFlatMap { response in
@@ -269,10 +269,10 @@ struct SiteModController: SiteControllerUtils {
 	///
 	/// Sets the moderation state of the given forum post. Moderation states include "locked" and "quarantined", as well as a few others.
 	func setForumPostModerationStatePostHandler(_ req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
-		guard let postID = req.parameters.get(postIDParam.paramString) else {
+		guard let postID = req.parameters.get(postIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
-		guard let modState = req.parameters.get(modStateParam.paramString) else {
+		guard let modState = req.parameters.get(modStateParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
 		return apiQuery(req, endpoint: "/mod/forumPost/\(postID)/setstate/\(modState)", method: .POST).map { response in
@@ -287,7 +287,7 @@ struct SiteModController: SiteControllerUtils {
 	/// * (hopefully) Mod actions taken against this content already
 	/// * 
 	func moderateForumContentPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-		guard let forumID = req.parameters.get(forumIDParam.paramString) else {
+		guard let forumID = req.parameters.get(forumIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
 		return apiQuery(req, endpoint: "/mod/forum/\(forumID)").throwingFlatMap { response in
@@ -324,10 +324,10 @@ struct SiteModController: SiteControllerUtils {
 	///
 	/// Sets the moderation state of the given forum. Moderation states include "locked" and "quarantined", as well as a few others.
 	func setForumModerationStatePostHandler(_ req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
-		guard let forumID = req.parameters.get(forumIDParam.paramString) else {
+		guard let forumID = req.parameters.get(forumIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
-		guard let modState = req.parameters.get(modStateParam.paramString) else {
+		guard let modState = req.parameters.get(modStateParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
 		return apiQuery(req, endpoint: "/mod/forum/\(forumID)/setstate/\(modState)", method: .POST).map { response in
@@ -342,7 +342,7 @@ struct SiteModController: SiteControllerUtils {
 	/// * (hopefully) Mod actions taken against this content already
 	/// * 
 	func moderateFezContentPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-		guard let fezID = req.parameters.get(fezIDParam.paramString) else {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
 		return apiQuery(req, endpoint: "/mod/fez/\(fezID)").throwingFlatMap { response in
@@ -379,10 +379,10 @@ struct SiteModController: SiteControllerUtils {
 	///
 	/// Sets the moderation state of the given fez. Moderation states include "locked" and "quarantined", as well as a few others.
 	func setFezModerationStatePostHandler(_ req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
-		guard let fezID = req.parameters.get(fezIDParam.paramString) else {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
-		guard let modState = req.parameters.get(modStateParam.paramString) else {
+		guard let modState = req.parameters.get(modStateParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
 		return apiQuery(req, endpoint: "/mod/fez/\(fezID)/setstate/\(modState)", method: .POST).map { response in
@@ -394,7 +394,7 @@ struct SiteModController: SiteControllerUtils {
 	/// 
 	/// Info from user's profile. Previous profile versions, reports against the user's profile fields or avatar image.
 	func moderateUserProfileContentPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-		guard let userID = req.parameters.get(userIDParam.paramString) else {
+		guard let userID = req.parameters.get(userIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
 		return apiQuery(req, endpoint: "/mod/profile/\(userID)").throwingFlatMap { response in
@@ -435,10 +435,10 @@ struct SiteModController: SiteControllerUtils {
 	/// Again: Setting the state to "locked" prevents the user from modifying their profile and avatar, but doesn't otherwise constrain them. 
 	/// Similarly, quarantine state prevents others from seeing the avatar and profile field text, but doesn't prevent the user from posting content.
 	func setUserProfileModerationStatePostHandler(_ req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
-		guard let userID = req.parameters.get(userIDParam.paramString) else {
+		guard let userID = req.parameters.get(userIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
-		guard let modState = req.parameters.get(modStateParam.paramString) else {
+		guard let modState = req.parameters.get(modStateParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
 		return apiQuery(req, endpoint: "/mod/profile/\(userID)/setstate/\(modState)", method: .POST).map { response in
@@ -451,7 +451,7 @@ struct SiteModController: SiteControllerUtils {
 	/// Shows the User Moderation page, which has the user's accessLevel controls, temp banning, and a list of all reports
 	/// filed against any of this user's content.
 	func moderateUserContentPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-		guard let userID = req.parameters.get(userIDParam.paramString) else {
+		guard let userID = req.parameters.get(userIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
 		return apiQuery(req, endpoint: "/mod/user/\(userID)").throwingFlatMap { response in
@@ -480,10 +480,10 @@ struct SiteModController: SiteControllerUtils {
 	/// Again: Setting the state to "locked" prevents the user from modifying their profile and avatar, but doesn't otherwise constrain them. 
 	/// Similarly, quarantine state prevents others from seeing the avatar and profile field text, but doesn't prevent the user from posting content.
 	func setUserAccessLevelPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
-		guard let userID = req.parameters.get(userIDParam.paramString) else {
+		guard let userID = req.parameters.get(userIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing userID parameter.")
 		}
-		guard let accessLevel = req.parameters.get(accessLevelParam.paramString) else {
+		guard let accessLevel = req.parameters.get(accessLevelParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing access level parameter.")
 		}
 		return apiQuery(req, endpoint: "/mod/user/\(userID)/setaccesslevel/\(accessLevel)", method: .POST).map { response in
@@ -498,7 +498,7 @@ struct SiteModController: SiteControllerUtils {
 	/// Temp quarantines effectively change the user's accessLevel to `.quarantined` for the duration, after which the user's accessLevel reverts
 	/// to what it was previously.
 	func applyTempBanPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
-		guard let userID = req.parameters.get(userIDParam.paramString) else {
+		guard let userID = req.parameters.get(userIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing userID parameter.")
 		}
 		struct TempBanFormData: Content {
@@ -518,7 +518,7 @@ struct SiteModController: SiteControllerUtils {
 	/// Temp quarantines effectively change the user's accessLevel to `.quarantined` for the duration, after which the user's accessLevel reverts
 	/// to what it was previously.
 	func removeTempBanPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
-		guard let userID = req.parameters.get(userIDParam.paramString) else {
+		guard let userID = req.parameters.get(userIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing userID parameter.")
 		}
 		return apiQuery(req, endpoint: "/mod/user/\(userID)/tempquarantine/0", method: .POST).map { response in

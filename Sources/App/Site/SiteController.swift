@@ -6,6 +6,7 @@ import FluentSQL
 struct TrunkContext: Encodable {
 	var title: String
 	var metaRedirectURL: String?
+	var searchPrompt: String?
 	
 	// current nav item
 	enum Tab: String, Codable {
@@ -27,7 +28,7 @@ struct TrunkContext: Encodable {
 	var alertCounts: UserNotificationData
 	var eventStartingSoon: Bool
 	
-	init(_ req: Request, title: String, tab: Tab) {
+	init(_ req: Request, title: String, tab: Tab, search: String? = nil) {
 		if let user = req.auth.get(User.self) {
 			userIsLoggedIn = true
 			userIsMod = user.accessLevel.hasAccess(.moderator)
@@ -49,9 +50,8 @@ struct TrunkContext: Encodable {
 			
 			// If we have a nextEventTime, and that event starts between 15 mins in the past -> 30 mins in the future,
 			// mark that we have an event starting soon
-			if let nextEventInterval = alerts?.nextFollowedEventTime?.timeIntervalSinceNow
-				//	((-15 * 60.0)...(30 * 60.0)).contains(nextEventInterval) 
-					{
+			if let nextEventInterval = alerts?.nextFollowedEventTime?.timeIntervalSinceNow,
+					((-15 * 60.0)...(30 * 60.0)).contains(nextEventInterval) {
 				eventStartingSoon = true	
 			}
 		}
@@ -61,6 +61,7 @@ struct TrunkContext: Encodable {
 		
 		self.title = title
 		self.tab = tab
+		self.searchPrompt = search
 	}
 }
 
@@ -277,6 +278,21 @@ struct TwarrtQuery: Content {
 	var start: Int?
 	var limit: Int?
 	var replyGroup: Int?
+	
+	// Convert search strings starting with "#" and "@" into hashtag or mentions searches
+	mutating func afterDecode() throws {
+		if let searchStr = search {
+			if searchStr.hasPrefix("#"), hashtag == nil {
+				hashtag = String(searchStr.dropFirst())
+				search = nil
+			}
+			if searchStr.hasPrefix("@"), mentions == nil {
+				mentions = String(searchStr.dropFirst())
+				search = nil
+			}
+		}
+	}
+
 	
 	// TRUE if the 'next' tweets in this query are going to be newer or older than the current ones.
 	// For instance, by default the 'anchor' is the most recent tweet and the direction is towards older tweets.
@@ -566,6 +582,16 @@ extension SiteControllerUtils {
 		}
 		return nil
 	}
+}
 
+extension String {
+	
+	// Utility to perform URL percent encoding on a string that is to be placed in an URL path. The string
+	// is percent encoded for all non-url-path chars, plus "/", as the string must be a *single* path component.
+	func percentEncodeFilePathEntry() -> String? {
+		var pathEntryChars = CharacterSet.urlPathAllowed
+		pathEntryChars.remove("/")
+		return self.addingPercentEncoding(withAllowedCharacters: pathEntryChars)
+	}
 }
 

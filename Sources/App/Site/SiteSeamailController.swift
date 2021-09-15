@@ -56,7 +56,7 @@ struct SiteSeamailController: SiteControllerUtils {
     
     // Called by JS when searching for usernames to add to a seamail.
     func seamailUsernameAutocompleteHandler(_ req: Request) throws -> EventLoopFuture<Response> {
-    	guard let searchString = req.parameters.get("searchString") else {
+    	guard let searchString = req.parameters.get("searchString")?.percentEncodeFilePathEntry() else {
     		throw "Missing search string"
     	}
 		return apiQuery(req, endpoint: "/users/match/allnames/\(searchString)").flatMap { response in
@@ -111,7 +111,7 @@ struct SiteSeamailController: SiteControllerUtils {
     
     // Shows a seamail thread. Participants up top, then a list of messages, then a form for composing.
 	func seamailViewPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-    	guard let fezID = req.parameters.get(fezIDParam.paramString) else {
+    	guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
     		throw Abort(.badRequest, reason: "Missing fez_id")
     	}
 		return apiQuery(req, endpoint: "/fez/\(fezID)").throwingFlatMap { response in
@@ -156,7 +156,7 @@ struct SiteSeamailController: SiteControllerUtils {
 	}
 	
 	func seamailThreadPostHandler(_ req: Request) throws -> EventLoopFuture<Response> {
-    	guard let fezID = req.parameters.get(fezIDParam.paramString) else {
+    	guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
     		throw Abort(.badRequest, reason: "Missing fez_id")
     	}
 		let postStruct = try req.content.decode(MessagePostFormContent.self)

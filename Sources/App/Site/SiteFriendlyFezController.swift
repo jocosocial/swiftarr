@@ -184,7 +184,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 	/// `/fez/ID/edit`
 	/// Shows the Update Friendly Fez page.
     func fezUpdatePageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-		guard let fezID = req.parameters.get(fezIDParam.paramString) else {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
     		throw "Invalid fez ID"
     	}
 		return apiQuery(req, endpoint: "/fez/\(fezID)").throwingFlatMap { response in
@@ -221,7 +221,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 				maxCapacity: postStruct.maximum, 
 				initialUsers: [])
 		var path = "/fez/create"
-		if let updatingFezID = req.parameters.get(fezIDParam.paramString) {
+		if let updatingFezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() {
 			path = "/fez/\(updatingFezID)/update"
 		}		
 		return apiQuery(req, endpoint: path, method: .POST, beforeSend: { req throws in
@@ -240,7 +240,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
     
     // Shows a single Fez.
     func singleFezPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-		guard let fezID = req.parameters.get(fezIDParam.paramString) else {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
     		throw "Invalid fez ID"
     	}
 		return apiQuery(req, endpoint: "/fez/\(fezID)").throwingFlatMap { response in
@@ -285,7 +285,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 	}
 
 	func fezThreadPostHandler(_ req: Request) throws -> EventLoopFuture<Response> {
-		guard let fezID = req.parameters.get(fezIDParam.paramString) else {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing fez_id")
 		}
 		let postStruct = try req.content.decode(MessagePostFormContent.self)
@@ -305,7 +305,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 	}
 	
 	func fezJoinPostHandler(_ req: Request) throws -> EventLoopFuture<Response> {
-		guard let fezID = req.parameters.get(fezIDParam.paramString) else {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing fez_id")
 		}
     	return apiQuery(req, endpoint: "/fez/\(fezID)/join", method: .POST).flatMapThrowing { response in
@@ -321,7 +321,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 	}
 		
 	func fezLeavePostHandler(_ req: Request) throws -> EventLoopFuture<Response> {
-		guard let fezID = req.parameters.get(fezIDParam.paramString) else {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing fez_id")
 		}
     	return apiQuery(req, endpoint: "/fez/\(fezID)/unjoin", method: .POST).flatMapThrowing { response in
@@ -345,7 +345,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
     }
     
 	func fezReportPostHandler(_ req: Request) throws -> EventLoopFuture<Response> {
-		guard let fezID = req.parameters.get(fezIDParam.paramString) else {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing fez_id")
 		}
 		let postStruct = try req.content.decode(ReportData.self)
@@ -365,7 +365,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
     
 	/// Handles the POST of a delete request for a fez. Moderators only..
     func fezDeleteHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-    	guard let fez = req.parameters.get(fezIDParam.paramString) else {
+    	guard let fez = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
     		throw "While deleting fez: Invalid fez ID"
     	}
     	return apiQuery(req, endpoint: "/fez/\(fez)", method: .DELETE).map { response in

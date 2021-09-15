@@ -199,6 +199,22 @@ struct EventTimeTag: LeafTag {
 	}
 }
 
+/// Turns a Date into a indexed day of the cruise, with embarkation day being day 0. Used to get the day on which an event happens.
+/// This code counts ''days' as starting/ending at 3AM instead of midnight, as there are often after-midnight events but rarely 3AM events.
+///
+/// Usage: #cruiseDayIndex(date)  returns 0...8
+struct CruiseDayIndexTag: LeafTag {
+	func render(_ ctx: LeafContext) throws -> LeafData {
+        try ctx.requireParameterCount(1)
+		guard let startTimeDouble = ctx.parameters[0].double else {
+            throw "Leaf: Unable to convert parameter to double for date"
+		}
+		let difference = Date(timeIntervalSince1970: startTimeDouble).timeIntervalSince(Settings.shared.cruiseStartDate) - 3600 * 3
+		let dayIndex = String(Int(floor(difference / (3600.0 * 24.0))))
+		return LeafData.string(dayIndex)
+	}
+}
+
 /// Inserts an <img> tag for the given user's avatar image. Presents a default image if the user doesn't have an image.
 /// Note: If we implement identicons at the API level, users will always have images, and the 'generic user' image here is just a fallback.
 ///

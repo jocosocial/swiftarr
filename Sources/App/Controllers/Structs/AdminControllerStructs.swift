@@ -60,6 +60,7 @@ struct SettingsAppFeaturePair: Content {
 /// See `EventController.eventsUpdateHandler(_:data:)`.
 struct SettingsAdminData: Content {
 	var maximumTwarrts: Int
+	var maximumForums: Int
 	var maximumForumPosts: Int
 	/// Max Image size in bytes. Images larger than this are rejected. The server separately enforces maximum x and y image dimensions, downsizing the 
 	/// image if possible. Mostly this option is designed to reject very large gif images.
@@ -75,6 +76,7 @@ struct SettingsAdminData: Content {
 extension SettingsAdminData {
 	init(_ settings: Settings) {
 		self.maximumTwarrts = settings.maximumTwarrts
+		self.maximumForums = settings.maximumForums
 		self.maximumForumPosts = settings.maximumForumPosts
 		self.maxImageSize = settings.maxImageSize
 		self.forumAutoQuarantineThreshold = settings.forumAutoQuarantineThreshold
@@ -98,6 +100,7 @@ extension SettingsAdminData {
 /// See `EventController.eventsUpdateHandler(_:data:)`.
 struct SettingsUpdateData: Content {
 	var maximumTwarrts: Int?
+	var maximumForums: Int?
 	var maximumForumPosts: Int?
 	var maxImageSize: Int?
 	var forumAutoQuarantineThreshold: Int?
