@@ -53,15 +53,32 @@ struct PostSearchPageContext : Encodable {
 	var paginator: PaginatorContext
 	var filterDescription: String
 	
-	init(_ req: Request, posts: PostSearchData, title: String, filter: String) throws {
+	enum SearchType {
+		case userMentions
+		case textSearch(String)
+	}
+	
+	init(_ req: Request, posts: PostSearchData, searchType: SearchType) throws {
+		var title: String
+		var paginatorClosure: (Int) -> String
+		switch searchType {
+			case .userMentions:
+				title = "User Mentions"
+				filterDescription = "Posts Mentioning You"
+				paginatorClosure = { pageIndex in
+					"/forumpost/mentions?start=\(pageIndex * posts.limit)&limit=\(posts.limit)"
+				}
+			case .textSearch(let searchString):
+				title = "ForumPost Search"
+				filterDescription = "\(posts.totalPosts) Posts with \"\(searchString)\""
+				paginatorClosure = { pageIndex in
+					"/forum/search?search=\(searchString)&searchType=posts&start=\(pageIndex * posts.limit)&limit=\(posts.limit)"
+				}
+		}
 		trunk = .init(req, title: title, tab: .forums, search: "Search")
 		self.postSearch = posts
-		let userID = trunk.userID
 		paginator = .init(currentPage: posts.start / posts.limit, 
-				totalPages: (Int(posts.totalPosts) + posts.limit - 1) / posts.limit) { pageIndex in
-			"/forum/post/search?mentionid=\(userID)&start=\(pageIndex * posts.limit)&limit=\(posts.limit)"
-		}
-		filterDescription = filter
+				totalPages: (Int(posts.totalPosts) + posts.limit - 1) / posts.limit, urlForPage: paginatorClosure)
 	}
 }
 
@@ -573,7 +590,7 @@ struct SiteForumController: SiteControllerUtils {
 	func forumGetUserMentions(_ req: Request) throws -> EventLoopFuture<View> {
 		return apiQuery(req, endpoint: "/forum/post/search?mentionself=true").throwingFlatMap { response in
 			let postData = try response.content.decode(PostSearchData.self)
-    		let ctx = try PostSearchPageContext(req, posts: postData, title: "User Mentions", filter: "Posts Mentioning You")
+    		let ctx = try PostSearchPageContext(req, posts: postData, searchType: .userMentions)
 			return req.view.render("Forums/forumPostsList", ctx)
 		}
 	}
@@ -606,7 +623,7 @@ struct SiteForumController: SiteControllerUtils {
 			}
 			return apiQuery(req, endpoint: "/forum/post/search?search=\(querySearch)").throwingFlatMap { response in
 				let responseData = try response.content.decode(PostSearchData.self)
-    			let ctx = try PostSearchPageContext(req, posts: responseData, title: "ForumPost Search", filter: "\(responseData.totalPosts) Posts with \"\(formData.search)\"")
+    			let ctx = try PostSearchPageContext(req, posts: responseData, searchType: .textSearch(formData.search))
 				return req.view.render("Forums/forumPostsList", ctx)
 			}
 		}

@@ -21,6 +21,10 @@ final class Forum: Model {
     /// The title of the forum.
     @Field(key: "title") var title: String
         
+    /// Minimum access level to view posts in this thread. Usually set to `.quarantined`. But, a category reserved for moderators only
+    /// could have this set to `.moderator`. Copied from the category when a thread is created.
+    @Enum(key: "view_access_level") var accessLevelToView: UserAccessLevel
+    
     /// Moderators can set several statuses on forums that modify editability and visibility.
     @Enum(key: "mod_status") var moderationStatus: ContentModerationStatus
     
@@ -62,17 +66,13 @@ final class Forum: Model {
     ///   - categoryID: The category to which the forum belongs.
     ///   - creatorID: The ID of the creator of the forum.
     ///   - isLocked: Whether the forum is administratively locked.
-    init(
-        title: String,
-        category: Category,
-        creator: User,
-        isLocked: Bool = false
-    ) throws {
+    init(title: String, category: Category, creator: User, isLocked: Bool = false) throws {
         self.title = title
         self.$category.id = try category.requireID()
         self.$category.value = category
         self.$creator.id = try creator.requireID()
         self.$creator.value = creator
         self.moderationStatus = .normal
+        self.accessLevelToView = category.accessLevelToView
     }
 }

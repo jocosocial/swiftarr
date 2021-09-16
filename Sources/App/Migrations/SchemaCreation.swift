@@ -161,16 +161,19 @@ struct CreateFezPostSchema: Migration {
 struct CreateForumSchema: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
 		database.enum("moderation_status").read().flatMap { modStatusEnum in
-			database.schema("forums")
-					.id()
-					.field("title", .string, .required)
-					.field("mod_status", modStatusEnum, .required)
-					.field("created_at", .datetime)
-					.field("updated_at", .datetime)
-					.field("deleted_at", .datetime)
-					.field("category_id", .uuid, .required, .references("categories", "id"))
-					.field("creator_id", .uuid, .required, .references("users", "id"))
-					.create()
+			database.enum("user_access_level").read().flatMap { userAccessLevel in
+				database.schema("forums")
+						.id()
+						.field("title", .string, .required)
+						.field("mod_status", modStatusEnum, .required)
+						.field("view_access_level", userAccessLevel, .required)
+						.field("created_at", .datetime)
+						.field("updated_at", .datetime)
+						.field("deleted_at", .datetime)
+						.field("category_id", .uuid, .required, .references("categories", "id"))
+						.field("creator_id", .uuid, .required, .references("users", "id"))
+						.create()
+			}
 		}
     }
     
