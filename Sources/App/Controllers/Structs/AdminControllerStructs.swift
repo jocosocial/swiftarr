@@ -41,6 +41,28 @@ struct EventsUpdateData: Content {
     var schedule: String
 }
 
+/// Used to validate changes to the `Event` database. This struct shows the differrences between the current schedule and the 
+/// (already uploaded but not processed) updated schedule. Event identity is based on the `uid` field--two events with the same
+/// `uid` are the same event, and if they show different times, we conclude the event's time changed. Two events with different `uid`s
+/// are different events, even if all other fields are exactly the same.
+/// 
+/// Events that are added or deleted will only appear in deleted or created event arrays. Modified events could appear in any or all of the 3 modification arrays.
+/// Deleted events take their contents from the database. All other arrays take content from the update.
+///
+/// Required by: `POST /api/v3/admin/schedule/verify`
+///
+/// See `EventController.eventsUpdateHandler(_:data:)`.
+struct EventUpdateDifferenceData: Content {
+	/// Events in db but not in update. EventData is based on the current db values.
+	var deletedEvents: [EventData] = []
+	/// Events in update but not in db. 
+	var createdEvents: [EventData] = []
+	/// Events that will change their time as part of the update. Items here can also show up in `locationChangeEvents` and `minorChangeEvents`.
+	var timeChangeEvents: [EventData] = []
+	var locationChangeEvents: [EventData] = []
+	var minorChangeEvents: [EventData] = []
+}
+
 /// Used to enable/disable features. A featurePair with name: "kraken" and feature: "schedule" indicates the Schedule feature of the Kraken app.
 /// When the server indicates this app:feature pair is disabled, the client app should not show the feature to users, and should avoid calling API calls
 /// related to that feature. Either the app or feature field could be 'all'.

@@ -127,7 +127,9 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		string = words.joined(separator: " ")
 						
 		// Also convert newlines to HTML breaks.
+		string = string.replacingOccurrences(of: "\r\n", with: "<br>")
 		string = string.replacingOccurrences(of: "\r", with: "<br>")
+		string = string.replacingOccurrences(of: "\n", with: "<br>")
 		
 		return LeafData.string(string)
     }

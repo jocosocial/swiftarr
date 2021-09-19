@@ -1009,7 +1009,7 @@ struct ForumController: APIRouteCollection {
                     	// If the post @mentions anyone, update their mention counts
                     	processForumMentions(post: post, editedText: normalizedText, on: req)
 						// stash current contents first
-						let forumEdit = try ForumPostEdit(post: post)
+						let forumEdit = try ForumPostEdit(post: post, editor: user)
 						post.text = normalizedText
 						post.images = filenames
   						post.logIfModeratorAction(.edit, user: user, on: req)

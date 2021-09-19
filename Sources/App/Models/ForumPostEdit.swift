@@ -46,10 +46,12 @@ final class ForumPostEdit: Model {
     ///
     /// - Parameters:
     ///   - post: The ForumPost that will be edited.
-    init(post: ForumPost) throws
+    init(post: ForumPost, editor: User) throws
     {
         self.$post.id = try post.requireID()
         self.$post.value = post
+        self.$editor.id = try editor.requireID()
+        self.$editor.value = editor
         self.postText = post.text
         self.images = post.images
     }

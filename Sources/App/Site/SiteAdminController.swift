@@ -29,6 +29,12 @@ struct SiteAdminController: SiteControllerUtils {
 		
 		privateAdminRoutes.get("serversettings", use: settingsViewHandler)
 		privateAdminRoutes.post("serversettings", use: settingsPostHandler)
+
+		privateAdminRoutes.get("scheduleupload", use: scheduleUploadViewHandler)
+		privateAdminRoutes.post("scheduleupload", use: scheduleUploadPostHandler)
+		privateAdminRoutes.get("scheduleverify", use: scheduleVerifyViewHandler)
+		privateAdminRoutes.post("scheduleverify", use: scheduleVerifyPostHandler)
+		privateAdminRoutes.get("scheduleupload", "complete", use: scheduleUpdateCompleteViewtHandler)
 	}
 	
 // MARK: - Admin Pages
@@ -372,6 +378,105 @@ struct SiteAdminController: SiteControllerUtils {
 		}).flatMapThrowing { response in
 			return .ok
 		}	
+	}
+	
+	// GET /admin/scheduleupload
+	//
+	// Shows a form with a file upload button for upload a new schedule.ics file. This the start of a flow, going from
+	// scheduleupload to scheduleverify to scheduleapply.
+	func scheduleUploadViewHandler(_ req: Request) throws -> EventLoopFuture<View> {
+		struct ScheduleUploadViewContext : Encodable {
+			var trunk: TrunkContext
+
+			init(_ req: Request) throws {
+				trunk = .init(req, title: "Upload Schedule", tab: .none)
+			}
+		}
+		let ctx = try ScheduleUploadViewContext(req)
+		return req.view.render("admin/scheduleUpload", ctx)
+	}
+	
+	// POST /admin/scheduleupload
+	//
+	// Handles the POST of an uploaded schedule file. Reads the file in and saves it in "<workingDir>/admin/uploadschedule.ics".
+	// Does not immediately parse the file or apply it to the DB. See scheduleVerifyViewHandler().
+	func scheduleUploadPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+		struct ScheduleUploadData: Content {
+			/// The schedule in `String` format. 
+			var schedule: String
+		}
+		let uploadData = try req.content.decode(ScheduleUploadData.self)
+		return apiQuery(req, endpoint: "/admin/schedule/update", method: .POST, beforeSend: { req throws in
+			let apiPostData = EventsUpdateData(schedule: uploadData.schedule)
+			try req.content.encode(apiPostData)
+		}).transform(to: .ok)
+	}
+	
+	// GET /admin/scheduleverify
+	//
+	// Displays a page showing the schedule changes that will happen when the (saved) uploaded schedule is applied.
+	// We diff the existing schedule with the new update, and display the adds, deletes, and modified events for review.
+	// This page also has a form where the user can approve the changes to apply them to the db. 
+	func scheduleVerifyViewHandler(_ req: Request) throws -> EventLoopFuture<View> {
+		return apiQuery(req, endpoint: "/admin/schedule/verify").throwingFlatMap { response in
+			let differenceData = try response.content.decode(EventUpdateDifferenceData.self)
+
+			struct ScheduleUpdateVerifyViewContext : Encodable {
+				var trunk: TrunkContext
+				var diff: EventUpdateDifferenceData
+				
+				init(_ req: Request, differenceData: EventUpdateDifferenceData) throws {
+					trunk = .init(req, title: "Edit Daily Theme", tab: .none)
+					self.diff = differenceData
+				}
+			}
+			let ctx = try ScheduleUpdateVerifyViewContext(req, differenceData: differenceData)
+			return req.view.render("admin/scheduleVerify", ctx)
+		}
+	}
+	
+	// POST /admin/scheduleverify
+	//
+	// Handled the POST from the schedule verify page form. Schedule Verify shows the admin the changes that will be applied
+	// before they happen. Accepting the changes POSTs to here. There are 2 options on the form as well:
+	// - Add Posts in Forum Thread. This option, if selected, will create a post in the Event Forum thread of each affected
+	//	 event, (except maybe creates?) explaining the change that occurred.
+	// - Ignore Deleted Events. This option causes deletes to not be applied. In a case where you need to update a single event's
+	// 	 time or location, you could make a .ics that only contains that event and upload/apply that file. Without this 
+	// 	 option, that one event would be considered an exhaustive list of events for the week, and all other events would be deleted.
+	func scheduleVerifyPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+		struct ScheduleVerifyData: Content {
+			var addForumPosts: String?
+			var ignoreDeletes: String?
+		}
+		let formData = try req.content.decode(ScheduleVerifyData.self)
+		var query = [URLQueryItem]()
+		if formData.addForumPosts == "on" {
+			query.append(URLQueryItem(name: "forumPosts", value: "true"))
+		}
+		if formData.ignoreDeletes != "on" {
+			query.append(URLQueryItem(name: "processDeletes", value: "true"))
+		}
+		var components = URLComponents()
+		components.queryItems = query
+		return apiQuery(req, endpoint: "/admin/schedule/update/apply?\(components.percentEncodedQuery ?? "")",
+				method: .POST).map { response in
+			return .ok
+		}
+	}
+	
+	// GET /admin/scheduleupload/complete
+	//
+	func scheduleUpdateCompleteViewtHandler(_ req: Request) throws -> EventLoopFuture<View> {
+			struct ScheduleUpdateCompleteViewContext : Encodable {
+				var trunk: TrunkContext
+				
+				init(_ req: Request) throws {
+					trunk = .init(req, title: "Schedule Update Complete", tab: .none)
+				}
+			}
+			let ctx = try ScheduleUpdateCompleteViewContext(req)
+			return req.view.render("admin/scheduleUpdateComplete", ctx)
 	}
 }
 

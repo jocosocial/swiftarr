@@ -27,21 +27,15 @@ struct CreateEventForums: Migration {
                 }
                 // get events
                 return Event.query(on: database).all().throwingFlatMap { events in
-					// date formatter for titles
-					let dateFormatter = DateFormatter()
-					dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
-					dateFormatter.dateFormat = "(E, HH:mm)"
 					// create forums
 					var futures: [EventLoopFuture<Void>] = []
 					for event in events {
-						// build title and forum
-						let title = dateFormatter.string(from: event.startTime) + " \(event.title)"
-						let forum = try Forum(title: title, category: event.eventType == .shadow ? shadow : official,
-								creator: admin, isLocked: false)
+						let forum = try CreateEventForums.buildEventForum(event, creator: admin, 
+								shadowCategory: shadow, officialCategory: official)
 						futures.append(forum.save(on: database).throwingFlatMap {
 							// Build an initial post in the forum with information about the event, and
 							// a callout for posters to discuss the event.
-							let postText = self.buildEventPostText(event)
+							let postText = CreateEventForums.buildEventPostText(event)
 							let infoPost = try ForumPost(forum: forum, author: admin, text: postText)
 						
 							// Associate the forum with the event
@@ -67,6 +61,18 @@ struct CreateEventForums: Migration {
         database.schema("eventforums").delete()
     }
     
+    static func buildEventForum(_ event: Event, creator: User, shadowCategory: Category, officialCategory: Category) throws -> Forum {
+		// date formatter for titles
+		let dateFormatter = DateFormatter()
+		dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+		dateFormatter.dateFormat = "(E, HH:mm)"
+		// build title and forum
+		let title = dateFormatter.string(from: event.startTime) + " \(event.title)"
+		let forum = try Forum(title: title, category: event.eventType == .shadow ? shadowCategory : officialCategory,
+				creator: creator, isLocked: false)
+		return forum
+    }
+    
     /// Builds a text string for posting to the Events forum thread for an Event. This post is created by `admin`.
     /// On initial Events migration, each Event gets a thread in the Events category associated with it, and each thread
     /// gets an initial post. 
@@ -77,7 +83,7 @@ struct CreateEventForums: Migration {
 	/// 
     /// - Parameter event: The event for which to produce a blurb.
     /// - Returns: A string suitable for adding to a ForumPost, describing the event.
-    func buildEventPostText(_ event: Event) -> String {
+	static func buildEventPostText(_ event: Event) -> String {
 
 		let dateFormatter = DateFormatter()
 		dateFormatter.dateFormat = "E, h:mm a"

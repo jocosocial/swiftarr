@@ -12,7 +12,7 @@ DTEND:20200308T050000Z
 SUMMARY:Theme: Alternate Universe!
 DESCRIPTION:This is a test of a new event. Sure hope the uid doesn't conflict!
 CATEGORIES:
-LOCATION:Whole Ship\,
+LOCATION:Whole Ship
 SEQUENCE:0
 UID:aee4abeeae49e68a25b7d746f7aa7a00
 URL:http://jococruise2019.sched.com/event/aee4abeeae49e68a25b7d746f7aa7a00
@@ -71,17 +71,6 @@ LOCATION:Upper Main Dining Room\, Deck 3\, Aft
 SEQUENCE:0
 UID:1127d54372322e6c031eb3516b6c14e7
 URL:http://jococruise2019.sched.com/event/1127d54372322e6c031eb3516b6c14e7
-END:VEVENT
-BEGIN:VEVENT
-DTSTART:20200307T190000Z
-DTEND:20200307T200000Z
-SUMMARY:Game Library Ribbon Cutting Ceremony
-DESCRIPTION:There's not really so much of an official ceremony\, but the proverbial ducks will be in metaphorical rows by 2 pm\, and the library will be officially open for "business."
-CATEGORIES:GAMING
-LOCATION:Upper Main Dining Room\, Deck 3\, Aft
-SEQUENCE:0
-UID:705ce900bdaee97c217f9ec933d94a87
-URL:http://jococruise2019.sched.com/event/705ce900bdaee97c217f9ec933d94a87
 END:VEVENT
 BEGIN:VEVENT
 DTSTART:20200307T190000Z
@@ -207,7 +196,7 @@ END:VEVENT
 BEGIN:VEVENT
 DTSTART:20200308T010000Z
 DTEND:20200308T030000Z
-SUMMARY:Main Concert (Red Team) - "Alexa: Play 'JoCo Cruise' on Shuffle" Opening Night Sampler
+SUMMARY:Main Concert (Red Team) - "Alexa: Play 'JoCo Cruise'" Opening Night Sampler
 DESCRIPTION:Jonathan Coulton and Paul & Storm kick things off with an informal\, freewheeling concert\, sitting in on each other's songs\, and bringing out some pals (including Molly Lewis\, Jim Boggia and Aimee Mann).
 CATEGORIES:MAIN CONCERT
 LOCATION:The Main Stage\, Deck 2\, Forward
@@ -733,7 +722,7 @@ UID:e5cd64d4972c8769b4a7971dde429325
 URL:http://jococruise2019.sched.com/event/e5cd64d4972c8769b4a7971dde429325
 END:VEVENT
 BEGIN:VEVENT
-DTSTART:20200309T023000Z
+DTSTART:20200309T022000Z
 DTEND:20200309T040000Z
 SUMMARY:Escape Room: An Epic Quest
 DESCRIPTION:Solve puzzles\, petition mythical creatures\, enchant magic relics\, and perform a ritual to save the world! A low-tech portable "escape room" designed for groups of 6 to 10. Advance sign-up recommended (sheet posted by room)\, last-minute sign-ups accommodated as space permits. DO NOT BE LATE!
@@ -936,7 +925,7 @@ DTEND:20200309T143000Z
 SUMMARY:Let's Talk Photography
 DESCRIPTION:We'll have an informal discussion about photography and tips to make your photos better. All skill levels are welcome\, and all devices from DSLRs to phones. Come with questions\, share favorite subjects and moments.
 CATEGORIES:SHADOW CRUISE
-LOCATION:Stuyvesant Room\, Deck 3\, Forward
+LOCATION:Stuyvesant Room\, Deck 3\, Backward
 SEQUENCE:0
 UID:61264a8cf13bdfff19d7f3929dfe8ebb
 URL:http://jococruise2019.sched.com/event/61264a8cf13bdfff19d7f3929dfe8ebb

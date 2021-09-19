@@ -148,10 +148,6 @@ struct EventController: APIRouteCollection {
     }
 
     
-    // MARK: - sharedAuthGroup Handlers (logged in or not)
-    // All handlers in this route group require a valid HTTP Basic Authorization
-    // *or* HTTP Bearer Authorization header in the request.
-        
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.

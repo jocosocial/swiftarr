@@ -16,6 +16,9 @@
 				<a class="list-group-item list-group-item-action" href="/admin/serversettings">
 					<b>Server Settings</b>: Lots of inscrutable toggles and buttons here.
 				</a>		
+				<a class="list-group-item list-group-item-action" href="/admin/scheduleupload">
+					<b>Schedule Upload</b>: Uploads and processes a new schedule.ics file.
+				</a>		
 			</div>
 		</div>
     #endexport
