@@ -3,7 +3,7 @@
     	<div class="container-md ms-0 mt-2">
     		<div class="row align-items-end">
     			<div class="col col-auto">
-			    	<h6><b>Moderate User @#(modData.header.username)</b></h6>
+			    	<h6><b>Moderate Primary User @#(modData.header.username)</b></h6>
 				</div>
 			</div>
 			<div class="row mb-3">
@@ -47,11 +47,23 @@
 				</div>				
 			</form>
 			
+			#if(count(modData.subAccounts) == 0):
+				<h6><b>User has no sub-accounts.</b></h6>
+			#else:
+				<h6><b>Alt Accounts for this user</b></h6>
+				<div class="list-group mb-1">
+					#for(subAcct in modData.subAccounts):
+						#userByline(subAcct, "list-group-item")
+					#endfor
+				</div>
+				<p class="mb-3"><i>Access Level/Temp Quarantine changes affect all alt accounts of this user.</i></p>
+			#endif
+			
 			#if(count(reportGroups) == 0):
-				<h6><b>No reports on this user.</b></h6>
+				<h6><b>No reports on this user or their alt accounts.</b></h6>
 			#else:				
 				<div class="row mt-3">
-					<h6><b>#count(modData.reports) reports on this user:</b></h6>
+					<h6><b>#count(modData.reports) reports on this user's accounts:</b></h6>
 				</div>
 				<div class="list-group">
 					#for(reportGroup in reportGroups):

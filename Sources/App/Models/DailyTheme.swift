@@ -27,7 +27,7 @@ final class DailyTheme: Model {
     @Field(key: "info") var info: String
     
 	/// An image that relates to the theme.
-    @Field(key: "image") var image: String?
+    @OptionalField(key: "image") var image: String?
     
     /// Day of cruise, counted from `Settings.shared.cruiseStartDate`. 0 is embarkation day. Values could be negative (e.g. Day -1 is "Anticipation Day")
     /// Values for this field are uniqued in the database, meaning switching two theme days requires extra steps.

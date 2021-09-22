@@ -70,6 +70,9 @@ final class Settings : Encodable {
 	@StoredSettingsValue("disabledFeatures", defaultValue: DisabledFeaturesGroup(value: [:])) var disabledFeatures: DisabledFeaturesGroup
     
 // MARK: Limits
+    /// The maximum number of alt accounts per primary user account.
+    @StoredSettingsValue("maxAlternateAccounts", defaultValue: 6) var maxAlternateAccounts: Int
+    
     /// The maximum number of twartts allowed per request.
     @StoredSettingsValue("maximumTwarrts", defaultValue: 200) var maximumTwarrts: Int
 

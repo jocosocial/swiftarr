@@ -460,21 +460,26 @@ struct ModerationController: APIRouteCollection {
 	/// Moderator only. Returns info admins and moderators need to review a User. 
 	///
 	/// The `UserModerationData` contains:
-	/// * Reports against the user's content, for all content types (twarrt, forum posts, profile, user image)
-	/// * The user's current  access lavel
+	/// * UserHeaders for the User's primary account and any sub-accounts.
+	/// * Reports against content authored by any of the above accounts, for all content types (twarrt, forum posts, profile, user image)
+	/// * The user's current access level.
 	/// * Any temp ban the user has.
 	/// 
 	/// - Parameter req: The incoming `Request`, provided automatically.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: `FezModerationData` containing a bunch of data pertinient to moderating the forum.
 	func userModerationHandler(_ req: Request) throws -> EventLoopFuture<UserModerationData> {
-		return User.findFromParameter(userIDParam, on: req).throwingFlatMap { targetUser in
-			return try Report.query(on: req.db)
-					.filter(\.$reportedUser.$id == targetUser.requireID())
-					.sort(\.$createdAt, .descending).all().flatMapThrowing { reports in
-				let reportData = try reports.map { try ReportModerationData.init(req: req, report: $0) }
-				let modData = try UserModerationData(user: targetUser, reports: reportData)
-				return modData
+		return User.findFromParameter(userIDParam, on: req).flatMap { targetUser in
+			return targetUser.allAccounts(on: req.db).throwingFlatMap { allAccounts in
+				let allUserIDs = try allAccounts.map { try $0.requireID() }
+				return Report.query(on: req.db)
+						.filter(\.$reportedUser.$id ~~ allUserIDs)
+						.sort(\.$createdAt, .descending).all().flatMapThrowing { reports in
+					let reportData = try reports.map { try ReportModerationData.init(req: req, report: $0) }
+					let modData = try UserModerationData(user: allAccounts[0], subAccounts: Array(allAccounts.dropFirst()), 
+							reports: reportData)
+					return modData
+				}
 			}
 		}
 	}
@@ -485,6 +490,9 @@ struct ModerationController: APIRouteCollection {
 	/// Moderators (and above) cannot use this method to change the access level of other mods (and above). Nor can they use this to
 	/// reduce their own access level to non-moderator status.
 	///
+	/// The primary account and all sub-accounts linked to the given User account are affected by the temporary ban. The passed-in UserID may
+	/// be either a primary or sub-account.
+	/// 
 	/// - Parameter req: The incoming `Request`, provided automatically.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: `HTTPStatus` .ok if the requested access level was set.
@@ -503,11 +511,16 @@ struct ModerationController: APIRouteCollection {
 					targetUser.accessLevel != UserAccessLevel.client else {
 				throw Abort(.badRequest, reason: "You cannot modify user access level of Target user.")
 			}
-			targetUser.accessLevel = targetAccessLevel
-			if let modSettableAccessLevel = ModeratorActionType.setFromAccessLevel(targetAccessLevel) {
-				targetUser.logIfModeratorAction(modSettableAccessLevel, user: user, on: req)
+			return targetUser.allAccounts(on: req.db).throwingFlatMap { allAccounts in
+				if let modSettableAccessLevel = ModeratorActionType.setFromAccessLevel(targetAccessLevel) {
+					allAccounts[0].logIfModeratorAction(modSettableAccessLevel, user: user, on: req)
+				}
+				let futures = allAccounts.map { (targetUserAccount) -> EventLoopFuture<Void> in
+					targetUserAccount.accessLevel = targetAccessLevel
+					return targetUserAccount.save(on: req.db)
+				}
+				return futures.flatten(on: req.eventLoop).transform(to: .ok)
 			}
-			return targetUser.save(on: req.db).transform(to: .ok)
 		}
 	}
 	
@@ -515,6 +528,9 @@ struct ModerationController: APIRouteCollection {
 	///
 	/// Moderator only. Applies a tempory quarantine on a user for INT hours, starting immediately. While quarantined, the user may not 
 	/// create or edit content, but can still read others' content. They can still talk in private Seamail chats.
+	/// 
+	/// The primary account and all sub-accounts linked to the given User account are affected by the temporary ban. The passed-in UserID may
+	/// be either a primary or sub-account.
 	///
 	/// - Parameter req: The incoming `Request`, provided automatically.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
@@ -533,22 +549,29 @@ struct ModerationController: APIRouteCollection {
 					targetUser.accessLevel != UserAccessLevel.client else {
 				throw Abort(.badRequest, reason: "You cannot temp quarantine Target user.")
 			}
-			if quarantineHours == 0 {
-				if targetUser.tempQuarantineUntil != nil {
-					targetUser.tempQuarantineUntil = nil
-					targetUser.logIfModeratorAction(.tempQuarantineCleared, user: user, on: req)
-					return targetUser.save(on: req.db).transform(to: .ok)
+			return targetUser.allAccounts(on: req.db).throwingFlatMap { allAccounts in
+				if quarantineHours == 0 {
+					if targetUser.tempQuarantineUntil != nil {
+						allAccounts.forEach { $0.tempQuarantineUntil = nil }
+						allAccounts[0].logIfModeratorAction(.tempQuarantineCleared, user: user, on: req)
+					}
 				}
-			} 
-			if let endDate = Calendar.autoupdatingCurrent.date(byAdding: .hour, value: quarantineHours, to: Date()) {
-				targetUser.tempQuarantineUntil = endDate
+				else { 
+					if let endDate = Calendar.autoupdatingCurrent.date(byAdding: .hour, value: quarantineHours, to: Date()) {
+						allAccounts.forEach { $0.tempQuarantineUntil = endDate }
+					}
+					else {
+						// Do it the old way
+						allAccounts.forEach { $0.tempQuarantineUntil = Date() + Double(quarantineHours) * 60.0 * 60.0 }
+					}
+					// Note: If user was previously quarantined, and this action changes the length of time, we still
+					// log the quarantine action.
+					allAccounts[0].logIfModeratorAction(.tempQuarantine, user: user, on: req)
+				}
+				return allAccounts.map { (targetUserAccount) -> EventLoopFuture<Void> in
+					return targetUserAccount.save(on: req.db)
+				}.flatten(on: req.eventLoop).transform(to: .ok)
 			}
-			else {
-				// Do it the old way
-				targetUser.tempQuarantineUntil = Date() + Double(quarantineHours) * 60.0 * 60.0
-			}
-			targetUser.logIfModeratorAction(.tempQuarantine, user: user, on: req)
-			return targetUser.save(on: req.db).transform(to: .ok)
 		}
 	}
 	

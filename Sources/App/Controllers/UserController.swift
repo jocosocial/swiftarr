@@ -510,14 +510,15 @@ struct UserController: APIRouteCollection {
         // see `UserCreateData.validations()`
 		let data = try ValidatingJSONDecoder().decode(UserCreateData.self, fromBodyOf: req)
         // only upstanding citizens need apply
-        guard user.accessLevel.hasAccess(.verified) else {
-            throw Abort(.forbidden, reason: "user not currently permitted to create sub-account")
-        }
-        // check if existing username
-        return User.query(on: req.db)
-            .filter(\.$username == data.username)
-            .first()
-            .throwingFlatMap { (existingUser) in
+        try user.guardCanCreateContent(customErrorString: "user not currently permitted to create sub-account")
+        let parentID = try user.$parent.id ?? user.requireID()
+        return try User.query(on: req.db).filter(\.$parent.$id == parentID).count()
+        		.and(user.parentAccount(on: req)).throwingFlatMap { (altAccountCount, parentAccount) in
+        	guard altAccountCount <= Settings.shared.maxAlternateAccounts else {
+        		throw Abort(.badRequest, reason: "Maximum number of alternate accounts reached.")
+        	}
+			// check if existing username
+			return User.query(on: req.db).filter(\.$username == data.username).first().throwingFlatMap { existingUser in
 				guard existingUser == nil else {
 					throw Abort(.conflict, reason: "username '\(data.username)' is not available")
 				}
@@ -525,16 +526,14 @@ struct UserController: APIRouteCollection {
 				let passwordHash = try Bcrypt.hash(data.password)
 				// sub-account inherits .accessLevel, .recoveryKey and .verification
 				let subAccount = User(
-					username: data.username,
-					password: passwordHash,
-					recoveryKey: user.recoveryKey,
-					verification: user.verification,
-					parent: user.parent,
-					accessLevel: user.accessLevel
-				)
+						username: data.username,
+						password: passwordHash,
+						recoveryKey: user.recoveryKey,
+						verification: user.verification,
+						parent: parentAccount,
+						accessLevel: user.accessLevel)
 				return req.db.transaction { (database) in
-					return subAccount.save(on: database).transform(to: subAccount).addModelID().flatMap {
-						(newAccount, newAccountID) in
+					return subAccount.save(on: database).transform(to: subAccount).addModelID().flatMap { (newAccount, newAccountID) in
 						// initialize default barrels
 						return self.createDefaultBarrels(for: newAccount, on: database).flatMap {
 							return req.userCache.updateUser(newAccountID).flatMapThrowing { (cacheData) -> Response in
@@ -547,7 +546,8 @@ struct UserController: APIRouteCollection {
 						}
 					}
 				}
-        }
+			}
+		}
     }
     
     /// `POST /api/v3/user/alertwords/add/STRING`

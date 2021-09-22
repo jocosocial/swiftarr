@@ -41,7 +41,7 @@ final class Report: Model {
 
     /// Set to a new UUID() when a Moderator starts handling one or more reports. Any mod actions the mod takes until these reports are closed
 	/// get tagged with this UUID. Reports may be closed without ever setting an action group.
-    @Field(key: "action_group") var actionGroup: UUID?
+    @OptionalField(key: "action_group") var actionGroup: UUID?
     
     /// The status of the report.
     @Field(key: "isClosed") var isClosed: Bool

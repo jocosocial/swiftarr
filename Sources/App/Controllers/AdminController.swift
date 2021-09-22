@@ -125,6 +125,9 @@ struct AdminController: APIRouteCollection {
 			throw Abort(.forbidden, reason: "Admin only")
 		}
  		let data = try ValidatingJSONDecoder().decode(SettingsUpdateData.self, fromBodyOf: req)
+ 		if let value = data.maxAlternateAccounts {
+ 			Settings.shared.maxAlternateAccounts = value
+ 		}
  		if let value = data.maximumTwarrts {
  			Settings.shared.maximumTwarrts = value
  		}

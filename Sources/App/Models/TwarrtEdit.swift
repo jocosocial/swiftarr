@@ -21,7 +21,7 @@ final class TwarrtEdit: Model {
     @Field(key: "text") var text: String
     
     /// The previous images, if any.
-    @Field(key: "images") var images: [String]?
+    @OptionalField(key: "images") var images: [String]?
     
     /// Timestamp of the model's creation, set automatically.
 	@Timestamp(key: "created_at", on: .create) var createdAt: Date?

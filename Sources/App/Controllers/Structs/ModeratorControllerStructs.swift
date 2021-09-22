@@ -307,20 +307,28 @@ struct TwarrtModerationData: Content {
 }
 
 struct UserModerationData: Content {
+	/// 'Main' account for this user
 	var header: UserHeader
+	/// Sub-accounts that this user has created.			
+	var subAccounts: [UserHeader]
+	/// This user's access level. Main user and all sub accounts share an access level.
 	var accessLevel: UserAccessLevel
+	/// If this user is temporarily quarantined, this will contain the end time for the quarantine. While quarantined, the user can log in and read content as normal
+	/// but cannot create content in any public area (posts, edit posts, create forums, participate in FriendlyFezzes, or edit their profile). 
 	var tempQuarantineEndTime: Date?
+	/// All reports against any user account this user controls.
 	var reports: [ReportModerationData]
 }
 
 extension UserModerationData {
-	init(user: User, reports: [ReportModerationData]) throws {
+	init(user: User, subAccounts: [User], reports: [ReportModerationData]) throws {
 		header = try UserHeader(user: user)
 		accessLevel = user.accessLevel
 		tempQuarantineEndTime =  nil
 		if let endTime = user.tempQuarantineUntil, endTime > Date() {
 			tempQuarantineEndTime = user.tempQuarantineUntil
 		}
+		self.subAccounts = try subAccounts.map { try UserHeader(user: $0) }
 		self.reports = reports
 	}
 }

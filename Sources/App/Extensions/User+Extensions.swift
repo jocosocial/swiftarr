@@ -50,15 +50,15 @@ extension User {
     func hasBookmarked(_ object: UserBookmarkable, on req: Request) -> EventLoopFuture<Bool> {
     	do {
 			return try Barrel.query(on: req.db)
-				.filter(\.$ownerID, .equal, self.requireID())
-				.filter(\.$barrelType, .equal, object.bookmarkBarrelType)
-				.first()
-				.flatMapThrowing { (barrel) in
-					guard let barrel = barrel else {
-						return false 
-					}
-					return try barrel.userInfo["bookmarks"]?.contains(object.bookmarkIDString()) ?? false
+					.filter(\.$ownerID, .equal, self.requireID())
+					.filter(\.$barrelType, .equal, object.bookmarkBarrelType)
+					.first()
+					.flatMapThrowing { (barrel) in
+				guard let barrel = barrel else {
+					return false 
 				}
+				return try barrel.userInfo["bookmarks"]?.contains(object.bookmarkIDString()) ?? false
+			}
 		}
 		catch {
 			return req.eventLoop.makeFailedFuture(error)
@@ -73,17 +73,35 @@ extension User {
     ///   which the query must be run.
     /// - Returns: `[UUID]` containing all the user's associated IDs.
     func allAccountIDs(on req: Request) -> EventLoopFuture<[UUID]> {
-    	let parID = self.parent?.id ?? self.id
+    	let parID = self.$parent.id ?? self.id
     	guard let parent = parID else {
     		return req.eventLoop.makeSucceededFuture([])
     	}
 		return User.query(on: req.db).group(.or) { (or) in
-            or.filter(\.$id == parent)
-            or.filter(\.$parent.$id == parent)
-        }.all()
-            .flatMapThrowing { (users) in
-                return try users.map { try $0.requireID() }
-        	}
+				or.filter(\.$id == parent)
+				or.filter(\.$parent.$id == parent)
+				}.all().flatMapThrowing { (users) in
+			return try users.map { try $0.requireID() }
+		}
+    }
+    
+    /// Returns an array of `User` whose first element is the primary account and the remaining elements
+	/// are sub-accounts of the primary account.
+    ///
+    /// - Parameter db: The incoming request `Container`, which provides the `EventLoop` on
+    ///   which the query must be run.
+    /// - Returns: `[User]`
+    func allAccounts(on db: Database) -> EventLoopFuture<[User]> {
+    	var parentFinder: EventLoopFuture<User?> = db.eventLoop.makeSucceededFuture(self)
+    	if let parentID = self.$parent.id {
+    		parentFinder = User.find(parentID, on: db)
+    	}
+    	return parentFinder.throwingFlatMap { parent in
+    		let parentUser = parent ?? self
+    		return try User.query(on: db).filter(\.$parent.$id == parentUser.requireID()).all().map { subAccounts in
+    			return [parentUser] + subAccounts
+    		}
+    	}
     }
         
     /// Returns the parent `User` of the user sending the request. If the requesting user has
@@ -92,7 +110,7 @@ extension User {
     /// - Parameter req: The incoming request `Container`, which provides reference to the
     ///   sending user.
     func parentAccount(on req: Request) throws -> EventLoopFuture<User> {
-    	if self.$parent.value == nil {
+    	if self.$parent.id == nil {
     		return req.eventLoop.makeSucceededFuture(self)
     	}
     	return self.$parent.load(on: req.db).map { self.parent }
@@ -116,7 +134,7 @@ extension User {
 	func guardCanCreateContent(customErrorString: String = "user cannot modify this content") throws {
 		if let quarantineEndDate = tempQuarantineUntil {
 			guard Date() > quarantineEndDate else {
-				throw Abort(.forbidden, reason: "User is temporarily quarantined and cannot create content.")
+				throw Abort(.forbidden, reason: "User is temporarily quarantined; \(customErrorString)")
 			}
 		}
 		guard accessLevel.canCreateContent() else {

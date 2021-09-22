@@ -14,6 +14,12 @@
 			<form class="ajax" action="/admin/serversettings" enctype="multipart/form-data" method="POST" data-successurl="/admin/serversettings" id="serverSettingsForm">
 				<div class="row my-1">
 					<div class="col">
+						<label for="maximumTwarrts">Maximum Alt Accounts per Primary Acct</label>
+						<input type="number" id="maxAlternateAccounts" name="maxAlternateAccounts" min="0" max="40" value="#(settings.maxAlternateAccounts)">
+					</div>
+				</div>
+				<div class="row my-1">
+					<div class="col">
 						<label for="maximumTwarrts">Maximum Twarrts per request</label>
 						<input type="number" id="maximumTwarrts" name="maximumTwarrts" min="1" max="1000" value="#(settings.maximumTwarrts)">
 					</div>

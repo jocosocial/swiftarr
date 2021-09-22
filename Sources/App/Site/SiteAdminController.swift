@@ -333,6 +333,7 @@ struct SiteAdminController: SiteControllerUtils {
 	func settingsPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
 		// The web form decodes into this from a multipart-form
 		struct SettingsPostFormContent: Decodable {
+			var maxAlternateAccounts: Int
 			var maximumTwarrts: Int
 			var maximumForums: Int
 			var maximumForumPosts: Int
@@ -364,7 +365,9 @@ struct SiteAdminController: SiteControllerUtils {
 			}
 		}
 
-		let apiPostContent = SettingsUpdateData(maximumTwarrts: postStruct.maximumTwarrts,
+		let apiPostContent = SettingsUpdateData(
+				maxAlternateAccounts: postStruct.maxAlternateAccounts,
+				maximumTwarrts: postStruct.maximumTwarrts,
 				maximumForums: postStruct.maximumForums, 
 				maximumForumPosts: postStruct.maximumForumPosts, 
 				maxImageSize: postStruct.maxImageSize * 1048576, 

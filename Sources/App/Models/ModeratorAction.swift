@@ -28,7 +28,7 @@ final class ModeratorAction: Model {
     @Field(key: "content_id") var contentID: String
      
 	/// If the mod is in the process of handling reports when taking this action, this gets set to the reports' actionGroup, making it easier to correllate user reports amd mod actions.
-    @Field(key: "action_group") var actionGroup: UUID?
+    @OptionalField(key: "action_group") var actionGroup: UUID?
 
     /// Timestamp of the model's creation, set automatically.
 	@Timestamp(key: "created_at", on: .create) var createdAt: Date?

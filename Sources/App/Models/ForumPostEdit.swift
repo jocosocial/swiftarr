@@ -23,7 +23,7 @@ final class ForumPostEdit: Model {
     @Field(key: "post_text") var postText: String
     
     /// The previous images, if any.
-    @Field(key: "images") var images: [String]?
+    @OptionalField(key: "images") var images: [String]?
     
     /// Timestamp of the model's creation, set automatically.
 	@Timestamp(key: "created_at", on: .create) var createdAt: Date?

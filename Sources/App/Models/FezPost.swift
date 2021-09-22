@@ -22,7 +22,7 @@ final class FezPost: Model {
     @Field(key: "text") var text: String
     
     /// The filename of any image content of the post. FezPosts are limited to one image, and "closed" Fez types cannot have any.
-    @Field(key: "image") var image: String?
+    @OptionalField(key: "image") var image: String?
     
     /// Moderators can set several statuses on fezPosts that modify editability and visibility.
     @Enum(key: "mod_status") var moderationStatus: ContentModerationStatus

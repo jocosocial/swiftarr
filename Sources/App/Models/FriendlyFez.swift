@@ -37,16 +37,16 @@ final class FriendlyFez: Model {
 	@Field(key: "info") var info: String
 
 	/// Where the fez is happening.
-	@Field(key: "location") var location: String?
+	@OptionalField(key: "location") var location: String?
 	
     /// Moderators can set several statuses on fezPosts that modify editability and visibility.
     @Enum(key: "mod_status") var moderationStatus: ContentModerationStatus
         
 	/// Start time for the fez. Only meaningful for public fezzes that are organizing an activity.
-	@Field(key: "start_time") var startTime: Date?
+	@OptionalField(key: "start_time") var startTime: Date?
 
 	/// End  time for the fez.
-	@Field(key: "end_time") var endTime: Date?
+	@OptionalField(key: "end_time") var endTime: Date?
 	
 	/// A minimum headcount needed for the fez to happen. Clients may want to highlight fezzes that are below min capacity in order to 
 	/// encourage users to join.
