@@ -57,6 +57,7 @@
 						<ul class="list-group">
 							<li class="list-group-item"><a href="/profile">View your User Profile</a></li>
 							<li class="list-group-item"><a href="/profile">Manage Muted and Blocked Users</a></li>
+							<li class="list-group-item"><a href="/createAltAccount">Create an Alt Account</a></li>
 						</ul>
 					</div>
 				</div>

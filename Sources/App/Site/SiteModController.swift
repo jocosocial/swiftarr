@@ -534,17 +534,18 @@ struct SiteModController: SiteControllerUtils {
 // entry per reported content
 func generateContentGroups(from reports: [ReportModerationData]) -> [ReportContentGroup] {
 	var reportedContentArray = [ReportContentGroup]()
-	reportLoop: for report in reports {
-		for var content in reportedContentArray {
-			if report.reportedID == content.reportedID && report.type == content.reportType {
-				content.openCount += report.isClosed ? 0 : 1
-				if content.firstReport.creationTime > report.creationTime {
-					content.firstReport = report
-				}
-				content.reports.append(report)
-				break reportLoop
+	for report in reports {
+		if let index = reportedContentArray.firstIndex(where: { report.reportedID == $0.reportedID && report.type == $0.reportType }) {
+			var content = reportedContentArray[index]
+			content.openCount += report.isClosed ? 0 : 1
+			if content.firstReport.creationTime > report.creationTime {
+				content.firstReport = report
 			}
+			content.reports.append(report)
+			reportedContentArray[index] = content
+			continue
 		}
+		
 		var contentURL: String
 		switch report.type {
 			case .twarrt: 		contentURL = "/moderate/twarrt/\(report.reportedID)"

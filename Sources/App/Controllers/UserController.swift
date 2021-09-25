@@ -509,7 +509,7 @@ struct UserController: APIRouteCollection {
         let user = try req.auth.require(User.self)
         // see `UserCreateData.validations()`
 		let data = try ValidatingJSONDecoder().decode(UserCreateData.self, fromBodyOf: req)
-        // only upstanding citizens need apply
+        // only upstanding citizens need apply--'validated' user level, not tmep-quarantined.
         try user.guardCanCreateContent(customErrorString: "user not currently permitted to create sub-account")
         let parentID = try user.$parent.id ?? user.requireID()
         return try User.query(on: req.db).filter(\.$parent.$id == parentID).count()
@@ -535,15 +535,16 @@ struct UserController: APIRouteCollection {
 				return req.db.transaction { (database) in
 					return subAccount.save(on: database).transform(to: subAccount).addModelID().flatMap { (newAccount, newAccountID) in
 						// initialize default barrels
-						return self.createDefaultBarrels(for: newAccount, on: database).flatMap {
-							return req.userCache.updateUser(newAccountID).flatMapThrowing { (cacheData) -> Response in
-								// return user data as .created
-								let addedUserData = AddedUserData(userID: newAccountID, username: newAccount.username)
-								let response = Response(status: .created)
-								try response.content.encode(addedUserData)
-								return response
-							}
-						}
+						return self.createDefaultBarrels(for: newAccount, on: database).transform(to: newAccount)
+					}
+				}.throwingFlatMap { newAccount in
+					let newAccountID = try newAccount.requireID()
+					return req.userCache.updateUser(newAccountID).flatMapThrowing { (cacheData) -> Response in
+						// return user data as .created
+						let addedUserData = AddedUserData(userID: newAccountID, username: newAccount.username)
+						let response = Response(status: .created)
+						try response.content.encode(addedUserData)
+						return response
 					}
 				}
 			}

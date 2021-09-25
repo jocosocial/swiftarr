@@ -8,19 +8,22 @@ struct SiteLoginController: SiteControllerUtils {
 
 		// Routes that the user does not need to be logged in to access.
 		let openRoutes = getOpenRoutes(app)
-        openRoutes.get("login", use: loginPageHandler)
-        openRoutes.post("login", use: loginPageLoginHandler)
+        openRoutes.get("login", use: loginPageViewHandler)
+        openRoutes.post("login", use: loginPagePostHandler)
         openRoutes.get("createAccount", use: createAccountPageHandler)
-        openRoutes.post("createAccount", use: createAccountPagePostHandler)
-        openRoutes.get("resetPassword", use: resetPasswordPageHandler)
+        openRoutes.post("createAccount", use: createAccountPostHandler)
+        openRoutes.get("resetPassword", use: resetPasswordViewHandler)
         openRoutes.post("resetPassword", use: resetPasswordPostHandler)			// Change pw while logged in
         openRoutes.post("recoverPassword", use: recoverPasswordPostHandler)		// Change pw while not logged in
-        openRoutes.get("codeOfConduct", use: codeOfConductPageHandler)
+        openRoutes.get("codeOfConduct", use: codeOfConductViewHandler)
 				
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let privateRoutes = getPrivateRoutes(app)
-        privateRoutes.get("logout", use: loginPageHandler)
+        privateRoutes.get("logout", use: loginPageViewHandler)
         privateRoutes.post("logout", use: loginPageLogoutHandler)
+
+        privateRoutes.get("createAltAccount", use: createAltAccountViewHandler)
+        privateRoutes.post("createAltAccount", use: createAltAccountPostHandler)
 	}
 	    
 // MARK: - Login
@@ -62,11 +65,17 @@ struct SiteLoginController: SiteControllerUtils {
 		}
 	}
 	
-    func loginPageHandler(_ req: Request) -> EventLoopFuture<View> {
+	/// `GET /login`
+	/// `GET /logout`
+	///
+	/// When the caller is a logged-in user with a session token, this shows a logout page. When the caller is not logged-in, this shows a login page.
+    func loginPageViewHandler(_ req: Request) -> EventLoopFuture<View> {
 		return req.view.render("Login/login", LoginPageContext(req))
 	}
 	    
-    func loginPageLoginHandler(_ req: Request) -> EventLoopFuture<View> {
+	/// `POST /login`
+	///
+    func loginPagePostHandler(_ req: Request) -> EventLoopFuture<View> {
     	struct PostStruct : Codable {
     		var username: String
     		var password: String
@@ -95,6 +104,10 @@ struct SiteLoginController: SiteControllerUtils {
 		}
 	}
 	    
+	/// `POST /logout`
+	///
+	/// There's a single URL for login/logout; it shows you the right page depending on your current login status.
+	/// The logout form shows the user who they're logged in as, and has a single 'Logout' button.
     func loginPageLogoutHandler(_ req: Request) -> EventLoopFuture<View> {
     	req.session.destroy()
     	req.auth.logout(User.self)
@@ -106,12 +119,17 @@ struct SiteLoginController: SiteControllerUtils {
 		return req.view.render("Login/login", loginContext)
     }
     
-    func createAccountPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+	/// `GET /createAccount`
+	///
+	/// Shows the Account Creation form if not logged in. For logged-in users this shows the Logout form.
+	func createAccountPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		return req.view.render("Login/createAccount", LoginPageContext(req))
     }
     
-    // Called when the Create Account form is POSTed.
-	func createAccountPagePostHandler(_ req: Request) throws -> EventLoopFuture<View> {
+	/// `POST /createAccount`
+	///
+    /// Called when the Create Account form is POSTed.
+	func createAccountPostHandler(_ req: Request) throws -> EventLoopFuture<View> {
     	struct PostStruct : Codable {
     		var regcode: String?
     		var username: String
@@ -175,11 +193,16 @@ struct SiteLoginController: SiteControllerUtils {
 		}
 	}
 	
-	// Uses password update if you're logged in, else uses the recover password flow.
-    func resetPasswordPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+	/// `GET /resetPassword`
+	///
+	/// Shows the Reset Password page.
+	/// Uses password update if you're logged in, else uses the recover password flow.
+    func resetPasswordViewHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		return req.view.render("Login/resetPassword", LoginPageContext(req))
     }
 
+	/// `POST /resetPassword`
+	///
 	// Change password for logged-in user
     func resetPasswordPostHandler(_ req: Request) throws -> EventLoopFuture<View> {
     	struct PostStruct : Codable {
@@ -210,13 +233,15 @@ struct SiteLoginController: SiteControllerUtils {
 		}
     }
     
-    func recoverPasswordPostHandler(_ req: Request) -> EventLoopFuture<View> {
-    	struct PostStruct : Codable {
-    		var username: String
-    		var regCode: String
-    		var password: String
-    		var confirmPassword: String
-    	}
+	/// `POST /recoverPassword`
+	///
+	func recoverPasswordPostHandler(_ req: Request) -> EventLoopFuture<View> {
+		struct PostStruct : Codable {
+			var username: String
+			var regCode: String
+			var password: String
+			var confirmPassword: String
+		}
     	do {
 			let postStruct = try req.content.decode(PostStruct.self)
 			guard postStruct.password == postStruct.confirmPassword else {
@@ -246,9 +271,46 @@ struct SiteLoginController: SiteControllerUtils {
 		}
     }
     
-    func codeOfConductPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+	/// `GET /codeOfConduct`
+	///
+    func codeOfConductViewHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		return req.view.render("codeOfConduct", LoginPageContext(req))
     }
+    
+	/// `GET /createAltAccount`
+	///
+	/// Must be logged in, although you can be logged in as an alt account, in which case this method creates another alt as a child
+	/// of the parent account. All accounts are parents or children, never both.
+    func createAltAccountViewHandler(_ req: Request) throws -> EventLoopFuture<View> {
+    	let _ = try req.auth.require(User.self)
+		return req.view.render("Login/createAltAccount", LoginPageContext(req))
+    }
+
+	/// `POST /createAltAccount`
+	///
+	func createAltAccountPostHandler(_ req: Request) throws -> EventLoopFuture<View> {
+		struct PostStruct : Codable {
+    		var username: String
+    		var password: String
+    		var confirmPassword: String
+    	}
+		let postStruct = try req.content.decode(PostStruct.self)
+		guard postStruct.password == postStruct.confirmPassword else {
+			return req.view.render("Login/createAltAccount", LoginPageContext(req, error: "Password fields do not match"))
+		}
+		return apiQuery(req, endpoint: "/user/add", method: .POST, beforeSend: { req throws in
+			let createData = UserCreateData(username: postStruct.username, password: postStruct.password)
+			try req.content.encode(createData)
+		}).throwingFlatMap { apiResponse in
+//			let createUserResponse = try apiResponse.content.decode(AddedUserData.self)
+			var loginContext = LoginPageContext(req)
+			loginContext.trunk.metaRedirectURL = "/"
+			loginContext.operationSuccess = true
+			loginContext.operationName = "Alt account creation"
+			return req.view.render("Login/createAltAccount", loginContext)
+		}
+	}
+	
 
 // MARK: - Utilities
 
