@@ -72,6 +72,13 @@
 							</div>
 							<div class="row mt-1 justify-content-end row-cols-auto collapse" data-label="actionbar">	
 								<div class="col btn-group btn-group-sm" role="group" aria-label="Post actions">
+									<input type="checkbox" class="btn-check" autocomplete="off" data-action="favoriteForumPost" id="#(forumPost.postID)_favorite"
+										#if(forumPost.isBookmarked):checked#endif>
+									<label class="btn btn-outline-primary" for="#(forumPost.postID)_favorite">
+										Favorite<span class="laughtext"></span>
+										<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+										<span class="visually-hidden">Loading...</span>
+									</label>
 									#if(forumPost.author.userID == trunk.userID):
 										<a class="btn btn-outline-primary" href="/forumpost/edit/#(forumPost.postID)">Edit</a>
 										<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="\#deleteModal">Delete</button>

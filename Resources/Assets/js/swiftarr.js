@@ -12,6 +12,9 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 	else if (action == "favoriteForum") {
 		btn.addEventListener("click", favoriteForumTappedAction);
 	}
+	else if (action == "favoriteForumPost") {
+		btn.addEventListener("click", favoriteForumPostTappedAction);
+	}
 	else if (action == "follow") {
 		btn.addEventListener("click", followEventAction);
 	}
@@ -196,6 +199,32 @@ function favoriteForumTappedAction() {
 	}
 	let req = new Request(path + forumID, { method: 'POST' });
 	let errorDiv = tappedButton.closest('.row').querySelector('[data-purpose="errordisplay"]');
+	setLikeButtonsState([tappedButton], tappedButton, false);
+	fetch(req).then(function(response) {
+		if (response.ok) {
+			errorDiv.textContent = "";
+		}
+		else {
+			errorDiv.textContent = "Could not add/remove favorite";
+		}
+		setTimeout(() => {
+			setLikeButtonsState([tappedButton], tappedButton, true);
+		}, 1000)
+	}).catch(error => {
+		errorDiv.textContent = "Could not add/remove favorite";
+		setLikeButtonsState([tappedButton], tappedButton, true);
+	});
+}
+
+function favoriteForumPostTappedAction() {
+	let tappedButton = event.target;
+	let postID = tappedButton.closest('li').dataset.postid;
+	let path = "/forumpost/favorite/add/"
+	if (!tappedButton.checked) {
+		path = "/forumpost/favorite/remove/"
+	}
+	let req = new Request(path + postID, { method: 'POST' });
+	let errorDiv = tappedButton.closest('li').querySelector('[data-purpose="errordisplay"]');
 	setLikeButtonsState([tappedButton], tappedButton, false);
 	fetch(req).then(function(response) {
 		if (response.ok) {

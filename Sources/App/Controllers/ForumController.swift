@@ -61,7 +61,6 @@ struct ForumController: APIRouteCollection {
 		tokenAuthGroup.post("post", postIDParam, "report", use: postReportHandler)
 
 			// 'Favorite' applies to forums, while 'Bookmark' is for posts
-		tokenAuthGroup.get("bookmarks", use: bookmarksHandler)
 		tokenAuthGroup.post("post", postIDParam, "bookmark", use: bookmarkAddHandler)
 		tokenAuthGroup.post("post", postIDParam, "bookmark", "remove", use: bookmarkRemoveHandler)
 		tokenAuthGroup.delete("post", postIDParam, "bookmark", use: bookmarkRemoveHandler)
@@ -363,6 +362,7 @@ struct ForumController: APIRouteCollection {
 	/// * `?mentionself=true` - Matches posts whose text contains a @mention of the current user.
 	/// * `?ownreacts=true` - Matches posts the current user has reacted to.
 	/// * `?byuser=ID` - Matches posts the given user authored.
+	/// * `?bookmarked=true` - Matches posts the user has bookmarked.
 	/// 
 	/// Additionally, you can constrain results to either posts in a specific category, or a specific forum. If both are specified, forum is ignored.
 	/// * `?forum=UUID` - Confines the search to posts in the given forum thread.
@@ -377,86 +377,100 @@ struct ForumController: APIRouteCollection {
         let user = try req.auth.require(User.self)
 		let cachedUser = try req.userCache.getUser(user)
         var postFilterMentions: String? = nil
+        
+        // BookmarkFuture is nil if we can't (or shouldn't) filter on bookmarks but [] if there aren't any bookmarks.
+        var bookmarkFuture: EventLoopFuture<[Int]?> = req.eventLoop.makeSucceededFuture(nil)
+        if let isBookmarked = req.query[String.self, at: "bookmarked"], isBookmarked == "true" {
+			bookmarkFuture = user.getBookmarkBarrel(of: .bookmarkedPost, on: req).map { barrel in
+				return (barrel?.userInfo["bookmarks"] ?? []).compactMap { Int($0) }
+			}        	
+        }
+		return bookmarkFuture.throwingFlatMap { bookmarks in
+			// Start building a query.
+			var query: FluentKit.QueryBuilder<ForumPost>
+			if let ownreacts = req.query[String.self, at: "ownreacts"], ownreacts == "true" {
+				query = user.$postLikes.query(on: req.db)
+			}
+			else {
+				query = ForumPost.query(on: req.db)
+			}
+			// Note: The forum join() here is used to check access level, but other filters may require the join as well.
+			query = query.filter(\.$author.$id !~ cachedUser.getBlocks())
+					.filter(\.$author.$id !~ cachedUser.getMutes())
+					.sort(\.$id, .descending)
+					.join(Forum.self, on: \ForumPost.$forum.$id == \Forum.$id)
+					.filter(Forum.self, \.$accessLevelToView <= user.accessLevel)
 
-		// 
-		var query: FluentKit.QueryBuilder<ForumPost>
-		if let ownreacts = req.query[String.self, at: "ownreacts"], ownreacts == "true" {
-			query = user.$postLikes.query(on: req.db)
-		}
-		else {
-			query = ForumPost.query(on: req.db)
-		}
+			if let foundBookmarks = bookmarks {
+				query.filter(\.$id ~~ foundBookmarks)
+			}
 
-		if let categoryStr = req.query[String.self, at: "category"] {
-			guard let categoryID = UUID(categoryStr) else {
-				throw Abort(.badRequest, reason: "category parameter requires a valid UUID")
-			}
-			query = query.join(Forum.self, on: \ForumPost.$forum.$id == \Forum.$id)
-					.filter(Forum.self, \.$category.$id == categoryID)
-		}
-		else if let forumID = req.query[UUID.self, at: "forum"] {
-			query = query.filter(\.$forum.$id == forumID)
-		}
-		
-		if var searchStr = req.query[String.self, at: "search"] {
-			searchStr = searchStr.replacingOccurrences(of: "_", with: "\\_")
-					.replacingOccurrences(of: "%", with: "\\%")
-					.trimmingCharacters(in: .whitespacesAndNewlines)
-			query = query.filter(\.$text, .custom("ILIKE"), "%\(searchStr)%")
-		}
-		if var hashtag = req.query[String.self, at: "hashtag"] {
-			// postgres "_" and "%" are wildcards, so escape for literals
-			hashtag = hashtag.replacingOccurrences(of: "_", with: "\\_")
-					.replacingOccurrences(of: "%", with: "\\%")
-					.trimmingCharacters(in: .whitespacesAndNewlines)
-			if !hashtag.hasPrefix("#") {
-				hashtag = "#\(hashtag)"
-			}
-			query.filter(\.$text, .custom("ILIKE"), "%\(hashtag)%")
-		}
-		if let mentionID = req.query[String.self, at: "mentionid"], let mentionUUID = UUID(mentionID),
-				let mentionedUser = req.userCache.getUser(mentionUUID) {
-			postFilterMentions = mentionedUser.username
-		}
-		else if let mentionName = req.query[String.self, at: "mentionname"] {
-			postFilterMentions = mentionName
-		}
-		else if let mentionSelf = req.query[String.self, at: "mentionself"], mentionSelf == "true" {
-			postFilterMentions = user.username
-			// TODO: Set user's mentionsViewed to == mentions
-		}
-		if var mentionName = postFilterMentions {
-			if !mentionName.hasPrefix("@") {
-				mentionName = "@\(mentionName)"
-			}
-			postFilterMentions = mentionName
-			query.filter(\.$text, .custom("ILIKE"), "%\(mentionName)%")
-		}
-		if let byuser = req.query[String.self, at: "byuser"] {
-			guard let authorUUID = UUID(byuser) else {
-				throw Abort(.badRequest, reason: "byuser parameter requires a valid UUID")
-			}
-			query.filter(\.$author.$id == authorUUID)
-		}
-		
-		query = query.filter(\.$author.$id !~ cachedUser.getBlocks())
-				.filter(\.$author.$id !~ cachedUser.getMutes())
-				.sort(\.$id, .descending)
-				.join(Forum.self, on: \ForumPost.$forum.$id == \Forum.$id)
-				.filter(Forum.self, \.$accessLevelToView <= user.accessLevel)
-		return query.count().flatMap { totalPosts in
-			let start = (req.query[Int.self, at: "start"] ?? 0)
-			let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForumPosts)
-			return query.range(start..<(start + limit)).all().flatMap { posts in
-				// The filter() for mentions will include usernames that are prefixes for other usernames and other false positives.
-				// This filters those out after the query. 
-				var postFilteredPosts = posts
-				if let postFilter = postFilterMentions {
-					postFilteredPosts = posts.compactMap { $0.filterForMention(of: postFilter) }
+			if let categoryStr = req.query[String.self, at: "category"] {
+				guard let categoryID = UUID(categoryStr) else {
+					throw Abort(.badRequest, reason: "category parameter requires a valid UUID")
 				}
-				return buildPostData(postFilteredPosts, user: user, on: req, mutewords: cachedUser.mutewords).map { postData in
-					return PostSearchData(queryString: req.url.query ?? "", totalPosts: totalPosts, 
-							start: start, limit: limit, posts: postData)
+				// Depends on `.join(Forum.self, on: \ForumPost.$forum.$id == \Forum.$id)`, above
+				query = query.filter(Forum.self, \.$category.$id == categoryID)
+			}
+			else if let forumID = req.query[UUID.self, at: "forum"] {
+				query = query.filter(\.$forum.$id == forumID)
+			}
+			
+			if var searchStr = req.query[String.self, at: "search"] {
+				searchStr = searchStr.replacingOccurrences(of: "_", with: "\\_")
+						.replacingOccurrences(of: "%", with: "\\%")
+						.trimmingCharacters(in: .whitespacesAndNewlines)
+				query = query.filter(\.$text, .custom("ILIKE"), "%\(searchStr)%")
+			}
+			if var hashtag = req.query[String.self, at: "hashtag"] {
+				// postgres "_" and "%" are wildcards, so escape for literals
+				hashtag = hashtag.replacingOccurrences(of: "_", with: "\\_")
+						.replacingOccurrences(of: "%", with: "\\%")
+						.trimmingCharacters(in: .whitespacesAndNewlines)
+				if !hashtag.hasPrefix("#") {
+					hashtag = "#\(hashtag)"
+				}
+				query.filter(\.$text, .custom("ILIKE"), "%\(hashtag)%")
+			}
+			if let mentionID = req.query[String.self, at: "mentionid"], let mentionUUID = UUID(mentionID),
+					let mentionedUser = req.userCache.getUser(mentionUUID) {
+				postFilterMentions = mentionedUser.username
+			}
+			else if let mentionName = req.query[String.self, at: "mentionname"] {
+				postFilterMentions = mentionName
+			}
+			else if let mentionSelf = req.query[String.self, at: "mentionself"], mentionSelf == "true" {
+				postFilterMentions = user.username
+				// TODO: Set user's mentionsViewed to == mentions
+			}
+			if var mentionName = postFilterMentions {
+				if !mentionName.hasPrefix("@") {
+					mentionName = "@\(mentionName)"
+				}
+				postFilterMentions = mentionName
+				query.filter(\.$text, .custom("ILIKE"), "%\(mentionName)%")
+			}
+			if let byuser = req.query[String.self, at: "byuser"] {
+				guard let authorUUID = UUID(byuser) else {
+					throw Abort(.badRequest, reason: "byuser parameter requires a valid UUID")
+				}
+				query.filter(\.$author.$id == authorUUID)
+			}
+			
+			return query.count().flatMap { totalPosts in
+				let start = (req.query[Int.self, at: "start"] ?? 0)
+				let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForumPosts)
+				return query.range(start..<(start + limit)).all().flatMap { posts in
+					// The filter() for mentions will include usernames that are prefixes for other usernames and other false positives.
+					// This filters those out after the query. 
+					var postFilteredPosts = posts
+					if let postFilter = postFilterMentions {
+						postFilteredPosts = posts.compactMap { $0.filterForMention(of: postFilter) }
+					}
+					return buildPostData(postFilteredPosts, user: user, on: req, mutewords: cachedUser.mutewords).map { postData in
+						return PostSearchData(queryString: req.url.query ?? "", totalPosts: totalPosts, 
+								start: start, limit: limit, posts: postData)
+					}
 				}
 			}
 		}
@@ -521,34 +535,6 @@ struct ForumController: APIRouteCollection {
 			.flatMap { barrel in
                 return barrel.save(on: req.db).transform(to: .noContent)
             }
-    }
-    
-    /// `GET /api/v3/forum/bookmarks`
-    ///
-    /// Retrieve all `ForumPost`s the user has bookmarked, sorted by creation timestamp.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[PostData]` containing all bookmarked posts.
-    func bookmarksHandler(_ req: Request) throws -> EventLoopFuture<[PostData]> {
-        let user = try req.auth.require(User.self)
-        let userID = try user.requireID()
-        // get bookmarkedPost barrel
-        return user.getBookmarkBarrel(of: .bookmarkedPost, on: req).flatMap { (barrel) in
-            let bookmarkStrings = barrel?.userInfo["bookmarks"] ?? []
-            // convert to IDs
-            let bookmarks = bookmarkStrings.compactMap { Int($0) }
-            // filter blocks only
-            let blocked = req.userCache.getBlocks(userID)
-			// get twarrts
-			return ForumPost.query(on: req.db)
-				.filter(\.$id ~~ bookmarks)
-				.filter(\.$author.$id !~ blocked)
-				.sort(\.$createdAt, .ascending)
-				.all()
-				.flatMap { (posts) in
-					return buildPostData(posts, user: user, on: req, assumeBookmarked: true)
-            }
-        }
     }
     
     /// `POST /api/v3/forum/ID/favorite`
@@ -625,6 +611,7 @@ struct ForumController: APIRouteCollection {
             let blocked = req.userCache.getBlocks(userID)
 			// get forums
 			let countQuery = Forum.query(on: req.db).filter(\.$id ~~ barrel.modelUUIDs).filter(\.$creator.$id !~ blocked)
+					.filter(\.$accessLevelToView <= user.accessLevel)
 			let rangeQuery = countQuery.range(start..<(start + limit))
 			switch req.query[String.self, at: "sort"] {
 				case "update": _ = rangeQuery.sort(\.$updatedAt, .descending);

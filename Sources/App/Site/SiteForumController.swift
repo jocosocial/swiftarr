@@ -55,6 +55,7 @@ struct PostSearchPageContext : Encodable {
 	
 	enum SearchType {
 		case userMentions
+		case favorites
 		case textSearch(String)
 	}
 	
@@ -67,6 +68,12 @@ struct PostSearchPageContext : Encodable {
 				filterDescription = "Posts Mentioning You"
 				paginatorClosure = { pageIndex in
 					"/forumpost/mentions?start=\(pageIndex * posts.limit)&limit=\(posts.limit)"
+				}
+			case .favorites:
+				title = "Favorite Posts"
+				filterDescription = "Favorite Posts"
+				paginatorClosure = { pageIndex in
+					"/forumpost/favorite?start=\(pageIndex * posts.limit)&limit=\(posts.limit)"
 				}
 			case .textSearch(let searchString):
 				title = "ForumPost Search"
@@ -124,7 +131,11 @@ struct SiteForumController: SiteControllerUtils {
 		privateRoutes.get("forumpost", "report", postIDParam, use: forumPostReportPageHandler)
 		privateRoutes.post("forumpost", "report", postIDParam, use: forumPostReportPostHandler)
 		privateRoutes.get("forumpost", postIDParam, use: forumGetPostDetails)
-		privateRoutes.get("forumpost", "mentions", use: forumGetUserMentions)
+		privateRoutes.get("forumpost", "mentions", use: userMentionsViewHandler)
+		privateRoutes.get("forumpost", "favorite", use: favoritePostsViewHandler)
+		privateRoutes.post("forumpost", "favorite", "add", postIDParam, use: forumPostAddBookmarkPostHandler)
+		privateRoutes.post("forumpost", "favorite", "remove", postIDParam, use: forumPostRemoveBookmarkPostHandler)
+		
 		
 	}
 
@@ -587,13 +598,51 @@ struct SiteForumController: SiteControllerUtils {
     // GET /forumpost/mentions
     //
     // Gets forum posts that @mention the current user.
-	func forumGetUserMentions(_ req: Request) throws -> EventLoopFuture<View> {
+	func userMentionsViewHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		return apiQuery(req, endpoint: "/forum/post/search?mentionself=true").throwingFlatMap { response in
 			let postData = try response.content.decode(PostSearchData.self)
     		let ctx = try PostSearchPageContext(req, posts: postData, searchType: .userMentions)
 			return req.view.render("Forums/forumPostsList", ctx)
 		}
 	}
+	
+    // GET /forumpost/favorite
+    //
+    // Gets forum posts that the user has favorited (aka bookmarked).
+	func favoritePostsViewHandler(_ req: Request) throws -> EventLoopFuture<View> {
+		return apiQuery(req, endpoint: "/forum/post/search?bookmarked=true").throwingFlatMap { response in
+			let postData = try response.content.decode(PostSearchData.self)
+    		let ctx = try PostSearchPageContext(req, posts: postData, searchType: .favorites)
+			return req.view.render("Forums/forumPostsList", ctx)
+		}
+	}
+	
+    // POST /forumpost/favorite/add/:forumpost_ID
+    //
+    // The Web UI calls this 'favoriting' a post, but with the API nomenclature, you 'favorite' forums and 'bookmark' posts.
+    // Anyway, the UI calls it favoriting because users might get confused with the difference between favoriting and bookmarking.
+	func forumPostAddBookmarkPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+    	guard let postID = req.parameters.get(postIDParam.paramString)?.percentEncodeFilePathEntry() else {
+            throw Abort(.badRequest, reason: "Missing post_id parameter.")
+    	}
+    	return apiQuery(req, endpoint: "/forum/post/\(postID)/bookmark", method: .POST).map { response in
+    		return .ok
+    	}
+    }
+
+    // POST /forumpost/favorite/rmeove/:forumpost_ID
+    //
+    // The Web UI calls this 'favoriting' a post, but with the API nomenclature, you 'favorite' forums and 'bookmark' posts.
+    // Anyway, the UI calls it favoriting because users might get confused with the difference between favoriting and bookmarking.
+	func forumPostRemoveBookmarkPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+    	guard let postID = req.parameters.get(postIDParam.paramString)?.percentEncodeFilePathEntry() else {
+            throw Abort(.badRequest, reason: "Missing post_id parameter.")
+    	}
+    	return apiQuery(req, endpoint: "/forum/post/\(postID)/bookmark/remove", method: .POST).map { response in
+    		return .ok
+    	}
+    }
+
 	
 // MARK: - Search
 

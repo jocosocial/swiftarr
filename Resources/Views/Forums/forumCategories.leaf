@@ -60,11 +60,11 @@
 							</div>
 						</div>
 					</a>
-					<a href="/forumposts/bookmarked" class="list-group-item list-group-item-action">		
+					<a href="/forumpost/favorite" class="list-group-item list-group-item-action">		
 						<div class="container-fluid">
 							<div class="row">
 								<div class="col">
-									Bookmarked Posts
+									Favorite Posts
 								</div>
 							</div>
 						</div>
