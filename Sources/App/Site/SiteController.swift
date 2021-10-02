@@ -78,15 +78,19 @@ struct PaginatorContext: Codable {
 	var nextPageURL: String?
 	var lastPageURL: String?
 	var pageURLs: [PageInfo]
-	
+		
 	/// Works with "paginator.leaf". Builds a paginator control allowing navigation to different pages in a N-page array.
 	///
 	/// Parameters:
-	/// - currentPage: A 0-based index indicating the 'active' page in the paginator control.
-	/// - totalPages: The total number of pages the paginator 'controls'. The UI may not create a button for every page.
+	/// - start: A 0-based index indicating the first piece of content to show. This is generally the topmost item displayed on the current page.
+	/// - total: The total number of items in the list. The paginator will break this up into N pages. The UI may not create a button for every page.
+	/// - limit: The maximum number of items to show per page. If the 'item' size is a page, set this to 1.
 	/// - urlForPage: A closure that takes a page index and returns a relative URL that will load that page.
-	init(currentPage: Int, totalPages: Int, urlForPage: (Int) -> String) {
+	init(start: Int, total: Int, limit: Int, urlForPage: (Int) -> String) {
 		pageURLs = []
+		let currentPage = (start + limit - 1) / limit
+		let totalPages = (start + limit - 1) / limit + (total - start + limit - 1) / limit
+		
 		var minPage = max(currentPage - 3, 0)
 		var maxPage = min(minPage + 6, totalPages - 1)
 		minPage = max(maxPage - 6, 0)

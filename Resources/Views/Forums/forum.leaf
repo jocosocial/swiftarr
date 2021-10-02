@@ -33,6 +33,7 @@
 				<div class="col col-12 text-end text-danger" data-purpose="errordisplay">
 				</div>
 			</div>
+			#extend("paginator")
 			<ul class="container-md mx-0 px-0 list-group" data-listtype="forumpost">
 				#for(forumPost in forum.posts):
 					<li class="list-group-item bg-transparent has-action-bar" data-postid="#(forumPost.postID)">				

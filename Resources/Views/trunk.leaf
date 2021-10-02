@@ -11,7 +11,7 @@
 		<meta http-equiv="refresh" content="2;URL='#(trunk.metaRedirectURL)'" /> 
 	#endif
 
-	<title>Twit-arr!</title>
+	<title>#(trunk.title)</title>
 </head>
 <body style="background-image: url('/img/background.png'); background-size: 100%;">
 

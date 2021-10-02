@@ -35,10 +35,12 @@
 					#endfor
 				#else:
 					<div class="list-group-item">
-						#if(filterDescription == "Favorites"):
+						#if(searchType == "favorite"):
 							You haven't favorited any forums yet.
-						#elseif(filterDescription == "Your Forums"):
+						#elseif(searchType == "owned"):
 							You haven't created any forums yet.
+						#elseif(searchType == "textSearch"):
+							No forum titles match the search criteria.
 						#else:
 							There aren't any forums to show.
 						#endif

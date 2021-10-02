@@ -21,8 +21,7 @@ struct ForumPageContext : Encodable {
 			category = CategoryData(categoryID: UUID(), title: "Unknown Category", 
 					isRestricted: false, numThreads: 0, forumThreads: nil)
 		}
-		paginator = .init(currentPage: forum.start / forum.limit, 
-				totalPages: (forum.totalPosts + forum.limit - 1) / forum.limit) { pageIndex in
+		paginator = .init(start: forum.start, total: forum.totalPosts, limit: forum.limit) { pageIndex in
 			"/forum/\(forum.forumID)?start=\(pageIndex * forum.limit)&limit=\(forum.limit)"
 		}
 	}
@@ -34,12 +33,25 @@ struct ForumsSearchPageContext : Encodable {
 	var forums: ForumSearchData
 	var paginator: PaginatorContext
 	var filterDescription: String
+	var searchType: SearchType
 	
-	init(_ req: Request, forums: ForumSearchData, title: String, filterDesc: String) throws {
+	enum SearchType: String, Codable {
+		case owned
+		case favorite
+		case textSearch
+	}
+	
+	init(_ req: Request, forums: ForumSearchData, searchType: SearchType, filterDesc: String) throws {
+		var title: String
+		switch searchType {
+			case .owned: title = "Forums You Created"
+			case .favorite: title = "Favorite Forums"
+			case .textSearch: title = "Forum Search"
+		}
 		trunk = .init(req, title: title, tab: .forums, search: "Search")
 		self.forums = forums
-		paginator = .init(currentPage: forums.start / forums.limit, 
-				totalPages: (Int(forums.numThreads) + forums.limit - 1) / forums.limit) { pageIndex in
+		self.searchType = searchType
+		paginator = .init(start: forums.start, total: Int(forums.numThreads), limit: forums.limit) { pageIndex in
 			"/forum/favorites?start=\(pageIndex * forums.limit)&limit=\(forums.limit)"
 		}
 		filterDescription = filterDesc
@@ -50,33 +62,41 @@ struct ForumsSearchPageContext : Encodable {
 struct PostSearchPageContext : Encodable {
 	var trunk: TrunkContext
 	var postSearch: PostSearchData
+	var searchType: SearchType
 	var paginator: PaginatorContext
 	var filterDescription: String
 	
-	enum SearchType {
+	enum SearchType: String, Codable {
 		case userMentions
-		case favorites
-		case textSearch(String)
+		case owned
+		case favorite
+		case textSearch
 	}
 	
-	init(_ req: Request, posts: PostSearchData, searchType: SearchType) throws {
+	init(_ req: Request, posts: PostSearchData, searchType: SearchType, searchString: String = "") throws {
 		var title: String
 		var paginatorClosure: (Int) -> String
 		switch searchType {
 			case .userMentions:
-				title = "User Mentions"
-				filterDescription = "Posts Mentioning You"
+				title = "Posts Mentioning You"
+				filterDescription = "\(posts.totalPosts) Posts Mentioning You"
 				paginatorClosure = { pageIndex in
 					"/forumpost/mentions?start=\(pageIndex * posts.limit)&limit=\(posts.limit)"
 				}
-			case .favorites:
+			case .owned:
+				title = "Your Forum Posts"
+				filterDescription = "Your \(posts.totalPosts) Posts"
+				paginatorClosure = { pageIndex in
+					"/forumpost/owned?start=\(pageIndex * posts.limit)&limit=\(posts.limit)"
+				}
+			case .favorite:
 				title = "Favorite Posts"
-				filterDescription = "Favorite Posts"
+				filterDescription = "\(posts.totalPosts) Favorite Posts"
 				paginatorClosure = { pageIndex in
 					"/forumpost/favorite?start=\(pageIndex * posts.limit)&limit=\(posts.limit)"
 				}
-			case .textSearch(let searchString):
-				title = "ForumPost Search"
+			case .textSearch:
+				title = "Forum Post Search"
 				filterDescription = "\(posts.totalPosts) Posts with \"\(searchString)\""
 				paginatorClosure = { pageIndex in
 					"/forum/search?search=\(searchString)&searchType=posts&start=\(pageIndex * posts.limit)&limit=\(posts.limit)"
@@ -84,8 +104,8 @@ struct PostSearchPageContext : Encodable {
 		}
 		trunk = .init(req, title: title, tab: .forums, search: "Search")
 		self.postSearch = posts
-		paginator = .init(currentPage: posts.start / posts.limit, 
-				totalPages: (Int(posts.totalPosts) + posts.limit - 1) / posts.limit, urlForPage: paginatorClosure)
+		self.searchType = searchType
+		paginator = .init(start: posts.start, total: Int(posts.totalPosts), limit: posts.limit, urlForPage: paginatorClosure)
 	}
 }
 
@@ -133,6 +153,7 @@ struct SiteForumController: SiteControllerUtils {
 		privateRoutes.get("forumpost", postIDParam, use: forumGetPostDetails)
 		privateRoutes.get("forumpost", "mentions", use: userMentionsViewHandler)
 		privateRoutes.get("forumpost", "favorite", use: favoritePostsViewHandler)
+		privateRoutes.get("forumpost", "owned", use: forumPostsByUserViewHandler)
 		privateRoutes.post("forumpost", "favorite", "add", postIDParam, use: forumPostAddBookmarkPostHandler)
 		privateRoutes.post("forumpost", "favorite", "remove", postIDParam, use: forumPostRemoveBookmarkPostHandler)
 		
@@ -183,7 +204,7 @@ struct SiteForumController: SiteControllerUtils {
     			init(_ req: Request, forums: CategoryData, start: Int, limit: Int) throws {
     				trunk = .init(req, title: "Forum Threads", tab: .forums, search: "Search")
     				self.forums = forums
-					paginator = .init(currentPage: start / limit, totalPages: (Int(forums.numThreads) + limit - 1) / limit) { pageIndex in
+					paginator = .init(start: start, total: Int(forums.numThreads), limit: limit) { pageIndex in
 						"/forums/\(forums.categoryID)?start=\(pageIndex * limit)&limit=\(limit)"
 					}
     			}
@@ -413,7 +434,7 @@ struct SiteForumController: SiteControllerUtils {
 	func forumFavoritesPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		return apiQuery(req, endpoint: "/forum/favorites").throwingFlatMap { response in
  			let forums = try response.content.decode(ForumSearchData.self)    	
-    		let ctx = try ForumsSearchPageContext(req, forums: forums, title: "Favorite Forums", filterDesc: "Favorites")
+    		let ctx = try ForumsSearchPageContext(req, forums: forums, searchType: .favorite, filterDesc: "\(forums.numThreads) Favorites")
 			return req.view.render("Forums/forumsList", ctx)
     	}
 	}
@@ -442,10 +463,13 @@ struct SiteForumController: SiteControllerUtils {
 		}
 	}
 	
+    // GET /forum/owned
+    //
+    // Shows the forums the current user has created.
 	func forumsByUserPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		return apiQuery(req, endpoint: "/forum/owner").throwingFlatMap { response in
  			let forums = try response.content.decode(ForumSearchData.self)    	
-    		let ctx = try ForumsSearchPageContext(req, forums: forums, title: "Forums You Created", filterDesc: "Your Forums")
+    		let ctx = try ForumsSearchPageContext(req, forums: forums, searchType: .owned, filterDesc: "Your \(forums.numThreads) Forums")
 			return req.view.render("Forums/forumsList", ctx)
     	}
 	}
@@ -612,10 +636,24 @@ struct SiteForumController: SiteControllerUtils {
 	func favoritePostsViewHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		return apiQuery(req, endpoint: "/forum/post/search?bookmarked=true").throwingFlatMap { response in
 			let postData = try response.content.decode(PostSearchData.self)
-    		let ctx = try PostSearchPageContext(req, posts: postData, searchType: .favorites)
+    		let ctx = try PostSearchPageContext(req, posts: postData, searchType: .favorite)
 			return req.view.render("Forums/forumPostsList", ctx)
 		}
 	}
+	
+    // GET /forumpost/owned
+    //
+    // Gets forum posts that the user authored.
+	func forumPostsByUserViewHandler(_ req: Request) throws -> EventLoopFuture<View> {
+		let user = try req.auth.require(User.self)
+		return try apiQuery(req, endpoint: "/forum/post/search?byuser=\(user.requireID())").throwingFlatMap { response in
+			let postData = try response.content.decode(PostSearchData.self)
+    		let ctx = try PostSearchPageContext(req, posts: postData, searchType: .owned)
+			return req.view.render("Forums/forumPostsList", ctx)
+		}
+	}
+	
+	
 	
     // POST /forumpost/favorite/add/:forumpost_ID
     //
@@ -661,7 +699,8 @@ struct SiteForumController: SiteControllerUtils {
 			}
 			return apiQuery(req, endpoint: "/forum/match/\(pathSearch)", passThroughQuery: false).throwingFlatMap { response in
 				let responseData = try response.content.decode(ForumSearchData.self)
-    			let ctx = try ForumsSearchPageContext(req, forums: responseData, title: "Forum Search", filterDesc: "\(responseData.numThreads) Forums with \"\(formData.search)\"")
+    			let ctx = try ForumsSearchPageContext(req, forums: responseData, searchType: .textSearch,
+    					filterDesc: "\(responseData.numThreads) Forums with \"\(formData.search)\"")
 				return req.view.render("Forums/forumsList", ctx)
 			}
 		}
@@ -672,7 +711,7 @@ struct SiteForumController: SiteControllerUtils {
 			}
 			return apiQuery(req, endpoint: "/forum/post/search?search=\(querySearch)").throwingFlatMap { response in
 				let responseData = try response.content.decode(PostSearchData.self)
-    			let ctx = try PostSearchPageContext(req, posts: responseData, searchType: .textSearch(formData.search))
+    			let ctx = try PostSearchPageContext(req, posts: responseData, searchType: .textSearch, searchString: formData.search)
 				return req.view.render("Forums/forumPostsList", ctx)
 			}
 		}

@@ -69,6 +69,15 @@
 							</div>
 						</div>
 					</a>
+					<a href="/forumpost/owned" class="list-group-item list-group-item-action">		
+						<div class="container-fluid">
+							<div class="row">
+								<div class="col">
+									Posts You Wrote
+								</div>
+							</div>
+						</div>
+					</a>
 					<a href="/forumpost/mentions" class="list-group-item list-group-item-action">		
 						<div class="container-fluid">
 							<div class="row">

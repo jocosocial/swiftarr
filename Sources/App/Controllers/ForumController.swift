@@ -778,7 +778,7 @@ struct ForumController: APIRouteCollection {
         let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
         // get user's taggedForum barrel
         return user.getBookmarkBarrel(of: .taggedForum, on: req).flatMap { (barrel) in
-            let countQuery = user.$forums.query(on: req.db).filter(\.$accessLevelToView >= user.accessLevel)
+            let countQuery = user.$forums.query(on: req.db).filter(\.$accessLevelToView <= user.accessLevel)
             let resultQuery = countQuery.sort(\.$title, .ascending).range(start..<(start + limit))
 			return countQuery.count().and(resultQuery.all()).flatMap { (forumCount, forums) in
 				return buildForumListData(forums, on: req, userID: userID, favoritesBarrel: barrel).map { forumList in

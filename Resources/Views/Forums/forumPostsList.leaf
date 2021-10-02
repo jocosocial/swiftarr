@@ -108,7 +108,17 @@
 					#endfor
 				#else:
 					<div class="list-group-item">
-						There aren't any posts to show.
+						#if(searchType == "userMentions"):
+							You haven't been mentioned in any posts yet.
+						#elseif(searchType == "favorite"):
+							You haven't favorited any posts yet.
+						#elseif(searchType == "owned"):
+							You haven't created any forum posts yet.
+						#elseif(searchType == "textSearch"):
+							No posts match the search criteria.
+						#else:
+							There aren't any posts to show.
+						#endif
 					</div>
 				#endif
 			</ul>				
