@@ -67,11 +67,51 @@
 					#if(trunk.userID == profile.header.userID):
 						<a class="btn btn-sm btn-outline-primary" href="/profile/edit">Edit Profile</a>
 					#else:
+						<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="\#blockModal">Block</button>
+						<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="\#muteModal">Mute</button>
 						<a class="btn btn-outline-primary" href="/profile/report/#(profile.header.userID)">Report</a>
 						#if(trunk.userIsMod):
 							<a class="btn btn-sm btn-outline-primary" href="/moderate/userprofile/#(profile.header.userID)">Mod</a>
 						#endif
 					#endif
+				</div>
+			</div>
+		</div>
+		<div class="modal fade" id="blockModal" tabindex="-1" aria-labelledby="blockModalTitle" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="blockModalTitle">Block User @#(profile.header.username)?</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						Blocking a user will hide all that user's content from you, and also hide all your content from them.
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+						<button type="button" class="btn btn-primary" data-action="block" data-userid="#(profile.header.userID)">Block</button>
+					</div>
+					<div class="mx-3 pb-1 text-end text-danger" data-purpose="errordisplay">
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="modal fade" id="muteModal" tabindex="-1" aria-labelledby="muteModalTitle" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="muteModalTitle">Mute User @#(profile.header.username)?</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						Muting a user will hide all that user's content from you.
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+						<button type="button" class="btn btn-primary" data-action="mute" data-userid="#(profile.header.userID)">Mute</button>
+					</div>
+					<div class="mx-3 pb-1 text-end text-danger" data-purpose="errordisplay">
+					</div>
 				</div>
 			</div>
 		</div>

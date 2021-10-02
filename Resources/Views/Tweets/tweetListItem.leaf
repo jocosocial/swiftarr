@@ -55,21 +55,21 @@
 					<input type="checkbox" class="btn-check" autocomplete="off" data-action="laugh" id="#(tweet.twarrtID)_laugh"
 						#if(tweet.userLike == "laugh"):checked#endif>
 					<label class="btn btn-outline-primary" for="#(tweet.twarrtID)_laugh">
-						😆 <span class="laughtext"></span>
+						😆<span class="laughtext"></span>
 						<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
 						<span class="visually-hidden">Loading...</span>
 					</label>
 					<input type="checkbox" class="btn-check" autocomplete="off" data-action="like" id="#(tweet.twarrtID)_like"
 						#if(tweet.userLike == "like"):checked#endif>
 					<label class="btn btn-outline-primary" for="#(tweet.twarrtID)_like">
-						👍 <span class="liketext"></span>
+						👍<span class="liketext"></span>
 						<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
 						<span class="visually-hidden">Loading...</span>
 					</label>
 					<input type="checkbox" class="btn-check" autocomplete="off" data-action="love" id="#(tweet.twarrtID)_love"
 						#if(tweet.userLike == "love"):checked#endif>
 					<label class="btn btn-outline-primary" for="#(tweet.twarrtID)_love">
-						❤️ <span class="lovetext"></span>
+						❤️<span class="lovetext"></span>
 						<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
 						<span class="visually-hidden">Loading...</span>
 					</label>

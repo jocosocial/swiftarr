@@ -4,11 +4,9 @@
     		<div class="row align-items-center justify-content-between mb-2">
     			<div class="col col-12">
 					<nav aria-label="breadcrumb">
-						<ol class="breadcrumb mb-0">
-							<li class="breadcrumb-item"><a href="/forums">Forums</a></li>
-							<li class="breadcrumb-item"><a href="/forums/#(category.categoryID)">#(category.title)</a></li>
-							<li class="breadcrumb-item active" aria-current="page">#(forum.title)</li>
-						</ol>
+						<span class="swiftarr-breadcrumb-item"><a href="/forums">Forums</a></span>
+						<span class="swiftarr-breadcrumb-item"><a href="/forums/#(category.categoryID)">#(category.title)</a></span>
+						<span class="swiftarr-breadcrumb-item active" aria-current="page">#(forum.title)</span>
 					</nav>
 				</div>
 			</div>
@@ -143,11 +141,11 @@
 				#extend("messagePostForm")
 			</div>
 		#endif
-		<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+		<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalTitle" aria-hidden="true">
 			<div class="modal-dialog">
 				<div class="modal-content">
 					<div class="modal-header">
-						<h5 class="modal-title" id="exampleModalLabel">Delete Confirmation</h5>
+						<h5 class="modal-title" id="deleteModalTitle">Delete Confirmation</h5>
 						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 					</div>
 					<div class="modal-body">

@@ -148,7 +148,7 @@ struct BlockedUserData: Content {
     /// The name of the barrel.
     let name: String
     /// The blocked `User`s.
-    var seamonkeys: [SeaMonkey]
+    var blockedUsers: [UserHeader]
 }
 
 /// Used to return the ID and title of a `Category`. 
@@ -660,7 +660,7 @@ struct MutedUserData: Content {
     /// The name of the barrel.
     let name: String
     /// The muted `User`s.
-    var seamonkeys: [SeaMonkey]
+    var mutedUsers: [UserHeader]
 }
 
 /// Used to create a `UserNote` when viewing a user's profile.

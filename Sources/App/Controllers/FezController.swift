@@ -624,6 +624,9 @@ struct FezController: APIRouteCollection {
 			guard !fez.participantArray.contains(userID) else {
 				throw Abort(.badRequest, reason: "user is already in fez")
 			}
+			guard try !req.userCache.getUser(requester).getBlocks().contains(userID) else {
+				throw Abort(.badRequest, reason: "user is not available")
+			}
 			fez.participantArray.append(userID)
 			let cacheUser = try req.userCache.getUser(user)
 			let blocksAndMutes = cacheUser.getBlocks().union(cacheUser.getMutes())

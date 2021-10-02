@@ -47,7 +47,7 @@
 				</a>
 			#endif
 			#if(trunk.userIsLoggedIn):
-				<div class="row mb-2">
+				<div class="row mt-2">
 					<div class="col">
 						<h4><b>Things to Do:</b></h4>
 					</div>
@@ -56,7 +56,7 @@
 					<div class="col">
 						<ul class="list-group">
 							<li class="list-group-item"><a href="/profile">View your User Profile</a></li>
-							<li class="list-group-item"><a href="/profile">Manage Muted and Blocked Users</a></li>
+							<li class="list-group-item"><a href="/blocks">Manage Muted and Blocked Users</a></li>
 							<li class="list-group-item"><a href="/createAltAccount">Create an Alt Account</a></li>
 						</ul>
 					</div>

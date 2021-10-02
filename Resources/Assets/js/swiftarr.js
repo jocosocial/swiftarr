@@ -3,40 +3,56 @@ import("/js/bootstrap.bundle.js");
 // Make buttons with data-action properties post their actions when tapped.
 for (let btn of document.querySelectorAll('[data-action]')) {
 	let action = btn.dataset.action;
-	if (action == "delete") {
-		btn.addEventListener("click", deleteAction);
+	switch (action) {
+		case "laugh":
+		case "like":
+		case "love":
+			btn.addEventListener("click", likeAction); 
+			break;
+		case "delete": btn.addEventListener("click", deleteAction); break;
+		case "favoriteForum": btn.addEventListener("click", favoriteForumTappedAction); break;
+		case "favoriteForumPost": btn.addEventListener("click", favoriteForumPostTappedAction); break;
+		case "follow": btn.addEventListener("click", followEventAction); break;
+		case "eventFiltersChanged": btn.addEventListener("click", filterEvents); break;
+		case "filterEventType": btn.addEventListener("click", eventFilterDropdownTappedAction); break;
+		case "joinfez": btn.addEventListener("click", joinFezTappedAction); break;
+		case "leaveFez": btn.addEventListener("click", leaveFezTappedAction); break;
+		case "filterFezDay": 
+			dropdownButtonSetup(btn); 
+			btn.addEventListener("click", fezDayFilterDropdownTappedAction);
+			break;
+		case "filterFezType":
+			dropdownButtonSetup(btn); 
+			btn.addEventListener("click", fezTypeFilterDropdownTappedAction);
+			break;
+		case "block":
+		case "mute": 
+		case "unblock": 
+		case "unmute": 
+			btn.addEventListener("click", blockUserAction); 
+			break;
 	}
-	else if (action == "laugh" || action == "like" || action == "love") {
-		btn.addEventListener("click", likeAction);
+}
+
+// Updates button state for buttons that perform a data-action
+function setActionButtonsState(buttons, tappedButton, state) {
+	let spinnerElem = tappedButton.labels[0]?.querySelector(".spinner-border");
+	if (state) {
+		setTimeout(() => {
+			for (let btn of buttons) {
+				btn.disabled = false;
+			}
+			if (spinnerElem) spinnerElem.classList.add("d-none");
+		}, 1000);
 	}
-	else if (action == "favoriteForum") {
-		btn.addEventListener("click", favoriteForumTappedAction);
-	}
-	else if (action == "favoriteForumPost") {
-		btn.addEventListener("click", favoriteForumPostTappedAction);
-	}
-	else if (action == "follow") {
-		btn.addEventListener("click", followEventAction);
-	}
-	else if (action == "eventFiltersChanged") {
-		btn.addEventListener("click", filterEvents);
-	}
-	else if (action == "filterEventType") {
-		btn.addEventListener("click", eventFilterDropdownTappedAction);
-	}
-	else if (action == "joinfez") {
-		btn.addEventListener("click", joinFezTappedAction);
-	}
-	else if (action == "leaveFez") {
-		btn.addEventListener("click", leaveFezTappedAction);
-	}
-	else if (action == "filterFezDay") {
-		dropdownButtonSetup(btn);
-		btn.addEventListener("click", fezDayFilterDropdownTappedAction);
-	}
-	else if (action == "filterFezType") {
-		dropdownButtonSetup(btn);
-		btn.addEventListener("click", fezTypeFilterDropdownTappedAction);
+	else {
+		for (let btn of buttons) {
+			btn.disabled = true;
+			if (btn.checked && btn != tappedButton) {
+				btn.checked = false;
+			}
+		}
+		if (spinnerElem) spinnerElem.classList.remove("d-none");
 	}
 }
 
@@ -55,7 +71,7 @@ function likeAction() {
 	}
 		
 	let buttons = tappedButton.closest('[data-state]').querySelectorAll("input");
-	setLikeButtonsState(buttons, tappedButton, false);
+	setActionButtonsState(buttons, tappedButton, false);
 
 	let req = new Request(path, { method: 'POST' });
 	fetch(req).then(function(response) {
@@ -67,34 +83,12 @@ function likeAction() {
 		else {
 			errorDiv.textContent = "Could not post reaction";
 		}
-		setTimeout(() => {
-			setLikeButtonsState(buttons, tappedButton, true);
-			updateLikeCounts(postElement);
-		}, 1000)
+		updateLikeCounts(postElement);
 	}).catch(error => {
 		tappedButton.closest('[data-postid]').querySelector('[data-purpose="errordisplay"]').textContent = "Could not post reaction";
-		setLikeButtonsState(buttons, tappedButton, true);
+	}).finally(() => {
+		setActionButtonsState([tappedButton], tappedButton, true);
 	});
-}
-
-// Updates button state for like/laugh/love buttons
-function setLikeButtonsState(buttons, tappedButton, state) {
-	let spinnerElem = tappedButton.labels[0]?.querySelector(".spinner-border");
-	if (state) {
-		for (let btn of buttons) {
-			btn.disabled = false;
-		}
-		if (spinnerElem !== null) spinnerElem.classList.add("d-none");
-	}
-	else {
-		for (let btn of buttons) {
-			btn.disabled = true;
-			if (btn.checked && btn != tappedButton) {
-				btn.checked = false;
-			}
-		}
-		if (spinnerElem !== null) spinnerElem.classList.remove("d-none");
-	}
 }
 
 // Handler for the Delete Modal being shown. 
@@ -154,19 +148,19 @@ function updateLikeCounts(postElement) {
 			if (jsonStruct.laughs) { 
 				let laughspan = actionBar.querySelector('.laughtext');
 				if (laughspan) {
-					laughspan.textContent = (jsonStruct.laughs.length > 0 ? jsonStruct.laughs.length : "");
+					laughspan.textContent = (jsonStruct.laughs.length > 0 ? "\xa0\xa0" + jsonStruct.laughs.length : "");
 				}
 			}
 			if (jsonStruct.likes) { 
 				let likespan = actionBar.querySelector('.liketext');
 				if (likespan) {
-					likespan.textContent = (jsonStruct.likes.length > 0 ? jsonStruct.likes.length : "");
+					likespan.textContent = (jsonStruct.likes.length > 0 ? "\xa0\xa0" + jsonStruct.likes.length : "");
 				}
 			}
 			if (jsonStruct.loves) { 
 				let lovespan = actionBar.querySelector('.lovetext');
 				if (lovespan) {
-					lovespan.textContent = (jsonStruct.loves.length > 0 ? jsonStruct.loves.length : "");
+					lovespan.textContent = (jsonStruct.loves.length > 0 ? "\xa0\xa0" + jsonStruct.loves.length : "");
 				}
 			}
 		});
@@ -199,7 +193,7 @@ function favoriteForumTappedAction() {
 	}
 	let req = new Request(path + forumID, { method: 'POST' });
 	let errorDiv = tappedButton.closest('.row').querySelector('[data-purpose="errordisplay"]');
-	setLikeButtonsState([tappedButton], tappedButton, false);
+	setActionButtonsState([tappedButton], tappedButton, false);
 	fetch(req).then(function(response) {
 		if (response.ok) {
 			errorDiv.textContent = "";
@@ -207,12 +201,10 @@ function favoriteForumTappedAction() {
 		else {
 			errorDiv.textContent = "Could not add/remove favorite";
 		}
-		setTimeout(() => {
-			setLikeButtonsState([tappedButton], tappedButton, true);
-		}, 1000)
 	}).catch(error => {
 		errorDiv.textContent = "Could not add/remove favorite";
-		setLikeButtonsState([tappedButton], tappedButton, true);
+	}).finally(() => {
+		setActionButtonsState([tappedButton], tappedButton, true);
 	});
 }
 
@@ -225,20 +217,13 @@ function favoriteForumPostTappedAction() {
 	}
 	let req = new Request(path + postID, { method: 'POST' });
 	let errorDiv = tappedButton.closest('li').querySelector('[data-purpose="errordisplay"]');
-	setLikeButtonsState([tappedButton], tappedButton, false);
+	setActionButtonsState([tappedButton], tappedButton, false);
 	fetch(req).then(function(response) {
-		if (response.ok) {
-			errorDiv.textContent = "";
-		}
-		else {
-			errorDiv.textContent = "Could not add/remove favorite";
-		}
-		setTimeout(() => {
-			setLikeButtonsState([tappedButton], tappedButton, true);
-		}, 1000)
+		errorDiv.textContent = response.ok ? "" : "Could not add/remove favorite";
 	}).catch(error => {
 		errorDiv.textContent = "Could not add/remove favorite";
-		setLikeButtonsState([tappedButton], tappedButton, true);
+	}).finally(() => {
+		setActionButtonsState([tappedButton], tappedButton, true);
 	});
 }
 
@@ -554,4 +539,37 @@ function setDefaultAvatarImage() {
 	let hiddenElem = cardElement.querySelector('input[type="hidden"]');
 	hiddenElem.value = hiddenElem.dataset.defaultvalue;
 	updatePhotoCardState(cardElement);
+}
+
+function blockUserAction() {
+	let tappedButton = event.target;
+	let userID = tappedButton.dataset.userid;
+	let action = tappedButton.dataset.action;
+	let req = new Request("/user/" + userID + "/" + action, { method: 'POST' });
+	let errorDiv = (tappedButton.closest('.modal-dialog') ?? tappedButton.closest('li')).querySelector('[data-purpose="errordisplay"]')
+	setActionButtonsState([tappedButton], tappedButton, false);
+	fetch(req).then(function(response) {
+		if (response.ok) {
+			if (action == "block" || action == "mute") {
+				window.location.href = "/"
+			}
+			else {
+				tappedButton.labels[0].classList.add("disabled");
+				tappedButton.closest('li').classList.add("disabled");
+				if (action == "unblock") {
+					tappedButton.labels[0].innerText = "Unblocked";
+				}
+				else if (action == "unmute") {
+					tappedButton.labels[0].innerText = "Unmuted";
+				}
+			}
+		}
+		else {
+			errorDiv.textContent = "Error attempting to " + action + " user: " + response.statusText;
+		}
+	}).catch(error => {
+		errorDiv.textContent = "Error attempting to " + action + " user: " + error;
+	}).finally(() => {
+		setActionButtonsState([tappedButton], tappedButton, true);
+	});
 }

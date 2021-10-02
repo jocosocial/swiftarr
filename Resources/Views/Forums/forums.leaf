@@ -25,12 +25,13 @@
 									#(forum.title)
 								</div>
 								<div class="col col-auto">
-									<span class="text-muted">#relativeTime(forum.lastPostAt)</span>
+									<span class="text-muted d-none d-sm-flex">by&nbsp;#userByline(forum.creator, "nolink"), #relativeTime(forum.lastPostAt)</span>
+									<span class="text-muted d-sm-none">#relativeTime(forum.lastPostAt)</span>
 								</div>
 							</div>
 							<div class="row">
 								<div class="col">
-									#(forum.postCount) posts#if(forum.readCount < forum.postCount):, #(forum.postCount - forum.readCount) new#endif
+									#(forum.postCount) post#if(forum.postCount != 1):s#endif#if(forum.readCount < forum.postCount):, #(forum.postCount - forum.readCount) new#endif
 								</div>
 								<div class="col col-auto">
 									<span class="text-muted">Last post: @#(forum.lastPoster.username)</span>

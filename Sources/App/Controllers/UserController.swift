@@ -892,32 +892,17 @@ struct UserController: APIRouteCollection {
     func blocksHandler(_ req: Request) throws -> EventLoopFuture<BlockedUserData> {
         let user = try req.auth.require(User.self)
         // if sub-account, we want parent's blocks
-        let barrelAccount = try user.parentAccount(on: req)
-        return barrelAccount.addModelID().flatMap { (barrelUser, barrelUserID) in
-            // get blocks barrel
-            return Barrel.query(on: req.db)
-                .filter(\.$ownerID == barrelUserID)
-                .filter(\.$barrelType == .userBlock)
-                .first()
-                .unwrap(or: Abort(.internalServerError, reason: "blocks barrel not found"))
-                .flatMap { (barrel) in
-                    // return as BlockedUserData
-                    var blockedUserData = BlockedUserData(name: barrel.name, seamonkeys: [])
-                    let uuids = barrel.modelUUIDs
-                    // return empty list
-                    if uuids.count == 0 {
-                        return req.eventLoop.future(blockedUserData)
-                    }
-                    // convert IDs to sorted SeaMonkeys
-                    return User.query(on: req.db)
-                        .filter(\.$id ~~ uuids)
-                        .sort(\.$username, .ascending)
-                        .all()
-                        .flatMapThrowing { (users) in
-                            blockedUserData.seamonkeys = try users.map { try SeaMonkey(user: $0) }
-                            return blockedUserData
-                    }
-            }
+        let barrelUserID = try user.parentAccountID()
+		// get blocks barrel
+		return Barrel.query(on: req.db)
+				.filter(\.$ownerID == barrelUserID)
+				.filter(\.$barrelType == .userBlock)
+				.first()
+				.unwrap(or: Abort(.internalServerError, reason: "blocks barrel not found"))
+				.map { barrel in
+			// return as BlockedUserData
+			let blockedUserHeaders = req.userCache.getHeaders(barrel.modelUUIDs).sorted { $0.username < $1.username }
+			return BlockedUserData(name: barrel.name, blockedUsers: blockedUserHeaders)
         }
     }
     
@@ -1029,27 +1014,14 @@ struct UserController: APIRouteCollection {
         let user = try req.auth.require(User.self)
         // retrieve mutes barrel
         return try Barrel.query(on: req.db)
-            .filter(\.$ownerID == user.requireID())
-            .filter(\.$barrelType == .userMute)
-            .first()
-            .unwrap(or: Abort(.internalServerError, reason: "mutes barrel not found"))
-            .flatMap { (barrel) in
-                // return as MutedUserData
-                var mutedUserData = MutedUserData(name: barrel.name, seamonkeys: [])
-                let uuids = barrel.modelUUIDs
-                // return empty list
-                if uuids.count == 0 {
-                    return req.eventLoop.future(mutedUserData)
-                }
-                // convert IDs to sorted SeaMonkeys
-                return User.query(on: req.db)
-                    .filter(\.$id ~~ uuids)
-                    .sort(\.$username, .ascending)
-                    .all()
-                    .flatMapThrowing { (users) in
-                        mutedUserData.seamonkeys = try users.map { try SeaMonkey(user: $0) }
-                        return mutedUserData
-                }
+				.filter(\.$ownerID == user.requireID())
+				.filter(\.$barrelType == .userMute)
+				.first()
+				.unwrap(or: Abort(.internalServerError, reason: "mutes barrel not found"))
+				.map { (barrel) in
+			// return as MutedUserData
+			let mutedUserHeaders = req.userCache.getHeaders(barrel.modelUUIDs).sorted { $0.username < $1.username }
+			return MutedUserData(name: barrel.name, mutedUsers: mutedUserHeaders)
         }
     }
 

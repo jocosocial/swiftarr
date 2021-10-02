@@ -127,7 +127,7 @@ extension Application {
 				// Redis stores blocks as users you've blocked AND users who have blocked you,
 				// for all subaccounts of both you and the other user.
 				let redisKey: RedisKey = "rblocks:\(userID.uuidString)"
-				let blockFuture = app.redis.get(redisKey, as: [UUID].self)
+				let blockFuture = app.redis.smembers(of: redisKey, as: UUID.self)
 			
 				let futures = barrelFuture.and(blockFuture).map { (barrels, blocks) in 
 					var mutes: [UUID]?
@@ -141,8 +141,8 @@ extension Application {
 							default: continue
 						}
 					}
-				
-					let cacheData = UserCacheData(userID: userID, user: user, blocks: blocks,
+					let compactBlocks = blocks.compactMap { $0 }
+					let cacheData = UserCacheData(userID: userID, user: user, blocks: compactBlocks,
 							mutes: mutes, mutewords: muteWords, alertwords: alertWords)
 					initialStorage.cacheUser(cacheData)
 				}
@@ -247,9 +247,8 @@ extension Request {
 			return futures.flatten(on: request.eventLoop).map { cacheData in
 				let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
 				cacheLock.withLock {
-					var storage = request.application.userCacheStorage
 					cacheData.forEach { userCacheData in
-						storage.cacheUser(userCacheData)
+						request.application.userCacheStorage.cacheUser(userCacheData)
 					}
 				}
 			}
@@ -264,7 +263,7 @@ extension Request {
 			// Redis stores blocks as users you've blocked AND users who have blocked you,
 			// for all subaccounts of both you and the other user.
 			let redisKey: RedisKey = "rblocks:\(userUUID.uuidString)"
-			let blockFuture = request.redis.get(redisKey, as: [UUID].self)
+			let blockFuture = request.redis.smembers(of: redisKey, as: UUID.self)
 			
 			// Build an entry for this user
 			return User.find(userUUID, on: request.db)
@@ -285,7 +284,8 @@ extension Request {
 						}
 					}
 				
-					let cacheData = UserCacheData(userID: userUUID, user: user, blocks: blocks,
+					let compactBlocks = blocks.compactMap { $0 }
+					let cacheData = UserCacheData(userID: userUUID, user: user, blocks: compactBlocks,
 							mutes: mutes, mutewords: muteWords, alertwords: alertWords)
 					return cacheData
 				}

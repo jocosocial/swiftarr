@@ -153,44 +153,43 @@ struct UsersController: APIRouteCollection {
     /// ownership of any other accounts the blocked user may be using. The blocking of any
     /// associated user accounts is handled under the hood.
     ///
-    /// Users with an `.accessLevel` of `.moderator` or higher may not be blocked. A block
-    /// applied to such accounts will be accepted, but is effectively a uni-directional block.
-    /// That is, the blocking user will not see the blocked user, but the blocked privileged
-    /// user will still see the blocking user throughout the public areas of the system, and
-    /// their role accounts will still be visible to the blocking user.
+    /// Users with an `.accessLevel` of `.moderator` or higher may not be blocked.
+	/// Attempting to block a moderator account directly will produce an error.  A block
+    /// applied to an alt account of a moderator will be accepted, but will not include the moderator
+	/// in the set of blocked accounts. Similarly, moderators can block accounts, which has no
+	/// effect on their moderator account but applies bidirectional blocks between their (non-moderator)
+	/// alt accounts and the blocked accounts.
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: 201 Created on success.
+    /// - Returns: 201 Created on success, 200 OK if user already in block list.
     func blockHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let requester = try req.auth.require(User.self)
-		// get requester block barrel
-        let blockBarrel = try Barrel.query(on: req.db)
-					.filter(\.$ownerID == requester.requireID())
+        let requesterParentID = try requester.parentAccountID()
+		// get block barrel for the requester's parent account
+        let blockBarrel = Barrel.query(on: req.db)
+					.filter(\.$ownerID == requesterParentID)
 					.filter(\.$barrelType == .userBlock)
 					.first()
 					.unwrap(or: Abort(.internalServerError, reason: "userBlock barrel not found"))
-        return User.findFromParameter(userIDParam, on: req)
-        	.and(blockBarrel)
-            .flatMap { (user, barrel) in
-				do {
-					// add blocked user to barrel
-					barrel.modelUUIDs.append(try user.requireID())
-					return barrel.save(on: req.db).flatMap { (_) in
-						do {
-							// update cache and return 201
-							return try self.setBlocksCache(by: requester, of: user, on: req)
-								.transform(to: .created)
-						}
-						catch {
-							return req.eventLoop.makeFailedFuture(error)
-						}
-					}
-				}
-				catch {
-					return req.eventLoop.makeFailedFuture(error)
-				}
+        return User.findFromParameter(userIDParam, on: req).and(blockBarrel).throwingFlatMap { (user, barrel) in
+        	// This guard only applies to *directly* blocking a moderator's Mod account. 
+        	guard user.accessLevel < .moderator else {
+        		throw Abort(.badRequest, reason: "Cannot block accounts of moderators, THO, or admins")
+        	}
+        	let userIDToBlock = try user.requireID()
+        	guard try userIDToBlock != requester.requireID() else {
+        		throw Abort(.badRequest, reason: "You cannot block yourself.")
+        	} 
+        	if barrel.modelUUIDs.contains(userIDToBlock) {
+        		return req.eventLoop.future(.ok)
+        	}
+			// add blocked user to barrel
+			barrel.modelUUIDs.append(userIDToBlock)
+			return try self.setBlocksCache(by: requester, of: user, on: req).flatMap {
+				return barrel.save(on: req.db).transform(to: .created)
 			}
+		}
     }
     
     /// `GET /api/v3/users/match/allnames/STRING`
@@ -444,36 +443,25 @@ struct UsersController: APIRouteCollection {
     /// - Returns: 204 No Content on success.
     func unblockHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let requester = try req.auth.require(User.self)
-        let requesterID = try requester.requireID()
-  		guard let parameter = req.parameters.get(userIDParam.paramString), let userID = UUID(parameter) else {
-            throw Abort(.badRequest, reason: "No user ID in request.")
-        }
-		return User.find(userID, on: req.db)
-			.unwrap(or: Abort(.notFound, reason: "no user found for identifier '\(parameter)'"))
-			.flatMap { (user) in
-				// get requester block barrel
-				return Barrel.query(on: req.db)
-					.filter(\.$ownerID == requesterID)
+        let requesterParentID = try requester.parentAccountID()
+		// get block barrel for the requester's parent account
+        let blockBarrelFuture = Barrel.query(on: req.db)
+					.filter(\.$ownerID == requesterParentID)
 					.filter(\.$barrelType == .userBlock)
 					.first()
 					.unwrap(or: Abort(.internalServerError, reason: "userBlock barrel not found"))
-					.flatMap { (barrel) in
-						// remove user from barrel
-						guard let index = barrel.modelUUIDs.firstIndex(of: userID) else {
-							return req.eventLoop.makeFailedFuture(Abort(.badRequest, reason: "user not found in block list"))
-						}
-						barrel.modelUUIDs.remove(at: index)
-						return barrel.save(on: req.db).flatMap { (_) in
-							do {
-								// update cache and return 204
-								return try self.removeBlockFromCache(by: requester, of: user, on: req).transform(to: .noContent)
-							}
-							catch {
-								return req.eventLoop.makeFailedFuture(error)
-							}
-						}
-					}
+        return User.findFromParameter(userIDParam, on: req).and(blockBarrelFuture).throwingFlatMap { (user, barrel) in
+			// remove user from barrel
+        	let userIDToUnblock = try user.requireID()
+			guard let index = barrel.modelUUIDs.firstIndex(of: userIDToUnblock) else {
+				throw Abort(.badRequest, reason: "user not found in block list")
 			}
+			barrel.modelUUIDs.remove(at: index)
+			return barrel.save(on: req.db).flatMap { (_) in
+				// update cache and return 204
+				return self.removeBlockFromCache(by: requester, of: user, on: req).transform(to: .noContent)
+			}
+		}
     }
     
     /// `POST /api/v3/users/ID/unmute`
@@ -518,83 +506,36 @@ struct UsersController: APIRouteCollection {
     /// Updates the cache values for all accounts involved in a block removal. The currently
     /// blocked user and any associated accounts are removed from all blocking user's associated
     /// accounts' blocks caches, and vice versa.
-    ///
-    /// To avoid the potential race condition of multiple blocks being modified simultaneously,
-    /// a simple locking scheme is used for the removal processing. A lock expires after 1
-    /// second if not explicitly deleted. To avoid resulting potential request fulfillment
-    /// blocking, `swiftarr` uses an intermediary to perform the block removals, then updates the
-    /// atomic keyedCache used for filtering.
-    /// 
+	/// 
     /// - Parameters:
     ///   - requester: The `User` removing the block.
     ///   - user: The `User` currently being blocked.
     ///   - req:The incoming `Request`, which provides the `EventLoop` on which this must run.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: Void.
-    func removeBlockFromCache(by requester: User, of user: User, on req: Request) throws -> EventLoopFuture<Void> {
-        // get all involved IDs
-        let requesterUUIDs = requester.allAccountIDs(on: req)
-        let blockUUIDs = user.allAccountIDs(on: req)
-        return requesterUUIDs.and(blockUUIDs).flatMap { (ruuids, buuids) in
-			// create lock with 1-second expiry
-			let lockValue = UUID().uuidString
-			let commandArgs: [RESPValue] = [.simpleString(ByteBuffer(string: "blocksLock")), 
-					.simpleString(ByteBuffer(string: "\(lockValue)"))]
-			return req.redis.send(command: "SETNX", with: commandArgs)
-				.and(req.redis.expire("blocksLock", after: TimeAmount.seconds(1)))
-				.flatMap { (_, _) in
-                    var futures: [EventLoopFuture<Void>] = []
-                    // update requester caches
-                    for uuid in ruuids {
-                        let redisKey: RedisKey = "rblocks:\(uuid)"
-                        let cachedBlocks = req.redis.get(redisKey, as: [String].self)
-                        futures.append(cachedBlocks.flatMap { (cached) in
-                            var blocks = cached ?? []
-                            let removals = buuids.map { "\($0)" }
-                            blocks.removeAll(where: { removals.contains($0) })
-                            return req.redis.set(redisKey, to: blocks)
-                        })
-                    }
-                    // update blocked user caches
-                    for uuid in buuids {
-                        let redisKey: RedisKey = "rblocks:\(uuid)"
-                        let cachedBlocks = req.redis.get(redisKey, as: [String].self)
-                        futures.append(cachedBlocks.flatMap { (cached) in
-                            var blocks = cached ?? []
-                            let removals = ruuids.map { "\($0)" }
-                            blocks.removeAll(where: { removals.contains($0) })
-                            return req.redis.set(redisKey, to: blocks)
-                        })
-                    }
-                    // resolve futures
-                    return futures.flatten(on: req.eventLoop).flatMap { (_) in
-                        // unlock
-                        return req.redis.get("blocksLock", as: String.self).throwingFlatMap { (lock) in
-                            guard let lock = lock, lock == lockValue else {
-                                // hmm... notify of error, just allow lock to expire
-                                throw Abort(.internalServerError, reason: "lock conflict")
-                            }
-                            // delete lock
-                            return req.redis.delete("blocksLock").flatMap { _ in 
-								return req.userCache.updateUsers(ruuids)
-									.and(req.userCache.updateUsers(buuids))
-									.transform(to: ())
-                            }
-                        }
-                    }
-                }
+    func removeBlockFromCache(by requester: User, of user: User, on req: Request) -> EventLoopFuture<Void> {
+        // get all involved IDs. We don't need to filter out mod accts, as Redis `srem` on them should no-op.
+        let requesterFuture = requester.allAccountIDs(on: req)
+        let unblockFuture = user.allAccountIDs(on: req)
+        return requesterFuture.and(unblockFuture).flatMap { (ruuids, buuids) in
+			var futures: [EventLoopFuture<Int>] = []
+        	ruuids.forEach { ruuid in
+				futures.append(req.redis.srem(buuids, from: "rblocks:\(ruuid)"))
+        	}
+        	buuids.forEach { buuid in
+				futures.append(req.redis.srem(ruuids, from: "rblocks:\(buuid)"))
+        	}
+			return futures.flatten(on: req.eventLoop).flatMap { (_) in
+				return req.userCache.updateUsers(ruuids)
+						.and(req.userCache.updateUsers(buuids))
+						.transform(to: ())
+			}
         }
     }
     
     /// Updates the cache values for all accounts involved in a block. Blocked user and any
     /// associated accounts are added to all blocking user's associated accounts' blocks caches,
     /// and vice versa.
-    ///
-    /// To avoid the potential race condition of multiple blocks being modified simultaneously,
-    /// a simple locking scheme is used for the block generation. A lock expires after 1 second
-    /// if not explicitly deleted. To avoid resulting potential request fulfillment blocking,
-    /// `swiftarr` uses an intermediary to perform the block additions, then updates the atomic
-    /// keyedCache used for filtering.
     ///
     /// - Parameters:
     ///   - requester: The `User` requesting the block.
@@ -604,53 +545,26 @@ struct UsersController: APIRouteCollection {
     /// - Returns: Void.
     func setBlocksCache(by requester: User, of user: User, on req: Request) throws -> EventLoopFuture<Void> {
         // get all involved IDs
-        let requesterUUIDs = requester.allAccountIDs(on: req)
-        let blockUUIDs = user.allAccountIDs(on: req)
-        return requesterUUIDs.and(blockUUIDs).flatMap { (ruuids, buuids) in
-			// create lock with 1-second expiry
-			let lockValue = UUID().uuidString
-			let commandArgs: [RESPValue] = [.simpleString(ByteBuffer(string: "blocksLock")), 
-					.simpleString(ByteBuffer(string: "\(lockValue)"))]
-			return req.redis.send(command: "SETNX", with: commandArgs)
-				.and(req.redis.expire("blocksLock", after: TimeAmount.seconds(1)))
-				.flatMap { (_, _) in
-				var futures: [EventLoopFuture<Void>] = []
-				// update requester caches
-				for uuid in ruuids {
-					let redisKey: RedisKey = "rblocks:\(uuid)"
-					let cachedBlocks = req.redis.get(redisKey, as: [String].self)
-					futures.append(cachedBlocks.flatMap { (cached) in
-						var blocks = cached ?? []
-						blocks += buuids.map { "\($0)" }
-						return req.redis.set(redisKey, to: blocks)
-					})
-				}
-				// update blocked user caches
-				for uuid in buuids {
-					let redisKey: RedisKey = "rblocks:\(uuid)"
-					let cachedBlocks = req.redis.get(redisKey, as: [String].self)
-					futures.append(cachedBlocks.flatMap { (cached) in
-						var blocks = cached ?? []
-						blocks += ruuids.map { "\($0)" }
-						return req.redis.set(redisKey, to: blocks)
-					})
-				}
-				// resolve futures
-				return futures.flatten(on: req.eventLoop).flatMap { (_) in
-					// unlock
-					return req.redis.get("blocksLock", as: String.self).throwingFlatMap { (lock) in
-						guard let lock = lock, lock == lockValue else {
-							// hmm... notify of error, just allow lock to expire
-							throw Abort(.internalServerError, reason: "lock conflict")
-						}
-						// delete lock
-						return req.redis.delete("blocksLock").flatMap { _ in
-							return req.userCache.updateUsers(ruuids)
-								.and(req.userCache.updateUsers(buuids))
-								.transform(to: ())
-						}
-					}
-				}
+        let requesterFuture = requester.allAccounts(on: req.db)
+        let blockedFuture = user.allAccounts(on: req.db)
+        return requesterFuture.and(blockedFuture).throwingFlatMap { (requesterUsers, blockedUsers) in
+        	// Relies on the fact that allAccounts returns parent acct in position 0
+        	guard !requesterUsers.isEmpty, !blockedUsers.isEmpty, try requesterUsers[0].requireID() != blockedUsers[0].requireID() else {
+        		throw Abort(.badRequest, reason: "You cannot block your own alt accounts.")
+        	}
+        	let nonModRequesters = try requesterUsers.compactMap { try $0.accessLevel.hasAccess(.moderator) ? nil : $0.requireID() }
+        	let nonModBlocked = try blockedUsers.compactMap { try $0.accessLevel.hasAccess(.moderator) ? nil : $0.requireID() }
+			var futures: [EventLoopFuture<Int>] = []
+        	nonModRequesters.forEach { ruuid in
+				futures.append(req.redis.sadd(nonModBlocked, to: "rblocks:\(ruuid)"))
+        	}
+        	nonModBlocked.forEach { buuid in
+				futures.append(req.redis.sadd(nonModRequesters, to: "rblocks:\(buuid)"))
+        	}
+			return futures.flatten(on: req.eventLoop).flatMap { (_) in
+				return req.userCache.updateUsers(nonModRequesters)
+						.and(req.userCache.updateUsers(nonModBlocked))
+						.transform(to: ())
 			}
 		}
 	}

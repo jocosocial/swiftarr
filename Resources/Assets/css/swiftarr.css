@@ -44,6 +44,18 @@ hr.newline:after {
   border-top: 1px solid rgba(255, 255, 255, .95);
 }
 
+.swiftarr-breadcrumb-item + .swiftarr-breadcrumb-item {
+  padding-left: 0.25rem;
+}
+.swiftarr-breadcrumb-item + .swiftarr-breadcrumb-item::before {
+  padding-right: 0.5rem;
+  color: #6c757d;
+  content: "/";
+}
+.swiftarr-breadcrumb-item.active {
+  color: #6c757d;
+}
+
 .duration-select {
   display: flex;
   width: 100px;

@@ -117,6 +117,12 @@ extension User {
 				.unwrap(or: Abort(.internalServerError, reason: "parent not found"))
     }
     
+    /// Returns the ID of the parent account of the receiver. If the receiver has no parent, the receiver's ID is returned.
+    ///
+    func parentAccountID() throws -> UUID {
+    	return try self.$parent.id ?? self.requireID()
+    }
+    
     func buildUserSearchString() {
 		var builder = [String]()
 		builder.append(displayName ?? "")

@@ -54,6 +54,11 @@ struct SiteUserController: SiteControllerUtils {
         privateRoutes.post("profile", "note", userIDParam, use: userNotePostHandler)
         privateRoutes.get("profile", "report", userIDParam, use: profileReportPageHandler)
         privateRoutes.post("profile", "report", userIDParam, use: profileReportPostHandler)
+        privateRoutes.post("user", userIDParam, "block", use: blockUserPostHandler)
+        privateRoutes.post("user", userIDParam, "unblock", use: unblockUserPostHandler)
+        privateRoutes.post("user", userIDParam, "mute", use: muteUserPostHandler)
+        privateRoutes.post("user", userIDParam, "unmute", use: unmuteUserPostHandler)
+        privateRoutes.get("blocks", use: blocksPageHandler)
 	}
 	
 	/// GET /avatar/full/ID
@@ -140,6 +145,87 @@ struct SiteUserController: SiteControllerUtils {
 			}
 		}
 	}
+	
+	
+	// GET /blocks
+	//
+	// Show the user a page listing all the accounts they have blocked or muted, and allowing the user to unblock/unmute
+	// acconts. Has to exist here because a user generally can't get to the user profile page of a user they're blocking/muting,
+	// and that's where the block/mute buttons are.
+	// 
+	// By design, blocks do not show alt accounts of the blocked person (although all alts belonging to a blocked account 
+	// get blocked), nor does a blocked user see blocks applied against their account (although they won't be able to see 
+	// content created by the blocking user).
+	func blocksPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+    	return apiQuery(req, endpoint: "/user/blocks").throwingFlatMap { blocksResponse in
+			let blockedUsers = try blocksResponse.content.decode(BlockedUserData.self)
+			return apiQuery(req, endpoint: "/user/mutes").throwingFlatMap { mutesResponse in
+				let mutedUsers = try mutesResponse.content.decode(MutedUserData.self)
+				struct BlocksContext : Encodable {
+					var trunk: TrunkContext
+					var blocks: [UserHeader]
+					var mutes: [UserHeader]
+					
+					init(_ req: Request, blocks: [UserHeader], mutes: [UserHeader]) throws {
+						trunk = .init(req, title: "Manage Blocks and Mutes", tab: .none)
+						self.blocks = blocks
+						self.mutes = mutes
+					}
+				}
+				let ctx = try BlocksContext(req, blocks: blockedUsers.blockedUsers, mutes: mutedUsers.mutedUsers)
+				return req.view.render("User/userBlocks", ctx)			
+			}
+		}
+	}
+	
+	// POST /user/:user_ID/block
+	//
+	// Applies a block against the given user ID.
+	func blockUserPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+    	guard let userID = req.parameters.get(userIDParam.paramString) else {
+    		throw "Invalid username parameter"
+    	}
+		return apiQuery(req, endpoint: "/users/\(userID)/block", method: .POST).map { response in
+			return .created
+		}
+	}
+
+	// POST /user/:user_ID/unblock
+	//
+	// Removes a block against the given user ID.
+	func unblockUserPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+    	guard let userID = req.parameters.get(userIDParam.paramString) else {
+    		throw "Invalid username parameter"
+    	}
+		return apiQuery(req, endpoint: "/users/\(userID)/unblock", method: .POST).map { response in
+			return .ok
+		}
+	}
+	
+	// POST /user/:user_ID/mute
+	//
+	// Mutes the given user ID.
+	func muteUserPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+    	guard let userID = req.parameters.get(userIDParam.paramString) else {
+    		throw "Invalid username parameter"
+    	}
+		return apiQuery(req, endpoint: "/users/\(userID)/mute", method: .POST).map { response in
+			return .created
+		}
+	}
+
+	// POST /user/:user_ID/unmute
+	//
+	// Unmutes the given user ID.
+	func unmuteUserPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+    	guard let userID = req.parameters.get(userIDParam.paramString) else {
+    		throw "Invalid username parameter"
+    	}
+		return apiQuery(req, endpoint: "/users/\(userID)/unmute", method: .POST).map { response in
+			return .ok
+		}
+	}
+
 	
 	// GET /profile/edit
 	//

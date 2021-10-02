@@ -491,7 +491,7 @@ struct ForumController: APIRouteCollection {
         	.and(user.getBookmarkBarrel(of: .bookmarkedPost, on: req))
         	.flatMapThrowing { (post, bookmarkBarrel) -> Barrel in
                 // create barrel if needed
-                let barrel = bookmarkBarrel ?? Barrel(ownerID: userID, barrelType: .bookmarkedPost)
+                let barrel = bookmarkBarrel ?? Barrel(ownerID: userID, barrelType: .bookmarkedPost, name: "Posts")
                 // ensure bookmark doesn't exist
                 var bookmarks = barrel.userInfo["bookmarks"] ?? []
                 let postIDStr = try post.bookmarkIDString()
