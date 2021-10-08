@@ -29,7 +29,7 @@ struct FezController: APIRouteCollection {
         tokenAuthGroup.delete("post", fezPostIDParam, use: postDeleteHandler)
         tokenAuthGroup.post(fezIDParam, "unjoin", use: unjoinHandler)
         tokenAuthGroup.post(fezIDParam, "update", use: updateHandler)
-        tokenAuthGroup.post("user", userIDParam, "add", use: userAddHandler)
+        tokenAuthGroup.post(fezIDParam, "user", userIDParam, "add", use: userAddHandler)
         tokenAuthGroup.post(fezIDParam, "user", userIDParam, "remove", use: userRemoveHandler)
 		tokenAuthGroup.post(fezIDParam, "report", use: reportFezHandler)
 		tokenAuthGroup.post("post", fezPostIDParam, "report", use: reportFezPostHandler)
@@ -75,6 +75,7 @@ struct FezController: APIRouteCollection {
 		let futureFezzes = FriendlyFez.query(on: req.db)
 				.filter(\.$fezType != .closed)
 				.filter(\.$owner.$id !~ blocked)
+				.filter(\.$cancelled == false)
 				.filter(\.$startTime > Date().addingTimeInterval(-3600))
 				.sort(\.$startTime, .ascending)
 				.sort(\.$title, .ascending)
@@ -558,7 +559,7 @@ struct FezController: APIRouteCollection {
 	
     /// `POST /api/v3/fez/ID/update`
     ///
-    /// Update the specified FriendlyFez with the supplied data.
+    /// Update the specified FriendlyFez with the supplied data. Updating a cancelled fez will un-cancel it.
     ///
     /// - Note: All fields in the supplied `FezContentData` must be filled, just as if the fez
     ///   were being created from scratch. If there is demand, using a set of more efficient
@@ -594,6 +595,7 @@ struct FezController: APIRouteCollection {
 			fez.location = data.location
 			fez.minCapacity = data.minCapacity
 			fez.maxCapacity = data.maxCapacity
+			fez.cancelled = false
             return fez.save(on: req.db).throwingFlatMap { (_) in
             	return getUserPivot(fez: fez, userID: userID, on: req.db).flatMapThrowing { pivot in
 					return try buildFezData(from: fez, with: pivot, for: user, on: req)

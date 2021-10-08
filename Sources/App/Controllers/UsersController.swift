@@ -194,7 +194,7 @@ struct UsersController: APIRouteCollection {
     
     /// `GET /api/v3/users/match/allnames/STRING`
     ///
-    /// Retrieves all `User.userSearch` values containing the specified substring,
+    /// Retrieves the first 10 `User.userSearch` values containing the specified substring,
     /// returning an array of `UserHeader` structs..
     /// The intended use for this endpoint is to help isolate a particular user in an
     /// auto-complete type scenario, by searching **all** of the `.displayName`, `.username`
@@ -235,6 +235,7 @@ struct UsersController: APIRouteCollection {
 			.filter(\.$userSearch, .custom("ILIKE"), "%\(search)%")
 			.filter(\.$id !~ blocked)
 			.sort(\.$username, .ascending)
+			.range(0..<10)
 			.all()
 			.flatMapThrowing { (profiles) in
 				// return as UserSearch

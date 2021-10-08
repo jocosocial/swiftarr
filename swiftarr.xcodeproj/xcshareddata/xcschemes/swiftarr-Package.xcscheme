@@ -34,6 +34,20 @@
                ReferencedContainer = "container:swiftarr.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "swiftarr::gdOverrides"
+               BuildableName = "gdOverrides.framework"
+               BlueprintName = "gdOverrides"
+               ReferencedContainer = "container:swiftarr.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction

@@ -21,7 +21,7 @@
 					<form action="/createAltAccount" method="POST">
 						<div class="row mb-3 ms-2 col-6">
 							<label for="username" class="form-label">Username</label>
-							<input type="text" class="form-control" id="username" name="username" spellcheck="false" autocapitalize="none">
+							<input type="text" class="form-control" id="username" name="username" spellcheck="false" autocapitalize="none" autocomplete="off">
 						</div>
 						<div class="row">
 							<p>Due to technical restrictions, the security available on the ship is akin to <b>writing your password on a post-it and placing the post-it on your forehead.</b> At least, it is to anyone skilled and motivated to do such things.</p>
@@ -30,9 +30,9 @@
 						</div>
 						<div class="row ms-2 mb-3 col-6">
 							<label for="password" class="form-label">Password</label>
-							<input type="password" class="form-control" id="password" name="password">
+							<input type="password" class="form-control" id="password" name="password" autocomplete="new-password">
 							<label for="confirmPassword" class="form-label">Confirm Password</label>
-							<input type="password" class="form-control" id="confirmPassword" name="confirmPassword">
+							<input type="password" class="form-control" id="confirmPassword" name="confirmPassword" autocomplete="new-password">
 						</div>
 						#if(error):
 							<div class="alert alert-danger mt-3" role="alert">

@@ -50,10 +50,14 @@
 								<div class="row mt-1 justify-content-end row-cols-auto collapse" data-label="actionbar">	
 									<div class="col btn-group btn-group-sm" role="group" aria-label="Post actions">
 										<a class="btn btn-outline-primary" href="/forum/containingpost/#(forumPost.postID)">View Thread</a>
-										<input type="checkbox" class="btn-check" autocomplete="off" data-action="favoriteForumPost" id="#(forumPost.postID)_favorite"
-											#if(forumPost.isBookmarked):checked#endif>
+										<input type="checkbox" class="btn-check" autocomplete="off" data-action="favoriteForumPost" 
+												data-actionpath="/forumpost/favorite/#(forumPost.postID)"
+												data-istoggle="true"
+												data-errordiv="#(forumPost.postID)_errorDisplay"
+												id="#(forumPost.postID)_favorite"
+												#if(forumPost.isBookmarked):checked#endif>
 										<label class="btn btn-outline-primary" for="#(forumPost.postID)_favorite">
-											Favorite<span class="laughtext"></span>
+											Favorite
 											<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
 											<span class="visually-hidden">Loading...</span>
 										</label>
@@ -69,22 +73,34 @@
 									</div>								
 									#if(forumPost.author.userID != trunk.userID):
 										<div class="col btn-group btn-group-sm" role="group" data-state="#(forumPost.userLike)" aria-label="Reactions">
-											<input type="checkbox" class="btn-check" autocomplete="off" data-action="laugh" id="#(forumPost.postID)_laugh"
-												#if(forumPost.userLike == "laugh"):checked#endif>
+											<input type="checkbox" class="btn-check" autocomplete="off" data-action="laugh" 
+													data-actionpath="/forumpost/#(forumPost.postID)/laugh"
+													data-istoggle="true"
+													data-errordiv="#(forumPost.postID)_reactErrorDisplay"
+													id="#(forumPost.postID)_laugh"
+													#if(forumPost.userLike == "laugh"):checked#endif>
 											<label class="btn btn-outline-primary" for="#(forumPost.postID)_laugh">
 												😆 <span class="laughtext"></span>
 												<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
 												<span class="visually-hidden">Loading...</span>
 											</label>
-											<input type="checkbox" class="btn-check" autocomplete="off" data-action="like" id="#(forumPost.postID)_like"
-												#if(forumPost.userLike == "like"):checked#endif>
+											<input type="checkbox" class="btn-check" autocomplete="off" data-action="like" 
+													data-actionpath="/forumpost/#(forumPost.postID)/like"
+													data-istoggle="true"
+													data-errordiv="#(forumPost.postID)_reactErrorDisplay"
+													id="#(forumPost.postID)_like"
+													#if(forumPost.userLike == "like"):checked#endif>
 											<label class="btn btn-outline-primary" for="#(forumPost.postID)_like">
 												👍 <span class="liketext"></span>
 												<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
 												<span class="visually-hidden">Loading...</span>
 											</label>
-											<input type="checkbox" class="btn-check" autocomplete="off" data-action="love" id="#(forumPost.postID)_love"
-												#if(forumPost.userLike == "love"):checked#endif>
+											<input type="checkbox" class="btn-check" autocomplete="off" data-action="love" 
+													data-actionpath="/forumpost/#(forumPost.postID)/love"
+													data-istoggle="true"
+													data-errordiv="#(forumPost.postID)_reactErrorDisplay"
+													id="#(forumPost.postID)_love"
+													#if(forumPost.userLike == "love"):checked#endif>
 											<label class="btn btn-outline-primary" for="#(forumPost.postID)_love">
 												❤️ <span class="lovetext"></span>
 												<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
@@ -100,7 +116,13 @@
 									#endif
 								</div>
 								<div class="row">
-									<div class="col text-end text-danger" data-purpose="errordisplay">
+									<div class="col text-end text-danger d-none" id="#(forumPost.postID)_errorDisplay">
+										Could not add/remove favorite: <span class="errortext"></span>
+									</div>
+								</div>	
+								<div class="row">
+									<div class="col text-end text-danger d-none" id="#(forumPost.postID)_reactErrorDisplay">
+										Could not apply reaction to post: <span class="errortext"></span>
 									</div>
 								</div>	
 							</div>
@@ -140,7 +162,8 @@
 						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
 						<button type="button" class="btn btn-primary" data-action="delete" data-delete-type="forumpost" data-delete-postid="">Delete</button>
 					</div>
-					<div class="mx-3 pb-1 text-end text-danger" data-purpose="errordisplay">
+					<div class="mx-3 pb-1 text-end text-danger error-display d-none">
+						Could not delete forum post: <span class="errortext"></span>
 					</div>
 				</div>
 			</div>

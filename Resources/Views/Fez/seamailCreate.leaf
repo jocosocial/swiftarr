@@ -3,7 +3,7 @@
     	<div class="container-md ms-0 mt-2">
     		<div class="row">
     			<div class="col col-auto">
-    				Compose a New Seamail
+    				<b>Compose a New Seamail</b>
 				</div>
 			</div>
 			<div class="row">
@@ -15,21 +15,28 @@
 								<div class="row mb-3">
 									<div class="input-group">
 										<span class="input-group-text" id="basic-addon1">@</span>
-										<input type="text" class="form-control user-autocomplete" autocomplete="off" autofocus="true" placeholder="Search for users here" aria-label="participants" aria-describedby="basic-addon1">
+										<input type="text" class="form-control user-autocomplete" autofocus="true" 
+												placeholder="Search for users here" 
+												aria-label="participants" aria-describedby="basic-addon1" 
+												autocapitalize="off" autocomplete="off"
+												data-nameusage="seamail">
 									</div>
 								</div>
 								<div class="row">
-									<div class="col">Tap usernames to add to seamail chat</div>
+									<div class="col"><i>Enter partial username above to find users, then tap Add on matches to add to message group</i></div>
 								</div>
-								<div class="row mb-2 mx-0" id="name_suggestions">
-								</div>
+								<ul class="list-group mb-2 mx-0" id="name_suggestions">
+								</ul>
 								<div class="row">
-									<div class="col">Participants:</div>
+									<div class="col"><b>Participants:</b></div>
 								</div>
-								<div class="row mb-3 mx-0" id="named_participants">
-									<div class="col-auto border" data-uuid="#(trunk.userID)">@#(trunk.username)</div>
-								</div>
-								<div class="row mb-3">
+								<ul class="list-group mx-0" id="named_participants">
+									<li class="list-group-item d-flex flex-row justify-content-between" data-uuid="#(trunk.userID)">
+										<div>@#(trunk.username)</div>
+										<div><i>creator</i></div>
+									</li>
+								</ul>
+								<div class="row my-3">
 									<div class="input-group">
 										<input type="text" class="form-control" placeholder="Subject" name="subject" aria-label="Subject">
 									</div>
@@ -55,6 +62,23 @@
     			</div>
 			</div>
 		</div>
+
+		<template id="potentialMemberTemplate">
+			<li class="list-group-item list-group-item-action swiftarr-namecell">
+				<div class="row justify-content-between align-items-baseline">
+					<div class="col col-auto ms-2 username-here"></div>
+					<label class="col col-auto btn btn-sm btn-primary px-3">
+						<input type="checkbox" class="btn-check" autocomplete="off" data-action="fezAddUser">
+						<span class="button-title-here">Add</span>
+						<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+						<span class="visually-hidden">Loading...</span>
+					</label>
+				</div>
+				<div class="row text-end text-danger error-display d-none">
+					Could not add user: <span class="errortext"></span>
+				</div>
+			</li>
+		</template>
     #endexport
 #endextend
 

@@ -7,16 +7,23 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 		case "laugh":
 		case "like":
 		case "love":
-			btn.addEventListener("click", likeAction); 
+		case "favoriteForum":
+		case "favoriteForumPost":
+		case "follow":
+		case "joinFez":
+		case "leaveFez":
+		case "fezRemoveUser":
+		case "cancelFez":
+		case "fezDelete":
+		case "block":
+		case "mute": 
+		case "unblock": 
+		case "unmute":
+			btn.addEventListener("click", spinnerButtonAction); 
 			break;
 		case "delete": btn.addEventListener("click", deleteAction); break;
-		case "favoriteForum": btn.addEventListener("click", favoriteForumTappedAction); break;
-		case "favoriteForumPost": btn.addEventListener("click", favoriteForumPostTappedAction); break;
-		case "follow": btn.addEventListener("click", followEventAction); break;
 		case "eventFiltersChanged": btn.addEventListener("click", filterEvents); break;
 		case "filterEventType": btn.addEventListener("click", eventFilterDropdownTappedAction); break;
-		case "joinfez": btn.addEventListener("click", joinFezTappedAction); break;
-		case "leaveFez": btn.addEventListener("click", leaveFezTappedAction); break;
 		case "filterFezDay": 
 			dropdownButtonSetup(btn); 
 			btn.addEventListener("click", fezDayFilterDropdownTappedAction);
@@ -25,89 +32,126 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 			dropdownButtonSetup(btn); 
 			btn.addEventListener("click", fezTypeFilterDropdownTappedAction);
 			break;
-		case "block":
-		case "mute": 
-		case "unblock": 
-		case "unmute": 
-			btn.addEventListener("click", blockUserAction); 
-			break;
 	}
 }
 
 // Updates button state for buttons that perform a data-action
-function setActionButtonsState(buttons, tappedButton, state) {
-	let spinnerElem = tappedButton.labels[0]?.querySelector(".spinner-border");
+function setActionButtonsState(tappedButton, state) {
+	if (!tappedButton) { return }
+	let spinnerElem = tappedButton.labels[0]?.querySelector(".spinner-border") ??
+			 tappedButton.querySelector(".spinner-border");
 	if (state) {
 		setTimeout(() => {
-			for (let btn of buttons) {
+			for (let btn of tappedButton.parentElement.children) {
 				btn.disabled = false;
 			}
-			if (spinnerElem) spinnerElem.classList.add("d-none");
+			spinnerElem?.classList.add("d-none");
 		}, 1000);
 	}
 	else {
-		for (let btn of buttons) {
+		for (let btn of tappedButton.parentElement.children) {
 			btn.disabled = true;
 			if (btn.checked && btn != tappedButton) {
 				btn.checked = false;
 			}
 		}
-		if (spinnerElem) spinnerElem.classList.remove("d-none");
+		spinnerElem?.classList.remove("d-none");
 	}
 }
 
-// Click handler for the like/laugh/love buttons, for both tweets and forum posts
-function likeAction() {
-	let postid = event.target.closest('[data-postid]').dataset.postid;
+// Button handler for buttons that POST on click, spinner while processing, reload/redirect on completion, and display errors inline.
+// on Button: data-actionpath="/path/to/POST/to" 
+//		data-istoggle="true if it toggles via POST/DELETE of its actionPath"
+// 		data-errordiv="id"
+// on error div: class="d-none"
+// in error div: <span class="errorText"></span> 
+async function spinnerButtonAction() {
 	let tappedButton = event.target;
-	let listType = event.currentTarget.closest('ul')?.dataset.listtype;
-	var path =  '/' + listType + '/' + postid + '/';
-
-	if (!tappedButton.checked) {
-		path = path + "unreact";
+	let path = tappedButton.dataset.actionpath;
+	switch (tappedButton.dataset.action) {
 	}
-	else {
-		path = path + tappedButton.dataset.action;
+	let actionStr = 'POST'
+	if (tappedButton.dataset.istoggle == "true" && !tappedButton.checked) {
+		actionStr = 'DELETE';
 	}
-		
-	let buttons = tappedButton.closest('[data-state]').querySelectorAll("input");
-	setActionButtonsState(buttons, tappedButton, false);
-
-	let req = new Request(path, { method: 'POST' });
-	fetch(req).then(function(response) {
-		let postElement = tappedButton.closest('[data-postid]');
-		let errorDiv = tappedButton.closest('[data-postid]').querySelector('[data-purpose="errordisplay"]');
+	let req = new Request(path, { method: actionStr });
+	let errorDiv = document.getElementById(tappedButton.dataset.errordiv);
+	errorDiv?.classList.add("d-none")
+	setActionButtonsState(tappedButton, false);
+	try {
+		var response = await fetch(req);
 		if (response.ok) {
-			errorDiv.textContent = "";
+			switch(tappedButton.dataset.action) {
+				case "like": 
+				case "laugh": 
+				case "love": 
+					let postElement = tappedButton.closest('[data-postid]');
+					updateLikeCounts(postElement);
+					break;
+				case "follow":
+					tappedButton.closest('[data-eventfavorite]').dataset.eventfavorite = tappedButton.checked ? "true": "false";
+					break;
+				case "joinFez":
+				case "leaveFez":
+				case "fezDelete":
+				case "fezAddUser":
+				case "cancelFez":
+					location.reload();
+					break;
+				case "block":
+				case "mute":
+					window.location.href = "/";		// Once blocked, can't see profile anymore.
+					break;
+				case "unblock":
+				case "unmute":
+					let italicElem = document.createElement('i');
+					italicElem.append(document.createTextNode(tappedButton.dataset.action == "unblock" ? "unblocked" : "unmuted"));
+					tappedButton.replaceWith(italicElem);
+					tappedButton = null;
+					break;
+			}
 		}
 		else {
-			errorDiv.textContent = "Could not post reaction";
+			let responseJson = await response.json();
+			throw responseJson.reason; 
 		}
-		updateLikeCounts(postElement);
-	}).catch(error => {
-		tappedButton.closest('[data-postid]').querySelector('[data-purpose="errordisplay"]').textContent = "Could not post reaction";
-	}).finally(() => {
-		setActionButtonsState([tappedButton], tappedButton, true);
+	} catch (error) {
+		if (tappedButton.dataset.istoggle == "true") {
+			tappedButton.checked = !tappedButton.checked;
+		}
+		let errorSpan = errorDiv?.querySelector(".errortext");
+		if (errorSpan) { 
+			errorSpan.innerText = error; 
+		}
+		errorDiv?.classList.remove("d-none");
+	} finally {
+		setActionButtonsState(tappedButton, true);
+	}
+}
+
+for (let modal of document.querySelectorAll('.modal')) {
+	modal.addEventListener('show.bs.modal', event => {
+		modal.querySelector('.error-display')?.classList.add("d-none");
 	});
 }
 
-// Handler for the Delete Modal being shown. 
+// When a Delete Modal is shown, stash the ID of the thing being deleted in the Delete btn. 
 document.getElementById('deleteModal')?.addEventListener('show.bs.modal', function(event) {
 	let postElem = event.relatedTarget.closest('[data-postid]');
 	let deleteBtn = event.target.querySelector('[data-delete-postid]');
 	deleteBtn.setAttribute('data-delete-postid', postElem.dataset.postid);
-	event.target.querySelector('[data-purpose="errordisplay"]').innerHTML = ""
 })
 
 // Deletes forums, forumposts, and tweets. Delete btn handler inside Delete Modal.
-function deleteAction() {
+async function deleteAction() {
 	let postid = event.target.dataset.deletePostid;
 	let deleteType = event.target.dataset.deleteType;
 	let modal = event.target.closest('.modal');
 	let path = "/" + deleteType + "/" + postid + "/delete";
 	let req = new Request(path, { method: 'POST' });
-	fetch(req).then(response => {
-		if (response.status < 300) {
+	try {
+		var response = await fetch(req);
+		if (response.ok) {
 			bootstrap.Modal.getInstance(modal).hide()
 			let deletedPost = document.querySelector('li[data-postid="' + postid + '"]');
 			if (deletedPost != null) {
@@ -118,11 +162,17 @@ function deleteAction() {
 			}	
 		}
 		else {
-			response.json().then( data => {
-				modal.querySelector('[data-purpose="errordisplay"]').innerHTML = "<b>Error:</b> " + data.reason
-			})
+			let responseJson = await response.json();
+			throw responseJson.reason; 
 		}
-	})
+	}
+	catch (error) {
+		let errorSpan = modal?.querySelector(".errortext");
+		if (errorSpan) { 
+			errorSpan.innerText = error; 
+		}
+		modal?.querySelector(".error-display")?.classList.remove("d-none");
+	}
 }
 
 // Make every post expand when first clicked, showing the previously hidden action bar.
@@ -142,28 +192,28 @@ function updateLikeCounts(postElement) {
 	let postid = postElement.dataset.postid;
 	if (!listType || !postid) return;
 	fetch("/" + listType + "/" + postid)
-		.then(response => response.json())
-		.then(jsonStruct => {
-			let actionBar = postElement.querySelector('[data-label="actionbar"]');
-			if (jsonStruct.laughs) { 
-				let laughspan = actionBar.querySelector('.laughtext');
-				if (laughspan) {
-					laughspan.textContent = (jsonStruct.laughs.length > 0 ? "\xa0\xa0" + jsonStruct.laughs.length : "");
-				}
+			.then(response => response.json())
+			.then(jsonStruct => {
+		let actionBar = postElement.querySelector('[data-label="actionbar"]');
+		if (jsonStruct.laughs) { 
+			let laughspan = actionBar.querySelector('.laughtext');
+			if (laughspan) {
+				laughspan.textContent = (jsonStruct.laughs.length > 0 ? "\xa0\xa0" + jsonStruct.laughs.length : "");
 			}
-			if (jsonStruct.likes) { 
-				let likespan = actionBar.querySelector('.liketext');
-				if (likespan) {
-					likespan.textContent = (jsonStruct.likes.length > 0 ? "\xa0\xa0" + jsonStruct.likes.length : "");
-				}
+		}
+		if (jsonStruct.likes) { 
+			let likespan = actionBar.querySelector('.liketext');
+			if (likespan) {
+				likespan.textContent = (jsonStruct.likes.length > 0 ? "\xa0\xa0" + jsonStruct.likes.length : "");
 			}
-			if (jsonStruct.loves) { 
-				let lovespan = actionBar.querySelector('.lovetext');
-				if (lovespan) {
-					lovespan.textContent = (jsonStruct.loves.length > 0 ? "\xa0\xa0" + jsonStruct.loves.length : "");
-				}
+		}
+		if (jsonStruct.loves) { 
+			let lovespan = actionBar.querySelector('.lovetext');
+			if (lovespan) {
+				lovespan.textContent = (jsonStruct.loves.length > 0 ? "\xa0\xa0" + jsonStruct.loves.length : "");
 			}
-		});
+		}
+	});
 }
 
 function dropdownButtonSetup(menuItemBtn) {
@@ -182,49 +232,6 @@ function updateDropdownButton(menuItemBtn) {
 		menuItem.classList.remove("active");
 	}
 	menuItemBtn.classList.add("active");
-}
-
-function favoriteForumTappedAction() {
-	let tappedButton = event.target;
-	let forumID = event.target.dataset.forumid;
-	let path = "/forum/favorite/add/"
-	if (!tappedButton.checked) {
-		path = "/forum/favorite/remove/"
-	}
-	let req = new Request(path + forumID, { method: 'POST' });
-	let errorDiv = tappedButton.closest('.row').querySelector('[data-purpose="errordisplay"]');
-	setActionButtonsState([tappedButton], tappedButton, false);
-	fetch(req).then(function(response) {
-		if (response.ok) {
-			errorDiv.textContent = "";
-		}
-		else {
-			errorDiv.textContent = "Could not add/remove favorite";
-		}
-	}).catch(error => {
-		errorDiv.textContent = "Could not add/remove favorite";
-	}).finally(() => {
-		setActionButtonsState([tappedButton], tappedButton, true);
-	});
-}
-
-function favoriteForumPostTappedAction() {
-	let tappedButton = event.target;
-	let postID = tappedButton.closest('li').dataset.postid;
-	let path = "/forumpost/favorite/add/"
-	if (!tappedButton.checked) {
-		path = "/forumpost/favorite/remove/"
-	}
-	let req = new Request(path + postID, { method: 'POST' });
-	let errorDiv = tappedButton.closest('li').querySelector('[data-purpose="errordisplay"]');
-	setActionButtonsState([tappedButton], tappedButton, false);
-	fetch(req).then(function(response) {
-		errorDiv.textContent = response.ok ? "" : "Could not add/remove favorite";
-	}).catch(error => {
-		errorDiv.textContent = "Could not add/remove favorite";
-	}).finally(() => {
-		setActionButtonsState([tappedButton], tappedButton, true);
-	});
 }
 
 // MARK: - messagePostForm Handlers
@@ -378,69 +385,7 @@ function filterEvents() {
 	}
 }
 
-// Button handler for Schedule Follow btn; Marks a event followed/unfollowed
-function followEventAction() {
-	let eventid = event.target.closest('[data-eventid]').dataset.eventid;
-	let tappedButton = event.target;
-	let actionStr = tappedButton.checked ? 'POST' : 'DELETE';
-	let req = new Request('/events/' + eventid + '/favorite', { method: actionStr });
-	let spinnerElem = tappedButton.labels[0]?.querySelector(".spinner-border");
-	if (spinnerElem !== null) spinnerElem.classList.remove("d-none");
-	let errorDiv = tappedButton.closest('[data-eventid]').querySelector('[data-purpose="errordisplay"]');
-	fetch(req).then(function(response) {
-		if (response.ok) {
-			errorDiv.innerHTML = "";
-			tappedButton.closest('[data-eventfavorite]').dataset.eventfavorite = tappedButton.checked ? "true": "false";
-		}
-		else {
-			response.json().then( data => {
-				errorDiv.innerHTML = "<b>Error:</b> " + data.reason
-			});
-		}
-		setTimeout(() => {
-			if (spinnerElem !== null) spinnerElem.classList.add("d-none");
-		}, 1000);
-	}).catch(error => {
-		if (spinnerElem !== null) spinnerElem.classList.add("d-none");
-		errorDiv.innerHTML = "<b>Error:</b> " + error;
-	});
-}
-
 // MARK: - Fez Handlers
-
-function joinFezTappedAction() {
-	let fezID = event.target.closest('[data-fezid]').dataset.fezid;
-	let tappedButton = event.target;
-	let req = new Request("/fez/" + fezID + "/join", { method: 'POST' });
-	let errorDiv = tappedButton.closest('[data-fezid]').querySelector('[data-purpose="errordisplay"]');
-	fetch(req).then(function(response) {
-		if (response.ok) {
-			location.reload();
-		}
-		else {
-			errorDiv.textContent = "Could not join fez";
-		}
-	}).catch(error => {
-		errorDiv.textContent = "Could not join fez";
-	});
-}
-
-function leaveFezTappedAction() {
-	let fezID = event.target.dataset.fezid;
-	let tappedButton = event.target;
-	let req = new Request("/fez/" + fezID + "/leave", { method: 'POST' });
-	let errorDiv = tappedButton.closest('.modal-dialog').querySelector('[data-purpose="errordisplay"]');
-	fetch(req).then(function(response) {
-		if (response.ok) {
-			location.reload();
-		}
-		else {
-			errorDiv.textContent = "Error attempting to leave fez";
-		}
-	}).catch(error => {
-		errorDiv.textContent = "Error attempting to leave fez";
-	});
-}
 
 function fezDayFilterDropdownTappedAction() {
 	updateDropdownButton(event.target);
@@ -487,35 +432,52 @@ userSearch?.addEventListener('input', function(event) {
 				let suggestionDiv = document.getElementById('name_suggestions');
 				suggestionDiv.innerHTML = "";
 				for (user of userHeaders) {
-					let nameDiv = document.createElement("div");
-					nameDiv.classList.add("col-auto", "border");
-					nameDiv.dataset.uuid = user.userID;
-					nameDiv.appendChild(document.createTextNode("@" + user.username));
-					suggestionDiv.append(nameDiv);
-					nameDiv.addEventListener('click', function(event) {
-						let participantsDiv = document.getElementById('named_participants');
-						for (index = 0; index < participantsDiv.children.length; ++index) {
-							if (participantsDiv.children[index].dataset['uuid'] == nameDiv.dataset.uuid) {
-								return;
-							}
-						} 
-						let divCopy = nameDiv.cloneNode(true);
-						participantsDiv.append(divCopy);
-						divCopy.addEventListener('click', function(event) {
-							divCopy.remove();
-						});
-						let names = [];
-						for (index = 1; index < participantsDiv.children.length; ++index) {
-							names.push(participantsDiv.children[index].dataset['uuid']);
-						} 
-						let hiddenFormElem = document.getElementById('participants_hidden');
-						hiddenFormElem.value = names;
-					});
+					let listItem = document.getElementById('potentialMemberTemplate').content.firstElementChild.cloneNode(true);
+					listItem.dataset.userid = user.userID;
+					listItem.querySelector('.username-here').innerText = "@" + user.username;
+					let checkbox = listItem.querySelector('.btn-check');
+					checkbox.dataset.actionpath = checkbox.dataset.actionpath + user.userID;
+					checkbox.dataset.errordiv = "waitlisterror_" + user.userID;
+					listItem.querySelector('.error-display').id = "waitlisterror_" + user.userID;
+					suggestionDiv.append(listItem);
+					if (userSearch.dataset.nameusage == "seamail") {
+						checkbox.addEventListener('click', addToNamedParticipants);
+					}
+					else {
+						checkbox.addEventListener('click', spinnerButtonAction);
+					}
 				}
 			})
 		
 	}, 200);
 })
+
+function addToNamedParticipants(event) {
+	let listItem = event.target.closest('li');
+	let participantsDiv = document.getElementById('named_participants');
+	for (index = 0; index < participantsDiv.children.length; ++index) {
+		if (participantsDiv.children[index].dataset.userid == listItem.dataset.userid) {
+			return;
+		}
+	} 
+	let divCopy = listItem.cloneNode(true);
+	divCopy.querySelector('.button-title-here').innerText = "Remove";
+	participantsDiv.append(divCopy);
+	updateParticipantFormElement(participantsDiv);
+	divCopy.addEventListener('click', function(event) {
+		divCopy.remove();
+		updateParticipantFormElement(participantsDiv);
+	});
+}
+
+function updateParticipantFormElement(participantsDiv) {
+	let names = [];
+	for (index = 1; index < participantsDiv.children.length; ++index) {
+		names.push(participantsDiv.children[index].dataset.userid);
+	} 
+	let hiddenFormElem = document.getElementById('participants_hidden');
+	hiddenFormElem.value = names;
+}
 
 // MARK: - User Profile Handlers
 
@@ -539,37 +501,4 @@ function setDefaultAvatarImage() {
 	let hiddenElem = cardElement.querySelector('input[type="hidden"]');
 	hiddenElem.value = hiddenElem.dataset.defaultvalue;
 	updatePhotoCardState(cardElement);
-}
-
-function blockUserAction() {
-	let tappedButton = event.target;
-	let userID = tappedButton.dataset.userid;
-	let action = tappedButton.dataset.action;
-	let req = new Request("/user/" + userID + "/" + action, { method: 'POST' });
-	let errorDiv = (tappedButton.closest('.modal-dialog') ?? tappedButton.closest('li')).querySelector('[data-purpose="errordisplay"]')
-	setActionButtonsState([tappedButton], tappedButton, false);
-	fetch(req).then(function(response) {
-		if (response.ok) {
-			if (action == "block" || action == "mute") {
-				window.location.href = "/"
-			}
-			else {
-				tappedButton.labels[0].classList.add("disabled");
-				tappedButton.closest('li').classList.add("disabled");
-				if (action == "unblock") {
-					tappedButton.labels[0].innerText = "Unblocked";
-				}
-				else if (action == "unmute") {
-					tappedButton.labels[0].innerText = "Unmuted";
-				}
-			}
-		}
-		else {
-			errorDiv.textContent = "Error attempting to " + action + " user: " + response.statusText;
-		}
-	}).catch(error => {
-		errorDiv.textContent = "Error attempting to " + action + " user: " + error;
-	}).finally(() => {
-		setActionButtonsState([tappedButton], tappedButton, true);
-	});
 }

@@ -127,6 +127,9 @@ struct SiteForumController: SiteControllerUtils {
 		privateRoutes.post("forumpost", postIDParam, "laugh", use: forumPostLaughActionHandler)
 		privateRoutes.post("forumpost", postIDParam, "love", use: forumPostLoveActionHandler)
 		privateRoutes.post("forumpost", postIDParam, "unreact", use: forumPostUnreactActionHandler)
+		privateRoutes.delete("forumpost", postIDParam, "like", use: forumPostUnreactActionHandler)
+		privateRoutes.delete("forumpost", postIDParam, "laugh", use: forumPostUnreactActionHandler)
+		privateRoutes.delete("forumpost", postIDParam, "love", use: forumPostUnreactActionHandler)
 
 		privateRoutes.get("forums", categoryIDParam, "createForum", use: forumCreateViewHandler)
 		privateRoutes.post("forums", categoryIDParam, "createForum", use: forumCreateForumPostHandler)
@@ -141,8 +144,8 @@ struct SiteForumController: SiteControllerUtils {
 		
 		privateRoutes.get("forum", "search", use: forumSearchPageHandler)
 		privateRoutes.get("forum", "favorites", use: forumFavoritesPageHandler)
-		privateRoutes.post("forum", "favorite", "add", forumIDParam, use: forumAddFavoritePostHandler)
-		privateRoutes.post("forum", "favorite", "remove", forumIDParam, use: forumRemoveFavoritePostHandler)
+		privateRoutes.post("forum", "favorite", forumIDParam, use: forumAddFavoritePostHandler)
+		privateRoutes.delete("forum", "favorite", forumIDParam, use: forumRemoveFavoritePostHandler)
 		privateRoutes.get("forum", "owned", use: forumsByUserPageHandler)
 
 		privateRoutes.get("forumpost", "edit", postIDParam, use: forumPostEditPageHandler)
@@ -154,8 +157,8 @@ struct SiteForumController: SiteControllerUtils {
 		privateRoutes.get("forumpost", "mentions", use: userMentionsViewHandler)
 		privateRoutes.get("forumpost", "favorite", use: favoritePostsViewHandler)
 		privateRoutes.get("forumpost", "owned", use: forumPostsByUserViewHandler)
-		privateRoutes.post("forumpost", "favorite", "add", postIDParam, use: forumPostAddBookmarkPostHandler)
-		privateRoutes.post("forumpost", "favorite", "remove", postIDParam, use: forumPostRemoveBookmarkPostHandler)
+		privateRoutes.post("forumpost", "favorite", postIDParam, use: forumPostAddBookmarkPostHandler)
+		privateRoutes.delete("forumpost", "favorite", postIDParam, use: forumPostRemoveBookmarkPostHandler)
 		
 		
 	}
@@ -439,7 +442,7 @@ struct SiteForumController: SiteControllerUtils {
     	}
 	}
 	
-    // POST /forum/favorite/add/:forum_ID
+    // POST /forum/favorite/:forum_ID
     //
     // Adds a forum to the user's favorites list.
 	func forumAddFavoritePostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
@@ -451,7 +454,7 @@ struct SiteForumController: SiteControllerUtils {
 		}
 	}
 	
-    // POST /forum/favorite/remove/:forum_ID
+    // DELETE /forum/favorite/:forum_ID
     //
     // Removes a forum from the user's favorites list.
 	func forumRemoveFavoritePostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
@@ -655,7 +658,7 @@ struct SiteForumController: SiteControllerUtils {
 	
 	
 	
-    // POST /forumpost/favorite/add/:forumpost_ID
+    // POST /forumpost/favorite/:forumpost_ID
     //
     // The Web UI calls this 'favoriting' a post, but with the API nomenclature, you 'favorite' forums and 'bookmark' posts.
     // Anyway, the UI calls it favoriting because users might get confused with the difference between favoriting and bookmarking.
@@ -668,7 +671,7 @@ struct SiteForumController: SiteControllerUtils {
     	}
     }
 
-    // POST /forumpost/favorite/rmeove/:forumpost_ID
+    // DELETE /forumpost/favorite/:forumpost_ID
     //
     // The Web UI calls this 'favoriting' a post, but with the API nomenclature, you 'favorite' forums and 'bookmark' posts.
     // Anyway, the UI calls it favoriting because users might get confused with the difference between favoriting and bookmarking.

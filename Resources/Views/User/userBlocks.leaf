@@ -22,21 +22,23 @@
 									#userByline(blockedUser, "nolink")
 								</div>
 								<div class="col col-auto">
-									<input type="checkbox" class="btn-check" autocomplete="off" data-action="unblock" data-userid="#(blockedUser.userID)" id="#(blockedUser.userID)_unblock">
-									<label class="btn btn-sm btn-primary" for="#(blockedUser.userID)_unblock">
+									<button type="button" class="btn btn-sm btn-primary" autocomplete="off" data-action="unblock" 
+											data-actionpath="/user/#(blockedUser.userID)/unblock"
+											data-errordiv="#(blockedUser.userID)_errorDisplay">
 										Unblock
 										<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
 										<span class="visually-hidden">Loading...</span>
-									</label>
+									</button>
 								</div>
 							</div>
-							<div class="text-end text-danger" data-purpose="errordisplay">
+							<div class="text-end text-danger d-none" id="#(blockedUser.userID)_errorDisplay">
+								Could not unblock user: <span class="errortext"></span>
 							</div>
 						</li>
 					#endfor
 				#endif
 			</ul>				
-    		<div class="row">
+    		<div class="row mt-3">
     			<div class="col col-auto">
 					<b>Muted Users</b>
 				</div>
@@ -52,15 +54,17 @@
 									#userByline(mutedUser, "nolink")
 								</div>
 								<div class="col col-auto">
-									<input type="checkbox" class="btn-check" autocomplete="off" data-action="unmute" data-userid="#(mutedUser.userID)" id="#(mutedUser.userID)_unmute">
-									<label class="btn btn-sm btn-primary" for="#(mutedUser.userID)_unmute">
+									<button type="button" class="btn btn-sm btn-primary" autocomplete="off" data-action="unmute" 
+											data-actionpath="/user/#(mutedUser.userID)/unmute"
+											data-errordiv="#(mutedUser.userID)_muteErrorDisplay">
 										Unmute
 										<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
 										<span class="visually-hidden">Loading...</span>
 									</label>
 								</div>
 							</div>
-							<div class="text-end text-danger" data-purpose="errordisplay">
+							<div class="text-end text-danger d-none" id="#(mutedUser.userID)_muteErrorDisplay">
+								Could not unmute user: <span class="errortext"></span>
 							</div>
 						</li>
 					#endfor

@@ -142,8 +142,12 @@
 								#endif
 								<a class="btn btn-outline-primary" href="/events/#(event.eventID)/calendarevent.ics">Add to Calendar</a>
 								#if(trunk.userIsLoggedIn):
-									<input type="checkbox" class="btn-check" autocomplete="off" data-action="follow" id="#(event.eventID)_follow"
-										#if(event.isFavorite):checked#endif>
+									<input type="checkbox" class="btn-check" autocomplete="off" data-action="follow" 
+											data-actionpath="/events/#(event.eventID)/favorite"
+											data-istoggle="true"
+											data-errordiv="#(event.eventID)_errorDisplay"
+											id="#(event.eventID)_follow"
+											#if(event.isFavorite):checked#endif>
 									<label class="btn btn-outline-primary" for="#(event.eventID)_follow">
 										Follow
 										<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
@@ -153,7 +157,8 @@
 							</div>								
 						</div>
 						<div class="row">
-							<div class="col text-end text-danger" data-purpose="errordisplay">
+							<div class="col text-end text-danger d-none" id="#(event.eventID)_errorDisplay">
+								Could not follow/unfollow event: <span class="errortext"></span>
 							</div>
 						</div>	
 					</div>

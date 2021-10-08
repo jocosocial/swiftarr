@@ -9,6 +9,14 @@
 				  </ol>
 				</nav>
 			</div>
+			
+			#if(fez.cancelled):
+				<div class="row mb-3">
+					<div class="col text-danger text-center">
+						<b>This Fez has been cancelled</b>
+					</div>
+				</div>
+			#endif
 
 			<div class="row">
 				<div class="col">
@@ -47,17 +55,15 @@
 							<a class="btn btn-outline-primary" href="/moderate/fez/#(fez.fezID)">Mod</a>
 						#endif
 						#if(fez.owner.userID == trunk.userID):
-							<a class="btn btn-outline-primary" href="#">Add Users</a>
-							<a class="btn btn-outline-primary" href="#">Remove Users</a>
+							<a class="btn btn-outline-primary" href="/fez/#(fez.fezID)/members">Manage Members</a>
 							<a class="btn btn-outline-primary" href="/fez/#(fez.fezID)/update">Update</a>
-							<a class="btn btn-outline-primary" href="#">Cancel</a>
+							<button type="button" class="btn btn-outline-primary px-3" data-bs-toggle="modal" data-bs-target="\#cancelFezModal">Cancel</button>
 						#else:
 							<a class="btn btn-outline-primary px-3" href="/fez/report/#(fez.fezID)">Report</a>
 							<button type="button" class="btn btn-outline-primary px-3" data-bs-toggle="modal" data-bs-target="\#leaveFezModal">Leave</button>
 						#endif
 					</div>								
 				</div>
-			
 			#else:
 				<div class="row mt-1 justify-content-end row-cols-auto ">
 					<div class="col btn-group btn-group-sm" role="group" aria-label="non-member actions">
@@ -65,25 +71,43 @@
 							<a class="btn btn-outline-primary" href="/moderate/fez/#(fez.fezID)">Mod</a>
 						#endif
 						<a class="btn btn-outline-primary" href="/fez/report/#(fez.fezID)">Report</a>
-						<button type="button" class="btn btn-primary px-4" data-action="joinfez">Join</a>
+						<input type="checkbox" class="btn-check" autocomplete="off" data-action="joinFez" 
+								data-actionpath="/fez/#(fez.fezID)/join"
+								data-errordiv="fezActions_errorDisplay"
+								id="#(fez.fezID)_join">
+						<label class="btn btn-primary px-4" for="#(fez.fezID)_join">
+							Join
+							<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+							<span class="visually-hidden">Loading...</span>
+						</label>
 					</div>								
 				</div>
 			#endif
 
 			<div class="row">
-				<div class="col text-end text-danger" data-purpose="errordisplay">
+				<div class="col text-end text-danger d-none" id="fezActions_errorDisplay">
+					Could not join fez: <span class="errortext"></span>
 				</div>
 			</div>	
 			
 			#if(fez.members):
-				<div class="row">
+				<div class="row mt-2">
 					<b>Participants</b>
 				</div>
 				<div class="row mb-2 mx-0">
 					#for(participant in fez.members.participants):
-						<div class="col col-auto border">
-							#avatar(participant)
-							<span>#(participant.username)</span>
+						<div class="col col-auto border text-nowrap">
+							#avatar(participant) #userByline(participant)
+						</div>				
+					#endfor
+				</div>
+				<div class="row mt-2">
+					<b>Wait List</b>
+				</div>
+				<div class="row mb-2 mx-0">
+					#for(participant in fez.members.waitingList):
+						<div class="col col-auto border text-nowrap">
+							#avatar(participant) #userByline(participant)
 						</div>				
 					#endfor
 				</div>
@@ -192,9 +216,53 @@
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-						<button type="button" class="btn btn-primary" data-action="leaveFez" data-fezid="#(fez.fezID)">Leave</button>
+						<input type="checkbox" class="btn-check" autocomplete="off" data-action="leaveFez" 
+								data-actionpath="/fez/#(fez.fezID)/leave"
+								data-errordiv="fezDialog_errorDisplay"
+								id="#(fez.fezID)_leave">
+						<label class="btn btn-primary px-4" for="#(fez.fezID)_leave">
+							Leave
+							<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+							<span class="visually-hidden">Loading...</span>
+						</label>
 					</div>
-					<div class="mx-3 pb-1 text-end text-danger" data-purpose="errordisplay">
+					<div class="mx-3 pb-1 text-end text-danger d-none error-display" id="fezDialog_errorDisplay">
+						Error attempting to leave fez: <span class="errortext"></span>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<div class="modal fade" id="cancelFezModal" tabindex="-1" aria-labelledby="cancel fez modal" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="cancel fez modal">Cancel Fez</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<p>Cancelling the fez will mark the fez as not happening and notify all participants.
+						The fez won't be deleted; participants can still create and read posts.</p>
+						#if(fez.members):
+							#if(count(fez.members.participants) > 1):
+								<p>If you haven't, you may want to make a post letting particpants know why the event was cancelled.</p>
+							#endif
+						#endif
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">DON'T Cancel Fez</button>
+						<input type="checkbox" class="btn-check" autocomplete="off" data-action="cancelFez" 
+								data-actionpath="/fez/#(fez.fezID)/cancel"
+								data-errordiv="cancelDialog_errorDisplay"
+								id="#(fez.fezID)_cancel">
+						<label class="btn btn-primary px-4" for="#(fez.fezID)_cancel">
+							Cancel
+							<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+							<span class="visually-hidden">Loading...</span>
+						</label>
+					</div>
+					<div class="mx-3 pb-1 text-end text-danger d-none error-display" id="cancelDialog_errorDisplay">
+						Error attempting to cancel fez: <span class="errortext"></span>
 					</div>
 				</div>
 			</div>

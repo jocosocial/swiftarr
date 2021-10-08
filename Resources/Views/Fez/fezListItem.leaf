@@ -1,7 +1,7 @@
 <a class="list-group-item list-group-item-action" href="/fez/#(fez.fezID)">		
 	<div class="row">
 		<div class="col">
-			<b>#(fez.title)</b>
+			#if(fez.cancelled):<span class="text-danger"><b>Cancelled</b></span>#endif <b>#(fez.title)</b>
 		</div>
 		<div class="col col-auto">
 			<span class="text-muted">#eventTime(fez.startTime, fez.endTime)</span>

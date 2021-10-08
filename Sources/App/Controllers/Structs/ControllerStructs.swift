@@ -386,6 +386,8 @@ struct FezData: Content, ResponseEncodable {
 	var minParticipants: Int
     /// The max number of people for the activity. Set by the host.
 	var maxParticipants: Int
+	/// TRUE if the fez has been cancelled by the owner. Cancelled fezzes should display CANCELLED so users know not to show up, but cancelled fezzes are not deleted.
+	var cancelled: Bool
 	/// The most recent of: Creation time for the fez, time of the last post (may not exactly match post time), user add/remove, or update to fezzes' fields. 
 	var lastModificationTime: Date
     
@@ -424,6 +426,7 @@ extension FezData {
 		self.minParticipants = fez.minCapacity
 		self.maxParticipants = fez.maxCapacity
 		self.members = nil
+		self.cancelled = fez.cancelled
 	}
 }
 

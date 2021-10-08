@@ -29,11 +29,11 @@
 				<form action="/login" method="POST">
 				  <div class="mb-3 col-7">
 					<label for="username" class="form-label">Username</label>
-					<input type="text" class="form-control" id="username" name="username" spellcheck="off" autocapitalize="none">
+					<input type="text" class="form-control" id="username" name="username" spellcheck="off" autocapitalize="none" autocomplete="username">
 				  </div>
 				  <div class="mb-3 col-7">
 					<label for="password" class="form-label">Password</label>
-					<input type="password" class="form-control" id="password" name="password">
+					<input type="password" class="form-control" id="password" name="password" autocomplete="current-password">
 				  </div>
 				  <button type="submit" class="btn btn-primary">Login</button>
 				</form>

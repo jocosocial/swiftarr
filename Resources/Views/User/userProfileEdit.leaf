@@ -63,7 +63,7 @@
 						<label for="realName" class="text-start text-sm-end d-block">Real Name:</label>
 					</div>
 					<div class="col col-12 col-sm-8">
-						<input type="text" class="form-control" id="realName" name="realName" placeholder="Real Name" value="#(profile.realName)" spellcheck="false" autocapitalize="words">
+						<input type="text" class="form-control" id="realName" name="realName" placeholder="Real Name" value="#(profile.realName)" spellcheck="false" autocapitalize="words" autocomplete="name">
 					</div>
 				</div>
 
@@ -99,7 +99,7 @@
 						<label for="email" class="text-start text-sm-end d-block">Email:</label>
 					</div>
 					<div class="col col-12 col-sm-8">
-						<input type="email" class="form-control" id="email" name="email" placeholder="Email" value="#(profile.email)">
+						<input type="email" class="form-control" id="email" name="email" placeholder="Email" value="#(profile.email)" autocomplete="email">
 					</div>
 				</div>
 

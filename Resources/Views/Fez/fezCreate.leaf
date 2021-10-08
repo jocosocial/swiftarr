@@ -6,6 +6,16 @@
     				<b>#(pageTitle)</b>
 				</div>
 			</div>
+			#if(fez):
+				#if(fez.cancelled):
+					<div class="row mb-3">
+						<div class="col text-danger text-center">
+							<b>This Fez has been cancelled. Updating the fez will un-cancel it.</b>
+						</div>
+					</div>
+				#endif
+			#endif
+
 			<div class="row">
     			<div class="col">
 					<ul class="container-md mx-0 px-0 list-group">
@@ -18,7 +28,31 @@
 								</div>
 								<div class="row mb-3">
 									<div class="input-group">
-										<input type="text" class="form-control" placeholder="Location" name="location" aria-label="Location" value="#(fezLocation)">
+										<input type="text" class="form-control" list="locationOptions" placeholder="Location" name="location" aria-label="Location" value="#(fezLocation)">
+										<datalist id="locationOptions">
+											<option value="Atrium, Deck 1, Midship">
+											<option value="B.B. King's, Deck 2, Midship">
+											<option value="Billboard Onboard, Deck 2, Forward">
+											<option value="Pinnacle Bar, Deck 2, Midship">
+											<option value="Explorer's Lounge, Deck 2, Aft">
+											<option value="Lower Main Dining Room, Deck 2, Aft">
+											<option value="Ocean Bar, Deck 3, Midship">
+											<option value="Upper Main Dining Room, Deck 3, Aft">
+											<option value="Lido Bar (Midship), Deck 9, Midship">
+											<option value="Sea View Bar, Deck 9, Midship">
+											<option value="Lido Pool Area, Deck 9, Midship">
+											<option value="Lido Market, Deck 9, Aft">
+											<option value="Sea View Pool Area, Deck 9, Aft">
+											<option value="Crow's Nest (Ten Forward), Deck 10, Forward">
+											<option value="Shuffleboard Court, Deck 10, Midship">
+											<option value="EXC, Deck 10, Forward">
+											<option value="Sports Deck, Deck 11, Forward">							
+										</datalist>	
+									</div>
+								</div>
+								<div class="row mb-3 justify-content-end">
+									<div class="col col-auto">
+										<button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="\#locationModal">Note on Locations</button>
 									</div>
 								</div>
 								<div class="row mb-3">
@@ -76,6 +110,29 @@
 						</li>
 					</ul>
     			</div>
+			</div>
+		</div>
+		<div class="modal fade" id="locationModal" tabindex="-1" aria-labelledby="locationModalTitle" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="locationModalTitle">About Fez Locations</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<ol>
+							<li>Fezzes are not a reservation system. You can't claim a room by scheduling a Fez there.</li>
+							<li>While you can schedule a fez in a a room used for official or shadow events, you should only do so to 
+								find a group to attend an existing event together.</li>
+							<li>Event rooms are often used for official things even when not running a listed event.</li>
+							<li>Sometimes places fill up; have backup plans. If you schedule a "Drink Like a Pirate" fez at a bar
+								onboard, and that bar's full at the appointed time, you can message the fez members to relocate.</li>
+						</ol>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-primary" data-bs-dismiss="modal">Alrrright</button>
+					</div>
+				</div>
 			</div>
 		</div>
     #endexport

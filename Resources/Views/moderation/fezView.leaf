@@ -10,7 +10,7 @@
 				<div class="col" data-reportabletype="fez" data-reportableid="#(modData.fez.fezID)" data-postid="#(modData.fez.fezID)">
 					#if(!modData.isDeleted):
 						<a class="btn btn-outline-primary btn-sm" href="/fez/#(modData.fez.fezID)/edit">Edit</a>
-						<button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="\#deleteModal">Delete</button>
+						<button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="\#deleteFezModal">Delete</button>
 						<span class="dropdown">
 							<button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
 								Set State
@@ -138,7 +138,7 @@
 			#endif
 		</div>
 
-		<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+		<div class="modal fade" id="deleteFezModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
 			<div class="modal-dialog">
 				<div class="modal-content">
 					<div class="modal-header">
@@ -150,9 +150,18 @@
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-						<button type="button" class="btn btn-primary" data-action="delete" data-delete-type="fez" data-delete-postid="#(modData.fezID)">Delete</button>
+						<input type="checkbox" class="btn-check" autocomplete="off" data-action="fezDelete" 
+								data-actionpath="/fez/#(modData.fez.fezID)/delete" 
+								data-errordiv="fezDialog_errorDisplay"
+								id="fezDialog_deleteBtn">
+						<label class="btn btn-primary px-4" for="fezDialog_deleteBtn">
+							Delete
+							<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+							<span class="visually-hidden">Loading...</span>
+						</label>
 					</div>
-					<div class="mx-3 pb-1 text-end text-danger" data-purpose="errordisplay">
+					<div class="mx-3 pb-1 text-end text-danger error-display d-none" id="fezDialog_errorDisplay">
+						<b>Error attempting to delete fez:</b> <span class="errortext"></span>
 					</div>
 				</div>
 			</div>
