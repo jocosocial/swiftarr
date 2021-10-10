@@ -38,7 +38,7 @@ struct AdminController: APIRouteCollection {
     /// Creates a new daily theme for a day of the cruise (or some other day). The 'day' field is unique, so attempts to create a new record
 	/// with the same day as an existing record will fail--instead, you probably want to edit the existing DailyTheme for that day. 
 	/// 
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter requestBody: <doc:DailyThemeUploadData>
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `HTTP 201 Created` if the theme was added successfully.
 	func addDailyThemeHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
@@ -59,7 +59,8 @@ struct AdminController: APIRouteCollection {
     /// Edits an existing daily theme. Passing nil for the image will remove an existing image. Although you can change the cruise day for a DailyTheme,
 	/// you can't set the day to equal a day that already has a theme record. This means it'll take extra steps if you want to swap days for 2 themes.
 	/// 
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter dailyThemeID: in URL path
+    /// - Parameter requestBody: <doc:DailyThemeUploadData>
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `HTTP 201 Created` if the theme was added successfully.
 	func editDailyThemeHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
@@ -67,8 +68,7 @@ struct AdminController: APIRouteCollection {
 		try user.guardCanCreateContent(customErrorString: "user cannot add daily themes")
  		let data = try ValidatingJSONDecoder().decode(DailyThemeUploadData.self, fromBodyOf: req)
  		let imageArray = data.image != nil ? [data.image!] : []
-		return DailyTheme.query(on: req.db).filter(\.$cruiseDay == data.cruiseDay).first()
-				.unwrap(or: Abort(.notFound, reason: "No theme found for given cruise day")).throwingFlatMap { dailyTheme in
+ 		return DailyTheme.findFromParameter(dailyThemeIDParam, on: req).throwingFlatMap { dailyTheme in
 			// process images
 			return self.processImages(imageArray, usage: .dailyTheme, on: req).throwingFlatMap { filenames in
         		let filename = filenames.isEmpty ? nil : filenames[0]
@@ -86,9 +86,9 @@ struct AdminController: APIRouteCollection {
     ///
     ///  Deletes a daily theme.
 	/// 
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter dailyThemeID:in URL path
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: `HTTP 201 Created` if the theme was added successfully.
+    /// - Returns: `HTTP 204 noContent` if the theme was deleted successfully.
 	func deleteDailyThemeHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
 		try user.guardCanCreateContent(customErrorString: "user cannot delete daily themes")
@@ -101,9 +101,8 @@ struct AdminController: APIRouteCollection {
     ///
     ///  Returns the current state of the server's Settings structure.
 	/// 
-    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: `SettingsAdminData`
+    /// - Returns: <doc:SettingsAdminData>
 	func settingsHandler(_ req: Request) throws -> SettingsAdminData {
 		let user = try req.auth.require(User.self)
 		guard user.accessLevel.hasAccess(.admin) else {
@@ -116,9 +115,9 @@ struct AdminController: APIRouteCollection {
     ///
     ///  Updates a bunch of settings in the Settings.shared object.
 	/// 
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter requestBody: <doc:SettingsUpdateData>
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: `HTTP 201 Created` if the theme was added successfully.
+    /// - Returns: `HTTP 200 OK` if the settings were updated.
 	func settingsUpdateHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
 		let user = try req.auth.require(User.self)
 		guard user.accessLevel.hasAccess(.admin) else {
@@ -175,11 +174,15 @@ struct AdminController: APIRouteCollection {
 		return try Settings.shared.storeSettings(on: req).transform(to: HTTPStatus.ok)
 	}
 	
-    /// `POST /api/v3/admin/schedule/upload`
+    /// `POST /api/v3/admin/schedule/update`
     ///
     ///  Handles the POST of a new schedule .ics file.
 	/// 
-    /// - Parameter req: The incoming `Request`, provided automatically.
+	///  - Warning: Updating the schedule isn't thread-safe, especially if admin is logged in twice. Uploading a schedule file while another 
+	///  admin account was attempting to apply its contents will cause errors. Once uploaded, an events file should be safe to verify and 
+	///  apply multiple times in parallel.
+	///
+    /// - Parameter requestBody: <doc:EventsUpdateData> which is really one big String (the .ics file) wrapped in JSON.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `HTTP 200 OK`
 	func scheduleUploadPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
@@ -201,12 +204,11 @@ struct AdminController: APIRouteCollection {
     ///
     ///  Returns a struct showing the differences between the current schedule and the (already uploaded and saved to a local file) new schedule.
 	///  
-	///  Note: This is a separate GET call, instead of the response from POSTing the updated .ics file, so that verifying and applying a schedule 
-	///  update can be idempotent. Once an update is uploaded, you can call the validate and apply endpoints repeatedly if necessary.
-	/// 
-    /// - Parameter req: The incoming `Request`, provided automatically.
+	///  - Note: This is a separate GET call, instead of the response from POSTing the updated .ics file, so that verifying and applying a schedule 
+	///  update can be idempotent. Once an update is uploaded, you can call the validate and apply endpoints repeatedly if necessary. 
+	///  
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: `HTTP 200 OK`
+    /// - Returns: <doc:EventUpdateDifferenceData>
 	func scheduleChangeVerificationHandler(_ req: Request) throws -> EventLoopFuture<EventUpdateDifferenceData> {
 		let filepath = try uploadSchedulePath()
 		return req.fileio.collectFile(at: filepath.path).throwingFlatMap { buffer in
@@ -273,13 +275,13 @@ struct AdminController: APIRouteCollection {
 	/// change. Whether `forumPosts` is true or not, forums are created for new Events, and forum titles and initial posts are updated to match
 	/// the updated event info.
     ///
-    ///  URL Query Parameters:
-	///  - `?processDeletes=true` to delete existing events not in the update list. Only set this if the update file is a comprehensive list of all events.
-	///  - `?forumPosts=true` to create posts in the Event Forum of each modified event, alerting readers of the event change. We may want to forego 
+    /// **URL Query Parameters:**
+	/// 
+	/// - `?processDeletes=true` to delete existing events not in the update list. Only set this if the update file is a comprehensive list of all events.
+	/// - `?forumPosts=true` to create posts in the Event Forum of each modified event, alerting readers of the event change. We may want to forego 
 	///   	 	change posts if we update the schedule as soon as we board the ship. For events created by this update, we always try to create and associate
 	///   	 	a forum for the event.
 	/// 
-    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `HTTP 200 OK`
 	func scheduleChangeApplyHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {

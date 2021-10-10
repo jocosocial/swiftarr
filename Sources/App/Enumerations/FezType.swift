@@ -1,7 +1,7 @@
 
 /// The type of `FriendlyFez`.
 
-enum FezType: String, CaseIterable, Codable {
+public enum FezType: String, CaseIterable, Codable {
     /// A closed chat. Participants are set at creation and can't be changed. No location, start/end time, or capacity. 
     case closed
     /// Some type of activity.

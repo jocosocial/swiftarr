@@ -63,9 +63,8 @@ struct ModerationController: APIRouteCollection {
 	///
 	/// Retrieves the full `Report` model of all reports.
 	///
-	/// - Parameter req: The incoming `Request`, provided automatically.
 	/// - Throws: 403 error if the user is not an admin.
-	/// - Returns: `[Report]`.
+	/// - Returns: An array of <doc:Report> objects
 	func reportsHandler(_ req: Request) throws -> EventLoopFuture<[ReportModerationData]> {
 		let user = try req.auth.require(User.self)
 		guard user.accessLevel.hasAccess(.moderator) else {
@@ -84,6 +83,9 @@ struct ModerationController: APIRouteCollection {
 	/// Moving reports through the 'handling' state is not necessary--you can go straight to 'closed'--but this marks the reports as being 'taken' by the given mod
 	/// so other mods can avoid duplicate or conflicting work. Also, any ModeratorActions taken while a mod has reports in the 'handling' state get tagged with an
 	/// identifier that matches the actions to the reports. Reports should be closed once a mod is done with them.
+    /// - Parameter reportID: in URL path. Note that this method actually operates on all reports referring to the same content as the indicated report.
+	/// - Throws: 403 error if the user is not an admin.
+	/// - Returns: 200 OK on success
 	func beginProcessingReportsHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
 		// TODO: This could benefit from checks that the mod doesn't currently have an actionGroup (that is, already handling a report)
 		// and that the reports aren't already being handled by another mod. But, need to think about process--don't want reports getting stuck.
@@ -115,6 +117,10 @@ struct ModerationController: APIRouteCollection {
 	///
 	/// Closes all reports filed against the same piece of content as the given report. That is, if there are several user reports
 	/// concerning the same post, this will close all of them.
+	/// 
+    /// - Parameter reportID: in URL path. Note that this method actually operates on all reports referring to the same content as the indicated report.
+	/// - Throws: 403 error if the user is not an admin.
+	/// - Returns: 200 OK on success
 	func closeReportsHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
 		let user = try req.auth.require(User.self)
 		guard user.accessLevel.hasAccess(.moderator) else {
@@ -140,15 +146,17 @@ struct ModerationController: APIRouteCollection {
 
 	/// `GET /api/v3/mod/moderationlog`
 	///
-	/// Retrieves ModeratorAction recoreds. These records are a log of Mods using their Mod powers.
+	/// Retrieves ModeratorAction recoreds. These records are a log of Mods using their Mod powers. Generally, if an action 1) modifies the database and 
+	/// 2) requires that the acting user be a mod to perform the action, it will get logged.
 	/// 
-	/// URL Query Parameters:
+	/// - Note: A mod editing/deleting their own content will not get logged, even if they use a Moderator-only API call to do it. 
+	/// 
+	/// **URL Query Parameters:**
 	/// * `?start=INT` - the offset from the anchor to start. Offset only counts twarrts that pass the filters.
 	/// * `?limit=INT` - the maximum number of twarrts to retrieve: 1-200, default is 50
 	/// 
-	/// - Parameter req: The incoming `Request`, provided automatically.
 	/// - Throws: 403 error if the user is not an admin.
-	/// - Returns: `[Report]`.
+	/// - Returns: An array of <doc:ModeratorActionLogData> records.
 	func moderatorActionLogHandler(_ req: Request) throws -> EventLoopFuture<[ModeratorActionLogData]> {
 		let start = (req.query[Int.self, at: "start"] ?? 0)
 		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...200)
@@ -160,20 +168,20 @@ struct ModerationController: APIRouteCollection {
 		}
 	}
 
-	/// ` GET /api/v3/mod/twarrt/ID`
+	/// `GET /api/v3/mod/twarrt/ID`
 	///
 	/// Moderator only. Returns info admins and moderators need to review a twarrt. Works if twarrt has been deleted. Shows
 	/// twarrt's quarantine and reviewed states.
 	///
-	/// The `TwarrtModerationData` contains:
+	/// The <doc:TwarrtModerationData> contains:
 	/// * The current twarrt contents, even if its deleted
 	/// * Previous edits of the twarrt
 	/// * Reports against the twarrt
 	/// * The twarrt's current deletion and moderation status.
 	/// 
-	/// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter twarrtID: in URL path.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: `TwarrtModerationData` containing a bunch of data pertinient to moderating the twarrt.
+	/// - Returns: <doc:TwarrtModerationData> containing a bunch of data pertinient to moderating the twarrt.
 	func twarrtModerationHandler(_ req: Request) throws -> EventLoopFuture<TwarrtModerationData> {
 		guard let paramVal = req.parameters.get(twarrtIDParam.paramString), let twarrtID = Int(paramVal) else {
 			throw Abort(.badRequest, reason: "Request parameter \(twarrtIDParam.paramString) is missing.")
@@ -201,12 +209,13 @@ struct ModerationController: APIRouteCollection {
 		}
 	}
 
-	/// ` POST /api/v3/mod/twarrt/ID/setstate/STRING`
+	/// `POST /api/v3/mod/twarrt/ID/setstate/STRING`
 	///
-	/// Moderator only. Sets the moderation state enum on the twarrt idententified by ID to the `ModerationState` in STRING.
+	/// Moderator only. Sets the moderation state enum on the twarrt idententified by ID to the <doc:ModerationState>  in STRING.
 	/// Logs the action to the moderator log unless the user owns the twarrt. 
 	///
-	/// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter twarrtID: in URL path.
+    /// - Parameter moderationState: in URL path. Value must match a <doc:ModerationState> rawValue.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: `HTTPStatus` .ok if the requested moderation status was set.
 	func twarrtSetModerationStateHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
@@ -221,20 +230,20 @@ struct ModerationController: APIRouteCollection {
 		}
 	}
 
-	/// ` GET /api/v3/mod/forumpost/ID`
+	/// `GET /api/v3/mod/forumpost/ID`
 	///
 	/// Moderator only. Returns info admins and moderators need to review a forumPost. Works if forumPost has been deleted. Shows
 	/// forumPost's quarantine and reviewed states.
 	///
-	/// The `ForumPostModerationData` contains:
+	/// The <doc:ForumPostModerationData> contains:
 	/// * The current post contents, even if its deleted
 	/// * Previous edits of the post
 	/// * Reports against the post
 	/// * The post's current deletion and moderation status.
 	/// 
-	/// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter postID: in URL path.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: `ForumPostModerationData` containing a bunch of data pertinient to moderating the post.
+	/// - Returns: <doc:ForumPostModerationData> containing a bunch of data pertinient to moderating the post.
 	func forumPostModerationHandler(_ req: Request) throws -> EventLoopFuture<ForumPostModerationData> {
 		guard let paramVal = req.parameters.get(postIDParam.paramString), let postID = Int(paramVal) else {
 			throw Abort(.badRequest, reason: "Request parameter \(postIDParam.paramString) is missing.")
@@ -261,12 +270,13 @@ struct ModerationController: APIRouteCollection {
 		}
 	}
 
-	/// ` POST /api/v3/mod/forumpost/ID/setstate/STRING`
+	/// `POST /api/v3/mod/forumpost/ID/setstate/STRING`
 	///
 	/// Moderator only. Sets the moderation state enum on the post idententified by ID to the `ModerationState` in STRING.
 	/// Logs the action to the moderator log unless the user owns the post. 
 	///
-	/// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter postID: in URL path.
+    /// - Parameter moderationState: in URL path. Value must match a <doc:ModerationState> rawValue.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: `HTTPStatus` .ok if the requested moderation status was set.
 	func forumPostSetModerationStateHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
@@ -281,21 +291,21 @@ struct ModerationController: APIRouteCollection {
 		}
 	}
 
-	/// ` GET /api/v3/mod/forum/ID`
+	/// `GET /api/v3/mod/forum/ID`
 	///
 	/// Moderator only. Returns info admins and moderators need to review a forum. Works if forum has been deleted. Shows
 	/// forum's quarantine and reviewed states. Reports against forums should be reserved for reporting problems with the forum's title.
 	/// Likely, they'll also get used to report problems with individual posts.
 	///
-	/// The `ForumModerationData` contains:
+	/// The <doc:ForumModerationData> contains:
 	/// * The current forum contents, even if its deleted
 	/// * Previous edits of the forum
 	/// * Reports against the forum
 	/// * The forum's current deletion and moderation status.
 	/// 
-	/// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter forumID: in URL path.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: `ForumModerationData` containing a bunch of data pertinient to moderating the forum.
+	/// - Returns: <doc:ForumModerationData>  containing a bunch of data pertinient to moderating the forum.
 	func forumModerationHandler(_ req: Request) throws -> EventLoopFuture<ForumModerationData> {
 		guard let forumIDString = req.parameters.get(forumIDParam.paramString), let forumID = UUID(forumIDString) else {
 			throw Abort(.badRequest, reason: "Request parameter \(forumIDParam.paramString) is missing.")
@@ -318,12 +328,13 @@ struct ModerationController: APIRouteCollection {
 		}
 	}
 
-	/// ` POST /api/v3/mod/forum/ID/setstate/STRING`
+	/// `POST /api/v3/mod/forum/ID/setstate/STRING`
 	///
-	/// Moderator only. Sets the moderation state enum on the forum idententified by ID to the `ModerationState` in STRING.
+	/// Moderator only. Sets the moderation state enum on the forum idententified by ID to the <doc:ModerationState> in STRING.
 	/// Logs the action to the moderator log unless the current user owns the forum. 
 	///
-	/// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter forumID: in URL path.
+    /// - Parameter moderationState: in URL path. Value must match a <doc:ModerationState> rawValue.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: `HTTPStatus` .ok if the requested moderation status was set.
 	func forumSetModerationStateHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
@@ -338,20 +349,20 @@ struct ModerationController: APIRouteCollection {
 		}
 	}
 
-	/// ` GET /api/v3/mod/fez/ID`
+	/// `GET /api/v3/mod/fez/ID`
 	///
 	/// Moderator only. Returns info admins and moderators need to review a Fez. Works if fez has been deleted. Shows
 	/// fez's quarantine and reviewed states.
 	///
-	/// The `FezModerationData` contains:
+	/// The <doc:FezModerationData> contains:
 	/// * The current fez contents, even if its deleted
 	/// * Previous edits of the fez
 	/// * Reports against the fez
 	/// * The fez's current deletion and moderation status.
 	/// 
-	/// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter fezID: in URL path.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: `FezModerationData` containing a bunch of data pertinient to moderating the forum.
+	/// - Returns: <doc:FezModerationData> containing a bunch of data pertinient to moderating the forum.
 	func fezModerationHandler(_ req: Request) throws -> EventLoopFuture<FezModerationData> {
 		guard let fezIDString = req.parameters.get(fezIDParam.paramString), let fezID = UUID(fezIDString) else {
 			throw Abort(.badRequest, reason: "Request parameter \(fezIDParam.paramString) is missing.")
@@ -379,10 +390,11 @@ struct ModerationController: APIRouteCollection {
 
 	/// ` POST /api/v3/mod/fez/ID/setstate/STRING`
 	///
-	/// Moderator only. Sets the moderation state enum on the fez idententified by ID to the `ModerationState` in STRING.
+	/// Moderator only. Sets the moderation state enum on the fez idententified by ID to the <doc:ModerationState> in STRING.
 	/// Logs the action to the moderator log unless the current user owns the fez. 
 	///
-	/// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter fezID: in URL path.
+    /// - Parameter moderationState: in URL path. Value must match a <doc:ModerationState> rawValue.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: `HTTPStatus` .ok if the requested moderation status was set.
 	func fezSetModerationStateHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
@@ -402,15 +414,15 @@ struct ModerationController: APIRouteCollection {
 	/// Moderator only. Returns info admins and moderators need to review a User Profile. The returned info pertains to the user's profile and avatar image --
 	/// for example, the web site puts the button allowing mods to edit a user's profile fields on this page.
 	///
-	/// The `ProfileModerationData` contains:
+	/// The <doc:ProfileModerationData> contains:
 	/// * The user's profile info and avatar
 	/// * Previous edits of the profile and avatar
 	/// * Reports against the user's profile
 	/// * The user's current  moderation status.
 	/// 
-	/// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter userID: in URL path.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: `FezModerationData` containing a bunch of data pertinient to moderating the forum.
+	/// - Returns: <doc:ProfileModerationData> containing a bunch of data pertinient to moderating the user's profile.
 	func profileModerationHandler(_ req: Request) throws -> EventLoopFuture<ProfileModerationData> {
 		guard let targetUserIDString = req.parameters.get(userIDParam.paramString), let targetUserID = UUID(targetUserIDString) else {
 			throw Abort(.badRequest, reason: "Request parameter \(userIDParam.paramString) is missing or isn't a UUID.")
@@ -440,7 +452,8 @@ struct ModerationController: APIRouteCollection {
 	/// Moderator only. Sets the moderation state enum on the profile idententified by userID to the `ModerationState` in STRING.
 	/// Logs the action to the moderator log unless the moderator is changing state on their own profile.. 
 	///
-	/// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter userID: in URL path.
+    /// - Parameter moderationState: in URL path. Value must match a <doc:ModerationState> rawValue.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: `HTTPStatus` .ok if the requested moderation status was set.
 	func profileSetModerationStateHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
@@ -457,17 +470,18 @@ struct ModerationController: APIRouteCollection {
 	
 	/// ` GET /api/v3/mod/user/ID`
 	///
-	/// Moderator only. Returns info admins and moderators need to review a User. 
+	/// Moderator only. Returns info admins and moderators need to review a User. User moderation in this context means actions taken against the User account
+	/// itself,  such as banning and temp-quarantining. These actions don't edit or remove content but prevent the user from creating any more content.
 	///
-	/// The `UserModerationData` contains:
+	/// The <doc:UserModerationData> contains:
 	/// * UserHeaders for the User's primary account and any sub-accounts.
 	/// * Reports against content authored by any of the above accounts, for all content types (twarrt, forum posts, profile, user image)
 	/// * The user's current access level.
 	/// * Any temp ban the user has.
 	/// 
-	/// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter userID: in URL path.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: `FezModerationData` containing a bunch of data pertinient to moderating the forum.
+	/// - Returns: <doc:UserModerationData> containing a bunch of data pertinient to moderating the forum.
 	func userModerationHandler(_ req: Request) throws -> EventLoopFuture<UserModerationData> {
 		return User.findFromParameter(userIDParam, on: req).flatMap { targetUser in
 			return targetUser.allAccounts(on: req.db).throwingFlatMap { allAccounts in
@@ -486,14 +500,15 @@ struct ModerationController: APIRouteCollection {
 	
 	/// ` POST /api/v3/mod/user/ID/setaccesslevel/STRING`
 	///
-	/// Moderator only. Sets the accessLevel enum on the user idententified by userID to the `UserAccessLevel` in STRING.
+	/// Moderator only. Sets the accessLevel enum on the user idententified by userID to the <doc:UserAccessLevel> in STRING.
 	/// Moderators (and above) cannot use this method to change the access level of other mods (and above). Nor can they use this to
 	/// reduce their own access level to non-moderator status.
 	///
 	/// The primary account and all sub-accounts linked to the given User account are affected by the temporary ban. The passed-in UserID may
 	/// be either a primary or sub-account.
 	/// 
-	/// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter userID: in URL path.
+    /// - Parameter accessLevel: in URL path. Value must match a <doc:UserAccessLevel> rawValue.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: `HTTPStatus` .ok if the requested access level was set.
 	func userSetAccessLevelHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
@@ -532,9 +547,10 @@ struct ModerationController: APIRouteCollection {
 	/// The primary account and all sub-accounts linked to the given User account are affected by the temporary ban. The passed-in UserID may
 	/// be either a primary or sub-account.
 	///
-	/// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter userID: in URL path.
+    /// - Parameter quarantineHours: in URL path. Must be a integer number.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: `HTTPStatus` .ok if the requested access level was set.
+	/// - Returns: `HTTPStatus` .ok if the requested quarantine was set.
 	func applyUserTempQuarantine(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
 		let user = try req.auth.require(User.self)
 		guard user.accessLevel.canModerateUsers() else {

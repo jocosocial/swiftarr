@@ -47,8 +47,7 @@ struct FezController: APIRouteCollection {
     ///
     /// Retrieve a list of all values for `FezType` as strings.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[String]` containing the `.label` value for each type.
+    /// - Returns: An array of `String` containing the `.label` value for each type.
     func typesHandler(_ req: Request) throws -> EventLoopFuture<[String]> {
         return req.eventLoop.future(FezType.allCases.map { $0.label })
     }
@@ -57,15 +56,15 @@ struct FezController: APIRouteCollection {
     ///
     /// Retrieve FriendlyFezzes with open slots and a startTime of no earlier than one hour ago. Results are returned sorted by start time, then by title.
 	/// 
-	/// URL Query Parameters:
+	/// **URL Query Parameters:**
+	/// 
 	/// * `?cruiseday=INT` - Only return fezzes occuring on this day of the cruise. Embarkation Day is day 0.
 	/// * `?type=STRING` - Only return fezzes of this type, there STRING is a `FezType.fromAPIString()` string.
 	/// * `?start=INT` - The offset to the first result to return in the filtered + sorted array of results.
 	/// * `?limit=INT` - The maximum number of fezzes to return; defaults to 50.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: `[FezData]` containing all current fezzes with open slots.
+    /// - Returns: An array of <doc:FezData> containing current fezzes with open slots.
     func openHandler(_ req: Request) throws -> EventLoopFuture<[FezData]> {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
@@ -108,15 +107,14 @@ struct FezController: APIRouteCollection {
     ///
     /// Retrieve all the FriendlyFez chats that the user has joined.
 	/// 
-	/// Query Parameters:
-	/// `?type=STRING` -	Only return fezzes of the given fezType. See `FezType` for a list.
-	/// `?excludetype=STRING` - Don't return fezzes of the given type. See `FezType` for a list.
+	/// **Query Parameters:**
+	/// - `?type=STRING` -	Only return fezzes of the given fezType. See `FezType` for a list.
+	/// - `?excludetype=STRING` - Don't return fezzes of the given type. See `FezType` for a list.
     ///
 	/// `/GET /api/v3/fez/types` is  the canonical way to get the list of acceptable values. Type and excludetype are exclusive options, obv.
 	///
-    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: `[FezData]` containing all the fezzes joined by the user.
+    /// - Returns: An array of <doc:FezData> containing all the fezzes joined by the user.
     func joinedHandler(_ req: Request) throws -> EventLoopFuture<[FezData]> {
         let user = try req.auth.require(User.self)
         let query = user.$joined_fezzes.$pivots.query(on: req.db)
@@ -146,13 +144,12 @@ struct FezController: APIRouteCollection {
     ///   owner of the fez has the ability to remove users if desired, and the fez itself is no
     ///   longer visible to the non-owning party.
     ///
-	/// Query Parameters:
-	/// `?type=STRING` -	Only return fezzes of the given fezType. See `FezType` for a list.
-	/// `?excludetype=STRING` - Don't return fezzes of the given type. See `FezType` for a list.
+	/// **Query Parameters:**
+	/// - `?type=STRING` -	Only return fezzes of the given fezType. See `FezType` for a list.
+	/// - `?excludetype=STRING` - Don't return fezzes of the given type. See `FezType` for a list.
 	///
-    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: `[FezData]` containing all the fezzes created by the user.
+    /// - Returns: An array of <doc:FezData> containing all the fezzes created by the user.
     func ownerHandler(_ req: Request) throws -> EventLoopFuture<[FezData]> {
         let user = try req.auth.require(User.self)
         let query = try user.$owned_fezzes.query(on: req.db)
@@ -189,10 +186,10 @@ struct FezController: APIRouteCollection {
     /// - Note: Posts are subject to block and mute user filtering, but mutewords are ignored
     ///   in order to not suppress potentially important information.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter fezID: in the URL path.
     /// - Throws: 404 error if a block between the user and fez owner applies. A 5xx response
     ///   should be reported as a likely bug, please and thank you.
-    /// - Returns: `FezDetailData` with fez info and all discussion posts.
+    /// - Returns: <doc:FezDetailData> with fez info and all discussion posts.
     func fezHandler(_ req: Request) throws -> EventLoopFuture<FezData> {
         let user = try req.auth.require(User.self)
         // get fez
@@ -234,11 +231,11 @@ struct FezController: APIRouteCollection {
     ///   replaced by a placeholder in the returned data. It is the user's responsibility to
     ///   examine the participant list for conflicts prior to joining or attending.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter fezID: in the URL path.
     /// - Throws: 400 error if the supplied ID is not a fez barrel or user is already in fez.
     ///   404 error if a block between the user and fez owner applies. A 5xx response should be
     ///   reported as a likely bug, please and thank you.
-    /// - Returns: `FezData` containing the updated fez data.
+    /// - Returns: <doc:FezData> containing the updated fez data.
     func joinHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         let user = try req.auth.require(User.self)
 		return FriendlyFez.findFromParameter(fezIDParam, on: req).throwingFlatMap { (fez) in
@@ -276,10 +273,10 @@ struct FezController: APIRouteCollection {
     /// previously been reached, the first user from the waiting list, if any, is moved to the
     /// participant list.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter fezID: in the URL path.
     /// - Throws: 400 error if the supplied ID is not a fez barrel. A 5xx response should be
     ///   reported as a likely bug, please and thank you.
-    /// - Returns: `FezData` containing the updated fez data.
+    /// - Returns: <doc:FezData> containing the updated fez data.
     func unjoinHandler(_ req: Request) throws -> EventLoopFuture<FezData> {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
@@ -301,20 +298,21 @@ struct FezController: APIRouteCollection {
 	
     /// `POST /api/v3/fez/ID/post`
     ///
-    /// Add a `FezPost` to the specified `FriendlyFez`.
+    /// Add a `FezPost` to the specified `FriendlyFez`. 
+	/// 
+	/// Open fez types are only permitted to have 1 image per post. Private fezzes (aka Seamail) cannot have any images.
     ///
-    /// - Requires: `PostContentData` payload in the HTTP body.
-    /// - Parameters:
-    ///   - req: The incoming `Request`, provided automatically
+    /// - Parameter fezID: in URL path
+    /// - Parameter requestBody: <doc:PostContentData> 
     /// - Throws: 404 error if the fez is not available. A 5xx response should be reported
     ///   as a likely bug, please and thank you.
-    /// - Returns: `FezData` containing the updated fez discussion.
+    /// - Returns: <doc:FezData> containing the updated fez discussion.
     func postAddHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         let user = try req.auth.require(User.self)
         try user.guardCanCreateContent()
         // see PostContentData.validations()
  		let data = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
- 		if data.images.count > 1 {
+ 		guard data.images.count <= 1 else {
  			throw Abort(.badRequest, reason: "Fez posts may only have one image")
  		}
         // get fez
@@ -375,10 +373,10 @@ struct FezController: APIRouteCollection {
     ///
     /// Delete a `FezPost`.
     ///
-    /// - Parameters: req: The incoming `Request`, provided automatically
+    /// - Parameter fezID: in URL path
     /// - Throws: 403 error if user is not the post author. 404 error if the fez is not
     ///   available. A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: `FezData` containing the updated fez discussion.
+    /// - Returns: <doc:FezData> containing the updated fez discussion.
     func postDeleteHandler(_ req: Request) throws -> EventLoopFuture<FezData> {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
@@ -443,10 +441,8 @@ struct FezController: APIRouteCollection {
     ///   but the `ReportData` is mandatory in order to allow one. If there is no message,
     ///   send an empty string in the `.message` field.
     ///
-    /// - Requires: `ReportData` payload in the HTTP body.
-    /// - Parameters:
-    ///   - req: The incoming `Request`, provided automatically.
-    ///   - data: `ReportData` containing an optional accompanying message.
+    /// - Parameter postID: in URL path, the ID of the post being reported.
+    /// - Parameter requestBody: <doc:ReportData> payload in the HTTP body.
     /// - Returns: 201 Created on success.
     func reportFezPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let submitter = try req.auth.require(User.self)
@@ -474,11 +470,9 @@ struct FezController: APIRouteCollection {
     /// A value of 0 in either the `.minCapacity` or `.maxCapacity` fields indicates an undefined
     /// limit: "there is no minimum", "there is no maximum".
     ///
-    /// - Requires: `FezContentData` payload in the HTTP body.
-    /// - Parameters:
-    ///   - req: The incoming `Request`, provided automatically.
+    /// - Parameter requestBody: <doc:FezContentData> payload in the HTTP body.
     /// - Throws: 400 error if the supplied data does not validate.
-    /// - Returns: `FezData` containing the newly created fez.
+    /// - Returns: <doc:FezData> containing the newly created fez.
     func createHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         let user = try req.auth.require(User.self)
         // see `FezContentData.validations()`
@@ -509,12 +503,15 @@ struct FezController: APIRouteCollection {
         
     /// `POST /api/v3/fez/ID/cancel`
     ///
-    /// Cancel a FriendlyFez.
+    /// Cancel a FriendlyFez. Owner only. Cancelling a Fez is different from deleting it. A canceled fez is still visible; members may still post to it.
+	/// But, a cenceled fez does not show up in searches for open fezzes, and should be clearly marked in UI to indicate that it's been canceled.
+	/// 
+	/// - Note: Eventually, cancelling a fez should notifiy all members via the notifications endpoint.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter fezID: in URL path.
     /// - Throws: 403 error if user is not the fez owner. A 5xx response should be
     ///   reported as a likely bug, please and thank you.
-    /// - Returns: `FezData` with the updated fez info.
+    /// - Returns: <doc:FezData> with the updated fez info.
     func cancelHandler(_ req: Request) throws -> EventLoopFuture<FezData> {
         let user = try req.auth.require(User.self)
         return FriendlyFez.findFromParameter(fezIDParam, on: req).throwingFlatMap { (fez) in
@@ -540,7 +537,7 @@ struct FezController: APIRouteCollection {
 	/// To delete, the user must have an access level allowing them to delete the fez. Currently this means moderators and above. 
 	/// The owner of a fez may Cancel the fez, which tells the members the fez was cancelled, but does not delete it.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter fezID: in URL path.
     /// - Throws: 403 error if the user is not permitted to delete.
     /// - Returns: 204 No Content on success.
     func fezDeleteHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
@@ -565,13 +562,11 @@ struct FezController: APIRouteCollection {
     ///   were being created from scratch. If there is demand, using a set of more efficient
     ///   endpoints instead of this single monolith can be considered.
     ///
-    /// - Requires: `FezContentData` payload in the HTTP body.
-    /// - Parameters:
-    ///   - req: The incoming `Request`, provided automatically.
-    ///   - data: `FezContentData` containing the new fez parameters.
+    /// - Parameter fezID: in URL path.
+    /// - Parameter requestBody: <doc:FezContentData> payload in the HTTP body.
     /// - Throws: 400 error if the data is not valid. 403 error if user is not fez owner.
     ///   A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: `FezData` containing the updated fez info.
+    /// - Returns: <doc:FezData> containing the updated fez info.
     func updateHandler(_ req: Request) throws -> EventLoopFuture<FezData> {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
@@ -608,10 +603,11 @@ struct FezController: APIRouteCollection {
     ///
     /// Add the specified `User` to the specified FriendlyFez barrel. This lets a fez owner invite others.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter fezID: in URL path.
+    /// - Parameter userID: in URL path.
     /// - Throws: 400 error if user is already in barrel. 403 error if requester is not fez
     ///   owner. A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: `FezData` containing the updated fez info.
+    /// - Returns: <doc:FezData> containing the updated fez info.
     func userAddHandler(_ req: Request) throws -> EventLoopFuture<FezData> {
         let requester = try req.auth.require(User.self)
         let requesterID = try requester.requireID()
@@ -649,10 +645,11 @@ struct FezController: APIRouteCollection {
     ///
     /// Remove the specified `User` from the specified FriendlyFez barrel. This lets a fez owner remove others.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter fezID: in URL path.
+    /// - Parameter userID: in URL path.
     /// - Throws: 400 error if user is not in the barrel. 403 error if requester is not fez
     ///   owner. A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: `FezData` containing the updated fez info.
+    /// - Returns: <doc:FezData> containing the updated fez info.
     func userRemoveHandler(_ req: Request) throws -> EventLoopFuture<FezData> {
         let requester = try req.auth.require(User.self)
         let requesterID = try requester.requireID()
@@ -686,10 +683,8 @@ struct FezController: APIRouteCollection {
     ///   but the `ReportData` is mandatory in order to allow one. If there is no message,
     ///   send an empty string in the `.message` field.
     ///
-    /// - Requires: `ReportData` payload in the HTTP body.
-    /// - Parameters:
-    ///   - req: The incoming `Request`, provided automatically.
-    ///   - data: `ReportData` containing an optional accompanying message.
+    /// - Parameter fezID: in URL path, the Fez ID to report.
+    /// - Parameter requestBody: <doc:ReportData>
     /// - Returns: 201 Created on success.
     func reportFezHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let submitter = try req.auth.require(User.self)

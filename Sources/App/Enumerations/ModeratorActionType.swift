@@ -1,7 +1,7 @@
 
 /// Describes the type of action a moderator took. This enum is used both in the ModeratorAction Model, and in several Moderation DTOs.
 /// Be careful when modifying this. Not all ModeratorActionTypes are applicable to all ReportTypes.
-enum ModeratorActionType: String, Codable {
+public enum ModeratorActionType: String, Codable {
 	/// The moderator edited a piece of content owned by somebody else. For `user` content, this means the profile fields (custom avatar images can't be
 	/// edited by mods, only deleted).
 	case edit

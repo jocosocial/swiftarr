@@ -5,7 +5,7 @@ import Fluent
 /// This `enum` structure MUST match the values in `CreateCustomEnums` in SchemaCreation.swift
 /// as this enum is part of the database schema. This enum is also sent out in several Data Transfer Object types.
 /// Think very carefully about modifying these values.
-enum UserAccessLevel: String, Codable {
+public enum UserAccessLevel: String, Codable {
     /// A user account that has not yet been activated. [read-only, limited]
     case unverified
     /// A user account that has been banned. [cannot log in]
@@ -84,7 +84,7 @@ extension UserAccessLevel {
 }
 
 extension UserAccessLevel: Comparable {
-	static func < (lhs: UserAccessLevel, rhs: UserAccessLevel) -> Bool {
+	public static func < (lhs: UserAccessLevel, rhs: UserAccessLevel) -> Bool {
 		func orderFromEnum(val: Self) -> Int {
 			switch val {
 				case .unverified: return 1

@@ -1,4 +1,4 @@
-// swift-tools-version:5.2
+// swift-tools-version:5.5
 import PackageDescription
 
 let package = Package(
@@ -31,7 +31,7 @@ let package = Package(
 											.product(name: "Leaf", package: "leaf"),
 											.product(name: "SwiftPrometheus", package: "SwiftPrometheus"),
 											]),
-		.target(name: "Run", dependencies: ["App"]),
+		.executableTarget(name: "Run", dependencies: ["App"]),
 		.testTarget(name: "AppTests", dependencies: ["App"])
 	],
 	cLanguageStandard: .c11

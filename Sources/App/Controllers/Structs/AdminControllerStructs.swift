@@ -1,9 +1,9 @@
 import Vapor
 
-/// Structs in this file should only be used by Admin APIs, that is: API calls that require administrator access.
+/// structs in this file should only be used by Admin APIs, that is: API calls that require administrator access.
 
 /// For admins to create and edit Annoucements.
-struct AnnouncementCreateData: Content {
+public struct AnnouncementCreateData: Content {
 	/// The text of the announcement
 	var text: String
 	/// How long to display the announcement to users. User-level API route methods will only return this Announcement until this time. 
@@ -20,7 +20,7 @@ extension AnnouncementCreateData: RCFValidatable {
 }
 
 /// For admins to upload new daily themes, or edit existing ones.
-struct DailyThemeUploadData: Content {
+public struct DailyThemeUploadData: Content {
 	/// A short string describing the day's theme. e.g. "Cosplay Day", or "Pajamas Day", or "Science Day".
 	var title: String
 	/// A longer string describing the theme, possibly with a call to action for users to participate.
@@ -36,12 +36,12 @@ struct DailyThemeUploadData: Content {
 /// Required by: `POST /api/v3/events/update`
 ///
 /// See `EventController.eventsUpdateHandler(_:data:)`.
-struct EventsUpdateData: Content {
+public struct EventsUpdateData: Content {
     /// The `.ics` event schedule file.
     var schedule: String
 }
 
-/// Used to validate changes to the `Event` database. This struct shows the differrences between the current schedule and the 
+/// Used to validate changes to the `Event` database. This public struct shows the differrences between the current schedule and the 
 /// (already uploaded but not processed) updated schedule. Event identity is based on the `uid` field--two events with the same
 /// `uid` are the same event, and if they show different times, we conclude the event's time changed. Two events with different `uid`s
 /// are different events, even if all other fields are exactly the same.
@@ -52,7 +52,7 @@ struct EventsUpdateData: Content {
 /// Required by: `POST /api/v3/admin/schedule/verify`
 ///
 /// See `EventController.eventsUpdateHandler(_:data:)`.
-struct EventUpdateDifferenceData: Content {
+public struct EventUpdateDifferenceData: Content {
 	/// Events in db but not in update. EventData is based on the current db values.
 	var deletedEvents: [EventData] = []
 	/// Events in update but not in db. 
@@ -68,7 +68,7 @@ struct EventUpdateDifferenceData: Content {
 /// related to that feature. Either the app or feature field could be 'all'.
 ///
 /// Used in: `SettingsAdminData`, `SettingsUpdateData`
-struct SettingsAppFeaturePair: Content {
+public struct SettingsAppFeaturePair: Content {
 	/// Should match a SwiftarrClientApp.rawValue
 	var app: String
 	/// Should match a SwiftarrFeature.rawValue
@@ -80,7 +80,7 @@ struct SettingsAppFeaturePair: Content {
 /// Required by: `POST /api/v3/events/update`
 ///
 /// See `EventController.eventsUpdateHandler(_:data:)`.
-struct SettingsAdminData: Content {
+public struct SettingsAdminData: Content {
 	var maxAlternateAccounts: Int
 	var maximumTwarrts: Int
 	var maximumForums: Int
@@ -122,7 +122,7 @@ extension SettingsAdminData {
 /// Required by: `POST /api/v3/events/update`
 ///
 /// See `EventController.eventsUpdateHandler(_:data:)`.
-struct SettingsUpdateData: Content {
+public struct SettingsUpdateData: Content {
 	var maxAlternateAccounts: Int?
 	var maximumTwarrts: Int?
 	var maximumForums: Int?

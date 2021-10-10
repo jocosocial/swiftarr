@@ -42,13 +42,15 @@ struct TwitarrController: APIRouteCollection {
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
             
-    /// `GET /api/v3/twitarr/ID`
-    ///
-    /// Retrieve the specfied `Twarrt` with full user `LikeType` data.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Throws: 404 error if the twarrt is not available.
-    /// - Returns: `TwarrtDetaildata` containing the specified twarrt.
+/**
+	`GET /api/v3/twitarr/ID`
+
+	Retrieve the specfied `Twarrt` with full user <doc:LikeType> data.
+
+	- Parameter twarrtID: in URL path
+	- Throws: 404 error if the twarrt is not available.
+	- Returns: <doc:TwarrtDetailData> containing the specified twarrt.
+*/
     func twarrtHandler(_ req: Request) throws -> EventLoopFuture<TwarrtDetailData> {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
@@ -106,6 +108,8 @@ struct TwitarrController: APIRouteCollection {
 	`GET /api/v3/twitarr`
 
 	Retrieve an array of `Twarrt`s. This query supports several optional query parameters.
+	
+	**URL Query Parameters**
 
 	Parameters that filter the set of returned `Twarrt`s. These may be combined (but only one instance of each); 
 	the result set will match all provided filters.
@@ -150,9 +154,8 @@ struct TwitarrController: APIRouteCollection {
 	  also ensure that any others possibly created within the same millisecond will not be
 	  omitted.
 
-	- Parameter req: The incoming `Request`, provided automatically.
 	- Throws: 400 error if a date parameter was supplied and is in an unknown format.
-	- Returns: `[TwarrtData]` containing the requested twarrts.
+	- Returns: An array of <doc:TwarrtData> containing the requested twarrts.
 */
     func twarrtsHandler(_ req: Request) throws -> EventLoopFuture<[TwarrtData]> {
         let user = try req.auth.require(User.self)
@@ -266,7 +269,7 @@ struct TwitarrController: APIRouteCollection {
     ///
     /// Add a bookmark of the specified `Twarrt`.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter twarrtID: in URL path
     /// - Throws: 400 error if the twarrt is already bookmarked.
     /// - Returns: 201 Created on success.
     func bookmarkAddHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
@@ -276,8 +279,7 @@ struct TwitarrController: APIRouteCollection {
         return Twarrt.findFromParameter(twarrtIDParam, on: req).addModelID().flatMap {
             (twarrt, twarrtID) in
             // get user's bookmarkedTwarrt barrel
-            return user.getBookmarkBarrel(of:.bookmarkedTwarrt, on: req).flatMap {
-                (bookmarkBarrel) in
+            return user.getBookmarkBarrel(of:.bookmarkedTwarrt, on: req).flatMap { bookmarkBarrel in
                 // create barrel if needed
                 let barrel = bookmarkBarrel ?? Barrel(ownerID: userID, barrelType: .bookmarkedTwarrt)
                 // ensure bookmark doesn't exist
@@ -298,17 +300,17 @@ struct TwitarrController: APIRouteCollection {
     ///
     /// Remove a bookmark of the specified `Twarrt`.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter twarrtID: in URL path
     /// - Throws: 400 error if the user has not bookmarked any twarrts.
+    /// - Returns: 204 NoContent on success.
     func bookmarkRemoveHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
         // get twarrt
-        return Twarrt.findFromParameter(twarrtIDParam, on: req).addModelID().flatMap {
-            (twarrt, twarrtID) in
+        return Twarrt.findFromParameter(twarrtIDParam, on: req).addModelID().flatMap { (twarrt, twarrtID) in
             // get user's bookmarkedTwarrt barrel
             return user.getBookmarkBarrel(of:.bookmarkedTwarrt, on: req)
-            	.unwrap(or: Abort(.badRequest, reason: "user has not bookmarked any twarrts"))
-            	.flatMap { (barrel) in
+					.unwrap(or: Abort(.badRequest, reason: "user has not bookmarked any twarrts"))
+					.flatMap { barrel in
                 var bookmarks = barrel.userInfo["bookmarks"] ?? []
                 // remove twarrt and return 204
                 let twarrtID = String(twarrtID)
@@ -325,8 +327,7 @@ struct TwitarrController: APIRouteCollection {
     ///
     /// Retrieve all `Twarrt`s the user has bookmarked.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[TwarrtData]` containing all bookmarked posts.
+    /// - Returns: An array of <doc:TwarrtData> containing all bookmarked posts.
     func bookmarksHandler(_ req: Request) throws -> EventLoopFuture<[TwarrtData]> {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
@@ -339,13 +340,13 @@ struct TwitarrController: APIRouteCollection {
             let blocked = req.userCache.getBlocks(userID)
 			// get twarrts
 			return Twarrt.query(on: req.db)
-				.filter(\.$id ~~ bookmarks)
-				.filter(\.$author.$id !~ blocked)
-				.sort(\.$id, .descending)
-				.all()
-				.flatMap { (twarrts) in
-					return buildTwarrtData(from: twarrts, user: user, on: req, assumeBookmarked: true)
-				}
+					.filter(\.$id ~~ bookmarks)
+					.filter(\.$author.$id !~ blocked)
+					.sort(\.$id, .descending)
+					.all()
+					.flatMap { (twarrts) in
+				return buildTwarrtData(from: twarrts, user: user, on: req, assumeBookmarked: true)
+			}
 		}
     }
         
@@ -354,29 +355,36 @@ struct TwitarrController: APIRouteCollection {
     /// Retrieve all `Twarrt`s the user has liked.
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[TwarrtData]` containing all liked posts.
+    /// - Returns: An array of <doc:TwarrtData> containing all liked posts.
     func likesHandler(_ req: Request) throws -> EventLoopFuture<[TwarrtData]> {
         let user = try req.auth.require(User.self)
         // respect blocks
         let blocked = try req.userCache.getBlocks(user)
 		// get liked twarrts
 		return user.$twarrtLikes.query(on: req.db)
-			.filter(\.$author.$id !~ blocked)
-			.all()
-			.flatMap { (twarrts) in
-				return buildTwarrtData(from: twarrts, user: user, on: req)
+				.filter(\.$author.$id !~ blocked)
+				.all()
+				.flatMap { (twarrts) in
+			return buildTwarrtData(from: twarrts, user: user, on: req)
 		}
     }
         
     /// `POST /api/v3/twitarr/ID/reply`
     ///
     /// Create a `Twarrt` as a reply to an existing twarrt. If the replyTo twarrt is in quarantine, the post is rejected.
+	/// 
+	/// - Note: Replies work differently than on Twitter. Here, any twarrt that is replied to becomes a reply-group, and all 
+	/// twarrts replying to ANY twarrt in the reply-group are added to that reply-group. Reply-groups are not nestable, and every twarrt
+	/// is a member of at most one reply group. Twarrts that are not replies themselves are eligible to become the head of a reply-group if they are replied to.
+	/// Twarrts that are replies are placed in a reply-group whose ID is the twarrt ID of the first twarrt in the group. This may not be the ID of the twarrt
+	/// they're directly replying to. If B is created as a reply to A, and C is created as a reply to B, C is actually placed in a reply-group with both A and B.
+	/// 
+	/// One feature of this system for replies is that `TwarrtData.replyGroupID` can be used to discern whether a twarrt is part of a reply-group or not.
     ///
-    /// - Requires: `PostContentData` payload in the HTTP body.
-    /// - Parameters:
-    ///   - req: The incoming `Request`, provided automatically.
+    /// - Parameter twarrtID: in URL path. The twarrt to reply to.
+    /// - Parameter requestBody: <doc:PostContentData>
     /// - Throws: 400 error if the replyTo twarrt is in quarantine.
-    /// - Returns: `TwarrtData` containing the twarrt's contents and metadata. HTTP 201 status if successful.
+    /// - Returns: A <doc:TwarrtData> containing the twarrt's contents and metadata. HTTP 201 status if successful.
     func replyHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         let user = try req.auth.require(User.self)
 		try user.guardCanCreateContent(customErrorString: "user cannot post twarrts")
@@ -412,10 +420,8 @@ struct TwitarrController: APIRouteCollection {
     ///
     /// Create a new `Twarrt` in the twitarr stream.
     ///
-    /// - Requires: `PostContentData` payload in the HTTP body.
-    /// - Parameters:
-    ///   - req: The incoming `Request`, provided automatically.
-    /// - Returns: `TwarrtData` containing the twarrt's contents and metadata. HTTP 201 status if successful.
+    /// - Parameter requestBody: <doc:PostContentData>
+    /// - Returns: <doc:TwarrtData> containing the twarrt's contents and metadata. HTTP 201 status if successful.
     func twarrtCreateHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         let user = try req.auth.require(User.self)
 		try user.guardCanCreateContent(customErrorString: "user cannot post twarrts")
@@ -441,7 +447,7 @@ struct TwitarrController: APIRouteCollection {
     ///
     /// Delete the specified `Twarrt`.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter twarrtID: in URL path. The twarrt to delete.
     /// - Throws: 403 error if the user is not permitted to delete.
     /// - Returns: 204 No Content on success.
     func twarrtDeleteHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
@@ -463,10 +469,8 @@ struct TwitarrController: APIRouteCollection {
     ///   but the `ReportData` is mandatory in order to allow one. If there is no message,
     ///   sent an empty string in the `.message` field.
     ///
-    /// - Requires: `ReportData` payload in the HTTP body.
-    /// - Parameters:
-    ///   - req: The incoming `Request`, provided automatically.
-    ///   - data: `ReportData` containing an optional accompanying message.
+    /// - Parameter twarrtID: in URL path. The twarrt to report.
+    /// - Parameter requestBody: <doc:ReportData>
     /// - Throws: 400 error if user has already submitted report.
     /// - Returns: 201 Created on success.
     func twarrtReportHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
@@ -481,9 +485,9 @@ struct TwitarrController: APIRouteCollection {
     ///
     /// Add a "laugh" reaction to the specified `Twarrt`. If there is an existing `LikeType` reaction by the user, it is replaced.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter twarrtID: in URL path.
     /// - Throws: 403 error if user is the twarrt's creator.
-    /// - Returns: `TwarrtData` containing the updated like info.
+    /// - Returns: <doc:TwarrtData> containing the updated like info.
     func twarrtLaughHandler(_ req: Request) throws -> EventLoopFuture<TwarrtData> {
     	return try twarrtReactHandler(req, likeType: .laugh)
     }
@@ -492,9 +496,9 @@ struct TwitarrController: APIRouteCollection {
     ///
     /// Add a "like" reaction to the specified `Twarrt`. If there is an existing `LikeType` reaction by the user, it is replaced.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter twarrtID: in URL path.
     /// - Throws: 403 error if user is the twarrt's creator.
-    /// - Returns: `TwarrtData` containing the updated like info.
+    /// - Returns: <doc:TwarrtData> containing the updated like info.
 	func twarrtLikeHandler(_ req: Request) throws -> EventLoopFuture<TwarrtData> {
     	return try twarrtReactHandler(req, likeType: .like)
     }
@@ -503,9 +507,9 @@ struct TwitarrController: APIRouteCollection {
     ///
     /// Add a "love" reaction to the specified `Twarrt`. If there is an existing `LikeType` reaction by the user, it is replaced.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter twarrtID: in URL path.
     /// - Throws: 403 error if user is the twarrt's creator.
-    /// - Returns: `TwarrtData` containing the updated like info.
+    /// - Returns: <doc:TwarrtData> containing the updated like info.
     func twarrtLoveHandler(_ req: Request) throws -> EventLoopFuture<TwarrtData> {
     	return try twarrtReactHandler(req, likeType: .love)
     }
@@ -514,9 +518,9 @@ struct TwitarrController: APIRouteCollection {
 	///  All 3 reaction handlers use this function as they all do the same thing.
     ///
     /// - Parameter req: The incoming `Request`, provided automatically.
-	/// - Parameter likeType: The type of reaction being set.
+	/// - Parameter likeType:  The type of reaction being set.
     /// - Throws: 403 error if user is the twarrt's creator.
-    /// - Returns: `TwarrtData` containing the updated like info.
+    /// - Returns: <doc:TwarrtData> containing the updated like info.
     func twarrtReactHandler(_ req: Request, likeType: LikeType) throws -> EventLoopFuture<TwarrtData> {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
@@ -545,9 +549,9 @@ struct TwitarrController: APIRouteCollection {
     ///
     /// Remove a `LikeType` reaction from the specified `Twarrt`.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter twarrtID: in URL path.
     /// - Throws: 403 error if user is is the twarrt's creator. 404 if no twarrt with the ID is found. 
-    /// - Returns: `TwarrtData` containing the updated like info.
+    /// - Returns: <doc:TwarrtData> containing the updated like info.
     func twarrtUnreactHandler(_ req: Request) throws -> EventLoopFuture<TwarrtData> {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
@@ -567,12 +571,10 @@ struct TwitarrController: APIRouteCollection {
     ///
     /// Update the specified `Twarrt`.
 	///
-    /// - Requires: `PostContentData` payload in the HTTP body.
-    /// - Parameters:
-    ///   - req: The incoming `Request`, provided automatically.
-    ///   - data: `PostContentData` containing the twarrt's text and image filename.
+    /// - Parameter twarrtID: in URL path.
+    /// - Parameter requestBody: <doc:PostContentData>
     /// - Throws: 403 error if user is not twarrt owner or has read-only access.
-    /// - Returns: `TwarrtData` containing the twarrt's contents and metadata.
+    /// - Returns: <doc:TwarrtData> containing the twarrt's contents and metadata.
     func twarrtUpdateHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         let user = try req.auth.require(User.self)
 		let data = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)

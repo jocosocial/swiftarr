@@ -92,14 +92,11 @@ struct AuthController: APIRouteCollection {
     /// - Note: To prevent brute-force malicious attempts, there is a limit on successive
     ///   failed recovery attempts, currently hard-coded to 5.
     ///
-    /// - Requires: `UserRecoveryData` payload in the HTTP body.
-    /// - Parameters:
-    ///   - req: The incoming `Request`, provided automatically.
-    ///   pair to attempt.
+    /// - Parameter requestBody: <doc:UserRecoveryData>
     /// - Throws: 400 error if the recovery fails. 403 error if the maximum number of successive
     ///   failed recovery attempts has been reached. A 5xx response should be reported as a
     ///   likely bug, please and thank you.
-    /// - Returns: `TokenStringData` containing an authentication token (string) that should
+    /// - Returns: <doc:TokenStringData> containing an authentication token (string) that should
     ///   be used for all subsequent HTTP requests, until expiry or revocation.
     func recoveryHandler(_ req: Request) throws -> EventLoopFuture<TokenStringData> {
         // see `UserRecoveryData.validations()`
@@ -225,12 +222,13 @@ struct AuthController: APIRouteCollection {
     ///   **not** supported in API v3.
     ///
     /// - Requires: `User.accessLevel` other than `.banned`.
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Requires: HTTP Basic Auth in `Authorization` header. 
     /// - Throws: 401 error if the Basic authentication fails. 403 error if the user is
     ///   banned. A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: `TokenStringData` containing an authentication token (string) that should
+    /// - Returns: <doc:TokenStringData> containing an authentication token (string) that should
     ///   be used for all subsequent HTTP requests, until expiry or revocation.
     func loginHandler(_ req: Request) throws -> EventLoopFuture<TokenStringData> {
+    	// By the time we get here, basic auth has *already happened* via middleware that runs before the route handler.
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
         // no login for punks
@@ -238,20 +236,17 @@ struct AuthController: APIRouteCollection {
             throw Abort(.forbidden, reason: "nope")
         }
         // return existing token if one exists
-        return Token.query(on: req.db)
-            .filter(\.$user.$id == userID)
-            .first()
-            .throwingFlatMap { token in
-				if let token = token {
-					return try req.eventLoop.future(TokenStringData(user: user, token: token))
-				} else {
-					// otherwise generate and return new token
-					let token = try Token.generate(for: user)
-					return token.save(on: req.db).flatMapThrowing { _ in
-						return try TokenStringData(user: user, token: token)
-					}
+        return Token.query(on: req.db).filter(\.$user.$id == userID).first().throwingFlatMap { token in
+			if let token = token {
+				return try req.eventLoop.future(TokenStringData(user: user, token: token))
+			} else {
+				// otherwise generate and return new token
+				let token = try Token.generate(for: user)
+				return token.save(on: req.db).flatMapThrowing { _ in
+					return try TokenStringData(user: user, token: token)
 				}
 			}
+		}
     }
     
     // MARK: - tokenAuthGroup Handlers (logged in)
@@ -272,7 +267,6 @@ struct AuthController: APIRouteCollection {
     /// There should be no side effect and it is likely harmless, but please do report
     /// a 409 error if you encounter one so that the specifics can be looked into.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 401 error if the authentication failed. 409 error if the user somehow
     ///   wasn't logged in.
     /// - Returns: 204 No Content if the token was successfully deleted.

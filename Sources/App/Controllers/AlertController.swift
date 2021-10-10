@@ -47,9 +47,8 @@ struct AlertController: APIRouteCollection {
     ///
     /// Retrieve info on the number of each type of notification supported by Swiftarr. 
 	/// 
-    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: `UserNotificationCountData` containing all the fezzes joined by the user.
+    /// - Returns: <doc:UserNotificationData>
 	func globalNotificationHandler(_ req: Request) throws -> EventLoopFuture<UserNotificationData> {
         guard let user = req.auth.get(User.self) else {
 			return Announcement.query(on: req.db).filter(\.$displayUntil > Date()).count().map { activeAnnouncements in
@@ -126,7 +125,7 @@ struct AlertController: APIRouteCollection {
     /// Create a new announcement. Requires THO access and above. When a new announcement is created the notification endpoints will start 
 	/// indicating the new announcement to all users.
 	/// 
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter requestBody: <doc:AnnouncementCreateData>
     /// - Returns: `HTTPStatus` 201 on success.
 	func createAnnouncement(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
 		let user = try req.auth.require(User.self)
@@ -142,14 +141,15 @@ struct AlertController: APIRouteCollection {
     ///
     /// Returns all active announcements, sorted by creation time, by default. 
 	/// 
-	/// * `?inactives=true` - Also return expired and deleted announcements. THO and admins only. 
+	/// **URL Query Parameters**
+	/// 
+	/// - `?inactives=true` Also return expired and deleted announcements. THO and admins only. 
 	/// 		
 	/// The purpose if the inactives flag is to allow for finding an expired announcement and re-activating it by changing its expire time. Remember that doing so
 	/// doesn't re-alert users who have already read it.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 403 error if the user is not permitted to delete.
-    /// - Returns: An array of AnnouncementData on success.
+    /// - Returns: Array of <doc:AnnouncementData>
 	func getAnnouncements(_ req: Request) throws -> EventLoopFuture<[AnnouncementData]> {
 		let user = req.auth.get(User.self)
 		let includeInactives: Bool = req.query[String.self, at: "inactives"] == "true"
@@ -176,9 +176,9 @@ struct AlertController: APIRouteCollection {
     ///
     /// Returns a single announcement, identified by its ID. THO and admins only. . 
 	/// 
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter announcementID: The announcement to find
     /// - Throws: 403 error if the user doesn't have THO-level access. 404 if no announcement with the given ID is found.
-    /// - Returns: AnnouncementData on success.
+    /// - Returns: <doc:AnnouncementData>
 	func getSingleAnnouncement(_ req: Request) throws -> EventLoopFuture<AnnouncementData> {
 		let user = try req.auth.require(User.self)
 		guard user.accessLevel.hasAccess(.tho) else {
@@ -199,9 +199,10 @@ struct AlertController: APIRouteCollection {
     /// Edits an existing announcement. Editing a deleted announcement will un-delete it. Editing an announcement does not change any user's notification status for that
 	/// announcement: if a user has seen the announcement already, editing it will not cause the user to be notified that they should read it again.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter announcementID: The announcement to edit. Must exist.
+    /// - Parameter requestBody: <doc:AnnouncementCreateData>
     /// - Throws: 403 error if the user is not permitted to delete.
-    /// - Returns: An array of AnnouncementData on success.
+    /// - Returns: The updated <doc:AnnouncementCreateData>
 	func editAnnouncement(_ req: Request) throws -> EventLoopFuture<AnnouncementData> {
 		let user = try req.auth.require(User.self)
 		guard user.accessLevel.hasAccess(.tho) else {
@@ -233,9 +234,9 @@ struct AlertController: APIRouteCollection {
     /// Edits an existing announcement. Editing a deleted announcement will un-delete it. Editing an announcement does not change any user's notification status for that
 	/// announcement: if a user has seen the announcement already, editing it will not cause the user to be notified that they should read it again.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter announcementIDParam: The announcement to delete. 
     /// - Throws: 403 error if the user is not permitted to delete.
-    /// - Returns: An array of AnnouncementData on success.
+    /// - Returns: 204 NoContent on success.
 	func deleteAnnouncement(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
 		let user = try req.auth.require(User.self)
 		guard user.accessLevel.hasAccess(.tho) else {
@@ -252,9 +253,8 @@ struct AlertController: APIRouteCollection {
 	/// 
 	///  Returns information about all the daily themes currently registered.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 403 error if the user is not permitted to delete.
-    /// - Returns: An array of DailyThemeData on success.
+    /// - Returns: An array of <doc:DailyThemeData> on success.
 	func getDailyThemes(_ req: Request) throws -> EventLoopFuture<[DailyThemeData]> {
 		return DailyTheme.query(on: req.db).sort(\.$cruiseDay, .ascending).all().flatMapThrowing { themes in
 			return try themes.map { try DailyThemeData($0) }

@@ -1,6 +1,6 @@
 /// The type of `Barrel`.
 
-enum BarrelType: String, Codable, Comparable {
+public enum BarrelType: String, Codable, Comparable {
     /// A user's barrel of bookmarked posts.
     case bookmarkedPost
     /// A user's barrel of bookmarked twarrts.
@@ -39,12 +39,12 @@ enum BarrelType: String, Codable, Comparable {
     }
     
     /// Required `Equatable`.
-    static func ==(lhs: BarrelType, rhs: BarrelType) -> Bool {
+	public static func ==(lhs: BarrelType, rhs: BarrelType) -> Bool {
         return lhs.sortOrder == rhs.sortOrder
     }
     
     /// Required `Comparable`.
-    static func <(lhs: BarrelType, rhs: BarrelType) -> Bool {
+	public static func <(lhs: BarrelType, rhs: BarrelType) -> Bool {
         return lhs.sortOrder < rhs.sortOrder
     }
 }

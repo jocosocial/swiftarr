@@ -7,7 +7,7 @@ import Metrics
 import Prometheus
 import gd
 
-/// Called before your application initializes. Calls several other config methos do its work. Sub functions are only
+/// Called before your application initializes. Calls several other config methods to do its work. Sub functions are only
 /// here for easier organization. If order-of-initialization issues arise, rearrange as necessary.
 public func configure(_ app: Application) throws {
     

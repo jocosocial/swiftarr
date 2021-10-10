@@ -25,11 +25,7 @@ struct EventController: APIRouteCollection {
         tokenAuthGroup.post(eventIDParam, "favorite", "remove", use: favoriteRemoveHandler)
         tokenAuthGroup.delete(eventIDParam, "favorite", use: favoriteRemoveHandler)
         tokenAuthGroup.get("favorites", use: favoritesHandler)
-        
-        // Endpoints for admins only
-		let adminAuthGroup = addTokenAuthGroup(to: app.grouped("api", "v3", "events")).grouped(RequireAdminMiddleware())
-        adminAuthGroup.post("update", use: eventsUpdateHandler)
-    }
+	}
     
     // MARK: - Open Access Handlers
     // The handlers in this route group do not require Authorization, but can take advantage
@@ -39,7 +35,7 @@ struct EventController: APIRouteCollection {
     ///
     /// Retrieve a list of scheduled events. By default, this retrieves the entire event schedule.
 	/// 
-	/// Query Parameters:
+	/// **URL Query Parameters:**
 	/// - cruiseday=INT		Embarkation day is day 1, value should be  less than or equal to `Settings.shared.cruiseLengthInDays`, which will be 8 for the 2022 cruise.
 	/// - day=STRING			3 letter day of week abbreviation e.g. "TUE" .Returns events for that day *of the cruise in 2022* "SAT" returns events for embarkation day while 
 	/// 					the current date is earlier than embarkation day, then it returns events for disembarkation day.
@@ -48,14 +44,13 @@ struct EventController: APIRouteCollection {
 	/// - ?type=[official, shadow]	Only returns events matching the selected type. 
 	/// - ?search=STRING		Returns events whose title or description contain the given string.
 	/// 
-	/// The `?day=STRING` query parameter is intended to make it easy to get schedule events returned even when the cruise is not occurring, for ease of testing.. 
-	/// The day and date parameters actually return events from 3AM on the given day until 3AM the next day--some events start after midnight and tend to get lost by those
+	/// The `?day=STRING` query parameter is intended to make it easy to get schedule events returned even when the cruise is not occurring, for ease of testing.
+	/// The day and date parameters actually return events from 3AM local time on the given day until 3AM the next day--some events start after midnight and tend to get lost by those
 	/// looking at daily schedules.
 	/// 
-	/// All the above parameters filter the set of `EventData` objects that get returned. Onlly one of [day, date, time] may be used.  
+	/// All the above parameters filter the set of <doc:EventData> objects that get returned. Onlly one of [cruiseday, day, date, time] may be used.  
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[EventData]` containing all events.
+    /// - Returns: An array of  <doc:EventData> containing filtered events.
     func eventsHandler(_ req: Request) throws -> EventLoopFuture<[EventData]> {
     	struct QueryOptions: Content {
 			var cruiseday: Int?
@@ -136,8 +131,8 @@ struct EventController: APIRouteCollection {
     ///
     /// Retrieve a single event from its ID.
 	/// 
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `EventData` containing  event info.
+    /// - Parameter eventID: in URL path
+    /// - Returns: <doc:EventData> containing  event info.
     func singleEventHandler(_ req: Request) throws -> EventLoopFuture<EventData> {
     	return Event.findFromParameter(eventIDParam, on: req).flatMap { event in
 			return (req.auth.get(User.self)?.getBookmarkBarrel(of: .taggedEvent, on: req) ?? req.eventLoop.future(nil))
@@ -151,82 +146,12 @@ struct EventController: APIRouteCollection {
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
-    
-    /// `POST /api/v3/events/update`
-    ///
-    /// Updates the `Event` database from an `.ics` file.
-    ///
-    /// - Requires: `EventUpdateData` payload in the HTTP body.
-    /// - Parameters:
-    ///   - req: The incoming `Request`, provided automatically.
-    ///   - data: `EventUpdateData` containing an updated event schedule.
-    /// - Throws: 403 Forbidden if the user is not an admin.
-    /// - Returns: `[EventData]` containing the events that were updated or added.
-    func eventsUpdateHandler(_ req: Request) throws -> EventLoopFuture<[EventData]> {
-        let user = try req.auth.require(User.self)
-        guard user.accessLevel.hasAccess(.admin) else {
-            throw Abort(.forbidden, reason: "admins only")
-        }
-        var schedule = try req.content.decode(EventsUpdateData.self).schedule 
-        schedule = schedule.replacingOccurrences(of: "&amp;", with: "&")
-        schedule = schedule.replacingOccurrences(of: "\\,", with: ",")
-        return req.db.transaction { database in
-            // convert to [Event]
-            let updateEvents = EventParser().parse(schedule)
-            let existingEvents = Event.query(on: database).all()
-            return existingEvents.flatMap { (events) in
-                var updatedEvents: [EventLoopFuture<Void>] = []
-                for update in updateEvents {
-                    let event = events.first(where: { $0.uid == update.uid })
-                    // if event exists
-                    if let event = event {
-                        // update existing event
-                        if event.startTime != update.startTime
-                            || event.endTime != update.endTime
-                            || event.title != update.title
-                            || event.info != update.info
-                            || event.location != update.location
-                            || event.eventType != update.eventType {
-                            event.startTime = update.startTime
-                            event.endTime = update.endTime
-                            event.title = update.title
-                            event.info = update.info
-                            event.location = update.location
-                            event.eventType = update.eventType
-                            // save future
-                            updatedEvents.append(event.save(on: req.db))
-                        }
-                    } else {
-                        // else create new event
-                        let newEvent = Event(
-                            startTime: update.startTime,
-                            endTime: update.endTime,
-                            title: update.title,
-                            description: update.info,
-                            location: update.location,
-                            eventType: update.eventType,
-                            uid: update.uid
-                        )
-                        // save future
-                        updatedEvents.append(newEvent.save(on: req.db))
-                    }
-                }
-                
-                // Do we delete existing events not in the update?
-                
-                // resolve futures, return as EventData
-                return updatedEvents.flatten(on: req.eventLoop).flatMapThrowing {
-					return try updateEvents.map { try EventData($0, isFavorite: false) }
-                }
-            }
-        }
-    }
-    
+        
     /// `POST /api/v3/events/ID/favorite`
     ///
     /// Add the specified `Event` to the user's tagged events list.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter eventID: in URL path
     /// - Returns: 201 Created on success.
     func favoriteAddHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
@@ -255,7 +180,7 @@ struct EventController: APIRouteCollection {
     ///
     /// Remove the specified `Event` from the user's tagged events list.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter eventID: in URL path
     /// - Throws: 400 error if the event was not favorited.
     /// - Returns: 204 No Content on success.
     func favoriteRemoveHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
@@ -289,8 +214,7 @@ struct EventController: APIRouteCollection {
     ///
     /// Retrieve the `Event`s in the user's taggedEvent barrel, sorted by `.startTime`.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[EventData]` containing the user's favorited events.
+    /// - Returns: An array of  <doc:EventData> containing the user's favorite events.
     func favoritesHandler(_ req: Request) throws -> EventLoopFuture<[EventData]> {
         let user = try req.auth.require(User.self)
         // get user's taggedEvent barrel

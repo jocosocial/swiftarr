@@ -5,7 +5,7 @@ import Vapor
 /// Returned by: `POST /api/v3/user/add`
 ///
 /// See `UserController.addHandler(_:data:)`.
-struct AddedUserData: Content {
+public struct AddedUserData: Content {
     /// The newly created sub-account's ID.
     let userID: UUID
     /// The newly created sub-account's username.
@@ -21,7 +21,7 @@ struct AddedUserData: Content {
 ///
 /// See `UserController.alertwordsHandler(_:)`, `UserController.alertwordsAddHandler(_:)`,
 /// `UserController.alertwordsRemoveHandler(_:)`.
-struct AlertKeywordData: Content {
+public struct AlertKeywordData: Content {
     /// The name of the barrel.
     let name: String
     /// The muted keywords.
@@ -37,7 +37,7 @@ struct AlertKeywordData: Content {
 /// Returned by:
 /// * `GET /api/v3/notification/announcements`
 /// * `GET /api/v3/notification/announcement/ID` for admins/THO only.
-struct AnnouncementData: Content {
+public struct AnnouncementData: Content {
 	/// Only THO and admins need to send Announcement IDs back to the API (to modify or delete announcements, for example), but caching clients can still use the ID
 	/// to correlate announcements returned by the API with cached ones.
 	var id: Int
@@ -73,7 +73,7 @@ extension AnnouncementData {
 /// Required by: `POST /api/v3/user/barrel`
 ///
 /// See `UserController.createBarrelHandler(_:data:)`.
-struct BarrelCreateData: Content {
+public struct BarrelCreateData: Content {
     /// The name of the barrel.
     var name: String
     /// An optional list of model UUIDs.
@@ -105,7 +105,7 @@ extension BarrelCreateData: RCFValidatable {
 /// See `UserController.createBarrelHandler(_:data:)`, `UserController.barrelHandler(_:)`,
 /// `UserController.barrelAddHandler(_:)`, `UserController.barrelRemoveHandler(_:)`,
 /// `UserController.renameBarrelHandler(_:)`.
-struct BarrelData: Content {
+public struct BarrelData: Content {
     /// The barrel's ID.
     let barrelID: UUID
     /// The name of the barrel.
@@ -132,7 +132,7 @@ extension BarrelData {
 /// * `GET /api/v3/user/barrels/seamonkey`
 ///
 /// See `UserController.barrelsHandler(_:)`, `UserController.seamonkeyBarrelsHandler(_:)`.
-struct BarrelListData: Content {
+public struct BarrelListData: Content {
     /// The barrel's ID.
     let barrelID: UUID
     /// The name of the barrel.
@@ -144,7 +144,7 @@ struct BarrelListData: Content {
 /// Returned by: `GET /api/v3/user/blocks`
 ///
 /// See `UserController.blocksHandler(_:)`.
-struct BlockedUserData: Content {
+public struct BlockedUserData: Content {
     /// The name of the barrel.
     let name: String
     /// The blocked `User`s.
@@ -158,7 +158,7 @@ struct BlockedUserData: Content {
 /// * `GET /api/v3/forum/catgories/ID`
 ///
 /// See `ForumController.categoriesHandler(_:)`
-struct CategoryData: Content {
+public struct CategoryData: Content {
     /// The ID of the category.
     var categoryID: UUID
     /// The title of the category.
@@ -186,7 +186,7 @@ extension CategoryData {
 /// Returned by: `POST /api/v3/user/create`
 ///
 /// See `UserController.createHandler(_:data:).`
-struct CreatedUserData: Content {
+public struct CreatedUserData: Content {
     /// The newly created user's ID.
     let userID: UUID
     /// The newly created user's username.
@@ -200,7 +200,7 @@ struct CreatedUserData: Content {
 /// Returned by: `GET /api/v3/user/whoami`
 ///
 /// See `UserController.whoamiHandler(_:).`
-struct CurrentUserData: Content {
+public struct CurrentUserData: Content {
     /// The currrent user's ID.
     let userID: UUID
     /// The current user's username.
@@ -213,7 +213,7 @@ struct CurrentUserData: Content {
 ///
 /// Returned by: `GET /api/v3/notifications/dailythemes`
 ///
-struct DailyThemeData: Content {
+public struct DailyThemeData: Content {
     /// The theme's ID Probably only useful for admins in order to edit or delete themes.
     var themeID: UUID
 	/// A short string describing the day's theme. e.g. "Cosplay Day", or "Pajamas Day", or "Science Day".
@@ -242,7 +242,7 @@ extension DailyThemeData {
 /// the server entirely or disallowing specific clients entirely. 
 ///
 /// Used in `UserNotificationData`.
-struct DisabledFeature: Content {
+public struct DisabledFeature: Content {
 	/// AppName and featureName act as a grid, allowing a specific feature to be disabled only in a specific app. If the appName is `all`, the server
 	/// code for the feature may be causing the issue, requiring the feature be disabled for all clients.
 	var appName: SwiftarrClientApp
@@ -257,7 +257,7 @@ struct DisabledFeature: Content {
 /// * `GET /api/v3/events/favorites`
 ///
 /// See `EventController.eventsHandler(_:)`, `EventController.favoritesHandler(_:)`.
-struct EventData: Content {
+public struct EventData: Content {
     /// The event's ID. This is the Swiftarr database record for this event.
     var eventID: UUID
     /// The event's UID. This is the VCALENDAR/ICS File/sched.com identifier for this event--what calendar software uses to correllate whether 2 events are the same event.
@@ -302,7 +302,7 @@ extension EventData {
 /// * `POST /api/v3/fez/ID/update`
 ///
 /// See: `FezController.createHandler(_:data:)`, `FezController.updateHandler(_:data:)`.
-struct FezContentData: Content {
+public struct FezContentData: Content {
     /// The `FezType` .label of the fez.
     var fezType: FezType
     /// The title for the FriendlyFez.
@@ -363,7 +363,7 @@ extension FezContentData: RCFValidatable {
 /// `FezController.openhandler(_:)`, `FezController.ownerHandler(_:)`,
 /// `FezController.userAddHandler(_:)`, `FezController.userRemoveHandler(_:)`,
 /// `FezController.cancelHandler(_:)`.
-struct FezData: Content, ResponseEncodable {
+public struct FezData: Content, ResponseEncodable {
     /// The ID of the fez.
     var fezID: UUID
     /// The fez's owner.
@@ -392,7 +392,7 @@ struct FezData: Content, ResponseEncodable {
 	var lastModificationTime: Date
     
     /// FezData.MembersOnlyData returns data only available to participants in a Fez. 
-    struct MembersOnlyData: Content, ResponseEncodable {
+    public struct MembersOnlyData: Content, ResponseEncodable {
 		/// The users participating in the fez.
 		var participants: [UserHeader]
 		/// The users on a waiting list for the fez.
@@ -439,7 +439,7 @@ extension FezData {
 ///
 /// See: `FezController.fezHandler(_:)`, `FezController.postAddHandler(_:data:)`,
 /// `FezController.postDeleteHandler(_:)`.
-struct FezPostData: Content {
+public struct FezPostData: Content {
     /// The ID of the fez post.
     var postID: Int
     /// The ID of the fez post's author.
@@ -467,7 +467,7 @@ extension FezPostData {
 /// Required by: `POST /api/v3/forum/categories/ID/create`
 ///
 /// See `ForumController.forumCreateHandler(_:data:)`.
-struct ForumCreateData: Content {
+public struct ForumCreateData: Content {
     /// The forum's title.
     var title: String
     /// The first post in the forum. 
@@ -491,7 +491,7 @@ extension ForumCreateData: RCFValidatable {
 ///
 /// See `ForumController.forumCreateHandler(_:data:)`, `ForumController.forumHandler(_:)`,
 /// `EventController.eventForumHandler(_:)`.
-struct ForumData: Content {
+public struct ForumData: Content {
     /// The forum's ID.
     var forumID: UUID
     /// The ID of the forum's containing Category..
@@ -544,7 +544,7 @@ extension ForumData {
 ///
 /// See `ForumController.categoryForumsHandler(_:)`, `ForumController.ownerHandler(_:)`,
 /// `ForumController.forumMatchHandler(_:)`, `ForumController.favoritesHandler(_:).
-struct ForumListData: Content {
+public struct ForumListData: Content {
     /// The forum's ID.
     var forumID: UUID
     /// The forum's creator.
@@ -595,7 +595,7 @@ extension ForumListData {
 /// * `GET /api/v3/forum/owner`
 ///
 /// See `ForumController.categoriesHandler(_:)`
-struct ForumSearchData: Content {
+public struct ForumSearchData: Content {
 	/// The index number of the first post in the `posts` array. 0 is the index of the first post in the forum. This number is usually  a multiple of `limit` and indicates the page of results.
 	var start: Int
 	/// The number of posts the server attempted to gather. posts.count may be less than this number if posts were filtered out by blocks/mutes, or if start + limit > totalPosts.
@@ -616,7 +616,7 @@ struct ForumSearchData: Content {
 /// Incorporated into `PostContentData`, which is in turn required by several routes.
 ///
 /// See `UserController.imageHandler(_:data)`.
-struct ImageUploadData: Content {
+public struct ImageUploadData: Content {
     /// The filename of an existing image previously uploaded to the server. Ignored if image is set.
     var filename: String?
     /// The image in `Data` format. 
@@ -647,7 +647,7 @@ extension ImageUploadData {
 ///
 /// See `UserController.mutewordsHandler(_:)`, `UserController.mutewordsAddHandler(_:)`,
 /// `UserController.mutewordsRemoveHandler(_:)`.
-struct MuteKeywordData: Content {
+public struct MuteKeywordData: Content {
     /// The name of the barrel.
     let name: String
     /// The muted keywords.
@@ -659,7 +659,7 @@ struct MuteKeywordData: Content {
 /// Returned by: `GET /api/v3/user/mutes`
 ///
 /// See `UserController.mutesHandler(_:)`.
-struct MutedUserData: Content {
+public struct MutedUserData: Content {
     /// The name of the barrel.
     let name: String
     /// The muted `User`s.
@@ -671,7 +671,7 @@ struct MutedUserData: Content {
 /// Required by: `/api/v3/users/ID/note`
 ///
 /// See `UsersController.noteCreateHandler(_:data:)`.
-struct NoteCreateData: Content {
+public struct NoteCreateData: Content {
     /// The text of the note.
     var note: String
 }
@@ -684,7 +684,7 @@ struct NoteCreateData: Content {
 /// * `POST /api/v3/user/note`
 ///
 /// See `UserController.notesHandler(_:)`, `UserController.noteHandler(_:data:)`.
-struct NoteData: Content {
+public struct NoteData: Content {
     /// Timestamp of the note's creation.
     let createdAt: Date
     /// Timestamp of the note's last update.
@@ -716,7 +716,7 @@ extension NoteData {
 /// * `POST /api/v3/fez/ID/post`
 ///
 /// See `ForumController.postUpdateHandler(_:data:)`.
-struct PostContentData: Content {
+public struct PostContentData: Content {
     /// The new text of the forum post.
     var text: String
     /// An array of up to 4 images (1 when used in a Fez post). Each image can specify either new image data or an existing image filename. 
@@ -763,7 +763,7 @@ extension PostContentData: RCFValidatable {
 /// `ForumController.bookmarksHandler(_:)`, `ForumCOntroller.likesHandler(_:)`,
 /// `ForumController.mentionsHandler(_:)`, `ForumController.postsHandler(_:)`,
 /// `ForumController.postHashtagHandler(_:)`.
-struct PostData: Content {
+public struct PostData: Content {
     /// The ID of the post.
     var postID: Int
     /// The timestamp of the post.
@@ -812,7 +812,7 @@ extension PostData {
 ///
 /// Returned by: `GET /api/v3/forum/post/search`
 /// 
-struct PostSearchData: Content {
+public struct PostSearchData: Content {
 	/// The search query used to create these results. 
 	var queryString: String
     /// The total number of posts in the result set.
@@ -830,7 +830,7 @@ struct PostSearchData: Content {
 /// Returned by: `GET /api/v3/forum/post/ID`
 ///
 /// See `ForumController.postHandler(_:)`.
-struct PostDetailData: Content {
+public struct PostDetailData: Content {
     /// The ID of the post.
     var postID: Int
     /// The ID of the Forum containing the post.
@@ -878,7 +878,7 @@ extension PostDetailData {
 /// Returned by: `GET /api/v3/users/ID/profile`
 ///
 /// See `UsersController.profileHandler(_:)`.
-struct ProfilePublicData: Content {
+public struct ProfilePublicData: Content {
     /// Basic info abou thte user--their ID, username, displayname, and avatar image.
     var header: UserHeader
     /// An optional real world name of the user.
@@ -945,13 +945,13 @@ extension ProfilePublicData {
 ///
 /// See `UsersController.reportHandler(_:data:)`, `ForumController.forumReportHandler(_:data:)`
 /// `ForumController.postReportHandler(_:data:)`.
-struct ReportData: Content {
+public struct ReportData: Content {
     /// An optional message from the submitting user.
     var message: String
 }
 
 /// Returned by `Barrel`s as a unit representing a user.
-struct SeaMonkey: Content {
+public struct SeaMonkey: Content {
     /// The user's ID.
     var userID: UUID
     /// The user's username.
@@ -986,7 +986,7 @@ extension SeaMonkey {
 /// * `POST /api/v3/auth/recovery`
 ///
 /// See `AuthController.loginHandler(_:)` and `AuthController.recoveryHandler(_:data:)`.
-struct TokenStringData: Content {
+public struct TokenStringData: Content {
     /// The user ID of the newly logged in user. 
     var userID: UUID
     /// The user's access level.
@@ -1045,7 +1045,7 @@ struct TokenStringData: Content {
 /// `TwitarrController.twarrtsHandler(_:)`, `TwitarrController.twarrtsBarrelHandler(_:)`,
 /// `TwitarrController.twarrtsHashtagHandler(_:)`, `TwitarrController.twarrtsSearchHandler(_:)`,
 /// `TwitarrController.twarrtsUserHandler(_:)`, `TwitarrController.userHandler(_:)`.
-struct TwarrtData: Content {
+public struct TwarrtData: Content {
     /// The ID of the twarrt.
     var twarrtID: Int
     /// The timestamp of the twarrt.
@@ -1056,7 +1056,7 @@ struct TwarrtData: Content {
     var text: String
     /// The filenames of the twarrt's optional images.
     var images: [String]?
-    /// If this twarrt is part of a Reply Group, the ID of the group. If replyGroupID == twarrtID, this twarrt is the start of a Reply Group.
+    /// If this twarrt is part of a Reply Group, the ID of the group. If replyGroupID == twarrtID, this twarrt is the start of a Reply Group. If nil, there are no replies to this twarrt.
     var replyGroupID: Int?
     /// Whether the current user has bookmarked the twarrt.
     var isBookmarked: Bool
@@ -1088,7 +1088,7 @@ extension TwarrtData {
 /// Returned by: `GET /api/v3/twitarr/ID`
 ///
 /// See `TwitarrController.twarrtHandler(_:)`.
-struct TwarrtDetailData: Content {
+public struct TwarrtDetailData: Content {
     /// The ID of the post/twarrt.
     var postID: Int
     /// The timestamp of the post/twarrt.
@@ -1120,7 +1120,7 @@ struct TwarrtDetailData: Content {
 /// * `POST /api/v3/user/add`
 ///
 /// See `UserController.createHandler(_:data:)`, `UserController.addHandler(_:data:)`.
-struct UserCreateData: Content {
+public struct UserCreateData: Content {
     /// The user's username.
     var username: String
     /// The user's password.
@@ -1155,7 +1155,7 @@ extension UserCreateData: RCFValidatable {
 /// * `GET /api/v3/client/user/headers/since/DATE`
 ///
 /// See `UsersController.headerHandler(_:)`, `ClientController.userHeadersHandler(_:)`.
-struct UserHeader: Content {
+public struct UserHeader: Content {
     /// The user's ID.
     var userID: UUID
     /// The user's username.
@@ -1182,7 +1182,7 @@ extension UserHeader {
 /// `userNotificationHandler()` is intended to be called frequently by clients (I mean, don't call it once a second).
 /// 
 /// Returned by AlertController.userNotificationHandler()
-struct UserNotificationData: Content {
+public struct UserNotificationData: Content {
 	/// Always an ISO 8601 date in UTC, like "2020-03-07T12:00:00Z"
 	var serverTime: String
 	/// Server Time Zone offset, in seconds from UTC. One hour before UTC is -3600. EST  timezone is -18000.
@@ -1265,7 +1265,7 @@ extension UserNotificationData	{
 /// Required by: `POST /api/v3/user/password`
 ///
 /// See `UserController.passwordHandler(_:data:)`.
-struct UserPasswordData: Content {
+public struct UserPasswordData: Content {
     /// The user's current password.
     var currentPassword: String
     /// The user's desired new password.
@@ -1290,7 +1290,7 @@ extension UserPasswordData: RCFValidatable {
 /// * `POST /api/v3/user/profile`
 ///
 /// See `UserController.profileHandler(_:)`, `UserController.profileUpdateHandler(_:data:)`.
-struct UserProfileUploadData: Content {
+public struct UserProfileUploadData: Content {
     /// Basic info about the user--their ID, username, displayname, and avatar image. May be nil on POST.
     var header: UserHeader?
     /// The displayName, again. Will be equal to header.displayName in results. When POSTing, set this field to update displayName.
@@ -1345,7 +1345,7 @@ extension UserProfileUploadData: RCFValidatable {
 /// Required by: `POST /api/v3/auth/recovery`
 ///
 /// See `AuthController.recoveryHandler(_:data:)`.
-struct UserRecoveryData: Content {
+public struct UserRecoveryData: Content {
     /// The user's username.
     var username: String
     /// The string to use – any one of: password / registration key / recovery key.
@@ -1373,7 +1373,7 @@ extension UserRecoveryData: RCFValidatable {
 /// * `GET /api/v3/client/usersearch`
 ///
 /// See `UsersController.matchAllNamesHandler(_:)`, `ClientController.userSearchHandler(_:)`.
-struct UserSearch: Content {
+public struct UserSearch: Content {
     /// The user's ID.
     var userID: UUID
     /// The user's composed displayName + username + realName.
@@ -1385,7 +1385,7 @@ struct UserSearch: Content {
 /// Required by: `POST /api/v3/user/username`
 ///
 /// See `UserController.usernameHandler(_:data:)`.
-struct UserUsernameData: Content {
+public struct UserUsernameData: Content {
     /// The user's desired new username.
     var username: String
 }
@@ -1404,7 +1404,7 @@ extension UserUsernameData: RCFValidatable {
 /// Required by: `POST /api/v3/user/verify`
 ///
 /// See `UserController.verifyHandler(_:data:)`.
-struct UserVerifyData: Content {
+public struct UserVerifyData: Content {
     /// The registration code provided to the user.
     var verification: String
 }

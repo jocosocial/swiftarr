@@ -1,6 +1,6 @@
 /// The type of `Event`.
 
-enum EventType: String, Codable {
+public enum EventType: String, Codable {
     /// A gaming event.
     case gaming
     /// An official but uncategorized event.

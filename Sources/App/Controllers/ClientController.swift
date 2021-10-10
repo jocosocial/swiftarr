@@ -40,10 +40,9 @@ struct ClientController: APIRouteCollection {
     /// **all** of the `.displayName`, `.username` and `.realName` profile fields.
     ///
     /// - Requires: `x-swiftarr-user` header in the request.
-    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 400 error if no valid date string provided. 401 error if the required header
     ///   is missing or invalid. 403 error if user is not a registered client.
-    /// - Returns: `[UserSearch]` containing the ID and `.userSearch` string values
+    /// - Returns: An array of  <doc:UserSearch> containing the ID and `.userSearch` string values
     ///   of all users, sorted by username.
     func userSearchHandler(_ req: Request) throws -> EventLoopFuture<[UserSearch]> {
         let client = try req.auth.require(User.self)
@@ -58,22 +57,18 @@ struct ClientController: APIRouteCollection {
         }
         // find user
         return User.find(userID, on: req.db)
-            .unwrap(or: Abort(.unauthorized, reason: "'x-swiftarr-user' user not found"))
-            .throwingFlatMap { (user) in
-				// must be actual user
-				guard user.accessLevel != .client else {
-					throw Abort(.unauthorized, reason: "'x-swiftarr-user' user cannot be client")
-				}
-				// remove blocked users
-				let blocked = req.userCache.getBlocks(userID)
-				return User.query(on: req.db)
-					.filter(\.$id !~ blocked)
-					.sort(\.$username, .ascending)
-					.all()
-					.flatMapThrowing { (users) in
-						// return as [UserSearch]
-						return try users.map { try UserSearch(userID: $0.requireID(), userSearch: $0.userSearch) }
-				}
+				.unwrap(or: Abort(.unauthorized, reason: "'x-swiftarr-user' user not found"))
+				.throwingFlatMap { (user) in
+			// must be actual user
+			guard user.accessLevel != .client else {
+				throw Abort(.unauthorized, reason: "'x-swiftarr-user' user cannot be client")
+			}
+			// remove blocked users
+			let blocked = req.userCache.getBlocks(userID)
+			return User.query(on: req.db).filter(\.$id !~ blocked).sort(\.$username, .ascending).all().flatMapThrowing { users in
+				// return as [UserSearch]
+				return try users.map { try UserSearch(userID: $0.requireID(), userSearch: $0.userSearch) }
+			}
         }
     }
     
@@ -90,10 +85,10 @@ struct ClientController: APIRouteCollection {
     /// the numeric form makes for a prettier URL.
     ///
     /// - Requires: `x-swiftarr-user` header in the request.
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter Date: in URL path. See above for formats.
     /// - Throws: 400 error if no valid date string provided. 401 error if the required header
     ///   is missing or invalid. 403 error if user is not a registered client.
-    /// - Returns: `[UserHeader]` containing all updated users.
+    /// - Returns: An array of <doc:UserHeader> containing all updated users.
     func userUpdatesHandler(_ req: Request) throws -> EventLoopFuture<[UserHeader]> {
 		let client = try req.auth.require(User.self)
         // must be registered client
@@ -122,6 +117,17 @@ struct ClientController: APIRouteCollection {
         }
     }
     
+    /// `GET /api/v3/client/metrics`
+    ///
+    /// For use with [Prometheus](https://prometheus.io), a server metrics package. When a Prometheus server process
+	/// is connected, it will poll this endpoint for metrics updates. You can then view Swiftarr metrics data with charts and graphs in a web page served
+	/// by Prometheus.
+    ///
+    /// - Requires: `x-swiftarr-user` header in the request.
+    /// - Throws: 400 error if no valid date string provided. 401 error if the required header
+    ///   is missing or invalid. 403 error if user is not a registered client.
+    /// - Returns: Data about what requests are being called, how long they take to complete, how the databases are doing, what the server's CPU utilization is,
+	/// plus a bunch of other metrics data. All the data is in some opaquish Prometheus format.
 	func prometheusMetricsSource(_ req: Request) -> EventLoopFuture<String> {
 		let promise = req.eventLoop.makePromise(of: String.self)
 		DispatchQueue.global().async {
@@ -134,6 +140,5 @@ struct ClientController: APIRouteCollection {
 		return promise.futureResult
 	}
 
-    
     // MARK: - Helper Functions
 }

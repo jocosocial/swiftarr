@@ -77,11 +77,10 @@ struct ForumController: APIRouteCollection {
 	/// access level, which implies those categories won't be shown if you don't provide a login token. Without a token, the 'accessible to anyone' categories
 	/// are returned. You'll still need to be logged in to see the contents of the categories, or post, or do much anything else.
 	/// 
-	/// Requiest parameters:
+	/// **URL Query Parameters:**
 	/// - `?cat=UUID` Only return information about the given category. Will still return an array of `CategoryData`.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[CategoryData]` containing all category IDs and titles.
+    /// - Returns: An array of <doc:CategoryData> containing all category IDs and titles. Or just the one, if you use the ?cat parameter.
     func categoriesHandler(_ req: Request) throws -> EventLoopFuture<[CategoryData]> {
         var effectiveAccessLevel: UserAccessLevel = .unverified
         if let user = req.auth.get(User.self) {
@@ -116,11 +115,12 @@ struct ForumController: APIRouteCollection {
     ///
     /// Retrieve a list of forums in the specifiec `Category`. Will not return forums created by blocked users.
 	/// 
-	/// * `?sort=STRING` - Sort forums by `create`, `update`, or `title`. Create and update return newest forums first.
+	/// **URL Query Parameters:**
+	/// * `?sort=[create, update, title]` - Sort forums by `create`, `update`, or `title`. Create and update return newest forums first.
 	/// * `?start=INT` - The index into the sorted list of forums to start returning results. 0 for first item, which is the default.
 	/// * `?limit=INT` - The max # of entries to return. Defaults to 50
 	/// 
-	/// These options set the anchor point for returning threads. By default the anchor is 'newest create date'. When sorting on 
+	/// beforedate and afterdate set the anchor point for returning threads. By default the anchor is 'newest create date'. When sorting on 
 	/// update time, these params may be used to ensure a series of calls see (mostly) contiguous resullts. As users keep posting
 	/// to threads, the sorting for most recently updated threads is constantly changing. A paged UI, for example, may show N threads
 	/// per page and use beforedate/afterdate as the user moves between pages to ensure continuity.
@@ -135,9 +135,8 @@ struct ForumController: APIRouteCollection {
 	/// the last time you asked. If you want to update last post times and post counts, you can sort by update time and get the
 	/// latest updates. 
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
     /// - Throws: 404 error if the category ID is not valid.
-    /// - Returns: `CategoryData` containing category forums.
+    /// - Returns: <doc:CategoryData> containing category forums.
     func categoryForumsHandler(_ req: Request) throws -> EventLoopFuture<CategoryData> {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
@@ -183,25 +182,25 @@ struct ForumController: APIRouteCollection {
     /// Retrieve a `Forum` with all its `ForumPost`s. Content from blocked or muted users,
     /// or containing user's muteWords, is not returned. Posts are always sorted by creation time.
     ///
-	/// Query parameters:
+	/// **URL Query Parameters:**
 	/// * `?start=INT` - The index into the array of posts to start returning results. 0 for first post. Not compatible with `startPost`.
 	/// * `?startPost=INT` - PostID of a post in the thread.  Acts as if `start` had been used with the index of this post within the thread.
 	/// * `?limit=INT` - The max # of entries to return. Defaults to 50. Clamped to a max value set in Settings.
 	/// 
 	/// The first post in the result `posts` array (assuming it isn't blocked/muted) will be, in priority order:
-	/// 	- The `start`-th post in the thread (first post has index 0).
-	/// 	- The post with id of `startPost`
-	/// 	- The page of thread posts (with `limit` as pagesize) that contains the last post read by the user.
-	/// 	- The first post in the thread.
+	/// 1. The `start`-th post in the thread (first post has index 0).
+	/// 2. The post with id of `startPost`
+	/// 3. The page of thread posts (with `limit` as pagesize) that contains the last post read by the user.
+	/// 4. The first post in the thread.
 	/// 
 	/// Start and Limit do not take blocks and mutes into account, matching the behavior of the totalPosts values. Instead, when asking for e.g. the first 50 posts in a thread,
 	/// you may only receive 46 posts, as 4 posts in that batch were blocked/muted. To continue reading the thread, ask to start with post 50 (not post 47)--you'll receive however
 	/// many posts are viewable by the user in the range 50...99 . Doing it this way makes Forum read counts invariant to blocks--if a user reads a forum, then blocks a user, then
 	/// comes back to the forum, they should come back to the same place they were in previously.
 	///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter forumID: in URL path
     /// - Throws: 404 error if the forum is not available.
-    /// - Returns: `ForumData` containing the forum's metadata and posts.
+    /// - Returns: <doc:ForumData> containing the forum's metadata and posts.
     func forumHandler(_ req: Request) throws -> EventLoopFuture<ForumData> {
 		let user = try req.auth.require(User.self)
         return Forum.findFromParameter(forumIDParam, on: req).throwingFlatMap { forum in
@@ -215,14 +214,15 @@ struct ForumController: APIRouteCollection {
     
     /// `GET /api/v3/forum/match/STRING`
     ///
-    /// Retrieve all `Forum`s in all categories whose title contains the specified string.
+    /// Retrieve all `Forum`s in all categories whose title contains the specified string. Results will be sorted in decending order of creation time.
+	/// Does not return results from categories for which the user does not have access.
     ///
-	/// Query parameters:
+	/// **URL Query Parameters**:
 	/// * `?start=INT` - The index into the array of forums to start returning results. 0 for first forum.
 	/// * `?limit=INT` - The max # of entries to return. Defaults to 50. Clamped to a max value set in Settings.
 	///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[ForumListData]` containing all matching forums.
+    /// - Parameter searchString: In the URL path.
+    /// - Returns: An array of <doc:ForumListData> containing all matching forums.
     func forumMatchHandler(_ req: Request) throws -> EventLoopFuture<ForumSearchData> {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
@@ -254,7 +254,7 @@ struct ForumController: APIRouteCollection {
     ///
     /// Retrieve the `ForumData` of the specified `ForumPost`'s parent `Forum`.
     ///
-	/// Query parameters:
+	/// **URL Query Parameters**:
 	/// * `?start=INT` - The index into the array of posts to start returning results. 0 for first post.
 	/// * `?limit=INT` - The max # of entries to return. Defaults to 50. Clamped to a max value set in Settings.
 	/// 
@@ -267,9 +267,9 @@ struct ForumController: APIRouteCollection {
 	/// many posts are viewable by the user in the range 50...99 . Doing it this way makes Forum read counts invariant to blocks--if a user reads a forum, then blocks a user, then
 	/// comes back to the forum, they should come back to the same place they were in previously.
 	///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter postID: In the URL path.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: `ForumData` containing the post's parent forum.
+    /// - Returns: <doc:ForumData> containing the post's parent forum.
     func postForumHandler(_ req: Request) throws -> EventLoopFuture<ForumData> {
         let user = try req.auth.require(User.self)
 		return ForumPost.findFromParameter(postIDParam, on: req).flatMap { post in
@@ -287,13 +287,13 @@ struct ForumController: APIRouteCollection {
     /// Retrieve the `Forum` associated with an `Event`, with its `ForumPost`s. Content from
     /// blocked or muted users, or containing user's muteWords, is not returned.
 	///
-	/// Query parameters:
+	/// **URL Query Parameters**:
 	/// * `?start=INT` - The index into the array of posts to start returning results. 0 for first post. Default is the last post the user read, rounded down to a multiple of `limit`.
 	/// * `?limit=INT` - The max # of entries to return. Defaults to 50. Clamped to a max value set in Settings.
 	/// 
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter eventID: In the URL path.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: `ForumData` containing the forum's metadata and all posts.
+    /// - Returns: <doc:ForumData> containing the forum's metadata and all posts.
     func eventForumHandler(_ req: Request) throws -> EventLoopFuture<ForumData> {
         let user = try req.auth.require(User.self)
     	return Event.findFromParameter("event_id", on: req).throwingFlatMap { event in
@@ -315,9 +315,9 @@ struct ForumController: APIRouteCollection {
     ///
     /// Retrieve the specified `ForumPost` with full user `LikeType` data.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter postID: In the URL path.
     /// - Throws: 404 error if the post is not available.
-    /// - Returns: `PostDetailData` containing the specified post.
+    /// - Returns: <doc:PostDetailData> containing the specified post.
 	func postHandler(_ req: Request) throws -> EventLoopFuture<PostDetailData> {
 		let user = try req.auth.require(User.self)
 		let cacheUser = try req.userCache.getUser(user)
@@ -355,6 +355,7 @@ struct ForumController: APIRouteCollection {
     ///
     /// Search all `ForumPost`s that match the filters given in the URL query parameters:
 	/// 
+	/// **URL Query Parameters**:
 	/// * `?search=STRING` - Matches posts whose text contains the given search string.
 	/// * `?hashtag=STRING` - Matches posts whose text contains the given #hashtag. The leading # is optional in the query parameter.
 	/// * `?mentionname=STRING` - Matches posts whose text contains a @mention of the given username. The leading @ is optional in the query parameter.
@@ -373,6 +374,8 @@ struct ForumController: APIRouteCollection {
 	/// 
 	/// * `?start=INT` - The index into the sorted list of forums to start returning results. 0 for first item, which is the default.
 	/// * `?limit=INT` - The max # of entries to return. Defaults to 50
+    /// 
+    /// - Returns: <doc:PostSearchData> containing the search results..
 	func postSearchHandler(_ req: Request) throws -> EventLoopFuture<PostSearchData> {
         let user = try req.auth.require(User.self)
 		let cachedUser = try req.userCache.getUser(user)
@@ -480,7 +483,7 @@ struct ForumController: APIRouteCollection {
     ///
     /// Add a bookmark of the specified `ForumPost`.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter postID: In the URL path.
     /// - Throws: 400 error if the post is already bookmarked.
     /// - Returns: 201 Created on success.
     func bookmarkAddHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
@@ -512,8 +515,9 @@ struct ForumController: APIRouteCollection {
     ///
     /// Remove a bookmark of the specified `ForumPost`.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter postID: In the URL path.
     /// - Throws: 400 error if the user has not bookmarked any posts.
+    /// - Returns: 204 NoContent on success.
     func bookmarkRemoveHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
         // get post and user's bookmarkedPost barrel
@@ -541,7 +545,7 @@ struct ForumController: APIRouteCollection {
     ///
     /// Add the specified `Forum` to the user's tagged forums list.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter forumID: In the URL path.
     /// - Returns: 201 Created on success.
     func favoriteAddHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
@@ -564,7 +568,7 @@ struct ForumController: APIRouteCollection {
     ///
     /// Remove the specified `Forum` from the user's tagged forums list.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter forumID: In the URL path.
     /// - Throws: 400 error if the forum was not favorited.
     /// - Returns: 204 No Content on success.
     func favoriteRemoveHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
@@ -590,13 +594,12 @@ struct ForumController: APIRouteCollection {
     ///
     /// Retrieve the `Forum`s in the user's taggedForum barrel, sorted by title.
 	/// 
-	/// URL Parameters:
+	/// **URL Query Parameters**:
 	/// * `?sort=STRING` - Sort forums by `create`, `update`, or `title`. Create and update return newest forums first.
 	/// * `?start=INT` - The index into the sorted list of forums to start returning results. 0 for first item, which is the default.
 	/// * `?limit=INT` - The max # of entries to return. Defaults to 50
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[ForumListData]` containing the user's favorited forums.
+    /// - Returns: An array of  <doc:ForumListData> containing the user's favorited forums.
     func favoritesHandler(_ req: Request) throws -> EventLoopFuture<ForumSearchData> {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
@@ -629,15 +632,14 @@ struct ForumController: APIRouteCollection {
     /// `POST /api/v3/forum/categories/ID/create`
     ///
     /// Creates a new `Forum` in the specified `Category`, and the first `ForumPost` within
-    /// the newly created forum. Creating a forum in an `.isRestricted` category requires
-    /// administrative access.
+    /// the newly created forum. Creating a forum in a category requires a `userAccessLevel` >= the category's `accessLevelToCreate`.
+	/// 
+	/// - Note: Users may be able to add posts to existing forum threads in categories where they don't have access to create new threads.
     ///
-    /// - Requires: `ForumCreateData` payload in the HTTP body.
-    /// - Parameters:
-    ///   - req: The incoming `Request`, provided automatically.
-    ///   - data: `ForumCreateData` containing the forum's title and initial post contents.
+    /// - Parameter categoryID: in URL path
+    /// - Parameter requestBody: <doc:ForumCreateData> payload in the HTTP body.
     /// - Throws: 403 error if the user is not authorized to create a forum.
-    /// - Returns: `ForumData` containing the new forum's contents.
+    /// - Returns: <doc:ForumData> containing the new forum's contents.
     func forumCreateHandler(_ req: Request) throws -> EventLoopFuture<ForumData> {
         let user = try req.auth.require(User.self)
 		// see `ForumCreateData.validations()`
@@ -679,9 +681,10 @@ struct ForumController: APIRouteCollection {
         
     /// `POST /api/v3/forum/ID/rename/:new_name`
     ///
-    /// Rename the specified `Forum` to the specified title string.
+    /// Rename the specified `Forum` to the specified title string. 
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter forumID: in URL path
+    /// - Parameter new_name: in URL path; URL-path encoded.
     /// - Throws: 403 error if the user does not have credentials to modify the forum. 404 error
     ///   if the forum ID is not valid.
     /// - Returns: 201 Created on success.
@@ -705,16 +708,16 @@ struct ForumController: APIRouteCollection {
     
     /// `POST /api/v3/forum/ID/report`
     ///
-    /// Creates a `Report` regarding the specified `Forum`.
+    /// Creates a `Report` regarding the specified `Forum`. The 'correct' use of this method is to report issues with the forum title. However,
+	/// no amount of guidance is going to get users to not use this method to report on individual posts in the thread, even though there's a
+	/// separate reporting API for reporting posts.
     ///
     /// - Note: The accompanying report message is optional on the part of the submitting user,
     ///   but the `ReportData` is mandatory in order to allow one. If there is no message,
     ///   send an empty string in the `.message` field.
     ///
-    /// - Requires: `ReportData` payload in the HTTP body.
-    /// - Parameters:
-    ///   - req: The incoming `Request`, provided automatically.
-    ///   - data: `ReportData` containing an optional accompanying message.
+    /// - Parameter forumID: in URL path
+    /// - Parameter requestBody: <doc:ReportData> payload in the HTTP body.
     /// - Returns: 201 Created on success.
     func forumReportHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
@@ -727,11 +730,12 @@ struct ForumController: APIRouteCollection {
     /// `POST /api/v3/forum/ID/delete`
 	/// `DELETE /api/v3/forum/ID`
     ///
-    /// Delete the specified `Forum`. This soft-deletes the forum itself and all the forum's posts.
+    /// Delete the specified `Forum`. This soft-deletes the forum itself and all the forum's posts. The posts have to be deleted so they 
+	/// won't be returned by search methods.
 	/// 
 	/// To delete, the user must have an access level allowing them to delete the forum. Currently this means moderators and above.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter forumID: in URL path
     /// - Throws: 403 error if the user is not permitted to delete.
     /// - Returns: 204 No Content on success.
     func forumDeleteHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
@@ -765,12 +769,11 @@ struct ForumController: APIRouteCollection {
     ///
     /// Retrieve a list of all `Forum`s created by the user, sorted by title.
     ///
-	/// Query parameters:
+	/// **URL Query Parameters**:
 	/// * `?start=INT` - The index into the array of forums to start returning results. 0 for first forum.
 	/// * `?limit=INT` - The max # of entries to return. Defaults to 50. Clamped to a max value set in Settings.
 	///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: `[ForumListData]` containing all forums created by the user.
+    /// - Returns: An array of <doc:ForumListData> containing all forums created by the user.
     func ownerHandler(_ req: Request) throws-> EventLoopFuture<ForumSearchData> {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
@@ -792,11 +795,10 @@ struct ForumController: APIRouteCollection {
     ///
     /// Create a new `ForumPost` in the specified `Forum`.
     ///
-    /// - Requires: `PostContentData` payload in the HTTP body.
-    /// - Parameters:
-    ///   - req: The incoming `Request`, provided automatically.
+    /// - Parameter forumID: in URL path
+    /// - Parameter requestBody: <doc:PostContentData>
     /// - Throws: 403 error if the forum is locked or user is blocked.
-    /// - Returns: `PostData` containing the post's contents and metadata.
+    /// - Returns: <doc:PostData> containing the post's contents and metadata.
     func postCreateHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         let user = try req.auth.require(User.self)
         let cacheUser = try req.userCache.getUser(user)
@@ -832,7 +834,7 @@ struct ForumController: APIRouteCollection {
 	/// 
 	/// To delete, the user must have an access level allowing them to delete the post, and the forum itself must not be locked or in quarantine.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter postID: in URL path
     /// - Throws: 403 error if the user is not permitted to delete.
     /// - Returns: 204 No Content on success.
     func postDeleteHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
@@ -855,10 +857,7 @@ struct ForumController: APIRouteCollection {
     ///   but the `ReportData` is mandatory in order to allow one. If there is no message,
     ///   send an empty string in the `.message` field.
     ///
-    /// - Requires: `ReportData` payload in the HTTP body.
-    /// - Parameters:
-    ///   - req: The incoming `Request`, provided automatically.
-    ///   - data: `ReportData` containing an optional accompanying message.
+    /// - Parameter requestBody:<doc:ReportData`> 
     /// - Throws: 409 error if user has already reported the post.
     /// - Returns: 201 Created on success.
     func postReportHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
@@ -874,21 +873,21 @@ struct ForumController: APIRouteCollection {
     /// Add a "laugh" reaction to the specified `ForumPost`. If there is an existing `LikeType`
     /// reaction by the user, it is replaced.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter postID: in URL path
     /// - Throws: 403 error if user is the post's creator.
-    /// - Returns: `PostData` containing the updated like info.
+    /// - Returns: <doc:PostData> containing the updated like info.
     func postLaughHandler(_ req: Request) throws -> EventLoopFuture<PostData> {
     	return try postReactHandler(req, likeType: .laugh)
     }
     
-        /// `POST /api/v3/forum/post/ID/like`
+	/// `POST /api/v3/forum/post/ID/like`
     ///
     /// Add a "like" reaction to the specified `ForumPost`. If there is an existing `LikeType`
     /// reaction by the user, it is replaced.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter postID: in URL path
     /// - Throws: 403 error if user is the post's creator.
-    /// - Returns: `PostData` containing the updated like info.
+    /// - Returns: <doc:PostData> containing the updated like info.
     func postLikeHandler(_ req: Request) throws -> EventLoopFuture<PostData> {
     	return try postReactHandler(req, likeType: .like)
 	}
@@ -898,9 +897,9 @@ struct ForumController: APIRouteCollection {
     /// Add a "love" reaction to the specified `ForumPost`. If there is an existing `LikeType`
     /// reaction by the user, it is replaced.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter postID: in URL path
     /// - Throws: 403 error if user is the post's creator.
-    /// - Returns: `PostData` containing the updated like info.
+    /// - Returns: <doc:PostData> containing the updated like info.
     func postLoveHandler(_ req: Request) throws -> EventLoopFuture<PostData> {
     	return try postReactHandler(req, likeType: .love)
 	}
@@ -932,10 +931,9 @@ struct ForumController: APIRouteCollection {
     ///
     /// Remove a `LikeType` reaction from the specified `ForumPost`.
     ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Throws: 400 error if there was no existing reaction. 403 error if user is the post's
-    ///   creator.
-    /// - Returns: `PostData` containing the updated like info.
+    /// - Parameter postID: in URL path
+    /// - Throws: 400 error if there was no existing reaction. 403 error if user is the post's creator.
+    /// - Returns: <doc:PostData> containing the updated like info.
     func postUnreactHandler(_ req: Request) throws -> EventLoopFuture<PostData> {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
@@ -972,11 +970,10 @@ struct ForumController: APIRouteCollection {
     ///
     /// Update the specified `ForumPost`.
     ///
-    /// - Requires: `PostContentData` payload in the HTTP body.
-    /// - Parameters:
-    ///   - req: The incoming `Request`, provided automatically.
+    /// - Parameter postID: in URL path
+    /// - Parameter requestBody: <doc:PostContentData> 
     /// - Throws: 403 error if user is not post owner or has read-only access.
-    /// - Returns: `PostData` containing the post's contents and metadata.
+    /// - Returns: <doc:PostData> containing the post's contents and metadata.
     func postUpateHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         let user = try req.auth.require(User.self)
 		// see `PostContentData.validations()`

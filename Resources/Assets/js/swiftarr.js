@@ -96,6 +96,7 @@ async function spinnerButtonAction() {
 				case "fezDelete":
 				case "fezAddUser":
 				case "cancelFez":
+				case "fezRemoveUser":
 					location.reload();
 					break;
 				case "block":

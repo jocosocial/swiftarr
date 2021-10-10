@@ -7,7 +7,7 @@ import Vapor
 ///	
 /// Returned by:
 /// * `GET /api/v3/mod/fez/ID`
-struct FezEditLogData: Content {
+public struct FezEditLogData: Content {
 	/// The ID of the fez.
     var fezID: UUID
 	/// The ID of the edit.
@@ -43,7 +43,7 @@ extension FezEditLogData {
 /// * `GET /api/v3/mod/fez/id`
 ///
 /// See `ModerationController.forumModerationHandler(_:)`
-struct FezModerationData: Content {
+public struct FezModerationData: Content {
 	var fez: FezData
 	var isDeleted: Bool
 	var moderationStatus: ContentModerationStatus
@@ -59,7 +59,7 @@ struct FezModerationData: Content {
 ///	
 /// Returned by:
 /// * `GET /api/v3/mod/forum/id`
-struct ForumEditLogData: Content {
+public struct ForumEditLogData: Content {
 	/// The ID of the forum.
     var forumID: UUID
 	/// The ID of the edit.
@@ -89,7 +89,7 @@ extension ForumEditLogData {
 /// * `GET /api/v3/mod/forum/id`
 ///
 /// See `ModerationController.forumModerationHandler(_:)`
-struct ForumModerationData: Content {
+public struct ForumModerationData: Content {
     /// The forum's ID.
     var forumID: UUID
     /// The forum's creator.
@@ -130,7 +130,7 @@ extension ForumModerationData {
 /// * `GET /api/v3/mod/forumPost/id`
 ///
 /// See `ModerationController.forumPostModerationHandler(_:)`
-struct ForumPostModerationData: Content {
+public struct ForumPostModerationData: Content {
 	/// The post in question
 	var forumPost: PostDetailData
 	/// TRUE if the post has been soft-deleted (A soft-deleted post appears deleted, doesn't appear in its forum or in searches,
@@ -145,7 +145,7 @@ struct ForumPostModerationData: Content {
 }
 
 /// Returns data about an instance of a moderator using their mod powers to edit/delete a user's content, edit a user's profile fields, or change a user's privledges.
-struct ModeratorActionLogData: Content {
+public struct ModeratorActionLogData: Content {
 	/// The ID of this log entry
 	var id: UUID
 	/// What action the moderator took.
@@ -182,7 +182,7 @@ extension ModeratorActionLogData {
 ///	
 /// Returned by:
 /// * `GET /api/v3/mod/twarrt/id`
-struct PostEditLogData: Content {
+public struct PostEditLogData: Content {
 	/// The ID of the post. Depending on context, could be a twarrtID or a forumPostID.
     var postID: Int
 	/// The ID of the edit.
@@ -221,7 +221,7 @@ extension PostEditLogData {
 /// Used to return data moderators need to view previous edits a user made to their profile. 
 /// This structure will have either the `profileData` or `profileImage` field populated.
 /// An array of these stucts is placed inside `ProfileModerationData`.
-struct ProfileEditLogData: Content {
+public struct ProfileEditLogData: Content {
 	var editID: UUID
 	var createdAt: Date
 	var author: UserHeader
@@ -241,7 +241,7 @@ extension ProfileEditLogData {
 
 /// Used to return data moderators need to evaluate a user's profile. Shows the user's current profile values, past edits, reports made against
 /// the profile, and the user's profile moderationStatus.
-struct ProfileModerationData: Content {
+public struct ProfileModerationData: Content {
 	var profile: UserProfileUploadData
 	var moderationStatus: ContentModerationStatus
 	var edits: [ProfileEditLogData]
@@ -252,7 +252,7 @@ struct ProfileModerationData: Content {
 ///
 /// Required by:
 /// * `GET /api/v3/mod/reports`
-struct ReportModerationData: Content {
+public struct ReportModerationData: Content {
 	/// The id of the report.
 	var id: UUID
 	/// The type of content being reported
@@ -298,7 +298,7 @@ extension ReportModerationData {
 /// * `GET /api/v3/mod/twarrt/id`
 ///
 /// See `ModerationController.twarrtModerationHandler(_:)`
-struct TwarrtModerationData: Content {
+public struct TwarrtModerationData: Content {
 	var twarrt: TwarrtData
 	var isDeleted: Bool
 	var moderationStatus: ContentModerationStatus
@@ -306,7 +306,13 @@ struct TwarrtModerationData: Content {
 	var reports: [ReportModerationData]
 }
 
-struct UserModerationData: Content {
+/// Used to return data a moderator needs to moderate a user. 
+///	
+/// Returned by:
+/// * `GET /api/v3/mod/user/id`
+///
+/// See `ModerationController.userModerationHandler(_:)`
+public struct UserModerationData: Content {
 	/// 'Main' account for this user
 	var header: UserHeader
 	/// Sub-accounts that this user has created.			

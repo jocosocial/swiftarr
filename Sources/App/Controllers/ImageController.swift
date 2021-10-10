@@ -52,7 +52,7 @@ struct ImageController: APIRouteCollection {
 	/// User Avatar Images: UserHeader.image will be nil for a user that has not set an avatar image; clients should display a default avatar image instead. Or, clients may
 	/// call the `/api/v3/image/user/` endpoints instead--these endpoints return identicon images for users that have not set custom images for themselves.
 	/// 
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter STRING: A reference to the image, returned from another API call.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: Image data
 	func getImage_FullHandler(_ req: Request) throws -> Response {
@@ -71,7 +71,7 @@ struct ImageController: APIRouteCollection {
 	/// User Avatar Images: UserHeader.image will be nil for a user that has not set an avatar image; clients should display a default avatar image instead. Or, clients may
 	/// call the `/api/v3/image/user/` endpoints instead--these endpoints return identicon images for users that have not set custom images for themselves.
 	/// 
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter STRING: A reference to the image, returned from another API call.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: Image data
 	func getImage_ThumbnailHandler(_ req: Request) throws -> Response {
@@ -87,7 +87,7 @@ struct ImageController: APIRouteCollection {
 	/// matches one of : "bmp", "gif", "jpg", "png", "tiff", "wbmp", "webp". Example: `F818D809-AAB9-4C92-8AAD-6AE483C8AB82.jpg`. The `thumb` and `full`
 	/// versions of this call return differently-sized versions of the same image when called with the same filename.
 	/// 
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter STRING: A reference to the image, returned from another API call.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: Image data
 	func getImage_ArchivedlHandler(_ req: Request) throws -> Response {
@@ -110,7 +110,7 @@ struct ImageController: APIRouteCollection {
 	///  This method is optional. If you don't want the server-generated identicons for your client, you can create your own and know when to use them instead of 
 	///  user-created avatars, as the user's userImage will be nil if they have no custom avatar.
 	///  
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter ID: A userID value, in the URL path.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: Image data, or `304 notModified` if client's ETag matches.
 	func getUserAvatarHandler(_ req: Request) throws -> EventLoopFuture<Response> {
@@ -146,7 +146,7 @@ struct ImageController: APIRouteCollection {
 	/// 
 	/// Please don't use this method to show identicons for all users everywhere. Users like their custom avatars.
 	/// 
-    /// - Parameter req: The incoming `Request`, provided automatically.
+    /// - Parameter ID: A userID value, in the URL path.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: Image data, or `304 notModified` if client's ETag matches.
 	func getUserIdenticonHandler(_ req: Request) throws -> EventLoopFuture<Response> {
@@ -258,7 +258,7 @@ struct ImageController: APIRouteCollection {
 /// Random number generator that can be initialized with a seed value.
 /// Copied from https://github.com/mattgallagher/CwlUtils/blob/master/Sources/CwlUtils/CwlRandom.swift
 /// 
-///
+/// The idea here is that this RNG is seeded with a user's userID, and will always produce the same sequence of numbers when building a user's identicon..
 public struct Xoshiro: RandomNumberGenerator {
 	public typealias StateType = (UInt64, UInt64, UInt64, UInt64)
 
