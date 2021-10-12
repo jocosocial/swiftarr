@@ -127,7 +127,6 @@ struct UserController: APIRouteCollection {
         tokenAuthGroup.post("barrels", barrelIDParam, "remove", ":string", use: barrelRemoveHandler)
         tokenAuthGroup.post("barrels", barrelIDParam, "rename", ":barrel_name", use: renameBarrelHandler)
         tokenAuthGroup.get("blocks", use: blocksHandler)
-        tokenAuthGroup.get("forums", use: ForumController().ownerHandler)
         tokenAuthGroup.get("mutes", use: mutesHandler)
         tokenAuthGroup.get("mutewords", use: mutewordsHandler)
         tokenAuthGroup.post("mutewords", "add", mutewordParam, use: mutewordsAddHandler)
@@ -142,7 +141,7 @@ struct UserController: APIRouteCollection {
     
     /// `POST /api/v3/user/create`
     ///
-    /// Creates a new `User` account.
+    /// Creates a new `User` account. Does not log the new user in. Route is open access.
     ///
     /// A  <doc:CreatedUserData> structure is returned on success, containing the new user's ID,
     /// username and a generated recovery key.
@@ -290,14 +289,14 @@ struct UserController: APIRouteCollection {
     
     /// `POST /api/v3/user/image`
     ///
-    /// Sets the user's profile image to the <doc:ImageUpdloadData> uploaded in the HTTP body. 
+    /// Sets the user's profile image to the <doc:ImageUploadData> uploaded in the HTTP body. 
 	/// 
-	/// - If the <doc:ImageUpdloadData> contains image data in the `image` member, that data is processed, saved, and set to user's new image
-	/// - If the <doc:ImageUpdloadData> contains a filename in the `filename` member, the user's avatar is set to that image file on the server. 
+	/// - If the <doc:ImageUploadData> contains image data in the `image` member, that data is processed, saved, and set to user's new image
+	/// - If the <doc:ImageUploadData> contains a filename in the `filename` member, the user's avatar is set to that image file on the server. 
 	/// We don't check whether the file exists.
 	/// - If both members are nil, the user's avatar image is set to nil, which will cause the default image be returned.
     ///
-    /// - Parameter requestBody: <doc:ImageUpdloadData> payload in the HTTP body.
+    /// - Parameter requestBody: <doc:ImageUploadData> payload in the HTTP body.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: <doc:UserHeader> containing the generated image identifier string.
     func imageHandler(_ req: Request) throws -> EventLoopFuture<UserHeader> {
@@ -305,31 +304,30 @@ struct UserController: APIRouteCollection {
         try user.guardCanEditProfile()
         let data = try req.content.decode(ImageUploadData.self)
         // get generated filename
-        return processImage(data: data.image, usage: .userProfile, on: req)
-        	.throwingFlatMap { filename in
-        		let newImageName = filename ?? data.filename
-				// Save a thumbnail of existing image if there was one and we're changing it.
-				if let existingImage = user.userImage, !existingImage.isEmpty, existingImage != newImageName {
-					// create ProfileEdit record
-					let profileEdit = try ProfileEdit(target: user, editor: user)
-					// archive thumbnail
-					DispatchQueue.global(qos: .background).async {
-						self.archiveImage(existingImage, on: req)
-					}
-					return profileEdit.save(on: req.db).transform(to: newImageName)
+        return processImage(data: data.image, usage: .userProfile, on: req).throwingFlatMap { filename in
+			let newImageName = filename ?? data.filename
+			// Save a thumbnail of existing image if there was one and we're changing it.
+			if let existingImage = user.userImage, !existingImage.isEmpty, existingImage != newImageName {
+				// create ProfileEdit record
+				let profileEdit = try ProfileEdit(target: user, editor: user)
+				// archive thumbnail
+				DispatchQueue.global(qos: .background).async {
+					self.archiveImage(existingImage, on: req)
 				}
-				return req.eventLoop.future(newImageName) 
+				return profileEdit.save(on: req.db).transform(to: newImageName)
 			}
-			.flatMap { (filename: String?) in
-				// Set new image
-				user.userImage = filename
-				user.profileUpdatedAt = Date()
-				return user.save(on: req.db).throwingFlatMap {
-					return try req.userCache.updateUser(user.requireID()).map { userCacheData in
-						return userCacheData.makeHeader()
-					}
+			return req.eventLoop.future(newImageName) 
+		}
+		.flatMap { (filename: String?) in
+			// Set new image
+			user.userImage = filename
+			user.profileUpdatedAt = Date()
+			return user.save(on: req.db).throwingFlatMap {
+				return try req.userCache.updateUser(user.requireID()).map { userCacheData in
+					return userCacheData.makeHeader()
 				}
 			}
+		}
     }
     
     /// `POST /api/v3/user/image/remove`
@@ -864,7 +862,7 @@ struct UserController: APIRouteCollection {
     /// If the user is a sub-account, the parent user's blocks are returned.
     ///
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: <doc:BlockedUserData> containing the currently blocked users as an array of <doc:SeaMonkey>.
+    /// - Returns: <doc:BlockedUserData> containing the currently blocked users as an array of <doc:UserHeader>.
     func blocksHandler(_ req: Request) throws -> EventLoopFuture<BlockedUserData> {
         let user = try req.auth.require(User.self)
         // if sub-account, we want parent's blocks

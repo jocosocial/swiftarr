@@ -73,7 +73,7 @@ struct ForumController: APIRouteCollection {
 
     /// `GET /api/v3/forum/categories`
     ///
-    /// Retrieve a list of  forum `Category`s, sorted by type (admin, user) and title. Access to certain categories is restricted to users of an appropriate
+    /// Retrieve a list of  forum `Category`s, sorted by access level and title. Access to certain categories is restricted to users of an appropriate
 	/// access level, which implies those categories won't be shown if you don't provide a login token. Without a token, the 'accessible to anyone' categories
 	/// are returned. You'll still need to be logged in to see the contents of the categories, or post, or do much anything else.
 	/// 
@@ -282,7 +282,7 @@ struct ForumController: APIRouteCollection {
 		}
 	}
     
-    /// `GET /api/v3/events/ID/forum`
+    /// `GET /api/v3/forum/forevent/ID`
     ///
     /// Retrieve the `Forum` associated with an `Event`, with its `ForumPost`s. Content from
     /// blocked or muted users, or containing user's muteWords, is not returned.
@@ -512,6 +512,7 @@ struct ForumController: APIRouteCollection {
     }
     
     /// `POST /api/v3/forum/post/ID/bookmark/remove`
+    /// `DELETE /api/v3/forum/post/ID/bookmark`
     ///
     /// Remove a bookmark of the specified `ForumPost`.
     ///
@@ -565,6 +566,7 @@ struct ForumController: APIRouteCollection {
     }
     
     /// `POST /api/v3/forum/ID/favorite/remove`
+    /// `DELETE /api/v3/forum/ID/favorite`
     ///
     /// Remove the specified `Forum` from the user's tagged forums list.
     ///
@@ -765,7 +767,6 @@ struct ForumController: APIRouteCollection {
     }
 	
     /// `GET /api/v3/forum/owner`
-    /// `GET /api/v3/user/forums`
     ///
     /// Retrieve a list of all `Forum`s created by the user, sorted by title.
     ///
@@ -928,6 +929,9 @@ struct ForumController: APIRouteCollection {
 	}
     
     /// `POST /api/v3/forum/post/ID/unreact`
+    /// `DELETE /api/v3/forum/post/ID/like`
+    /// `DELETE /api/v3/forum/post/ID/laugh`
+    /// `DELETE /api/v3/forum/post/ID/love`
     ///
     /// Remove a `LikeType` reaction from the specified `ForumPost`.
     ///

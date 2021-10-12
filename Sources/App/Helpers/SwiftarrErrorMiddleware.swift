@@ -6,7 +6,7 @@ import Vapor
 /// Field-specific validation errors are keyed by the path to the field that caused the error. Validation errors that aren't specific to an input field
 /// (e.g. an error indicating that one of two fields may be empty, but not both) are all concatenated and placed into a `general` key in `fieldErrors`.
 /// This means lthat all errors are both in `error` (concatenated into a single string), and also in `fieldErrors` (split into fields). 
-struct ErrorResponse: Codable, Error {
+public struct ErrorResponse: Codable, Error {
 	/// Always `true` to indicate this is a non-typical JSON response.
 	var error: Bool
 	

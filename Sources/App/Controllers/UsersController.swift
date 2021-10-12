@@ -23,19 +23,20 @@ struct UsersController: APIRouteCollection {
 		// endpoints available only when logged in
 		let tokenAuthGroup = addTokenAuthGroup(to: usersRoutes)
 		tokenAuthGroup.get("find", ":userSearchString", use: findHandler)
-		tokenAuthGroup.get(userIDParam, "profile", use: profileHandler)
-		tokenAuthGroup.get(userIDParam, use: headerHandler)
-		tokenAuthGroup.post(userIDParam, "block", use: blockHandler)
 		tokenAuthGroup.get("match", "allnames", searchStringParam, use: matchAllNamesHandler)
 		tokenAuthGroup.get("match", "username", searchStringParam, use: matchUsernameHandler)
+		tokenAuthGroup.get(userIDParam, use: headerHandler)
+		tokenAuthGroup.get(userIDParam, "profile", use: profileHandler)
+		tokenAuthGroup.post(userIDParam, "report", use: reportHandler)
+
+		tokenAuthGroup.post(userIDParam, "block", use: blockHandler)
+		tokenAuthGroup.post(userIDParam, "unblock", use: unblockHandler)
 		tokenAuthGroup.post(userIDParam, "mute", use: muteHandler)
+		tokenAuthGroup.post(userIDParam, "unmute", use: unmuteHandler)
 		tokenAuthGroup.post(userIDParam, "note", use: noteCreateHandler)
 		tokenAuthGroup.post(userIDParam, "note", "delete", use: noteDeleteHandler)
 		tokenAuthGroup.delete(userIDParam, "note", use: noteDeleteHandler)
 		tokenAuthGroup.get(userIDParam, "note", use: noteHandler)
-		tokenAuthGroup.post(userIDParam, "report", use: reportHandler)
-		tokenAuthGroup.post(userIDParam, "unblock", use: unblockHandler)
-		tokenAuthGroup.post(userIDParam, "unmute", use: unmuteHandler)
     }
         
     // MARK: - tokenAuthGroup Handlers (logged in)

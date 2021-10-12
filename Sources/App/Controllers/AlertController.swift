@@ -231,8 +231,7 @@ struct AlertController: APIRouteCollection {
     /// `POST /api/v3/notification/announcement/ID/delete`
     /// `DELETE /api/v3/notification/announcement/ID`
     ///
-    /// Edits an existing announcement. Editing a deleted announcement will un-delete it. Editing an announcement does not change any user's notification status for that
-	/// announcement: if a user has seen the announcement already, editing it will not cause the user to be notified that they should read it again.
+    /// Deletes an existing announcement. Editing a deleted announcement will un-delete it.
     ///
     /// - Parameter announcementIDParam: The announcement to delete. 
     /// - Throws: 403 error if the user is not permitted to delete.

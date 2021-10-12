@@ -146,7 +146,7 @@ struct ModerationController: APIRouteCollection {
 
 	/// `GET /api/v3/mod/moderationlog`
 	///
-	/// Retrieves ModeratorAction recoreds. These records are a log of Mods using their Mod powers. Generally, if an action 1) modifies the database and 
+	/// Retrieves ModeratorAction records. These records are a log of Mods using their Mod powers. Generally, if an action 1) modifies the database and 
 	/// 2) requires that the acting user be a mod to perform the action, it will get logged.
 	/// 
 	/// - Note: A mod editing/deleting their own content will not get logged, even if they use a Moderator-only API call to do it. 
@@ -211,11 +211,11 @@ struct ModerationController: APIRouteCollection {
 
 	/// `POST /api/v3/mod/twarrt/ID/setstate/STRING`
 	///
-	/// Moderator only. Sets the moderation state enum on the twarrt idententified by ID to the <doc:ModerationState>  in STRING.
+	/// Moderator only. Sets the moderation state enum on the twarrt identified by ID to the <doc:ContentModerationStatus> in STRING.
 	/// Logs the action to the moderator log unless the user owns the twarrt. 
 	///
     /// - Parameter twarrtID: in URL path.
-    /// - Parameter moderationState: in URL path. Value must match a <doc:ModerationState> rawValue.
+    /// - Parameter moderationState: in URL path. Value must match a <doc:ContentModerationStatus> rawValue.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: `HTTPStatus` .ok if the requested moderation status was set.
 	func twarrtSetModerationStateHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
@@ -272,11 +272,11 @@ struct ModerationController: APIRouteCollection {
 
 	/// `POST /api/v3/mod/forumpost/ID/setstate/STRING`
 	///
-	/// Moderator only. Sets the moderation state enum on the post idententified by ID to the `ModerationState` in STRING.
+	/// Moderator only. Sets the moderation state enum on the post idententified by ID to the <doc:ContentModerationStatus> in STRING.
 	/// Logs the action to the moderator log unless the user owns the post. 
 	///
     /// - Parameter postID: in URL path.
-    /// - Parameter moderationState: in URL path. Value must match a <doc:ModerationState> rawValue.
+    /// - Parameter moderationState: in URL path. Value must match a <doc:ContentModerationStatus> rawValue.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: `HTTPStatus` .ok if the requested moderation status was set.
 	func forumPostSetModerationStateHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
@@ -330,11 +330,11 @@ struct ModerationController: APIRouteCollection {
 
 	/// `POST /api/v3/mod/forum/ID/setstate/STRING`
 	///
-	/// Moderator only. Sets the moderation state enum on the forum idententified by ID to the <doc:ModerationState> in STRING.
+	/// Moderator only. Sets the moderation state enum on the forum idententified by ID to the <doc:ContentModerationStatus> in STRING.
 	/// Logs the action to the moderator log unless the current user owns the forum. 
 	///
     /// - Parameter forumID: in URL path.
-    /// - Parameter moderationState: in URL path. Value must match a <doc:ModerationState> rawValue.
+    /// - Parameter moderationState: in URL path. Value must match a <doc:ContentModerationStatus> rawValue.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: `HTTPStatus` .ok if the requested moderation status was set.
 	func forumSetModerationStateHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
@@ -390,11 +390,11 @@ struct ModerationController: APIRouteCollection {
 
 	/// ` POST /api/v3/mod/fez/ID/setstate/STRING`
 	///
-	/// Moderator only. Sets the moderation state enum on the fez idententified by ID to the <doc:ModerationState> in STRING.
+	/// Moderator only. Sets the moderation state enum on the fez idententified by ID to the <doc:ContentModerationStatus> in STRING.
 	/// Logs the action to the moderator log unless the current user owns the fez. 
 	///
     /// - Parameter fezID: in URL path.
-    /// - Parameter moderationState: in URL path. Value must match a <doc:ModerationState> rawValue.
+    /// - Parameter moderationState: in URL path. Value must match a <doc:ContentModerationStatus> rawValue.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: `HTTPStatus` .ok if the requested moderation status was set.
 	func fezSetModerationStateHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
@@ -449,11 +449,11 @@ struct ModerationController: APIRouteCollection {
 	
 	/// ` POST /api/v3/mod/profile/ID/setstate/STRING`
 	///
-	/// Moderator only. Sets the moderation state enum on the profile idententified by userID to the `ModerationState` in STRING.
+	/// Moderator only. Sets the moderation state enum on the profile idententified by userID to the <doc:ContentModerationStatus> in STRING.
 	/// Logs the action to the moderator log unless the moderator is changing state on their own profile.. 
 	///
     /// - Parameter userID: in URL path.
-    /// - Parameter moderationState: in URL path. Value must match a <doc:ModerationState> rawValue.
+    /// - Parameter moderationState: in URL path. Value must match a <doc:ContentModerationStatus> rawValue.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: `HTTPStatus` .ok if the requested moderation status was set.
 	func profileSetModerationStateHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {

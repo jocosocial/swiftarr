@@ -1,7 +1,7 @@
 import Foundation
 import Vapor
 
-/// Names of clients that consume the Swiftarr client API. Used in the `DisabledFeature` struct.
+/// Names of clients that consume the Swiftarr client API. Used in the `SettingsAppFeaturePair` struct.
 /// Clients: Be sure to anticipate server values not listed here. 
 public enum SwiftarrClientApp: String, Content, CaseIterable {
 	/// The website, but NOT the API layer
@@ -29,7 +29,7 @@ public enum SwiftarrClientApp: String, Content, CaseIterable {
 	}
 }
 
-/// Functional areas of the Swiftarr API. Used in the `DisabledFeature` struct.
+/// Functional areas of the Swiftarr API. Used in the `SettingsAppFeaturePair` struct.
 /// Clients: Be sure to anticipate server values not listed here. 
 public enum SwiftarrFeature: String, Content, CaseIterable {
 	case tweets

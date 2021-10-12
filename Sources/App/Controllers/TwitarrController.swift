@@ -21,20 +21,18 @@ struct TwitarrController: APIRouteCollection {
 		tokenAuthGroup.get(twarrtIDParam, use: twarrtHandler)
 		tokenAuthGroup.post(twarrtIDParam, "bookmark", use: bookmarkAddHandler)
 		tokenAuthGroup.post(twarrtIDParam, "bookmark", "remove", use: bookmarkRemoveHandler)
-		tokenAuthGroup.get("bookmarks", use: bookmarksHandler)
 		tokenAuthGroup.post("create", use: twarrtCreateHandler)
 		tokenAuthGroup.post(twarrtIDParam, "delete", use: twarrtDeleteHandler)
 		tokenAuthGroup.delete(twarrtIDParam, use: twarrtDeleteHandler)
 		tokenAuthGroup.post(twarrtIDParam, "laugh", use: twarrtLaughHandler)
 		tokenAuthGroup.post(twarrtIDParam, "like", use: twarrtLikeHandler)
 		tokenAuthGroup.post(twarrtIDParam, "love", use: twarrtLoveHandler)
-		tokenAuthGroup.get("likes", use: likesHandler)
 		tokenAuthGroup.post(twarrtIDParam, "reply", use: replyHandler)
-		tokenAuthGroup.post(twarrtIDParam, "report", use: twarrtReportHandler)
 		tokenAuthGroup.post(twarrtIDParam, "unreact", use: twarrtUnreactHandler)
 		tokenAuthGroup.delete(twarrtIDParam, "laugh", use: twarrtUnreactHandler)
 		tokenAuthGroup.delete(twarrtIDParam, "like", use: twarrtUnreactHandler)
 		tokenAuthGroup.delete(twarrtIDParam, "love", use: twarrtUnreactHandler)
+		tokenAuthGroup.post(twarrtIDParam, "report", use: twarrtReportHandler)
 		tokenAuthGroup.post(twarrtIDParam, "update", use: twarrtUpdateHandler)
 	}
     
@@ -45,7 +43,7 @@ struct TwitarrController: APIRouteCollection {
 /**
 	`GET /api/v3/twitarr/ID`
 
-	Retrieve the specfied `Twarrt` with full user <doc:LikeType> data.
+	Retrieve the specified `Twarrt` with full user <doc:LikeType> data.
 
 	- Parameter twarrtID: in URL path
 	- Throws: 404 error if the twarrt is not available.
@@ -117,9 +115,11 @@ struct TwitarrController: APIRouteCollection {
 	* `?hashtag=STRING` - Only return twarrts whose text contains the given #hashtag. The # is not required in the value.
 	* `?mentions=STRING` - Only return twarrts that @mention the given username. The @ is not required in the value.
 	* `?byuser=ID` - Only return twarrts authored by the given user.
+	* `?bookmarked=true` - Only return twarrts the user has bookmarked.
 	* `?inbarrel=ID` - Only return twarrts authored by any user in the given `.seamonkey` type `Barrel`.
 	* `?replyGroup=ID` - Only return twarrts in the given replyGroup. The twarrt whose twarrtID == ID is always considered to be in the reply group,
 	even if there are no replies to it.
+	* `?likeType=[like, laugh, love, all]` - Only return twarrts the user has reacted to.
 
 	Parameters that set the anchor. The anchor can be a specific `Twarrt`, a `Date`, or the first or last twarrt in the stream.
 	These parameters are mutually exclusive. The default anchor if none is specified is `?from=last`. 
@@ -153,6 +153,9 @@ struct TwitarrController: APIRouteCollection {
 	  query. You will almost certainly receive the original anchor twarrt again, but it will
 	  also ensure that any others possibly created within the same millisecond will not be
 	  omitted.
+	  
+	- Note: Blocks are always applied to the search results. User mutes are applied to the search results unless a filter is used that 
+	involves users or twarrts the user has previously interacted with (`inbarrel`, `likeType`, `bookmarked`) or matches users by name (`byuser`).
 
 	- Throws: 400 error if a date parameter was supplied and is in an unknown format.
 	- Returns: An array of <doc:TwarrtData> containing the requested twarrts.
@@ -165,9 +168,9 @@ struct TwitarrController: APIRouteCollection {
         let start = (req.query[Int.self, at: "start"] ?? 0)
         let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
         var postFilterMentions: String? = nil
+        var applyMutes = true
 		let futureTwarrts = Twarrt.query(on: req.db)
 				.filter(\.$author.$id !~ cachedUser.getBlocks())
-				.filter(\.$author.$id !~ cachedUser.getMutes())
 				.range(start..<(start + limit))
 		
 		// Process query params that set an anchor twarrt and search direction.
@@ -217,6 +220,7 @@ struct TwitarrController: APIRouteCollection {
 			futureTwarrts.filter(\.$text, .custom("ILIKE"), "%\(mentions)%")
 		}
 		if let byuser = req.query[String.self, at: "byuser"] {
+			applyMutes = false
 			guard let authorUUID = UUID(byuser) else {
 				throw Abort(.badRequest, reason: "byuser parameter requires a valid UUID")
 			}
@@ -228,13 +232,24 @@ struct TwitarrController: APIRouteCollection {
 			}
 			sortDescending = false
 		}
+		if let likeType = req.query[String.self, at: "likeType"] {
+			applyMutes = false
+			futureTwarrts.join(children: \.$likes.$pivots).filter(TwarrtLikes.self, \TwarrtLikes.$user.$id == cachedUser.userID)
+			switch likeType {
+				case "like": futureTwarrts.filter(TwarrtLikes.self, \TwarrtLikes.$likeType == .like)
+				case "laugh": futureTwarrts.filter(TwarrtLikes.self, \TwarrtLikes.$likeType == .laugh)
+				case "love": futureTwarrts.filter(TwarrtLikes.self, \TwarrtLikes.$likeType == .love)
+				default: break
+			}
+		}
 		
-		var barrelFinder: EventLoopFuture<Barrel?> = req.eventLoop.future(nil)
+		var barrelFuture: EventLoopFuture<Barrel?> = req.eventLoop.future(nil)
 		if let inBarrel = req.query[String.self, at: "inbarrel"] {
+			applyMutes = false
 			guard let barrelID = UUID(inBarrel) else {
 				throw Abort(.badRequest, reason: "inbarrel parameter requires a valid barrel UUID")
 			}
-			barrelFinder = Barrel.find(barrelID, on: req.db).flatMapThrowing { (barrel) in
+			barrelFuture = Barrel.find(barrelID, on: req.db).flatMapThrowing { (barrel) in
 				guard let foundBarrel = barrel else {
 					throw Abort(.badRequest, reason: "No barrel found with given barrel ID")
             	}
@@ -246,21 +261,37 @@ struct TwitarrController: APIRouteCollection {
 			}
 		}
 		
-		return barrelFinder.flatMap { barrel in
+		var bookmarkFuture: EventLoopFuture<Barrel?> = req.eventLoop.future(nil)
+		if let bookmarkFilter = req.query[String.self, at:"bookmarked"], bookmarkFilter == "true" {
+			applyMutes = false
+			bookmarkFuture = user.getBookmarkBarrel(of: .bookmarkedTwarrt, on: req)
+		}
+		
+		if applyMutes {
+			futureTwarrts.filter(\.$author.$id !~ cachedUser.getMutes())
+		}
+
+		return barrelFuture.flatMap { barrel in
 			if let foundBarrel = barrel {
 				futureTwarrts.filter(\.$author.$id ~~ foundBarrel.modelUUIDs)
 			}
-			return futureTwarrts.sort(\.$id, searchDescending ? .descending : .ascending).all().flatMap { (twarrts) in
-				// The filter() for mentions will include usernames that are prefixes for other usernames and other false positives.
-				// This filters those out after the query. 
-				var postFilteredTwarrts = twarrts
-				if let postFilter = postFilterMentions {
-					postFilteredTwarrts = twarrts.compactMap { $0.filterForMention(of: postFilter) }
+			return bookmarkFuture.flatMap { bookmarkBarrel in
+				if let foundBarrel = bookmarkBarrel {
+					let bookmarks = foundBarrel.userInfo["bookmarks"]?.compactMap { Int($0) } ?? []
+					futureTwarrts.filter(\.$id ~~ bookmarks)
 				}
-			
-				// correct sort order if necessary
-				let sortedTwarrts: [Twarrt] = searchDescending == sortDescending ? postFilteredTwarrts : postFilteredTwarrts.reversed()
-				return buildTwarrtData(from: sortedTwarrts, user: user, on: req, mutewords: cachedUser.mutewords)
+				return futureTwarrts.sort(\.$id, searchDescending ? .descending : .ascending).all().flatMap { twarrts in
+					// The filter() for mentions will include usernames that are prefixes for other usernames and other false positives.
+					// This filters those out after the query. 
+					var postFilteredTwarrts = twarrts
+					if let postFilter = postFilterMentions {
+						postFilteredTwarrts = twarrts.compactMap { $0.filterForMention(of: postFilter) }
+					}
+				
+					// correct sort order if necessary
+					let sortedTwarrts: [Twarrt] = searchDescending == sortDescending ? postFilteredTwarrts : postFilteredTwarrts.reversed()
+					return buildTwarrtData(from: sortedTwarrts, user: user, on: req, mutewords: cachedUser.mutewords)
+				}
 			}
 		}
     }
@@ -322,53 +353,7 @@ struct TwitarrController: APIRouteCollection {
             }
         }
     }
-    
-    /// `GET /api/v3/twitarr/bookmarks`
-    ///
-    /// Retrieve all `Twarrt`s the user has bookmarked.
-    ///
-    /// - Returns: An array of <doc:TwarrtData> containing all bookmarked posts.
-    func bookmarksHandler(_ req: Request) throws -> EventLoopFuture<[TwarrtData]> {
-        let user = try req.auth.require(User.self)
-        let userID = try user.requireID()
-        // get bookmarkedTwarrt barrel
-        return user.getBookmarkBarrel(of:.bookmarkedTwarrt, on: req).flatMap { (barrel) in
-            let bookmarkStrings = barrel?.userInfo["bookmarks"] ?? []
-            // convert to IDs
-            let bookmarks = bookmarkStrings.compactMap { Int($0) }
-            // filter blocks only
-            let blocked = req.userCache.getBlocks(userID)
-			// get twarrts
-			return Twarrt.query(on: req.db)
-					.filter(\.$id ~~ bookmarks)
-					.filter(\.$author.$id !~ blocked)
-					.sort(\.$id, .descending)
-					.all()
-					.flatMap { (twarrts) in
-				return buildTwarrtData(from: twarrts, user: user, on: req, assumeBookmarked: true)
-			}
-		}
-    }
-        
-    /// `GET /api/v3/twitarr/likes`
-    ///
-    /// Retrieve all `Twarrt`s the user has liked.
-    ///
-    /// - Parameter req: The incoming `Request`, provided automatically.
-    /// - Returns: An array of <doc:TwarrtData> containing all liked posts.
-    func likesHandler(_ req: Request) throws -> EventLoopFuture<[TwarrtData]> {
-        let user = try req.auth.require(User.self)
-        // respect blocks
-        let blocked = try req.userCache.getBlocks(user)
-		// get liked twarrts
-		return user.$twarrtLikes.query(on: req.db)
-				.filter(\.$author.$id !~ blocked)
-				.all()
-				.flatMap { (twarrts) in
-			return buildTwarrtData(from: twarrts, user: user, on: req)
-		}
-    }
-        
+            
     /// `POST /api/v3/twitarr/ID/reply`
     ///
     /// Create a `Twarrt` as a reply to an existing twarrt. If the replyTo twarrt is in quarantine, the post is rejected.
