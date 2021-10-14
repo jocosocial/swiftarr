@@ -469,6 +469,10 @@ struct ForumController: APIRouteCollection {
 					var postFilteredPosts = posts
 					if let postFilter = postFilterMentions {
 						postFilteredPosts = posts.compactMap { $0.filterForMention(of: postFilter) }
+						if postFilter == "@\(user.username)" {
+							user.forumMentionsViewed = user.forumMentions
+							_ = user.save(on: req.db)	
+						}
 					}
 					return buildPostData(postFilteredPosts, user: user, on: req, mutewords: cachedUser.mutewords).map { postData in
 						return PostSearchData(queryString: req.url.query ?? "", totalPosts: totalPosts, 

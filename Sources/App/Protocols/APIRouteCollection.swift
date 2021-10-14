@@ -47,8 +47,6 @@ extension APIRouteCollection {
 		return to.grouped([Token.authenticator(), User.guardMiddleware()])
 	}
 
-
-	
 	/// Transforms a string that might represent a date (either a `Double` or an ISO 8601
     /// representation) into a `Date`, if possible.
     ///

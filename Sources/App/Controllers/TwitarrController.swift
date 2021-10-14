@@ -3,9 +3,100 @@ import Crypto
 import FluentSQL
 import Fluent
 
+// Decoding struct for the URL Query Options that twarrtsHandler() can decode.
+public struct TwarrtQueryOptions: Content {
+	var search: String?
+	var hashtag: String?
+	var mentions: String?
+	var mentionSelf: Bool?
+	var byUser: UUID?
+	var byUsername: String?
+	var bookmarked: Bool?
+	var inBarrel: UUID?
+	var replyGroup: Int?
+	var likeType: String?
+	var after: Int?
+	var before: Int?
+	var afterDate: String?
+	var beforeDate: String?
+	var from: String?
+	var start: Int?
+	var limit: Int?
+	
+	// This is a somewhat low-rent way to allow both camelCase and lowercased query options in the url query.
+	// Only works for optional values, and doesn't implement full case-insensitivity.
+	// As of Swift 5.5, there's a keyDecodingStrategy that does what we want, but it's JSONDecoder only.
+	private var mentionself: Bool?
+	private var byuser: UUID?
+	private var byusername: String?
+	private var inbarrel: UUID?
+	private var replygroup: Int?
+	private var liketype: String?
+	private var afterdate: String?
+	private var beforedate: String?
+
+	public mutating func afterDecode() throws {
+		mentionSelf = mentionSelf ?? mentionself
+		afterDate = afterDate ?? afterdate
+		beforeDate = beforeDate ?? beforedate
+		byUser = byUser ?? byuser
+		byUsername = byUsername ?? byusername
+		replyGroup = replyGroup ?? replygroup
+		likeType = likeType ?? liketype
+		inBarrel = inBarrel ?? inbarrel
+
+		if let searchStr = search {
+			if searchStr.hasPrefix("#"), hashtag == nil {
+				hashtag = String(searchStr.dropFirst())
+				search = nil
+			}
+			if searchStr.hasPrefix("@"), mentions == nil {
+				mentions = String(searchStr.dropFirst())
+				search = nil
+			}
+		}
+	}
+	
+	// TRUE if the 'next' tweets in this query are going to be newer or older than the current ones.
+	// For instance, by default the 'anchor' is the most recent tweet and the direction is towards older tweets.
+	func directionIsNewer() -> Bool {
+		return (after != nil) || (afterdate != nil)  || (from == "first") || (replyGroup != nil)
+	}
+	
+	func computedLimit() -> Int {
+		return limit ?? 50
+	}
+	
+	func buildQuery(baseURL: String, startOffset: Int) -> String? {
+		
+		guard var components = URLComponents(string: baseURL) else {
+			return nil
+		}
+	
+		var elements = [URLQueryItem]()
+		if let search = search { elements.append(URLQueryItem(name: "search", value: search)) }
+		if let hashtag = hashtag { elements.append(URLQueryItem(name: "hashtag", value: hashtag)) }
+		if let mentions = mentions { elements.append(URLQueryItem(name: "mentions", value: mentions)) }
+		if let byUser = byUser { elements.append(URLQueryItem(name: "byUser", value: byUser.uuidString)) }
+		if let inBarrel = inBarrel { elements.append(URLQueryItem(name: "inBarrel", value: inBarrel.uuidString)) }
+		if let after = after { elements.append(URLQueryItem(name: "after", value: String(after))) }
+		if let before = before { elements.append(URLQueryItem(name: "before", value: String(before))) }
+		if let afterDate = afterDate { elements.append(URLQueryItem(name: "afterDate", value: afterDate)) }
+		if let beforeDate = beforeDate { elements.append(URLQueryItem(name: "beforeDate", value: beforeDate)) }
+		if let from = from { elements.append(URLQueryItem(name: "from", value: from)) }
+		let newOffset = max(start ?? 0 + startOffset, 0)
+		if newOffset != 0 { elements.append(URLQueryItem(name: "start", value: String(newOffset))) }
+		if let limit = limit { elements.append(URLQueryItem(name: "limit", value: String(limit))) }
+		if let replyGroup = replyGroup { elements.append(URLQueryItem(name: "replyGroup", value: String(replyGroup))) }
+
+		components.queryItems = elements
+		return components.string
+	}
+}
+
+
 /// The collection of `/api/v3/twitarr/*` route endpoint and handler functions related
 /// to the twit-arr stream.
-
 struct TwitarrController: APIRouteCollection {
         
 // MARK: RouteCollection Conformance
@@ -101,7 +192,7 @@ struct TwitarrController: APIRouteCollection {
 			}
         }
     }
- 
+     
 /**
 	`GET /api/v3/twitarr`
 
@@ -114,9 +205,11 @@ struct TwitarrController: APIRouteCollection {
 	* `?search=STRING` - Only return twarrts whose text contains the search string.
 	* `?hashtag=STRING` - Only return twarrts whose text contains the given #hashtag. The # is not required in the value.
 	* `?mentions=STRING` - Only return twarrts that @mention the given username. The @ is not required in the value.
-	* `?byuser=ID` - Only return twarrts authored by the given user.
+	* `?mentionSelf=true` - Matches posts whose text contains a @mention of the current user.
+	* `?byUser=ID` - Only return twarrts authored by the given user.
+	* `?byUsername=STRING` - Only return twarrts authored by the given user.
 	* `?bookmarked=true` - Only return twarrts the user has bookmarked.
-	* `?inbarrel=ID` - Only return twarrts authored by any user in the given `.seamonkey` type `Barrel`.
+	* `?inBarrel=ID` - Only return twarrts authored by any user in the given `.seamonkey` type `Barrel`.
 	* `?replyGroup=ID` - Only return twarrts in the given replyGroup. The twarrt whose twarrtID == ID is always considered to be in the reply group,
 	even if there are no replies to it.
 	* `?likeType=[like, laugh, love, all]` - Only return twarrts the user has reacted to.
@@ -126,8 +219,8 @@ struct TwitarrController: APIRouteCollection {
 	If you specify a twarrt ID as an anchor, that twarrt does not need to pass the filter params (see above).
 	* `?after=ID` - the ID of the twarrt *after* which the retrieval should start (newer).
 	* `?before=ID` - the ID of the twarrt *before* which the retrieval should start (older).
-	* `?afterdate=DATE` - the timestamp *after* which the retrieval should start (newer).
-	* `?beforedate=DATE` - the timestamp *before* which the retrieval should start (older).
+	* `?afterDate=DATE` - the timestamp *after* which the retrieval should start (newer).
+	* `?beforeDate=DATE` - the timestamp *before* which the retrieval should start (older).
 	* `?from=STRING` - retrieve starting from "first" or "last".
 
 	These parameters operate on the filtered set of twarrts, starting at the anchor, above. These parameters can be used
@@ -155,7 +248,7 @@ struct TwitarrController: APIRouteCollection {
 	  omitted.
 	  
 	- Note: Blocks are always applied to the search results. User mutes are applied to the search results unless a filter is used that 
-	involves users or twarrts the user has previously interacted with (`inbarrel`, `likeType`, `bookmarked`) or matches users by name (`byuser`).
+	involves users or twarrts the user has previously interacted with (`inBarrel`, `likeType`, `bookmarked`) or matches users by name (`byuser`).
 
 	- Throws: 400 error if a date parameter was supplied and is in an unknown format.
 	- Returns: An array of <doc:TwarrtData> containing the requested twarrts.
@@ -163,10 +256,11 @@ struct TwitarrController: APIRouteCollection {
     func twarrtsHandler(_ req: Request) throws -> EventLoopFuture<[TwarrtData]> {
         let user = try req.auth.require(User.self)
  		let cachedUser = try req.userCache.getUser(user)
+ 		let filters = try req.query.decode(TwarrtQueryOptions.self)
         
 		// Query builder always filters out blocks and mutes, and the range always applies.
-        let start = (req.query[Int.self, at: "start"] ?? 0)
-        let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
+        let start = filters.start ?? 0
+        let limit = (filters.limit ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
         var postFilterMentions: String? = nil
         var applyMutes = true
 		let futureTwarrts = Twarrt.query(on: req.db)
@@ -178,61 +272,70 @@ struct TwitarrController: APIRouteCollection {
 		// SortDescending refers to the ordering of the returned twarrts.
 		var searchDescending = true
 		var sortDescending = true
-		if let afterID = req.query[Int.self, at: "after"] {
+		if let afterID = filters.after {
 			futureTwarrts.filter(\.$id > afterID)
 			searchDescending = false
 		}
-		else if let beforeID = req.query[Int.self, at: "before"]{
+		else if let beforeID = filters.before {
 			futureTwarrts.filter(\.$id < beforeID)
 		}
-		else if let afterDate = req.query[String.self, at: "afterdate"] {
+		else if let afterDate = filters.afterDate {
 			guard let date = TwitarrController.dateFromParameter(string: afterDate) else {
 				throw Abort(.badRequest, reason: "not a recognized date format")
 			}
 			futureTwarrts.filter(\.$createdAt > date)
 			searchDescending = false
 		}
-		else if let beforeDate = req.query[String.self, at: "beforedate"] {
+		else if let beforeDate = filters.beforeDate {
 			guard let date = TwitarrController.dateFromParameter(string: beforeDate) else {
 				throw Abort(.badRequest, reason: "not a recognized date format")
 			}
 			futureTwarrts.filter(\.$createdAt < date)
 		}
-		else if let from = req.query[String.self, at: "from"]?.lowercased(), from == "first" {
+		else if let from = filters.from?.lowercased(), from == "first" {
 			searchDescending = false
 		}
 		
 		// Process query params that filter for specific content.
-		if let searchStr = req.query[String.self, at: "search"] {
+		if let searchStr = filters.search {
 			futureTwarrts.filter(\.$text, .custom("ILIKE"), "%\(searchStr)%")
 		}
-		if var hashtag = req.query[String.self, at: "hashtag"] {
+		if var hashtag = filters.hashtag {
 			if !hashtag.hasPrefix("#") {
 				hashtag = "#\(hashtag)"
 			}
 			futureTwarrts.filter(\.$text, .custom("ILIKE"), "%\(hashtag)%")
 		}
-		if var mentions = req.query[String.self, at: "mentions"] {
+		if var mentions = filters.mentions {
 			if !mentions.hasPrefix("@") {
 				mentions = "@\(mentions)"
 			}
 			postFilterMentions = mentions
 			futureTwarrts.filter(\.$text, .custom("ILIKE"), "%\(mentions)%")
 		}
-		if let byuser = req.query[String.self, at: "byuser"] {
-			applyMutes = false
-			guard let authorUUID = UUID(byuser) else {
-				throw Abort(.badRequest, reason: "byuser parameter requires a valid UUID")
-			}
-			futureTwarrts.filter(\.$author.$id == authorUUID)
+		if let mentionSelf = filters.mentionSelf, mentionSelf == true {
+			let mentions = "@\(user.username)"
+			postFilterMentions = mentions
+			futureTwarrts.filter(\.$text, .custom("ILIKE"), "%\(mentions)%")
 		}
-		if let replyGroup = req.query[Int.self, at: "replyGroup"] {
+		if let byUser = filters.byUser {
+			applyMutes = false
+			futureTwarrts.filter(\.$author.$id == byUser)
+		}
+		if let byUsername = filters.byUsername {
+			applyMutes = false
+			guard let targetCacheUser = req.userCache.getHeader(byUsername) else {
+				throw Abort(.badRequest, reason: "byUsername query parameter references a nonexistent user.")
+			}
+			futureTwarrts.filter(\.$author.$id == targetCacheUser.userID)
+		}
+		if let replyGroup = filters.replyGroup {
 			futureTwarrts.group(.or) { group in
 				group.filter(\.$replyGroup.$id == replyGroup).filter(\.$id == replyGroup)
 			}
 			sortDescending = false
 		}
-		if let likeType = req.query[String.self, at: "likeType"] {
+		if let likeType = filters.likeType {
 			applyMutes = false
 			futureTwarrts.join(children: \.$likes.$pivots).filter(TwarrtLikes.self, \TwarrtLikes.$user.$id == cachedUser.userID)
 			switch likeType {
@@ -244,12 +347,9 @@ struct TwitarrController: APIRouteCollection {
 		}
 		
 		var barrelFuture: EventLoopFuture<Barrel?> = req.eventLoop.future(nil)
-		if let inBarrel = req.query[String.self, at: "inbarrel"] {
+		if let barrelID = filters.inBarrel {
 			applyMutes = false
-			guard let barrelID = UUID(inBarrel) else {
-				throw Abort(.badRequest, reason: "inbarrel parameter requires a valid barrel UUID")
-			}
-			barrelFuture = Barrel.find(barrelID, on: req.db).flatMapThrowing { (barrel) in
+			barrelFuture = Barrel.find(barrelID, on: req.db).flatMapThrowing { barrel in
 				guard let foundBarrel = barrel else {
 					throw Abort(.badRequest, reason: "No barrel found with given barrel ID")
             	}
@@ -262,7 +362,7 @@ struct TwitarrController: APIRouteCollection {
 		}
 		
 		var bookmarkFuture: EventLoopFuture<Barrel?> = req.eventLoop.future(nil)
-		if let bookmarkFilter = req.query[String.self, at:"bookmarked"], bookmarkFilter == "true" {
+		if let bookmarkFilter = filters.bookmarked, bookmarkFilter == true {
 			applyMutes = false
 			bookmarkFuture = user.getBookmarkBarrel(of: .bookmarkedTwarrt, on: req)
 		}
@@ -280,12 +380,20 @@ struct TwitarrController: APIRouteCollection {
 					let bookmarks = foundBarrel.userInfo["bookmarks"]?.compactMap { Int($0) } ?? []
 					futureTwarrts.filter(\.$id ~~ bookmarks)
 				}
+				else if let bookmarkFilter = filters.bookmarked, bookmarkFilter == true {
+					futureTwarrts.filter(\.$id ~~ [])		// Yes, this forces a nullset return.
+				}
 				return futureTwarrts.sort(\.$id, searchDescending ? .descending : .ascending).all().flatMap { twarrts in
 					// The filter() for mentions will include usernames that are prefixes for other usernames and other false positives.
 					// This filters those out after the query. 
 					var postFilteredTwarrts = twarrts
 					if let postFilter = postFilterMentions {
 						postFilteredTwarrts = twarrts.compactMap { $0.filterForMention(of: postFilter) }
+						// This also clears new mentions in cases where the user got their mentions plus additional filters.
+						if postFilter == "@\(user.username)" {
+							user.twarrtMentionsViewed = user.twarrtMentions
+							_ = user.save(on: req.db)
+						}
 					}
 				
 					// correct sort order if necessary
@@ -307,8 +415,7 @@ struct TwitarrController: APIRouteCollection {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
         // get twarrt
-        return Twarrt.findFromParameter(twarrtIDParam, on: req).addModelID().flatMap {
-            (twarrt, twarrtID) in
+        return Twarrt.findFromParameter(twarrtIDParam, on: req).addModelID().flatMap { (twarrt, twarrtID) in
             // get user's bookmarkedTwarrt barrel
             return user.getBookmarkBarrel(of:.bookmarkedTwarrt, on: req).flatMap { bookmarkBarrel in
                 // create barrel if needed

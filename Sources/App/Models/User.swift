@@ -98,7 +98,7 @@ final class User: Model {
 	@Field(key: "last_read_announcement") var lastReadAnnouncement: Int
 
 	/// Every time someone posts a twarrt and @mentions this user, we increment the value in this user's twarrtMentions. 
-	/// When the user views (technically: retrieves) their mentions, we se the twarrtMentionsViewed to equal twarrtMentions.
+	/// When the user views (technically: retrieves) their mentions, we set the twarrtMentionsViewed to equal twarrtMentions.
 	/// The difference between these two numbers is the number of mentions that this user hasn't seen.
 	@Field(key: "twarrt_mentions") var twarrtMentions: Int
 	@Field(key: "twarrt_mentions_viewed") var twarrtMentionsViewed: Int

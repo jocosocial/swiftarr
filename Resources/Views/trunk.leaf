@@ -41,7 +41,7 @@
 				</div>
 				<div class="col px-0">	  
 					<a class="nav-item nav-link link-light px-1#if(trunk.tab == "seamail"): active#endif" #if(trunk.tab == "seamail"):aria-current="page"#endif href="/seamail">
-						<span #if(trunk.alertCounts.newFezMessageCount > 0):class="border-bottom border-danger"#endif>
+						<span #if(trunk.alertCounts.newSeamailMessageCount > 0):class="border-bottom border-danger"#endif>
 							Seamail
 						</span>
 					</a>

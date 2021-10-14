@@ -9616,7 +9616,6 @@
 		OBJ_267 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = Package.swift; path = "/Users/cfry/Code/swiftarr/.build/checkouts/fluent-postgres-driver/Package.swift"; sourceTree = "<group>"; };
 		OBJ_270 /* ConnectionPool+Postgres.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ConnectionPool+Postgres.swift"; sourceTree = "<group>"; };
 		OBJ_2700 /* Resources */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Resources; sourceTree = SOURCE_ROOT; };
-		OBJ_2701 /* html */ = {isa = PBXFileReference; lastKnownFileType = folder; path = html; sourceTree = SOURCE_ROOT; };
 		OBJ_2702 /* __pycache__ */ = {isa = PBXFileReference; lastKnownFileType = folder; path = __pycache__; sourceTree = SOURCE_ROOT; };
 		OBJ_2703 /* docs */ = {isa = PBXFileReference; lastKnownFileType = folder; path = docs; sourceTree = SOURCE_ROOT; };
 		OBJ_2704 /* seeds */ = {isa = PBXFileReference; lastKnownFileType = folder; path = seeds; sourceTree = SOURCE_ROOT; };
@@ -15767,7 +15766,6 @@
 				OBJ_145 /* Dependencies */,
 				OBJ_2638 /* Products */,
 				OBJ_2700 /* Resources */,
-				OBJ_2701 /* html */,
 				OBJ_2702 /* __pycache__ */,
 				OBJ_2703 /* docs */,
 				OBJ_2704 /* seeds */,

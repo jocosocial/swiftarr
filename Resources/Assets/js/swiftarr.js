@@ -9,6 +9,7 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 		case "love":
 		case "favoriteForum":
 		case "favoriteForumPost":
+		case "favoriteTweet":
 		case "follow":
 		case "joinFez":
 		case "leaveFez":

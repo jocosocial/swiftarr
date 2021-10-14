@@ -3,6 +3,14 @@ import Crypto
 import FluentSQL
 
 struct TweetPageContext : Encodable {
+	enum FilterType: String, Encodable {
+		case all
+		case byUser
+		case mentions
+		case favorites
+		case liked
+	}
+
 	var trunk: TrunkContext
 	var post: MessagePostContext
 	var tweets: [TwarrtData]
@@ -12,11 +20,12 @@ struct TweetPageContext : Encodable {
 	var bottomMorePostsURL: String?
 	var bottomMorePostsLabel: String?
 	var isReplyGroup: Bool = false
+	var filterType: FilterType
 	
 	init(_ req: Request, tweets: [TwarrtData]) throws {
 		trunk = .init(req, title: "Tweets", tab: .twarrts, search: "Search Tweets")
 		self.tweets = tweets
-		let queryStruct = try req.query.decode(TwarrtQuery.self)
+		let queryStruct = try req.query.decode(TwarrtQueryOptions.self)
 		if let rg = queryStruct.replyGroup {
 			filterDesc = "Reply Thread"
 			if tweets.count == 1, tweets[0].replyGroupID == nil {
@@ -30,14 +39,49 @@ struct TweetPageContext : Encodable {
 		}
 		
 		var filters: [String] = []
+		filterType = .all
 		if let mention = queryStruct.mentions {
 			filters.append(mention == trunk.username ? " mentioning you" : " that mention '\(mention)'")
+			filterType = .mentions
+		}
+		if let mentionSelf = queryStruct.mentionSelf, mentionSelf == true {
+			filters.append(" mentioning you")
+			filterType = .mentions
 		}
 		if let hashtag = queryStruct.hashtag {
 			filters.append(" with #\(hashtag)")
 		}
-		if let byuser = queryStruct.byuser {
-			filters.append(" by '\(byuser)'")
+		if let byUser = queryStruct.byUser {
+			if byUser == trunk.userID {
+				filters.append(" by you")
+				filterType = .byUser
+			}
+			else {
+				// Sucks, as it'll append the UUID not the username
+				filters.append(" by '\(byUser)'")
+			}
+		}
+		if let byUsername = queryStruct.byUsername {
+			if byUsername == trunk.username {
+				filters.append(" by you")
+				filterType = .byUser
+			}
+			else {
+				filters.append(" by '\(byUsername)'")
+			}
+		}
+		if let liked = queryStruct.likeType {
+			switch liked {
+				case "like" : filters.append(" that you liked")
+				case "laugh" : filters.append(" that made you laugh")
+				case "love" : filters.append(" that you loved")
+				default: filters.append(" that you liked")
+			}
+			filterType = .liked
+		}
+		if let bookmarked = queryStruct.bookmarked, bookmarked == true {
+			filters.append(" you favorited")
+			filterType = .favorites
 		}
 		if let search = queryStruct.search {
 			filters.append(" containing '\(search)'")
@@ -52,7 +96,7 @@ struct TweetPageContext : Encodable {
 					if let replyGroup = queryStruct.replyGroup, replyGroup == firstTweet.twarrtID {
 						showTopButton = false
 					}
-					if let afterStr = queryStruct.after, let after = Int(afterStr), after == firstTweet.twarrtID {
+					if let after = queryStruct.after, after == firstTweet.twarrtID {
 						showTopButton = false
 					}
 					if firstTweet.twarrtID == 1 {		// Not sure this can happen, but if it does, I mean, we can't go any older.
@@ -71,7 +115,7 @@ struct TweetPageContext : Encodable {
 				// because even if we were at the newest tweet when we loaded, even newer ones may appear.
 				var showTopButton = true
 				if let firstTweet = tweets.first {
-					if let beforeStr = queryStruct.before, let before = Int(beforeStr), before == firstTweet.twarrtID {
+					if let before = queryStruct.before, before == firstTweet.twarrtID {
 						showTopButton = false
 					}
 				}
@@ -127,10 +171,14 @@ struct SiteTwitarrController: SiteControllerUtils {
 		privateRoutes.delete("tweets", twarrtIDParam, "laugh", use: tweetUnreactActionHandler)
 		privateRoutes.delete("tweets", twarrtIDParam, "love", use: tweetUnreactActionHandler)
 		privateRoutes.post("tweets", twarrtIDParam, "unreact", use: tweetUnreactActionHandler)
+		privateRoutes.post("tweets", twarrtIDParam, "bookmark", use: tweetBookmarkActionHandler)
+		privateRoutes.delete("tweets", twarrtIDParam, "bookmark", use: tweetUnBookmarkActionHandler)
 		privateRoutes.post("tweets", twarrtIDParam, "delete", use: tweetPostDeleteHandler)
 		privateRoutes.get("tweets", "edit", twarrtIDParam, use: tweetEditPageHandler)
 		privateRoutes.post("tweets", "edit", twarrtIDParam, use: tweetEditPostHandler)
 		privateRoutes.post("tweets", "create", use: tweetCreatePostHandler)
+		privateRoutes.post("tweets", "reply", twarrtIDParam, use: tweetReplyPostHandler)
+		
 		privateRoutes.get("tweets", "report", twarrtIDParam, use: tweetReportPageHandler)
 		privateRoutes.post("tweets", "report", twarrtIDParam, use: tweetReportPostHandler)
 	}
@@ -183,6 +231,30 @@ struct SiteTwitarrController: SiteControllerUtils {
 		}
 	}
 	
+	// POST /tweets/ID/bookmark
+	//
+	// Bookmarks a tweet.
+	func tweetBookmarkActionHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+		guard let twarrtID = req.parameters.get(twarrtIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing search parameter.")
+		}
+		return apiQuery(req, endpoint: "/twitarr/\(twarrtID)/bookmark", method: .POST).flatMapThrowing { response in
+ 			return response.status
+		}
+	}
+	
+	// DELETE /tweets/ID/bookmark
+	//
+	// Un-bookmarks a tweet.
+	func tweetUnBookmarkActionHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+		guard let twarrtID = req.parameters.get(twarrtIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing search parameter.")
+		}
+		return apiQuery(req, endpoint: "/twitarr/\(twarrtID)/bookmark/remove", method: .POST).flatMapThrowing { response in
+ 			return response.status
+		}
+	}
+	
 	// POST /tweets/ID/delete
 	// Although this looks like it just redirects the call, middleware plays an important part here. 
 	// Javascript POSTs the delete request, middleware for this route validates via the session cookia.
@@ -212,6 +284,26 @@ struct SiteTwitarrController: SiteControllerUtils {
 		}
 	}
 		
+    // POST /tweets/reply/ID
+    //
+    // When posting a twarrt reply, the ID should usually be the twarrt you're replying to. 
+    func tweetReplyPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+    	guard let twarrtID = req.parameters.get(twarrtIDParam.paramString) else {
+            throw Abort(.badRequest, reason: "Missing twarrt_id parameter.")
+    	}
+		let postStruct = try req.content.decode(MessagePostFormContent.self)
+		let images: [ImageUploadData] = [ImageUploadData(postStruct.serverPhoto1, postStruct.localPhoto1),
+				ImageUploadData(postStruct.serverPhoto2, postStruct.localPhoto2),
+				ImageUploadData(postStruct.serverPhoto3, postStruct.localPhoto3),
+				ImageUploadData(postStruct.serverPhoto4, postStruct.localPhoto4)].compactMap { $0 }
+		let postContent = PostContentData(text: postStruct.postText ?? "", images: images)
+ 		return apiQuery(req, endpoint: "/twitarr/\(twarrtID)/reply", method: .POST, beforeSend: { req throws in
+			try req.content.encode(postContent)
+		}).map { response in
+			return .created
+		}
+    }
+    
 	// GET /tweets/edit/ID
 	func tweetEditPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		guard let twarrtID = req.parameters.get(twarrtIDParam.paramString)?.percentEncodeFilePathEntry() else {

@@ -9,6 +9,7 @@ import Vapor
 /// servers, we can either:
 /// 	* Stop inspecting the `updatedAt `property; notificaitons will be sligihtly less realtime.
 ///		* Add a webSocket betwen the UI and API, pass usernames that have new notifications as they happen.
+///		* Use Redis pub/sub
 ///		* Really, the communication is one-way -- perhaps build a server endpoint in the UI code and the API layer acts as a client to call it?
 /// Via any method, Vapor Sessions aren't set up for finding sessions by user, or accessing any other Session at all, really. 
 struct NotificationsMiddleware: Middleware, SiteControllerUtils {

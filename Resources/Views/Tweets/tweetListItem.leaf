@@ -1,4 +1,4 @@
-<li class="list-group-item bg-transparent has-action-bar" data-postid="#(tweet.twarrtID)">				
+<li class="list-group-item bg-transparent has-action-bar px-1" data-postid="#(tweet.twarrtID)">				
 	<div class="container-fluid">
 		<div class="row align-items-start justify-content-start">	
 			<div class="col g-0" style="flex: 0 0 40px;">
@@ -33,6 +33,17 @@
 		</div>
 		<div class="row mt-1 justify-content-end row-cols-auto collapse" data-label="actionbar">	
 			<div class="col btn-group btn-group-sm" role="group" aria-label="Post actions">
+				<input type="checkbox" class="btn-check" autocomplete="off" data-action="favoriteTweet" 
+						data-actionpath="/tweets/#(tweet.twarrtID)/bookmark"
+						data-istoggle="true"
+						data-errordiv="#(tweet.twarrtID)_favoriteErrorDisplay"
+						id="#(tweet.twarrtID)_favorite"
+						#if(tweet.isBookmarked):checked#endif>
+				<label class="btn btn-outline-primary" for="#(tweet.twarrtID)_favorite">
+					Fav
+					<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+					<span class="visually-hidden">Loading...</span>
+				</label>
 				#if(!isReplyGroup):
 					#if(tweet.replyGroupID):
 						<a class="btn btn-outline-primary" href="/tweets?replyGroup=#(tweet.replyGroupID)">View Thread</a>
@@ -97,6 +108,9 @@
 		<div class="row">
 			<div class="col text-end text-danger d-none" id="#(tweet.twarrtID)_reactErrorDisplay">
 				Could not apply reaction to twarrt: <span class="errortext"></span>
+			</div>
+			<div class="col text-end text-danger d-none" id="#(tweet.twarrtID)_favoriteErrorDisplay">
+				Could not favorite/unfavorite twarrt: <span class="errortext"></span>
 			</div>
 		</div>	
 	</div>

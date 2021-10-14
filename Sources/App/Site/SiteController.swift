@@ -267,74 +267,6 @@ struct MessagePostFormContent : Codable {
 	let cruiseDay: Int32? 					// Used for Daily Themes
 }
 
-// Used to build an URL query string.
-struct TwarrtQuery: Content {
-	var search: String?
-	var hashtag: String?
-	var mentions: String?
-	var byuser: String?
-	var inbarrel: String?
-	var after: String?
-	var before: String?
-	var afterdate: String?
-	var beforedate: String?
-	var from: String?
-	var start: Int?
-	var limit: Int?
-	var replyGroup: Int?
-	
-	// Convert search strings starting with "#" and "@" into hashtag or mentions searches
-	mutating func afterDecode() throws {
-		if let searchStr = search {
-			if searchStr.hasPrefix("#"), hashtag == nil {
-				hashtag = String(searchStr.dropFirst())
-				search = nil
-			}
-			if searchStr.hasPrefix("@"), mentions == nil {
-				mentions = String(searchStr.dropFirst())
-				search = nil
-			}
-		}
-	}
-
-	
-	// TRUE if the 'next' tweets in this query are going to be newer or older than the current ones.
-	// For instance, by default the 'anchor' is the most recent tweet and the direction is towards older tweets.
-	func directionIsNewer() -> Bool {
-		return (after != nil) || (afterdate != nil)  || (from == "first") || (replyGroup != nil)
-	}
-	
-	func computedLimit() -> Int {
-		return limit ?? 50
-	}
-	
-	func buildQuery(baseURL: String, startOffset: Int) -> String? {
-		
-		guard var components = URLComponents(string: baseURL) else {
-			return nil
-		}
-	
-		var elements = [URLQueryItem]()
-		if let search = search { elements.append(URLQueryItem(name: "search", value: search)) }
-		if let hashtag = hashtag { elements.append(URLQueryItem(name: "hashtag", value: hashtag)) }
-		if let mentions = mentions { elements.append(URLQueryItem(name: "mentions", value: mentions)) }
-		if let byuser = byuser { elements.append(URLQueryItem(name: "byuser", value: byuser)) }
-		if let inbarrel = inbarrel { elements.append(URLQueryItem(name: "inbarrel", value: inbarrel)) }
-		if let after = after { elements.append(URLQueryItem(name: "after", value: after)) }
-		if let before = before { elements.append(URLQueryItem(name: "before", value: before)) }
-		if let afterdate = afterdate { elements.append(URLQueryItem(name: "afterdate", value: afterdate)) }
-		if let beforedate = beforedate { elements.append(URLQueryItem(name: "beforedate", value: beforedate)) }
-		if let from = from { elements.append(URLQueryItem(name: "from", value: from)) }
-		let newOffset = max(start ?? 0 + startOffset, 0)
-		if newOffset != 0 { elements.append(URLQueryItem(name: "start", value: String(newOffset))) }
-		if let limit = limit { elements.append(URLQueryItem(name: "limit", value: String(limit))) }
-		if let replyGroup = replyGroup { elements.append(URLQueryItem(name: "replyGroup", value: String(replyGroup))) }
-
-		components.queryItems = elements
-		return components.string
-	}
-}
-
 struct ReportPageContext : Encodable {
 	var trunk: TrunkContext
 	var reportTitle: String
@@ -382,9 +314,8 @@ struct ReportPageContext : Encodable {
 	}
 	
 }
-    
 
-
+/// Route gorup that only manages one route: the root route "/".
 struct SiteController: SiteControllerUtils {
 
 	func registerRoutes(_ app: Application) throws {

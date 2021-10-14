@@ -1,24 +1,5 @@
 import Vapor
 
-/// All errors returned in HTTP responses use this structure.
-///`error` is always true, `reason` concatenates all errors into a single string, and `fieldErrors` breaks errors up by field name
-/// of the request's body content, if available. Only content validation errors actaully use `fieldErrors`.
-/// Field-specific validation errors are keyed by the path to the field that caused the error. Validation errors that aren't specific to an input field
-/// (e.g. an error indicating that one of two fields may be empty, but not both) are all concatenated and placed into a `general` key in `fieldErrors`.
-/// This means lthat all errors are both in `error` (concatenated into a single string), and also in `fieldErrors` (split into fields). 
-public struct ErrorResponse: Codable, Error {
-	/// Always `true` to indicate this is a non-typical JSON response.
-	var error: Bool
-	
-	/// The HTTP status
-	var status: UInt
-
-	/// The reason for the error.
-	var reason: String
-	
-	var fieldErrors: [String : String]?
-}
-
 /// Captures all errors and transforms them into an internal server error HTTP response.
 public final class SwiftarrErrorMiddleware: Middleware {
 	var isReleaseMode: Bool

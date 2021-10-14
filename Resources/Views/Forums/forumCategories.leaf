@@ -84,6 +84,12 @@
 								<div class="col">
 									Posts Mentioning You
 								</div>
+								<div class="col col-auto">
+									#if(trunk.alertCounts.forumMentionCount > 0):
+										#(trunk.alertCounts.forumMentionCount) Mention#if(trunk.alertCounts.forumMentionCount > 1):s#endif
+										#if(trunk.alertCounts.newForumMentionCount > 0):, <span class="text-danger">#(trunk.alertCounts.newForumMentionCount) New</span>#endif
+									#endif
+								</div>
 							</div>
 						</div>
 					</a>
