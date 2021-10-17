@@ -182,4 +182,13 @@ struct DisabledFeaturesGroup: Codable, RESPValueConvertible {
 		return RESPValue(from: encodedStr) 
 	}
 	
+	func buildDisabledFeatureArray() -> [DisabledFeature] {
+		var result = [DisabledFeature]()
+		self.value.forEach { (appName, features) in
+			for feature in features {
+				result.append(DisabledFeature(appName: appName, featureName: feature))
+			}
+		}
+		return result
+	}
 }

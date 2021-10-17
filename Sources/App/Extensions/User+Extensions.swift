@@ -29,15 +29,15 @@ extension User {
     ///   - user: The user who owns the barrel.
     ///   - req: The incoming `Request`, on whose event loop this must run.
     /// - Returns: `Barrel` of the required type, or `nil`.
-    func getBookmarkBarrel(of type: BarrelType, on req: Request) -> EventLoopFuture<Barrel?> {
+    func getBookmarkBarrel(of type: BarrelType, on db: Database) -> EventLoopFuture<Barrel?> {
     	do {
-			return try Barrel.query(on: req.db)
+			return try Barrel.query(on: db)
 				.filter(\.$ownerID, .equal, self.requireID())
 				.filter(\.$barrelType, .equal, type)
 				.first()
 		}
 		catch {
-			return req.eventLoop.makeFailedFuture(error)
+			return db.eventLoop.makeFailedFuture(error)
 		}
     }
 	

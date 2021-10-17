@@ -252,11 +252,18 @@ public struct DisabledFeature: Content {
 
 /// All errors returned in HTTP responses use this structure.
 /// 
+/// Some server errors (such as 404s) may not have any payload in the response body, but for any HTTP error response that has a payload, the 
+/// payload will have this strcture.
+/// 
 ///`error` is always true, `reason` concatenates all errors into a single string, and `fieldErrors` breaks errors up by field name
 /// of the request's body content, if available. Only content validation errors actaully use `fieldErrors`.
 /// Field-specific validation errors are keyed by the path to the field that caused the error. Validation errors that aren't specific to an input field
 /// (e.g. an error indicating that one of two fields may be empty, but not both) are all concatenated and placed into a `general` key in `fieldErrors`.
-/// This means lthat all field errors are both in `error` (concatenated into a single string), and also in `fieldErrors` (split into fields). 
+/// This means that all field errors are both in `error` (concatenated into a single string), and also in `fieldErrors` (split into fields). 
+/// 
+/// - Note: If the request body has validation errors, the error response should list all validation errors at once. However, other errors that may prevent a successful
+/// action will not be included. For instance, a user might try creating a Forum with empty fields. The error response will indicate that both Title and Text fields need values.
+/// After fixing those issues, the user could still get an error becuase they are quarantined and not authorized to create posts.
 public struct ErrorResponse: Codable, Error {
 	/// Always `true` to indicate this is a non-typical JSON response.
 	var error: Bool
@@ -265,7 +272,7 @@ public struct ErrorResponse: Codable, Error {
 	/// The reason for the error. Displayable to the user.
 	var reason: String
 	/// Optional dictionary of field errors; mostly used for input JSON validation failures. A request with JSON content that fails validation may have field-level errors here,
-	/// keyed by the keypath to the fields that failed validation.
+	/// keyed by the keypath to the fields that failed validation. 
 	var fieldErrors: [String : String]?
 }
 
@@ -1197,6 +1204,33 @@ extension UserHeader {
 			displayName: "BlockedUser", userImage: "") }
 }
 
+/// Returns status about a single Alertword, for either Twarrts of ForumPost hits on that word.
+/// Used inside UserNotificationData.
+public struct UserNotificationAlertwordData: Content {
+	/// Will be one of the user's current alert keywords.
+	var alertword: String
+	/// The total number of twarrts that include this word since the first time anyone added this alertword. We record alert word hits in
+	/// a single global list that unions all users' alert word lists. A search for this alertword may return more hits than this number indicates.
+	var twarrtMentionCount: Int
+	/// The number of twarrts that include this alertword that the user has not yet seen. Calls to view twarrts with a "?search=" parameter that matches the 
+	/// alertword will mark all twarrts containing this alertword as viewed. 
+	var newTwarrtMentionCount: Int
+	/// The total number of forum posts that include this word since the first time anyone added this alertword.
+	var forumMentionCount: Int
+	/// The number of forum posts that include this alertword that the user has not yet seen.
+	var newForumMentionCount: Int
+}
+
+extension UserNotificationAlertwordData {
+	init(_ word: String) {
+		alertword = word
+		twarrtMentionCount = 0
+		newTwarrtMentionCount = 0
+		forumMentionCount = 0
+		newForumMentionCount = 0
+	}
+}
+
 /// Provides updates about server global state and the logged in user's notifications. 
 /// `userNotificationHandler()` is intended to be called frequently by clients (I mean, don't call it once a second).
 /// 
@@ -1239,8 +1273,8 @@ public struct UserNotificationData: Content {
 	/// The start time of the earliest event that the user has followed with a start time > now. nil if not logged in.
 	var nextFollowedEventTime: Date?
 	
-	// I see where alert words can be set, but nowhere do I see alert words implemented to actually alert a user.
-//	let alertWordNotificationCount: Int
+	/// For each alertword the user has, this returns data on hit counts for that word.
+	var alertWords: [UserNotificationAlertwordData]
 }
 
 extension UserNotificationData	{
@@ -1259,6 +1293,7 @@ extension UserNotificationData	{
 		self.newSeamailMessageCount = newSeamailCount
 		self.newFezMessageCount = newFezCount
 		self.nextFollowedEventTime = nextEvent
+		self.alertWords = []
 	}
 	
 	// Initializes an dummy struct, for when there's no user logged in.
@@ -1276,6 +1311,7 @@ extension UserNotificationData	{
 		self.newSeamailMessageCount = 0
 		self.newFezMessageCount = 0
 		self.nextFollowedEventTime = nil
+		self.alertWords = []
 	}
 }
 

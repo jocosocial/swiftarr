@@ -143,7 +143,7 @@ struct ForumController: APIRouteCollection {
         let start = (req.query[Int.self, at: "start"] ?? 0)
         let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
         // get user's taggedForum barrel, and category
-        return user.getBookmarkBarrel(of: .taggedForum, on: req)
+        return user.getBookmarkBarrel(of: .taggedForum, on: req.db)
         	.and(Category.findFromParameter(categoryIDParam, on: req).addModelID()).throwingFlatMap { (barrel, categoryTuple) in
             let (category, categoryID) = categoryTuple
             guard user.accessLevel.hasAccess(category.accessLevelToView) else {
@@ -236,7 +236,7 @@ struct ForumController: APIRouteCollection {
         search = search.replacingOccurrences(of: "%", with: "\\%")
         search = search.trimmingCharacters(in: .whitespacesAndNewlines)
 		// get user's blocks and taggedForum barrel
-		return user.getBookmarkBarrel(of: .taggedForum, on: req).throwingFlatMap { (barrel) in
+		return user.getBookmarkBarrel(of: .taggedForum, on: req.db).throwingFlatMap { (barrel) in
 			// get forums, remove blocks
 			let blocked = try req.userCache.getBlocks(user)
 			let countQuery = Forum.query(on: req.db).filter(\.$creator.$id !~ blocked).filter(\.$title, .custom("ILIKE"), "%\(search)%")
@@ -362,7 +362,7 @@ struct ForumController: APIRouteCollection {
 	/// * `?mentionid=UUID` - Matches posts whose text contains a @mention of the user with the given userID. Do not prefix userID with @.
 	/// * `?mentionself=true` - Matches posts whose text contains a @mention of the current user.
 	/// * `?ownreacts=true` - Matches posts the current user has reacted to.
-	/// * `?byuser=ID` - Matches posts the given user authored.
+	/// * `?byself=true` - Matches posts the current user authored.
 	/// * `?bookmarked=true` - Matches posts the user has bookmarked.
 	/// 
 	/// Additionally, you can constrain results to either posts in a specific category, or a specific forum. If both are specified, forum is ignored.
@@ -384,11 +384,13 @@ struct ForumController: APIRouteCollection {
         // BookmarkFuture is nil if we can't (or shouldn't) filter on bookmarks but [] if there aren't any bookmarks.
         var bookmarkFuture: EventLoopFuture<[Int]?> = req.eventLoop.makeSucceededFuture(nil)
         if let isBookmarked = req.query[String.self, at: "bookmarked"], isBookmarked == "true" {
-			bookmarkFuture = user.getBookmarkBarrel(of: .bookmarkedPost, on: req).map { barrel in
+			bookmarkFuture = user.getBookmarkBarrel(of: .bookmarkedPost, on: req.db).map { barrel in
 				return (barrel?.userInfo["bookmarks"] ?? []).compactMap { Int($0) }
 			}        	
         }
 		return bookmarkFuture.throwingFlatMap { bookmarks in
+			let start = (req.query[Int.self, at: "start"] ?? 0)
+			let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForumPosts)
 			// Start building a query.
 			var query: FluentKit.QueryBuilder<ForumPost>
 			if let ownreacts = req.query[String.self, at: "ownreacts"], ownreacts == "true" {
@@ -424,6 +426,9 @@ struct ForumController: APIRouteCollection {
 						.replacingOccurrences(of: "%", with: "\\%")
 						.trimmingCharacters(in: .whitespacesAndNewlines)
 				query = query.filter(\.$text, .custom("ILIKE"), "%\(searchStr)%")
+				if !searchStr.contains(" ") && start == 0 {
+					_ = markAlertwordViewed(searchStr, userid: cachedUser.userID, isPosts: true, on: req)
+				}
 			}
 			if var hashtag = req.query[String.self, at: "hashtag"] {
 				// postgres "_" and "%" are wildcards, so escape for literals
@@ -453,16 +458,11 @@ struct ForumController: APIRouteCollection {
 				postFilterMentions = mentionName
 				query.filter(\.$text, .custom("ILIKE"), "%\(mentionName)%")
 			}
-			if let byuser = req.query[String.self, at: "byuser"] {
-				guard let authorUUID = UUID(byuser) else {
-					throw Abort(.badRequest, reason: "byuser parameter requires a valid UUID")
-				}
-				query.filter(\.$author.$id == authorUUID)
+			if let byself = req.query[Bool.self, at: "byself"], byself == true {
+				query.filter(\.$author.$id == cachedUser.userID)
 			}
 			
 			return query.count().flatMap { totalPosts in
-				let start = (req.query[Int.self, at: "start"] ?? 0)
-				let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForumPosts)
 				return query.range(start..<(start + limit)).all().flatMap { posts in
 					// The filter() for mentions will include usernames that are prefixes for other usernames and other false positives.
 					// This filters those out after the query. 
@@ -495,7 +495,7 @@ struct ForumController: APIRouteCollection {
         let userID = try user.requireID()
         // get post and user's bookmarkedPost barrel
         return ForumPost.findFromParameter(postIDParam, on: req)
-        	.and(user.getBookmarkBarrel(of: .bookmarkedPost, on: req))
+        	.and(user.getBookmarkBarrel(of: .bookmarkedPost, on: req.db))
         	.flatMapThrowing { (post, bookmarkBarrel) -> Barrel in
                 // create barrel if needed
                 let barrel = bookmarkBarrel ?? Barrel(ownerID: userID, barrelType: .bookmarkedPost, name: "Posts")
@@ -527,7 +527,7 @@ struct ForumController: APIRouteCollection {
         let user = try req.auth.require(User.self)
         // get post and user's bookmarkedPost barrel
         return ForumPost.findFromParameter(postIDParam, on: req)
-        	.and(user.getBookmarkBarrel(of: .bookmarkedPost, on: req))
+        	.and(user.getBookmarkBarrel(of: .bookmarkedPost, on: req.db))
         	.flatMapThrowing { (post, bookmarkBarrel) -> Barrel in
                 guard let barrel = bookmarkBarrel else {
                     throw Abort(.badRequest, reason: "user has not bookmarked any posts")
@@ -557,7 +557,7 @@ struct ForumController: APIRouteCollection {
         let userID = try user.requireID()
         // get forum and barrel
         return Forum.findFromParameter(forumIDParam, on: req).addModelID()
-        		.and(user.getBookmarkBarrel(of: .taggedForum, on: req)
+        		.and(user.getBookmarkBarrel(of: .taggedForum, on: req.db)
 				.unwrap(orReplace: Barrel(ownerID: userID, barrelType: .taggedForum)))
         		.flatMap { (arg0, barrel) in
 			let (_, forumID) = arg0
@@ -581,7 +581,7 @@ struct ForumController: APIRouteCollection {
         let user = try req.auth.require(User.self)
         // get forum
         return Forum.findFromParameter(forumIDParam, on: req).addModelID()
-				.and(user.getBookmarkBarrel(of: .taggedForum, on: req))
+				.and(user.getBookmarkBarrel(of: .taggedForum, on: req.db))
 				.flatMap { (arg0, forumBarrel) in
 			let (_, forumID) = arg0
 			guard let barrel = forumBarrel else {
@@ -612,7 +612,7 @@ struct ForumController: APIRouteCollection {
         let start = (req.query[Int.self, at: "start"] ?? 0)
         let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
         // get user's taggedForum barrel
-        return user.getBookmarkBarrel(of: .taggedForum, on: req).flatMap { (barrel) in
+        return user.getBookmarkBarrel(of: .taggedForum, on: req.db).flatMap { (barrel) in
             guard let barrel = barrel else {
                  return req.eventLoop.future(ForumSearchData(start: start, limit: limit, numThreads: 0, forumThreads: []))
             }
@@ -671,7 +671,7 @@ struct ForumController: APIRouteCollection {
                     		return category.save(on: req.db)                    		
                     	}
                     	// If the post @mentions anyone, update their mention counts
-                    	processForumMentions(post: forumPost, editedText: nil, isCreate: true, on: req)
+                    	processForumMentions(forum: forum, post: forumPost, editedText: nil, isCreate: true, on: req)
                     
                     	let creatorHeader = try req.userCache.getHeader(user.requireID())
                     	let postData = try PostData(post: forumPost, author: creatorHeader, 
@@ -785,7 +785,7 @@ struct ForumController: APIRouteCollection {
         let start = (req.query[Int.self, at: "start"] ?? 0)
         let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
         // get user's taggedForum barrel
-        return user.getBookmarkBarrel(of: .taggedForum, on: req).flatMap { (barrel) in
+        return user.getBookmarkBarrel(of: .taggedForum, on: req.db).flatMap { (barrel) in
             let countQuery = user.$forums.query(on: req.db).filter(\.$accessLevelToView <= user.accessLevel)
             let resultQuery = countQuery.sort(\.$title, .ascending).range(start..<(start + limit))
 			return countQuery.count().and(resultQuery.all()).flatMap { (forumCount, forums) in
@@ -810,7 +810,7 @@ struct ForumController: APIRouteCollection {
         // see `PostContentData.validations()`
  		let newPostData = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
         // get forum
-        return Forum.findFromParameter(forumIDParam, on: req).throwingFlatMap { (forum) in
+        return Forum.findFromParameter(forumIDParam, on: req).throwingFlatMap { forum in
 			try guardUserCanPostInForum(user, in: forum)
             // ensure user has access to forum; user cannot retrieve block-owned forum, but prevent end-run
 			guard !cacheUser.getBlocks().contains(forum.$creator.id) else {
@@ -822,7 +822,7 @@ struct ForumController: APIRouteCollection {
 				let forumPost = try ForumPost(forum: forum, author: user, text: newPostData.text, images: filenames)
 				return forumPost.save(on: req.db).flatMapThrowing { (_) in
 					// If the post @mentions anyone, update their mention counts
-					processForumMentions(post: forumPost, editedText: nil, isCreate: true, on: req)
+					processForumMentions(forum: forum, post: forumPost, editedText: nil, isCreate: true, on: req)
 					// return as PostData, with 201 status
 					let response = Response(status: .created)
 					try response.content.encode(PostData(post: forumPost, author: cacheUser.makeHeader()))
@@ -848,7 +848,7 @@ struct ForumController: APIRouteCollection {
         	return post.$forum.load(on: req.db).throwingFlatMap {
 				try guardUserCanPostInForum(user, in: post.forum, editingPost: post)
   				post.logIfModeratorAction(.delete, user: user, on: req)
-				processForumMentions(post: post, editedText: nil, on: req)
+				processForumMentions(forum: post.forum, post: post, editedText: nil, on: req)
         	    return post.delete(on: req.db).transform(to: .noContent)
 			}
         }
@@ -999,7 +999,7 @@ struct ForumController: APIRouteCollection {
 					let normalizedText = newPostData.text.replacingOccurrences(of: "\r\n", with: "\r")
 					if post.text != normalizedText || post.images != filenames {
                     	// If the post @mentions anyone, update their mention counts
-                    	processForumMentions(post: post, editedText: normalizedText, on: req)
+                    	processForumMentions(forum: post.forum, post: post, editedText: normalizedText, on: req)
 						// stash current contents first
 						let forumEdit = try ForumPostEdit(post: post, editor: user)
 						post.text = normalizedText
@@ -1088,7 +1088,7 @@ extension ForumController {
 		let cacheUser = try req.userCache.getUser(user)
 		return forum.$posts.query(on: req.db).count().flatMap { postCount in
 			return forum.$readers.$pivots.query(on: req.db).filter(\.$user.$id == userID).first()
-					.and(user.getBookmarkBarrel(of: .taggedForum, on: req)).flatMap { (readerPivot, favoriteForumBarrel) in
+					.and(user.getBookmarkBarrel(of: .taggedForum, on: req.db)).flatMap { (readerPivot, favoriteForumBarrel) in
 				let clampedReadCount = min(readerPivot?.readCount ?? 0, postCount)
 				let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 1...Settings.shared.maximumForumPosts)
 				var future: EventLoopFuture<(Int?, Int)>
@@ -1205,23 +1205,50 @@ extension ForumController {
 	
 	// Scans the text of forum posts as they are created/edited/deleted, finds @mentions, updates mention counts for
 	// mentioned `User`s.
-	@discardableResult func processForumMentions(post: ForumPost, editedText: String?, 
-			isCreate: Bool = false, on req: Request) -> EventLoopFuture<Void> {	
+	@discardableResult func processForumMentions(forum: Forum, post: ForumPost, editedText: String?, 
+			isCreate: Bool = false, on req: Request) -> EventLoopFuture<Void> {
+		var mentionsFuture = req.eventLoop.future()
 		let (subtracts, adds) = post.getMentionsDiffs(editedString: editedText, isCreate: isCreate)
-		if subtracts.isEmpty && adds.isEmpty {
-			return req.eventLoop.future()
+		if !subtracts.isEmpty || !adds.isEmpty {
+			mentionsFuture =  User.query(on: req.db).filter(\.$username ~~ subtracts).all().flatMap { subtractUsers in
+				return User.query(on: req.db).filter(\.$username ~~ adds).all().flatMap { addUsers in
+					var saveFutures = subtractUsers.compactMap { (user: User) -> EventLoopFuture<Void>? in
+						if user.accessLevel.hasAccess(forum.accessLevelToView) {
+							user.forumMentions -= 1
+							return user.save(on: req.db)
+						}
+						return nil
+					}
+					addUsers.forEach {
+						if $0.accessLevel.hasAccess(forum.accessLevelToView) {
+							$0.forumMentions += 1
+							saveFutures.append($0.save(on: req.db))
+						}
+					}
+					return saveFutures.flatten(on: req.eventLoop)
+				}
+			}
 		}
-		return User.query(on: req.db).filter(\.$username ~~ subtracts).all().flatMap { subtractUsers in
-			return User.query(on: req.db).filter(\.$username ~~ adds).all().flatMap { addUsers in
-				var saveFutures = subtractUsers.map { (user: User) -> EventLoopFuture<Void> in
-					user.forumMentions -= 1
-					return user.save(on: req.db)
+		return mentionsFuture.flatMap {
+			// An imperfect solution, but users should not be able to infer word use in forums they can't see.
+			// Alert word counts are stored in one global store for all alertwords; handling this 'correctly' would 
+			// require individual counts for each access level.
+			if forum.accessLevelToView > .verified {
+				return req.eventLoop.future()
+			}
+			let (subtracts, adds) = post.getAlertwordDiffs(editedString: editedText, isCreate: isCreate)
+			return req.redis.zrange(from: "alertwords-posts", firstIndex: 0, lastIndex: -1).flatMap { alertwords in 
+				let alertSet = Set(alertwords.compactMap { String.init(fromRESP: $0) })
+				let subtractingAlertWords = subtracts.intersection(alertSet)
+				let addingAlertWords = adds.intersection(alertSet)
+				var futures: [EventLoopFuture<Double>] = []
+				subtractingAlertWords.forEach { word in
+					futures.append(req.redis.zincrby(-1.0, element: word, in: "alertwords-posts"))
 				}
-				addUsers.forEach {
-					$0.forumMentions += 1
-					saveFutures.append($0.save(on: req.db))
+				addingAlertWords.forEach { word in
+					futures.append(req.redis.zincrby(1.0, element: word, in: "alertwords-posts"))
 				}
-				return saveFutures.flatten(on: req.eventLoop)
+				return futures.flatten(on: req.eventLoop).transform(to: ())
 			}
 		}
 	}

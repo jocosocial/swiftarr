@@ -20,6 +20,7 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 		case "mute": 
 		case "unblock": 
 		case "unmute":
+		case "alertWordDelete":
 			btn.addEventListener("click", spinnerButtonAction); 
 			break;
 		case "delete": btn.addEventListener("click", deleteAction); break;
@@ -104,13 +105,9 @@ async function spinnerButtonAction() {
 				case "mute":
 					window.location.href = "/";		// Once blocked, can't see profile anymore.
 					break;
-				case "unblock":
-				case "unmute":
-					let italicElem = document.createElement('i');
-					italicElem.append(document.createTextNode(tappedButton.dataset.action == "unblock" ? "unblocked" : "unmuted"));
-					tappedButton.replaceWith(italicElem);
-					tappedButton = null;
-					break;
+				case "unblock": acknowledgeRemovalAction(tappedButton, "unblocked"); break;
+				case "unmute": acknowledgeRemovalAction(tappedButton, "unmuted"); break;
+				case "alertWordDelete": acknowledgeRemovalAction(tappedButton, "removed"); break;
 			}
 		}
 		else {
@@ -127,8 +124,16 @@ async function spinnerButtonAction() {
 		}
 		errorDiv?.classList.remove("d-none");
 	} finally {
-		setActionButtonsState(tappedButton, true);
+		if (tappedButton && tappedButton.parent) {
+			setActionButtonsState(tappedButton, true);
+		}
 	}
+}
+function acknowledgeRemovalAction(btn, str) {
+	let italicElem = document.createElement('i');
+	italicElem.append(document.createTextNode(str));
+	btn.replaceWith(italicElem);
+	btn = null;
 }
 
 for (let modal of document.querySelectorAll('.modal')) {

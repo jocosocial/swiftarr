@@ -13,7 +13,7 @@
 
     			<div class="col col-auto">
 					<div class="dropdown">
-						<button class="btn #if(trunk.alertCounts.newTwarrtMentionCount > 0):btn-outline-danger#else:btn-outline-primary#endif dropdown-toggle btn-sm" type="button" id="eventFilterMenu" data-bs-toggle="dropdown" data-selected="all" aria-expanded="false">
+						<button class="btn #if(trunk.alertCounts.newTwarrtMentionCount > 0 || trunk.newTweetAlertwords):btn-outline-danger#else:btn-outline-primary#endif dropdown-toggle btn-sm" type="button" id="eventFilterMenu" data-bs-toggle="dropdown" data-selected="all" aria-expanded="false">
 							Filter
 						</button>
 						<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="eventFilterMenu">
@@ -21,12 +21,22 @@
  							<li><hr class="dropdown-divider"></li>
 							<li><h6 class="dropdown-header">Only show:</h6></li>
  							<li><a class="dropdown-item #if(filterType == "byUser"):active#endif" href="/tweets?byUser=#(trunk.userID)">Your Tweets</a></li>
- 							<li><a class="dropdown-item #if(filterType == "mentions"):active#endif" href="/tweets?mentionSelf=true">
- 								Your #if(trunk.alertCounts.twarrtMentionCount > 0):#(trunk.alertCounts.twarrtMentionCount)#endif Mention#if(trunk.alertCounts.twarrtMentionCount != 1):s#endif 
+ 							<li><a class="dropdown-item d-flex justify-content-between #if(filterType == "mentions"):active#endif" href="/tweets?mentionSelf=true">
+ 								<span>Your #if(trunk.alertCounts.twarrtMentionCount > 0):#(trunk.alertCounts.twarrtMentionCount)#endif Mention#if(trunk.alertCounts.twarrtMentionCount != 1):s#endif</span>
  								#if(trunk.alertCounts.newTwarrtMentionCount > 0): <span class="text-danger ms-4">#(trunk.alertCounts.newTwarrtMentionCount) New</span>#endif
 							</a></li>
  							<li><a class="dropdown-item #if(filterType == "favorites"):active#endif" href="/tweets?bookmarked=true">Favorites</a></li>
  							<li><a class="dropdown-item #if(filterType == "liked"):active#endif" href="/tweets?likeType=all">Liked</a></li>
+							#if(count(trunk.alertCounts.alertWords) > 0):
+								<li><hr class="dropdown-divider"></li>
+								<li><h6 class="dropdown-header">Alert Keywords:</h6></li>
+								#for(keyword in trunk.alertCounts.alertWords):
+ 									<li><a class="dropdown-item d-flex justify-content-between" href="/tweets?search=#(keyword.alertword)">
+ 										<span>#(keyword.alertword)</span>
+ 										<span class="ms-4">#(keyword.twarrtMentionCount)#if(keyword.newTwarrtMentionCount > 0):, <span class="text-danger">#(keyword.newTwarrtMentionCount) New</span>#endif</span>
+									</a></li>
+								#endfor
+							#endif
 						</ul>
 					</div>
 				</div>

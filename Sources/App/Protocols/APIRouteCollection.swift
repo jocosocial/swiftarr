@@ -1,6 +1,7 @@
 import Vapor
 import Crypto
 import FluentSQL
+import Redis
 
 protocol APIRouteCollection {
 	func registerRoutes(_ app: Application) throws
@@ -80,5 +81,23 @@ extension APIRouteCollection {
         return date
     }
 
+	/// Sets the current user's viewedCount for the given alertword to equal our global count of how many tweets/posts exist containing that word.
+	/// 
+	/// Effectively this means the user has seen all the posts/tweets with this word, and any notification for this alertword should be cleared.
+	/// Can be called for non-alertwords safely--the expectation is that tweets and posts will call this when asked to search for a single search word,
+	/// although a special search alternate could be used that indicates the search is an alertword e.g. '/api/v3/tweets?alertword=helicopter' instead
+	/// of '?search=helicopter'.
+	func markAlertwordViewed(_ word: String, userid: UUID, isPosts: Bool, on req: Request) -> EventLoopFuture<Void> {
+		let globalKey = isPosts ? RedisKey("alertwords-posts") : RedisKey("alertwords-tweets")
+		let userKey = isPosts ? RedisKey("alertwordPosts-\(userid)") : RedisKey("alertwordTweets-\(userid)")
+		return req.redis.zscore(of: word, in: globalKey).flatMap { wordHitCountRESP in
+			guard let wordCount = wordHitCountRESP else {
+				return req.eventLoop.future()
+			}
+			return req.redis.zadd((element: word, score: wordCount), to: userKey).map { _ in 
+				return
+			}
+		}
+	}
 }
 

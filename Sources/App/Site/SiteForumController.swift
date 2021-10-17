@@ -648,8 +648,7 @@ struct SiteForumController: SiteControllerUtils {
     //
     // Gets forum posts that the user authored.
 	func forumPostsByUserViewHandler(_ req: Request) throws -> EventLoopFuture<View> {
-		let user = try req.auth.require(User.self)
-		return try apiQuery(req, endpoint: "/forum/post/search?byuser=\(user.requireID())").throwingFlatMap { response in
+		return apiQuery(req, endpoint: "/forum/post/search?byself=true").throwingFlatMap { response in
 			let postData = try response.content.decode(PostSearchData.self)
     		let ctx = try PostSearchPageContext(req, posts: postData, searchType: .owned)
 			return req.view.render("Forums/forumPostsList", ctx)

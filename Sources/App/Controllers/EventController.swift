@@ -119,7 +119,7 @@ struct EventController: APIRouteCollection {
 			query.filter(\.$startTime >= start).filter(\.$startTime < end)
 		}
 		return query.all().throwingFlatMap { events in
-			return (req.auth.get(User.self)?.getBookmarkBarrel(of: .taggedEvent, on: req) ?? req.eventLoop.future(nil))
+			return (req.auth.get(User.self)?.getBookmarkBarrel(of: .taggedEvent, on: req.db) ?? req.eventLoop.future(nil))
 				.flatMapThrowing { eventsBarrel in
 				let result = try events.map { try EventData($0, isFavorite: eventsBarrel?.modelUUIDs.contains($0.requireID()) ?? false) }
 				return result
@@ -135,7 +135,7 @@ struct EventController: APIRouteCollection {
     /// - Returns: <doc:EventData> containing  event info.
     func singleEventHandler(_ req: Request) throws -> EventLoopFuture<EventData> {
     	return Event.findFromParameter(eventIDParam, on: req).flatMap { event in
-			return (req.auth.get(User.self)?.getBookmarkBarrel(of: .taggedEvent, on: req) ?? req.eventLoop.future(nil))
+			return (req.auth.get(User.self)?.getBookmarkBarrel(of: .taggedEvent, on: req.db) ?? req.eventLoop.future(nil))
 					.flatMapThrowing { eventsBarrel in
 	    		return try EventData(event, isFavorite: eventsBarrel?.modelUUIDs.contains(event.requireID()) ?? false)
 			}
@@ -218,7 +218,7 @@ struct EventController: APIRouteCollection {
     func favoritesHandler(_ req: Request) throws -> EventLoopFuture<[EventData]> {
         let user = try req.auth.require(User.self)
         // get user's taggedEvent barrel
-        return user.getBookmarkBarrel(of: .taggedEvent, on: req).flatMap { (barrel) in
+        return user.getBookmarkBarrel(of: .taggedEvent, on: req.db).flatMap { (barrel) in
             guard let barrel = barrel else {
                 // return empty array
                 return req.eventLoop.future([EventData]())

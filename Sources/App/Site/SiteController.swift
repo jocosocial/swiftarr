@@ -27,6 +27,8 @@ struct TrunkContext: Encodable {
 	
 	var alertCounts: UserNotificationData
 	var eventStartingSoon: Bool
+	var newTweetAlertwords: Bool
+	var newForumAlertwords: Bool
 	
 	init(_ req: Request, title: String, tab: Tab, search: String? = nil) {
 		if let user = req.auth.get(User.self) {
@@ -62,6 +64,9 @@ struct TrunkContext: Encodable {
 		self.title = title
 		self.tab = tab
 		self.searchPrompt = search
+		
+		newTweetAlertwords = alertCounts.alertWords.contains { $0.newTwarrtMentionCount > 0 }
+		newForumAlertwords = alertCounts.alertWords.contains { $0.newForumMentionCount > 0 }
 	}
 }
 
@@ -371,17 +376,6 @@ struct SiteController: SiteControllerUtils {
 // MARK: - Utilities
 
 protocol SiteControllerUtils {
-    var categoryIDParam: PathComponent { get }
-    var twarrtIDParam: PathComponent { get }
-    var forumIDParam: PathComponent { get }
-    var postIDParam: PathComponent { get }
-    var fezIDParam: PathComponent { get }
-    var userIDParam: PathComponent { get }
-    var eventIDParam: PathComponent { get }
-    var reportIDParam: PathComponent { get }
-    var modStateParam: PathComponent { get }
-    var announcementIDParam: PathComponent { get }
-
 	func registerRoutes(_ app: Application) throws
 	func apiQuery(_ req: Request, endpoint: String, method: HTTPMethod, defaultHeaders: HTTPHeaders?, passThroughQuery: Bool,
 			beforeSend: (inout ClientRequest) throws -> ()) -> EventLoopFuture<ClientResponse>
@@ -401,6 +395,7 @@ extension SiteControllerUtils {
     var announcementIDParam: PathComponent { PathComponent(":announcement_id") }
     var imageIDParam: PathComponent { PathComponent(":image_id") }
     var accessLevelParam: PathComponent { PathComponent(":access_level") }
+    var alertWordParam: PathComponent { PathComponent(":alert_word") }
 
 	/// Call the Swiftarr API. This method pulls a user's token from their session data and adds it to the API call. By default it also forwards URL query parameters
 	/// from the Site-level request to the API-level request. 
@@ -528,5 +523,15 @@ extension String {
 		pathEntryChars.remove("/")
 		return self.addingPercentEncoding(withAllowedCharacters: pathEntryChars)
 	}
+	
+	// Utility to perform URL percent encoding on a string that is to be placed in an URL Query value. NOT a full
+	// query string, the value in a '?key=value' clause.
+	func percentEncodeQueryValue() -> String? {
+		var allowedChars = CharacterSet.urlQueryAllowed
+		allowedChars.remove(charactersIn: "/=?&")
+		return self.addingPercentEncoding(withAllowedCharacters: allowedChars)
+	}
+	
+	
 }
 

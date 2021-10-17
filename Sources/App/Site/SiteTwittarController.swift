@@ -2,7 +2,7 @@ import Vapor
 import Crypto
 import FluentSQL
 
-struct TweetPageContext : Encodable {
+struct TweetPageContext: Encodable {
 	enum FilterType: String, Encodable {
 		case all
 		case byUser
@@ -21,7 +21,7 @@ struct TweetPageContext : Encodable {
 	var bottomMorePostsLabel: String?
 	var isReplyGroup: Bool = false
 	var filterType: FilterType
-	
+
 	init(_ req: Request, tweets: [TwarrtData]) throws {
 		trunk = .init(req, title: "Tweets", tab: .twarrts, search: "Search Tweets")
 		self.tweets = tweets

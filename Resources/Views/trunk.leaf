@@ -27,14 +27,14 @@
 				</div>
 				<div class="col px-0">	  
 					<a class="nav-item nav-link link-light px-1 #if(trunk.tab == "twarrts"):active#endif" #if(trunk.tab == "twarrts"):aria-current="page"#endif href="/tweets">
-						<span class="#if(trunk.alertCounts.newTwarrtMentionCount > 0):border-bottom border-danger#endif">
+						<span class="#if(trunk.alertCounts.newTwarrtMentionCount > 0 || trunk.newTweetAlertwords):border-bottom border-danger#endif">
 							Tweets			
 						</span>
 					</a>
 				</div>
 				<div class="col px-0">	  
 					<a class="nav-item nav-link link-light px-1#if(trunk.tab == "forums"): active#endif" #if(trunk.tab == "forums"):aria-current="page"#endif href="/forums">
-						<span class="#if(trunk.alertCounts.newForumMentionCount > 0):border-bottom border-danger#endif">
+						<span class="#if(trunk.alertCounts.newForumMentionCount > 0 || trunk.newForumAlertwords):border-bottom border-danger#endif">
 							Forums
 						</span>
 					</a>

@@ -1,6 +1,7 @@
 import Vapor
 import Crypto
 import FluentSQL
+import Redis
 
 // rcf Contents of this file are still being baked.
 //
@@ -54,11 +55,13 @@ struct AlertController: APIRouteCollection {
 			return Announcement.query(on: req.db).filter(\.$displayUntil > Date()).count().map { activeAnnouncements in
 				var result = UserNotificationData()
 				result.activeAnnouncementCount = activeAnnouncements
+				result.disabledFeatures = Settings.shared.disabledFeatures.buildDisabledFeatureArray()
 				return result
 			}
         }
+		let userid = try user.requireID()
 		// get user's taggedEvent barrel, and from it get next event being followed
-		return user.getBookmarkBarrel(of: .taggedEvent, on: req).flatMap { barrel in
+		return user.getBookmarkBarrel(of: .taggedEvent, on: req.db).flatMap { barrel in
 			guard let barrel = barrel else {
 				return req.eventLoop.makeSucceededFuture(nil)
 			}
@@ -105,18 +108,65 @@ struct AlertController: APIRouteCollection {
 						}
 					}
 				}
-				return Announcement.query(on: req.db)
-						.field(\.$id)
-						.filter(\.$displayUntil > Date())
-						.all().map { actives in
-					let newAnnouncements = actives.reduce(0) { ($1.id ?? 0) > user.lastReadAnnouncement ? $0 + 1 : $0 }
-					return UserNotificationData(user: user, newFezCount: unreadFezCount, newSeamailCount: unreadSeamailCount,
-							newAnnouncementCount: newAnnouncements, activeAnnouncementCount: actives.count, nextEvent: nextEventDate,
-							disabledFeatures: [])
+				return getNewAlertWordCounts(userID: userid, on: req).flatMap { alertWordCounts in
+					return Announcement.query(on: req.db).field(\.$id).filter(\.$displayUntil > Date()).all().map { actives in
+						let newAnnouncements = actives.reduce(0) { ($1.id ?? 0) > user.lastReadAnnouncement ? $0 + 1 : $0 }
+						var result = UserNotificationData(user: user, newFezCount: unreadFezCount, newSeamailCount: unreadSeamailCount,
+								newAnnouncementCount: newAnnouncements, activeAnnouncementCount: actives.count, nextEvent: nextEventDate,
+								disabledFeatures: Settings.shared.disabledFeatures.buildDisabledFeatureArray())
+						result.alertWords = alertWordCounts
+						return result
+					}
 				}
 			}
 		}
 	}
+	
+	func getNewAlertWordCounts(userID: UUID, on req: Request) -> EventLoopFuture<[UserNotificationAlertwordData]> {
+		return req.redis.zrange(from: "alertwordTweets-\(userID)", firstIndex: 0, lastIndex: -1, includeScoresInResponse: true)
+				.and(req.redis.zrange(from: "alertwordPosts-\(userID)", firstIndex: 0, lastIndex: -1,  includeScoresInResponse: true))
+				.flatMap { (alertTweets, alertPosts) in
+			if alertTweets.count == 0 {
+				return req.eventLoop.future([])
+			}
+			var zmscoreArgs: [RESPValue] = []
+			var result: [UserNotificationAlertwordData] = []
+			for index in stride(from: 0, to: alertTweets.count, by: 2) {
+				if let str = String(fromRESP: alertTweets[index]), let val = Int(fromRESP: alertTweets[index + 1]) {
+					zmscoreArgs.append(alertTweets[index])
+					var newElement = UserNotificationAlertwordData(str)
+					newElement.twarrtMentionCount = val
+					newElement.newTwarrtMentionCount = val
+					result.append(newElement)
+				}
+			}
+			for index in stride(from: 0, to: alertPosts.count, by: 2) {
+				if let str = String(fromRESP: alertPosts[index]), let val = Int(fromRESP: alertPosts[index + 1]) {
+					if let elementIndex = result.firstIndex(where: { $0.alertword == str } ) {
+						result[elementIndex].forumMentionCount = val
+						result[elementIndex].newForumMentionCount = val
+					}
+				}
+			}
+			let userTwarrtCountArgs = [RESPValue(from: "alertwords-tweets")] + zmscoreArgs
+			let userForumCountArgs = [RESPValue(from: "alertwords-posts")] + zmscoreArgs
+			return req.redis.send(command: "ZMSCORE", with: userTwarrtCountArgs)
+					.and(req.redis.send(command: "ZMSCORE", with: userForumCountArgs)).map { (totalTweetRESP, totalForumRESP) in
+				if let totalTweets = Array<Int?>(fromRESP: totalTweetRESP), let totalForums = Array<Int?>(fromRESP: totalForumRESP),
+						totalTweets.count == result.count {
+					for index in 0..<result.count {
+						var alertData = result[index]
+						alertData.twarrtMentionCount = totalTweets[index] ?? 0
+						alertData.newTwarrtMentionCount = max(0, alertData.twarrtMentionCount - alertData.newTwarrtMentionCount)
+						alertData.forumMentionCount = totalForums[index] ?? 0
+						alertData.newForumMentionCount = max(0, alertData.forumMentionCount - alertData.newForumMentionCount)
+						result[index] = alertData
+					}		
+				}
+				return result
+			}
+		}
+	}	
 	
 	// MARK: - Announcements
 

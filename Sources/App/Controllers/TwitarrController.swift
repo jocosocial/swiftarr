@@ -2,6 +2,7 @@ import Vapor
 import Crypto
 import FluentSQL
 import Fluent
+import Redis
 
 // Decoding struct for the URL Query Options that twarrtsHandler() can decode.
 public struct TwarrtQueryOptions: Content {
@@ -299,6 +300,9 @@ struct TwitarrController: APIRouteCollection {
 		// Process query params that filter for specific content.
 		if let searchStr = filters.search {
 			futureTwarrts.filter(\.$text, .custom("ILIKE"), "%\(searchStr)%")
+			if !searchStr.contains(" ") && start == 0 {
+				_ = markAlertwordViewed(searchStr, userid: cachedUser.userID, isPosts: false, on: req)
+			}
 		}
 		if var hashtag = filters.hashtag {
 			if !hashtag.hasPrefix("#") {
@@ -364,7 +368,7 @@ struct TwitarrController: APIRouteCollection {
 		var bookmarkFuture: EventLoopFuture<Barrel?> = req.eventLoop.future(nil)
 		if let bookmarkFilter = filters.bookmarked, bookmarkFilter == true {
 			applyMutes = false
-			bookmarkFuture = user.getBookmarkBarrel(of: .bookmarkedTwarrt, on: req)
+			bookmarkFuture = user.getBookmarkBarrel(of: .bookmarkedTwarrt, on: req.db)
 		}
 		
 		if applyMutes {
@@ -417,7 +421,7 @@ struct TwitarrController: APIRouteCollection {
         // get twarrt
         return Twarrt.findFromParameter(twarrtIDParam, on: req).addModelID().flatMap { (twarrt, twarrtID) in
             // get user's bookmarkedTwarrt barrel
-            return user.getBookmarkBarrel(of:.bookmarkedTwarrt, on: req).flatMap { bookmarkBarrel in
+            return user.getBookmarkBarrel(of:.bookmarkedTwarrt, on: req.db).flatMap { bookmarkBarrel in
                 // create barrel if needed
                 let barrel = bookmarkBarrel ?? Barrel(ownerID: userID, barrelType: .bookmarkedTwarrt)
                 // ensure bookmark doesn't exist
@@ -446,7 +450,7 @@ struct TwitarrController: APIRouteCollection {
         // get twarrt
         return Twarrt.findFromParameter(twarrtIDParam, on: req).addModelID().flatMap { (twarrt, twarrtID) in
             // get user's bookmarkedTwarrt barrel
-            return user.getBookmarkBarrel(of:.bookmarkedTwarrt, on: req)
+            return user.getBookmarkBarrel(of:.bookmarkedTwarrt, on: req.db)
 					.unwrap(or: Abort(.badRequest, reason: "user has not bookmarked any twarrts"))
 					.flatMap { barrel in
                 var bookmarks = barrel.userInfo["bookmarks"] ?? []
@@ -776,22 +780,38 @@ extension TwitarrController {
 	@discardableResult func processTwarrtMentions(twarrt: Twarrt, editedText: String?, 
 			isCreate: Bool = false, on req: Request) -> EventLoopFuture<Void> {	
 		let (subtracts, adds) = twarrt.getMentionsDiffs(editedString: editedText, isCreate: isCreate)
-		if subtracts.isEmpty && adds.isEmpty {
-			return req.eventLoop.future()
+		var mentionsFuture = req.eventLoop.future()
+		if !subtracts.isEmpty || !adds.isEmpty {
+			mentionsFuture = User.query(on: req.db).filter(\.$username ~~ subtracts).all().flatMap { subtractUsers in
+				return User.query(on: req.db).filter(\.$username ~~ adds).all().flatMap { addUsers in
+					var saveFutures = subtractUsers.map { (user: User) -> EventLoopFuture<Void> in
+						user.twarrtMentions -= 1
+						return user.save(on: req.db)
+					}
+					addUsers.forEach {
+						$0.twarrtMentions += 1
+						saveFutures.append($0.save(on: req.db))
+					}
+					return saveFutures.flatten(on: req.eventLoop)
+				}
+			}
 		}
-		return User.query(on: req.db).filter(\.$username ~~ subtracts).all().flatMap { subtractUsers in
-			return User.query(on: req.db).filter(\.$username ~~ adds).all().flatMap { addUsers in
-				var saveFutures = subtractUsers.map { (user: User) -> EventLoopFuture<Void> in
-					user.twarrtMentions -= 1
-					return user.save(on: req.db)
+		return mentionsFuture.flatMap {
+			// Alert words check
+			let (subtracts, adds) = twarrt.getAlertwordDiffs(editedString: editedText, isCreate: isCreate)
+			return req.redis.zrange(from: "alertwords-tweets", firstIndex: 0, lastIndex: -1).flatMap { alertwords in 
+				let alertSet = Set(alertwords.compactMap { String.init(fromRESP: $0) })
+				let subtractingAlertWords = subtracts.intersection(alertSet)
+				let addingAlertWords = adds.intersection(alertSet)
+				var futures: [EventLoopFuture<Double>] = []
+				subtractingAlertWords.forEach { word in
+					futures.append(req.redis.zincrby(-1.0, element: word, in: "alertwords-tweets"))
 				}
-				addUsers.forEach {
-					$0.twarrtMentions += 1
-					saveFutures.append($0.save(on: req.db))
+				addingAlertWords.forEach { word in
+					futures.append(req.redis.zincrby(1.0, element: word, in: "alertwords-tweets"))
 				}
-				return saveFutures.flatten(on: req.eventLoop)
+				return futures.flatten(on: req.eventLoop).transform(to: ())
 			}
 		}
 	}
 }
-

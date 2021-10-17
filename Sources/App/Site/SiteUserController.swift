@@ -59,6 +59,9 @@ struct SiteUserController: SiteControllerUtils {
         privateRoutes.post("user", userIDParam, "mute", use: muteUserPostHandler)
         privateRoutes.post("user", userIDParam, "unmute", use: unmuteUserPostHandler)
         privateRoutes.get("blocks", use: blocksPageHandler)
+        privateRoutes.get("alertwords", use: alertWordsPageHandler)
+        privateRoutes.post("alertword", "add", use: addAlertwordPostHandler)
+        privateRoutes.post("alertword", alertWordParam,  "remove", use: removeAlertwordPostHandler)
 	}
 	
 	/// GET /avatar/full/ID
@@ -225,8 +228,56 @@ struct SiteUserController: SiteControllerUtils {
 			return .ok
 		}
 	}
+	
+	// GET /alertwords
+	//
+	// 
+	func alertWordsPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+    	return apiQuery(req, endpoint: "/user/alertwords").throwingFlatMap { alertwordsResponse in
+			let alertwordsData = try alertwordsResponse.content.decode(AlertKeywordData.self)
+			struct AlertwordsContext : Encodable {
+				var trunk: TrunkContext
+				var alertKeywords: [String]
+				
+				init(_ req: Request, alertWords: [String]) throws {
+					trunk = .init(req, title: "Manage Alertwords", tab: .none)
+					self.alertKeywords = alertWords
+				}
+			}
+			let ctx = try AlertwordsContext(req, alertWords: alertwordsData.keywords)
+			return req.view.render("User/alertwords", ctx)			
+		}
+	}
 
 	
+	// POST /alertword/add
+	//
+	// Adds the word in the form to the user's list of alert keywords.
+	func addAlertwordPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+		struct AlertwordFormStruct: Decodable {
+			var newKeyword: String?
+		}
+		let alertwordFormStruct = try req.content.decode(AlertwordFormStruct.self)
+    	guard let newAlertword = alertwordFormStruct.newKeyword?.percentEncodeQueryValue() else {
+    		throw "Invalid alertword parameter"
+    	}
+		return apiQuery(req, endpoint: "/user/alertwords/add/\(newAlertword)", method: .POST).map { response in
+			return .created
+		}
+	}
+
+	// POST /alertword/:alert_word/remove
+	//
+	// Remove the given alert keyword.
+	func removeAlertwordPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+    	guard let alertWord = req.parameters.get(alertWordParam.paramString)?.percentEncodeFilePathEntry() else {
+    		throw "Invalid alertword parameter"
+    	}
+		return apiQuery(req, endpoint: "/user/alertwords/remove/\(alertWord)", method: .POST).map { response in
+			return .ok
+		}
+	}
+
 	// GET /profile/edit
 	//
 	// Shows a user a page that lets them edit their own profile.

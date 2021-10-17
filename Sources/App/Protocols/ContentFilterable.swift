@@ -69,6 +69,30 @@ extension ContentFilterable {
 		}
     }
     
+    func getAlertwordDiffs(editedString: String?, isCreate: Bool) -> (Set<String>, Set<String>) {
+		var oldAlertWords = Set<String>()
+		var newAlertWords = Set<String>()
+		self.contentTextStrings().forEach {
+			oldAlertWords.formUnion(Self.buildCleanWordsArray($0))
+		}
+		if let editedStr = editedString {
+			newAlertWords = Self.buildCleanWordsArray(editedStr)
+		}
+		let subtracts = oldAlertWords.subtracting(newAlertWords)
+		let adds = newAlertWords.subtracting(oldAlertWords)
+		if isCreate {
+			return (adds, subtracts)
+		}
+		else {
+			return (subtracts, adds)
+		}
+    }
+    
+	static func buildCleanWordsArray(_ str: String) -> Set<String> {
+		let words = Set(str.lowercased().filter { $0.isLetter || $0.isWhitespace }.split(separator: " ").map { String($0) })
+		return words
+	}
+
     /// Returns a set of possible usernames found as @mentions in the given string. Does not check whether the @mentions are valid users.
     /// The algorithm could probably reduced to a somewhat complicated regex, but here's what it looks for:
 	///	- Start-of-string or whitespace,

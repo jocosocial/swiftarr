@@ -533,7 +533,7 @@ struct UserController: APIRouteCollection {
     
     /// `POST /api/v3/user/alertwords/add/STRING`
     ///
-    /// Adds a string to the user's "Alert Keywords" barrel.
+    /// Adds a string to the user's "Alert Keywords" barrel. The string is lowercased and stripped of punctuation before being added.
     ///
     /// - Parameter STRING: In URL path. The alert word to watch for.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
@@ -542,25 +542,42 @@ struct UserController: APIRouteCollection {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
         let param = req.parameters.get(alertwordParam.paramString)
-        guard let parameter = param else {
+        guard let parameter = param  else {
         	throw Abort(.badRequest, reason: "No alert word to add found in request.")
         }
+		let cleanedParams = Twarrt.buildCleanWordsArray(parameter)
+        guard cleanedParams.count <= 1 else {
+        	throw Abort(.badRequest, reason: "Can only add one new alert word at a time.")
+        }
+        guard let cleanParam = cleanedParams.first, cleanParam.count > 3 else {
+        	throw Abort(.badRequest, reason: "Cannot set alerts on very short or very common words")
+        }
         // get alertwords barrel
-        return Barrel.query(on: req.db)
-				.filter(\.$ownerID == userID)
-				.filter(\.$barrelType == .keywordAlert)
-				.first()
-				.unwrap(or: Abort(.internalServerError, reason: "alert keywords barrel not found"))
-				.flatMap { (barrel) in
+        return user.getBookmarkBarrel(of: .keywordAlert, on: req.db)
+				.unwrap(or: Abort(.internalServerError, reason: "alert keywords barrel not found")).flatMap { barrel in
 			// add string
 			var alertWords = barrel.userInfo["alertWords"] ?? []
-			alertWords.append(parameter)
+			alertWords.append(cleanParam)
 			barrel.userInfo.updateValue(alertWords.sorted(), forKey: "alertWords")
 			return barrel.save(on: req.db).flatMap { (_) in
-				// return sorted list
-				let alertKeywordData = AlertKeywordData(name: barrel.name, keywords: alertWords.sorted())
-				// update cache
-				return req.userCache.updateUser(userID).transform(to: alertKeywordData)
+				return req.redis.zincrby(1.0, element: cleanParam, in: "alertwords").flatMap { newScore in
+					if newScore == 1.0 {
+						var redisFutures: [EventLoopFuture<Bool>] = []
+						redisFutures.append(req.redis.zadd((element: cleanParam, score: 0.0), to: "alertwords-tweets",
+								inserting: .onlyNewElements, returning: .insertedElementsCount))
+						redisFutures.append(req.redis.zadd((element: cleanParam, score: 0.0), to: "alertwords-posts", 
+								inserting: .onlyNewElements, returning: .insertedElementsCount))
+						redisFutures.append(req.redis.zadd((element: cleanParam, score: 0.0), to: "alertwordTweets-\(userID)", 
+								inserting: .onlyNewElements, returning: .insertedElementsCount))
+						redisFutures.append(req.redis.zadd((element: cleanParam, score: 0.0), to: "alertwordPosts-\(userID)", 
+								inserting: .onlyNewElements, returning: .insertedElementsCount))
+					}
+				
+					// return sorted list
+					let alertKeywordData = AlertKeywordData(name: barrel.name, keywords: alertWords.sorted())
+					// update cache
+					return req.userCache.updateUser(userID).transform(to: alertKeywordData)
+				}
 			}
         }
     }
@@ -601,25 +618,30 @@ struct UserController: APIRouteCollection {
         	throw Abort(.badRequest, reason: "No alert word to remove found in request.")
         }
         // get alertwords barrel
-        return Barrel.query(on: req.db)
-				.filter(\.$ownerID == userID)
-				.filter(\.$barrelType == .keywordAlert)
-				.first()
+        return user.getBookmarkBarrel(of: .keywordAlert, on: req.db)
 				.unwrap(or: Abort(.internalServerError, reason: "alert keywords barrel not found"))
-				.flatMap { barrel in
+				.throwingFlatMap { barrel in
 			// remove string
 			var alertWords = barrel.userInfo["alertWords"] ?? []
 			guard let index = alertWords.firstIndex(of: parameter) else {
-				return req.eventLoop.makeFailedFuture(
-						Abort(.badRequest, reason: "'\(parameter)' is not in barrel"))
+				throw Abort(.badRequest, reason: "'\(parameter)' is not in barrel")
 			}
 			alertWords.remove(at: index)
 			barrel.userInfo.updateValue(alertWords.sorted(), forKey: "alertWords")
 			return barrel.save(on: req.db).flatMap {
-				// return sorted list
-				let alertKeywordData = AlertKeywordData(name: barrel.name, keywords: alertWords.sorted())
-				// update cache
-				return req.userCache.updateUser(userID).transform(to: alertKeywordData)
+				return req.redis.zincrby(-1.0, element: parameter, in: "alertwords").flatMap { newScore in
+					var redisFutures: [EventLoopFuture<Int>] = []
+					if newScore == 0.0 {
+						redisFutures.append(req.redis.zrem(parameter, from: "alertwords-tweets"))
+						redisFutures.append(req.redis.zrem(parameter, from: "alertwords-posts")) 
+					}
+					redisFutures.append(req.redis.zrem(parameter, from: "alertwordTweets-\(userID)")) 
+					redisFutures.append(req.redis.zrem(parameter, from: "alertwordPosts-\(userID)")) 
+					// return sorted list
+					let alertKeywordData = AlertKeywordData(name: barrel.name, keywords: alertWords.sorted())
+					// update cache
+					return req.userCache.updateUser(userID).transform(to: alertKeywordData)
+				}
 			}
 		}
     }
