@@ -17,6 +17,8 @@ struct SiteEventsController: SiteControllerUtils {
 	}
 	
 // MARK: - Events
+	/// `GET /events`
+	///
 	/// By default, shows a day's worth events. Always attempts to show events from a day on the actual cruise. Uses `Settings.shared.cruiseStartDate`
 	/// for cruise dates; the ingested schedule should have events for that day and the next 7 days.
 	/// 

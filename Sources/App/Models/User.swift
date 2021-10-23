@@ -170,6 +170,9 @@ final class User: Model {
     /// The child `UserNote`s owned by the user.
 	@Children(for: \.$author) var notes: [UserNote]
 	
+	/// The sibling `Boardgame`s this user has favorited.
+	@Siblings(through: BoardgameFavorite.self, from: \.$user, to: \.$boardgame) var favoriteBoardgames: [Boardgame]
+	
     // MARK: Initialization
     
     // Used by Fluent

@@ -77,12 +77,12 @@
 								<div class="row mb-2">
 									<label for="duration" class="col-form-label col-auto d-flex">Duration:</label>
 									<select class="duration-select" aria-label="Duration" id="duration" name="duration">
-										<option value="30"#if(minutes == 30): selected#endif>30 Mins</option>
-										<option value="60"#if(minutes == 60): selected#endif>1 Hr</option>
-										<option value="90"#if(minutes == 90): selected#endif>1:30</option>
-										<option value="120"#if(minutes == 120): selected#endif>2 Hrs</option>
-										<option value="180"#if(minutes == 180): selected#endif>3 Hrs</option>
-										<option value="240"#if(minutes == 240): selected#endif>4 Hrs</option>
+										<option value="30"#if(minutes < 45): selected#endif>30 Mins</option>
+										<option value="60"#if(minutes >= 45 && minutes < 75): selected#endif>1 Hr</option>
+										<option value="90"#if(minutes >= 75 && minutes < 105): selected#endif>1:30</option>
+										<option value="120"#if(minutes >= 105 && minutes < 150): selected#endif>2 Hrs</option>
+										<option value="180"#if(minutes >= 150 && minutes < 210): selected#endif>3 Hrs</option>
+										<option value="240"#if(minutes >= 210): selected#endif>4 Hrs</option>
 									</select>
 								</div>
 								<div class="row mb-2">
@@ -121,10 +121,10 @@
 					</div>
 					<div class="modal-body">
 						<ol>
-							<li>Fezzes are not a reservation system. You can't claim a room by scheduling a Fez there.</li>
-							<li>While you can schedule a fez in a a room used for official or shadow events, you should only do so to 
-								find a group to attend an existing event together.</li>
-							<li>Event rooms are often used for official things even when not running a listed event.</li>
+							<li>Fezzes are not a reservation system. You can't claim a room or even a table by scheduling a Fez there.</li>
+							<li>Don't set up a Fez in a room used for Official or Shadow Events.</li>
+							<li>Don't try to get around Item 2 by scheduling your Fez in an Event room at a time when the Official Schedule 
+								doesn't list anything happening there. Event rooms are often used for official things even when not running a listed event.</li>
 							<li>Sometimes places fill up; have backup plans. If you schedule a "Drink Like a Pirate" fez at a bar
 								onboard, and that bar's full at the appointed time, you can message the fez members to relocate.</li>
 						</ol>
@@ -137,4 +137,3 @@
 		</div>
     #endexport
 #endextend
-

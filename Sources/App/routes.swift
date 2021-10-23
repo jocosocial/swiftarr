@@ -12,6 +12,7 @@ public func routes(_ app: Application) throws {
 			ModerationController(),
 			AlertController(),
 			AuthController(),
+			BoardgameController(),
 			ClientController(),
 			EventController(),
 			FezController(),
@@ -38,8 +39,9 @@ public func routes(_ app: Application) throws {
 			SiteForumController(),
 			SiteEventsController(),
 			SiteUserController(),
+			SiteBoardgameController(),
 			SiteModController(),
-			SiteAdminController()
+			SiteAdminController(),
 	]
 	try siteControllers.forEach { try $0.registerRoutes(app) }
 }

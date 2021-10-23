@@ -10,6 +10,7 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 		case "favoriteForum":
 		case "favoriteForumPost":
 		case "favoriteTweet":
+		case "favoriteGame":
 		case "follow":
 		case "joinFez":
 		case "leaveFez":
@@ -124,7 +125,7 @@ async function spinnerButtonAction() {
 		}
 		errorDiv?.classList.remove("d-none");
 	} finally {
-		if (tappedButton && tappedButton.parent) {
+		if (tappedButton && tappedButton.parentNode) {
 			setActionButtonsState(tappedButton, true);
 		}
 	}
@@ -188,7 +189,7 @@ for (let posElement of document.querySelectorAll('.has-action-bar')) {
 }
 function showActionBar() {
 	let actionBar = event.currentTarget.querySelector('[data-label="actionbar"]');
-	if (!actionBar.classList.contains("show")) {
+	if (actionBar && !actionBar.classList.contains("show")) {
 		var bsCollapse = new bootstrap.Collapse(actionBar, { toggle: false }).show();
 		updateLikeCounts(event.currentTarget);
 	}

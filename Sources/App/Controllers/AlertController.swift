@@ -20,7 +20,7 @@ struct AlertController: APIRouteCollection {
 	/// Required. Registers routes to the incoming router.
 	func registerRoutes(_ app: Application) throws {
         
-		// convenience route group for all /api/v3/alert endpoints
+		// convenience route group for all /api/v3/notification endpoints
 		let alertRoutes = app.grouped("api", "v3", "notification")
 
 		// Flexible access endpoints -- login not required, although calls may act differently if logged in

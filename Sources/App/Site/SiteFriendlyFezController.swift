@@ -70,6 +70,27 @@ struct FezCreateUpdatePageContext : Encodable {
 			maxPeople = 2
 		}
 	}
+	
+	// Builds a Create Fez page for a fez, prefilled to play the indicated boardgame.
+	// If `game` is an expansion set, you can optionally pass the baseGame in as well. 
+	init(_ req: Request, forGame game: BoardgameData, baseGame: BoardgameData? = nil) {
+		trunk = .init(req, title: "New FriendlyFez", tab: .none)
+		pageTitle = "Create Fez to play a Boardgame"
+		fezTitle = "Play \(game.gameName)"
+		fezLocation = "Dining Room, Deck 3 Aft"
+		fezType = "gaming"
+		minutes = game.avgPlayingTime ?? game.minPlayingTime ?? game.maxPlayingTime ?? 0
+		minPeople = game.minPlayers ?? 2
+		maxPeople = game.maxPlayers ?? 2
+		let copyText = game.numCopies == 1 ? "1 copy" : "\(game.numCopies) copies"
+		info = "Play a board game! We'll be playing \"\(game.gameName)\".\n\nRemember, FriendlyFez is not a game reservation service. The game library has \(copyText) of this game."
+		if let baseGame = baseGame {
+			let baseGameCopyText = baseGame.numCopies == 1 ? "1 copy" : "\(baseGame.numCopies) copies"
+			info.append("\n\n\(game.gameName) is an expansion pack for \(baseGame.gameName). You'll need to check this out of the library too. The game library has \(baseGameCopyText) of the base game.")
+		}
+		formAction = "/fez/create"
+		submitButtonTitle = "Create"
+	}
 }
 	
 

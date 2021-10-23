@@ -45,6 +45,11 @@
 /* Begin PBXBuildFile section */
 		EA0238EB2711298F00D5A168 /* Resources in CopyFiles */ = {isa = PBXBuildFile; fileRef = OBJ_2700 /* Resources */; };
 		EA0238EC2711299100D5A168 /* seeds in CopyFiles */ = {isa = PBXBuildFile; fileRef = OBJ_2704 /* seeds */; };
+		EA0238EE271C0EA300D5A168 /* Boardgame.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA0238ED271C0EA200D5A168 /* Boardgame.swift */; };
+		EA0238F0271C239000D5A168 /* Boardgames.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA0238EF271C239000D5A168 /* Boardgames.swift */; };
+		EA0238F2271D1E9C00D5A168 /* BoardgameController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA0238F1271D1E9C00D5A168 /* BoardgameController.swift */; };
+		EA0238F4271D7C1B00D5A168 /* SiteBoardgameController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA0238F3271D7C1B00D5A168 /* SiteBoardgameController.swift */; };
+		EA0238F627224E0F00D5A168 /* BoardgameFavorite.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA0238F527224E0F00D5A168 /* BoardgameFavorite.swift */; };
 		OBJ_2720 /* AdminController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_10 /* AdminController.swift */; };
 		OBJ_2721 /* AlertController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* AlertController.swift */; };
 		OBJ_2722 /* AuthController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* AuthController.swift */; };
@@ -8056,6 +8061,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		EA0238ED271C0EA200D5A168 /* Boardgame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Boardgame.swift; sourceTree = "<group>"; };
+		EA0238EF271C239000D5A168 /* Boardgames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Boardgames.swift; sourceTree = "<group>"; };
+		EA0238F1271D1E9C00D5A168 /* BoardgameController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardgameController.swift; sourceTree = "<group>"; };
+		EA0238F3271D7C1B00D5A168 /* SiteBoardgameController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteBoardgameController.swift; sourceTree = "<group>"; };
+		EA0238F527224E0F00D5A168 /* BoardgameFavorite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardgameFavorite.swift; sourceTree = "<group>"; };
 		OBJ_10 /* AdminController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminController.swift; sourceTree = "<group>"; };
 		OBJ_100 /* ImageHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageHandler.swift; sourceTree = "<group>"; };
 		OBJ_1000 /* bn_asn1.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = bn_asn1.c; sourceTree = "<group>"; };
@@ -11601,9 +11611,10 @@
 			isa = PBXGroup;
 			children = (
 				OBJ_104 /* CustomLeafTags.swift */,
+				OBJ_109 /* SiteController.swift */,
 				OBJ_105 /* Middleware */,
 				OBJ_108 /* SiteAdminController.swift */,
-				OBJ_109 /* SiteController.swift */,
+				EA0238F3271D7C1B00D5A168 /* SiteBoardgameController.swift */,
 				OBJ_110 /* SiteEventsController.swift */,
 				OBJ_111 /* SiteForumController.swift */,
 				OBJ_112 /* SiteFriendlyFezController.swift */,
@@ -15963,6 +15974,7 @@
 			isa = PBXGroup;
 			children = (
 				OBJ_60 /* AdminUser.swift */,
+				EA0238EF271C239000D5A168 /* Boardgames.swift */,
 				OBJ_61 /* Categories.swift */,
 				OBJ_62 /* ClientUsers.swift */,
 				OBJ_63 /* EventForums.swift */,
@@ -16262,6 +16274,7 @@
 			children = (
 				OBJ_71 /* Announcement.swift */,
 				OBJ_72 /* Barrel.swift */,
+				EA0238ED271C0EA200D5A168 /* Boardgame.swift */,
 				OBJ_73 /* Category.swift */,
 				OBJ_74 /* DailyTheme.swift */,
 				OBJ_75 /* Event.swift */,
@@ -16689,6 +16702,7 @@
 				OBJ_10 /* AdminController.swift */,
 				OBJ_11 /* AlertController.swift */,
 				OBJ_12 /* AuthController.swift */,
+				EA0238F1271D1E9C00D5A168 /* BoardgameController.swift */,
 				OBJ_13 /* ClientController.swift */,
 				OBJ_14 /* EventController.swift */,
 				OBJ_15 /* FezController.swift */,
@@ -16771,6 +16785,7 @@
 				OBJ_94 /* ForumReaders.swift */,
 				OBJ_95 /* PostLikes.swift */,
 				OBJ_96 /* TwarrtLikes.swift */,
+				EA0238F527224E0F00D5A168 /* BoardgameFavorite.swift */,
 			);
 			path = Pivots;
 			sourceTree = "<group>";
@@ -19411,10 +19426,12 @@
 				OBJ_2725 /* FezController.swift in Sources */,
 				OBJ_2726 /* ForumController.swift in Sources */,
 				OBJ_2727 /* ImageController.swift in Sources */,
+				EA0238F2271D1E9C00D5A168 /* BoardgameController.swift in Sources */,
 				OBJ_2728 /* ModerationController.swift in Sources */,
 				OBJ_2729 /* AdminControllerStructs.swift in Sources */,
 				OBJ_2730 /* ControllerStructs.swift in Sources */,
 				OBJ_2731 /* ModeratorControllerStructs.swift in Sources */,
+				EA0238EE271C0EA300D5A168 /* Boardgame.swift in Sources */,
 				OBJ_2732 /* TestController.swift in Sources */,
 				OBJ_2733 /* TwitarrController.swift in Sources */,
 				OBJ_2734 /* UserController.swift in Sources */,
@@ -19442,6 +19459,7 @@
 				OBJ_2756 /* Settings.swift in Sources */,
 				OBJ_2757 /* SwiftarrErrorMiddleware.swift in Sources */,
 				OBJ_2758 /* UserCache.swift in Sources */,
+				EA0238F4271D7C1B00D5A168 /* SiteBoardgameController.swift in Sources */,
 				OBJ_2759 /* UserRoleMiddleware.swift in Sources */,
 				OBJ_2760 /* ValidatingJSONParser.swift in Sources */,
 				OBJ_2761 /* Format.swift in Sources */,
@@ -19460,6 +19478,7 @@
 				OBJ_2774 /* Announcement.swift in Sources */,
 				OBJ_2775 /* Barrel.swift in Sources */,
 				OBJ_2776 /* Category.swift in Sources */,
+				EA0238F627224E0F00D5A168 /* BoardgameFavorite.swift in Sources */,
 				OBJ_2777 /* DailyTheme.swift in Sources */,
 				OBJ_2778 /* Event.swift in Sources */,
 				OBJ_2779 /* FezPost.swift in Sources */,
@@ -19488,6 +19507,7 @@
 				OBJ_2802 /* Reportable.swift in Sources */,
 				OBJ_2803 /* UserBookmarkable.swift in Sources */,
 				OBJ_2804 /* CustomLeafTags.swift in Sources */,
+				EA0238F0271C239000D5A168 /* Boardgames.swift in Sources */,
 				OBJ_2805 /* NotificationsMiddleware.swift in Sources */,
 				OBJ_2806 /* SiteErrorMiddleware.swift in Sources */,
 				OBJ_2807 /* SiteAdminController.swift in Sources */,
@@ -26721,6 +26741,7 @@
 					"SWIFT_PACKAGE=1",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				ONLY_ACTIVE_ARCH = YES;
 				OTHER_SWIFT_FLAGS = "$(inherited) -DXcode";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;

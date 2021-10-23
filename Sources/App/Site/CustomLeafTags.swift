@@ -270,3 +270,17 @@ struct UserBylineTag: UnsafeUnescapedLeafTag {
 		}
 	}
 }
+
+/// Prints a float with 2 decimal precision e.g. "5.76". Used by game ratings and game complexity.
+///
+/// Usage: #gameRating(float)
+struct GameRatingTag: LeafTag {
+    func render(_ ctx: LeafContext) throws -> LeafData {
+		guard ctx.parameters.count == 1, let value = ctx.parameters[0].double else {
+			throw "Leaf: gameRating tag unable to get float value."
+		}
+		let str = String(format: "%.2f", value)
+		return LeafData.string(str)
+	}
+}
+

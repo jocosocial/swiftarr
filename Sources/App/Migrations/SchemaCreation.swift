@@ -73,6 +73,57 @@ struct CreateBarrelSchema: Migration {
     }
 }
 
+struct CreateBoardgameSchema: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("boardgame")
+				.id()
+				.field("gameName", .string, .required)
+				.field("bggGameName", .string)
+				.field("yearPublished", .string)
+				.field("gameDescription", .string)
+
+				.field("minPlayers", .int)
+				.field("maxPlayers", .int)
+
+				.field("minPlayingTime", .int)
+				.field("maxPlayingTime", .int)
+				.field("avgPlayingTime", .int)
+
+				.field("minAge", .int)
+				.field("numRatings", .int)
+				.field("avgRating", .float)
+				.field("complexity", .float)
+
+				.field("donatedBy", .string)
+				.field("notes", .string)
+				.field("numCopies", .int, .required)
+				
+				.field("expands", .uuid, .references("boardgame", "id"))
+
+				.field("created_at", .datetime)
+				.create()
+	}
+    
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("boardgame").delete()
+    }
+}
+
+struct CreateBoardgameFavoriteSchema: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("boardgame+favorite")
+				.id()
+				.unique(on: "user", "boardgame")
+ 				.field("user", .uuid, .required, .references("users", "id", onDelete: .cascade))
+ 				.field("boardgame", .uuid, .required, .references("boardgame", "id", onDelete: .cascade))
+				.create()
+    }
+    
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("boardgame+favorite").delete()
+    }
+}
+
 struct CreateCategorySchema: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
 		database.enum("user_access_level").read().flatMap { userAccessLevel in

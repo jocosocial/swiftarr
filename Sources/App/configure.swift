@@ -7,6 +7,32 @@ import Metrics
 import Prometheus
 import gd
 
+/// # Launching Swiftarr
+/// 
+/// ### Environment
+/// 
+/// Besides the standard .development, .production, and .testing, there's a few custom environment values that can be set, either on the command line
+/// with `--env=<ENVIRONMENT>` or with the `VAPOR_ENV` environment variable
+/// * --env=heroku: Use this for Heroku installs. This changes the Migrations for games and karaoke to load fewer items and use fewer table rows. It also
+/// 	may change the way images are stored. Otherwise like .production.
+/// 
+/// Environment variables used by Swiftarr:
+/// * DATABASE_URL: 
+/// * DATABASE_HOSTNAME:
+/// * DATABASE_PORT:
+/// * DATABASE_DB:
+/// * DATABASE_PASSWORD:
+/// 
+/// * REDIS_URL:
+/// * REDIS_HOSTNAME: 
+/// 
+/// * PORT:
+/// * hostname:
+/// 
+/// * ADMIN_PASSWORD:
+/// * RECOVERY_KEY:
+/// 
+///
 /// Called before your application initializes. Calls several other config methods to do its work. Sub functions are only
 /// here for easier organization. If order-of-initialization issues arise, rearrange as necessary.
 public func configure(_ app: Application) throws {
@@ -193,6 +219,7 @@ func configureLeaf(_ app: Application) throws {
     app.leaf.tags["avatar"] = AvatarTag()
     app.leaf.tags["userByline"] = UserBylineTag()
     app.leaf.tags["cruiseDayIndex"] = CruiseDayIndexTag()
+    app.leaf.tags["gameRating"] = GameRatingTag()
 }
 
 func configurePrometheus(_ app: Application) throws {
@@ -234,6 +261,8 @@ func configureMigrations(_ app: Application) throws {
 	app.migrations.add(CreateFezPostSchema(), to: .psql)
 	app.migrations.add(CreateFriendlyFezEditSchema(), to: .psql)
 	app.migrations.add(CreateDailyThemeSchema(), to: .psql)
+	app.migrations.add(CreateBoardgameSchema(), to: .psql)
+	app.migrations.add(CreateBoardgameFavoriteSchema(), to: .psql)
 	
 	// Third, migrations that seed the db with initial data
 	app.migrations.add(CreateAdminUser(), to: .psql)
@@ -241,9 +270,10 @@ func configureMigrations(_ app: Application) throws {
 	app.migrations.add(CreateRegistrationCodes(), to: .psql)
 	app.migrations.add(CreateEvents(), to: .psql)
 	app.migrations.add(CreateCategories(), to: .psql)
-//y	app.migrations.add(CreateForums(), to: .psql)
+//	app.migrations.add(CreateForums(), to: .psql)		// Adds some initial forum threads; not the event forum threads.
 	app.migrations.add(CreateEventForums(), to: .psql)
-	if (app.environment == .testing || app.environment == .development) {
+	app.migrations.add(CreateBoardgames(), to: .psql)	
+	if app.environment == .testing || app.environment == .development {
 		app.migrations.add(CreateTestUsers(), to: .psql)
 		app.migrations.add(CreateTestData(), to: .psql)
 	}

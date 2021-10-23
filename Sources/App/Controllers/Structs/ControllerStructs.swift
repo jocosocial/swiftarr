@@ -151,6 +151,108 @@ public struct BlockedUserData: Content {
     var blockedUsers: [UserHeader]
 }
 
+/// Wraps an array of `BoardgameData` with info needed to paginate the result set.
+/// 
+/// Returned by:
+/// * `GET /api/v3/boardgames`
+public struct BoardgameResponseData: Content {
+	/// How many games are in the result set. If the request included a filter, this value will contain the total number of games that match the filter.
+	var totalGames: Int
+	/// The initial offset into the resultSet array. 0 based. 
+	var start: Int
+	/// How many results are to be returned.
+	var limit: Int
+	/// Array of boardgames.
+	var gameArray: [BoardgameData]
+}
+
+/// Used to obtain a list of board games. 
+/// 
+/// Each year there's a list of boardgames published that'll be brought onboard for the games library. The board game data is produced
+/// by running a script that pulls game data from `http://boardgamegeek.com`'s API and merging it with the games library table.
+/// 
+/// Games in the library may not match anything in BGG's database (or we can't find a match), so all the BGG fields are optional.
+///
+/// Returned by:
+/// * `GET /api/v3/boardgames` (inside `BoardgameResponseData`)
+/// * `GET /api/v3/boardgames/:boardgameID`
+/// * `GET /api/v3/boardgames/expansions/:boardgameID`
+///
+/// See `BoardgameController.getBoardgames(_:)`, `BoardgameController.getExpansions(_:)`.
+public struct BoardgameData: Content {
+	// The database ID for this game. Used to request a list of expansion sets for a game.
+	var gameID: UUID
+	/// Name from the JoCo boardgame list
+	var gameName: String
+	/// How many copies are being brought aboard.
+	var numCopies: Int
+	/// Some games each year are loaned to the library by specific people.
+	var donatedBy: String?
+	/// Any notes on the game (specific printing, wear and tear)
+	var notes: String?
+
+	/// From BoardGameGeek's API.
+	var yearPublished: String?
+	/// From BGG's API. Usually several paragraphs.
+	var gameDescription: String?
+
+	/// From BGG's API.
+	var minPlayers: Int?
+	/// From BGG's API.
+	var maxPlayers: Int?
+
+	/// From BGG's API. Playtime in minutes.
+	var minPlayingTime: Int?
+	/// From BGG's API. Playtime in minutes.
+	var maxPlayingTime: Int?
+	/// From BGG's API. Playtime in minutes.
+	var avgPlayingTime: Int?
+
+	/// From BGG's API. Suggested min player age in years. Min age could be determined by complexity or content.
+	var minAge: Int?
+	/// From BGG's API. How many BGG reviewers submitted ratings. 
+	var numRatings: Int?
+	/// From BGG's API. Average game rating. Members can rate games with scores in the range 1...10
+	var avgRating: Float?
+	/// From BGG's API. Members can score a games' complexity on a scale of 1...5, where 1 is Light and 5 is Heavy.
+	var complexity: Float?
+	
+	/// TRUE if this entry is an expansion for another game. Weirdly, the games library may not actually have the base game.
+	/// At any rate, the base game is usually a requirement to play an expansion, and both must be checked out together.
+	var isExpansion: Bool
+	/// TRUE if the user has favorited the game. FALSE if no one is logged in.
+	var isFavorite: Bool
+}
+
+extension BoardgameData {
+	init(game: Boardgame, isFavorite: Bool = false) throws {
+		self.gameID = try game.requireID()
+		self.gameName = game.gameName
+		self.yearPublished = game.yearPublished
+		self.gameDescription = game.gameDescription
+		
+		self.minPlayers = game.minPlayers
+		self.maxPlayers = game.maxPlayers
+		
+		self.minPlayingTime = game.minPlayingTime
+		self.maxPlayingTime = game.maxPlayingTime
+		self.avgPlayingTime = game.avgPlayingTime
+		
+		self.minAge = game.minAge
+		self.numRatings = game.numRatings
+		self.avgRating = game.avgRating
+		self.complexity = game.complexity
+		
+		self.donatedBy = game.donatedBy
+		self.notes = game.notes
+		self.numCopies = game.numCopies
+
+		self.isExpansion = game.$expands.id != nil
+		self.isFavorite = isFavorite
+	}
+}
+
+
 /// Used to return the ID and title of a `Category`. 
 ///
 /// Returned by:
