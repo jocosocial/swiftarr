@@ -73,8 +73,6 @@ considered ephemeral and only ever be used to *attempt* to obtain an ID  (`api/v
 * Images are the WIP that got shoved aside to push this out, very stubby at the moment.
 * Required HTTP payload structs can be encoded as either JSON or MultiPart.
 * Returned data is always JSON.
-* All endpoints are currently GET/POST to maintain high compatibility for web clients. PUT/DELETE can be mapped
-onto them if this offends sensibilities, er, I mean... is desired.
 * Query parameters are pretty much avoided in favor of endpoints except for the few necessary cases.
 * The intended on-boarding flow:
     1. "welcome!"
@@ -100,7 +98,7 @@ onto them if this offends sensibilities, er, I mean... is desired.
 There are five requirements for either running an instance of `swiftarr` or development itself.
 
 * the [`libgd`](http://libgd.github.io) library
-* a recent [Swift](https://swift.org) toolchain (recommend 5.1.x or later)
+* a recent [Swift](https://swift.org) toolchain (recommend 5.5 or later)
 * the [Vapor](http://vapor.codes) framework
 * an instance of [PostgreSQL](https://www.postgresql.org)
 * an instance of [Redis](https://redis.io)
@@ -108,6 +106,8 @@ There are five requirements for either running an instance of `swiftarr` or deve
 A recent version of [Xcode](https://apps.apple.com/us/app/xcode/id497799835?mt=12) is also required for
 development. (This is not strictly necessary, but if you walk your own Swift development path, add
 "self-sufficiency" to the list.)
+
+Swiftarr also uses libjpeg directly, but libjpeg should get installed when installing libgd.
 
 ### Quickstart - macOS
 
@@ -122,15 +122,17 @@ correct SSL library and shimming for SwiftNIO.)
 4. Download or clone the `switarr` [repository](https://github.com/grundoon/swiftarr).
 5. Run `./scripts/instance.sh up` from the `swiftarr` directory to create and launch postgres and redis
 Docker containers.
-6. Generate the `swiftarr.xcodeproj` file, then open it in Xcode.
+6. Open the swiftarr.xcodeproj file.
+7. Run the "Migrate" scheme to configure the databses, or
 
 ```shell
-cd <swiftarr-directory>
-swift package generate-xcodeproj
-open ./swiftarr.xcodeproj
+xcodebuild -project "swiftarr.xcodeproj" -scheme "Migrate"
+./DerivedData/swiftarr/Build/Products/Debug/Run migrate
 ```
 
-Make sure the selected Scheme is "My Mac" in Xcode, hit Run, and `swiftarr` should shortly be available at http://localhost:8081.
+You'll be asked to approve a bunch of migrations; these mostly create database tables. 
+
+8. Set the scheme to "Run/My Mac" in Xcode, hit Run, and `swiftarr` should shortly be available at http://localhost:8081.
 To shut down the Docker containers, `./scripts/instance.sh stop`.
 
 Yes, that's a bunch the first time through and it does take some time. From here on out though, it's just a matter of
@@ -150,6 +152,27 @@ cd <swiftarr-directory>
 This simply adds two more Docker containers to the mix, running instances of postgres and redis on alternate (+1)
 ports.
 
+#### Generating a new Xcode Project
+
+Swiftarr uses a Package.swift dependency management file; like a million other package-managers it loads in other source code
+and manages dependencies. Xcode can also direclty open and build Package.swift files in a way similar to project files; 
+except you can't set up build scripts or do a bunch of other project-y things. To regen the project:
+
+```shell
+cd <swiftarr-directory>
+swift package generate-xcodeproj
+open ./swiftarr.xcodeproj
+```
+
+Then, in Target Settings for the App Target, select the Build Phases tab. Add a Copy Files phase copying "Resources" and 
+"Seeds" directories to the "Products Directory" destination.
+
+One of the many Xcode quirks that confuses developers not used to it is that Xcode puts the built app and all the buildfiles
+in the /DerivedData folder. The Copy Files script copies all the Leaf templates, javascript, css, images, into /DerivedData
+on each build and the running app uses the copies, NOT the files in /Resources and /Seeds. But, the copy happens every build,
+even if no sources changed. So, while running the server, you can edit a Leaf template or some JS, hit command-B to build, 
+reload the page, and see the changes. 
+
 ### Production Instance
 
 Not on macOS or otherwise just want an instance to test against? Sure, there are several options, and they're all
@@ -165,7 +188,10 @@ soon™
 
 #### Heroku
 
-soon™
+Swiftarr is currently running on http://swiftarr.heroku.com, minus image storage. Currently, images are stored in the node
+the app runs in, but that node gets wiped and rebuilt at least once a day.
+
+Instructions soon™
 
 #### AWS
 
