@@ -26,6 +26,11 @@ struct ProfileFormContent: Content {
 	var message: String
 	var about: String
 }
+
+struct AddWordFormStruct: Decodable {
+	var newKeyword: String?
+}
+
 	
 struct SiteUserController: SiteControllerUtils {
 
@@ -59,9 +64,12 @@ struct SiteUserController: SiteControllerUtils {
         privateRoutes.post("user", userIDParam, "mute", use: muteUserPostHandler)
         privateRoutes.post("user", userIDParam, "unmute", use: unmuteUserPostHandler)
         privateRoutes.get("blocks", use: blocksPageHandler)
-        privateRoutes.get("alertwords", use: alertWordsPageHandler)
+        privateRoutes.get("alertwords", use: alertMuteWordsPageHandler)
+        privateRoutes.get("mutewords", use: alertMuteWordsPageHandler)
         privateRoutes.post("alertword", "add", use: addAlertwordPostHandler)
-        privateRoutes.post("alertword", alertWordParam,  "remove", use: removeAlertwordPostHandler)
+        privateRoutes.post("alertword", alertWordParam, "remove", use: removeAlertwordPostHandler)
+        privateRoutes.post("muteword", "add", use: addMutewordPostHandler)
+        privateRoutes.post("muteword", muteWordParam, "remove", use: removeMutewordPostHandler)
 	}
 	
 	/// GET /avatar/full/ID
@@ -230,38 +238,54 @@ struct SiteUserController: SiteControllerUtils {
 	}
 	
 	// GET /alertwords
+	// GET /mutewords
 	//
-	// 
-	func alertWordsPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+	// Shows a page with the user's mute and alert keywords, with controls for deleting current words
+	// and adding new ones to each word set.
+	func alertMuteWordsPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
     	return apiQuery(req, endpoint: "/user/alertwords").throwingFlatMap { alertwordsResponse in
 			let alertwordsData = try alertwordsResponse.content.decode(AlertKeywordData.self)
-			struct AlertwordsContext : Encodable {
-				var trunk: TrunkContext
-				var alertKeywords: [String]
-				
-				init(_ req: Request, alertWords: [String]) throws {
-					trunk = .init(req, title: "Manage Alertwords", tab: .none)
-					self.alertKeywords = alertWords
+			return apiQuery(req, endpoint: "/user/mutewords").throwingFlatMap { mutewordsResponse in
+				let mutewords = try mutewordsResponse.content.decode(MuteKeywordData.self)
+				struct AlertwordsContext : Encodable {
+					var trunk: TrunkContext
+					var alertKeywords: [String]
+					var muteKeywords: [String]
+					
+					init(_ req: Request, alertWords: [String], muteWords: [String]) throws {
+						trunk = .init(req, title: "Manage Alertwords", tab: .none)
+						self.alertKeywords = alertWords
+						self.muteKeywords = muteWords
+					}
 				}
+				let ctx = try AlertwordsContext(req, alertWords: alertwordsData.keywords, muteWords: mutewords.keywords)
+				return req.view.render("User/alertwords", ctx)			
 			}
-			let ctx = try AlertwordsContext(req, alertWords: alertwordsData.keywords)
-			return req.view.render("User/alertwords", ctx)			
 		}
 	}
-
 	
 	// POST /alertword/add
 	//
 	// Adds the word in the form to the user's list of alert keywords.
 	func addAlertwordPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-		struct AlertwordFormStruct: Decodable {
-			var newKeyword: String?
-		}
-		let alertwordFormStruct = try req.content.decode(AlertwordFormStruct.self)
+		let alertwordFormStruct = try req.content.decode(AddWordFormStruct.self)
     	guard let newAlertword = alertwordFormStruct.newKeyword?.percentEncodeQueryValue() else {
     		throw "Invalid alertword parameter"
     	}
 		return apiQuery(req, endpoint: "/user/alertwords/add/\(newAlertword)", method: .POST).map { response in
+			return .created
+		}
+	}
+
+	// POST /muteword/add
+	//
+	// Adds the word in the form to the user's list of mute keywords.
+	func addMutewordPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+		let mutewordFormStruct = try req.content.decode(AddWordFormStruct.self)
+    	guard let newMuteword = mutewordFormStruct.newKeyword?.percentEncodeQueryValue() else {
+    		throw "Invalid muteword parameter"
+    	}
+		return apiQuery(req, endpoint: "/user/mutewords/add/\(newMuteword)", method: .POST).map { response in
 			return .created
 		}
 	}
@@ -274,6 +298,18 @@ struct SiteUserController: SiteControllerUtils {
     		throw "Invalid alertword parameter"
     	}
 		return apiQuery(req, endpoint: "/user/alertwords/remove/\(alertWord)", method: .POST).map { response in
+			return .ok
+		}
+	}
+
+	// POST /muteword/:mute_word/remove
+	//
+	// Remove the given mute keyword.
+	func removeMutewordPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+    	guard let muteWord = req.parameters.get(muteWordParam.paramString)?.percentEncodeFilePathEntry() else {
+    		throw "Invalid muteword parameter"
+    	}
+		return apiQuery(req, endpoint: "/user/mutewords/remove/\(muteWord)", method: .POST).map { response in
 			return .ok
 		}
 	}

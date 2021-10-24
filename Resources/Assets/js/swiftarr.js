@@ -22,6 +22,7 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 		case "unblock": 
 		case "unmute":
 		case "alertWordDelete":
+		case "muteWordDelete":
 			btn.addEventListener("click", spinnerButtonAction); 
 			break;
 		case "delete": btn.addEventListener("click", deleteAction); break;
@@ -109,6 +110,7 @@ async function spinnerButtonAction() {
 				case "unblock": acknowledgeRemovalAction(tappedButton, "unblocked"); break;
 				case "unmute": acknowledgeRemovalAction(tappedButton, "unmuted"); break;
 				case "alertWordDelete": acknowledgeRemovalAction(tappedButton, "removed"); break;
+				case "muteWordDelete": acknowledgeRemovalAction(tappedButton, "removed"); break;
 			}
 		}
 		else {

@@ -396,6 +396,7 @@ extension SiteControllerUtils {
     var imageIDParam: PathComponent { PathComponent(":image_id") }
     var accessLevelParam: PathComponent { PathComponent(":access_level") }
     var alertWordParam: PathComponent { PathComponent(":alert_word") }
+    var muteWordParam: PathComponent { PathComponent(":mute_word") }
 	var boardgameIDParam: PathComponent { PathComponent(":boardgame") }
 
 	/// Call the Swiftarr API. This method pulls a user's token from their session data and adds it to the API call. By default it also forwards URL query parameters
