@@ -60,8 +60,8 @@
 							</div>
 							<div class="collapse" data-label="actionbar">	
 								<div class="row justify-content-center">
-									#if(trunk.userIsLoggedIn):
-										<div class="col col-auto btn-group btn-group-sm">
+									<div class="col col-auto btn-group btn-group-sm">
+										#if(trunk.userIsLoggedIn):
 											<input type="checkbox" class="btn-check" autocomplete="off" data-action="favoriteGame" 
 													data-actionpath="/boardgames/#(game.gameID)/favorite"
 													data-istoggle="true"
@@ -74,11 +74,11 @@
 												<span class="visually-hidden">Loading...</span>
 											</label>
 											<a class="btn btn-outline-primary" href="/boardgames/#(game.gameID)/createfez">Create Fez</a>
-											#if(game.isExpansion):
-												<a class="btn btn-outline-primary" href="/boardgames/#(game.gameID)/expansions">Show Expansions</a>
-											#endif
-										</div>
-									#endif
+										#endif
+										#if(game.isExpansion):
+											<a class="btn btn-outline-primary" href="/boardgames/#(game.gameID)/expansions">Show Expansions</a>
+										#endif
+									</div>
 								</div>
 								<div class="row">
 									<div class="col text-end text-danger d-none" id="#(game.gameID)_errorDisplay">

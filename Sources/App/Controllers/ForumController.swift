@@ -168,8 +168,8 @@ struct ForumController: APIRouteCollection {
 			else if let afterDate = req.query[Date.self, at: "afterdate"] {
 				query.filter((dateFilterUsesUpdate ? \.$updatedAt : \.$createdAt) > afterDate)
 			}
-			return query.all().flatMap { (forums) in
-				return buildForumListData(forums, on: req, userID: userID, favoritesBarrel: barrel).flatMapThrowing { forumList in
+			return query.all().throwingFlatMap { forums in
+				return try buildForumListData(forums, on: req, user: user, favoritesBarrel: barrel).flatMapThrowing { forumList in
 					return try CategoryData(category, restricted: category.accessLevelToCreate > user.accessLevel,
 							forumThreads: forumList)
 				}
@@ -225,7 +225,6 @@ struct ForumController: APIRouteCollection {
     /// - Returns: An array of <doc:ForumListData> containing all matching forums.
     func forumMatchHandler(_ req: Request) throws -> EventLoopFuture<ForumSearchData> {
         let user = try req.auth.require(User.self)
-        let userID = try user.requireID()
         guard var search = req.parameters.get("search_string") else {
             throw Abort(.badRequest, reason: "Missing search parameter.")
         }
@@ -242,8 +241,8 @@ struct ForumController: APIRouteCollection {
 			let countQuery = Forum.query(on: req.db).filter(\.$creator.$id !~ blocked).filter(\.$title, .custom("ILIKE"), "%\(search)%")
 					.filter(\.$accessLevelToView <= user.accessLevel)
 			let resultQuery = countQuery.sort(\.$createdAt, .descending).range(start..<(start + limit))
-			return countQuery.count().and(resultQuery.all()).flatMap { (forumCount, forums) in
-				return buildForumListData(forums, on: req, userID: userID, favoritesBarrel: barrel).map { forumList in
+			return countQuery.count().and(resultQuery.all()).throwingFlatMap { (forumCount, forums) in
+				return try buildForumListData(forums, on: req, user: user, favoritesBarrel: barrel).map { forumList in
 					return ForumSearchData(start: start, limit: limit, numThreads: forumCount, forumThreads: forumList)
 				}
 			}
@@ -463,7 +462,7 @@ struct ForumController: APIRouteCollection {
 			}
 			
 			return query.count().flatMap { totalPosts in
-				return query.range(start..<(start + limit)).all().flatMap { posts in
+				return query.range(start..<(start + limit)).all().throwingFlatMap { posts in
 					// The filter() for mentions will include usernames that are prefixes for other usernames and other false positives.
 					// This filters those out after the query. 
 					var postFilteredPosts = posts
@@ -474,7 +473,7 @@ struct ForumController: APIRouteCollection {
 							_ = user.save(on: req.db)	
 						}
 					}
-					return buildPostData(postFilteredPosts, user: user, on: req, mutewords: cachedUser.mutewords).map { postData in
+					return try buildPostData(postFilteredPosts, user: user, on: req, mutewords: cachedUser.mutewords).map { postData in
 						return PostSearchData(queryString: req.url.query ?? "", totalPosts: totalPosts, 
 								start: start, limit: limit, posts: postData)
 					}
@@ -627,8 +626,8 @@ struct ForumController: APIRouteCollection {
 				case "title": _ = rangeQuery.sort(\.$title, .ascending)
 				default: _ = rangeQuery.sort(\.$createdAt, .descending)
 			}
-			return countQuery.count().and(rangeQuery.all()).flatMap { (forumCount, forums) in
-				return buildForumListData(forums, on: req, userID: userID, forceIsFavorite: true).map { forumList in
+			return countQuery.count().and(rangeQuery.all()).throwingFlatMap { (forumCount, forums) in
+				return try buildForumListData(forums, on: req, user: user, forceIsFavorite: true).map { forumList in
 					return ForumSearchData(start: start, limit: limit, numThreads: forumCount, forumThreads: forumList)
 				}
             }
@@ -781,15 +780,14 @@ struct ForumController: APIRouteCollection {
     /// - Returns: An array of <doc:ForumListData> containing all forums created by the user.
     func ownerHandler(_ req: Request) throws-> EventLoopFuture<ForumSearchData> {
         let user = try req.auth.require(User.self)
-        let userID = try user.requireID()
         let start = (req.query[Int.self, at: "start"] ?? 0)
         let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
         // get user's taggedForum barrel
         return user.getBookmarkBarrel(of: .taggedForum, on: req.db).flatMap { (barrel) in
             let countQuery = user.$forums.query(on: req.db).filter(\.$accessLevelToView <= user.accessLevel)
             let resultQuery = countQuery.sort(\.$title, .ascending).range(start..<(start + limit))
-			return countQuery.count().and(resultQuery.all()).flatMap { (forumCount, forums) in
-				return buildForumListData(forums, on: req, userID: userID, favoritesBarrel: barrel).map { forumList in
+			return countQuery.count().and(resultQuery.all()).throwingFlatMap { (forumCount, forums) in
+				return try buildForumListData(forums, on: req, user: user, favoritesBarrel: barrel).map { forumList in
 					return ForumSearchData(start: start, limit: limit, numThreads: forumCount, forumThreads: forumList)
 				}
 			}
@@ -923,8 +921,8 @@ struct ForumController: APIRouteCollection {
 				}
 				return post.$likes.attachOrEdit(from: post, to: user, on: req.db) { postLike in
 					postLike.likeType = likeType
-				}.flatMap { 
-					return buildPostData([post], user: user, on: req).map { postDataArray in
+				}.throwingFlatMap { 
+					return try buildPostData([post], user: user, on: req).map { postDataArray in
 						return postDataArray[0]
 					}
 				}
@@ -964,8 +962,8 @@ struct ForumController: APIRouteCollection {
 						throw Abort(.badRequest, reason: "user does not have a reaction on the post")
 					}
 					// remove pivot
-					return post.$likes.detach(user, on: req.db).flatMap { (_) in
-						return buildPostData([post], user: user, on: req).map { postDataArray in
+					return post.$likes.detach(user, on: req.db).throwingFlatMap { (_) in
+						return try buildPostData([post], user: user, on: req).map { postDataArray in
 							return postDataArray[0]
 						}
 					}
@@ -1009,9 +1007,9 @@ struct ForumController: APIRouteCollection {
 					}
 					return req.eventLoop.future((post, false))
 				}
-				.flatMap { (post, wasCreated: Bool) in
+				.throwingFlatMap { (post, wasCreated: Bool) in
 					// return updated post as PostData, with 200 or 201 status
-					return buildPostData([post], user: user, on: req).flatMapThrowing { postDataArray in
+					return try buildPostData([post], user: user, on: req).flatMapThrowing { postDataArray in
 						let response = Response(status: wasCreated ? .created : .ok)
 						try response.content.encode(postDataArray[0])
 						return response
@@ -1039,41 +1037,42 @@ extension ForumController {
 	}
 	
 	/// Builds an array of `ForumListData` from the given `Forums`. `ForumListData` does not return post content, but does return post counts.
-	func buildForumListData(_ forums: [Forum], on req: Request, userID: UUID,
-			favoritesBarrel: Barrel? = nil, forceIsFavorite: Bool? = nil) -> EventLoopFuture<[ForumListData]> {
+	func buildForumListData(_ forums: [Forum], on req: Request, user: User,
+			favoritesBarrel: Barrel? = nil, forceIsFavorite: Bool? = nil) throws -> EventLoopFuture<[ForumListData]> {
 		// get forum metadata
-		var forumCounts: [EventLoopFuture<Int>] = []
-		var forumLastPosts: [EventLoopFuture<ForumPost?>] = []
-		var readerPivots: [EventLoopFuture<ForumReaders?>] = []
-		for forum in forums {
-			forumCounts.append(forum.$posts.query(on: req.db).count())
-			forumLastPosts.append(forum.$posts.query(on: req.db).sort(\.$createdAt, .descending).first())
-			readerPivots.append(forum.$readers.$pivots.query(on: req.db).filter(\.$user.$id == userID).first())
+		let forumIDs = try forums.map { try $0.requireID() }
+		let forumPostCountsFuture = try forums.childCountsPerModel(atPath: \.$posts, on: req.db)
+		let readerPivotsFuture = user.$readForums.$pivots.query(on: req.db).filter(\.$forum.$id ~~ forumIDs).all()
+		let forumLastPostsFuture: [EventLoopFuture<ForumPost?>] = forums.map { forum in
+			forum.$posts.query(on: req.db).sort(\.$createdAt, .descending).first()
 		}
 		// resolve futures
-		return forumCounts.flatten(on: req.eventLoop).and(forumLastPosts.flatten(on: req.eventLoop))
-				.flatMap { (counts, lastPosts) in
-			return readerPivots.flatten(on: req.eventLoop).flatMapThrowing { readCounts in
-				// return as ForumListData
-				var returnListData: [ForumListData] = []
-				for (index, forum) in forums.enumerated() {
+		return forumPostCountsFuture.and(readerPivotsFuture).flatMap { (postCounts, readerPivots) in
+			return forumLastPostsFuture.flatten(on: req.eventLoop).flatMapThrowing { forumLastPosts in
+				let postEnumeration: [(UUID, ForumPost)] = forumLastPosts.compactMap {
+					if let post = $0 { 
+						return (post.$forum.id, post) 
+					}
+					else {
+						return nil
+					}
+				}
+				let lastPostsDict = Dictionary(postEnumeration, uniquingKeysWith: { (first, _) in first })
+				let readerPivotsDict = Dictionary(readerPivots.map { ($0.$forum.id, $0) }, 
+						 uniquingKeysWith: { (first, _) in first })
+				let returnListData: [ForumListData] = try forums.map { forum in
+					let forumID = try forum.requireID()
 					let creatorHeader = try req.userCache.getHeader(forum.$creator.id)
 					var lastPosterHeader: UserHeader? 
 					var lastPostTime: Date? 
-					if let lastPost = lastPosts[index] {
+					if let lastPost = lastPostsDict[forumID] {
 						lastPosterHeader = try req.userCache.getHeader(lastPost.$author.id)
 						lastPostTime = lastPost.createdAt
 					}
-					returnListData.append(
-						try ForumListData(
-							forum: forum, 
-							creator: creatorHeader, 
-							postCount: counts[index], 
-							readCount: readCounts[index]?.readCount ?? 0, 
-							lastPostAt: lastPostTime,
-							lastPoster: lastPosterHeader,
+					return try ForumListData(forum: forum, creator: creatorHeader, postCount: postCounts[forumID] ?? 0, 
+							readCount: readerPivotsDict[forumID]?.readCount ?? 0, 
+							lastPostAt: lastPostTime, lastPoster: lastPosterHeader,
 							isFavorite: forceIsFavorite ?? favoritesBarrel?.contains(forum) ?? false)
-					)
 				}
 				return returnListData
 			}
@@ -1136,7 +1135,7 @@ extension ForumController {
 					else {
 						query = query.range(start...start + limit)
 					}
-					return query.all().flatMap { (posts) -> EventLoopFuture<ForumData> in
+					return query.all().throwingFlatMap { (posts) -> EventLoopFuture<ForumData> in
 						if let pivot = readerPivot {
 							let newReadCount = min(start + limit, postCount)
 							if newReadCount > pivot.readCount || pivot.readCount > postCount {
@@ -1149,7 +1148,7 @@ extension ForumController {
 								newReader.readCount = min(start + limit, postCount)
 							}
 						}
-						return buildPostData(posts, user: user, on: req, mutewords: cacheUser.mutewords).flatMapThrowing { flattenedPosts in
+						return try buildPostData(posts, user: user, on: req, mutewords: cacheUser.mutewords).flatMapThrowing { flattenedPosts in
 							let creatorHeader = try req.userCache.getHeader(forum.$creator.id)
 							var result = try ForumData(forum: forum, creator: creatorHeader, 
 									isFavorite: favoriteForumBarrel?.contains(forum) ?? false, posts: flattenedPosts)
@@ -1168,39 +1167,43 @@ extension ForumController {
 	// for the post, as well as the total count of likes. The optional parameters are for callers that
 	// only need some of the functionality, or for whom some of the values are known in advance e.g.
 	// the method that returns a user's bookmarked posts can assume all the posts it finds are in fact bookmarked.
-	func buildPostData(_ posts: [ForumPost], user: User, on req: Request,
-			mutewords: [String]? = nil, assumeBookmarked: Bool? = nil, assumeLikeType: LikeType? = nil) -> EventLoopFuture<[PostData]> {
-
+	func buildPostData(_ posts: [ForumPost], user: User, on req: Request, mutewords: [String]? = nil, 
+			assumeBookmarked: Bool? = nil, assumeLikeType: LikeType? = nil, matchHashtag: String? = nil) throws -> EventLoopFuture<[PostData]> {
 		// remove muteword posts
 		var filteredPosts = posts
 		if let mutes = mutewords {
 			 filteredPosts = posts.compactMap { $0.filterOutStrings(using: mutes) }
 		}
-		// convert to PostData
-		let postsData = filteredPosts.map { (filteredPost) -> EventLoopFuture<PostData> in
-			do {
-      			let author = try req.userCache.getHeader(filteredPost.$author.id)
-				let bookmarked = assumeBookmarked == nil ? user.hasBookmarked(filteredPost, on: req) :
-						req.eventLoop.future(assumeBookmarked!)
-				let processUserLike = try author.userID != user.requireID() && assumeLikeType == nil
-				let userLike = processUserLike ? try PostLikes.query(on: req.db)
-					.filter(\.$post.$id == filteredPost.requireID())
-					.filter(\.$user.$id == user.requireID())
-					.first().map { $0?.likeType } : req.eventLoop.future(assumeLikeType)
-				let likeCount = try PostLikes.query(on: req.db)
-					.filter(\.$post.$id  == filteredPost.requireID())
-					.count()
-				return bookmarked.and(userLike).and(likeCount).flatMapThrowing { (arg0, count) in
-					let (bookmarked, userLike) = arg0
-					return try PostData(post: filteredPost, author: author, bookmarked: bookmarked, 
-							userLike: userLike, likeCount: count)
-				}
-			}
-			catch {
-				return req.eventLoop.makeFailedFuture(error)
+		// get exact hashtag if we're matching on hashtag
+		if let hashtag = matchHashtag {
+			filteredPosts = filteredPosts.compactMap { filteredPost in
+				let text = filteredPost.text.lowercased()
+				let words = text.components(separatedBy: .whitespacesAndNewlines + .contentSeparators)
+				return words.contains(hashtag) ? filteredPost : nil
 			}
 		}
-		return postsData.flatten(on: req.eventLoop)
+		
+		let postIDs = try filteredPosts.map { try $0.requireID() }
+		let bookmarkFuture = try Barrel.query(on: req.db).filter(\.$ownerID == user.requireID())
+				.filter(\.$barrelType == .bookmarkedPost).first()
+		let userLikesFuture = try PostLikes.query(on: req.db).filter(\.$post.$id ~~ postIDs)
+					.filter(\.$user.$id == user.requireID()).all()
+		let likeCountsFuture = try filteredPosts.childCountsPerModel(atPath: \.$likes.$pivots, on: req.db)
+		return bookmarkFuture.and(userLikesFuture).and(likeCountsFuture).flatMapThrowing { (arg0, likeCountDict) in
+			let (bookmarkBarrel, userLikes) = arg0
+			let bookmarks = bookmarkBarrel?.userInfo["bookmarks"] ?? []
+			let userLikeDict = Dictionary(userLikes.map { ($0.$post.id, $0) }, uniquingKeysWith: { (first, _) in first })
+
+			let postDataArray = try filteredPosts.map { post -> PostData in 
+				let postID = try post.requireID()
+				let author = try req.userCache.getHeader(post.$author.id)
+				let bookmarked = try assumeBookmarked ?? bookmarks.contains(post.bookmarkIDString())
+				let userLike = userLikeDict[postID]?.likeType
+				let likeCount = likeCountDict[postID] ?? 0
+				return try PostData(post: post, author: author, bookmarked: bookmarked, userLike: userLike, likeCount: likeCount)
+			}
+			return postDataArray
+		}
 	}
 	
 	// Scans the text of forum posts as they are created/edited/deleted, finds @mentions, updates mention counts for

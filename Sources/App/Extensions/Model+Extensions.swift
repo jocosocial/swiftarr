@@ -1,5 +1,6 @@
 import Vapor
 import Fluent
+import SQLKit
 
 extension Model where IDValue: LosslessStringConvertible {
 
@@ -83,6 +84,53 @@ extension EventLoopFuture {
 		}
 		return self.flatMap(wrappedCallback)
     }
+}
+
+
+extension Array where Element: Model {
+	/// Returns a Dictionary mapping IDs of the array elements to counts of how many associated Children each element has in the database.
+	/// 
+	/// Result is a Dictionary instead of an array because (I think?) SQL may coalesce array values with the same ID, resulting in a output array
+	/// smaller than the input.
+	/// 
+	/// If the database is SQL-backed, this method uses SQLKit to get counts for the # of related rows of each array element all with one call. 
+	/// This is considerably faster than the Fluent-only path, saving ~1.2ms per array element. For a 50 element array, the SQLKit path will take
+	/// ~2ms, and the Fluent path will take ~75ms.
+	public func childCountsPerModel<ChildModel: Model>(atPath: KeyPath<Element, ChildrenProperty<Element, ChildModel>>, on db: Database)
+			throws -> EventLoopFuture<Dictionary<Element.IDValue, Int>> {
+		guard let sql = db as? SQLDatabase else {
+			// SQL not available? Use Fluent; make a separate count() query per array element. 
+			let futures = self.map { $0[keyPath: atPath].query(on: db).count() }
+			return futures.flatten(on: db.eventLoop).flatMapThrowing { counts in
+				var elementTuples: [(Element.IDValue, Int)] = []
+				for (index, element) in self.enumerated() {
+					try elementTuples.append((element.requireID(), counts[index]))
+				}
+				return Dictionary(elementTuples, uniquingKeysWith: { (first, _) in first })
+			}
+		}
+		// Use SQLKit directly, bypassing Fluent. Make a single SQL call of the general form:
+		// "select parentColumn, count(*) from "childModelSchema" where parentColumn in <list of IDs> group by parentColumn
+		// This returns a bunch of rows of (parentID, count) tuples
+		var columnName: String
+		switch self[0][keyPath: atPath.appending(path: \.parentKey)] {
+			case .required(let required):
+				columnName = ChildModel()[keyPath: required.appending(path: \.$id.key)].description
+			case .optional(let optional):
+				columnName = ChildModel()[keyPath: optional.appending(path: \.$id.key)].description
+		}
+		let elementIDArray = try self.map { try $0.requireID() }
+		return sql.select().columns(SQLColumn(columnName), SQLFunction("COUNT", args: SQLLiteral.all))
+				.from(ChildModel.schema).where(SQLIdentifier(columnName), .in, elementIDArray)
+				.groupBy(columnName).all().flatMapThrowing { rows in
+			let elementTuples: [(Element.IDValue, Int)] = try rows.map { row in
+				let elementID = try row.decode(column: columnName, as: Element.IDValue.self)
+				let countForThisElement = try row.decode(column: "count", as: Int.self)
+				return (elementID, countForThisElement)
+			}
+			return Dictionary(elementTuples, uniquingKeysWith: { (first, _) in first })
+		}
+	}
 }
 
 extension SiblingsProperty {

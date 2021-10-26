@@ -68,7 +68,7 @@ final class Twarrt: Model {
     // Used by Fluent
  	init() { }
  	
-    /// Initialized a new Twarrt.
+    /// Initializes a new Twarrt.
     ///
     /// - Parameters:
     ///   - author: The author of the twarrt.
