@@ -1,7 +1,7 @@
 #extend("trunk"):
     #export("body"):
     	<div class="container-md ms-0 my-1">
-    		<div class="row">
+    		<div class="row align-items-center">
 				#if(topMorePostsURL):
 					<div class="col col-auto">
 						<a class="btn btn-primary btn-sm" href="#(topMorePostsURL)">#(topMorePostsLabel)</a>

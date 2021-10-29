@@ -88,6 +88,32 @@ extension ContentFilterable {
 		}
     }
     
+    /// Retuns all discovered hashtags in all text strings of the content.
+    func getHashtags() -> Set<String> {
+    	var hashtags: Set<String> = Set()
+		self.contentTextStrings().forEach { string in
+			let words = string.split(separator: " ", omittingEmptySubsequences: true)
+			for word in words {
+				if !word.hasPrefix("#") || word.count < 3 || word.count >= 50 {
+					continue
+				}
+				let scalars = word.unicodeScalars
+				let firstValidHashtagIndex = scalars.index(scalars.startIndex, offsetBy: 1)
+				var firstNonHashtagIndex = firstValidHashtagIndex
+				// Move forward to the last char that's valid in a hashtag
+				while firstNonHashtagIndex < scalars.endIndex, CharacterSet.alphanumerics.contains(scalars[firstNonHashtagIndex]) {
+					scalars.formIndex(after: &firstNonHashtagIndex)		
+				}
+				// After trimming, hashtag must be >=2 chars, plus the # sign makes 3.
+				if scalars.distance(from: scalars.startIndex, to: firstNonHashtagIndex) >= 3 {
+					let hashtag = String(scalars[firstValidHashtagIndex..<firstNonHashtagIndex])
+					hashtags.insert(hashtag)
+				}
+			}
+		}
+		return hashtags
+	}
+    
 	static func buildCleanWordsArray(_ str: String) -> Set<String> {
 		let words = Set(str.lowercased().filter { $0.isLetter || $0.isWhitespace }.split(separator: " ").map { String($0) })
 		return words

@@ -17,7 +17,7 @@
 				</div>
 				<div class="row">	
 					<div class="col">
-						#formatPostText(tweet.text)
+						#formatTwarrtText(tweet.text)
 					</div>
 				</div>
 				#if(tweet.images):

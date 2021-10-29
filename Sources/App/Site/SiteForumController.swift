@@ -58,6 +58,45 @@ struct ForumsSearchPageContext : Encodable {
 	}
 }
 
+// Matches the URL Query options for `/api/v3/forum/post/search`
+struct ForumPostSearchQueryOptions: Content {
+	var search: String?
+	var hashtag: String?
+	var mentionname: String?
+	var mentionid: UUID?
+	var mentionself: Bool?
+	var ownreacts: Bool?
+	var byself: Bool?
+	var bookmarked: Bool?
+	var forum: UUID?
+	var category: UUID?
+	var start: Int?
+	var limit: Int?
+	
+	func buildQuery(baseURL: String, startOffset: Int?) -> String? {
+		guard var components = URLComponents(string: baseURL) else {
+			return nil
+		}
+		var elements = [URLQueryItem]()
+		if let search = search { elements.append(URLQueryItem(name: "search", value: search)) }
+		if let hashtag = hashtag { elements.append(URLQueryItem(name: "hashtag", value: hashtag)) }
+		if let mentionname = mentionname { elements.append(URLQueryItem(name: "mentionname", value: mentionname)) }
+		if let mentionid = mentionid { elements.append(URLQueryItem(name: "mentionid", value: mentionid.uuidString)) }
+		if let _ = mentionself { elements.append(URLQueryItem(name: "mentionself", value: "true")) }
+		if let _ = ownreacts { elements.append(URLQueryItem(name: "ownreacts", value: "true")) }
+		if let _ = byself { elements.append(URLQueryItem(name: "byself", value: "true")) }
+		if let _ = bookmarked { elements.append(URLQueryItem(name: "bookmarked", value: "true")) }
+		if let forum = forum { elements.append(URLQueryItem(name: "forum", value: forum.uuidString)) }
+		if let category = category { elements.append(URLQueryItem(name: "category", value: category.uuidString)) }
+		let newOffset = max(startOffset ?? start ?? 0, 0)
+		if newOffset != 0 { elements.append(URLQueryItem(name: "start", value: String(newOffset))) }
+		if let limit = limit { elements.append(URLQueryItem(name: "limit", value: String(limit))) }
+
+		components.queryItems = elements
+		return components.string
+	}
+}
+
 // Used for Post Search, BookmaredPosts, and Posts Mentioning You pages.
 struct PostSearchPageContext : Encodable {
 	var trunk: TrunkContext
@@ -71,6 +110,7 @@ struct PostSearchPageContext : Encodable {
 		case owned
 		case favorite
 		case textSearch
+		case direct				// Request has all search params, see /api/v3/forum/post/search
 	}
 	
 	init(_ req: Request, posts: PostSearchData, searchType: SearchType, searchString: String = "") throws {
@@ -100,6 +140,26 @@ struct PostSearchPageContext : Encodable {
 				filterDescription = "\(posts.totalPosts) Posts with \"\(searchString)\""
 				paginatorClosure = { pageIndex in
 					"/forum/search?search=\(searchString)&searchType=posts&start=\(pageIndex * posts.limit)&limit=\(posts.limit)"
+				}
+			case .direct:
+				let searchParams = try req.query.decode(ForumPostSearchQueryOptions.self)
+				filterDescription = searchParams.bookmarked != nil ? "Bookmarked posts" : "Posts" +
+						(searchParams.byself != nil ? " by you" : "") +
+						(searchParams.ownreacts != nil ? " you reacted to" : "") +
+						(searchParams.mentionself != nil ? " mentioning you" : "")
+				if let name = searchParams.mentionname {
+					filterDescription.append(" mentioning \"@\(name)\"")
+				}
+				if let tag = searchParams.hashtag {
+					filterDescription.append(" with hashtag \"#\(tag)\"")
+				}
+				if let searchStr = searchParams.search {
+					filterDescription.append(" containing \"\(searchStr)\"")
+				}
+				title = "Forum Post Search"
+				paginatorClosure = { pageIndex in
+					let limit = searchParams.limit ?? 50
+					return searchParams.buildQuery(baseURL: "/forumpost/search", startOffset: pageIndex * limit) ?? "/"
 				}
 		}
 		trunk = .init(req, title: title, tab: .forums, search: "Search")
@@ -159,6 +219,7 @@ struct SiteForumController: SiteControllerUtils {
 		privateRoutes.get("forumpost", "owned", use: forumPostsByUserViewHandler)
 		privateRoutes.post("forumpost", "favorite", postIDParam, use: forumPostAddBookmarkPostHandler)
 		privateRoutes.delete("forumpost", "favorite", postIDParam, use: forumPostRemoveBookmarkPostHandler)
+		privateRoutes.get("forumpost", "search", use: forumPostSearchPageHandler)
 		
 		
 	}
@@ -688,7 +749,7 @@ struct SiteForumController: SiteControllerUtils {
 
     // GET /forum/search
     //
-    // Shows results of forum or post searches.
+    // Shows results of forum or post searches from the header search bar.
 	func forumSearchPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		struct FormData : Content {
 			var search: String
@@ -718,7 +779,18 @@ struct SiteForumController: SiteControllerUtils {
 			}
 		}
 	}
+	
+    // GET /forumpost/search
+    //
+    // Shows results of searches for forum posts. Passes query parameters through to /api/v3/forum/post/search.
+	func forumPostSearchPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+		return apiQuery(req, endpoint: "/forum/post/search").throwingFlatMap { response in
+			let responseData = try response.content.decode(PostSearchData.self)
+			let ctx = try PostSearchPageContext(req, posts: responseData, searchType: .direct)
+			return req.view.render("Forums/forumPostsList", ctx)
+		}
+	}
 
 }
 
-    
+

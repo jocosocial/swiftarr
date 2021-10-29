@@ -1232,28 +1232,33 @@ extension ForumController {
 				}
 			}
 		}
-		return mentionsFuture.flatMap {
-			// An imperfect solution, but users should not be able to infer word use in forums they can't see.
-			// Alert word counts are stored in one global store for all alertwords; handling this 'correctly' would 
-			// require individual counts for each access level.
-			if forum.accessLevelToView > .verified {
-				return req.eventLoop.future()
-			}
-			let (subtracts, adds) = post.getAlertwordDiffs(editedString: editedText, isCreate: isCreate)
-			return req.redis.zrange(from: "alertwords-posts", firstIndex: 0, lastIndex: -1).flatMap { alertwords in 
-				let alertSet = Set(alertwords.compactMap { String.init(fromRESP: $0) })
-				let subtractingAlertWords = subtracts.intersection(alertSet)
-				let addingAlertWords = adds.intersection(alertSet)
-				var futures: [EventLoopFuture<Double>] = []
-				subtractingAlertWords.forEach { word in
-					futures.append(req.redis.zincrby(-1.0, element: word, in: "alertwords-posts"))
-				}
-				addingAlertWords.forEach { word in
-					futures.append(req.redis.zincrby(1.0, element: word, in: "alertwords-posts"))
-				}
-				return futures.flatten(on: req.eventLoop).transform(to: ())
-			}
+		// An imperfect solution, but users should not be able to infer word use in forums they can't see.
+		// Alert word counts are stored in one global store for all alertwords; handling this 'correctly' would 
+		// require individual counts for each access level.
+		if forum.accessLevelToView > .verified {
+			return req.eventLoop.future()
 		}
+		let (alertSubtracts, alertAdds) = post.getAlertwordDiffs(editedString: editedText, isCreate: isCreate)
+		let alertwordsFuture: EventLoopFuture<Void> = req.redis.zrange(from: "alertwords-posts", firstIndex: 0, lastIndex: -1)
+				.flatMap { alertwords in 
+			let alertSet = Set(alertwords.compactMap { String.init(fromRESP: $0) })
+			let subtractingAlertWords = alertSubtracts.intersection(alertSet)
+			let addingAlertWords = alertAdds.intersection(alertSet)
+			var futures: [EventLoopFuture<Double>] = []
+			subtractingAlertWords.forEach { word in
+				futures.append(req.redis.zincrby(-1.0, element: word, in: "alertwords-posts"))
+			}
+			addingAlertWords.forEach { word in
+				futures.append(req.redis.zincrby(1.0, element: word, in: "alertwords-posts"))
+			}
+			return futures.flatten(on: req.eventLoop).transform(to: ())
+		}
+		// Hashtag check
+		let hashtags = post.getHashtags().map { ($0, 0.0 ) }
+		let hashtagsFuture = hashtags.isEmpty ? req.eventLoop.future() : 
+				req.redis.zadd(hashtags, to: "hashtags").transform(to: ())
+
+		return mentionsFuture.and(alertwordsFuture).and(hashtagsFuture).transform(to: ())
 	}
 	
 	// Deleting a forum thread means we delete a bunch of posts at once. This fn coalesces the updates to User models

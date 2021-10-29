@@ -22,6 +22,7 @@ struct AlertController: APIRouteCollection {
         
 		// convenience route group for all /api/v3/notification endpoints
 		let alertRoutes = app.grouped("api", "v3", "notification")
+		alertRoutes.get("hashtags", searchStringParam, use: getHashtagsHandler)
 
 		// Flexible access endpoints -- login not required, although calls may act differently if logged in
 		let flexAuthGroup = addFlexAuthGroup(to: alertRoutes)
@@ -41,6 +42,27 @@ struct AlertController: APIRouteCollection {
 
 	}
 	
+	// MARK: - Hashtags
+	
+	func getHashtagsHandler(_ req: Request) throws -> EventLoopFuture<[String]> {
+		guard var paramVal = req.parameters.get(searchStringParam.paramString), paramVal.count >= 1 else {
+            throw Abort(.badRequest, reason: "Request parameter \(searchStringParam.paramString) is missing.")
+        }
+        if paramVal.hasPrefix("#") {
+        	paramVal = String(paramVal.dropFirst())
+        }
+		guard paramVal.count >= 1, paramVal.count < 50, paramVal.allSatisfy({ $0.isLetter || $0.isNumber }) else {
+            throw Abort(.badRequest, reason: "Request parameter \(searchStringParam.paramString) is malformed.")
+		}
+		return req.redis.zrangebylex(from: "hashtags", withValuesBetween: (min: .inclusive(paramVal), max: .inclusive("\(paramVal)\u{FF}")), 
+				limitBy: (offset: 0, count: 10)).map { respvalues in
+			let strings = respvalues.map { $0.description }
+			return strings
+		}
+	}
+
+
+
 	// MARK: - Notifications
 		
     /// `GET /api/v3/notification/global`
@@ -224,7 +246,10 @@ struct AlertController: APIRouteCollection {
 	
     /// `GET /api/v3/notification/announcement/ID`
     ///
-    /// Returns a single announcement, identified by its ID. THO and admins only. . 
+    /// Returns a single announcement, identified by its ID. THO and admins only. Others should just use `/api/v3/notification/announcements`.
+	/// 
+	/// Announcements shouldn't be large, and there shouldn't be many of them active at once (Less than 1KB each, if there's more than 5 active 
+	/// at once people likely won't read them). This endpoint really exists to support admins editing announcements.
 	/// 
     /// - Parameter announcementID: The announcement to find
     /// - Throws: 403 error if the user doesn't have THO-level access. 404 if no announcement with the given ID is found.

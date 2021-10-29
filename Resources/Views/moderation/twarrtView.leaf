@@ -63,7 +63,7 @@
 										</div>
 										<div class="row">	
 											<div class="col">
-												#formatPostText(modData.twarrt.text)
+												#formatTwarrtText(modData.twarrt.text)
 											</div>
 										</div>
 										#if(modData.twarrt.images):

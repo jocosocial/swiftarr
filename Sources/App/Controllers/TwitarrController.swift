@@ -758,10 +758,15 @@ extension TwitarrController {
 		}
 	}
 	
-	// Scans the text of twarrts as they are created/edited/deleted, finds @mentions, updates mention counts for
-	// mentioned `User`s.
+	// Scans the text of twarrts as they are created/edited/deleted. Handles several on-post text processing tasks.
+	//	1. finds @mentions, updates mention counts for mentioned `User`s. 
+	//	2. runs text through the alertword checker, adjusts counts for words *someone* is alerting on.
+	//		--note: Does not trigger a notification directly, although perhaps it could? Instead, the next time
+	// 		the user calls the notification endpoint they are informed of the new alertword hits.
+	//	3. finds hashtags 
 	@discardableResult func processTwarrtMentions(twarrt: Twarrt, editedText: String?, 
 			isCreate: Bool = false, on req: Request) -> EventLoopFuture<Void> {	
+		// Mentions
 		let (subtracts, adds) = twarrt.getMentionsDiffs(editedString: editedText, isCreate: isCreate)
 		var mentionsFuture = req.eventLoop.future()
 		if !subtracts.isEmpty || !adds.isEmpty {
@@ -779,22 +784,26 @@ extension TwitarrController {
 				}
 			}
 		}
-		return mentionsFuture.flatMap {
-			// Alert words check
-			let (subtracts, adds) = twarrt.getAlertwordDiffs(editedString: editedText, isCreate: isCreate)
-			return req.redis.zrange(from: "alertwords-tweets", firstIndex: 0, lastIndex: -1).flatMap { alertwords in 
-				let alertSet = Set(alertwords.compactMap { String.init(fromRESP: $0) })
-				let subtractingAlertWords = subtracts.intersection(alertSet)
-				let addingAlertWords = adds.intersection(alertSet)
-				var futures: [EventLoopFuture<Double>] = []
-				subtractingAlertWords.forEach { word in
-					futures.append(req.redis.zincrby(-1.0, element: word, in: "alertwords-tweets"))
-				}
-				addingAlertWords.forEach { word in
-					futures.append(req.redis.zincrby(1.0, element: word, in: "alertwords-tweets"))
-				}
-				return futures.flatten(on: req.eventLoop).transform(to: ())
+		// Alert words check
+		let (alertSubtracts, alertAdds) = twarrt.getAlertwordDiffs(editedString: editedText, isCreate: isCreate)
+		let alertwordsFuture: EventLoopFuture<Void> = req.redis.zrange(from: "alertwords-tweets", firstIndex: 0, lastIndex: -1).flatMap { alertwords in 
+			let alertSet = Set(alertwords.compactMap { String.init(fromRESP: $0) })
+			let subtractingAlertWords = alertSubtracts.intersection(alertSet)
+			let addingAlertWords = alertAdds.intersection(alertSet)
+			var futures: [EventLoopFuture<Double>] = []
+			subtractingAlertWords.forEach { word in
+				futures.append(req.redis.zincrby(-1.0, element: word, in: "alertwords-tweets"))
 			}
+			addingAlertWords.forEach { word in
+				futures.append(req.redis.zincrby(1.0, element: word, in: "alertwords-tweets"))
+			}
+			return futures.flatten(on: req.eventLoop).transform(to: ())
 		}
+		// Hashtag check
+		let hashtags = twarrt.getHashtags().map { ($0, 0.0 ) }
+		let hashtagsFuture = hashtags.isEmpty ? req.eventLoop.future() : 
+				req.redis.zadd(hashtags, to: "hashtags").transform(to: ())
+		
+		return mentionsFuture.and(alertwordsFuture).and(hashtagsFuture).transform(to: ())
 	}
 }

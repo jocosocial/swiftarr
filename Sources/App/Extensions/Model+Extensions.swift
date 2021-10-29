@@ -98,6 +98,9 @@ extension Array where Element: Model {
 	/// ~2ms, and the Fluent path will take ~75ms.
 	public func childCountsPerModel<ChildModel: Model>(atPath: KeyPath<Element, ChildrenProperty<Element, ChildModel>>, on db: Database)
 			throws -> EventLoopFuture<Dictionary<Element.IDValue, Int>> {
+		guard !self.isEmpty else {
+			return db.eventLoop.future([:])
+		}	
 		guard let sql = db as? SQLDatabase else {
 			// SQL not available? Use Fluent; make a separate count() query per array element. 
 			let futures = self.map { $0[keyPath: atPath].query(on: db).count() }
@@ -113,7 +116,7 @@ extension Array where Element: Model {
 		// "select parentColumn, count(*) from "childModelSchema" where parentColumn in <list of IDs> group by parentColumn
 		// This returns a bunch of rows of (parentID, count) tuples
 		var columnName: String
-		switch self[0][keyPath: atPath.appending(path: \.parentKey)] {
+		switch Element.init()[keyPath: atPath.appending(path: \.parentKey)] {
 			case .required(let required):
 				columnName = ChildModel()[keyPath: required.appending(path: \.$id.key)].description
 			case .optional(let optional):

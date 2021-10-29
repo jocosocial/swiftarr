@@ -78,7 +78,10 @@ struct AddJocomojiTag: UnsafeUnescapedLeafTag {
 /// Runs the element sanitizer on the given string, converts Jocomoji (specific string tags with the form :tag:)
 /// into inline images, and then converts substrings of the forum "@username"  and "#hashtag" into links.
 ///
+/// Usage: #formatTwarrtText(String) -> String
 /// Usage: #formatPostText(String) -> String
+/// Usage: #formatFezText(String) -> String
+/// Usage: #formatSeamailText(String) -> String
 struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 	static var nameRefStartCharacterSet: CharacterSet {
 		var x = CharacterSet()
@@ -122,6 +125,29 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 					return "<a class=\"link-primary\" href=\"/username/\(name)\">@\(name)</a>\(restOfString)"
 				}
 			}
+			else if $0.hasPrefix("#") && $0.count <= 50 && $0.count >= 3 {
+				let scalars = $0.unicodeScalars
+				let firstValidHashtagIndex = scalars.index(scalars.startIndex, offsetBy: 1)
+				var firstNonHashtagIndex = firstValidHashtagIndex
+				// Move forward to the last char that's valid in a hashtag
+				while firstNonHashtagIndex < scalars.endIndex, CharacterSet.alphanumerics.contains(scalars[firstNonHashtagIndex]) {
+					scalars.formIndex(after: &firstNonHashtagIndex)		
+				}
+				// After trimming, hashtag must be >=2 chars, plus the # sign makes 3.
+				if scalars.distance(from: scalars.startIndex, to: firstNonHashtagIndex) >= 3,
+						let hashtag = String(scalars[firstValidHashtagIndex..<firstNonHashtagIndex])
+						.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+					let restOfString = String(scalars[firstNonHashtagIndex...])
+					var searchHref: String
+					switch usage {
+					case .twarrt: searchHref = "/tweets?hashtag=\(hashtag)"
+					case .forumpost: searchHref = "/forumpost/search?hashtag=\(hashtag)"
+					case .fez: searchHref = "/tweets?hashtag=\(hashtag)"
+					case .seamail: searchHref = "/tweets?hashtag=\(hashtag)"
+					}
+					return "<a class=\"link-primary\" href=\"\(searchHref)\">#\(hashtag)</a>\(restOfString)"
+				}
+			}
 			return $0
 		}
 		string = words.joined(separator: " ")
@@ -132,6 +158,17 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		string = string.replacingOccurrences(of: "\n", with: "<br>")
 		
 		return LeafData.string(string)
+    }
+    
+    enum Usage {
+    	case twarrt
+    	case forumpost
+    	case fez
+    	case seamail
+    }
+    let usage: Usage
+    init(_ forUsage: Usage) {
+    	usage = forUsage
     }
 }
 

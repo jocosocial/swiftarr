@@ -213,7 +213,10 @@ func configureLeaf(_ app: Application) throws {
     
     // Custom Leaf tags
     app.leaf.tags["addJocomoji"] = AddJocomojiTag()
-    app.leaf.tags["formatPostText"] = FormatPostTextTag()
+    app.leaf.tags["formatTwarrtText"] = FormatPostTextTag(.twarrt)
+    app.leaf.tags["formatPostText"] = FormatPostTextTag(.forumpost)
+    app.leaf.tags["formatFezText"] = FormatPostTextTag(.fez)
+    app.leaf.tags["formatSeamailText"] = FormatPostTextTag(.seamail)
     app.leaf.tags["relativeTime"] = RelativeTimeTag()
     app.leaf.tags["eventTime"] = EventTimeTag()
     app.leaf.tags["avatar"] = AvatarTag()
