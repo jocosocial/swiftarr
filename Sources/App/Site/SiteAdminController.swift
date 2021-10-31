@@ -486,7 +486,7 @@ struct SiteAdminController: SiteControllerUtils {
 	
 	// GET /admin/regcodes
 	//
-	//
+	// Shows stats on reg code use. Lets admins search on a regcode and get the user it's associated with, if any.
 	func getRegCodeHandler(_ req: Request) throws -> EventLoopFuture<View> {
         var regCodeSearchFuture: EventLoopFuture<String> = req.eventLoop.future("")
 		if var regCode = req.query[String.self, at: "search"]?.removingPercentEncoding?.lowercased() {
