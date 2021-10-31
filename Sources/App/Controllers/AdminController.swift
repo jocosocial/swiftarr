@@ -31,6 +31,8 @@ struct AdminController: APIRouteCollection {
 		adminAuthGroup.get("schedule", "verify", use: scheduleChangeVerificationHandler)
 		adminAuthGroup.post("schedule", "update", "apply", use: scheduleChangeApplyHandler)
 		
+		adminAuthGroup.get("regcodes", "stats", use: regCodeStatsHandler)
+		adminAuthGroup.get("regcodes", "find", searchStringParam, use: userForRegCodeHandler)
 	}
 
     /// `POST /api/v3/admin/dailytheme/create`
@@ -456,6 +458,48 @@ struct AdminController: APIRouteCollection {
 			}
         }
 	}
+	
+    /// `GET /api/v3/admin/regcodes/stats`
+	/// 
+	///  Returns basic info about how many regcodes have been used to create accounts, and how many there are in total.
+	///  In the future, we may add a capability for admins to create and issue replacement codes to users (or pull codes from a pre-allocated
+	///  'replacement' list, or something). This returns stats on those theoretical codes too, but the numbers are all 0.
+	///  
+    /// - Returns: <doc:RegistrationCodeStatsData> 
+	func regCodeStatsHandler(_ req: Request) throws -> EventLoopFuture<RegistrationCodeStatsData> {
+		let codeCountFuture = RegistrationCode.query(on: req.db).count()
+		let usedCodesFuture = RegistrationCode.query(on: req.db).filter(\.$user.$id != nil).count()
+		return codeCountFuture.and(usedCodesFuture).map { codeCount, usedCodes in
+			return RegistrationCodeStatsData(allocatedCodes: codeCount, usedCodes: usedCodes, 
+					unusedCodes: codeCount - usedCodes, adminCodes: 0)
+		}
+	}
+	
+    /// `GET /api/v3/admin/regcodes/find/:search_string`
+	/// 
+	///  Checks whether a user has been associated with a registration code. Can also be used to check whether a reg code is valid.
+	///  Throws when the reg code is not found primarily to help differentiate between "No reg code found" "No User Found" and "User Found" cases.
+	///  
+    /// - Throws: 400 Bad Request if the reg code isn't found in the db or if it's malformed. We don't check too thoroughly whether it's well-formed.
+    /// - Returns: [] if no user has created an account using this reg code yet. If they have, returns a one-item array containing the UserHead of that user.
+	func userForRegCodeHandler(_ req: Request) throws -> EventLoopFuture<[UserHeader]> {
+        guard let regCode = req.parameters.get(searchStringParam.paramString, as: String.self)?.lowercased() else {
+        	throw Abort(.badRequest, reason: "Missing search parameter")
+        }
+        guard regCode.count == 6, regCode.allSatisfy( { $0.isLetter || $0.isNumber }) else {
+        	throw Abort(.badRequest, reason: "Registration code search parameter is malformed.")
+        }
+		return RegistrationCode.query(on: req.db).filter(\.$code == regCode).first().flatMapThrowing { record in
+			guard let foundRecord = record else {
+				throw Abort(.badRequest, reason: "\(regCode) is not found in the registration code table.")
+			}
+			if let userID = foundRecord.$user.id {
+				let userHeader = try req.userCache.getHeader(userID)
+				return [userHeader]
+			}
+			return []
+		}
+	}
 
 // MARK: - Utilities
 
@@ -471,6 +515,7 @@ struct AdminController: APIRouteCollection {
 
 }
 
+// Used internally to track the diffs involved in an calendar update.
 fileprivate enum EventModification {
 	case startTime
 	case endTime

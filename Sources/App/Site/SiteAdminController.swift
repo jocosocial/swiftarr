@@ -35,6 +35,8 @@ struct SiteAdminController: SiteControllerUtils {
 		privateAdminRoutes.get("scheduleverify", use: scheduleVerifyViewHandler)
 		privateAdminRoutes.post("scheduleverify", use: scheduleVerifyPostHandler)
 		privateAdminRoutes.get("scheduleupload", "complete", use: scheduleUpdateCompleteViewtHandler)
+
+		privateAdminRoutes.get("regcodes", use: getRegCodeHandler)
 	}
 	
 // MARK: - Admin Pages
@@ -480,6 +482,51 @@ struct SiteAdminController: SiteControllerUtils {
 			}
 			let ctx = try ScheduleUpdateCompleteViewContext(req)
 			return req.view.render("admin/scheduleUpdateComplete", ctx)
+	}
+	
+	// GET /admin/regcodes
+	//
+	//
+	func getRegCodeHandler(_ req: Request) throws -> EventLoopFuture<View> {
+        var regCodeSearchFuture: EventLoopFuture<String> = req.eventLoop.future("")
+		if var regCode = req.query[String.self, at: "search"]?.removingPercentEncoding?.lowercased() {
+			regCode.removeAll { $0 == " " }
+			if regCode.count == 6, regCode.allSatisfy({ $0.isLetter || $0.isNumber }) {
+				regCodeSearchFuture = apiQuery(req, endpoint: "/admin/regcodes/find/\(regCode)").flatMapThrowing { response in
+					let headers = try response.content.decode([UserHeader].self)
+					if headers.count > 0 {
+						return "User \"\(headers[0].username)\" is associated with registration code \"\(regCode)\""
+					}
+					else {
+						return "No user found for registration code \"\(regCode)\""
+					}
+				}.flatMapError { error in 
+					if let apiError = error as? ErrorResponse {
+						return req.eventLoop.future("Error: \(apiError.reason)")
+					}
+					return req.eventLoop.future("Error: \(error)")
+				}
+			}
+			else {
+				regCodeSearchFuture = req.eventLoop.future("Invalid registration code")
+			}
+       	}
+		return apiQuery(req, endpoint: "/admin/regcodes/stats").and(regCodeSearchFuture).throwingFlatMap { (response, searchResults) in
+			let regCodeData = try response.content.decode(RegistrationCodeStatsData.self)
+			struct RegCodeStatsContext : Encodable {
+				var trunk: TrunkContext
+				var stats: RegistrationCodeStatsData
+				var searchResults: String
+				
+				init(_ req: Request, stats: RegistrationCodeStatsData, searchResults: String) throws {
+					trunk = .init(req, title: "Schedule Update Complete", tab: .none)
+					self.stats = stats
+					self.searchResults = searchResults
+				}
+			}
+			let ctx = try RegCodeStatsContext(req, stats: regCodeData, searchResults: searchResults)
+			return req.view.render("admin/regcodes", ctx)
+		}
 	}
 }
 

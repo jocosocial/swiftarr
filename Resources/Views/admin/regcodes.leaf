@@ -1,0 +1,47 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 my-1">
+			<div class="row">
+    			<div class="col">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+							<li class="breadcrumb-item active" aria-current="page">Registration Codes</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+			<ul class="list-group">
+				<li class="list-group-item">
+					#(stats.allocatedCodes) Registration Codes Allocated
+				</li>		
+				<li class="list-group-item">
+					#(stats.usedCodes) Registration Codes Used
+				</li>		
+				<li class="list-group-item">
+					#(stats.unusedCodes) Registration Codes Not Yet Used
+				</li>		
+				<li class="list-group-item">
+					#(stats.adminCodes) Registration Codes Created by Admin
+				</li>		
+			</ul>
+			<div class="row my-2">
+				<div class="col">
+					<b>Search for a Registration Code</b>
+				</div>
+			</div>
+			<div class="row my-2">
+				<form class="d-flex my-1">
+					<input class="form-control" type="search" name="search" placeholder="Reg Code" value="#(regCodeSearchString)" aria-label="Search" autocapitalize="off" required>
+					<button class="btn btn-primary ms-2" type="submit">Search</button>
+				</form>
+			</div>
+			<div class="row my-2">
+				<div class="col">
+					#(searchResults)
+				</div>
+			</div>
+		</div>
+		
+    #endexport
+#endextend

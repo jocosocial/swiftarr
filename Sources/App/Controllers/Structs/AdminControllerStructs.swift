@@ -63,6 +63,22 @@ public struct EventUpdateDifferenceData: Content {
 	var minorChangeEvents: [EventData] = []
 }
 
+/// Returns general info about registration codes.
+/// 
+/// Each passenger gets sent an email with a unique registration code; the reg code allows them to create verified accounts.
+/// This struct lets the admins quickly view some basic stats on account usage.
+public struct RegistrationCodeStatsData: Content {
+	/// How many reg codes are in the database.
+	var allocatedCodes: Int
+	/// How many codes have been used to create verified accounts.
+	var usedCodes: Int
+	/// How many codes have not yet been used.
+	var unusedCodes: Int
+	/// This exists so that if admins create new reg codes for people who lost theirs, we can track it. 
+	/// There isn't yet any API for admins to do this; the number will be 0.
+	var adminCodes: Int
+}
+
 /// Used to enable/disable features. A featurePair with name: "kraken" and feature: "schedule" indicates the Schedule feature of the Kraken app.
 /// When the server indicates this app:feature pair is disabled, the client app should not show the feature to users, and should avoid calling API calls
 /// related to that feature. Either the app or feature field could be 'all'.
