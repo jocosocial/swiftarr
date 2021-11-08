@@ -71,7 +71,7 @@
 							<a class="btn btn-outline-primary" href="/moderate/fez/#(fez.fezID)">Mod</a>
 						#endif
 						<a class="btn btn-outline-primary" href="/fez/report/#(fez.fezID)">Report</a>
-						<input type="checkbox" class="btn-check" autocomplete="off" data-action="joinFez" 
+						<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload" 
 								data-actionpath="/fez/#(fez.fezID)/join"
 								data-errordiv="fezActions_errorDisplay"
 								id="#(fez.fezID)_join">
@@ -216,7 +216,7 @@
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-						<input type="checkbox" class="btn-check" autocomplete="off" data-action="leaveFez" 
+						<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload" 
 								data-actionpath="/fez/#(fez.fezID)/leave"
 								data-errordiv="fezDialog_errorDisplay"
 								id="#(fez.fezID)_leave">
@@ -251,7 +251,7 @@
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">DON'T Cancel Fez</button>
-						<input type="checkbox" class="btn-check" autocomplete="off" data-action="cancelFez" 
+						<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload" 
 								data-actionpath="/fez/#(fez.fezID)/cancel"
 								data-errordiv="cancelDialog_errorDisplay"
 								id="#(fez.fezID)_cancel">

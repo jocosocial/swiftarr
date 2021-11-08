@@ -766,6 +766,77 @@ extension ImageUploadData {
 	}
 }
 
+/// Wraps an array of `KaraokeSongData` with information for pagination.
+/// `KaraokeSongData` returns data about a single song.
+/// 
+/// Returned by: `GET /api/v3/karaoke`
+/// See `KaraokeController.getKaraokeSongs()`.
+public struct KaraokeSongResponseData: Content {
+	/// How many songs are in the found set. The found set is sorted by Artist, then by Song Title. The found set may often be larger than `songs.count`.
+	var totalSongs: Int
+	/// The offset within the found set to begin returning results.
+	var start: Int
+	/// How many results to return.
+	var limit: Int
+	/// The array of songs that match 
+	var songs: [KaraokeSongData]
+}
+
+/// Returns information about a song in the Karaoke Song Library.
+/// 
+/// Returned by: `GET /api/v3/karaoke/:song_id`
+/// Incorporated into: `KaraokeSongResponseData`
+public struct KaraokeSongData: Content {
+	/// The database ID of the song. Used to mark favorite songs and to log song performances.
+	var songID: UUID
+	/// The artist or band that produced the song.
+	var artist: String
+	/// The title of the song
+	var songName: String
+	/// If TRUE, this song is a MIDI track.
+	var isMidi: Bool
+	/// If TRUE, this track is the regular released version of the song, post-processed with voice removal software. 
+	/// If FALSE, the track is (assumedly) the karaoke mix of the track.
+	var isVoiceReduced: Bool
+	/// TRUE if this user has favorited this song. Always FALSE if not logged in.
+	var isFavorite: Bool
+	/// An array of performances of this song in the Karaoke Lounge on boat this year. [] if the song hasn't been performed.
+	var performances: [KaraokePerformedSongsData]
+}
+
+extension KaraokeSongData {
+	init(with song: KaraokeSong, isFavorite: Bool) throws {
+		songID = try song.requireID()
+		artist = song.artist
+		songName = song.title
+		isMidi = song.midi
+		isVoiceReduced = song.voiceRemoved
+		self.isFavorite = isFavorite
+		performances = []
+		if song.$sungBy.value != nil {
+			performances = song.sungBy.map { 
+				KaraokePerformedSongsData(artist: song.artist, songName: song.title, performers: $0.performers, 
+						time: $0.createdAt ?? Date()) 
+			}
+		}
+	}
+}
+
+/// Returns information about songs that have been performed in the Karaoke Lounge onboard.
+/// 
+/// Returned by: `GET /api/v3/karaoke/performance`
+/// Incorporated into: `KaraokeSongData`, which itself is incorporated into `KaraokeSongResponseData
+public struct KaraokePerformedSongsData: Content {
+	/// The artist that originally performed this song.
+	var artist: String
+	/// The title of the song.
+	var songName: String
+	/// The person or people aboard the boat who performed this song in the Karaoke Lounge.
+	var performers: String
+	/// The time the performance was logged -- this is usually the time the song was performed.
+	var time: Date
+}
+
 /// Used to obtain the user's current list of keywords for muting public content.
 ///
 /// Returned by:
@@ -794,14 +865,26 @@ public struct MutedUserData: Content {
     var mutedUsers: [UserHeader]
 }
 
-/// Used to create a `UserNote` when viewing a user's profile.
+/// Used to create a `UserNote` when viewing a user's profile. Also used to create a Karaoke song log entry.
 ///
-/// Required by: `/api/v3/users/ID/note`
+/// Required by: 
+/// * `/api/v3/users/:userID/note`
+/// * `/api/v3/karaoke/:songID/logperformance`
 ///
 /// See `UsersController.noteCreateHandler(_:data:)`.
 public struct NoteCreateData: Content {
     /// The text of the note.
     var note: String
+}
+
+extension NoteCreateData: RCFValidatable {
+    func runValidations(using decoder: ValidatingDecoder) throws {
+    	let tester = try decoder.validator(keyedBy: CodingKeys.self)
+    	tester.validate(note.count > 0, forKey: .note, or: "post text cannot be empty.")
+    	tester.validate(note.count < 1000, forKey: .note, or: "post length of \(note.count) is over the 1000 character limit")
+    	let lines = note.replacingOccurrences(of: "\r\n", with: "\r").components(separatedBy: .newlines).count
+    	tester.validate(lines <= 25, forKey: .note, or: "posts are limited to 25 lines of text")
+	}
 }
 
 /// Used to obtain the contents of a `UserNote` for display in a non-profile-viewing context.
@@ -1239,6 +1322,17 @@ public struct TwarrtDetailData: Content {
     var likes: [SeaMonkey]
     /// The seamonkeys with "love" reactions on the post/twarrt.
     var loves: [SeaMonkey]
+}
+
+/// A bool, wrapped in a struct. Used for the results of user capability queries.
+///
+/// Required by:
+/// * `POST /api/v3/karaoke/userIsManager`
+///
+/// See `UserController.createHandler(_:data:)`, `UserController.addHandler(_:data:)`.
+public struct UserAuthorizedToCreateKaraokeLogs: Content {
+	/// TRUE if the user is authorized to add entries to the Karaoke Performed Song Log.
+	var isAuthorized: Bool
 }
 
 /// Used to create a new account or sub-account.

@@ -1,0 +1,67 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 my-1">
+    		<div class="row align-items-center">
+    			<div class="col">
+			    	<b>Search Karaoke Library</b>
+				</div>
+				<div class="col col-auto" aria-label="Favorites Filter">
+					<a class="btn btn-outline-primary #if(!trunk.userIsLoggedIn):d-none#endif"
+							href="/karaoke?favorite=true">
+						Favorites
+					</a>
+				</div>								
+			</div>
+			<form>
+    			<div class="d-flex my-1">
+					<input class="form-control" type="search" name="search" placeholder="Search Song Library" value="#(searchText)" aria-label="Search" autocapitalize="off" required>
+					<a class="btn btn-primary ms-2" href="/karaoke">Clear</a>
+					<button class="btn btn-primary ms-2" type="submit">Search</button>
+				</div>
+    			<div class="row">
+    				<div class="col">
+						<div class="alert alert-danger mt-3 d-none" role="alert">
+						</div>	
+					</div>
+				</div>
+			</form>
+    		<div class="row align-items-center mt-2">
+    			<div class="col">
+			    	<b>Latest Karaoke Songs</b>
+				</div>
+			</div>
+			<ul class="container-md mx-0 px-0 list-group">
+				#if(count(songs) == 0):
+					<li class="list-group-item bg-transparent has-action-bar">
+						No recent karaoke songs.
+					</li>	
+				#else:
+					#for(song in songs):
+						<li class="list-group-item bg-transparent has-action-bar px-0">				
+							<div class="container-fluid">
+								<div class="row">	
+									<div class="col">
+										<b>#(song.artist)</b>
+									</div>
+									<div class="col col-auto">
+										#date(song.time, "MMM dd, hh:mm a")
+									</div>
+								</div>
+								<div class="row">
+									<div class="col">
+										#(song.songName)
+									</div>
+								</div>
+								<div class="row">
+									<div class="col">
+										Performed by: #formatPostText(song.performers)
+									</div>
+								</div>
+							</div>
+						</li>
+					#endfor
+				#endif
+			</ul>
+    	</div>
+	#endexport
+#endextend

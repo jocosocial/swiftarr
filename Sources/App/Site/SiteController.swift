@@ -304,8 +304,8 @@ struct ReportPageContext : Encodable {
 	
 	// For reporting a fez (The fez itself: title, info, location)
 	init(_ req: Request, fezID: String) throws {
-		trunk = .init(req, title: "Report Friendly Fez", tab: .none)
-		reportTitle = "Report a Friendly Fez"
+		trunk = .init(req, title: "Report LFG Content", tab: .none)
+		reportTitle = "Report LFG Content"
 		reportFormAction = "/fez/report/\(fezID)"
 		reportSuccessURL = req.headers.first(name: "Referer") ?? "/fez"
 	}
@@ -397,7 +397,8 @@ extension SiteControllerUtils {
     var accessLevelParam: PathComponent { PathComponent(":access_level") }
     var alertWordParam: PathComponent { PathComponent(":alert_word") }
     var muteWordParam: PathComponent { PathComponent(":mute_word") }
-	var boardgameIDParam: PathComponent { PathComponent(":boardgame") }
+	var boardgameIDParam: PathComponent { PathComponent(":boardgame_id") }
+	var songIDParam: PathComponent { PathComponent(":karaoke_song_id") }
 
 	/// Call the Swiftarr API. This method pulls a user's token from their session data and adds it to the API call. By default it also forwards URL query parameters
 	/// from the Site-level request to the API-level request. 
@@ -460,7 +461,7 @@ extension SiteControllerUtils {
 		return app.grouped( [
 				app.sessions.middleware, 
 				User.sessionAuthenticator(),
-				Token.authenticator(),
+			//	Token.authenticator(),
 				NotificationsMiddleware(),
 				redirectMiddleware
 		])
@@ -471,7 +472,7 @@ extension SiteControllerUtils {
 		return app.grouped( [ 
 				app.sessions.middleware, 
 				User.sessionAuthenticator(),
-				Token.authenticator(),
+			//	Token.authenticator(),
 				User.guardMiddleware()
 		])
 	}

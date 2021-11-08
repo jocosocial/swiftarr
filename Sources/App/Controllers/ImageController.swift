@@ -28,16 +28,13 @@ struct ImageController: APIRouteCollection {
 		userImageRoutes.get("full", ":image_filename", use: getImage_FullHandler)
 		userImageRoutes.get("thumb", ":image_filename", use: getImage_ThumbnailHandler)
 		userImageRoutes.get("user", "identicon", userIDParam, use: getUserIdenticonHandler)
-		
-		// Flex access endpoints. 
-		let flexRoutes = addFlexAuthGroup(to: userImageRoutes)
-		flexRoutes.get("user", "full", userIDParam, use: getUserAvatarHandler)
-		flexRoutes.get("user", "thumb", userIDParam, use: getUserAvatarHandler)
+		userImageRoutes.get("user", "full", userIDParam, use: getUserAvatarHandler)
+		userImageRoutes.get("user", "thumb", userIDParam, use: getUserAvatarHandler)
 
 		// Moderator-only endpoints
 		let requireModMiddleware = RequireModeratorMiddleware()
 		let tokenAuthGroup = addTokenAuthGroup(to: imageRoutes).grouped(requireModMiddleware)
-		tokenAuthGroup.get("archive", ":image_filename", use: getImage_ArchivedlHandler)
+		tokenAuthGroup.get("archive", ":image_filename", use: getImage_ArchivedHandler)
 	}
 	
     /// `GET /api/v3/image/full/STRING`
@@ -90,19 +87,22 @@ struct ImageController: APIRouteCollection {
     /// - Parameter STRING: A reference to the image, returned from another API call.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: Image data
-	func getImage_ArchivedlHandler(_ req: Request) throws -> Response {
+	func getImage_ArchivedHandler(_ req: Request) throws -> Response {
 		return try getUserUploadedImage(req, sizeGroup: .archive)
 	}
 	
-    /// `GET /api/v3/image/user/full/ID`
-    /// `GET /api/v3/image/user/thumb/ID`
+    /// `GET /api/v3/image/user/full/:userID`
+    /// `GET /api/v3/image/user/thumb/:userID`
     ///
-	///  Gets the avatar image for the given user. If the given user's profile is quarantined and the requester is not a mod and requester != given user, returns an identicon.
-	///  Otherwise, if the user has a custom avatar, result is the same as if you called `/api/v3/image/<thumb|full>/<user.userImage>`
+	///  Gets the avatar image for the given user. 
+	///  If the user has a custom avatar, result is the same as if you called `/api/v3/image/<thumb|full>/<user.userImage>`
 	///  If the user has no custom avatar, returns a 40x40 Identicon image specific to the given userID. 
 	///  
-	///  Note: You don't need to pass an auth token to this method, but if you don't we assume the requestor is not a moderator and will show the default identicon for any
-	///  quarantined user.
+	///  Note: This method is a convenience for clients that do their own image caching. For clients that rely on `Cache-Control` headers, it's better to call
+	///  either the custom image or user identicon call instead; those calls can set a long-term cache expiry and this method cannot. Said differently,
+	///  `/api/v3/image/thumb/:filename` only changes its result if the file is mod-deleted, and if that happens the user's userImage field updates.
+	///  Similarly, `api/v3/image/user/identicon/:userID` will always return the same result for the same userID parameter. This method returns a different 
+	///  image for the same URL whenever the user updates their profile image, therefore we can't set cache headers as aggressively.  
 	///  
 	///  Barring severe errors, this method will always return an image--either a user's custom avatar or their default identicon. A consequence of this is that you cannot tell
 	///  whether a user has a custom avatar set or not when calling this method.
@@ -114,14 +114,12 @@ struct ImageController: APIRouteCollection {
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: Image data, or `304 notModified` if client's ETag matches.
 	func getUserAvatarHandler(_ req: Request) throws -> EventLoopFuture<Response> {
-        let user = req.auth.get(User.self)
         guard let userID = req.parameters.get(userIDParam.paramString, as: UUID.self) else {
             throw Abort(.badRequest, reason: "Missing user ID parameter.")
         }
         let sizeGroup: ImageSizeGroup = req.url.path.hasPrefix("/api/v3/image/user/thumb") ? .thumbnail : .full
 		return User.find(userID, on: req.db).unwrap(or: Abort(.badRequest, reason: "User not found")).flatMapThrowing { targetUser in
-			if let filename = targetUser.userImage, try !targetUser.isQuarantined || (user?.accessLevel.hasAccess(.moderator) ?? false) ||
-					targetUser.requireID() == user?.requireID() {
+			if let filename = targetUser.userImage {
 				return try getUserUploadedImage(req, sizeGroup: sizeGroup, imageFilename: filename)
 			}
 			var headers: HTTPHeaders = [:]
@@ -162,6 +160,7 @@ struct ImageController: APIRouteCollection {
 			}
 			let imageData = try generateIdenticon(for: targetUser)
 			headers.contentType = HTTPMediaType.fileExtension("png")
+			headers.cacheControl = .init(isPublic: true, maxAge: 3600 * 24)
 			let body = Response.Body(data: imageData)
 			return Response(status: .ok, headers: headers, body: body)
 		}
@@ -199,7 +198,12 @@ struct ImageController: APIRouteCollection {
         let fileURL = imagesDirectory.appendingPathComponent(sizeGroup.rawValue)
         		.appendingPathComponent(subDirName)
         		.appendingPathComponent(fileUUID.uuidString + "." + fileExtension)
-		return req.fileio.streamFile(at: fileURL.path)
+		let response = req.fileio.streamFile(at: fileURL.path)
+		// If streamFile is returning the image file, add a cache-control header to the repsonse
+		if response.status == .ok {
+			response.headers.cacheControl = .init(isPublic: true, maxAge: 3600 * 24)
+		}
+		return response
 	}
 	
 	/// Creates an identicon image from the given user's userID. 

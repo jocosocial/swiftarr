@@ -62,7 +62,7 @@
 								<div class="row justify-content-center">
 									<div class="col col-auto btn-group btn-group-sm">
 										#if(trunk.userIsLoggedIn):
-											<input type="checkbox" class="btn-check" autocomplete="off" data-action="favoriteGame" 
+											<input type="checkbox" class="btn-check" autocomplete="off" data-action="favorite" 
 													data-actionpath="/boardgames/#(game.gameID)/favorite"
 													data-istoggle="true"
 													data-errordiv="#(game.gameID)_errorDisplay"

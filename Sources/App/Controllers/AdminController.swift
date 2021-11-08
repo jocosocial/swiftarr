@@ -33,6 +33,14 @@ struct AdminController: APIRouteCollection {
 		
 		adminAuthGroup.get("regcodes", "stats", use: regCodeStatsHandler)
 		adminAuthGroup.get("regcodes", "find", searchStringParam, use: userForRegCodeHandler)
+
+		adminAuthGroup.get("moderators", use: getModeratorsHandler)
+		adminAuthGroup.post("moderator", "promote", userIDParam, use: makeModeratorHandler)
+		adminAuthGroup.post("moderator", "demote", userIDParam, use: removeModeratorHandler)
+		
+		adminAuthGroup.get("karaoke", "managers", use: getKaraokeManagers)
+		adminAuthGroup.post("karaoke", "manager", "promote", userIDParam, use: makeKaraokeManager)
+		adminAuthGroup.post("karaoke", "manager", "demote", userIDParam, use: removeKaraokeManager)
 	}
 
     /// `POST /api/v3/admin/dailytheme/create`
@@ -351,12 +359,12 @@ struct AdminController: APIRouteCollection {
 									if let officialCategory = categories[0], let shadowCategory = categories[1], 
 											officialCategory.title.lowercased() == "event forums", 
 											shadowCategory.title.lowercased() == "shadow event forums" {
-										let forum = try CreateEventForums.buildEventForum(event, creator: user, 
+										let forum = try SetInitialEventForums.buildEventForum(event, creator: user, 
 												shadowCategory: shadowCategory, officialCategory: officialCategory)
 										futures.append(forum.save(on: database).throwingFlatMap {
 											// Build an initial post in the forum with information about the event, and
 											// a callout for posters to discuss the event.
-											let postText = CreateEventForums.buildEventPostText(event)
+											let postText = SetInitialEventForums.buildEventPostText(event)
 											let infoPost = try ForumPost(forum: forum, author: user, text: postText)
 										
 											// Associate the forum with the event
@@ -424,7 +432,7 @@ struct AdminController: APIRouteCollection {
 											futures.append(forum.$posts.query(on: database).sort(\.$id, .ascending).first()
 													.flatMap { (post) -> EventLoopFuture<Void> in
 												if let firstPost = post {
-													firstPost.text = CreateEventForums.buildEventPostText(existing)
+													firstPost.text = SetInitialEventForums.buildEventPostText(existing)
 													return firstPost.save(on: database)
 												}
 												return database.eventLoop.future()
@@ -500,6 +508,120 @@ struct AdminController: APIRouteCollection {
 			return []
 		}
 	}
+	
+    /// `GET /api/v3/admin/moderators`
+	/// 
+	///  Returns a list of all site moderators. Only admins may call this method.
+	///  
+    /// - Returns: Array of <doc:UserHeader>.
+	func getModeratorsHandler(_ req: Request) throws -> EventLoopFuture<[UserHeader]> {
+		return User.query(on: req.db).filter(\.$accessLevel == .moderator).all().flatMapThrowing { mods in
+			return try mods.map { try UserHeader(user: $0) }
+		}
+	}
+	
+    /// `POST /api/v3/admin/moderator/promote/:user_id`
+	/// 
+	/// Makes the target user a moderator. Only admins may call this method. The user must have an access level of `.verified` and not 
+	/// be temp-quarantined.
+	///  
+    /// - Throws: badRequest if the target user isn't verified, or if they're temp quarantined.
+    /// - Returns: 200 OK if the user was made a mod.
+	func makeModeratorHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+		return User.findFromParameter(userIDParam, on: req).throwingFlatMap { targetUser in
+			if targetUser.accessLevel == .moderator {
+				throw Abort(.badRequest, reason: "Cannot promote: User is already a moderator.")
+			}
+			if targetUser.accessLevel > .moderator {
+				throw Abort(.badRequest, reason: "Cannot promote to moderator: Access level is above moderator!")
+			}
+			guard targetUser.accessLevel == .verified else {
+				throw Abort(.badRequest, reason: "Only verified users may be promoted to moderators.")
+			}
+			if let tempQuarantineEndTime = targetUser.tempQuarantineUntil {
+				guard tempQuarantineEndTime <= Date() else {
+					throw Abort(.badRequest, reason: "Temp Quarantined users may not be promoted to moderators.")
+				}
+			}
+			targetUser.accessLevel = .moderator
+			return targetUser.save(on: req.db).transform(to: .ok)
+		}
+	}
+	
+    /// `POST /api/v3/admin/moderator/demote/:user_id`
+	/// 
+	/// Sets the target user's accessLevel to `.verified` if it was `.moderator`. Only admins may call this method.
+	///  
+    /// - Throws: badRequest if the target user isn't a mod.
+    /// - Returns: 200 OK if the user was demoted successfully.
+	func removeModeratorHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+		return User.findFromParameter(userIDParam, on: req).throwingFlatMap { targetUser in
+			guard targetUser.accessLevel == .moderator else {
+				throw Abort(.badRequest, reason: "User is not a moderator: cannot remove moderator status.")
+			}
+			targetUser.accessLevel = .verified
+			return targetUser.save(on: req.db).transform(to: .ok)
+		}
+	}
+	
+    /// `GET /api/v3/admin/karaoke/managers`
+	/// 
+	///  Returns a list of all Karaoke managers. Karaoke managers are able to create KaraokePlayedSong entries which contain the song that was 
+	///  performed, who performed it, and the time of the performance.
+	///  
+    /// - Returns: Array of <doc:UserHeader>.
+	func getKaraokeManagers(_ req: Request) throws -> EventLoopFuture<[UserHeader]> {
+    	return req.redis.smembers(of: "KaraokeSongManagers", as: UUID.self).map { managersIDOptionals in
+    		let managerIDs = managersIDOptionals.compactMap { $0 }
+    		return req.userCache.getHeaders(managerIDs)
+    	}
+	}
+	
+	/// `POST /api/v3/admin/karaoke/manager/promote/:user_id`
+	/// 
+	/// Makes the target user a karaoke manager. Only admins may call this method. The user must have an access level of `.verified` and not 
+	/// be temp-quarantined. Karaoke Manager status is orthogonal to a user's access level. 
+	///  
+    /// - Throws: badRequest if the target user isn't verified, they're temp quarantined, or already a karaoke manager.
+    /// - Returns: 200 OK if the user was made a karaoke manager.
+	func makeKaraokeManager(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+		return User.findFromParameter(userIDParam, on: req).throwingFlatMap { targetUser in
+			guard targetUser.accessLevel.hasAccess(.verified) else {
+				throw Abort(.badRequest, reason: "Only verified users may be promoted to karaoke managers.")
+			}
+			if let tempQuarantineEndTime = targetUser.tempQuarantineUntil {
+				guard tempQuarantineEndTime <= Date() else {
+					throw Abort(.badRequest, reason: "Temp Quarantined users may not be promoted to karaoke managers.")
+				}
+			}
+			let targetUserID = try targetUser.requireID()
+			return req.redis.sismember(targetUserID, of: "KaraokeSongManagers").throwingFlatMap { isMember in
+				if isMember {
+					throw Abort(.badRequest, reason: "Cannot promote to Karaoke Manager: user is already a Karaoke Manager.")
+				}
+				return req.redis.sadd(targetUserID, to: "KaraokeSongManagers").transform(to: .ok)
+			}
+		}
+	}
+	
+    /// `POST /api/v3/admin/karaoke/manager/demote/:user_id`
+	/// 
+	/// Removes the target user from the list of Karaoke Managers. Only admins may call this method.
+	///  
+    /// - Throws: badRequest if the target user isn't a Karaoke Manager.
+    /// - Returns: 200 OK if the user was demoted successfully.
+	func removeKaraokeManager(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+    	guard let targetUserIDStr = req.parameters.get(userIDParam.paramString), let targetUserID = UUID(targetUserIDStr) else {
+            throw Abort(.badRequest, reason: "Missing user ID parameter.")
+    	}
+		return req.redis.sismember(targetUserID, of: "KaraokeSongManagers").throwingFlatMap { isMember in
+			if !isMember {
+				throw Abort(.badRequest, reason: "Cannot demote: User isn't a Karaoke Manager.")
+			}
+			return req.redis.srem(targetUserID, from: "KaraokeSongManagers").transform(to: .ok)
+		}
+	}
+
 
 // MARK: - Utilities
 

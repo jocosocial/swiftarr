@@ -346,6 +346,9 @@ struct SiteTwitarrController: SiteControllerUtils {
 		}
 	}
 	
+	// GET /tweets/report
+	//
+	// Shows the report page.
 	func tweetReportPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		guard let twarrtID = req.parameters.get(twarrtIDParam.paramString) else {
 			throw Abort(.badRequest, reason: "Missing twarrt_id parameter.")
@@ -354,6 +357,9 @@ struct SiteTwitarrController: SiteControllerUtils {
 		return req.view.render("reportCreate", ctx)
 	}
 	
+	// POST /tweets/report
+	//
+	// Submits a completed report.
 	func tweetReportPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
 		guard let twarrtID = req.parameters.get(twarrtIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing twarrt_id parameter.")

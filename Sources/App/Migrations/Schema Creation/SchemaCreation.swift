@@ -369,6 +369,52 @@ struct CreateFezParticipantSchema: Migration {
     }
 }
 
+struct CreateKaraokeFavoriteSchema: Migration {
+	func prepare(on database: Database) -> EventLoopFuture<Void> {
+		database.schema("karaoke+favorite")
+				.id()
+ 				.field("user", .uuid, .required, .references("users", "id", onDelete: .cascade))
+ 				.field("song", .uuid, .required, .references("karaoke_song", "id", onDelete: .cascade))
+				.create()
+	}
+ 
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("karaoke+favorite").delete()
+    }
+}
+
+struct CreateKaraokePlayedSongSchema: Migration {
+	func prepare(on database: Database) -> EventLoopFuture<Void> {
+		database.schema("karaoke_played_song")
+				.id()
+ 				.field("singers", .string, .required)
+ 				.field("song", .uuid, .required, .references("karaoke_song", "id", onDelete: .cascade))
+ 				.field("manager", .uuid, .required, .references("users", "id", onDelete: .cascade))
+    			.field("created_at", .datetime)
+				.create()
+	}
+ 
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("karaoke_played_song").delete()
+    }
+}
+
+struct CreateKaraokeSongSchema: Migration {
+	func prepare(on database: Database) -> EventLoopFuture<Void> {
+		database.schema("karaoke_song")
+				.id()
+				.field("artist", .string, .required)
+				.field("title", .string, .required)
+				.field("voiceRemoved", .bool, .required)
+				.field("midi", .bool, .required)
+				.create()
+	}
+ 
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        database.schema("karaoke_song").delete()
+    }
+}
+
 struct CreateModeratorActionSchema: Migration {
 	func prepare(on database: Database) -> EventLoopFuture<Void> {
 		database.schema("moderator_actions")

@@ -266,22 +266,28 @@ func configureMigrations(_ app: Application) throws {
 	app.migrations.add(CreateDailyThemeSchema(), to: .psql)
 	app.migrations.add(CreateBoardgameSchema(), to: .psql)
 	app.migrations.add(CreateBoardgameFavoriteSchema(), to: .psql)
-	
+	app.migrations.add(CreateKaraokeSongSchema(), to: .psql)
+	app.migrations.add(CreateKaraokePlayedSongSchema(), to: .psql)
+	app.migrations.add(CreateKaraokeFavoriteSchema(), to: .psql)
+
 	// Third, migrations that seed the db with initial data
 	app.migrations.add(CreateAdminUser(), to: .psql)
 	app.migrations.add(CreateClientUsers(), to: .psql)
-	app.migrations.add(CreateRegistrationCodes(), to: .psql)
-	app.migrations.add(CreateEvents(), to: .psql)
 	app.migrations.add(CreateCategories(), to: .psql)
 //	app.migrations.add(CreateForums(), to: .psql)		// Adds some initial forum threads; not the event forum threads.
-	app.migrations.add(CreateEventForums(), to: .psql)
-	app.migrations.add(CreateBoardgames(), to: .psql)	
 	if app.environment == .testing || app.environment == .development {
 		app.migrations.add(CreateTestUsers(), to: .psql)
 		app.migrations.add(CreateTestData(), to: .psql)
 	}
 	
-	// Fourth, migrations that touch up initial state
+	// Fourth, migrations that import data from /seeds
+	app.migrations.add(ImportRegistrationCodes(), to: .psql)
+	app.migrations.add(ImportEvents(), to: .psql)
+	app.migrations.add(ImportBoardgames(), to: .psql)	
+	app.migrations.add(ImportKaraokeSongs(), to: .psql)	
+	
+	// Fifth, migrations that touch up initial state
+	app.migrations.add(SetInitialEventForums(), to: .psql)
 	app.migrations.add(SetInitialCategoryForumCounts(), to: .psql)
 }
   

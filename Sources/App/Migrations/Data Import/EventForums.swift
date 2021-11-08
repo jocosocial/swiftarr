@@ -4,7 +4,7 @@ import Fluent
 
 /// A `Migration` that creates `Forum`s for each `Event` in the schedule.
 
-struct CreateEventForums: Migration {    
+struct SetInitialEventForums: Migration {    
     /// Required by `Migration` protocol. Creates a set of forums for the schedule events.
     ///
     /// - Parameter database: A connection to the database, provided automatically.
@@ -30,12 +30,12 @@ struct CreateEventForums: Migration {
 					// create forums
 					var futures: [EventLoopFuture<Void>] = []
 					for event in events {
-						let forum = try CreateEventForums.buildEventForum(event, creator: admin, 
+						let forum = try SetInitialEventForums.buildEventForum(event, creator: admin, 
 								shadowCategory: shadow, officialCategory: official)
 						futures.append(forum.save(on: database).throwingFlatMap {
 							// Build an initial post in the forum with information about the event, and
 							// a callout for posters to discuss the event.
-							let postText = CreateEventForums.buildEventPostText(event)
+							let postText = SetInitialEventForums.buildEventPostText(event)
 							let infoPost = try ForumPost(forum: forum, author: admin, text: postText)
 						
 							// Associate the forum with the event

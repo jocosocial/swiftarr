@@ -4,7 +4,7 @@ import Fluent
 
 /// A `Migration` that imports the event schedule from a `schedule.ics` file
 /// located in the `seeds/` subdirectory of the project.
-struct CreateEvents: Migration {    
+struct ImportEvents: Migration {    
     /// Required by `Migration` protocol. Reads either a test or production `.ics` file in the
     /// `seeds/` subdirectory, converts the lines into elements of an array, hands that off to
     /// a parser and populates the `Event` database with the `[Event]` array returned.

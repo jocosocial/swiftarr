@@ -5,7 +5,7 @@ import Fluent
 /// A `Migration` that imports the Games Catalog JSON file.
 /// 
 /// This file is  located in the `seeds/` subdirectory of the project.
-struct CreateBoardgames: Migration {    
+struct ImportBoardgames: Migration {    
     /// Required by `Migration` protocol. Reads either a test or production `.ics` file in the
     /// `seeds/` subdirectory, converts the lines into elements of an array, hands that off to
     /// a parser and populates the `Event` database with the `[Event]` array returned.
@@ -14,6 +14,7 @@ struct CreateBoardgames: Migration {
     /// - Parameter database: A connection to the database, provided automatically.
     /// - Returns: Void.
     func prepare(on database: Database) -> EventLoopFuture<Void> {
+    	database.logger.info("Starting boardgame import")
         // get gamesFile
         let gamesFile: String
         do {
@@ -65,13 +66,12 @@ struct CreateBoardgames: Migration {
         }
     }
     
-    /// Required by `Migration` protocol, but this isn't a model update, so just return a
-    /// pre-completed `Future`.
+    /// Required by `Migration` protocol.
     ///
     /// - Parameter database: A connection to the database, provided automatically.
     /// - Returns: Void.
     func revert(on database: Database) -> EventLoopFuture<Void> {
-		return database.schema("events").delete()
+        return Boardgame.query(on: database).delete()
     }
 }
  

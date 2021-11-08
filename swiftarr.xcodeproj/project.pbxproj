@@ -50,6 +50,12 @@
 		EA0238F2271D1E9C00D5A168 /* BoardgameController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA0238F1271D1E9C00D5A168 /* BoardgameController.swift */; };
 		EA0238F4271D7C1B00D5A168 /* SiteBoardgameController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA0238F3271D7C1B00D5A168 /* SiteBoardgameController.swift */; };
 		EA0238F627224E0F00D5A168 /* BoardgameFavorite.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA0238F527224E0F00D5A168 /* BoardgameFavorite.swift */; };
+		EA4A9A2027301E3500652C0A /* KaraokeSong.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4A9A1F27301E3500652C0A /* KaraokeSong.swift */; };
+		EA5BDEC427302EF20099C150 /* KaraokePlayedSong.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA5BDEC327302EF20099C150 /* KaraokePlayedSong.swift */; };
+		EA5BDEC627303DE60099C150 /* KaraokeSongs.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA5BDEC527303DE60099C150 /* KaraokeSongs.swift */; };
+		EA5BDECB273145990099C150 /* KaraokeFavorite.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA5BDECA273145990099C150 /* KaraokeFavorite.swift */; };
+		EA5BDECD273213830099C150 /* KaraokeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA5BDECC273213830099C150 /* KaraokeController.swift */; };
+		EA5BDECF2734B11F0099C150 /* SiteKaraokeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA5BDECE2734B11F0099C150 /* SiteKaraokeController.swift */; };
 		OBJ_2720 /* AdminController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_10 /* AdminController.swift */; };
 		OBJ_2721 /* AlertController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* AlertController.swift */; };
 		OBJ_2722 /* AuthController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* AuthController.swift */; };
@@ -8066,6 +8072,12 @@
 		EA0238F1271D1E9C00D5A168 /* BoardgameController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardgameController.swift; sourceTree = "<group>"; };
 		EA0238F3271D7C1B00D5A168 /* SiteBoardgameController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteBoardgameController.swift; sourceTree = "<group>"; };
 		EA0238F527224E0F00D5A168 /* BoardgameFavorite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardgameFavorite.swift; sourceTree = "<group>"; };
+		EA4A9A1F27301E3500652C0A /* KaraokeSong.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KaraokeSong.swift; sourceTree = "<group>"; };
+		EA5BDEC327302EF20099C150 /* KaraokePlayedSong.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KaraokePlayedSong.swift; sourceTree = "<group>"; };
+		EA5BDEC527303DE60099C150 /* KaraokeSongs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KaraokeSongs.swift; sourceTree = "<group>"; };
+		EA5BDECA273145990099C150 /* KaraokeFavorite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KaraokeFavorite.swift; sourceTree = "<group>"; };
+		EA5BDECC273213830099C150 /* KaraokeController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KaraokeController.swift; sourceTree = "<group>"; };
+		EA5BDECE2734B11F0099C150 /* SiteKaraokeController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteKaraokeController.swift; sourceTree = "<group>"; };
 		OBJ_10 /* AdminController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminController.swift; sourceTree = "<group>"; };
 		OBJ_100 /* ImageHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageHandler.swift; sourceTree = "<group>"; };
 		OBJ_1000 /* bn_asn1.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = bn_asn1.c; sourceTree = "<group>"; };
@@ -11549,6 +11561,35 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		EA5BDEC727310D5E0099C150 /* Schema Creation */ = {
+			isa = PBXGroup;
+			children = (
+				OBJ_67 /* SchemaCreation.swift */,
+			);
+			path = "Schema Creation";
+			sourceTree = "<group>";
+		};
+		EA5BDEC827310D6A0099C150 /* Data Import */ = {
+			isa = PBXGroup;
+			children = (
+				EA0238EF271C239000D5A168 /* Boardgames.swift */,
+				OBJ_64 /* Events.swift */,
+				OBJ_63 /* EventForums.swift */,
+				EA5BDEC527303DE60099C150 /* KaraokeSongs.swift */,
+				OBJ_66 /* RegistrationCodes.swift */,
+			);
+			path = "Data Import";
+			sourceTree = "<group>";
+		};
+		EA5BDEC927310DF30099C150 /* Test Data */ = {
+			isa = PBXGroup;
+			children = (
+				OBJ_68 /* TestData.swift */,
+				OBJ_69 /* TestUsers.swift */,
+			);
+			path = "Test Data";
+			sourceTree = "<group>";
+		};
 		OBJ_1002 /* buf */ = {
 			isa = PBXGroup;
 			children = (
@@ -11618,6 +11659,7 @@
 				OBJ_110 /* SiteEventsController.swift */,
 				OBJ_111 /* SiteForumController.swift */,
 				OBJ_112 /* SiteFriendlyFezController.swift */,
+				EA5BDECE2734B11F0099C150 /* SiteKaraokeController.swift */,
 				OBJ_113 /* SiteLoginController.swift */,
 				OBJ_114 /* SiteModController.swift */,
 				OBJ_115 /* SiteSeamailController.swift */,
@@ -15768,7 +15810,7 @@
 			path = Builder;
 			sourceTree = "<group>";
 		};
-		OBJ_5 /*  */ = {
+		OBJ_5 = {
 			isa = PBXGroup;
 			children = (
 				OBJ_6 /* Package.swift */,
@@ -15791,7 +15833,6 @@
 				OBJ_2713 /* CONTRIBUTING.md */,
 				OBJ_2714 /* Procfile */,
 			);
-			name = "";
 			sourceTree = "<group>";
 		};
 		OBJ_504 /* Database */ = {
@@ -15973,17 +16014,13 @@
 		OBJ_59 /* Migrations */ = {
 			isa = PBXGroup;
 			children = (
+				EA5BDEC827310D6A0099C150 /* Data Import */,
+				EA5BDEC727310D5E0099C150 /* Schema Creation */,
+				EA5BDEC927310DF30099C150 /* Test Data */,
 				OBJ_60 /* AdminUser.swift */,
-				EA0238EF271C239000D5A168 /* Boardgames.swift */,
 				OBJ_61 /* Categories.swift */,
 				OBJ_62 /* ClientUsers.swift */,
-				OBJ_63 /* EventForums.swift */,
-				OBJ_64 /* Events.swift */,
 				OBJ_65 /* Forums.swift */,
-				OBJ_66 /* RegistrationCodes.swift */,
-				OBJ_67 /* SchemaCreation.swift */,
-				OBJ_68 /* TestData.swift */,
-				OBJ_69 /* TestUsers.swift */,
 			);
 			path = Migrations;
 			sourceTree = "<group>";
@@ -16285,6 +16322,8 @@
 				OBJ_80 /* ForumPostEdit.swift */,
 				OBJ_81 /* FriendlyFez.swift */,
 				OBJ_82 /* FriendlyFezEdit.swift */,
+				EA4A9A1F27301E3500652C0A /* KaraokeSong.swift */,
+				EA5BDEC327302EF20099C150 /* KaraokePlayedSong.swift */,
 				OBJ_83 /* ModeratorAction.swift */,
 				OBJ_84 /* ProfileEdit.swift */,
 				OBJ_85 /* RegistrationCode.swift */,
@@ -16699,6 +16738,7 @@
 		OBJ_9 /* Controllers */ = {
 			isa = PBXGroup;
 			children = (
+				OBJ_19 /* Structs */,
 				OBJ_10 /* AdminController.swift */,
 				OBJ_11 /* AlertController.swift */,
 				OBJ_12 /* AuthController.swift */,
@@ -16708,8 +16748,8 @@
 				OBJ_15 /* FezController.swift */,
 				OBJ_16 /* ForumController.swift */,
 				OBJ_17 /* ImageController.swift */,
+				EA5BDECC273213830099C150 /* KaraokeController.swift */,
 				OBJ_18 /* ModerationController.swift */,
-				OBJ_19 /* Structs */,
 				OBJ_23 /* TestController.swift */,
 				OBJ_24 /* TwitarrController.swift */,
 				OBJ_25 /* UserController.swift */,
@@ -16783,6 +16823,7 @@
 			children = (
 				OBJ_93 /* FezParticipant.swift */,
 				OBJ_94 /* ForumReaders.swift */,
+				EA5BDECA273145990099C150 /* KaraokeFavorite.swift */,
 				OBJ_95 /* PostLikes.swift */,
 				OBJ_96 /* TwarrtLikes.swift */,
 				EA0238F527224E0F00D5A168 /* BoardgameFavorite.swift */,
@@ -19312,7 +19353,7 @@
 			knownRegions = (
 				en,
 			);
-			mainGroup = OBJ_5 /*  */;
+			mainGroup = OBJ_5;
 			productRefGroup = OBJ_2638 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -19431,6 +19472,7 @@
 				OBJ_2729 /* AdminControllerStructs.swift in Sources */,
 				OBJ_2730 /* ControllerStructs.swift in Sources */,
 				OBJ_2731 /* ModeratorControllerStructs.swift in Sources */,
+				EA5BDECF2734B11F0099C150 /* SiteKaraokeController.swift in Sources */,
 				EA0238EE271C0EA300D5A168 /* Boardgame.swift in Sources */,
 				OBJ_2732 /* TestController.swift in Sources */,
 				OBJ_2733 /* TwitarrController.swift in Sources */,
@@ -19444,6 +19486,7 @@
 				OBJ_2741 /* ModeratorActionType.swift in Sources */,
 				OBJ_2742 /* ReportType.swift in Sources */,
 				OBJ_2743 /* UserAccessLevel.swift in Sources */,
+				EA5BDECB273145990099C150 /* KaraokeFavorite.swift in Sources */,
 				OBJ_2744 /* Event+Extensions.swift in Sources */,
 				OBJ_2745 /* Fez+Extensions.swift in Sources */,
 				OBJ_2746 /* FezPost+Extensions.swift in Sources */,
@@ -19464,6 +19507,7 @@
 				OBJ_2760 /* ValidatingJSONParser.swift in Sources */,
 				OBJ_2761 /* Format.swift in Sources */,
 				OBJ_2762 /* Geometry.swift in Sources */,
+				EA5BDEC427302EF20099C150 /* KaraokePlayedSong.swift in Sources */,
 				OBJ_2763 /* Image.swift in Sources */,
 				OBJ_2764 /* AdminUser.swift in Sources */,
 				OBJ_2765 /* Categories.swift in Sources */,
@@ -19477,9 +19521,11 @@
 				OBJ_2773 /* TestUsers.swift in Sources */,
 				OBJ_2774 /* Announcement.swift in Sources */,
 				OBJ_2775 /* Barrel.swift in Sources */,
+				EA5BDECD273213830099C150 /* KaraokeController.swift in Sources */,
 				OBJ_2776 /* Category.swift in Sources */,
 				EA0238F627224E0F00D5A168 /* BoardgameFavorite.swift in Sources */,
 				OBJ_2777 /* DailyTheme.swift in Sources */,
+				EA4A9A2027301E3500652C0A /* KaraokeSong.swift in Sources */,
 				OBJ_2778 /* Event.swift in Sources */,
 				OBJ_2779 /* FezPost.swift in Sources */,
 				OBJ_2780 /* Forum.swift in Sources */,
@@ -19517,6 +19563,7 @@
 				OBJ_2811 /* SiteFriendlyFezController.swift in Sources */,
 				OBJ_2812 /* SiteLoginController.swift in Sources */,
 				OBJ_2813 /* SiteModController.swift in Sources */,
+				EA5BDEC627303DE60099C150 /* KaraokeSongs.swift in Sources */,
 				OBJ_2814 /* SiteSeamailController.swift in Sources */,
 				OBJ_2815 /* SiteTwittarController.swift in Sources */,
 				OBJ_2816 /* SiteUserController.swift in Sources */,

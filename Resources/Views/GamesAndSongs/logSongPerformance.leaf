@@ -1,0 +1,39 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 my-1">
+    		<div class="row">
+    			<div class="col col-auto">
+			    	<h6><b>Song Performance Log</b></h6>
+			    	<p class="ms-4 mb-0"><b>Artist:</b> #(song.artist)</p>
+			    	<p class="ms-4"><b>Song Title:</b> #(song.songName)</p>
+				</div>
+			</div>
+    		<div class="row">
+    			<div class="col col-auto">
+			    	<h6><b>Performers:</b></h6>
+				</div>
+			</div>
+			<ul class="container-md mx-0 px-0 list-group">
+				<li class="list-group-item bg-transparent mb-3">				
+					<form class="ajax" action="/karaoke/logperformance/#(song.songID)" enctype="multipart/form-data" method="POST" data-successurl="/karaoke">
+						<div class="container-fluid">
+							<div class="row mb-2"> 
+								<textarea class="form-control" maxlength="500" rows="3" name="message"></textarea>
+							</div>
+							<div class="row mb-2">
+								<div class="col gx-0">
+									<small>Please remember to abide by the <a href="/codeOfConduct">Code of Conduct</a></small>
+								</div>
+								<div class="col col-auto gx-0">
+									<button type="submit" class="btn btn-primary">Create Log Entry</button>
+								</div>
+							</div>
+							<div class="alert alert-danger mt-3 d-none" role="alert">
+							</div>				
+						</div>
+					</form>
+				</li>
+			</ul>
+    	</div>
+	#endexport
+#endextend

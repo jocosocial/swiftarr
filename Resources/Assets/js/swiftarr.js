@@ -7,16 +7,9 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 		case "laugh":
 		case "like":
 		case "love":
-		case "favoriteForum":
-		case "favoriteForumPost":
-		case "favoriteTweet":
-		case "favoriteGame":
+		case "favorite":
 		case "follow":
-		case "joinFez":
-		case "leaveFez":
-		case "fezRemoveUser":
-		case "cancelFez":
-		case "fezDelete":
+		case "reload":
 		case "block":
 		case "mute": 
 		case "unblock": 
@@ -72,8 +65,6 @@ function setActionButtonsState(tappedButton, state) {
 async function spinnerButtonAction() {
 	let tappedButton = event.target;
 	let path = tappedButton.dataset.actionpath;
-	switch (tappedButton.dataset.action) {
-	}
 	let actionStr = 'POST'
 	if (tappedButton.dataset.istoggle == "true" && !tappedButton.checked) {
 		actionStr = 'DELETE';
@@ -95,12 +86,7 @@ async function spinnerButtonAction() {
 				case "follow":
 					tappedButton.closest('[data-eventfavorite]').dataset.eventfavorite = tappedButton.checked ? "true": "false";
 					break;
-				case "joinFez":
-				case "leaveFez":
-				case "fezDelete":
-				case "fezAddUser":
-				case "cancelFez":
-				case "fezRemoveUser":
+				case "reload":
 					location.reload();
 					break;
 				case "block":
@@ -352,14 +338,14 @@ function submitAJAXForm(formElement, event) {
 			let alertElement = formElement.querySelector('.alert');
 			if (alertElement) {
 				alertElement.innerHTML = "<b>Error:</b> " + data.reason;
-				alertElement.classList.remove("d-none")
+				alertElement.classList.remove("d-none");
 			}
 		}
 	}
 	req.onerror = function() {
 		let alertElement = formElement.querySelector('.alert');
 		alertElement.innerHTML = "<b>Error:</b> " + this.statusText;
-		alertElement.classList.remove("d-none")
+		alertElement.classList.remove("d-none");
 	}
 	req.open("post", formElement.action);
     req.send(new FormData(formElement));

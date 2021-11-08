@@ -66,7 +66,7 @@
 				<div class="row my-2">
 					<div class="col">
 						<b>You are currently logged out</b><br>
-						Use the links below to log in or create an account.
+						<p>Use the links below to log in or create an account.</p><p>While logged out, Tweets, Forums, Seamail, and Looking For Group will not be available.</p>
 					</div>
 				</div>
 				<div class="row mb-2">

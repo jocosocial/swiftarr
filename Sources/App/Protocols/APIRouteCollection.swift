@@ -26,7 +26,8 @@ extension APIRouteCollection {
 	var searchStringParam: PathComponent { PathComponent(":search_string") }
 	var dailyThemeIDParam: PathComponent { PathComponent(":daily_theme_id") }
 	var accessLevelParam: PathComponent { PathComponent(":access_level") }
-	var boardgameIDParam: PathComponent { PathComponent(":boardgame") }
+	var boardgameIDParam: PathComponent { PathComponent(":boardgame_id") }
+	var songIDParam: PathComponent { PathComponent(":karaoke_song+id") }
 	 
 	/// Adds Flexible Auth to a route. This route can be accessed without a token (while not logged in), but `req.auth.get(User.self)` will still
 	/// return a user if one is logged in. Route handlers for these routes should not call `req.auth.require(User.self)`. A route with no auth 

@@ -268,12 +268,14 @@ struct AvatarTag: UnsafeUnescapedLeafTag {
 			imgSize = tempSize
 		}
 		guard ctx.parameters.count >= 1, let userHeader = ctx.parameters[0].dictionary,
-			  let userID = userHeader["userID"]?.string else {
+				let userID = userHeader["userID"]?.string else {
 			throw "Leaf: avatarTag tag unable to get user header."
 		}
 		let imgLoadSize = imgSize > 100 ? "full" : "thumb"
-//		let imagePath = "/api/v3/image/user/\(imgLoadSize)/\(userID)"
-		let imagePath = "/avatar/\(imgLoadSize)/\(userID)"
+		var imagePath = "/api/v3/image/user/identicon/\(userID)"
+		if let customImage = userHeader["userImage"] {
+			imagePath = "/api/v3/image/\(imgLoadSize)/\(customImage)"
+		}
 		return LeafData.string("<img src=\"\(imagePath)\" width=\(imgSize) height=\(imgSize) alt=\"Avatar\">")
 	}
 }

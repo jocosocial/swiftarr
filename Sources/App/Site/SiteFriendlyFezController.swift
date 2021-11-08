@@ -46,9 +46,9 @@ struct FezCreateUpdatePageContext : Encodable {
 
 	init(_ req: Request, fezToUpdate: FezData? = nil) throws {
 		if let fez = fezToUpdate {
-			trunk = .init(req, title: "Update FriendlyFez", tab: .none)
+			trunk = .init(req, title: "Update Looking For Group", tab: .none)
 			self.fez = fezToUpdate
-			pageTitle = "Update Friendly Fez"
+			pageTitle = "Update Looking For Group"
 			fezTitle = fez.title
 			fezLocation = fez.location ?? ""
 			fezType = fez.fezType.rawValue
@@ -63,8 +63,8 @@ struct FezCreateUpdatePageContext : Encodable {
 			submitButtonTitle = "Update"
 		}
 		else {
-			trunk = .init(req, title: "New FriendlyFez", tab: .none)
-			pageTitle = "Create a New Friendly Fez"
+			trunk = .init(req, title: "New Looking For Group", tab: .none)
+			pageTitle = "Create a New LFG"
 			formAction = "/fez/create"
 			minPeople = 2
 			maxPeople = 2
@@ -74,8 +74,8 @@ struct FezCreateUpdatePageContext : Encodable {
 	// Builds a Create Fez page for a fez, prefilled to play the indicated boardgame.
 	// If `game` is an expansion set, you can optionally pass the baseGame in as well. 
 	init(_ req: Request, forGame game: BoardgameData, baseGame: BoardgameData? = nil) {
-		trunk = .init(req, title: "New FriendlyFez", tab: .none)
-		pageTitle = "Create Fez to play a Boardgame"
+		trunk = .init(req, title: "New LFG", tab: .none)
+		pageTitle = "Create LFG to play a Boardgame"
 		fezTitle = "Play \(game.gameName)"
 		fezLocation = "Dining Room, Deck 3 Aft"
 		fezType = "gaming"
@@ -83,7 +83,7 @@ struct FezCreateUpdatePageContext : Encodable {
 		minPeople = game.minPlayers ?? 2
 		maxPeople = game.maxPlayers ?? 2
 		let copyText = game.numCopies == 1 ? "1 copy" : "\(game.numCopies) copies"
-		info = "Play a board game! We'll be playing \"\(game.gameName)\".\n\nRemember, FriendlyFez is not a game reservation service. The game library has \(copyText) of this game."
+		info = "Play a board game! We'll be playing \"\(game.gameName)\".\n\nRemember, LFG is not a game reservation service. The game library has \(copyText) of this game."
 		if let baseGame = baseGame {
 			let baseGameCopyText = baseGame.numCopies == 1 ? "1 copy" : "\(baseGame.numCopies) copies"
 			info.append("\n\n\(game.gameName) is an expansion pack for \(baseGame.gameName). You'll need to check this out of the library too. The game library has \(baseGameCopyText) of the base game.")
@@ -135,7 +135,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 	}
 
 	// GET /fez
-	// Shows the root Fez page, with a list of all conversations.
+	// Shows the root Fez page, with a list of all fezzes.
 	func fezRootPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		return apiQuery(req, endpoint: "/fez/open").throwingFlatMap { response in
 			let fezzes = try response.content.decode([FezData].self)
@@ -147,7 +147,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 				var daySelection: Int?
 				
 				init(_ req: Request, fezzes: [FezData]) throws {
-					trunk = .init(req, title: "FriendlyFez", tab: .none)
+					trunk = .init(req, title: "Looking For Group", tab: .none)
 					self.fezzes = fezzes
 					tab = .find
 					typeSelection = req.query[String.self, at: "type"] ?? "all"
@@ -171,7 +171,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 				var tab: FezTab
 				
 				init(_ req: Request, fezzes: [FezData]) throws {
-					trunk = .init(req, title: "FriendlyFez", tab: .none)
+					trunk = .init(req, title: "LFG Joined Groups", tab: .none)
 					self.fezzes = fezzes
 					tab = .joined
 				}
@@ -193,7 +193,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 				var tab: FezTab
 				
 				init(_ req: Request, fezzes: [FezData]) throws {
-					trunk = .init(req, title: "FriendlyFez", tab: .none)
+					trunk = .init(req, title: "LFGs Created By You", tab: .none)
 					self.fezzes = fezzes
 					tab = .owned
 				}
@@ -291,7 +291,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
      			var post: MessagePostContext
 				
 				init(_ req: Request, fez: FezData) throws {
-					trunk = .init(req, title: "FriendlyFez", tab: .none)
+					trunk = .init(req, title: "LFG", tab: .none)
 					self.fez = fez
     				oldPosts = []
     				newPosts = []

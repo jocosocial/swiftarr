@@ -150,7 +150,7 @@
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-						<input type="checkbox" class="btn-check" autocomplete="off" data-action="fezDelete" 
+						<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload" 
 								data-actionpath="/fez/#(modData.fez.fezID)/delete" 
 								data-errordiv="fezDialog_errorDisplay"
 								id="fezDialog_deleteBtn">

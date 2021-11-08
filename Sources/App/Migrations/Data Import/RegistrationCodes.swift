@@ -5,7 +5,7 @@ import Fluent
 /// A `Migration` that populates the `RegistrationCode` database from a `registration-codes.txt`
 /// file located in the `seeds/` subdirectory of the project.
 
-struct CreateRegistrationCodes: Migration {
+struct ImportRegistrationCodes: Migration {
     
     /// Required by `Migration` protocol. Reads either a test or production text file in the
     /// `seeds/` subdirectory, converts the lines into elements of an array, then iterates over
@@ -15,6 +15,7 @@ struct CreateRegistrationCodes: Migration {
     /// - Parameter database: A connection to the database, provided automatically.
     /// - Returns: Void
     func prepare(on database: Database) -> EventLoopFuture<Void> {
+    	database.logger.info("Starting registration code import")
         // get file containing registration codes
         let codesFile: String
         // Environment.detect() can throw, so wrap it all in do/catch
@@ -51,7 +52,7 @@ struct CreateRegistrationCodes: Migration {
             return savedCodes.flatten(on: database.eventLoop).transform(to: ())
         
         } catch let error {
-            fatalError("Environment.detect() failed! error: \(error)")
+            fatalError("Import Registration Codes failed! error: \(error)")
         }
     }
     

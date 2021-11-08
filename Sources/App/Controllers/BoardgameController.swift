@@ -20,8 +20,6 @@ struct BoardgameController: APIRouteCollection {
 		tokenAuthGroup.post(boardgameIDParam, "favorite", use: addFavorite)
 		tokenAuthGroup.post(boardgameIDParam, "favorite", "remove", use: removeFavorite)
 		tokenAuthGroup.delete(boardgameIDParam, "favorite", use: removeFavorite)
-		
-		// TODO: add/remove favorites
 	}
 	
 	/// `GET /api/v3/boardgames`

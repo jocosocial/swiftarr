@@ -26,7 +26,7 @@
 						</div>
 						#if(user.userID != trunk.userID):
 							<div>
-								<input type="checkbox" class="btn-check" autocomplete="off" data-action="fezRemoveUser" 
+								<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload" 
 										data-actionpath="/fez/#(fez.fezID)/members/remove/#(user.userID)"
 										data-errordiv="#(user.userID)_participanterror"
 										id="#(user.userID)_remove">
@@ -65,7 +65,7 @@
 							</div>
 							#if(user.userID != trunk.userID):
 								<div class="">
-									<input type="checkbox" class="btn-check" autocomplete="off" data-action="fezRemoveUser" 
+									<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload" 
 										data-actionpath="/fez/#(fez.fezID)/members/remove/#(user.userID)"
 										data-errordiv="#(user.userID)_waitlisterror"
 										id="#(user.userID)_remove">
@@ -134,7 +134,7 @@
 				<div class="row justify-content-between align-items-baseline">
 					<div class="col col-auto username-here"></div>
 					<label class="col col-auto btn btn-sm btn-primary px-3 me-2">
-						<input type="checkbox" class="btn-check" autocomplete="off" data-action="fezAddUser"
+						<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload"
 								data-actionpath="/fez/#(fez.fezID)/members/add/">
 						<span class="button-title-here">Add</span>
 						<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>

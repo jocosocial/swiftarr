@@ -1,7 +1,6 @@
 import Vapor
 import Crypto
 import FluentSQL
-
 import LeafKit
 
 struct GameListContext: Encodable {

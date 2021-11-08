@@ -69,13 +69,13 @@
 						#endif
 					</li>
 					<li class="nav-item">
-						<a class="nav-link" href="/fez">FriendlyFez</a>
+						<a class="nav-link" href="/fez">Looking For Group</a>
 					</li>
 					<li class="nav-item">
 						<a class="nav-link" href="/boardgames">Games</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link" href="/">Karaoke</a>
+						<a class="nav-link" href="/karaoke">Karaoke</a>
 					</li>
 					#if(trunk.userIsMod):
 						<hr class="main-menu-divider">

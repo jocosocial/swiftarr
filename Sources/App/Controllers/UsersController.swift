@@ -331,7 +331,7 @@ struct UsersController: APIRouteCollection {
     func noteCreateHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         // FIXME: account for banned user
         let requester = try req.auth.require(User.self)
-        let data = try req.content.decode(NoteCreateData.self)        
+		let data = try ValidatingJSONDecoder().decode(NoteCreateData.self, fromBodyOf: req)
         return User.findFromParameter(userIDParam, on: req) .throwingFlatMap { targetUser in
             // profile shouldn't be visible, but just in case
             guard targetUser.accessLevel != .banned else {

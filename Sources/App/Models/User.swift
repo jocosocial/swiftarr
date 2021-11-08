@@ -173,6 +173,9 @@ final class User: Model {
 	/// The sibling `Boardgame`s this user has favorited.
 	@Siblings(through: BoardgameFavorite.self, from: \.$user, to: \.$boardgame) var favoriteBoardgames: [Boardgame]
 	
+	/// The sibling `KaraokeSongs`s this user has favorited.
+	@Siblings(through: KaraokeFavorite.self, from: \.$user, to: \.$song) var favoriteSongs: [KaraokeSong]
+	
     // MARK: Initialization
     
     // Used by Fluent

@@ -22,6 +22,12 @@
 				<a class="list-group-item list-group-item-action" href="/admin/regcodes">
 					<b>Registration Codes</b>: View/Manage registration code table.
 				</a>		
+				<a class="list-group-item list-group-item-action" href="/admin/mods">
+					<b>Manage Moderators</b>: View/Manage moderators.
+				</a>		
+				<a class="list-group-item list-group-item-action" href="/admin/karaoke/managers">
+					<b>Manage Karaoke Managers</b>: View/Manage Karaoke Managers.
+				</a>		
 			</div>
 		</div>
     #endexport

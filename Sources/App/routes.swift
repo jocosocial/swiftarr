@@ -18,6 +18,7 @@ public func routes(_ app: Application) throws {
 			FezController(),
 			ForumController(),
 			ImageController(),
+			KaraokeController(),
 			TestController(),
 			TwitarrController(),
 			UserController(),
@@ -40,6 +41,7 @@ public func routes(_ app: Application) throws {
 			SiteEventsController(),
 			SiteUserController(),
 			SiteBoardgameController(),
+			SiteKaraokeController(),
 			SiteModController(),
 			SiteAdminController(),
 	]

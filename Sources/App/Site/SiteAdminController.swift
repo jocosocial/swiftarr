@@ -37,6 +37,15 @@ struct SiteAdminController: SiteControllerUtils {
 		privateAdminRoutes.get("scheduleupload", "complete", use: scheduleUpdateCompleteViewtHandler)
 
 		privateAdminRoutes.get("regcodes", use: getRegCodeHandler)
+		
+		privateAdminRoutes.get("mods", use: getModsHandler)
+		privateAdminRoutes.post("user", userIDParam, "makemoderator", use: makeModerator)
+		privateAdminRoutes.post("user", userIDParam, "demotemoderator", use: demoteModerator)
+		
+		privateAdminRoutes.get("karaoke", "managers", use: getKaraokeManagersHandler)
+		privateAdminRoutes.post("user", userIDParam, "karaoke", "manager", "promote", use: promoteKaraokeManager)
+		privateAdminRoutes.post("user", userIDParam, "karaoke", "manager", "demote", use: demoteKaraokeManager)
+		
 	}
 	
 // MARK: - Admin Pages
@@ -526,6 +535,112 @@ struct SiteAdminController: SiteControllerUtils {
 			}
 			let ctx = try RegCodeStatsContext(req, stats: regCodeData, searchResults: searchResults)
 			return req.view.render("admin/regcodes", ctx)
+		}
+	}
+	
+	// GET /admin/mods
+	//
+	func getModsHandler(_ req: Request) throws -> EventLoopFuture<View> {
+		var searchFuture: EventLoopFuture<[UserHeader]?> = req.eventLoop.future(nil)
+		var searchStr = ""
+		if let str = req.query[String.self, at: "search"]?.percentEncodeFilePathEntry() {
+			searchStr = str
+			searchFuture = apiQuery(req, endpoint: "/users/match/allnames/\(searchStr)").flatMapThrowing { response in
+				return try response.content.decode([UserHeader].self)
+			}
+		}
+		return apiQuery(req, endpoint: "/admin/moderators").and(searchFuture).throwingFlatMap { (response, searchResults) in
+			let currentMods = try response.content.decode([UserHeader].self)
+			struct ManageModeratorsViewContext : Encodable {
+				var trunk: TrunkContext
+				var currentMods: [UserHeader]
+				var userSearch: String
+				var searchResults: [UserHeader]?
+				
+				init(_ req: Request, currentMods: [UserHeader], searchStr: String, searchResults: [UserHeader]?) throws {
+					trunk = .init(req, title: "Manage Moderators", tab: .none)
+					self.currentMods = currentMods
+					self.userSearch = searchStr
+					self.searchResults = searchResults
+				}
+			}
+			let ctx = try ManageModeratorsViewContext(req, currentMods: currentMods, searchStr: searchStr, searchResults: searchResults)
+			return req.view.render("admin/showModerators", ctx)
+		}
+	}
+
+	// POST /admin/user/:user_id/makemoderator
+	//
+	func makeModerator(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+    	guard let userID = req.parameters.get(userIDParam.paramString)?.percentEncodeFilePathEntry() else {
+    		throw "Invalid user ID"
+    	}
+		return apiQuery(req, endpoint: "/admin/moderator/promote/\(userID)", method: .POST).map { response in
+			return response.status
+		}
+	}
+	
+	// POST /admin/user/:user_id/demotemoderator
+	//
+	func demoteModerator(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+    	guard let userID = req.parameters.get(userIDParam.paramString)?.percentEncodeFilePathEntry() else {
+    		throw "Invalid user ID"
+    	}
+		return apiQuery(req, endpoint: "/admin/moderator/demote/\(userID)", method: .POST).map { response in
+			return response.status
+		}
+	}
+	
+	// GET /admin/karaoke/managers
+	//
+	func getKaraokeManagersHandler(_ req: Request) throws -> EventLoopFuture<View> {
+		var searchFuture: EventLoopFuture<[UserHeader]?> = req.eventLoop.future(nil)
+		var searchStr = ""
+		if let str = req.query[String.self, at: "search"]?.percentEncodeFilePathEntry() {
+			searchStr = str
+			searchFuture = apiQuery(req, endpoint: "/users/match/allnames/\(searchStr)").flatMapThrowing { response in
+				return try response.content.decode([UserHeader].self)
+			}
+		}
+		return apiQuery(req, endpoint: "/admin/karaoke/managers").and(searchFuture).throwingFlatMap { (response, searchResults) in
+			let currentMgrs = try response.content.decode([UserHeader].self)
+			struct KaraokeManagersViewContext : Encodable {
+				var trunk: TrunkContext
+				var currentMgrs: [UserHeader]
+				var userSearch: String
+				var searchResults: [UserHeader]?
+				
+				init(_ req: Request, currentMgrs: [UserHeader], searchStr: String, searchResults: [UserHeader]?) throws {
+					trunk = .init(req, title: "Karaoke Managers", tab: .none)
+					self.currentMgrs = currentMgrs
+					self.userSearch = searchStr
+					self.searchResults = searchResults
+				}
+			}
+			let ctx = try KaraokeManagersViewContext(req, currentMgrs: currentMgrs, searchStr: searchStr, searchResults: searchResults)
+			return req.view.render("admin/showKaraokeManagers", ctx)
+		}
+	}
+
+	// POST /admin/user/:user_id/karaoke/manager/promote
+	//
+	func promoteKaraokeManager(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+    	guard let userID = req.parameters.get(userIDParam.paramString)?.percentEncodeFilePathEntry() else {
+    		throw "Invalid user ID"
+    	}
+		return apiQuery(req, endpoint: "/admin/karaoke/manager/promote/\(userID)", method: .POST).map { response in
+			return response.status
+		}
+	}
+	
+	// POST /admin/user/:user_id/karaoke/manager/demote
+	//
+	func demoteKaraokeManager(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+    	guard let userID = req.parameters.get(userIDParam.paramString)?.percentEncodeFilePathEntry() else {
+    		throw "Invalid user ID"
+    	}
+		return apiQuery(req, endpoint: "/admin/karaoke/manager/demote/\(userID)", method: .POST).map { response in
+			return response.status
 		}
 	}
 }
