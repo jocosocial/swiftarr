@@ -6,7 +6,7 @@ import gd
 
 struct ImageController: APIRouteCollection {
 	// Important that this stays a constant; changing after creation is not thread-safe.
-	// Also, since this is based on DirectdoryConfiguration, the value is process-wide, not Application-wide.
+	// Also, since this is based on DirectoryConfiguration, the value is process-wide, not Application-wide.
 	let imagesDirectory: URL
 	
 	// TODO: Currently this creates an images directory inside of `DerivedData`, meaning all images are deleted

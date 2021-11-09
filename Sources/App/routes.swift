@@ -32,6 +32,7 @@ public func routes(_ app: Application) throws {
 	//
 	// API tokens are stored in session data, allowing site routes to make authenticated calls to API routes.
 	let siteControllers: [SiteControllerUtils] = [
+			SiteFileController(),
 			SiteController(),
 			SiteLoginController(),
 			SiteTwitarrController(),

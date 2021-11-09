@@ -56,6 +56,7 @@
 		EA5BDECB273145990099C150 /* KaraokeFavorite.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA5BDECA273145990099C150 /* KaraokeFavorite.swift */; };
 		EA5BDECD273213830099C150 /* KaraokeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA5BDECC273213830099C150 /* KaraokeController.swift */; };
 		EA5BDECF2734B11F0099C150 /* SiteKaraokeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA5BDECE2734B11F0099C150 /* SiteKaraokeController.swift */; };
+		EA5BDED12739F9070099C150 /* SiteFileController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA5BDED02739F9070099C150 /* SiteFileController.swift */; };
 		OBJ_2720 /* AdminController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_10 /* AdminController.swift */; };
 		OBJ_2721 /* AlertController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* AlertController.swift */; };
 		OBJ_2722 /* AuthController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* AuthController.swift */; };
@@ -8078,6 +8079,7 @@
 		EA5BDECA273145990099C150 /* KaraokeFavorite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KaraokeFavorite.swift; sourceTree = "<group>"; };
 		EA5BDECC273213830099C150 /* KaraokeController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KaraokeController.swift; sourceTree = "<group>"; };
 		EA5BDECE2734B11F0099C150 /* SiteKaraokeController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteKaraokeController.swift; sourceTree = "<group>"; };
+		EA5BDED02739F9070099C150 /* SiteFileController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteFileController.swift; sourceTree = "<group>"; };
 		OBJ_10 /* AdminController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminController.swift; sourceTree = "<group>"; };
 		OBJ_100 /* ImageHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageHandler.swift; sourceTree = "<group>"; };
 		OBJ_1000 /* bn_asn1.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = bn_asn1.c; sourceTree = "<group>"; };
@@ -11657,6 +11659,7 @@
 				OBJ_108 /* SiteAdminController.swift */,
 				EA0238F3271D7C1B00D5A168 /* SiteBoardgameController.swift */,
 				OBJ_110 /* SiteEventsController.swift */,
+				EA5BDED02739F9070099C150 /* SiteFileController.swift */,
 				OBJ_111 /* SiteForumController.swift */,
 				OBJ_112 /* SiteFriendlyFezController.swift */,
 				EA5BDECE2734B11F0099C150 /* SiteKaraokeController.swift */,
@@ -19472,6 +19475,7 @@
 				OBJ_2729 /* AdminControllerStructs.swift in Sources */,
 				OBJ_2730 /* ControllerStructs.swift in Sources */,
 				OBJ_2731 /* ModeratorControllerStructs.swift in Sources */,
+				EA5BDED12739F9070099C150 /* SiteFileController.swift in Sources */,
 				EA5BDECF2734B11F0099C150 /* SiteKaraokeController.swift in Sources */,
 				EA0238EE271C0EA300D5A168 /* Boardgame.swift in Sources */,
 				OBJ_2732 /* TestController.swift in Sources */,

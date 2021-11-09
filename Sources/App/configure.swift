@@ -184,7 +184,6 @@ func configureMiddleware(_ app: Application) throws {
 	var new = Middlewares()
 	new.use(SwiftarrErrorMiddleware(environment: app.environment))
 	new.use(SiteErrorMiddleware(environment: app.environment))
-	new.use(FileMiddleware(publicDirectory: "Resources/Assets")) // serves files from `Public/` directory
 	app.middleware = new
 }
 
