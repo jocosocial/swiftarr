@@ -113,28 +113,29 @@ struct ImageController: APIRouteCollection {
     /// - Parameter ID: A userID value, in the URL path.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: Image data, or `304 notModified` if client's ETag matches.
-	func getUserAvatarHandler(_ req: Request) throws -> EventLoopFuture<Response> {
+	func getUserAvatarHandler(_ req: Request) throws -> Response {
         guard let userID = req.parameters.get(userIDParam.paramString, as: UUID.self) else {
             throw Abort(.badRequest, reason: "Missing user ID parameter.")
         }
         let sizeGroup: ImageSizeGroup = req.url.path.hasPrefix("/api/v3/image/user/thumb") ? .thumbnail : .full
-		return User.find(userID, on: req.db).unwrap(or: Abort(.badRequest, reason: "User not found")).flatMapThrowing { targetUser in
-			if let filename = targetUser.userImage {
-				return try getUserUploadedImage(req, sizeGroup: sizeGroup, imageFilename: filename)
-			}
-			var headers: HTTPHeaders = [:]
-
-			// Check if file has been cached already and return NotModified response if the etags match
-			headers.replaceOrAdd(name: .eTag, value: "W/\"1\"")
-			if "W/\"1\"" == req.headers.first(name: .ifNoneMatch) {
-				return Response(status: .notModified)
-			}
-
-			let imageData = try generateIdenticon(for: targetUser)
-			headers.contentType = HTTPMediaType.fileExtension("png")
-			let body = Response.Body(data: imageData)
-			return Response(status: .ok, headers: headers, body: body)
+		guard let targetUser = req.userCache.getUser(userID) else {
+			throw Abort(.badRequest, reason: "User not found")
 		}
+		if let filename = targetUser.userImage {
+			return try getUserUploadedImage(req, sizeGroup: sizeGroup, imageFilename: filename)
+		}
+		var headers: HTTPHeaders = [:]
+
+		// Check if file has been cached already and return NotModified response if the etags match
+		headers.replaceOrAdd(name: .eTag, value: "W/\"1\"")
+		if "W/\"1\"" == req.headers.first(name: .ifNoneMatch) {
+			return Response(status: .notModified)
+		}
+
+		let imageData = try generateIdenticon(for: targetUser.userID)
+		headers.contentType = HTTPMediaType.fileExtension("png")
+		let body = Response.Body(data: imageData)
+		return Response(status: .ok, headers: headers, body: body)
 	}
 	
     /// `GET /api/v3/image/user/identicon/ID`
@@ -147,23 +148,24 @@ struct ImageController: APIRouteCollection {
     /// - Parameter ID: A userID value, in the URL path.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: Image data, or `304 notModified` if client's ETag matches.
-	func getUserIdenticonHandler(_ req: Request) throws -> EventLoopFuture<Response> {
+	func getUserIdenticonHandler(_ req: Request) throws -> Response {
         guard let userID = req.parameters.get(userIDParam.paramString, as: UUID.self) else {
             throw Abort(.badRequest, reason: "Missing user ID parameter.")
         }
-		return User.find(userID, on: req.db).unwrap(or: Abort(.badRequest, reason: "User not found")).flatMapThrowing { targetUser in
-			var headers: HTTPHeaders = [:]
-			// Check if file has been cached already and return NotModified response if the etags match
-			headers.replaceOrAdd(name: .eTag, value: "W/\"1\"")
-			if "W/\"1\"" == req.headers.first(name: .ifNoneMatch) {
-				return Response(status: .notModified)
-			}
-			let imageData = try generateIdenticon(for: targetUser)
-			headers.contentType = HTTPMediaType.fileExtension("png")
-			headers.cacheControl = .init(isPublic: true, maxAge: 3600 * 24)
-			let body = Response.Body(data: imageData)
-			return Response(status: .ok, headers: headers, body: body)
+		guard let targetUser = req.userCache.getUser(userID) else {
+			throw Abort(.badRequest, reason: "User not found")
 		}
+		var headers: HTTPHeaders = [:]
+		// Check if file has been cached already and return NotModified response if the etags match
+		headers.replaceOrAdd(name: .eTag, value: "W/\"1\"")
+		if "W/\"1\"" == req.headers.first(name: .ifNoneMatch) {
+			return Response(status: .notModified)
+		}
+		let imageData = try generateIdenticon(for: targetUser.userID)
+		headers.contentType = HTTPMediaType.fileExtension("png")
+		headers.cacheControl = .init(isPublic: true, maxAge: 3600 * 24)
+		let body = Response.Body(data: imageData)
+		return Response(status: .ok, headers: headers, body: body)
 	}
 	
 // MARK: - Utilities
@@ -214,10 +216,10 @@ struct ImageController: APIRouteCollection {
 	///
 	/// From testing, this method can generate about 10000 icons / second on a single thread. This should be fast enough so that we don't need to store
 	/// and retrieve generated images; we may as well just generate them on-demand.
-	func generateIdenticon(for user: User) throws -> Data {
+	func generateIdenticon(for userID: UUID) throws -> Data {
 		// This creates a random number generator that is seeded with a specific value based on a user's userID.
 		// This generator should then create a repeatable sequence of values for each user.
-		var gen = try Xoshiro(seed: user.requireID())
+		var gen = Xoshiro(seed: userID)
 
 		guard let srcImage = GDImage(width: 5, height: 5, type: .palette) else {
 			throw Abort(.internalServerError, reason: "Could not allocate image for identicon.")

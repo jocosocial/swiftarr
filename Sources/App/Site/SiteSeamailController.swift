@@ -66,7 +66,7 @@ struct SiteSeamailController: SiteControllerUtils {
     
     // POSTs a seamail creation request.
     func seamailCreatePostHandler(_ req: Request) throws -> EventLoopFuture<Response> {
-    	let user = try req.auth.require(User.self)
+    	let user = try req.auth.require(UserCacheData.self)
     	struct SeamailCreateFormContent : Content {
     		var subject: String
     		var postText: String
@@ -81,7 +81,7 @@ struct SiteSeamailController: SiteControllerUtils {
 		}
 		let participants = formContent.participants.split(separator: ",").compactMap { UUID(uuidString: String($0)) }
 		var allUsers = Set(participants)
-		try allUsers.insert(user.requireID())
+		allUsers.insert(user.userID)
 		guard allUsers.count >= 2 else {
 			throw Abort(.badRequest, reason: "Seamail conversations require at least 2 users.")
 		}

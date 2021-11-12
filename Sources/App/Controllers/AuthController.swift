@@ -103,81 +103,82 @@ struct AuthController: APIRouteCollection {
 		let data = try ValidatingJSONDecoder().decode(UserRecoveryData.self, fromBodyOf: req)
         // find data.username user
         return User.query(on: req.db)
-            .filter(\.$username == data.username)
-            .first()
-            .unwrap(or: Abort(.badRequest, reason: "username \"\(data.username)\" not found"))
-            .addModelID()
-			.throwingFlatMap { (user, userID) in
-				// no login for punks
-				guard user.accessLevel != .banned else {
-					throw Abort(.forbidden, reason: "nope")
-				}
-                // abort if account is seeing potential brute-force attack
-                guard user.recoveryAttempts < 5 else {
-                    throw Abort(.forbidden, reason: "please see a Twit-arr Team member for password recovery")
-                }
-                
-                // registration codes and recovery keys are normalized prior to storage
-                let normalizedKey = data.recoveryKey.lowercased().replacingOccurrences(of: " ", with: "")
+				.filter(\.$username == data.username)
+				.first()
+				.unwrap(or: Abort(.badRequest, reason: "username \"\(data.username)\" not found"))
+				.addModelID()
+				.throwingFlatMap { (user, userID) in
+			// no login for punks
+			guard user.accessLevel != .banned else {
+				throw Abort(.forbidden, reason: "nope")
+			}
+			// abort if account is seeing potential brute-force attack
+			guard user.recoveryAttempts < 5 else {
+				throw Abort(.forbidden, reason: "please see a Twit-arr Team member for password recovery")
+			}
+			
+			// registration codes and recovery keys are normalized prior to storage
+			let normalizedKey = data.recoveryKey.lowercased().replacingOccurrences(of: " ", with: "")
 
-                // protect against ping-pong attack from compromised registration code...
-                // if the code being sent normalizes to 6 characters, it is most likely a
-                // registration code, so abort if it's already been used
-                if normalizedKey.count == 6 {
-                    guard user.verification?.first != "*" else {
-                        throw Abort(.badRequest, reason: "account must be recovered using the recovery key")
-                    }
-                }
-                
-                // attempt data.recoveryKey match
-                var foundMatch = false
-                if normalizedKey == user.verification {
-                    foundMatch = true
-                    // prevent .verification from being used again
-                    if let newVerification = user.verification {
-                        user.verification = "*" + newVerification
-                    }
-                } else {
-                    // password and recoveryKey require hash verification
-                    let verifier = BCryptDigest()
-                    if try verifier.verify(data.recoveryKey, created: user.password) {
-                        foundMatch = true
-                    } else {
-                        // user.recoveryKey is normalized prior to hashing
-                        if try verifier.verify(normalizedKey, created: user.recoveryKey) {
-                            foundMatch = true
-                        }
-                    }
-                }
-                // abort if no match
-                guard foundMatch else {
-                    // track the attempt count
-                    user.recoveryAttempts += 1
-                    _ = user.save(on: req.db)
-                    throw Abort(.badRequest, reason: "no match for supplied recovery key")
-                }
-                
-                // user appears valid, zero out attempt tracking and save new password
-                user.recoveryAttempts = 0
-                user.password = try Bcrypt.hash(data.newPassword)
-                _ = user.save(on: req.db)
-                
-                // return existing token if any
-                return Token.query(on: req.db)
-                    .filter(\.$user.$id == userID)
-                    .first()
-                    .throwingFlatMap { (existingToken) in
-						if let existing = existingToken {
-							return try req.eventLoop.future(TokenStringData(user: user, token: existing))
-						} 
-						else {
-							// otherwise generate and return new token
-							let token = try Token.generate(for: user)
-							return token.save(on: req.db).flatMapThrowing { _ in
-								return try TokenStringData(user: user, token: token)
-							}
-						}
+			// protect against ping-pong attack from compromised registration code...
+			// if the code being sent normalizes to 6 characters, it is most likely a
+			// registration code, so abort if it's already been used
+			if normalizedKey.count == 6 {
+				guard user.verification?.first != "*" else {
+					throw Abort(.badRequest, reason: "account must be recovered using the recovery key")
 				}
+			}
+			
+			// attempt data.recoveryKey match
+			var foundMatch = false
+			if normalizedKey == user.verification {
+				foundMatch = true
+				// prevent .verification from being used again
+				if let newVerification = user.verification {
+					user.verification = "*" + newVerification
+				}
+			} else {
+				// password and recoveryKey require hash verification
+				let verifier = BCryptDigest()
+				if try verifier.verify(data.recoveryKey, created: user.password) {
+					foundMatch = true
+				} else {
+					// user.recoveryKey is normalized prior to hashing
+					if try verifier.verify(normalizedKey, created: user.recoveryKey) {
+						foundMatch = true
+					}
+				}
+			}
+			// abort if no match
+			guard foundMatch else {
+				// track the attempt count
+				user.recoveryAttempts += 1
+				_ = user.save(on: req.db)
+				throw Abort(.badRequest, reason: "no match for supplied recovery key")
+			}
+			
+			// user appears valid, zero out attempt tracking and save new password
+			user.recoveryAttempts = 0
+			user.password = try Bcrypt.hash(data.newPassword)
+			_ = user.save(on: req.db)
+			
+			// return existing token if any
+			return Token.query(on: req.db)
+					.filter(\.$user.$id == userID)
+					.first()
+					.throwingFlatMap { existingToken in
+				if let existing = existingToken {
+					return try req.eventLoop.future(TokenStringData(user: user, token: existing))
+				} 
+				else {
+					// otherwise generate and return new token
+					let token = try Token.generate(for: user)
+					return token.save(on: req.db).flatMapThrowing { _ in
+						req.userCache.updateUser(userID)
+						return try TokenStringData(user: user, token: token)
+					}
+				}
+			}
 		}
     }
     
@@ -243,6 +244,7 @@ struct AuthController: APIRouteCollection {
 				// otherwise generate and return new token
 				let token = try Token.generate(for: user)
 				return token.save(on: req.db).flatMapThrowing { _ in
+					req.userCache.updateUser(userID)
 					return try TokenStringData(user: user, token: token)
 				}
 			}
@@ -276,12 +278,14 @@ struct AuthController: APIRouteCollection {
         req.auth.logout(User.self)
         // revoke token
         return try Token.query(on: req.db)
-            .filter(\.$user.$id == user.requireID())
-            .first()
-            .unwrap(or: Abort(.conflict, reason: "user is not logged in"))
-            .flatMap {
-                (token) in
-                return token.delete(on: req.db).transform(to: .noContent)
+				.filter(\.$user.$id == user.requireID())
+				.first()
+				.unwrap(or: Abort(.conflict, reason: "user is not logged in"))
+				.flatMap { token in
+			return token.delete(on: req.db).flatMapThrowing {
+				try req.userCache.updateUser(user.requireID())
+				return .noContent
+			}
         }
     }
 }

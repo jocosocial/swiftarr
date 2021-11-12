@@ -81,9 +81,9 @@ struct AlertController: APIRouteCollection {
 				return result
 			}
         }
-		let userid = try user.requireID()
+		let userID = try user.requireID()
 		// get user's taggedEvent barrel, and from it get next event being followed
-		return user.getBookmarkBarrel(of: .taggedEvent, on: req.db).flatMap { barrel in
+		return Barrel.query(on: req.db).filter(\.$ownerID == userID).filter(\.$barrelType == .taggedEvent).first().flatMap { barrel in
 			guard let barrel = barrel else {
 				return req.eventLoop.makeSucceededFuture(nil)
 			}
@@ -117,7 +117,7 @@ struct AlertController: APIRouteCollection {
 			}
 		}.flatMap { (nextEventDate: Date?) in
 			// Get the number of fezzes with unread messages
-			return user.$joined_fezzes.$pivots.query(on: req.db).with(\.$fez).all().flatMap { pivots in
+			return FezParticipant.query(on: req.db).filter(\.$user.$id == userID).with(\.$fez).all().flatMap { pivots in
 				var unreadFezCount = 0
 				var unreadSeamailCount = 0
 				pivots.forEach { fezParticipant in
@@ -130,7 +130,7 @@ struct AlertController: APIRouteCollection {
 						}
 					}
 				}
-				return getNewAlertWordCounts(userID: userid, on: req).flatMap { alertWordCounts in
+				return getNewAlertWordCounts(userID: userID, on: req).flatMap { alertWordCounts in
 					return Announcement.query(on: req.db).field(\.$id).filter(\.$displayUntil > Date()).all().map { actives in
 						let newAnnouncements = actives.reduce(0) { ($1.id ?? 0) > user.lastReadAnnouncement ? $0 + 1 : $0 }
 						var result = UserNotificationData(user: user, newFezCount: unreadFezCount, newSeamailCount: unreadSeamailCount,

@@ -19,7 +19,7 @@ struct ImportKaraokeSongs: Migration {
         // Tags can be: "VR" for voice-reduced, M for midi (I think?)
         let songsFilename: String
         do {
-            if (try Environment.detect().name != "heroku") {
+            if try Environment.detect().name != "heroku" {
                 songsFilename = "2020JoCoKaraokeSongCatalog.txt"
             } else {
                 songsFilename = "JoCoKaraokeSongCatalog-heroku.txt"

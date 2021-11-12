@@ -13,12 +13,9 @@ struct AdminController: APIRouteCollection {
 		
 		// convenience route group for all /api/v3/admin endpoints
 		let modRoutes = app.grouped("api", "v3", "admin")
-		
-		// instantiate authentication middleware
-		let requireAdminMiddleware = RequireAdminMiddleware()
-						 
+								 
 		// endpoints available for Admins only
-		let adminAuthGroup = addTokenAuthGroup(to: modRoutes).grouped([requireAdminMiddleware])
+		let adminAuthGroup = addTokenAuthGroup(to: modRoutes).grouped([RequireAdminMiddleware()])
 		adminAuthGroup.post("dailytheme", "create", use: addDailyThemeHandler)
 		adminAuthGroup.post("dailytheme", dailyThemeIDParam, "edit", use: editDailyThemeHandler)
 		adminAuthGroup.post("dailytheme", dailyThemeIDParam, "delete", use: deleteDailyThemeHandler)

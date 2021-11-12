@@ -28,10 +28,8 @@ final class KaraokeFavorite: Model {
     /// - Parameters:
     ///   - user: The left hand `User` model.
     ///   - game: The right hand `Boardgame` model.
-    init(_ user: User, _ song: KaraokeSong) throws{
-        self.$user.id = try user.requireID()
-        self.$user.value = user
+    init(_ userID: UUID, _ song: KaraokeSong) throws{
+        self.$user.id = userID
         self.$song.id = try song.requireID()
-        self.$song.value = song
     }
 }

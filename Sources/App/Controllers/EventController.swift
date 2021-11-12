@@ -15,12 +15,12 @@ struct EventController: APIRouteCollection {
         let eventRoutes = app.grouped(DisabledAPISectionMiddleware(feature: .schedule)).grouped("api", "v3", "events")
         
         // Flexible access endpoints that behave differently for logged-in users
-        let optionalAuthGroup = addFlexAuthGroup(to: eventRoutes)
+        let optionalAuthGroup = addFlexCacheAuthGroup(to: eventRoutes)
         optionalAuthGroup.get(use: eventsHandler)
         optionalAuthGroup.get(eventIDParam, use: singleEventHandler)
         
         // endpoints available only when logged in
-        let tokenAuthGroup = addTokenAuthGroup(to: eventRoutes)
+        let tokenAuthGroup = addTokenCacheAuthGroup(to: eventRoutes)
         tokenAuthGroup.post(eventIDParam, "favorite", use: favoriteAddHandler)
         tokenAuthGroup.post(eventIDParam, "favorite", "remove", use: favoriteRemoveHandler)
         tokenAuthGroup.delete(eventIDParam, "favorite", use: favoriteRemoveHandler)
@@ -119,8 +119,11 @@ struct EventController: APIRouteCollection {
 			query.filter(\.$startTime >= start).filter(\.$startTime < end)
 		}
 		return query.all().throwingFlatMap { events in
-			return (req.auth.get(User.self)?.getBookmarkBarrel(of: .taggedEvent, on: req.db) ?? req.eventLoop.future(nil))
-				.flatMapThrowing { eventsBarrel in
+			var barrelFuture: EventLoopFuture<Barrel?> = req.eventLoop.future(nil)
+			if let user = req.auth.get(UserCacheData.self) {
+				barrelFuture = Barrel.query(on: req.db).filter(\.$ownerID == user.userID).filter(\.$barrelType == .taggedEvent).first()
+			}
+			return barrelFuture.flatMapThrowing { eventsBarrel in
 				let result = try events.map { try EventData($0, isFavorite: eventsBarrel?.modelUUIDs.contains($0.requireID()) ?? false) }
 				return result
 			}
@@ -135,8 +138,11 @@ struct EventController: APIRouteCollection {
     /// - Returns: <doc:EventData> containing  event info.
     func singleEventHandler(_ req: Request) throws -> EventLoopFuture<EventData> {
     	return Event.findFromParameter(eventIDParam, on: req).flatMap { event in
-			return (req.auth.get(User.self)?.getBookmarkBarrel(of: .taggedEvent, on: req.db) ?? req.eventLoop.future(nil))
-					.flatMapThrowing { eventsBarrel in
+			var barrelFuture: EventLoopFuture<Barrel?> = req.eventLoop.future(nil)
+			if let user = req.auth.get(UserCacheData.self) {
+				barrelFuture = Barrel.query(on: req.db).filter(\.$ownerID == user.userID).filter(\.$barrelType == .taggedEvent).first()
+			}
+			return barrelFuture.flatMapThrowing { eventsBarrel in
 	    		return try EventData(event, isFavorite: eventsBarrel?.modelUUIDs.contains(event.requireID()) ?? false)
 			}
     	}
@@ -154,18 +160,17 @@ struct EventController: APIRouteCollection {
     /// - Parameter eventID: in URL path
     /// - Returns: 201 Created on success.
     func favoriteAddHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        let user = try req.auth.require(User.self)
-        let userID = try user.requireID()
+        let user = try req.auth.require(UserCacheData.self)
         // get event
         return Event.findFromParameter("event_id", on: req).flatMap { (event) in
             guard let eventID = event.id else { return req.eventLoop.makeFailedFuture(FluentError.idRequired) } 
             // get user's taggedEvent barrel
             return Barrel.query(on: req.db)
-					.filter(\.$ownerID == userID)
+					.filter(\.$ownerID == user.userID)
 					.filter(\.$barrelType == .taggedEvent)
 					.first()
-					.unwrap(orReplace: Barrel(ownerID: userID, barrelType: .taggedEvent))
-					.flatMap { (barrel) in
+					.unwrap(orReplace: Barrel(ownerID: user.userID, barrelType: .taggedEvent))
+					.flatMap { barrel in
 				// add event and return 201
 				if !barrel.modelUUIDs.contains(eventID) {
 					barrel.modelUUIDs.append(eventID)
@@ -184,17 +189,16 @@ struct EventController: APIRouteCollection {
     /// - Throws: 400 error if the event was not favorited.
     /// - Returns: 204 No Content on success.
     func favoriteRemoveHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        let user = try req.auth.require(User.self)
-        let userID = try user.requireID()
+        let user = try req.auth.require(UserCacheData.self)
         // get event
         return Event.findFromParameter("event_id", on: req).flatMap { (event) in
             guard let eventID = event.id else { return req.eventLoop.makeFailedFuture(FluentError.idRequired) } 
             // get user's taggedEvent barrel
             return Barrel.query(on: req.db)
-					.filter(\.$ownerID == userID)
+					.filter(\.$ownerID == user.userID)
 					.filter(\.$barrelType == .taggedEvent)
 					.first()
-					.flatMap { (eventBarrel) in
+					.flatMap { eventBarrel in
 				guard let barrel = eventBarrel else {
 					return req.eventLoop.makeFailedFuture(
 							Abort(.badRequest, reason: "user has not tagged any events"))
@@ -216,9 +220,10 @@ struct EventController: APIRouteCollection {
     ///
     /// - Returns: An array of  <doc:EventData> containing the user's favorite events.
     func favoritesHandler(_ req: Request) throws -> EventLoopFuture<[EventData]> {
-        let user = try req.auth.require(User.self)
+        let user = try req.auth.require(UserCacheData.self)
         // get user's taggedEvent barrel
-        return user.getBookmarkBarrel(of: .taggedEvent, on: req.db).flatMap { (barrel) in
+		return Barrel.query(on: req.db).filter(\.$ownerID == user.userID).filter(\.$barrelType == .taggedEvent)
+				.first().flatMap { barrel in
             guard let barrel = barrel else {
                 // return empty array
                 return req.eventLoop.future([EventData]())

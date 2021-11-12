@@ -27,8 +27,7 @@ struct SiteModController: SiteControllerUtils {
 //		let globalRoutes = getGlobalRoutes(app)
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
-		let privateRoutes = getPrivateRoutes(app)
-		let modRoutes = privateRoutes.grouped(RequireModeratorMiddleware())
+		let modRoutes = getPrivateRoutes(app).grouped(SiteRequireModeratorMiddleware())
 		modRoutes.get("reports", use: reportsPageHandler)
 		modRoutes.get("moderator", "log",  use: moderatorLogPageHandler)
 		modRoutes.get("archivedimage", imageIDParam, use: archivedImageHandler)
@@ -77,33 +76,6 @@ struct SiteModController: SiteControllerUtils {
 		return apiQuery(req, endpoint: "/mod/reports").throwingFlatMap { response in
 			let reports = try response.content.decode([ReportModerationData].self)
 			let reportedContentArray = generateContentGroups(from: reports)
-//			var reportedContentArray = [ReportContentGroup]()
-//			reportLoop: for report in reports {
-//				for var content in reportedContentArray {
-//					if report.reportedID == content.reportedID && report.type == content.reportType {
-//						content.openCount += report.isClosed ? 0 : 1
-//						if content.firstReportTime < report.creationTime {
-//							content.firstReportTime = report.creationTime
-//						}
-//						content.reports.append(report)
-//						break reportLoop
-//					}
-//				}
-//				var contentURL: String
-//				switch report.type {
-//					case .twarrt: 		contentURL = "moderate/twarrt/\(report.reportedID)"
-//					case .forumPost: 	contentURL = "moderate/forumpost/\(report.reportedID)"
-//					case .forum: 		contentURL = "moderate/forum/\(report.reportedID)"
-//					case .fez: 			contentURL = "moderate/fez/\(report.reportedID)"
-//					case .fezPost: 		contentURL = "moderate/fezpost/\(report.reportedID)"
-//					case .userProfile: 	contentURL = "moderate/userprofile/\(report.reportedID)"
-//				}
-//				var newGroup = ReportContentGroup(reportType: report.type, reportedID: report.reportedID, reportedUser: report.reportedUser, 
-//						firstReportTime: Date(), openCount: 0, contentURL: contentURL, reports: [report])
-//				newGroup.openCount += report.isClosed ? 0 : 1
-//				newGroup.firstReportTime = report.creationTime
-//				reportedContentArray.append(newGroup)
-//			}
 			let openReportContent = reportedContentArray.compactMap { $0.openCount > 0 ? $0 : nil }
 			
 			struct ReportsContext : Encodable {

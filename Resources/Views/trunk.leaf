@@ -6,7 +6,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link href="/css/bootstrap.css" rel="stylesheet">
 	<link href="/css/swiftarr.css" rel="stylesheet">
-
+	<link rel="icon" type="image/vnd.microsoft.icon" href="/img/favicon.ico">
 	#if(trunk.metaRedirectURL):
 		<meta http-equiv="refresh" content="2;URL='#(trunk.metaRedirectURL)'" /> 
 	#endif

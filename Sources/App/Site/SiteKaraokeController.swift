@@ -37,7 +37,7 @@ struct SiteKaraokeController: SiteControllerUtils {
 		let favorite = req.query[String.self, at: "favorite"] == nil ? false : true
 		if !searchStr.isEmpty || favorite {
 			var mgrQuery: EventLoopFuture<Bool> = req.eventLoop.future(false)
-			if let _ = req.auth.get(User.self) {
+			if let _ = req.auth.get(UserCacheData.self) {
 				mgrQuery = apiQuery(req, endpoint: "/karaoke/userismanager").flatMapThrowing { mgrResponse in
 					let userIsMgr = try mgrResponse.content.decode(UserAuthorizedToCreateKaraokeLogs.self)
 					return userIsMgr.isAuthorized

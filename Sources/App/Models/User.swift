@@ -136,6 +136,10 @@ final class User: Model {
     /// provisioned by `UsersController` handlers during creation.
     @OptionalParent(key: "parent") var parent: User?
     
+    /// The login token associated with this user, if they're logged in. If logged in from multiple devices, all devices share
+	/// the login token.
+	@OptionalChild(for: \.$user) var token: Token? 
+    
     /// The child `Barrels`s owned by the user.
 // FIXME: how to handle this
 //	@Children(for: \$.) var barrels: [Barrel]

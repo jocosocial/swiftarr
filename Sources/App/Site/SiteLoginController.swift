@@ -87,7 +87,7 @@ struct SiteLoginController: SiteControllerUtils {
 			return apiQuery(req, endpoint: "/auth/login", method: .POST, defaultHeaders: headers)
 					.throwingFlatMap { apiResponse in
 				let tokenResponse = try apiResponse.content.decode(TokenStringData.self)
-				return loginUser(with: tokenResponse, on: req).flatMap {
+				return try loginUser(with: tokenResponse, on: req).flatMap {
 					var loginContext = LoginPageContext(req)
 					loginContext.trunk.metaRedirectURL = req.session.data["returnAfterLogin"] ?? "/tweets"
 					loginContext.operationSuccess = true
@@ -109,14 +109,16 @@ struct SiteLoginController: SiteControllerUtils {
 	/// There's a single URL for login/logout; it shows you the right page depending on your current login status.
 	/// The logout form shows the user who they're logged in as, and has a single 'Logout' button.
     func loginPageLogoutHandler(_ req: Request) -> EventLoopFuture<View> {
-    	req.session.destroy()
-    	req.auth.logout(User.self)
-    	req.auth.logout(Token.self)
-    	var loginContext = LoginPageContext(req)
-		loginContext.trunk.metaRedirectURL = "/login"
-		loginContext.operationSuccess = true
-		loginContext.operationName = "Logout"
-		return req.view.render("Login/login", loginContext)
+    	return apiQuery(req, endpoint: "/auth/logout", method: .POST).flatMap { response in
+			req.session.destroy()
+			req.auth.logout(UserCacheData.self)
+			req.auth.logout(Token.self)
+			var loginContext = LoginPageContext(req)
+			loginContext.trunk.metaRedirectURL = "/login"
+			loginContext.operationSuccess = true
+			loginContext.operationName = "Logout"
+			return req.view.render("Login/login", loginContext)
+		}
     }
     
 	/// `GET /createAccount`
@@ -156,7 +158,7 @@ struct SiteLoginController: SiteControllerUtils {
 				return apiQuery(req, endpoint: "/auth/login", method: .POST, defaultHeaders: headers)
 						.throwingFlatMap { apiResponse in
 					let tokenResponse = try apiResponse.content.decode(TokenStringData.self)
-					return loginUser(with: tokenResponse, on: req).flatMap {
+					return try loginUser(with: tokenResponse, on: req).flatMap {
 						if let displayname = postStruct.displayname {
 							// Set displayname; ignore result. We *could* direct errors here to show an alert in the 
 							// accountCreated webpage, but don't allow failures at this point to prevent showing the page.
@@ -253,7 +255,7 @@ struct SiteLoginController: SiteControllerUtils {
 				try req.content.encode(recoveryData)
 			}).throwingFlatMap { apiResponse in
 				let tokenResponse = try apiResponse.content.decode(TokenStringData.self)
-				return loginUser(with: tokenResponse, on: req).flatMap {
+				return try loginUser(with: tokenResponse, on: req).flatMap {
 					var loginContext = LoginPageContext(req)
 					loginContext.trunk.metaRedirectURL = req.session.data["returnAfterLogin"] ?? "/tweets"
 					loginContext.operationSuccess = true
@@ -282,7 +284,7 @@ struct SiteLoginController: SiteControllerUtils {
 	/// Must be logged in, although you can be logged in as an alt account, in which case this method creates another alt as a child
 	/// of the parent account. All accounts are parents or children, never both.
     func createAltAccountViewHandler(_ req: Request) throws -> EventLoopFuture<View> {
-    	let _ = try req.auth.require(User.self)
+    	let _ = try req.auth.require(UserCacheData.self)
 		return req.view.render("Login/createAltAccount", LoginPageContext(req))
     }
 
@@ -319,15 +321,13 @@ struct SiteLoginController: SiteControllerUtils {
 	// make a new Authenticatable type (WebUser?) that isn't database-backed and is stored in the Session, and
 	// then the web client can Auth on that type instead of User. But, I want to be sure we *really* don't need 
 	// User before embarking on this.
-	func loginUser(with tokenResponse: TokenStringData, on req: Request) -> EventLoopFuture<Void> {
-		return User.query(on: req.db).filter(\.$id == tokenResponse.userID).first().flatMapThrowing { user in
-			guard let user = user else {
-				throw Abort(.unauthorized, reason: "User not found")
-			}
-			req.auth.login(user)
-			req.session.data["token"] = tokenResponse.token
-						
-//			req.session.data["accessLevel"] = tokenResponse.accessLevel.rawValue			
+	func loginUser(with tokenResponse: TokenStringData, on req: Request) throws -> EventLoopFuture<Void> {
+		guard let user = req.userCache.getUser(tokenResponse.userID) else {
+			throw Abort(.unauthorized, reason: "User not found")
 		}
+		req.auth.login(user)
+		req.session.data["token"] = tokenResponse.token
+		req.session.data["accessLevel"] = tokenResponse.accessLevel.rawValue			
+		return req.eventLoop.future()
 	}
 }

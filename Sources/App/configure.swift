@@ -12,8 +12,8 @@ import gd
 /// ### Environment
 /// 
 /// Besides the standard .development, .production, and .testing, there's a few custom environment values that can be set, either on the command line
-/// with `--env=<ENVIRONMENT>` or with the `VAPOR_ENV` environment variable
-/// * --env=heroku: Use this for Heroku installs. This changes the Migrations for games and karaoke to load fewer items and use fewer table rows. It also
+/// with `--env <ENVIRONMENT>` or with the `VAPOR_ENV` environment variable
+/// * --env heroku: Use this for Heroku installs. This changes the Migrations for games and karaoke to load fewer items and use fewer table rows. It also
 /// 	may change the way images are stored. Otherwise like .production.
 /// 
 /// Environment variables used by Swiftarr:

@@ -1111,9 +1111,9 @@ public struct ProfilePublicData: Content {
 }
 
 extension ProfilePublicData {
-	init(user: User, note: String?, requester: User) throws {
+	init(user: User, note: String?, requesterAccessLevel: UserAccessLevel) throws {
 		self.header = try UserHeader(user: user)
-		if !user.moderationStatus.showsContent() && !requester.accessLevel.hasAccess(.moderator) { 
+		if !user.moderationStatus.showsContent() && !requesterAccessLevel.hasAccess(.moderator) { 
 			self.header.displayName = nil
 			self.header.userImage = nil 
 			self.about = ""
@@ -1125,7 +1125,7 @@ extension ProfilePublicData {
 			self.roomNumber = ""
 			self.note = note
 		}
-		else if requester.accessLevel == .banned {
+		else if requesterAccessLevel == .banned {
 			self.about = ""
 			self.email = ""
 			self.homeLocation = ""

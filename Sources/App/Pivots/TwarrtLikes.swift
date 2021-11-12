@@ -33,21 +33,10 @@ final class TwarrtLikes: Model {
     /// - Parameters:
     ///   - user: The left hand `User` model.
     ///   - twarrt: The right hand `Twarrt` model.
-    init(_ user: User, _ twarrt: Twarrt) throws{
-        self.$user.id = try user.requireID()
-        self.$user.value = user
+    init(_ userID: UUID, _ twarrt: Twarrt, likeType: LikeType) throws{
+        self.$user.id = userID
         self.$twarrt.id = try twarrt.requireID()
         self.$twarrt.value = twarrt
-    }
-    
-    /// Convenience initializer to provide `.likeType` initialization.
-    ///
-    /// - Parameters:
-    ///   - user: The left hand `User` model.
-    ///   - twarrt: The right hand `Twarrt` model.
-    ///   - likeType: The type of like reaction for this pivot.
-    convenience init(_ user: User, _ twarrt: Twarrt, likeType: LikeType) throws {
-        try self.init(user, twarrt)
         self.likeType = likeType
     }
 }

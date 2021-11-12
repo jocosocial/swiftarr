@@ -108,17 +108,19 @@ struct TwitarrController: APIRouteCollection {
 		let twitarrRoutes = app.grouped(DisabledAPISectionMiddleware(feature: .tweets)).grouped("api", "v3", "twitarr")
 
 		// endpoints only available when logged in
+		let tokenCacheAuthGroup = addTokenCacheAuthGroup(to: twitarrRoutes)
+		tokenCacheAuthGroup.get("", use: twarrtsHandler)
+		tokenCacheAuthGroup.get(twarrtIDParam, use: twarrtHandler)
+		tokenCacheAuthGroup.post(twarrtIDParam, "laugh", use: twarrtLaughHandler)
+		tokenCacheAuthGroup.post(twarrtIDParam, "like", use: twarrtLikeHandler)
+		tokenCacheAuthGroup.post(twarrtIDParam, "love", use: twarrtLoveHandler)
+		
 		let tokenAuthGroup = addTokenAuthGroup(to: twitarrRoutes)
-		tokenAuthGroup.get("", use: twarrtsHandler)
-		tokenAuthGroup.get(twarrtIDParam, use: twarrtHandler)
 		tokenAuthGroup.post(twarrtIDParam, "bookmark", use: bookmarkAddHandler)
 		tokenAuthGroup.post(twarrtIDParam, "bookmark", "remove", use: bookmarkRemoveHandler)
 		tokenAuthGroup.post("create", use: twarrtCreateHandler)
 		tokenAuthGroup.post(twarrtIDParam, "delete", use: twarrtDeleteHandler)
 		tokenAuthGroup.delete(twarrtIDParam, use: twarrtDeleteHandler)
-		tokenAuthGroup.post(twarrtIDParam, "laugh", use: twarrtLaughHandler)
-		tokenAuthGroup.post(twarrtIDParam, "like", use: twarrtLikeHandler)
-		tokenAuthGroup.post(twarrtIDParam, "love", use: twarrtLoveHandler)
 		tokenAuthGroup.post(twarrtIDParam, "reply", use: replyHandler)
 		tokenAuthGroup.post(twarrtIDParam, "unreact", use: twarrtUnreactHandler)
 		tokenAuthGroup.delete(twarrtIDParam, "laugh", use: twarrtUnreactHandler)
@@ -142,54 +144,52 @@ struct TwitarrController: APIRouteCollection {
 	- Returns: <doc:TwarrtDetailData> containing the specified twarrt.
 */
     func twarrtHandler(_ req: Request) throws -> EventLoopFuture<TwarrtDetailData> {
-        let user = try req.auth.require(User.self)
-        let userID = try user.requireID()
- 		let cachedUser = try req.userCache.getUser(user)
-        return Twarrt.findFromParameter(twarrtIDParam, on: req).addModelID().flatMap { (twarrt, twartID) in
+        let cachedUser = try req.auth.require(UserCacheData.self)
+        return Twarrt.findFromParameter(twarrtIDParam, on: req, builder: { $0.with(\.$likes.$pivots) }).flatMap { twarrt in
             // we have twarrt, but need to filter
 			if cachedUser.getBlocks().contains(twarrt.$author.id) || cachedUser.getMutes().contains(twarrt.$author.id) ||
 					twarrt.containsMutewords(using: cachedUser.mutewords ?? []) {
 				return req.eventLoop.makeFailedFuture(Abort(.notFound, reason: "twarrt is not available"))
 			}
-			return twarrt.$likes.$pivots.get(on: req.db).flatMap { twarrtLikes in
-				return user.hasBookmarked(twarrt, on: req).flatMapThrowing { bookmarked in
-					// get users
-					let userUUIDs = twarrtLikes.map { $0.$user.id }
-					let seamonkeys = req.userCache.getHeaders(userUUIDs).map { SeaMonkey(header: $0) }
-					// init return struct
-					guard let author = req.userCache.getUser(twarrt.$author.id)?.makeHeader() else {
-						throw Abort(.internalServerError, reason: "Could not find author of twarrt.")
-					}
-					var twarrtDetailData = try TwarrtDetailData(
-							postID: twarrt.requireID(),
-							createdAt: twarrt.createdAt ?? Date(),
-							author: author,
-							text: twarrt.isQuarantined ? "This twarrt is under moderator review." : twarrt.text,
-							images: twarrt.isQuarantined ? nil : twarrt.images,
-							replyGroupID: twarrt.$replyGroup.id,
-							isBookmarked: bookmarked,
-							userLike: nil,
-							laughs: [],
-							likes: [],
-							loves: []
-					)
-					// sort seamonkeys into like types
-					for (index, like) in twarrtLikes.enumerated() {
-						if seamonkeys[index].userID == userID {
-							twarrtDetailData.userLike = like.likeType
-						}
-						switch like.likeType {
-							case .laugh:
-								twarrtDetailData.laughs.append(seamonkeys[index])
-							case .like:
-								twarrtDetailData.likes.append(seamonkeys[index])
-							case .love:
-								twarrtDetailData.loves.append(seamonkeys[index])
-							default: continue
-						}
-					}
-					return twarrtDetailData
+			return Barrel.query(on: req.db).filter(\.$ownerID == cachedUser.userID).filter(\.$barrelType == .bookmarkedTwarrt)
+					.first().flatMapThrowing { barrel in
+				let bookmarked = try barrel?.userInfo["bookmarks"]?.contains(twarrt.bookmarkIDString()) ?? false
+				// get users
+				let userUUIDs = twarrt.$likes.pivots.map { $0.$user.id }
+				let seamonkeys = req.userCache.getHeaders(userUUIDs).map { SeaMonkey(header: $0) }
+				// init return struct
+				guard let author = req.userCache.getUser(twarrt.$author.id)?.makeHeader() else {
+					throw Abort(.internalServerError, reason: "Could not find author of twarrt.")
 				}
+				var twarrtDetailData = try TwarrtDetailData(
+						postID: twarrt.requireID(),
+						createdAt: twarrt.createdAt ?? Date(),
+						author: author,
+						text: twarrt.isQuarantined ? "This twarrt is under moderator review." : twarrt.text,
+						images: twarrt.isQuarantined ? nil : twarrt.images,
+						replyGroupID: twarrt.$replyGroup.id,
+						isBookmarked: bookmarked,
+						userLike: nil,
+						laughs: [],
+						likes: [],
+						loves: []
+				)
+				// sort seamonkeys into like types
+				for (index, like) in twarrt.$likes.pivots.enumerated() {
+					if seamonkeys[index].userID == cachedUser.userID {
+						twarrtDetailData.userLike = like.likeType
+					}
+					switch like.likeType {
+						case .laugh:
+							twarrtDetailData.laughs.append(seamonkeys[index])
+						case .like:
+							twarrtDetailData.likes.append(seamonkeys[index])
+						case .love:
+							twarrtDetailData.loves.append(seamonkeys[index])
+						default: continue
+					}
+				}
+				return twarrtDetailData
 			}
         }
     }
@@ -255,8 +255,7 @@ struct TwitarrController: APIRouteCollection {
 	- Returns: An array of <doc:TwarrtData> containing the requested twarrts.
 */
     func twarrtsHandler(_ req: Request) throws -> EventLoopFuture<[TwarrtData]> {
-        let user = try req.auth.require(User.self)
- 		let cachedUser = try req.userCache.getUser(user)
+        let cachedUser = try req.auth.require(UserCacheData.self)
  		let filters = try req.query.decode(TwarrtQueryOptions.self)
         
 		// Query builder always filters out blocks and mutes, and the range always applies.
@@ -318,7 +317,7 @@ struct TwitarrController: APIRouteCollection {
 			futureTwarrts.filter(\.$text, .custom("ILIKE"), "%\(mentions)%")
 		}
 		if let mentionSelf = filters.mentionSelf, mentionSelf == true {
-			let mentions = "@\(user.username)"
+			let mentions = "@\(cachedUser.username)"
 			postFilterMentions = mentions
 			futureTwarrts.filter(\.$text, .custom("ILIKE"), "%\(mentions)%")
 		}
@@ -368,7 +367,8 @@ struct TwitarrController: APIRouteCollection {
 		var bookmarkFuture: EventLoopFuture<Barrel?> = req.eventLoop.future(nil)
 		if let bookmarkFilter = filters.bookmarked, bookmarkFilter == true {
 			applyMutes = false
-			bookmarkFuture = user.getBookmarkBarrel(of: .bookmarkedTwarrt, on: req.db)
+			bookmarkFuture = Barrel.query(on: req.db).filter(\.$ownerID == cachedUser.userID)
+					.filter(\.$barrelType == .bookmarkedTwarrt).first()
 		}
 		
 		if applyMutes {
@@ -394,15 +394,20 @@ struct TwitarrController: APIRouteCollection {
 					if let postFilter = postFilterMentions {
 						postFilteredTwarrts = twarrts.compactMap { $0.filterForMention(of: postFilter) }
 						// This also clears new mentions in cases where the user got their mentions plus additional filters.
-						if postFilter == "@\(user.username)" {
-							user.twarrtMentionsViewed = user.twarrtMentions
-							_ = user.save(on: req.db)
+						if postFilter == "@\(cachedUser.username)" {
+							let _ : EventLoopFuture<Void> = User.find(cachedUser.userID, on: req.db).flatMap { user in
+								if let user = user {
+									user.twarrtMentionsViewed = user.twarrtMentions
+									return user.save(on: req.db)
+								}
+								return req.eventLoop.future()
+							}
 						}
 					}
 				
 					// correct sort order if necessary
 					let sortedTwarrts: [Twarrt] = searchDescending == sortDescending ? postFilteredTwarrts : postFilteredTwarrts.reversed()
-					return try buildTwarrtData(from: sortedTwarrts, user: user, on: req, mutewords: cachedUser.mutewords)
+					return try buildTwarrtData(from: sortedTwarrts, userID: cachedUser.userID, on: req, mutewords: cachedUser.mutewords)
 				}
 			}
 		}
@@ -618,20 +623,19 @@ struct TwitarrController: APIRouteCollection {
     /// - Throws: 403 error if user is the twarrt's creator.
     /// - Returns: <doc:TwarrtData> containing the updated like info.
     func twarrtReactHandler(_ req: Request, likeType: LikeType) throws -> EventLoopFuture<TwarrtData> {
-        let user = try req.auth.require(User.self)
-        let userID = try user.requireID()
+        let cacheUser = try req.auth.require(UserCacheData.self)
         // get twarrt
         return Twarrt.findFromParameter(twarrtIDParam, on: req).addModelID().flatMap { (twarrt, twarrtID) in
-            guard twarrt.$author.id != userID else {
+            guard twarrt.$author.id != cacheUser.userID else {
                 return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "user cannot like own twarrt"))
             }
 			// check for existing like
-			return TwarrtLikes.query(on: req.db).filter(\.$user.$id == userID).filter(\.$twarrt.$id == twarrtID)
-					.first().throwingFlatMap { (like) in
-				let newLike = try like ?? TwarrtLikes(user, twarrt, likeType: .laugh)
+			return TwarrtLikes.query(on: req.db).filter(\.$user.$id == cacheUser.userID).filter(\.$twarrt.$id == twarrtID)
+					.first().throwingFlatMap { like in
+				let newLike = try like ?? TwarrtLikes(cacheUser.userID, twarrt, likeType: .laugh)
 				newLike.likeType = likeType
 				return newLike.save(on: req.db).throwingFlatMap { (_) in
-					return try buildTwarrtData(from: twarrt, user: user, on: req)
+					return try buildTwarrtData(from: twarrt, userID: cacheUser.userID, on: req)
 				}
             }
         }
@@ -655,7 +659,7 @@ struct TwitarrController: APIRouteCollection {
             }
 			// remove pivot
 			return twarrt.$likes.detach(user, on: req.db).throwingFlatMap { (_) in
-				return try buildTwarrtData(from: twarrt, user: user, on: req)
+				return try buildTwarrtData(from: twarrt, userID: userID, on: req)
 			}
         }
     }
@@ -696,7 +700,7 @@ struct TwitarrController: APIRouteCollection {
 		}
 		.throwingFlatMap { (twarrt: Twarrt, status: HTTPStatus) in
 			twarrt.logIfModeratorAction(.edit, user: user, on: req)
-			return try buildTwarrtData(from: twarrt, user: user, on: req).flatMapThrowing { twarrtData in
+			return try buildTwarrtData(from: twarrt, userID: user.requireID(), on: req).flatMapThrowing { twarrtData in
 				// return updated twarrt as TwarrtData, with 201 status
 				let response = Response(status: status)
 				try response.content.encode(twarrtData)
@@ -709,10 +713,10 @@ struct TwitarrController: APIRouteCollection {
 
 // MARK: -
 extension TwitarrController {
-	// Builds a TwarrtData from a Twarrt. Somewhat stupidly, uses the array builder to do its work,
-	// instead of the other way around.
-	func buildTwarrtData(from twarrt: Twarrt, user: User, on req: Request) throws -> EventLoopFuture<TwarrtData> {
-		return try buildTwarrtData(from: [twarrt], user: user, on: req).flatMapThrowing { twarrtData in
+	// Builds a TwarrtData from a Twarrt. Uses the array builder to do its work. Don't call this in a loop;
+	// the array builder is much more efficient. This does give a better error if the twarrt isn't found or is blocked.
+	func buildTwarrtData(from twarrt: Twarrt, userID: UUID, on req: Request) throws -> EventLoopFuture<TwarrtData> {
+		return try buildTwarrtData(from: [twarrt], userID: userID, on: req).flatMapThrowing { twarrtData in
 			guard let result = twarrtData.first else {
 				throw Abort(.internalServerError, reason: "Twarrt not found.")
 			}
@@ -721,7 +725,7 @@ extension TwitarrController {
 	}
 
 	// Builds an array of TwarrtDatas from an array of Twarrts.
-	func buildTwarrtData(from twarrts: [Twarrt], user: User, on req: Request, mutewords: [String]? = nil, 
+	func buildTwarrtData(from twarrts: [Twarrt], userID: UUID, on req: Request, mutewords: [String]? = nil, 
 			assumeBookmarked: Bool? = nil, matchHashtag: String? = nil) throws -> EventLoopFuture<[TwarrtData]> {
 		// remove muteword twarrts
 		var filteredTwarrts = twarrts
@@ -738,10 +742,10 @@ extension TwitarrController {
 		}
 		
 		let twarrtIDs = try filteredTwarrts.map { try $0.requireID() }
-		let bookmarkFuture = try Barrel.query(on: req.db).filter(\.$ownerID == user.requireID())
+		let bookmarkFuture = Barrel.query(on: req.db).filter(\.$ownerID == userID)
 				.filter(\.$barrelType == .bookmarkedTwarrt).first()
-		let userLikesFuture = try TwarrtLikes.query(on: req.db).filter(\.$twarrt.$id ~~ twarrtIDs)
-					.filter(\.$user.$id == user.requireID()).all()
+		let userLikesFuture = TwarrtLikes.query(on: req.db).filter(\.$twarrt.$id ~~ twarrtIDs)
+					.filter(\.$user.$id == userID).all()
 		let likeCountsFuture = try filteredTwarrts.childCountsPerModel(atPath: \.$likes.$pivots, on: req.db)
 		return bookmarkFuture.and(userLikesFuture).and(likeCountsFuture).flatMapThrowing { (arg0, likeCountDict) in
 			let (bookmarkBarrel, userLikes) = arg0

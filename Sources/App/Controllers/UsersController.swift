@@ -21,14 +21,15 @@ struct UsersController: APIRouteCollection {
 		let usersRoutes = app.grouped("api", "v3", "users")
 				
 		// endpoints available only when logged in
-		let tokenAuthGroup = addTokenAuthGroup(to: usersRoutes)
-		tokenAuthGroup.get("find", ":userSearchString", use: findHandler)
-		tokenAuthGroup.get("match", "allnames", searchStringParam, use: matchAllNamesHandler)
-		tokenAuthGroup.get("match", "username", searchStringParam, use: matchUsernameHandler)
-		tokenAuthGroup.get(userIDParam, use: headerHandler)
-		tokenAuthGroup.get(userIDParam, "profile", use: profileHandler)
-		tokenAuthGroup.post(userIDParam, "report", use: reportHandler)
+		let tokenCacheAuthGroup = addTokenCacheAuthGroup(to: usersRoutes)
+		tokenCacheAuthGroup.get("find", ":userSearchString", use: findHandler)
+		tokenCacheAuthGroup.get(userIDParam, use: headerHandler)
+		tokenCacheAuthGroup.get("match", "allnames", searchStringParam, use: matchAllNamesHandler)
+		tokenCacheAuthGroup.get("match", "username", searchStringParam, use: matchUsernameHandler)
+		tokenCacheAuthGroup.get(userIDParam, "profile", use: profileHandler)
 
+		let tokenAuthGroup = addTokenAuthGroup(to: usersRoutes)
+		tokenAuthGroup.post(userIDParam, "report", use: reportHandler)
 		tokenAuthGroup.post(userIDParam, "block", use: blockHandler)
 		tokenAuthGroup.post(userIDParam, "unblock", use: unblockHandler)
 		tokenAuthGroup.post(userIDParam, "mute", use: muteHandler)
@@ -59,8 +60,7 @@ struct UsersController: APIRouteCollection {
     /// - Throws: 404 error if no match is found.
     /// - Returns: <doc:UserHeader> containing the user's ID, username, displayName and userImage.
     func findHandler(_ req: Request) throws -> UserHeader {
-        let requester = try req.auth.require(User.self)
-        let requesterID = try requester.requireID()
+        let requester = try req.auth.require(UserCacheData.self)
 		guard let parameter = req.parameters.get("userSearchString") else {
 			throw Abort(.badRequest, reason: "Find User: missing search string")
 		}
@@ -72,8 +72,7 @@ struct UsersController: APIRouteCollection {
 		guard let foundUser = userHeader else {
 			throw Abort(.notFound, reason: "no user found for identifier '\(parameter)'")
 		}
-		let blocked = req.userCache.getBlocks(requesterID)
-		if blocked.contains(foundUser.userID) {
+		if requester.getBlocks().contains(foundUser.userID) {
 			throw Abort(.notFound, reason: "no user found for identifier '\(parameter)'")
 		}
 		return foundUser
@@ -93,12 +92,11 @@ struct UsersController: APIRouteCollection {
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: <doc:UserHeader> containing the user's ID, `.displayedName` and profile image filename.
     func headerHandler(_ req: Request) throws -> UserHeader {
-        let requester = try req.auth.require(User.self)
+        let requester = try req.auth.require(UserCacheData.self)
 		guard let parameter = req.parameters.get(userIDParam.paramString) else {
 			throw Abort(.badRequest, reason: "UserID parameter missing")
 		}
-		guard let userHeader = req.userCache.getHeader(parameter), 
-				try !req.userCache.getBlocks(requester.requireID()).contains(userHeader.userID) else {
+		guard let userHeader = req.userCache.getHeader(parameter), !requester.getBlocks().contains(userHeader.userID) else {
 			throw Abort(.notFound, reason: "no user found for identifier '\(parameter)'")
 		}
 		return userHeader
@@ -114,11 +112,10 @@ struct UsersController: APIRouteCollection {
     /// - Returns: <doc:ProfilePublicData> containing the displayable properties of the specified
     ///   user's profile.
     func profileHandler(_ req: Request) throws -> EventLoopFuture<ProfilePublicData> {
-        let requester = try req.auth.require(User.self)
+        let requester = try req.auth.require(UserCacheData.self)
         return User.findFromParameter(userIDParam, on: req).throwingFlatMap { profiledUser in
 			// 404 if blocked
-			let blocked = try req.userCache.getBlocks(requester)
-			if blocked.contains(try profiledUser.requireID()) {
+			if requester.getBlocks().contains(try profiledUser.requireID()) {
 				throw Abort(.notFound, reason: "profile is not available")
 			}
 			// a .banned profile is only available to .moderator or above
@@ -126,12 +123,10 @@ struct UsersController: APIRouteCollection {
 				throw Abort(.notFound, reason: "profile is not available")
 			}
 			// Profile hidden if user quarantined and requester not mod, or if requester is banned.
-			var publicProfile = try ProfilePublicData(user: profiledUser, note: nil, requester: requester)
+			var publicProfile = try ProfilePublicData(user: profiledUser, note: nil, requesterAccessLevel: requester.accessLevel)
 			// include UserNote if any, then return
-			return try requester.$notes.query(on: req.db)
-					.filter(\.$noteSubject.$id == profiledUser.requireID())
-					.first()
-					.map { (note) in
+			return try UserNote.query(on: req.db).filter(\.$author.$id == requester.userID)
+					.filter(\.$noteSubject.$id == profiledUser.requireID()).first().map { note in
 				if let note = note {
 					publicProfile.note = note.note
 				}
@@ -212,7 +207,7 @@ struct UsersController: APIRouteCollection {
     /// - Throws: 403 error if the search term is not permitted.
     /// - Returns: An array of <doc:UserHeader> values of all matching users.
     func matchAllNamesHandler(_ req: Request) throws -> EventLoopFuture<[UserHeader]> {
-        let requester = try req.auth.require(User.self)
+        let requester = try req.auth.require(UserCacheData.self)
 		guard var search = req.parameters.get(searchStringParam.paramString) else {
             throw Abort(.badRequest, reason: "No user search string in request.")
         }
@@ -228,10 +223,9 @@ struct UsersController: APIRouteCollection {
             throw Abort(.badRequest, reason: "User search requires at least 2 valid characters in search string..")
         }
         // remove blocks from results
-        let blocked = try req.userCache.getBlocks(requester)
 		return User.query(on: req.db)
 				.filter(\.$userSearch, .custom("ILIKE"), "%\(search)%")
-				.filter(\.$id !~ blocked)
+				.filter(\.$id !~ requester.getBlocks())
 				.sort(\.$username, .ascending)
 				.range(0..<10)
 				.all()
@@ -254,7 +248,7 @@ struct UsersController: APIRouteCollection {
     /// - Parameter STRING: in URL path. The search string to use. Must be at least 2 characters long.
     /// - Returns: An array of  `String` containng all matching usernames as "@username" strings.
     func matchUsernameHandler(_ req: Request) throws -> EventLoopFuture<[String]> {
-        let requester = try req.auth.require(User.self)
+        let requester = try req.auth.require(UserCacheData.self)
 		guard var search = req.parameters.get(searchStringParam.paramString) else {
             throw Abort(.badRequest, reason: "No user search string in request.")
         }
@@ -264,10 +258,9 @@ struct UsersController: APIRouteCollection {
         // postgres "_" is wildcard, so escape for literal
         search = search.replacingOccurrences(of: "_", with: "\\_")
         // remove blocks from results
-        let blocked = try req.userCache.getBlocks(requester)
 		return User.query(on: req.db)
 				.filter(\.$username, .custom("ILIKE"), "%\(search)%")
-				.filter(\.$id !~ blocked)
+				.filter(\.$id !~ requester.getBlocks())
 				.sort(\.$username, .ascending)
 				.all()
 				.map { (users) in

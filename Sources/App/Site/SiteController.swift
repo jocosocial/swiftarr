@@ -31,12 +31,13 @@ struct TrunkContext: Encodable {
 	var newForumAlertwords: Bool
 	
 	init(_ req: Request, title: String, tab: Tab, search: String? = nil) {
-		if let user = req.auth.get(User.self) {
+		if let user = req.auth.get(UserCacheData.self) {
+			let userAccessLevel = UserAccessLevel(rawValue: req.session.data["accessLevel"] ?? "banned") ?? .banned
 			userIsLoggedIn = true
-			userIsMod = user.accessLevel.hasAccess(.moderator)
-			userIsTHO = user.accessLevel.hasAccess(.tho)
+			userIsMod = userAccessLevel.hasAccess(.moderator)
+			userIsTHO = userAccessLevel.hasAccess(.tho)
 			username = user.username
-			userID = user.id!
+			userID = user.userID
 		}
 		else {
 			userIsLoggedIn = false
@@ -441,7 +442,7 @@ extension SiteControllerUtils {
 	func getOpenRoutes(_ app: Application) -> RoutesBuilder {
 		return app.grouped( [
 				app.sessions.middleware, 
-				User.sessionAuthenticator(),
+				UserCacheData.SessionAuth(),
 				Token.authenticator(),			// For apps that want to sometimes open web pages
 				NotificationsMiddleware()
 		])
@@ -453,14 +454,14 @@ extension SiteControllerUtils {
 	func getGlobalRoutes(_ app: Application) -> RoutesBuilder {
 		// This middleware redirects to "/login" when accessing a global page that requires auth while not logged in.
 		// It saves the page the user was attempting to view in the session, so we can return there post-login.
-		let redirectMiddleware = User.redirectMiddleware { (req) -> String in
+		let redirectMiddleware = UserCacheData.redirectMiddleware { (req) -> String in
 			req.session.data["returnAfterLogin"] = req.url.string
 			return "/login"
 		}
 		
 		return app.grouped( [
 				app.sessions.middleware, 
-				User.sessionAuthenticator(),
+				UserCacheData.SessionAuth(),
 				Token.authenticator(),			// For apps that want to sometimes open web pages
 				NotificationsMiddleware(),
 				redirectMiddleware
@@ -475,8 +476,8 @@ extension SiteControllerUtils {
 	func getPrivateRoutes(_ app: Application) -> RoutesBuilder {
 		return app.grouped( [ 
 				app.sessions.middleware, 
-				User.sessionAuthenticator(),
-				User.guardMiddleware()
+				UserCacheData.SessionAuth(),
+				UserCacheData.guardMiddleware()
 		])
 	}
 	

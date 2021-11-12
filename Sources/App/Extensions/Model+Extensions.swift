@@ -14,8 +14,8 @@ extension Model where IDValue: LosslessStringConvertible {
     /// - Parameter req: The incoming request `Container`, which provides the `EventLoop` on
     ///   which the query must be run.
     /// - Returns: `[UUID]` containing all the user's associated IDs.
-	static func findFromParameter(_ param: PathComponent, on req: Request) -> EventLoopFuture<Self> {
-		return findFromParameter(param.description, on: req)
+	static func findFromParameter(_ param: PathComponent, on req: Request, builder: ((QueryBuilder<Self>) -> Void)? = nil) -> EventLoopFuture<Self> {
+		return findFromParameter(param.description, on: req, builder: builder)
 	}
 
     /// Returns an `EventLoopFuture<Model>` that will match the ID given in a named request parameter. 
@@ -27,7 +27,7 @@ extension Model where IDValue: LosslessStringConvertible {
     /// - Parameter req: The incoming request `Container`, which provides the `EventLoop` on
     ///   which the query must be run.
     /// - Returns: `[UUID]` containing all the user's associated IDs.
-	static func findFromParameter(_ param: String, on req: Request) -> EventLoopFuture<Self> {
+	static func findFromParameter(_ param: String, on req: Request, builder: ((QueryBuilder<Self>) -> Void)? = nil) -> EventLoopFuture<Self> {
 		let paramName = param.hasPrefix(":") ? String(param.dropFirst()) : param
   		guard let paramVal = req.parameters.get(paramName) else {
             return req.eventLoop.makeFailedFuture(Abort(.badRequest, reason: "Request parameter \(param) is missing."))
@@ -36,8 +36,9 @@ extension Model where IDValue: LosslessStringConvertible {
             return req.eventLoop.makeFailedFuture(
             		Abort(.badRequest, reason: "Request parameter \(param) with value \(paramVal) is malformed."))
         }
-		return Self.find(objectID, on: req.db)
-			.unwrap(or: Abort(.notFound, reason: "no value found for identifier '\(paramVal)'"))
+        let query = Self.query(on: req.db).filter(\._$id == objectID)
+		builder?(query)
+        return query.first().unwrap(or: Abort(.notFound, reason: "no value found for identifier '\(paramVal)'"))
 	}
 }
 

@@ -34,12 +34,10 @@ final class KaraokePlayedSong: Model {
     // Used by Fluent
  	init() { }
  	
- 	init(singer: String, song: KaraokeSong, manager: User) throws {
+ 	init(singer: String, song: KaraokeSong, managerID: UUID) throws {
  		self.performers = singer
  		self.$song.id = try song.requireID()
- 		self.$song.value = song
- 		self.$manager.id = try manager.requireID()
- 		self.$manager.value = manager
+ 		self.$manager.id = managerID
  	}
 }
 

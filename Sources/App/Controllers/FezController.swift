@@ -13,12 +13,14 @@ struct FezController: APIRouteCollection {
         
         // convenience route group for all /api/v3/fez endpoints
         let fezRoutes = app.grouped(DisabledAPISectionMiddleware(feature: .friendlyfez)).grouped("api", "v3", "fez")
+       
+		// Open access routes
+		fezRoutes.get("types", use: typesHandler)
                 
         // endpoints available only when logged in
         let tokenAuthGroup = addTokenAuthGroup(to: fezRoutes)
         tokenAuthGroup.get("joined", use: joinedHandler)
         tokenAuthGroup.get("open", use: openHandler)
-        tokenAuthGroup.get("types", use: typesHandler)
         tokenAuthGroup.get(fezIDParam, use: fezHandler)
         tokenAuthGroup.post(fezIDParam, "cancel", use: cancelHandler)
         tokenAuthGroup.post("create", use: createHandler)
@@ -48,8 +50,8 @@ struct FezController: APIRouteCollection {
     /// Retrieve a list of all values for `FezType` as strings.
     ///
     /// - Returns: An array of `String` containing the `.label` value for each type.
-    func typesHandler(_ req: Request) throws -> EventLoopFuture<[String]> {
-        return req.eventLoop.future(FezType.allCases.map { $0.label })
+    func typesHandler(_ req: Request) throws -> [String] {
+        return FezType.allCases.map { $0.label }
     }
     
     /// `GET /api/v3/fez/open`
@@ -96,7 +98,7 @@ struct FezController: APIRouteCollection {
 			return try fezzes.compactMap { fez in
 				if (fez.maxCapacity == 0 || fez.participantArray.count < Int(Double(fez.maxCapacity) * 1.5)) &&
 						!fez.participantArray.contains(userID) {
-					return try buildFezData(from: fez, with: nil, for: user, on: req)
+					return try buildFezData(from: fez, with: nil, for: userID, on: req)
 				}
 				return nil
 			}
@@ -130,7 +132,7 @@ struct FezController: APIRouteCollection {
         return query.all().flatMapThrowing { pivots in
         	return try pivots.map { pivot in
 				let fez = try pivot.joined(FriendlyFez.self)
-        		return try buildFezData(from: fez, with: pivot, for: user, on: req)
+        		return try buildFezData(from: fez, with: pivot, for: user.requireID(), on: req)
 			}
 		}
 	}
@@ -167,7 +169,7 @@ struct FezController: APIRouteCollection {
 			// convert to FezData
 			let fezzesData = try fezzes.map { (fez) -> FezData in
 				let userParticipant = try fez.joined(FezParticipant.self)
-				return try buildFezData(from: fez, with: userParticipant, for: user, on: req)
+				return try buildFezData(from: fez, with: userParticipant, for: user.requireID(), on: req)
 			}
 			return fezzesData
 		}
@@ -200,7 +202,7 @@ struct FezController: APIRouteCollection {
 			}
 			return try fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == user.requireID()).first()
 					.throwingFlatMap { pivot in
-				var fezData = try buildFezData(from: fez, with: pivot, for: user, on: req)
+				var fezData = try buildFezData(from: fez, with: pivot, for: user.requireID(), on: req)
 				if let pivot = pivot {
 					return try buildPostsForFez(fez.requireID(), on: req, userBlocks: cacheUser.getBlocks(), 
 							userMutes: cacheUser.getMutes()).flatMapThrowing { posts in
@@ -256,7 +258,7 @@ struct FezController: APIRouteCollection {
 					newParticipant.readCount = 0; 
 					newParticipant.hiddenCount = hiddenPostCount 
 					return newParticipant.save(on: req.db).flatMapThrowing {
-						let fezData = try buildFezData(from: fez, with: newParticipant, for: user, on: req)
+						let fezData = try buildFezData(from: fez, with: newParticipant, for: user.requireID(), on: req)
 						// return with 201 status
 						let response = Response(status: .created)
 						try response.content.encode(fezData)
@@ -289,7 +291,7 @@ struct FezController: APIRouteCollection {
 			return fez.save(on: req.db)
 					.and(fez.$participants.detach(user, on: req.db))
 					.flatMapThrowing { (_) in
-				return try buildFezData(from: fez, with: nil, for: user, on: req)
+				return try buildFezData(from: fez, with: nil, for: user.requireID(), on: req)
 			}
 		}
 	}
@@ -359,7 +361,7 @@ struct FezController: APIRouteCollection {
 							pivot.readCount = posts.count
 							_ = pivot.save(on: req.db)
 						}
-						let fezData = try buildFezData(from: fez, with: pivot, posts: posts, for: user, on: req)
+						let fezData = try buildFezData(from: fez, with: pivot, posts: posts, for: user.requireID(), on: req)
 						let response = Response(status: .created)
 						try response.content.encode(fezData)
 						return response
@@ -424,7 +426,7 @@ struct FezController: APIRouteCollection {
 						return saveFutures.flatten(on: req.eventLoop).throwingFlatMap { (_) in
 							return try buildPostsForFez(fez.requireID(), on: req, userBlocks: cacheUser.getBlocks(),
 									userMutes: cacheUser.getMutes()).flatMapThrowing { posts in
-								let fezData = try buildFezData(from: fez, with: posterPivot, posts: posts, for: user, on: req)
+								let fezData = try buildFezData(from: fez, with: posterPivot, posts: posts, for: user.requireID(), on: req)
 								return fezData
 							}
 						}
@@ -490,7 +492,7 @@ struct FezController: APIRouteCollection {
 							.filter(\.$user.$id == user.requireID())
 							.first()
 							.flatMapThrowing() { creatorPivot in
-						let fezData = try buildFezData(from: fez, with: creatorPivot, posts: [], for: user, on: req)
+						let fezData = try buildFezData(from: fez, with: creatorPivot, posts: [], for: user.requireID(), on: req)
 						// with 201 status
 						let response = Response(status: .created)
 						try response.content.encode(fezData)
@@ -523,7 +525,7 @@ struct FezController: APIRouteCollection {
 			return fez.save(on: req.db).throwingFlatMap {
 				return try fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == user.requireID()).first()
 					.flatMapThrowing { pivot in
-						return try buildFezData(from: fez, with: pivot, for: user, on: req)
+						return try buildFezData(from: fez, with: pivot, for: user.requireID(), on: req)
 				}
 			}
 		}
@@ -593,7 +595,7 @@ struct FezController: APIRouteCollection {
 			fez.cancelled = false
             return fez.save(on: req.db).throwingFlatMap { (_) in
             	return getUserPivot(fez: fez, userID: userID, on: req.db).flatMapThrowing { pivot in
-					return try buildFezData(from: fez, with: pivot, for: user, on: req)
+					return try buildFezData(from: fez, with: pivot, for: userID, on: req)
 				}
 			}
 		}
@@ -634,7 +636,7 @@ struct FezController: APIRouteCollection {
 					newParticipant.readCount = 0; 
 					newParticipant.hiddenCount = hiddenPostCount 
 					return newParticipant.save(on: req.db).flatMapThrowing {
-						return try buildFezData(from: fez, with: newParticipant, for: requester, on: req)
+						return try buildFezData(from: fez, with: newParticipant, for: requesterID, on: req)
 					}
 				}
 			}
@@ -669,7 +671,7 @@ struct FezController: APIRouteCollection {
 			return fez.save(on: req.db)
 				.and(fez.$participants.detach(user, on: req.db))
 				.flatMapThrowing { (_) in
-					return try buildFezData(from: fez, with: nil, for: requester, on: req)
+					return try buildFezData(from: fez, with: nil, for: requesterID, on: req)
 			}
 		}
 	}
@@ -702,8 +704,8 @@ extension FezController {
 
 	// If pivot is not nil, the FezData's postCount and readCount is filled in. Pivot should always be nil if the current user
 	// is not a member of the fez.
-	func buildFezData(from fez: FriendlyFez, with pivot: FezParticipant? = nil, posts: [FezPostData]? = nil, for user: User, on req: Request) throws -> FezData {
-		let userBlocks = try req.userCache.getBlocks(user)
+	func buildFezData(from fez: FriendlyFez, with pivot: FezParticipant? = nil, posts: [FezPostData]? = nil, for userID: UUID, on req: Request) throws -> FezData {
+		let userBlocks = req.userCache.getBlocks(userID)
 		// init return struct
 		let ownerHeader = try req.userCache.getHeader(fez.$owner.id)
 		var fezData : FezData = try FezData(fez: fez, owner: ownerHeader)

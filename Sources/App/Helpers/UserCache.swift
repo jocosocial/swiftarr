@@ -22,7 +22,7 @@ import PostgresNIO
 // to prevent a race where a new user immediately makes a call which processes before the cache is updated.
 // For all other updates, it's okay if eventual consistency is okay.
 
-public struct UserCacheData {
+public struct UserCacheData: Authenticatable, SessionAuthenticatable {
 	let userID: UUID
 	let username: String
 	let displayName: String?
@@ -32,6 +32,9 @@ public struct UserCacheData {
 	let mutes: Set<UUID>?
 	let mutewords: [String]?
 	let alertwords: [String]?
+	let token: String?
+	let accessLevel: UserAccessLevel
+	let tempQuarantineUntil: Date?
 	
 	init(userID: UUID, user: User, blocks: [UUID]?, mutes: [UUID]?, mutewords: [String]?, alertwords: [String]?) {
 		self.userID = userID
@@ -44,8 +47,16 @@ public struct UserCacheData {
 		self.mutes = mutes.map { Set($0) }
 		self.mutewords = mutewords
 		self.alertwords = alertwords
+		self.token = user.$token.value??.token ?? nil
+		self.accessLevel = user.accessLevel
+		self.tempQuarantineUntil = user.tempQuarantineUntil
 	}
 	
+	// Used by sessionAuthenticatable, but this doesn't go into the cookie.
+	public var sessionID: String {
+		self.userID.uuidString
+	}
+
 	func getBlocks() -> Set<UUID> {
 		return blocks ?? []
 	}
@@ -57,7 +68,76 @@ public struct UserCacheData {
 	func makeHeader() -> UserHeader {
 		return UserHeader(userID: userID, username: username, displayName: displayName, userImage: userImage)
 	}
+
+	// UserCacheData.TokeAuthenticator lets routes auth a UserCacheData object from a token instead of 
+	// using Token.authenticator to auth a User object.
+	// That is, a request comes in with a Token in the bearer authentication header, this Auth middleware 
+	// uses the token to authenticate a UserCacheData for the caller and adds the UCD to req.auth. The route
+	// can then get the UserCacheData from req.auth and use it to do stuff. Fetching a UCD is much faster than a
+	// User database query. 
+	//
+	// However, route handlers that need the User object to do their job might as well auth with Token.authenticator,
+	// since the database query is 'free'.
+	struct TokenAuthenticator: BearerAuthenticator {
+		typealias User = App.UserCacheData
+
+		func authenticate(bearer: BearerAuthorization, for request: Request) -> EventLoopFuture<Void> {
+			if let foundUser = request.userCache.getUser(token: bearer.token) {
+				request.auth.login(foundUser)
+			}
+			return request.eventLoop.makeSucceededFuture(())
+		}
+	}
+
+	// UserCacheData.SessionAuthenticator lets routes auth a UserCacheData object from a session ID. 
+	// Don't use this in API routes, as API routes should use token based auth (or basic auth for login).
+	struct SessionAuth: SessionAuthenticator {
+		typealias User = App.UserCacheData
+		
+		func authenticate(sessionID: String, for request: Request) -> EventLoopFuture<Void> {
+			if let userID = UUID(sessionID), let foundUser = request.userCache.getUser(userID) {
+				request.auth.login(foundUser)
+			}
+			return request.eventLoop.makeSucceededFuture(())
+		}
+	}
+	
+	/// Ensures that either the receiver can edit/delete other users' content (that is, they're a moderator), or that 
+    /// they authored the content they're trying to modify/delete themselves, and still have rights to edit
+	/// their own content (that is, they aren't banned/quarantined).
+	func guardCanCreateContent(customErrorString: String = "user cannot modify this content") throws {
+		if let quarantineEndDate = tempQuarantineUntil {
+			guard Date() > quarantineEndDate else {
+				throw Abort(.forbidden, reason: "User is temporarily quarantined; \(customErrorString)")
+			}
+		}
+		guard accessLevel.canCreateContent() else {
+			throw Abort(.forbidden, reason: customErrorString)
+		}
+	}
+    
+    /// Ensures that either the receiver can edit/delete other users' content (that is, they're a moderator), or that 
+    /// they authored the content they're trying to modify/delete themselves, and still have rights to edit
+	/// their own content (that is, they aren't banned/quarantined).
+	func guardCanModifyContent<T: Reportable>(_ content: T, customErrorString: String = "user cannot modify this content") throws {
+		if let quarantineEndDate = tempQuarantineUntil {
+			guard Date() > quarantineEndDate else {
+				throw Abort(.forbidden, reason: "User is temporarily quarantined and cannot modify content.")
+			}
+		}
+		let userIsContentCreator = userID == content.authorUUID
+		guard accessLevel.canEditOthersContent() || (userIsContentCreator && accessLevel.canCreateContent() &&
+				(content.moderationStatus == .normal || content.moderationStatus == .modReviewed)) else {
+			throw Abort(.forbidden, reason: customErrorString)
+		}
+		// If a mod reviews some content, and then the user edits their own content, it's no longer moderator reviewed.
+		// This code assumes the content is going to get saved by caller.
+		if userIsContentCreator && content.moderationStatus == .modReviewed {
+			content.moderationStatus = .normal
+		}
+	}
 }
+
 
 extension Application {
  	/// This is where UserCache stores its in-memory cache.
@@ -77,10 +157,20 @@ extension Application {
 	struct UserCacheStorage {
 		var usersByID: [UUID : UserCacheData] = [:]
 		var usersByName: [String : UserCacheData] = [:]
+		var usersByToken: [String : UserCacheData] = [:]
 		
 		mutating func cacheUser(_ data: UserCacheData) {
+			if let existing = usersByID[data.userID] {
+				usersByName.removeValue(forKey: existing.username)
+				if let token = existing.token {
+					usersByToken.removeValue(forKey: token)
+				}
+			}
 			self.usersByID[data.userID] = data
 			self.usersByName[data.username] = data
+			if let token = data.token {
+				self.usersByToken[token] = data
+			}
 		}
 	}
 	
@@ -107,7 +197,7 @@ extension Application {
 			var allUsers: [User]
 			// As it happens, we can diagnose several startup-time malfunctions here, as this is usually the first query each launch.
 			do {
-				allUsers = try User.query(on: app.db).all().wait()
+				allUsers = try User.query(on: app.db).with(\.$token).all().wait()
 			}
 			catch let error as NIO.IOError where error.errnoCode == 61 {
 				app.logger.critical("Initial connection to Postgres failed. Is the db up and running?")
@@ -162,6 +252,7 @@ extension Request {
 	public struct UserCache {
 		let request: Request
 		
+// MARK: UserHeaders
 		func getHeader(_ userID: UUID) throws -> UserHeader {
 			guard let user = getUser(userID) else {
 				throw Abort(.internalServerError, reason: "getUser should always return a cached value.")
@@ -204,6 +295,7 @@ extension Request {
 			return users.map { $0.makeHeader() }
 		}
 		
+// MARK: Blocks
 		func getBlocks(_ user: User) throws -> Set<UUID> {
 			return try getUser(user).blocks ?? []
 		}
@@ -212,6 +304,7 @@ extension Request {
 			return getUser(userUUID)?.blocks ?? []
 		}
 		
+// MARK: UserCacheData
 		func getUser(_ user: User) throws -> UserCacheData {
 			guard let result = try getUser(user.requireID()) else {
 				throw Abort(.internalServerError, reason: "getUser should always return a cached value.")
@@ -227,6 +320,15 @@ extension Request {
 			return cacheResult
 		}
 		
+		public func getUser(token: String) -> UserCacheData? {
+			let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
+			let cacheResult = cacheLock.withLock {
+				request.application.userCacheStorage.usersByToken[token]
+			}
+			return cacheResult
+		}
+		
+// MARK: updating		
 		@discardableResult
 		public func updateUser(_ userUUID: UUID) -> EventLoopFuture<UserCacheData> {
 			return getUpdatedUserCacheData(userUUID).map { cacheData in	
@@ -256,9 +358,9 @@ extension Request {
 		
 		private func getUpdatedUserCacheData(_ userUUID: UUID) -> EventLoopFuture<UserCacheData> {
 			let barrelFuture = Barrel.query(on: request.db)
-				.filter(\.$ownerID == userUUID)
-				.filter(\.$barrelType ~~ [.userMute, .keywordMute, .keywordAlert])
-				.all()
+					.filter(\.$ownerID == userUUID)
+					.filter(\.$barrelType ~~ [.userMute, .keywordMute, .keywordAlert])
+					.all()
            		
 			// Redis stores blocks as users you've blocked AND users who have blocked you,
 			// for all subaccounts of both you and the other user.
@@ -266,31 +368,30 @@ extension Request {
 			let blockFuture = request.redis.smembers(of: redisKey, as: UUID.self)
 			
 			// Build an entry for this user
-			return User.find(userUUID, on: request.db)
-				.unwrap(or: Abort(.internalServerError, reason: "user not found"))
-				.and(barrelFuture)
-				.and(blockFuture)
-				.map { (arg0, blocks) in 
-					let (user, barrels) = arg0
-					var mutes: [UUID]?
-					var muteWords: [String]?
-					var alertWords: [String]?
-					for barrel in barrels {
-						switch barrel.barrelType {
-							case .userMute: mutes = barrel.modelUUIDs
-							case .keywordMute: muteWords = barrel.userInfo["muteWords"]
-							case .keywordAlert: alertWords = barrel.userInfo["alertWords"]
-							default: continue
-						}
+			return User.query(on: request.db).filter(\.$id == userUUID).with(\.$token).first()
+					.unwrap(or: Abort(.internalServerError, reason: "user not found"))
+					.and(barrelFuture)
+					.and(blockFuture)
+					.map { (arg0, blocks) in 
+				let (user, barrels) = arg0
+				var mutes: [UUID]?
+				var muteWords: [String]?
+				var alertWords: [String]?
+				for barrel in barrels {
+					switch barrel.barrelType {
+						case .userMute: mutes = barrel.modelUUIDs
+						case .keywordMute: muteWords = barrel.userInfo["muteWords"]
+						case .keywordAlert: alertWords = barrel.userInfo["alertWords"]
+						default: continue
 					}
-				
-					let compactBlocks = blocks.compactMap { $0 }
-					let cacheData = UserCacheData(userID: userUUID, user: user, blocks: compactBlocks,
-							mutes: mutes, mutewords: muteWords, alertwords: alertWords)
-					return cacheData
 				}
+			
+				let compactBlocks = blocks.compactMap { $0 }
+				let cacheData = UserCacheData(userID: userUUID, user: user, blocks: compactBlocks,
+						mutes: mutes, mutewords: muteWords, alertwords: alertWords)
+				return cacheData
+			}
 		}
-
 	}
 }
 

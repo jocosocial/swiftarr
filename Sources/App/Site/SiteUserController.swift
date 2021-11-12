@@ -343,9 +343,10 @@ struct SiteUserController: SiteControllerUtils {
 	// Shows mods a page that lets them edit others profiles. Note: Non-mods cannot use this endpoint
 	// to edit their own profile, even if they pass in their own userID.
 	func userProfileEditPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-		let user = try req.auth.require(User.self)
 		guard let targetUserID = req.parameters.get(userIDParam.paramString, as: UUID.self),
-				user.accessLevel.hasAccess(.moderator) else {
+				let userAccessLevelStr = req.session.data["accessLevel"],
+				let userAccessLevel = UserAccessLevel(rawValue: userAccessLevelStr),
+				userAccessLevel.hasAccess(.moderator) else {
 			// Actually trying to post changes to someone else's profile will fail at the API level, but we want
 			// to catch it before showing the page.
 			throw Abort(.forbidden, reason: "User isn't authorized to edit other users' profiles.")

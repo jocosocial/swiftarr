@@ -390,7 +390,7 @@ struct UserController: APIRouteCollection {
     /// - Returns: <doc:ProfilePublicData> containing the editable properties of the profile.
     func profileHandler(_ req: Request) throws -> ProfilePublicData {
         let user = try req.auth.require(User.self)
-        return try ProfilePublicData(user: user, note: nil, requester: user)
+        return try ProfilePublicData(user: user, note: nil, requesterAccessLevel: user.accessLevel)
     }
     
     /// `POST /api/v3/user/profile`
@@ -442,7 +442,7 @@ struct UserController: APIRouteCollection {
 			return targetUser.save(on: req.db).flatMapThrowing {
 				try req.userCache.updateUser(targetUser.requireID())
 				targetUser.logIfModeratorAction(.edit, user: user, on: req)
-				return try ProfilePublicData(user: targetUser, note: nil, requester: user)
+				return try ProfilePublicData(user: targetUser, note: nil, requesterAccessLevel: user.accessLevel)
 			}
 		}
     }

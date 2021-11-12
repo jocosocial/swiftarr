@@ -39,6 +39,12 @@ extension APIRouteCollection {
 	func addFlexAuthGroup(to: RoutesBuilder) -> RoutesBuilder {
 		return to.grouped([Token.authenticator()])
 	}
+	
+	/// I'm moving auth over to UserCache, so that you'll auth a UserCacheData struct instead of a User model. Functionally, this means a `UserCacheData`
+	/// gets added to `req.auth` instead of a `User`. And, we avoid a SQL call per API call.
+	func addFlexCacheAuthGroup(to: RoutesBuilder) -> RoutesBuilder {
+		return to.grouped([UserCacheData.TokenAuthenticator()])
+	}
 
 	/// For routes that require HTTP Basic Auth. Tokens won't work. Generally, this is only for the login route.
 	func addBasicAuthGroup(to: RoutesBuilder) -> RoutesBuilder {
@@ -48,6 +54,9 @@ extension APIRouteCollection {
 	/// For routes that require a logged-in user. Applying this auth group to a route will make requests that don't have a valid token fail with a HTTP 401 error.
 	func addTokenAuthGroup(to: RoutesBuilder) -> RoutesBuilder {
 		return to.grouped([Token.authenticator(), User.guardMiddleware()])
+	}
+	func addTokenCacheAuthGroup(to: RoutesBuilder) -> RoutesBuilder {
+		return to.grouped([UserCacheData.TokenAuthenticator(), UserCacheData.guardMiddleware()])
 	}
 
 	/// Transforms a string that might represent a date (either a `Double` or an ISO 8601

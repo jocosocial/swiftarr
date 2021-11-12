@@ -8,15 +8,15 @@ struct BoardgameController: APIRouteCollection {
 	func registerRoutes(_ app: Application) throws {
 
 		// convenience route group for all /api/v3/boardgame endpoints
-		let alertRoutes = app.grouped("api", "v3", "boardgames")
+		let boardgameRoutes = app.grouped("api", "v3", "boardgames")
 	
-		let flexAuthGroup = addFlexAuthGroup(to: alertRoutes)
+		let flexAuthGroup = addFlexCacheAuthGroup(to: boardgameRoutes)
 		flexAuthGroup.get("", use: getBoardgames)
 		flexAuthGroup.get(boardgameIDParam, use: getBoardgame)
 		flexAuthGroup.get("expansions", boardgameIDParam, use: getExpansions)
 		
 		
-		let tokenAuthGroup = addTokenAuthGroup(to: alertRoutes)
+		let tokenAuthGroup = addTokenCacheAuthGroup(to: boardgameRoutes)
 		tokenAuthGroup.post(boardgameIDParam, "favorite", use: addFavorite)
 		tokenAuthGroup.post(boardgameIDParam, "favorite", "remove", use: removeFavorite)
 		tokenAuthGroup.delete(boardgameIDParam, "favorite", use: removeFavorite)
@@ -41,7 +41,7 @@ struct BoardgameController: APIRouteCollection {
 			var start: Int?
 			var limit: Int?
 		}
-		let user = req.auth.get(User.self)
+		let user = req.auth.get(UserCacheData.self)
  		let filters = try req.query.decode(GameQueryOptions.self)
         let start = filters.start ?? 0
         let limit = (filters.limit ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
@@ -50,8 +50,8 @@ struct BoardgameController: APIRouteCollection {
 			query.filter(\.$gameName, .custom("ILIKE"), "%\(search)%")
 		}
 		if let fav = filters.favorite, fav.lowercased() == "true", let user = user {
-			try query.join(BoardgameFavorite.self, on: \Boardgame.$id == \BoardgameFavorite.$boardgame.$id)
-					.filter(BoardgameFavorite.self, \.$user.$id == user.requireID())
+			query.join(BoardgameFavorite.self, on: \Boardgame.$id == \BoardgameFavorite.$boardgame.$id)
+					.filter(BoardgameFavorite.self, \.$user.$id == user.userID)
 		}
 		return query.count().flatMap { totalGames in
 			return query.sort(\.$gameName, .ascending).range(start..<(start + limit)).all().throwingFlatMap { games in
@@ -69,7 +69,7 @@ struct BoardgameController: APIRouteCollection {
     /// - Parameter boardgameID: in URL path
     /// - Returns: <doc:BoardgameData>
 	func getBoardgame(_ req: Request) throws -> EventLoopFuture<BoardgameData> {
-		let user = req.auth.get(User.self)
+		let user = req.auth.get(UserCacheData.self)
 		return Boardgame.findFromParameter(boardgameIDParam, on: req).throwingFlatMap { game in
 			return try buildBoardgameData(for: user, games: [game], on: req.db).map { gamesArray in
 				return gamesArray[0]
@@ -85,7 +85,7 @@ struct BoardgameController: APIRouteCollection {
     /// - Throws: 400 error if the event was not favorited.
     /// - Returns: An array of <doc:BoardgameData>. First item is the base game, other items are expansions.
 	func getExpansions(_ req: Request) throws -> EventLoopFuture<[BoardgameData]> {
-		let user = req.auth.get(User.self)
+		let user = req.auth.get(UserCacheData.self)
 		return Boardgame.findFromParameter(boardgameIDParam, on: req).throwingFlatMap { targetGame in
 			let basegameID = try targetGame.$expands.id ?? targetGame.requireID()
 			return Boardgame.query(on: req.db).group(.or) { group in
@@ -110,10 +110,11 @@ struct BoardgameController: APIRouteCollection {
     /// - Parameter boardgameID: in URL path
     /// - Returns: 201 Created on success.
     func addFavorite(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        let user = try req.auth.require(User.self)
-        return Boardgame.findFromParameter(boardgameIDParam, on: req).throwingFlatMap { boardgame in
-        	user.$favoriteBoardgames.attach(boardgame, method: .ifNotExists, on: req.db).transform(to: .created)
-		}
+		let user = try req.auth.require(UserCacheData.self)
+		return Boardgame.findFromParameter(boardgameIDParam, on: req).throwingFlatMap { boardgame in
+			let fav = try BoardgameFavorite(user.userID, boardgame)
+			return fav.save(on: req.db).transform(to: .created)
+		} 
     }
     
     /// `POST /api/v3/boardgames/:boardgameID/favorite/remove`
@@ -124,11 +125,12 @@ struct BoardgameController: APIRouteCollection {
     /// - Parameter boardgameID: in URL path
     /// - Returns: 204 No Content on success.
     func removeFavorite(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        let user = try req.auth.require(User.self)
+		let user = try req.auth.require(UserCacheData.self)
         guard let boardgameID = req.parameters.get(boardgameIDParam.paramString, as: UUID.self) else {
         	throw Abort(.badRequest, reason: "Could not make UUID out of boardgame parameter")
         }
-        return user.$favoriteBoardgames.$pivots.query(on: req.db).filter(\.$boardgame.$id == boardgameID).first().throwingFlatMap { pivot in
+        return BoardgameFavorite.query(on: req.db).filter(\.$user.$id == user.userID)
+        		.filter(\.$boardgame.$id == boardgameID).first().throwingFlatMap { pivot in
         	guard let pivot = pivot else {
         		throw Abort(.notFound, reason: "Cannot remove favorite: User has not favorited this boardgame.")
         	}
@@ -140,11 +142,11 @@ struct BoardgameController: APIRouteCollection {
 
 	// Builds a BoardgameData array from an array of Bardgame Model objects. Mostly, this fn figures out whether the game
 	// is a favorite of the given user.
-	func buildBoardgameData(for user: User?, games: [Boardgame], on db: Database) throws -> EventLoopFuture<[BoardgameData]> {
+	func buildBoardgameData(for user: UserCacheData?, games: [Boardgame], on db: Database) throws -> EventLoopFuture<[BoardgameData]> {
 		if let user = user {
 			let gameIDs = games.compactMap { $0.id }
-			return try BoardgameFavorite.query(on: db).filter(\.$boardgame.$id ~~ gameIDs)
-					.filter(\.$user.$id == user.requireID()).all().flatMapThrowing { favorites in
+			return BoardgameFavorite.query(on: db).filter(\.$boardgame.$id ~~ gameIDs)
+					.filter(\.$user.$id == user.userID).all().flatMapThrowing { favorites in
 				let favGameIDs = Set(favorites.compactMap { $0.$boardgame.id })
 				return try games.map { try BoardgameData(game: $0, isFavorite: favGameIDs.contains($0.requireID())) }
 			}
