@@ -19,25 +19,34 @@ struct NotificationsMiddleware: Middleware, SiteControllerUtils {
 		guard req.method == .GET else {
 			return next.respond(to: req)
 		}
-		if let user = req.auth.get(User.self), let userUpdateTime = user.updatedAt {
-			if let lastCheckTimeStr = req.session.data["lastNotificationCheckTime"], 
-					let lastCheckInterval = Double(lastCheckTimeStr) {
-				let lastCheckDate =	Date(timeIntervalSince1970: lastCheckInterval)
-				if lastCheckDate.timeIntervalSinceNow > -60.0 && lastCheckDate > userUpdateTime {
+		if let user = req.auth.get(UserCacheData.self) {
+			return req.redis.srem(user.userID, from: "UsersWithNotificationStateChange").flatMap { hasChanges in
+				var isStale = false
+				if hasChanges == 0 {
+					if let lastCheckTimeStr = req.session.data["lastNotificationCheckTime"], 
+							let lastCheckInterval = Double(lastCheckTimeStr) {
+						let lastCheckDate =	Date(timeIntervalSince1970: lastCheckInterval)
+						if lastCheckDate.timeIntervalSinceNow > -60.0 {
+							return next.respond(to: req)
+						}
+					}
+					isStale = true
+				}
+				guard hasChanges > 0 || isStale else {
 					return next.respond(to: req)
 				}
-			}
-			req.session.data["lastNotificationCheckTime"] = String(Date().timeIntervalSince1970)
-			return apiQuery(req, endpoint: "/notification/user").throwingFlatMap { response in
-				if response.status == .ok {
-					// I dislike decoding the response JSON just to re-encode it into a string for session storage.
-					// response.body?.getString(at: 0, length: response.body!.capacity)
-					let alertCounts = try response.content.decode(UserNotificationData.self)
-					let alertCountsJSON = try JSONEncoder().encode(alertCounts)
-					let alertCountStr = String(data: alertCountsJSON, encoding: .utf8)
-					req.session.data["alertCounts"] = alertCountStr
+				req.session.data["lastNotificationCheckTime"] = String(Date().timeIntervalSince1970)
+				return apiQuery(req, endpoint: "/notification/user").throwingFlatMap { response in
+					if response.status == .ok {
+						// I dislike decoding the response JSON just to re-encode it into a string for session storage.
+						// response.body?.getString(at: 0, length: response.body!.capacity)
+						let alertCounts = try response.content.decode(UserNotificationData.self)
+						let alertCountsJSON = try JSONEncoder().encode(alertCounts)
+						let alertCountStr = String(data: alertCountsJSON, encoding: .utf8)
+						req.session.data["alertCounts"] = alertCountStr
+					}
+					return next.respond(to: req)
 				}
-				return next.respond(to: req)
 			}
 		}
 		else {

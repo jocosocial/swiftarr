@@ -603,13 +603,7 @@ struct CreateUserSchema: Migration {
 					.field("message", .string)
 					.field("preferredPronoun", .string)
 					.field("roomNumber", .string)
-					
-					.field("last_read_announcement", .int)
-					.field("twarrt_mentions", .int)
-					.field("twarrt_mentions_viewed", .int)
-					.field("forum_mentions", .int)
-					.field("forum_mentions_viewed", .int)
-					
+										
 					.field("action_group", .uuid)
 
 					.field("created_at", .datetime)

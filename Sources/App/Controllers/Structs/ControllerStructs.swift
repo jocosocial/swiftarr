@@ -1474,18 +1474,18 @@ public struct UserNotificationData: Content {
 }
 
 extension UserNotificationData	{
-	init(user: User, newFezCount: Int, newSeamailCount: Int, newAnnouncementCount: Int, activeAnnouncementCount: Int, 
-			nextEvent: Date?, disabledFeatures: [DisabledFeature]) {
+	init(newFezCount: Int, newSeamailCount: Int, newAnnouncementCount: Int, activeAnnouncementCount: Int, 
+			nextEvent: Date?) {
 		serverTime = ISO8601DateFormatter().string(from: Date())
 		serverTimeOffset = TimeZone.autoupdatingCurrent.secondsFromGMT()
 		serverTimeZone = TimeZone.autoupdatingCurrent.abbreviation() ?? ""
-		self.disabledFeatures = disabledFeatures
+		self.disabledFeatures = Settings.shared.disabledFeatures.buildDisabledFeatureArray()
 		self.activeAnnouncementCount = activeAnnouncementCount
 		self.newAnnouncementCount = newAnnouncementCount
-		self.twarrtMentionCount = user.twarrtMentions
-		self.newTwarrtMentionCount = max(user.twarrtMentions - user.twarrtMentionsViewed, 0)
-		self.forumMentionCount = user.forumMentions
-		self.newForumMentionCount = max(user.forumMentions - user.forumMentionsViewed, 0)
+		self.twarrtMentionCount = 0
+		self.newTwarrtMentionCount = 0
+		self.forumMentionCount = 0
+		self.newForumMentionCount = 0
 		self.newSeamailMessageCount = newSeamailCount
 		self.newFezMessageCount = newFezCount
 		self.nextFollowedEventTime = nextEvent

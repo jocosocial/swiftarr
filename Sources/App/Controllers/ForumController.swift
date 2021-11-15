@@ -426,7 +426,7 @@ struct ForumController: APIRouteCollection {
 						.trimmingCharacters(in: .whitespacesAndNewlines)
 				query = query.filter(\.$text, .custom("ILIKE"), "%\(searchStr)%")
 				if !searchStr.contains(" ") && start == 0 {
-					_ = markAlertwordViewed(searchStr, userid: cachedUser.userID, isPosts: true, on: req)
+					markNotificationViewed(userID: cachedUser.userID, type: .alertwordPost(searchStr), on: req)
 				}
 			}
 			if var hashtag = req.query[String.self, at: "hashtag"] {
@@ -469,8 +469,7 @@ struct ForumController: APIRouteCollection {
 					if let postFilter = postFilterMentions {
 						postFilteredPosts = posts.compactMap { $0.filterForMention(of: postFilter) }
 						if postFilter == "@\(user.username)" {
-							user.forumMentionsViewed = user.forumMentions
-							_ = user.save(on: req.db)	
+							markNotificationViewed(userID: cachedUser.userID, type: .forumMention, on: req)
 						}
 					}
 					return try buildPostData(postFilteredPosts, user: user, on: req, mutewords: cachedUser.mutewords).map { postData in
@@ -1210,55 +1209,41 @@ extension ForumController {
 	// mentioned `User`s.
 	@discardableResult func processForumMentions(forum: Forum, post: ForumPost, editedText: String?, 
 			isCreate: Bool = false, on req: Request) -> EventLoopFuture<Void> {
-		var mentionsFuture = req.eventLoop.future()
+// Mentions
+		var futures: [EventLoopFuture<Void>] = []
 		let (subtracts, adds) = post.getMentionsDiffs(editedString: editedText, isCreate: isCreate)
-		if !subtracts.isEmpty || !adds.isEmpty {
-			mentionsFuture =  User.query(on: req.db).filter(\.$username ~~ subtracts).all().flatMap { subtractUsers in
-				return User.query(on: req.db).filter(\.$username ~~ adds).all().flatMap { addUsers in
-					var saveFutures = subtractUsers.compactMap { (user: User) -> EventLoopFuture<Void>? in
-						if user.accessLevel.hasAccess(forum.accessLevelToView) {
-							user.forumMentions -= 1
-							return user.save(on: req.db)
-						}
-						return nil
-					}
-					addUsers.forEach {
-						if $0.accessLevel.hasAccess(forum.accessLevelToView) {
-							$0.forumMentions += 1
-							saveFutures.append($0.save(on: req.db))
-						}
-					}
-					return saveFutures.flatten(on: req.eventLoop)
-				}
+		if !subtracts.isEmpty {
+			let subtractUUIDs = req.userCache.getUsers(usernames: subtracts).compactMap { 
+				$0.accessLevel.hasAccess(forum.accessLevelToView) ? $0.userID : nil
 			}
+			futures.append(subtractNotifications(users: subtractUUIDs, type: .forumMention, on: req))
 		}
-		// An imperfect solution, but users should not be able to infer word use in forums they can't see.
-		// Alert word counts are stored in one global store for all alertwords; handling this 'correctly' would 
-		// require individual counts for each access level.
-		if forum.accessLevelToView > .verified {
-			return req.eventLoop.future()
+		if !adds.isEmpty {
+			let addUUIDs = req.userCache.getUsers(usernames: adds).compactMap { 
+				$0.accessLevel.hasAccess(forum.accessLevelToView) ? $0.userID : nil
+			}
+			futures.append(addNotifications(users: addUUIDs, type: .forumMention, on: req))
 		}
+// Alertwords
 		let (alertSubtracts, alertAdds) = post.getAlertwordDiffs(editedString: editedText, isCreate: isCreate)
-		let alertwordsFuture: EventLoopFuture<Void> = req.redis.zrange(from: "alertwords-posts", firstIndex: 0, lastIndex: -1)
-				.flatMap { alertwords in 
+		futures.append(req.redis.zrangebyscore(from: "alertwords", withMinimumScoreOf: 1.0).flatMap { alertwords in 
 			let alertSet = Set(alertwords.compactMap { String.init(fromRESP: $0) })
 			let subtractingAlertWords = alertSubtracts.intersection(alertSet)
 			let addingAlertWords = alertAdds.intersection(alertSet)
-			var futures: [EventLoopFuture<Double>] = []
+			var wordFutures: [EventLoopFuture<Void>] = []
 			subtractingAlertWords.forEach { word in
-				futures.append(req.redis.zincrby(-1.0, element: word, in: "alertwords-posts"))
+				wordFutures.append(subtractAlertwordNotifications(type: .alertwordPost(word), minAccess: forum.accessLevelToView, on: req))
 			}
 			addingAlertWords.forEach { word in
-				futures.append(req.redis.zincrby(1.0, element: word, in: "alertwords-posts"))
+				wordFutures.append(addAlertwordNotifications(type: .alertwordPost(word), minAccess: forum.accessLevelToView, on: req))
 			}
-			return futures.flatten(on: req.eventLoop).transform(to: ())
-		}
-		// Hashtag check
+			return wordFutures.flatten(on: req.eventLoop).transform(to: ())
+		})
+// Hashtags
 		let hashtags = post.getHashtags().map { ($0, 0.0 ) }
-		let hashtagsFuture = hashtags.isEmpty ? req.eventLoop.future() : 
-				req.redis.zadd(hashtags, to: "hashtags").transform(to: ())
+		futures.append(hashtags.isEmpty ? req.eventLoop.future() : req.redis.zadd(hashtags, to: "hashtags").transform(to: ()))
 
-		return mentionsFuture.and(alertwordsFuture).and(hashtagsFuture).transform(to: ())
+		return futures.flatten(on: req.eventLoop).transform(to: ())
 	}
 	
 	// Deleting a forum thread means we delete a bunch of posts at once. This fn coalesces the updates to User models
@@ -1273,12 +1258,11 @@ extension ForumController {
 				mentionAdjustCounts[username] = entry
 			}
 		}
-		return User.query(on: req.db).filter(\.$username ~~ mentionAdjustCounts.keys).all().flatMap { subtractUsers in
-			let saveFutures = subtractUsers.map { (user: User) -> EventLoopFuture<Void> in
-				user.forumMentions -= mentionAdjustCounts[user.username] ?? 0
-				return user.save(on: req.db)
+		return mentionAdjustCounts.compactMap { username, value in
+			if let userID = req.userCache.getHeader(username)?.userID {
+				return subtractNotifications(users: [userID], type: .forumMention, subtractCount: value, on: req)
 			}
-			return saveFutures.flatten(on: req.eventLoop)
-		}
+			return nil
+		}.flatten(on: req.eventLoop)
 	}
 }

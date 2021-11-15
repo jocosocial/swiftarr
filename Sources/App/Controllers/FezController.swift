@@ -205,13 +205,14 @@ struct FezController: APIRouteCollection {
 				var fezData = try buildFezData(from: fez, with: pivot, for: user.requireID(), on: req)
 				if let pivot = pivot {
 					return try buildPostsForFez(fez.requireID(), on: req, userBlocks: cacheUser.getBlocks(), 
-							userMutes: cacheUser.getMutes()).flatMapThrowing { posts in
+							userMutes: cacheUser.getMutes()).throwingFlatMap { posts in
 						fezData.members?.posts = posts
 						//		
 						pivot.readCount = posts.count
 						pivot.hiddenCount = fez.postCount - posts.count
-						_ = pivot.save(on: req.db)
-						return fezData
+						
+						try markNotificationViewed(userID: cacheUser.userID, type: fez.notificationType(), on: req)
+						return pivot.save(on: req.db).transform(to: fezData)
 					}
 				}
 				else {
@@ -288,9 +289,8 @@ struct FezController: APIRouteCollection {
 			if let index = fez.participantArray.firstIndex(of: userID) {
 				fez.participantArray.remove(at: index)
 			}
-			return fez.save(on: req.db)
-					.and(fez.$participants.detach(user, on: req.db))
-					.flatMapThrowing { (_) in
+			return fez.save(on: req.db).and(fez.$participants.detach(user, on: req.db)).flatMapThrowing { (_) in
+				try deleteFezNotifications(userIDs: [userID], fez: fez, on: req)
 				return try buildFezData(from: fez, with: nil, for: user.requireID(), on: req)
 			}
 		}
@@ -338,9 +338,12 @@ struct FezController: APIRouteCollection {
                 var saveFutures = [ post.save(on: req.db), fez.save(on: req.db) ]
                 // If any participants block or mute this user, increase their hidden post count as they won't see this post.
                 // The nice thing about doing it this way is most of the time there will be no blocks and nothing to do.
+				var participantNotifyList: [UUID] = []
 				for participantUserID in fez.participantArray {
-					if let participantCacheUser = req.userCache.getUser(participantUserID),
-							participantCacheUser.getBlocks().contains(cacheUser.userID) || 
+					guard let participantCacheUser = req.userCache.getUser(participantUserID) else {
+						continue
+					}
+					if participantCacheUser.getBlocks().contains(cacheUser.userID) || 
 							participantCacheUser.getMutes().contains(cacheUser.userID) {
 						let incrementHiddenFuture = getUserPivot(fez: fez, userID: participantUserID, on: req.db)
 								.flatMap { pivot -> EventLoopFuture<Void> in
@@ -350,8 +353,13 @@ struct FezController: APIRouteCollection {
 						}
 						saveFutures.append(incrementHiddenFuture)		
 					}
+					else if try participantUserID != user.requireID() {
+						participantNotifyList.append(participantUserID)
+					}
 				}
 				return saveFutures.flatten(on: req.eventLoop).throwingFlatMap {
+					_ = try addNotifications(users: participantNotifyList, type: fez.fezType == .closed ? 
+							.seamailUnreadMsg(fez.requireID()) : .fezUnreadMsg(fez.requireID()), on: req)
 					return try buildPostsForFez(fez.requireID(), on: req, userBlocks: cacheUser.getBlocks(), 
 							userMutes: cacheUser.getMutes())
 							.and(getUserPivot(fez: fez, userID: cacheUser.userID, on: req.db)).flatMapThrowing { (posts, pivot) in
@@ -389,48 +397,53 @@ struct FezController: APIRouteCollection {
 			}
             // get fez and all its participant pivots. Also get count of posts before the one we're deleting.
             return post.$fez.query(on: req.db).with(\.$participants.$pivots).first()
-                .unwrap(or: Abort(.internalServerError, reason: "fez not found"))
-                .throwingFlatMap { (fez) in
-					let cacheUser = try req.userCache.getUser(user)
-					guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
-						throw Abort(.notFound, reason: "fez is not available")
-					}
-                	return try fez.$fezPosts.query(on: req.db).filter(\.$id < post.requireID()).count().flatMap { postIndex in
-						// delete post, reduce post count cached in fez
-						fez.postCount -= 1
-						var saveFutures = [ fez.save(on: req.db), post.delete(on: req.db) ]
-						var posterPivot: FezParticipant?
-						for participantPivot in fez.$participants.pivots {
-							if participantPivot.$user.id == userID {
-								posterPivot = participantPivot
-							}
-							// If this user was hiding this post, reduce their hidden count as the post is gone.
-							var pivotNeedsSave = false
-							if let participantCacheUser = req.userCache.getUser(participantPivot.$user.id),
-									participantCacheUser.getBlocks().contains(userID) || 
-									participantCacheUser.getMutes().contains(userID) {
-								participantPivot.hiddenCount = max(participantPivot.hiddenCount - 1, 0)
-								pivotNeedsSave = true
-							}
-							// If the user has read the post being deleted, reduce their read count by 1.
-							if participantPivot.readCount > postIndex {
-								participantPivot.readCount -= 1
-								pivotNeedsSave = true
-							}
-							if pivotNeedsSave {
-								saveFutures.append(participantPivot.save(on: req.db))
-							}
+					.unwrap(or: Abort(.internalServerError, reason: "fez not found"))
+					.throwingFlatMap { fez in
+				let cacheUser = try req.userCache.getUser(user)
+				guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
+					throw Abort(.notFound, reason: "fez is not available")
+				}
+				return try fez.$fezPosts.query(on: req.db).filter(\.$id < post.requireID()).count().throwingFlatMap { postIndex in
+					// delete post, reduce post count cached in fez
+					fez.postCount -= 1
+					var saveFutures = [ fez.save(on: req.db), post.delete(on: req.db) ]
+					var posterPivot: FezParticipant?
+					var adjustNotificationCountForUsers: [UUID] = []
+					for participantPivot in fez.$participants.pivots {
+						if participantPivot.$user.id == userID {
+							posterPivot = participantPivot
 						}
-						
-  						post.logIfModeratorAction(.delete, user: user, on: req)
-						return saveFutures.flatten(on: req.eventLoop).throwingFlatMap { (_) in
-							return try buildPostsForFez(fez.requireID(), on: req, userBlocks: cacheUser.getBlocks(),
-									userMutes: cacheUser.getMutes()).flatMapThrowing { posts in
-								let fezData = try buildFezData(from: fez, with: posterPivot, posts: posts, for: user.requireID(), on: req)
-								return fezData
-							}
+						// If this user was hiding this post, reduce their hidden count as the post is gone.
+						var pivotNeedsSave = false
+						if let participantCacheUser = req.userCache.getUser(participantPivot.$user.id),
+								participantCacheUser.getBlocks().contains(userID) || 
+								participantCacheUser.getMutes().contains(userID) {
+							participantPivot.hiddenCount = max(participantPivot.hiddenCount - 1, 0)
+							pivotNeedsSave = true
+						}
+						// If the user has read the post being deleted, reduce their read count by 1.
+						if participantPivot.readCount > postIndex {
+							participantPivot.readCount -= 1
+							pivotNeedsSave = true
+						}
+						if pivotNeedsSave {
+							saveFutures.append(participantPivot.save(on: req.db))
+						}
+						else if participantPivot.$user.id != userID {
+							adjustNotificationCountForUsers.append(participantPivot.$user.id)
 						}
 					}
+					_ = try subtractNotifications(users: adjustNotificationCountForUsers, type: fez.fezType == .closed ? 
+							.seamailUnreadMsg(fez.requireID()) : .fezUnreadMsg(fez.requireID()), on: req)
+					post.logIfModeratorAction(.delete, user: user, on: req)
+					return saveFutures.flatten(on: req.eventLoop).throwingFlatMap { (_) in
+						return try buildPostsForFez(fez.requireID(), on: req, userBlocks: cacheUser.getBlocks(),
+								userMutes: cacheUser.getMutes()).flatMapThrowing { posts in
+							let fezData = try buildFezData(from: fez, with: posterPivot, posts: posts, for: user.requireID(), on: req)
+							return fezData
+						}
+					}
+				}
 			}
 		}
 	}
@@ -549,6 +562,7 @@ struct FezController: APIRouteCollection {
         }
         return FriendlyFez.findFromParameter(fezIDParam, on: req).throwingFlatMap { fez in
 			try user.guardCanModifyContent(fez)
+       		try deleteFezNotifications(userIDs: fez.participantArray, fez: fez, on: req)
 			fez.logIfModeratorAction(.delete, user: user, on: req)
 			return fez.$participants.detachAll(on: req.db).flatMap { _ in
 				return fez.delete(on: req.db).transform(to: .noContent)

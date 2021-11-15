@@ -174,6 +174,7 @@ struct EventController: APIRouteCollection {
 				// add event and return 201
 				if !barrel.modelUUIDs.contains(eventID) {
 					barrel.modelUUIDs.append(eventID)
+					_ = storeNextEventTime(userID: user.userID, eventBarrel: barrel, on: req)
 				}
 				return barrel.save(on: req.db).transform(to: .created)
 			}
@@ -209,6 +210,7 @@ struct EventController: APIRouteCollection {
 							Abort(.badRequest, reason: "event was not tagged"))
 				}
 				barrel.modelUUIDs.remove(at: index)
+				_ = storeNextEventTime(userID: user.userID, eventBarrel: barrel, on: req)
 				return barrel.save(on: req.db).transform(to: .noContent)
 			}
         }
@@ -238,4 +240,7 @@ struct EventController: APIRouteCollection {
             }
         }
     }
+    
+// MARK: Utilities
+
 }

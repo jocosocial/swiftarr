@@ -300,7 +300,7 @@ struct TwitarrController: APIRouteCollection {
 		if let searchStr = filters.search {
 			futureTwarrts.filter(\.$text, .custom("ILIKE"), "%\(searchStr)%")
 			if !searchStr.contains(" ") && start == 0 {
-				_ = markAlertwordViewed(searchStr, userid: cachedUser.userID, isPosts: false, on: req)
+				markNotificationViewed(userID: cachedUser.userID, type: .alertwordTwarrt(searchStr), on: req)
 			}
 		}
 		if var hashtag = filters.hashtag {
@@ -395,13 +395,7 @@ struct TwitarrController: APIRouteCollection {
 						postFilteredTwarrts = twarrts.compactMap { $0.filterForMention(of: postFilter) }
 						// This also clears new mentions in cases where the user got their mentions plus additional filters.
 						if postFilter == "@\(cachedUser.username)" {
-							let _ : EventLoopFuture<Void> = User.find(cachedUser.userID, on: req.db).flatMap { user in
-								if let user = user {
-									user.twarrtMentionsViewed = user.twarrtMentions
-									return user.save(on: req.db)
-								}
-								return req.eventLoop.future()
-							}
+							markNotificationViewed(userID: cachedUser.userID, type: .twarrtMention, on: req)
 						}
 					}
 				
@@ -772,34 +766,28 @@ extension TwitarrController {
 			isCreate: Bool = false, on req: Request) -> EventLoopFuture<Void> {	
 		// Mentions
 		let (subtracts, adds) = twarrt.getMentionsDiffs(editedString: editedText, isCreate: isCreate)
-		var mentionsFuture = req.eventLoop.future()
-		if !subtracts.isEmpty || !adds.isEmpty {
-			mentionsFuture = User.query(on: req.db).filter(\.$username ~~ subtracts).all().flatMap { subtractUsers in
-				return User.query(on: req.db).filter(\.$username ~~ adds).all().flatMap { addUsers in
-					var saveFutures = subtractUsers.map { (user: User) -> EventLoopFuture<Void> in
-						user.twarrtMentions -= 1
-						return user.save(on: req.db)
-					}
-					addUsers.forEach {
-						$0.twarrtMentions += 1
-						saveFutures.append($0.save(on: req.db))
-					}
-					return saveFutures.flatten(on: req.eventLoop)
-				}
-			}
+		var mentionsFutures: [EventLoopFuture<Void>] = []
+		if !subtracts.isEmpty {
+			let subtractUUIDs = req.userCache.getHeaders(usernames: subtracts).map { $0.userID }
+			mentionsFutures.append(subtractNotifications(users: subtractUUIDs, type: .twarrtMention, on: req))
 		}
+		if !adds.isEmpty {
+			let addUUIDs = req.userCache.getHeaders(usernames: adds).map { $0.userID }
+			mentionsFutures.append(addNotifications(users: addUUIDs, type: .twarrtMention, on: req))
+		}
+		
 		// Alert words check
 		let (alertSubtracts, alertAdds) = twarrt.getAlertwordDiffs(editedString: editedText, isCreate: isCreate)
-		let alertwordsFuture: EventLoopFuture<Void> = req.redis.zrange(from: "alertwords-tweets", firstIndex: 0, lastIndex: -1).flatMap { alertwords in 
+		let alertwordsFuture: EventLoopFuture<Void> = req.redis.zrangebyscore(from: "alertwords", withMinimumScoreOf: 1.0).flatMap { alertwords in 
 			let alertSet = Set(alertwords.compactMap { String.init(fromRESP: $0) })
 			let subtractingAlertWords = alertSubtracts.intersection(alertSet)
 			let addingAlertWords = alertAdds.intersection(alertSet)
-			var futures: [EventLoopFuture<Double>] = []
+			var futures: [EventLoopFuture<Void>] = []
 			subtractingAlertWords.forEach { word in
-				futures.append(req.redis.zincrby(-1.0, element: word, in: "alertwords-tweets"))
+				futures.append(subtractAlertwordNotifications(type: .alertwordTwarrt(word), on: req))
 			}
 			addingAlertWords.forEach { word in
-				futures.append(req.redis.zincrby(1.0, element: word, in: "alertwords-tweets"))
+				futures.append(addAlertwordNotifications(type: .alertwordTwarrt(word), on: req))
 			}
 			return futures.flatten(on: req.eventLoop).transform(to: ())
 		}
@@ -808,6 +796,6 @@ extension TwitarrController {
 		let hashtagsFuture = hashtags.isEmpty ? req.eventLoop.future() : 
 				req.redis.zadd(hashtags, to: "hashtags").transform(to: ())
 		
-		return mentionsFuture.and(alertwordsFuture).and(hashtagsFuture).transform(to: ())
+		return mentionsFutures.flatten(on: req.eventLoop).and(alertwordsFuture).and(hashtagsFuture).transform(to: ())
 	}
 }

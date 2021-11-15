@@ -25,16 +25,15 @@ struct AlertController: APIRouteCollection {
 		alertRoutes.get("hashtags", searchStringParam, use: getHashtagsHandler)
 
 		// Flexible access endpoints -- login not required, although calls may act differently if logged in
-		let flexAuthGroup = addFlexAuthGroup(to: alertRoutes)
+		let flexAuthGroup = addFlexCacheAuthGroup(to: alertRoutes)
 		flexAuthGroup.get("global", use: globalNotificationHandler)
 		flexAuthGroup.get("user", use: globalNotificationHandler)
 		flexAuthGroup.get("announcements", use: getAnnouncements)
 		flexAuthGroup.get("dailythemes", use: getDailyThemes)
 
-		// endpoints available only when logged in
-		let tokenAuthGroup = addTokenAuthGroup(to: alertRoutes)
+		// endpoints available only when logged in as THO or above
+		let tokenAuthGroup = addTokenCacheAuthGroup(to: alertRoutes).grouped(RequireTHOMiddleware())
 		tokenAuthGroup.get("announcement", announcementIDParam, use: getSingleAnnouncement)
-
 		tokenAuthGroup.post("announcement", "create", use: createAnnouncement)
 		tokenAuthGroup.post("announcement", announcementIDParam, "edit", use: editAnnouncement)
 		tokenAuthGroup.post("announcement", announcementIDParam, "delete", use: deleteAnnouncement)
@@ -73,70 +72,42 @@ struct AlertController: APIRouteCollection {
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: <doc:UserNotificationData>
 	func globalNotificationHandler(_ req: Request) throws -> EventLoopFuture<UserNotificationData> {
-        guard let user = req.auth.get(User.self) else {
-			return Announcement.query(on: req.db).filter(\.$displayUntil > Date()).count().map { activeAnnouncements in
+        guard let user = req.auth.get(UserCacheData.self) else {
+        	return getActiveAnnouncementIDs(on: req).map { activeAnnouncementIDs in
 				var result = UserNotificationData()
-				result.activeAnnouncementCount = activeAnnouncements
+				result.activeAnnouncementCount = activeAnnouncementIDs.count
 				result.disabledFeatures = Settings.shared.disabledFeatures.buildDisabledFeatureArray()
 				return result
 			}
         }
-		let userID = try user.requireID()
-		// get user's taggedEvent barrel, and from it get next event being followed
-		return Barrel.query(on: req.db).filter(\.$ownerID == userID).filter(\.$barrelType == .taggedEvent).first().flatMap { barrel in
-			guard let barrel = barrel else {
-				return req.eventLoop.makeSucceededFuture(nil)
-			}
-			let cruiseStartDate = Settings.shared.cruiseStartDate
-			var filterDate = Date()
-			// If the cruise is in the future or more than 10 days in the past, construct a fake date during the cruise week
-			let secondsPerDay = 24 * 60 * 60.0
-			if cruiseStartDate.timeIntervalSinceNow > 0 ||
-				cruiseStartDate.timeIntervalSinceNow < 0 - Double(Settings.shared.cruiseLengthInDays) * secondsPerDay {
-				var filterDateComponents = Calendar.autoupdatingCurrent.dateComponents(in: TimeZone(abbreviation: "EST")!, 
-						from: cruiseStartDate)
-				let currentDateComponents = Calendar.autoupdatingCurrent.dateComponents(in: TimeZone(abbreviation: "EST")!, 
-						from: Date())
-				filterDateComponents.hour = currentDateComponents.hour
-				filterDateComponents.minute = currentDateComponents.minute
-				filterDateComponents.second = currentDateComponents.second
-				filterDate = Calendar.autoupdatingCurrent.date(from: filterDateComponents) ?? Date()
-				if let currentDayOfWeek = currentDateComponents.weekday {
-					let daysToAdd = (7 + currentDayOfWeek - Settings.shared.cruiseStartDayOfWeek) % 7 
-					if let adjustedDate = Calendar.autoupdatingCurrent.date(byAdding: .day, value: daysToAdd, to: filterDate) {
-						filterDate = adjustedDate
-					}
-				}
-			}			
-			return Event.query(on: req.db).filter(\.$id ~~ barrel.modelUUIDs)
-					.filter(\.$startTime > filterDate)
-					.sort(\.$startTime, .ascending)
-					.first()
-					.map { event in
-				return event?.startTime
-			}
-		}.flatMap { (nextEventDate: Date?) in
-			// Get the number of fezzes with unread messages
-			return FezParticipant.query(on: req.db).filter(\.$user.$id == userID).with(\.$fez).all().flatMap { pivots in
-				var unreadFezCount = 0
-				var unreadSeamailCount = 0
-				pivots.forEach { fezParticipant in
-					if fezParticipant.fez.postCount - fezParticipant.readCount - fezParticipant.hiddenCount > 0 {
-						if fezParticipant.fez.fezType == .closed {
-							unreadSeamailCount += 1
+		// Get the number of fezzes with unread messages
+		return req.redis.hvals(in: NotificationType.fezUnreadMsg(user.userID).redisKeyName(userID: user.userID), as: Int.self)
+				.and(req.redis.hvals(in: NotificationType.seamailUnreadMsg(user.userID).redisKeyName(userID: user.userID), 
+				as: Int.self)).flatMap { (fezHash, seamailHash) in
+			let unreadFezCount = fezHash.reduce(0) { $1 ?? 0 > 0 ? $0 + 1 : $0 }
+			let unreadSeamailCount = seamailHash.reduce(0) { $1 ?? 0 > 0 ? $0 + 1 : $0 }
+			return getActiveAnnouncementIDs(on: req).flatMap { actives in 
+				return req.redis.hgetall(from: NotificationType.redisHashKeyForUser(user.userID)).flatMap { hash in
+					let userHighestReadAnnouncement = hash["announcement_viewed"]?.int ?? 0
+					let newAnnouncements = actives.reduce(0) { $1 > userHighestReadAnnouncement ? $0 + 1 : $0 }
+					var nextEventFuture: EventLoopFuture<Date?> = req.eventLoop.future(nil)
+					if let nextEventStr = hash["nextFollowedEventTime"]?.string, let doubleDate = Double(nextEventStr) {
+						let eventDate = Date(timeIntervalSince1970: doubleDate)
+						if Date() > eventDate {
+							nextEventFuture = storeNextEventTime(userID: user.userID, eventBarrel: nil, on: req)
 						}
 						else {
-							unreadFezCount += 1
+							nextEventFuture = req.eventLoop.future(eventDate)
 						}
 					}
-				}
-				return getNewAlertWordCounts(userID: userID, on: req).flatMap { alertWordCounts in
-					return Announcement.query(on: req.db).field(\.$id).filter(\.$displayUntil > Date()).all().map { actives in
-						let newAnnouncements = actives.reduce(0) { ($1.id ?? 0) > user.lastReadAnnouncement ? $0 + 1 : $0 }
-						var result = UserNotificationData(user: user, newFezCount: unreadFezCount, newSeamailCount: unreadSeamailCount,
-								newAnnouncementCount: newAnnouncements, activeAnnouncementCount: actives.count, nextEvent: nextEventDate,
-								disabledFeatures: Settings.shared.disabledFeatures.buildDisabledFeatureArray())
-						result.alertWords = alertWordCounts
+					return nextEventFuture.map { nextEventDate in
+						var result = UserNotificationData(newFezCount: unreadFezCount, newSeamailCount: unreadSeamailCount,
+								newAnnouncementCount: newAnnouncements, activeAnnouncementCount: actives.count, nextEvent: nextEventDate)
+						result.twarrtMentionCount = hash["twarrtMention"]?.int ?? 0
+						result.newTwarrtMentionCount = max(result.twarrtMentionCount - (hash["twarrtMention_viewed"]?.int ?? 0), 0)
+						result.forumMentionCount = hash["forumMention"]?.int ?? 0
+						result.newForumMentionCount = max(result.forumMentionCount - (hash["forumMention_viewed"]?.int ?? 0), 0)
+						result.alertWords = getNewAlertWordCounts(hash: hash)
 						return result
 					}
 				}
@@ -144,51 +115,58 @@ struct AlertController: APIRouteCollection {
 		}
 	}
 	
-	func getNewAlertWordCounts(userID: UUID, on req: Request) -> EventLoopFuture<[UserNotificationAlertwordData]> {
-		return req.redis.zrange(from: "alertwordTweets-\(userID)", firstIndex: 0, lastIndex: -1, includeScoresInResponse: true)
-				.and(req.redis.zrange(from: "alertwordPosts-\(userID)", firstIndex: 0, lastIndex: -1,  includeScoresInResponse: true))
-				.flatMap { (alertTweets, alertPosts) in
-			if alertTweets.count == 0 {
-				return req.eventLoop.future([])
+	// Pulls an array of active announcement IDs from Redis, from a key that expires every minute. If the key is expired,
+	// rebuilds it by querying Announcements. Could be optimized a bit by setting expire time to the first expiring announcement,
+	// and making sure we delete the key when announcements are added/edited/deleted. 
+	func getActiveAnnouncementIDs(on req: Request) -> EventLoopFuture<[Int]> {
+		return req.redis.get("ActiveAnnouncementIDs", as: String.self).flatMap { alertIDStr in
+			if let idStr = alertIDStr {
+				return req.eventLoop.future(idStr.split(separator: " ").compactMap { Int($0) })
 			}
-			var zmscoreArgs: [RESPValue] = []
-			var result: [UserNotificationAlertwordData] = []
-			for index in stride(from: 0, to: alertTweets.count, by: 2) {
-				if let str = String(fromRESP: alertTweets[index]), let val = Int(fromRESP: alertTweets[index + 1]) {
-					zmscoreArgs.append(alertTweets[index])
-					var newElement = UserNotificationAlertwordData(str)
-					newElement.twarrtMentionCount = val
-					newElement.newTwarrtMentionCount = val
-					result.append(newElement)
+			else {
+				return Announcement.query(on: req.db).filter(\.$displayUntil > Date()).all().flatMapThrowing() { activeAnnouncements in
+					let ids = try activeAnnouncements.map { try $0.requireID() }
+					let idStr = ids.map { String($0) }.joined(separator: " ")
+					_ = req.redis.set("ActiveAnnouncementIDs", to: idStr, onCondition: .none, expiration: .seconds(60))
+					return ids 
 				}
-			}
-			for index in stride(from: 0, to: alertPosts.count, by: 2) {
-				if let str = String(fromRESP: alertPosts[index]), let val = Int(fromRESP: alertPosts[index + 1]) {
-					if let elementIndex = result.firstIndex(where: { $0.alertword == str } ) {
-						result[elementIndex].forumMentionCount = val
-						result[elementIndex].newForumMentionCount = val
-					}
-				}
-			}
-			let userTwarrtCountArgs = [RESPValue(from: "alertwords-tweets")] + zmscoreArgs
-			let userForumCountArgs = [RESPValue(from: "alertwords-posts")] + zmscoreArgs
-			return req.redis.send(command: "ZMSCORE", with: userTwarrtCountArgs)
-					.and(req.redis.send(command: "ZMSCORE", with: userForumCountArgs)).map { (totalTweetRESP, totalForumRESP) in
-				if let totalTweets = Array<Int?>(fromRESP: totalTweetRESP), let totalForums = Array<Int?>(fromRESP: totalForumRESP),
-						totalTweets.count == result.count {
-					for index in 0..<result.count {
-						var alertData = result[index]
-						alertData.twarrtMentionCount = totalTweets[index] ?? 0
-						alertData.newTwarrtMentionCount = max(0, alertData.twarrtMentionCount - alertData.newTwarrtMentionCount)
-						alertData.forumMentionCount = totalForums[index] ?? 0
-						alertData.newForumMentionCount = max(0, alertData.forumMentionCount - alertData.newForumMentionCount)
-						result[index] = alertData
-					}		
-				}
-				return result
 			}
 		}
-	}	
+	}
+	
+	func getNewAlertWordCounts(hash: [String : RESPValue]) -> [UserNotificationAlertwordData] {
+	//	return req.redis.hgetall(from: NotificationType.redisHashKeyForUser(userID), as: Int.self).map { hash in
+		var resultDict: [String : UserNotificationAlertwordData] = [:]
+		hash.forEach { (key, value) in
+			if key.hasSuffix("_viewed") {
+				return
+			}
+			var word: String
+			var isTweet = true
+			if key.hasPrefix("alertwordTweet-") {
+				word = String(key.dropFirst("alertwordTweet-".count))
+			}
+			else if key.hasPrefix("alertwordPost-") {
+				word = String(key.dropFirst("alertwordPost-".count))
+				isTweet = false
+			}
+			else {
+				return
+			}
+			let viewedCount = hash[key + "_viewed"]?.int ?? 0
+			var entry = resultDict[word] ?? UserNotificationAlertwordData(word)
+			if isTweet {
+				entry.twarrtMentionCount = value.int ?? 0
+				entry.newTwarrtMentionCount = max(0, entry.twarrtMentionCount - viewedCount)
+			}
+			else {
+				entry.forumMentionCount = value.int ?? 0
+				entry.newForumMentionCount = max(0, entry.forumMentionCount - viewedCount)
+			}
+			resultDict[word] = entry
+		}
+		return Array(resultDict.values)
+	}
 	
 	// MARK: - Announcements
 
@@ -200,13 +178,19 @@ struct AlertController: APIRouteCollection {
     /// - Parameter requestBody: <doc:AnnouncementCreateData>
     /// - Returns: `HTTPStatus` 201 on success.
 	func createAnnouncement(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-		let user = try req.auth.require(User.self)
+		let user = try req.auth.require(UserCacheData.self)
 		guard user.accessLevel.hasAccess(.tho) else {
 			throw Abort(.forbidden, reason: "THO only")
 		}
 		let announcementData = try ValidatingJSONDecoder().decode(AnnouncementCreateData.self, fromBodyOf: req)
-		let announcement = try Announcement(author: user, text: announcementData.text, displayUntil: announcementData.displayUntil)
-		return announcement.save(on: req.db).transform(to: .created)
+		let announcement = Announcement(authorID: user.userID, text: announcementData.text, displayUntil: announcementData.displayUntil)
+			
+		return announcement.save(on: req.db).throwingFlatMap {
+			return User.query(on: req.db).field(\.$id).all().throwingFlatMap { allUsers in
+				let userIDs = try allUsers.map { try $0.requireID() }
+				return try addNotifications(users: userIDs, type: .announcement(announcement.requireID()), on: req).transform(to: .created)
+			}
+		}
 	}
 	
     /// `GET /api/v3/notification/announcements`
@@ -223,7 +207,7 @@ struct AlertController: APIRouteCollection {
     /// - Throws: 403 error if the user is not permitted to delete.
     /// - Returns: Array of <doc:AnnouncementData>
 	func getAnnouncements(_ req: Request) throws -> EventLoopFuture<[AnnouncementData]> {
-		let user = req.auth.get(User.self)
+		let user = req.auth.get(UserCacheData.self)
 		let includeInactives: Bool = req.query[String.self, at: "inactives"] == "true"
 		guard !includeInactives || (user?.accessLevel.hasAccess(.tho) ?? false) else {
 			throw Abort(.forbidden, reason: "Inactive announcements are THO only")
@@ -236,9 +220,14 @@ struct AlertController: APIRouteCollection {
 			query.filter(\.$displayUntil > Date())
 		}
 		return query.all().flatMapThrowing { announcements in
+			var maxID = 0
 			let result: [AnnouncementData] = try announcements.map { 
 				let authorHeader = try req.userCache.getHeader($0.$author.id)
+				if let annID = $0.id, annID > maxID { maxID = annID }
 				return try AnnouncementData(from: $0, authorHeader: authorHeader) 
+			}
+			if let userID = user?.userID, includeInactives == false {
+				_ = markNotificationViewed(userID: userID, type: .announcement(maxID), on: req)
 			}
 			return result
 		}
@@ -255,7 +244,7 @@ struct AlertController: APIRouteCollection {
     /// - Throws: 403 error if the user doesn't have THO-level access. 404 if no announcement with the given ID is found.
     /// - Returns: <doc:AnnouncementData>
 	func getSingleAnnouncement(_ req: Request) throws -> EventLoopFuture<AnnouncementData> {
-		let user = try req.auth.require(User.self)
+		let user = try req.auth.require(UserCacheData.self)
 		guard user.accessLevel.hasAccess(.tho) else {
 			throw Abort(.forbidden, reason: "THO only")
 		}
@@ -279,7 +268,7 @@ struct AlertController: APIRouteCollection {
     /// - Throws: 403 error if the user is not permitted to delete.
     /// - Returns: The updated <doc:AnnouncementCreateData>
 	func editAnnouncement(_ req: Request) throws -> EventLoopFuture<AnnouncementData> {
-		let user = try req.auth.require(User.self)
+		let user = try req.auth.require(UserCacheData.self)
 		guard user.accessLevel.hasAccess(.tho) else {
 			throw Abort(.forbidden, reason: "THO only")
 		}
@@ -312,12 +301,18 @@ struct AlertController: APIRouteCollection {
     /// - Throws: 403 error if the user is not permitted to delete.
     /// - Returns: 204 NoContent on success.
 	func deleteAnnouncement(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-		let user = try req.auth.require(User.self)
+		let user = try req.auth.require(UserCacheData.self)
 		guard user.accessLevel.hasAccess(.tho) else {
 			throw Abort(.forbidden, reason: "THO only")
 		}
 		return Announcement.findFromParameter(announcementIDParam, on: req).throwingFlatMap { announcement in
-			announcement.delete(on: req.db).transform(to: .noContent)
+			return announcement.delete(on: req.db).flatMap {
+				return User.query(on: req.db).field(\.$id).all().throwingFlatMap { allUsers in
+					let userIDs = try allUsers.map { try $0.requireID() }
+					return try subtractNotifications(users: userIDs, type: .announcement(announcement.requireID()), on: req)
+							.transform(to: .noContent)
+				}
+			}
 		}
 	}
 	

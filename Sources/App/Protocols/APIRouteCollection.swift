@@ -60,55 +60,212 @@ extension APIRouteCollection {
 	}
 
 	/// Transforms a string that might represent a date (either a `Double` or an ISO 8601
-    /// representation) into a `Date`, if possible.
-    ///
-    /// - Note: The representation is expected to be either a string literal `Double`, or a
-    ///   string in UTC `yyyy-MM-dd'T'HH:mm:ssZ` format.
-    ///
-    /// - Parameter string: The string to be transformed.
-    /// - Returns: A `Date` if the conversion was successful, otherwise `nil`.
-    static func dateFromParameter(string: String) -> Date? {
-        var date: Date?
-        if let timeInterval = TimeInterval(string) {
-            date = Date(timeIntervalSince1970: timeInterval)
-        } else {
-            if #available(OSX 10.13, *) {
-                if let msDate = string.iso8601ms {
-                    date = msDate
-//                if let dateFromISO8601ms = ISO8601DateFormatter().date(from: string) {
-//                    date = dateFromISO8601ms
-                }
-            } else {
-                let dateFormatter = DateFormatter()
-                dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSXXXXX"
-//                dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
-                dateFormatter.locale = Locale(identifier: "en_US_POSIX")
-                dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
-                if let dateFromDateFormatter = dateFormatter.date(from: string) {
-                    date = dateFromDateFormatter
-                }
-            }
-        }
-        return date
-    }
-
-	/// Sets the current user's viewedCount for the given alertword to equal our global count of how many tweets/posts exist containing that word.
-	/// 
-	/// Effectively this means the user has seen all the posts/tweets with this word, and any notification for this alertword should be cleared.
-	/// Can be called for non-alertwords safely--the expectation is that tweets and posts will call this when asked to search for a single search word,
-	/// although a special search alternate could be used that indicates the search is an alertword e.g. '/api/v3/tweets?alertword=helicopter' instead
-	/// of '?search=helicopter'.
-	func markAlertwordViewed(_ word: String, userid: UUID, isPosts: Bool, on req: Request) -> EventLoopFuture<Void> {
-		let globalKey = isPosts ? RedisKey("alertwords-posts") : RedisKey("alertwords-tweets")
-		let userKey = isPosts ? RedisKey("alertwordPosts-\(userid)") : RedisKey("alertwordTweets-\(userid)")
-		return req.redis.zscore(of: word, in: globalKey).flatMap { wordHitCountRESP in
-			guard let wordCount = wordHitCountRESP else {
-				return req.eventLoop.future()
+	/// representation) into a `Date`, if possible.
+	///
+	/// - Note: The representation is expected to be either a string literal `Double`, or a
+	///   string in UTC `yyyy-MM-dd'T'HH:mm:ssZ` format.
+	///
+	/// - Parameter string: The string to be transformed.
+	/// - Returns: A `Date` if the conversion was successful, otherwise `nil`.
+	static func dateFromParameter(string: String) -> Date? {
+		var date: Date?
+		if let timeInterval = TimeInterval(string) {
+			date = Date(timeIntervalSince1970: timeInterval)
+		} else {
+			if #available(OSX 10.13, *) {
+				if let msDate = string.iso8601ms {
+					date = msDate
+//				if let dateFromISO8601ms = ISO8601DateFormatter().date(from: string) {
+//					date = dateFromISO8601ms
+				}
+			} else {
+				let dateFormatter = DateFormatter()
+				dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSXXXXX"
+				dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+				dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+				if let dateFromDateFormatter = dateFormatter.date(from: string) {
+					date = dateFromDateFormatter
+				}
 			}
-			return req.redis.zadd((element: word, score: wordCount), to: userKey).map { _ in 
-				return
+		}
+		return date
+	}
+	
+// MARK: Notification Management
+	
+	// When we detect a twarrt or post with an alertword in it, call this method to find the users that are looking
+	// for that alertword and increment each of their hit counts. Differs from addNotifications because the list
+	// of users to notify is itself stored in Redis.
+	@discardableResult func addAlertwordNotifications(type: NotificationType, minAccess: UserAccessLevel = .quarantined,
+			on req: Request) -> EventLoopFuture<Void> {
+		switch type {
+		case .alertwordTwarrt(let word):
+			return req.redis.smembers(of: "alertwordUsers-\(word)", as: UUID.self).flatMap { userIDOptionals in
+				let userIDs = userIDOptionals.compactMap { $0 }
+				return addNotifications(users: userIDs, type: type, on: req)
+			}
+		case .alertwordPost(let word):
+			return req.redis.smembers(of: "alertwordUsers-\(word)", as: UUID.self).flatMap { userIDOptionals in
+				let userIDs = userIDOptionals.compactMap { $0 }
+				let validUserIDs = req.userCache.getUsers(userIDs).compactMap { $0.accessLevel >= minAccess ? $0.userID : nil }
+				return addNotifications(users: validUserIDs, type: type, on: req)
+			}
+		default:
+			return req.eventLoop.future()
+		}
+	}
+	
+	// When an event happens that could change notification counts for someone (e.g. a user posts a Twarrt with an @mention) 
+	// call this method to do the notification bookkeeping.
+	@discardableResult func addNotifications(users: [UUID], type: NotificationType, on req: Request) -> EventLoopFuture<Void> {
+		var hashFutures: [EventLoopFuture<Int>] 		
+		switch type {
+		case .announcement:
+			// Force cache of active announcementIDs to get rebuilt
+			hashFutures = [req.redis.delete("ActiveAnnouncementIDs")]
+		case .nextFollowedEventTime(let date):
+			// Force cache of active announcementIDs to get rebuilt
+			hashFutures = users.map { userID in
+				if let doubleDate = date?.timeIntervalSince1970 {
+					return req.redis.hset(type.redisFieldName(), to: doubleDate, in: type.redisKeyName(userID: userID)).transform(to: 0)
+				}
+				else {
+					return req.redis.hdel(type.redisFieldName(), from: type.redisKeyName(userID: userID))
+				}
+			}
+		default:
+			hashFutures = users.map { userID in
+				req.redis.hincrby(1, field: type.redisFieldName(), in: type.redisKeyName(userID: userID))
+			}
+		}
+		
+		hashFutures.append(req.redis.sadd(users, to: "UsersWithNotificationStateChange"))
+		return hashFutures.flatten(on: req.eventLoop).transform(to: ())
+		
+		// Send a message to all involved users with open websockets.
+	}
+	
+	// When a twarrt or post with an alertword in it gets edited/deleted and the alertword is removed,
+	// you'll need to call this method to find the users that are looking for that alertword and decreemnt their hit counts.
+	// Differs from subtractNotifications because the list of users to notify is itself stored in Redis.	
+	@discardableResult func subtractAlertwordNotifications(type: NotificationType, minAccess: UserAccessLevel = .quarantined,
+			on req: Request) -> EventLoopFuture<Void> {
+		switch type {
+		case .alertwordTwarrt(let word):
+			return req.redis.smembers(of: "alertwordUsers-\(word)", as: UUID.self).flatMap { userIDOptionals in
+				let userIDs = userIDOptionals.compactMap { $0 }
+				return subtractNotifications(users: userIDs, type: type, on: req)
+			}
+		case .alertwordPost(let word):
+			return req.redis.smembers(of: "alertwordUsers-\(word)", as: UUID.self).flatMap { userIDOptionals in
+				let userIDs = userIDOptionals.compactMap { $0 }
+				let validUserIDs = req.userCache.getUsers(userIDs).compactMap { $0.accessLevel >= minAccess ? $0.userID : nil }
+				return subtractNotifications(users: validUserIDs, type: type, on: req)
+			}
+		default:
+			return req.eventLoop.future()
+		}
+	}
+	
+	// When an event happens that could reduce notification counts for someone (e.g. a user deletes a Twarrt with an @mention) 
+	// call this method to do the notification bookkeeping.
+	@discardableResult func subtractNotifications(users: [UUID], type: NotificationType, subtractCount: Int = 1, on req: Request) -> EventLoopFuture<Void> {
+		var hashFutures: [EventLoopFuture<Int>] = []
+		switch type {
+		case .announcement:
+			// Force cache of active announcementIDs to get rebuilt
+			hashFutures.append(req.redis.delete("ActiveAnnouncementIDs"))
+		default:
+			hashFutures = users.map { userID in
+				req.redis.hincrby(0 - subtractCount, field: type.redisFieldName(), in: type.redisKeyName(userID: userID))
+			}
+		}
+		hashFutures.append(req.redis.sadd(users, to: "UsersWithNotificationStateChange"))
+		return hashFutures.flatten(on: req.eventLoop).transform(to: ())
+	}
+	
+	// When a user leaves a fez or the fez is deleted, delete the unread count for that fez for all participants; it no longer applies.
+	@discardableResult func deleteFezNotifications(userIDs: [UUID], fez: FriendlyFez, on req: Request) throws -> EventLoopFuture<Void> {
+		let futures = try userIDs.map { userID in
+			try req.redis.hdel(fez.requireID().uuidString, from: NotificationType.redisKeyForFez(fez, userID: userID))
+		}
+		return futures.flatten(on: req.eventLoop).transform(to: ())
+	}
+	
+	// Call this when a user adds a new alertword to watch for.
+	@discardableResult func addAlertwordForUser(_ word: String, userID: UUID, on req: Request) -> EventLoopFuture<Void> {
+		req.redis.sadd(userID, to: "alertwordUsers-\(word)").transform(to: ())
+	}
+	
+	// Call this when a user removes one of their alertwords.
+	@discardableResult func removeAlertwordForUser(_ word: String, userID: UUID, on req: Request) -> EventLoopFuture<Void> {
+		req.redis.srem(userID, from: "alertwordUsers-\(word)").transform(to: ())
+	}
+	
+	// When a user does an action that might clear a notification call this to handle bookkeeping.
+	// Actions that could clear notifications: Viewing their @mentions (clears @mention notifications), viewing alert word hits,
+	// viewing announcements, reading seamails.
+	@discardableResult func markNotificationViewed(userID: UUID, type: NotificationType, on req: Request) -> EventLoopFuture<Void> {
+		var hashFuture: EventLoopFuture<Void>
+		switch type {
+		case .announcement(let id): 
+			hashFuture = req.redis.hset(type.redisViewedFieldName(), to: id, in: type.redisKeyName(userID: userID)).transform(to: ())
+		case .twarrtMention: fallthrough
+		case .forumMention: fallthrough		
+		case .alertwordTwarrt: fallthrough
+		case .alertwordPost:
+			hashFuture = req.redis.hget(type.redisFieldName(), from: type.redisKeyName(userID: userID), as: Int.self).flatMap { hitCount in
+				if hitCount == 0 {
+					return req.eventLoop.future()
+				}
+				return req.redis.hset(type.redisViewedFieldName(), to: hitCount, in: type.redisKeyName(userID: userID)).transform(to: ())
+			}
+		case .fezUnreadMsg: fallthrough
+		case .seamailUnreadMsg:
+			hashFuture = req.redis.hset(type.redisFieldName(), to: 0, in: type.redisKeyName(userID: userID)).transform(to: ())
+		case .nextFollowedEventTime: 
+			return req.eventLoop.future()	// Can't be cleared
+		}
+		return hashFuture.and(req.redis.sadd(userID, to: "UsersWithNotificationStateChange")).transform(to: ())
+	}
+	
+	// Calculates the start time of the earliest future followed event. Caches the value in Redis for quick access.
+	func storeNextEventTime(userID: UUID, eventBarrel: Barrel?, on req: Request) -> EventLoopFuture<Date?> {
+		let futureBarrel: EventLoopFuture<Barrel?> = eventBarrel != nil ?  req.eventLoop.future(eventBarrel) :
+				Barrel.query(on: req.db).filter(\.$ownerID == userID).filter(\.$barrelType == .taggedEvent).first()
+		return futureBarrel.flatMap { barrel in
+			guard let eventBarrel = barrel else {
+				return req.eventLoop.future(nil)
+			}
+			let cruiseStartDate = Settings.shared.cruiseStartDate
+			var filterDate = Date()
+			// If the cruise is in the future or more than 10 days in the past, construct a fake date during the cruise week
+			let secondsPerDay = 24 * 60 * 60.0
+			if cruiseStartDate.timeIntervalSinceNow > 0 ||
+				cruiseStartDate.timeIntervalSinceNow < 0 - Double(Settings.shared.cruiseLengthInDays) * secondsPerDay {
+				var filterDateComponents = Calendar.autoupdatingCurrent.dateComponents(in: TimeZone(abbreviation: "EST")!, 
+						from: cruiseStartDate)
+				let currentDateComponents = Calendar.autoupdatingCurrent.dateComponents(in: TimeZone(abbreviation: "EST")!, 
+						from: Date())
+				filterDateComponents.hour = currentDateComponents.hour
+				filterDateComponents.minute = currentDateComponents.minute
+				filterDateComponents.second = currentDateComponents.second
+				filterDate = Calendar.autoupdatingCurrent.date(from: filterDateComponents) ?? Date()
+				if let currentDayOfWeek = currentDateComponents.weekday {
+					let daysToAdd = (7 + currentDayOfWeek - Settings.shared.cruiseStartDayOfWeek) % 7 
+					if let adjustedDate = Calendar.autoupdatingCurrent.date(byAdding: .day, value: daysToAdd, to: filterDate) {
+						filterDate = adjustedDate
+					}
+				}
+			}			
+			return Event.query(on: req.db).filter(\.$id ~~ eventBarrel.modelUUIDs)
+					.filter(\.$startTime > filterDate)
+					.sort(\.$startTime, .ascending)
+					.first()
+					.map { event in
+				addNotifications(users: [userID], type: .nextFollowedEventTime(event?.startTime), on: req)
+				return event?.startTime
 			}
 		}
 	}
 }
-

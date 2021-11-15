@@ -560,19 +560,8 @@ struct UserController: APIRouteCollection {
 			alertWords.append(cleanParam)
 			barrel.userInfo.updateValue(alertWords.sorted(), forKey: "alertWords")
 			return barrel.save(on: req.db).flatMap { (_) in
-				return req.redis.zincrby(1.0, element: cleanParam, in: "alertwords").flatMap { newScore in
-					if newScore == 1.0 {
-						var redisFutures: [EventLoopFuture<Bool>] = []
-						redisFutures.append(req.redis.zadd((element: cleanParam, score: 0.0), to: "alertwords-tweets",
-								inserting: .onlyNewElements, returning: .insertedElementsCount))
-						redisFutures.append(req.redis.zadd((element: cleanParam, score: 0.0), to: "alertwords-posts", 
-								inserting: .onlyNewElements, returning: .insertedElementsCount))
-						redisFutures.append(req.redis.zadd((element: cleanParam, score: 0.0), to: "alertwordTweets-\(userID)", 
-								inserting: .onlyNewElements, returning: .insertedElementsCount))
-						redisFutures.append(req.redis.zadd((element: cleanParam, score: 0.0), to: "alertwordPosts-\(userID)", 
-								inserting: .onlyNewElements, returning: .insertedElementsCount))
-					}
-				
+				return req.redis.zincrby(1.0, element: cleanParam, in: "alertwords")
+						.and(addAlertwordForUser(cleanParam, userID: userID, on: req)).flatMap { _ in			
 					// return sorted list
 					let alertKeywordData = AlertKeywordData(name: barrel.name, keywords: alertWords.sorted())
 					// update cache
@@ -614,7 +603,7 @@ struct UserController: APIRouteCollection {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
         let param = req.parameters.get(alertwordParam.paramString)
-        guard let parameter = param else {
+        guard let parameter = param?.lowercased() else {
         	throw Abort(.badRequest, reason: "No alert word to remove found in request.")
         }
         // get alertwords barrel
@@ -630,13 +619,8 @@ struct UserController: APIRouteCollection {
 			barrel.userInfo.updateValue(alertWords.sorted(), forKey: "alertWords")
 			return barrel.save(on: req.db).flatMap {
 				return req.redis.zincrby(-1.0, element: parameter, in: "alertwords").flatMap { newScore in
-					var redisFutures: [EventLoopFuture<Int>] = []
-					if newScore == 0.0 {
-						redisFutures.append(req.redis.zrem(parameter, from: "alertwords-tweets"))
-						redisFutures.append(req.redis.zrem(parameter, from: "alertwords-posts")) 
-					}
-					redisFutures.append(req.redis.zrem(parameter, from: "alertwordTweets-\(userID)")) 
-					redisFutures.append(req.redis.zrem(parameter, from: "alertwordPosts-\(userID)")) 
+					// Set of users that have an alertword		
+					_ = removeAlertwordForUser(parameter, userID: userID, on: req).transform(to: 0)
 					// return sorted list
 					let alertKeywordData = AlertKeywordData(name: barrel.name, keywords: alertWords.sorted())
 					// update cache

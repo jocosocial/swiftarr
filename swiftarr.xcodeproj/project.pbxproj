@@ -58,6 +58,7 @@
 		EA5BDECF2734B11F0099C150 /* SiteKaraokeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA5BDECE2734B11F0099C150 /* SiteKaraokeController.swift */; };
 		EA5BDED12739F9070099C150 /* SiteFileController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA5BDED02739F9070099C150 /* SiteFileController.swift */; };
 		EA5BDED3273E4AAF0099C150 /* SiteUserRoleMiddleware.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA5BDED2273E4AAF0099C150 /* SiteUserRoleMiddleware.swift */; };
+		EA5BDED5274248580099C150 /* NotificationType.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA5BDED4274248570099C150 /* NotificationType.swift */; };
 		OBJ_2720 /* AdminController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_10 /* AdminController.swift */; };
 		OBJ_2721 /* AlertController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* AlertController.swift */; };
 		OBJ_2722 /* AuthController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* AuthController.swift */; };
@@ -8082,6 +8083,7 @@
 		EA5BDECE2734B11F0099C150 /* SiteKaraokeController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteKaraokeController.swift; sourceTree = "<group>"; };
 		EA5BDED02739F9070099C150 /* SiteFileController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteFileController.swift; sourceTree = "<group>"; };
 		EA5BDED2273E4AAF0099C150 /* SiteUserRoleMiddleware.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteUserRoleMiddleware.swift; sourceTree = "<group>"; };
+		EA5BDED4274248570099C150 /* NotificationType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NotificationType.swift; path = Sources/App/Enumerations/NotificationType.swift; sourceTree = SOURCE_ROOT; };
 		OBJ_10 /* AdminController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminController.swift; sourceTree = "<group>"; };
 		OBJ_100 /* ImageHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageHandler.swift; sourceTree = "<group>"; };
 		OBJ_1000 /* bn_asn1.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = bn_asn1.c; sourceTree = "<group>"; };
@@ -17036,6 +17038,7 @@
 			isa = PBXGroup;
 			children = (
 				OBJ_98 /* APIRouteCollection.swift */,
+				EA5BDED4274248570099C150 /* NotificationType.swift */,
 				OBJ_99 /* ContentFilterable.swift */,
 				OBJ_100 /* ImageHandler.swift */,
 				OBJ_101 /* Reportable.swift */,
@@ -19570,6 +19573,7 @@
 				OBJ_2810 /* SiteForumController.swift in Sources */,
 				OBJ_2811 /* SiteFriendlyFezController.swift in Sources */,
 				OBJ_2812 /* SiteLoginController.swift in Sources */,
+				EA5BDED5274248580099C150 /* NotificationType.swift in Sources */,
 				OBJ_2813 /* SiteModController.swift in Sources */,
 				EA5BDEC627303DE60099C150 /* KaraokeSongs.swift in Sources */,
 				OBJ_2814 /* SiteSeamailController.swift in Sources */,

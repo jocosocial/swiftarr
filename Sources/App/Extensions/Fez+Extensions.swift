@@ -11,3 +11,12 @@ extension FriendlyFez: Reportable {
 	/// No auto quarantine for fezzes.
 	var autoQuarantineThreshold: Int { Int.max }
 }
+
+extension FriendlyFez {
+	func notificationType() throws -> NotificationType {
+		if fezType == .closed {
+			return try .seamailUnreadMsg(requireID())
+		}
+		return try .fezUnreadMsg(requireID())
+	}
+}

@@ -287,12 +287,12 @@ extension Request {
 			}
 		}
 		
-		func getHeaders(_ userIDs: [UUID]) -> [UserHeader] {
-			let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
-			let users = cacheLock.withLock({
-				userIDs.compactMap { request.application.userCacheStorage.usersByID[$0] }
-			})
-			return users.map { $0.makeHeader() }
+		func getHeaders<IDs: Collection>(_ userIDs: IDs) -> [UserHeader] where IDs.Element == UUID {
+			return getUsers(userIDs).map { $0.makeHeader() }
+		}
+		
+		func getHeaders<Names: Collection>(usernames: Names) -> [UserHeader] where Names.Element == String {
+			return getUsers(usernames: usernames).map { $0.makeHeader() }
 		}
 		
 // MARK: Blocks
@@ -326,6 +326,22 @@ extension Request {
 				request.application.userCacheStorage.usersByToken[token]
 			}
 			return cacheResult
+		}
+		
+		func getUsers<IDs: Collection>(_ userIDs: IDs) -> [UserCacheData] where IDs.Element == UUID {
+			let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
+			let users = cacheLock.withLock({
+				userIDs.compactMap { request.application.userCacheStorage.usersByID[$0] }
+			})
+			return users
+		}
+		
+		func getUsers<Names: Collection>(usernames: Names) -> [UserCacheData] where Names.Element == String {
+			let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
+			let users = cacheLock.withLock({
+				usernames.compactMap { request.application.userCacheStorage.usersByName[$0] }
+			})
+			return users
 		}
 		
 // MARK: updating		

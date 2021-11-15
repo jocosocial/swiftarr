@@ -55,9 +55,8 @@ final class Announcement: Model {
     /// - Parameters:
     ///   - author: The author of the Announcement.
     ///   - text: The text content of the Announcement.
-    init(author: User, text: String, displayUntil: Date) throws {
-        self.$author.id = try author.requireID()
-        self.$author.value = author
+    init(authorID: UUID, text: String, displayUntil: Date) {
+        self.$author.id = authorID
         // We don't do much text manipulation on input, but let's normalize line endings.
         self.text = text.replacingOccurrences(of: "\r\n", with: "\r")
         self.displayUntil = displayUntil
