@@ -1,7 +1,7 @@
 <div class="row mb-2">
 	<ul class="nav nav-tabs">
 		<li class="nav-item">
-			<a class="nav-link disabled"><b>Friendly Fez</b></a>
+			<a class="nav-link#if(tab == "faq"): active#endif" #if(tab == "find"):aria-current="page"#endif href="/fez/faq"><b>LFG</b></a>
 		</li>
 		<li class="nav-item">
 			<a class="nav-link#if(tab == "find"): active#endif" #if(tab == "find"):aria-current="page"#endif href="/fez">Find</a>

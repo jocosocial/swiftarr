@@ -6,7 +6,7 @@
 				#if(count(fezzes) == 0):
 					<div class="row">
 						<div class="col">
-							<li class="list-group-item">You haven't joined any Friendly Fezzes yet, but you can find some using the Find tab, or create a new one in the Owned tab.</li>
+							<li class="list-group-item">You haven't joined any Looking For Groups yet, but you can find some using the Find tab, or create a new one in the Owned tab.</li>
 						</div>
 					</div>
 				#else:

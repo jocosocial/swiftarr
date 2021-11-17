@@ -10,7 +10,7 @@
 				#if(fez.cancelled):
 					<div class="row mb-3">
 						<div class="col text-danger text-center">
-							<b>This Fez has been cancelled. Updating the fez will un-cancel it.</b>
+							<b>This LFG has been cancelled. Updating the LFG will un-cancel it.</b>
 						</div>
 					</div>
 				#endif
@@ -116,17 +116,17 @@
 			<div class="modal-dialog">
 				<div class="modal-content">
 					<div class="modal-header">
-						<h5 class="modal-title" id="locationModalTitle">About Fez Locations</h5>
+						<h5 class="modal-title" id="locationModalTitle">About LFG Locations</h5>
 						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 					</div>
 					<div class="modal-body">
 						<ol>
-							<li>Fezzes are not a reservation system. You can't claim a room or even a table by scheduling a Fez there.</li>
-							<li>Don't set up a Fez in a room used for Official or Shadow Events.</li>
-							<li>Don't try to get around Item 2 by scheduling your Fez in an Event room at a time when the Official Schedule 
+							<li>LFGs are not a reservation system. You can't claim a room or even a table by scheduling an LFG there.</li>
+							<li>Don't set up an LFG in a room used for Official or Shadow Events.</li>
+							<li>Don't try to get around Item 2 by scheduling your LFG in an Event room at a time when the Official Schedule 
 								doesn't list anything happening there. Event rooms are often used for official things even when not running a listed event.</li>
-							<li>Sometimes places fill up; have backup plans. If you schedule a "Drink Like a Pirate" fez at a bar
-								onboard, and that bar's full at the appointed time, you can message the fez members to relocate.</li>
+							<li>Sometimes places fill up; have backup plans. If you schedule a "Drink Like a Pirate" LFG at a bar
+								onboard, and that bar's full at the appointed time, you can message the LFG members to relocate.</li>
 						</ol>
 					</div>
 					<div class="modal-footer">

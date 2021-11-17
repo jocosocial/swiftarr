@@ -48,7 +48,7 @@
 			</div>
 			<div class="list-group">
 				#if(count(fezzes) == 0):
-					<li class="list-group-item">No Fezzes match the current filters.</li>
+					<li class="list-group-item">No LFG posts match the current filters.</li>
 				#else:
 					#for(fez in fezzes):
 						#extend("Fez/fezListItem")

@@ -89,6 +89,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
         globalRoutes.get("joined", use: joinedFezPageHandler)
         globalRoutes.get("owned", use: ownedFezPageHandler)
         globalRoutes.get("", fezIDParam, use: singleFezPageHandler)
+        globalRoutes.get("faq", use: fezFAQHandler)
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let privateRoutes = getPrivateRoutes(app).grouped("fez").grouped(DisabledSiteSectionMiddleware(feature: .friendlyfez))
@@ -118,7 +119,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 // MARK: - FriendlyFez
 
 	enum FezTab: String, Codable {
-		case find, joined, owned
+		case faq, find, joined, owned
 	}
 
 	// GET /fez
@@ -144,6 +145,23 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 			let ctx = try FezRootPageContext(req, fezzes: fezzes)
 			return req.view.render("Fez/fezRoot", ctx)
 		}
+	}
+	
+	// GET /fez/faq
+	//
+	// Shows a FAQ page for Fezzes.
+	func fezFAQHandler(_ req: Request) throws -> EventLoopFuture<View> {
+		struct FezFAQPageContext : Encodable {
+			var trunk: TrunkContext
+			var tab: FezTab
+			
+			init(_ req: Request) throws {
+				trunk = .init(req, title: "Looking For Group", tab: .none)
+				tab = .faq
+			}
+		}
+		let ctx = try FezFAQPageContext(req)
+		return req.view.render("Fez/fezFAQ", ctx)
 	}
 	
 	// GET /fez/joined

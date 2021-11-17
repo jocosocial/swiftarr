@@ -4,7 +4,7 @@
     		<div class="row">
 				<nav aria-label="breadcrumb">
 				  <ol class="breadcrumb">
-					<li class="breadcrumb-item"><a href="/fez">Friendly Fez</a></li>
+					<li class="breadcrumb-item"><a href="/fez">LFG</a></li>
 					<li class="breadcrumb-item"><a href="/fez/#(fez.fezID)">#(fez.title)</a></li>
 					<li class="breadcrumb-item" aria-current="page">Manage Members</li>
 				  </ol>
@@ -97,7 +97,7 @@
 						</div>
 					</div>
 					<div class="row">
-						<div class="col"><i>Enter partial username above, then tap search matches below to add to fez</i></div>
+						<div class="col"><i>Enter partial username above, then tap search matches below to add to the LFG.</i></div>
 					</div>
 					<ul class="row list-group mb-2 mx-0" id="name_suggestions">
 					</ul>
@@ -114,10 +114,10 @@
 					</div>
 					<div class="modal-body">
 						<ol>
-							<li>Don't just add random people to your fez. It's not nice.</li>
-							<li>If you add people to your fez, those people should already expect to be added.</li>
+							<li>Don't just add random people to your LFG. It's not nice.</li>
+							<li>If you add people to your LFG, those people should already expect to be added.</li>
 							<li>Same idea with removing people: those removed should know why. Don't remove people who signed up just to bump your friend off the waitlist.</li>
-							<li>If you schedule a "Drink Like a Pirate" fez and someone joins and asks if they can come as a ninja instead,
+							<li>If you schedule a "Drink Like a Pirate" LFG and someone joins and asks if they can come as a ninja instead,
 							you may tell them it's more of a pirate thing and you may need to remove them to make room for more pirate participants.</li>
 						</ol>
 					</div>
