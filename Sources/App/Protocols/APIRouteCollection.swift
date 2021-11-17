@@ -97,18 +97,18 @@ extension APIRouteCollection {
 	// for that alertword and increment each of their hit counts. Differs from addNotifications because the list
 	// of users to notify is itself stored in Redis.
 	@discardableResult func addAlertwordNotifications(type: NotificationType, minAccess: UserAccessLevel = .quarantined,
-			on req: Request) -> EventLoopFuture<Void> {
+			info: String, on req: Request) -> EventLoopFuture<Void> {
 		switch type {
 		case .alertwordTwarrt(let word):
 			return req.redis.smembers(of: "alertwordUsers-\(word)", as: UUID.self).flatMap { userIDOptionals in
 				let userIDs = userIDOptionals.compactMap { $0 }
-				return addNotifications(users: userIDs, type: type, on: req)
+				return addNotifications(users: userIDs, type: type, info: "Your alert word '\(word)", on: req)
 			}
 		case .alertwordPost(let word):
 			return req.redis.smembers(of: "alertwordUsers-\(word)", as: UUID.self).flatMap { userIDOptionals in
 				let userIDs = userIDOptionals.compactMap { $0 }
 				let validUserIDs = req.userCache.getUsers(userIDs).compactMap { $0.accessLevel >= minAccess ? $0.userID : nil }
-				return addNotifications(users: validUserIDs, type: type, on: req)
+				return addNotifications(users: validUserIDs, type: type, info: info, on: req)
 			}
 		default:
 			return req.eventLoop.future()
@@ -117,8 +117,14 @@ extension APIRouteCollection {
 	
 	// When an event happens that could change notification counts for someone (e.g. a user posts a Twarrt with an @mention) 
 	// call this method to do the notification bookkeeping.
-	@discardableResult func addNotifications(users: [UUID], type: NotificationType, on req: Request) -> EventLoopFuture<Void> {
-		var hashFutures: [EventLoopFuture<Int>] 		
+	// 
+	// The users array should be pre-filtered to include only those who can actually see the new content (that is, not
+	// blocking or muting it, or not in the group that receives the content).
+	//
+	// Adding a new notification will also send out an update to all relevant users who are listening on notification sockets. 
+	@discardableResult func addNotifications(users: [UUID], type: NotificationType, info: String, on req: Request) -> EventLoopFuture<Void> {
+		var hashFutures: [EventLoopFuture<Int>]
+		var forwardToSockets = true	
 		switch type {
 		case .announcement:
 			// Force cache of active announcementIDs to get rebuilt
@@ -133,16 +139,29 @@ extension APIRouteCollection {
 					return req.redis.hdel(type.redisFieldName(), from: type.redisKeyName(userID: userID))
 				}
 			}
+			forwardToSockets = false
 		default:
 			hashFutures = users.map { userID in
 				req.redis.hincrby(1, field: type.redisFieldName(), in: type.redisKeyName(userID: userID))
 			}
 		}
-		
+
+		if forwardToSockets {
+			// Send a message to all involved users with open websockets.
+			let socketeers = req.webSocketStore.getSockets(users)
+			if socketeers.count > 0 {
+				let msgStruct = SocketNotificationData(type, info: info)
+				if let jsonData = try? JSONEncoder().encode(msgStruct), let jsonDataStr = String(data: jsonData, encoding: .utf8) {
+					socketeers.forEach { userSocket in
+						userSocket.socket.send(jsonDataStr)
+					}
+				}
+			}
+		}
+
 		hashFutures.append(req.redis.sadd(users, to: "UsersWithNotificationStateChange"))
 		return hashFutures.flatten(on: req.eventLoop).transform(to: ())
 		
-		// Send a message to all involved users with open websockets.
 	}
 	
 	// When a twarrt or post with an alertword in it gets edited/deleted and the alertword is removed,
@@ -263,7 +282,7 @@ extension APIRouteCollection {
 					.sort(\.$startTime, .ascending)
 					.first()
 					.map { event in
-				addNotifications(users: [userID], type: .nextFollowedEventTime(event?.startTime), on: req)
+				addNotifications(users: [userID], type: .nextFollowedEventTime(event?.startTime), info: "", on: req)
 				return event?.startTime
 			}
 		}

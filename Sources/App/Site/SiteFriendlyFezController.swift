@@ -2,21 +2,6 @@ import Vapor
 import Crypto
 import FluentSQL
 
-// FezPostData, modified to be easier for Leaf
-struct LeafFezPostData: Codable {
-	var postID: Int
-	var author: UserHeader
-	var text: String
-	var timestamp: Date
-	
-	init(post: FezPostData, author: UserHeader) {
-		self.postID = post.postID
-		self.author = author
-		self.text = post.text
-		self.timestamp = post.timestamp
-	}
-}
-
 // Form data from the Create/Update Fez form
 struct CreateFezPostFormContent: Codable {
 	var subject: String
@@ -99,33 +84,35 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 
 	func registerRoutes(_ app: Application) throws {
 		// Routes that require login but are generally 'global' -- Two logged-in users could share this URL and both see the content
-		let globalRoutes = getGlobalRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .friendlyfez))
-        globalRoutes.get("fez", use: fezRootPageHandler)
-        globalRoutes.get("fez", "joined", use: joinedFezPageHandler)
-        globalRoutes.get("fez", "owned", use: ownedFezPageHandler)
-        globalRoutes.get("fez", fezIDParam, use: singleFezPageHandler)
+		let globalRoutes = getGlobalRoutes(app).grouped("fez").grouped(DisabledSiteSectionMiddleware(feature: .friendlyfez))
+        globalRoutes.get("", use: fezRootPageHandler)
+        globalRoutes.get("joined", use: joinedFezPageHandler)
+        globalRoutes.get("owned", use: ownedFezPageHandler)
+        globalRoutes.get("", fezIDParam, use: singleFezPageHandler)
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
-		let privateRoutes = getPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .friendlyfez))
-        privateRoutes.get("fez", "create", use: fezCreatePageHandler)
-        privateRoutes.get("fez", fezIDParam, "update", use: fezUpdatePageHandler)
-        privateRoutes.get("fez", fezIDParam, "edit", use: fezUpdatePageHandler)
-        privateRoutes.post("fez", "create", use: fezCreateOrUpdatePostHandler)
-        privateRoutes.post("fez", fezIDParam, "update", use: fezCreateOrUpdatePostHandler)
+		let privateRoutes = getPrivateRoutes(app).grouped("fez").grouped(DisabledSiteSectionMiddleware(feature: .friendlyfez))
+        privateRoutes.get("create", use: fezCreatePageHandler)
+        privateRoutes.get(fezIDParam, "update", use: fezUpdatePageHandler)
+        privateRoutes.get(fezIDParam, "edit", use: fezUpdatePageHandler)
+        privateRoutes.post("create", use: fezCreateOrUpdatePostHandler)
+        privateRoutes.post(fezIDParam, "update", use: fezCreateOrUpdatePostHandler)
         
-        privateRoutes.post("fez", fezIDParam, "join", use: fezJoinPostHandler)
-        privateRoutes.post("fez", fezIDParam, "leave", use: fezLeavePostHandler)
-        privateRoutes.post("fez", fezIDParam, "post", use: fezThreadPostHandler)
-        privateRoutes.post("fez", fezIDParam, "cancel", use: fezCancelPostHandler)
-		privateRoutes.get("fez", "report", fezIDParam, use: fezReportPageHandler)
-		privateRoutes.post("fez", "report", fezIDParam, use: fezReportPostHandler)
-		privateRoutes.get("fez", fezIDParam, "members", use: fezMembersPageHandler)
-        privateRoutes.post("fez", fezIDParam, "members", "add", userIDParam, use: fezAddUserPostHandler)
-        privateRoutes.post("fez", fezIDParam, "members", "remove", userIDParam, use: fezRemoveUserPostHandler)
+        privateRoutes.post(fezIDParam, "join", use: fezJoinPostHandler)
+        privateRoutes.post(fezIDParam, "leave", use: fezLeavePostHandler)
+        privateRoutes.post(fezIDParam, "post", use: fezThreadPostHandler)
+        privateRoutes.post(fezIDParam, "cancel", use: fezCancelPostHandler)
+		privateRoutes.get("report", fezIDParam, use: fezReportPageHandler)
+		privateRoutes.post("report", fezIDParam, use: fezReportPostHandler)
+		privateRoutes.get(fezIDParam, "members", use: fezMembersPageHandler)
+        privateRoutes.post(fezIDParam, "members", "add", userIDParam, use: fezAddUserPostHandler)
+        privateRoutes.post(fezIDParam, "members", "remove", userIDParam, use: fezRemoveUserPostHandler)
 		
+		privateRoutes.webSocket(fezIDParam, "socket", onUpgrade: createFezSocket) 
+
 		// Mods only
-		privateRoutes.post("fez", fezIDParam, "delete", use: fezDeleteHandler)
-		privateRoutes.delete("fez", fezIDParam, use: fezDeleteHandler)
+		privateRoutes.post(fezIDParam, "delete", use: fezDeleteHandler)
+		privateRoutes.delete(fezIDParam, use: fezDeleteHandler)
 	}
 	
 // MARK: - FriendlyFez
@@ -285,9 +272,9 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 			struct FezPageContext : Encodable {
 				var trunk: TrunkContext
 				var fez: FezData
-    			var oldPosts: [LeafFezPostData]
+    			var oldPosts: [SocketFezPostData]
     			var showDivider: Bool
-    			var newPosts: [LeafFezPostData]
+    			var newPosts: [SocketFezPostData]
      			var post: MessagePostContext
 				
 				init(_ req: Request, fez: FezData) throws {
@@ -303,12 +290,12 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 							let post = posts[index]
 							if index < members.readCount {
 								if let author = participantDictionary[post.authorID] {
-									oldPosts.append(LeafFezPostData(post: post, author: author))
+									oldPosts.append(SocketFezPostData(post: post, author: author))
 								}
 							}
 							else {
 								if let author = participantDictionary[post.authorID] {
-									newPosts.append(LeafFezPostData(post: post, author: author))
+									newPosts.append(SocketFezPostData(post: post, author: author))
 								}
 							}
 						} 
@@ -321,6 +308,30 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		}
 	}
 	
+	// WS /fez/:fez_ID/socket
+	//
+	// Opens a WebSocket that receives updates on the given Fez. This websocket is intended for use by the
+	// web client and updates are in the form of HTML fragments.
+	// There are no messages intended to be sent from the client of this socket. Although this socket sends HTML for
+	// new posts to the client, new posts *created* by the client should use the regular POST method.
+	func createFezSocket(_ req: Request, _ ws: WebSocket) {
+		guard let user = try? req.auth.require(UserCacheData.self) else {
+			_ = ws.close()
+			return
+		}
+		_ = FriendlyFez.findFromParameter(fezIDParam, on: req).map { fez in
+			guard fez.participantArray.contains(user.userID), let fezID = try? fez.requireID() else {
+				_ = ws.close()
+				return
+			}
+			let userSocket = UserSocket(userID: user.userID, socket: ws, fezID: fezID, htmlOutput: true)
+			try? req.webSocketStore.storeFezSocket(userSocket)
+
+			ws.onClose.whenComplete { result in
+				try? req.webSocketStore.removeFezSocket(userSocket)
+			}
+		}
+	}
 	
 	// POST /fez/ID/post
 	//

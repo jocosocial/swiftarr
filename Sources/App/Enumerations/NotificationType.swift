@@ -34,16 +34,26 @@ import Redis
 /// - Next Event Time: Never gets deleted, but can get expired when the current time is > the event time.
 /// 	
 enum NotificationType {
+	/// An app-wide announcement. Associated value is the ID of the announcement.
 	case announcement(Int)
+	/// A new message posted to a fez. Associated value is the ID of the fez. (NOT the id of the new message).
 	case fezUnreadMsg(UUID)
+	/// A new message posted to a fez. Associated value is the ID of the fez. (NOT the id of the new message).
 	case seamailUnreadMsg(UUID)
+	/// A twarrt has been posted that contained a word that a user was alerting on. Associated value is the alert word that matched.
+	/// Could also happen if an existing twarrt was edited, and the edit adds the alert word to the text.
 	case alertwordTwarrt(String)
+	/// A new forum post that contains a word that a user was alerting on. Associated value is the alert word that matched.
+	/// Could also happen if an existing post was edited, and the edit adds the alert word to the text.
 	case alertwordPost(String)
+	/// A new or edited twarrt that now @mentions a user. 
 	case twarrtMention
+	/// A new or edited forum post that now @mentions a user.
 	case forumMention
+	/// A new or edited forum post that now @mentions a user.
 	case nextFollowedEventTime(Date?)
 	
-	// Returns the hash field name used to store info about this notification type in Redis.
+	/// Returns the hash field name used to store info about this notification type in Redis.
 	func redisFieldName() -> String {
 		switch self {
 			case .announcement: return "announcement"
@@ -57,13 +67,12 @@ enum NotificationType {
 		}
 	}
 	
-	// Some notification types store both 'current counts' and 'viewed counts'. Thie builds the Redis field name
-	// for the viewed counts.
+	/// Some notification types store both 'current counts' and 'viewed counts'. Thie builds the Redis field name for the viewed counts.
 	func redisViewedFieldName() -> String {
 		return redisFieldName() + "_viewed"
 	}
 	
-	// Returns the Redis Key used to store info about this notification type in Redis.
+	/// Returns the Redis Key used to store info about this notification type in Redis.
 	func redisKeyName(userID: UUID) -> RedisKey {
 		switch self {
 			case .announcement: return "NotificationHash-\(userID)"
@@ -77,28 +86,14 @@ enum NotificationType {
 		}
 	}
 	
-	// The global notificaiton method pulls all the notification data out of this key and builds its data transfer struct from it. 
+	/// The global notificaiton method pulls all the notification data out of this key and builds its data transfer struct from it. 
 	static func redisHashKeyForUser(_ userID: UUID) -> RedisKey {
 		 return "NotificationHash-\(userID)"
 	}
 	
-	// A shortcut method to get the RedisKey to use to store notification data about a fez.
+	/// A shortcut method to get the RedisKey to use to store notification data about a fez.
 	static func redisKeyForFez(_ fez: FriendlyFez, userID: UUID) throws -> RedisKey {
 		return try fez.fezType == .closed ? NotificationType.seamailUnreadMsg(fez.requireID()).redisKeyName(userID: userID) :
 				NotificationType.fezUnreadMsg(fez.requireID()).redisKeyName(userID: userID)
 	}
 }
-
-
-/* WebSockets
-	WS routes must be API-level, authed with token. Unlikely we'll allow sockets for unauthed.
-	
-	new+active announcements
-	new+total twarrt mentions
-	new+total forum mentions
-	new semail messages
-	new fez messages
-	for each alertword: twarrt and forum new+total mention counts
-	
-	disabled features, global
- */

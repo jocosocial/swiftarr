@@ -326,7 +326,13 @@ function submitAJAXForm(formElement, event) {
 	req.onload = function() {
 		if (this.status < 300) {
 			let successURL = formElement.dataset.successurl;
-			if (successURL) {
+			if (successURL == "reset") {
+				formElement.reset();
+				for (let elem of formElement.querySelectorAll('textarea')) {
+					elem.value = "";
+				}
+			}
+			else if (successURL) {
 				location.assign(successURL);
 			}
 			else {

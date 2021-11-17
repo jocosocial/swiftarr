@@ -1222,7 +1222,12 @@ extension ForumController {
 			let addUUIDs = req.userCache.getUsers(usernames: adds).compactMap { 
 				$0.accessLevel.hasAccess(forum.accessLevelToView) ? $0.userID : nil
 			}
-			futures.append(addNotifications(users: addUUIDs, type: .forumMention, on: req))
+			var authorText = "A user"
+			if let authorName = req.userCache.getUser(post.$author.id)?.username {
+				authorText = "User @\(authorName)"
+			}
+			let infoStr = "\(authorText) wrote a forum post that @mentioned you."
+			futures.append(addNotifications(users: addUUIDs, type: .forumMention, info: infoStr, on: req))
 		}
 // Alertwords
 		let (alertSubtracts, alertAdds) = post.getAlertwordDiffs(editedString: editedText, isCreate: isCreate)
@@ -1234,8 +1239,16 @@ extension ForumController {
 			subtractingAlertWords.forEach { word in
 				wordFutures.append(subtractAlertwordNotifications(type: .alertwordPost(word), minAccess: forum.accessLevelToView, on: req))
 			}
-			addingAlertWords.forEach { word in
-				wordFutures.append(addAlertwordNotifications(type: .alertwordPost(word), minAccess: forum.accessLevelToView, on: req))
+			if addingAlertWords.count > 0 {
+				var authorText = "A user"
+				if let authorName = req.userCache.getUser(post.$author.id)?.username {
+					authorText = "User @\(authorName)"
+				}
+				addingAlertWords.forEach { word in
+					let infoStr = "\(authorText) wrote a forum post containing your alert word '\(word)'."
+					wordFutures.append(addAlertwordNotifications(type: .alertwordPost(word), minAccess: forum.accessLevelToView,
+							info: infoStr, on: req))
+				}
 			}
 			return wordFutures.flatten(on: req.eventLoop).transform(to: ())
 		})

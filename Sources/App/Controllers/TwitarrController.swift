@@ -773,7 +773,9 @@ extension TwitarrController {
 		}
 		if !adds.isEmpty {
 			let addUUIDs = req.userCache.getHeaders(usernames: adds).map { $0.userID }
-			mentionsFutures.append(addNotifications(users: addUUIDs, type: .twarrtMention, on: req))
+			let authorName = req.userCache.getUser(twarrt.$author.id)?.username
+			let infoStr = "\(authorName == nil ? "A user" : "User @\(authorName!)") posted a twarrt that @mentioned you."
+			mentionsFutures.append(addNotifications(users: addUUIDs, type: .twarrtMention, info: infoStr, on: req))
 		}
 		
 		// Alert words check
@@ -786,8 +788,12 @@ extension TwitarrController {
 			subtractingAlertWords.forEach { word in
 				futures.append(subtractAlertwordNotifications(type: .alertwordTwarrt(word), on: req))
 			}
-			addingAlertWords.forEach { word in
-				futures.append(addAlertwordNotifications(type: .alertwordTwarrt(word), on: req))
+			if addingAlertWords.count > 0 {
+				let authorName = req.userCache.getUser(twarrt.$author.id)?.username
+				addingAlertWords.forEach { word in
+					let infoStr = "\(authorName == nil ? "A user" : "User @\(authorName!)") posted a twarrt containing your alert word '\(word)'."
+					futures.append(addAlertwordNotifications(type: .alertwordTwarrt(word), info: infoStr, on: req))
+				}
 			}
 			return futures.flatten(on: req.eventLoop).transform(to: ())
 		}

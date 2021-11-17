@@ -1,0 +1,101 @@
+import Vapor
+import FluentSQL
+
+/// FezPostData, modified to be easier for sockets.
+/// 
+/// Fez and Seamail socket clients will receive this message as a JSON string when a user posts in the fez/seamail. Posts made by a user
+/// will be reflected back to them via this socket. If a user is logged on from 2 clients and both have open sockets, both clients will see the
+/// socket message when the user posts a new message from one of the clients.
+/// Each struct contains the UserHeader of the poster instead of the author's UUID; this way clients (okay, the javascript web client) can
+/// format the post without additional requests.
+/// 
+/// Note: Fezzes have other state changes that don't currently have websocket notifications. Your socket message handler should gracefully
+/// handle the possibility that you receive a message that doesn't fit any of the currently documented message structs.
+/// 
+/// See:
+/// * `WS /api/v3/fez/:fezID/socket`
+struct SocketFezPostData: Content {
+	var postID: Int
+	var author: UserHeader
+	var text: String
+	var timestamp: Date
+	var image: String?
+}
+
+extension SocketFezPostData {	
+	init(post: FezPostData, author: UserHeader) {
+		self.postID = post.postID
+		self.author = author
+		self.text = post.text
+		self.timestamp = post.timestamp
+		self.image = post.image
+	}
+	
+	init(post: FezPost, author: UserHeader) throws {
+		self.postID = try post.requireID()
+		self.author = author
+		self.text = post.text
+		self.timestamp = post.createdAt ?? Date()
+		self.image = post.image
+	}
+}
+
+/// Informs Fez WebSocket clients of a change in Fez membership.
+/// 
+/// If joined is FALSE, the user has left the fez. Although seamail sockets use the same endpoint (seamail threads are Fezzes internally),
+/// this mesage will never be sent to Seamail threads as membership is fixed at creation time.
+/// 
+/// Fez socket message handlers will receive this message as a JSON string when a user joins/leaves the fez, or is added/removed by the fez owner.
+/// 
+/// See:
+/// * `WS /api/v3/fez/:fezID/socket`
+struct SocketFezMemberChangeData: Content {
+	var user: UserHeader
+	var joined: Bool
+}
+
+/// Informs Notification WebSocket clients of a new notification.
+/// 
+/// Each notification is delivered as a JSON string, containing a type of announcement and a string appropriate for displaying to the user.
+/// The string will be of the form, "User @authorName wrote a forum post that mentioned you."
+struct SocketNotificationData: Content {
+	enum NotificationTypeData: Content {
+		/// A server-wide announcement has just been added.
+		case announcement
+		/// A participant in a Fez the user is a member of has posted a new message.
+		case fezUnreadMsg
+		/// A participant in a Seamail thread the user is a member of has posted a new message.
+		case seamailUnreadMsg
+		/// A user has posted a Twarrt that contains a word this user has set as an alertword.
+		case alertwordTwarrt
+		/// A user has posted a Forum Post that contains a word this user has set as an alertword.
+		case alertwordPost
+		/// A user has posted a Twarrt that @mentions this user.
+		case twarrtMention
+		/// A user has posted a Forum Post that @mentions this user.
+		case forumMention
+		/// An event the user is following is about to start. NOT CURRENTLY IMPLEMENTED. Plan is to add support for this as a bulk process that runs every 30 mins
+		/// at :25 and :55, giving all users following an event about to start a notification 5 mins before the event start time.
+		case followedEventStarting
+	}
+	/// The type of event that happened. See <doc:SocketNotificationData.NotificationTypeData> for values.
+	var type: NotificationTypeData
+	/// A string describing what happened, suitable for adding to a notification alert.
+	var info: String 
+}
+
+extension SocketNotificationData {
+	init(_ type: NotificationType, info: String) {
+		switch type {
+			case .announcement: self.type = .announcement
+			case .fezUnreadMsg: self.type = .fezUnreadMsg
+			case .seamailUnreadMsg: self.type = .seamailUnreadMsg
+			case .alertwordTwarrt: self.type = .alertwordTwarrt
+			case .alertwordPost: self.type = .alertwordPost
+			case .twarrtMention: self.type = .twarrtMention
+			case .forumMention: self.type = .forumMention
+			case .nextFollowedEventTime: self.type = .followedEventStarting
+		}
+		self.info = info
+	}
+}

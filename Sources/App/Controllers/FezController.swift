@@ -37,7 +37,9 @@ struct FezController: APIRouteCollection {
 		tokenAuthGroup.post("post", fezPostIDParam, "report", use: reportFezPostHandler)
         tokenAuthGroup.post(fezIDParam, "delete", use: fezDeleteHandler)
         tokenAuthGroup.delete(fezIDParam, use: fezDeleteHandler)
-    }
+ 
+ 		tokenAuthGroup.webSocket(fezIDParam, "socket", onUpgrade: createFezSocket) 
+   }
         
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
@@ -259,6 +261,7 @@ struct FezController: APIRouteCollection {
 					newParticipant.readCount = 0; 
 					newParticipant.hiddenCount = hiddenPostCount 
 					return newParticipant.save(on: req.db).flatMapThrowing {
+						try forwardMembershipChangeToSockets(fez, user: user, joined: true, on: req)
 						let fezData = try buildFezData(from: fez, with: newParticipant, for: user.requireID(), on: req)
 						// return with 201 status
 						let response = Response(status: .created)
@@ -291,6 +294,7 @@ struct FezController: APIRouteCollection {
 			}
 			return fez.save(on: req.db).and(fez.$participants.detach(user, on: req.db)).flatMapThrowing { (_) in
 				try deleteFezNotifications(userIDs: [userID], fez: fez, on: req)
+				try forwardMembershipChangeToSockets(fez, user: user, joined: false, on: req)
 				return try buildFezData(from: fez, with: nil, for: user.requireID(), on: req)
 			}
 		}
@@ -358,8 +362,12 @@ struct FezController: APIRouteCollection {
 					}
 				}
 				return saveFutures.flatten(on: req.eventLoop).throwingFlatMap {
-					_ = try addNotifications(users: participantNotifyList, type: fez.fezType == .closed ? 
-							.seamailUnreadMsg(fez.requireID()) : .fezUnreadMsg(fez.requireID()), on: req)
+					var infoStr = "@\(user.username) wrote, \"\(post.text)\""
+					if fez.fezType != .closed {
+						infoStr.append(" in LFG \"\(fez.title)\".")
+					}
+					try addNotifications(users: participantNotifyList, type: fez.notificationType(), info: infoStr, on: req)
+					try forwardPostToSockets(fez, post, on: req)
 					return try buildPostsForFez(fez.requireID(), on: req, userBlocks: cacheUser.getBlocks(), 
 							userMutes: cacheUser.getMutes())
 							.and(getUserPivot(fez: fez, userID: cacheUser.userID, on: req.db)).flatMapThrowing { (posts, pivot) in
@@ -378,7 +386,7 @@ struct FezController: APIRouteCollection {
 			}
 		}
 	}
-						
+							
     /// `POST /api/v3/fez/post/ID/delete`
     ///
     /// Delete a `FezPost`.
@@ -650,6 +658,7 @@ struct FezController: APIRouteCollection {
 					newParticipant.readCount = 0; 
 					newParticipant.hiddenCount = hiddenPostCount 
 					return newParticipant.save(on: req.db).flatMapThrowing {
+						try forwardMembershipChangeToSockets(fez, user: user, joined: true, on: req)
 						return try buildFezData(from: fez, with: newParticipant, for: requesterID, on: req)
 					}
 				}
@@ -657,7 +666,7 @@ struct FezController: APIRouteCollection {
         }
     }
     
-    /// `POST /api/v3/fez/ID/user/ID/remove`
+    /// `POST /api/v3/fez/ID/user/:userID/remove`
     ///
     /// Remove the specified `User` from the specified FriendlyFez barrel. This lets a fez owner remove others.
     ///
@@ -682,10 +691,10 @@ struct FezController: APIRouteCollection {
 				throw Abort(.badRequest, reason: "user is not in fez")
 			}
 			fez.participantArray.remove(at: index)
-			return fez.save(on: req.db)
-				.and(fez.$participants.detach(user, on: req.db))
-				.flatMapThrowing { (_) in
-					return try buildFezData(from: fez, with: nil, for: requesterID, on: req)
+			return fez.save(on: req.db).and(fez.$participants.detach(user, on: req.db)).flatMapThrowing { (_) in
+				try deleteFezNotifications(userIDs: [userID], fez: fez, on: req)
+				try forwardMembershipChangeToSockets(fez, user: user, joined: false, on: req)
+				return try buildFezData(from: fez, with: nil, for: requesterID, on: req)
 			}
 		}
 	}
@@ -709,8 +718,93 @@ struct FezController: APIRouteCollection {
         	return try reportedFez.fileReport(submitter: submitter, submitterMessage: data.message, on: req)
 		}
     }
-}
 
+// MARK: - Socket Functions
+
+	/// `WS /api/v3/fez/:fezID/socket`
+	/// 
+	/// Opens a websocket to receive updates on the given fez. At the moment there's only 2 messages that the client may receive:
+	/// - <doc:SocketFezPostData> - sent when a post is added to the fez.
+	/// - <doc:SocketMemberChangeData> - sent when a member joins/leaves the fez.
+	/// 
+	/// Note that there's a bunch of other state change that can happen with a fez; I haven't built out code to send socket updates for them.
+	/// The socket returned by this call is only intended for receiving updates; there are no client-initiated messages defined for this socket.
+	/// Posting messages, leaving the fez, updating or canceling the fez and any other state changes should be performed using the various
+	/// POST methods of this controller.
+	/// 
+	/// The server validates membership before sending out each socket message, but be sure to close the socket if the user leaves the fez.
+	/// This method is designed to provide updates only while a user is viewing the fez in your app--don't open one of these sockets for each
+	/// fez a user joins and keep them open continually. Use `WS /api/v3/notification/socket` for long-term status updates.
+	func createFezSocket(_ req: Request, _ ws: WebSocket) {
+		guard let user = try? req.auth.require(UserCacheData.self) else {
+			_ = ws.close()
+			return
+		}
+		_ = FriendlyFez.findFromParameter(fezIDParam, on: req).map { fez in
+			guard fez.participantArray.contains(user.userID), let fezID = try? fez.requireID() else {
+				_ = ws.close()
+				return
+			}
+			let userSocket = UserSocket(userID: user.userID, socket: ws, fezID: fezID, htmlOutput: false)
+			try? req.webSocketStore.storeFezSocket(userSocket)
+
+			ws.onClose.whenComplete { result in
+				try? req.webSocketStore.removeFezSocket(userSocket)
+			}
+		}
+	}
+
+	// Checks for sockets open on this fez, and sends the post to each of them.
+	func forwardPostToSockets(_ fez: FriendlyFez, _ post: FezPost, on req: Request) throws {
+		try req.webSocketStore.getFezSockets(fez.requireID()).forEach { userSocket in
+			let postAuthor = try req.userCache.getHeader(post.$author.id)
+			guard fez.participantArray.contains(userSocket.userID), let socketOwner = req.userCache.getUser(userSocket.userID),
+					!(socketOwner.getBlocks().contains(postAuthor.userID) || socketOwner.getMutes().contains(postAuthor.userID)) else {
+				return 
+			}
+			struct FezPostContext: Encodable {
+				var fezPost: SocketFezPostData
+			}
+			let leafPost = try SocketFezPostData(post: post, author: postAuthor)
+			if userSocket.htmlOutput {
+				let ctx = FezPostContext(fezPost: leafPost)
+				_ = req.view.render("Fez/fezPost", ctx).map { postBuffer in
+					if let data = postBuffer.data.getData(at: 0, length: postBuffer.data.readableBytes),
+							let dataString = String(data: data, encoding: .utf8) {
+						userSocket.socket.send(dataString)
+					}
+				}
+			} 
+			else {
+				let data = try JSONEncoder().encode(leafPost)
+				if let dataString = String(data: data, encoding: .utf8) {
+					userSocket.socket.send(dataString)
+				}
+			}
+		}
+	}
+
+	func forwardMembershipChangeToSockets(_ fez: FriendlyFez, user: User, joined: Bool, on req: Request) throws {
+		try req.webSocketStore.getFezSockets(fez.requireID()).forEach { userSocket in
+			let userHeader = try req.userCache.getHeader(user.requireID())
+			guard fez.participantArray.contains(userSocket.userID), let socketOwner = req.userCache.getUser(userSocket.userID),
+					!(socketOwner.getBlocks().contains(userHeader.userID) || socketOwner.getMutes().contains(userHeader.userID)) else {
+				return 
+			}
+			if userSocket.htmlOutput {
+				let dataString = "<i>\(userHeader.username) has \(joined ? "entered" : "left") the chat</i>"
+				userSocket.socket.send(dataString)
+			} 
+			else {
+				let change = SocketFezMemberChangeData(user: userHeader, joined: true)
+				let data = try JSONEncoder().encode(change)
+				if let dataString = String(data: data, encoding: .utf8) {
+					userSocket.socket.send(dataString)
+				}
+			}
+		}
+	}
+}
 
 // MARK: - Helper Functions
 
@@ -718,7 +812,8 @@ extension FezController {
 
 	// If pivot is not nil, the FezData's postCount and readCount is filled in. Pivot should always be nil if the current user
 	// is not a member of the fez.
-	func buildFezData(from fez: FriendlyFez, with pivot: FezParticipant? = nil, posts: [FezPostData]? = nil, for userID: UUID, on req: Request) throws -> FezData {
+	func buildFezData(from fez: FriendlyFez, with pivot: FezParticipant? = nil, posts: [FezPostData]? = nil, 
+			for userID: UUID, on req: Request) throws -> FezData {
 		let userBlocks = req.userCache.getBlocks(userID)
 		// init return struct
 		let ownerHeader = try req.userCache.getHeader(fez.$owner.id)

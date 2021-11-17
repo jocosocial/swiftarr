@@ -31,13 +31,17 @@ struct AlertController: APIRouteCollection {
 		flexAuthGroup.get("announcements", use: getAnnouncements)
 		flexAuthGroup.get("dailythemes", use: getDailyThemes)
 
+		// endpoints available only when logged in
+		let tokenAuthGroup = addTokenCacheAuthGroup(to: alertRoutes)
+		tokenAuthGroup.webSocket("socket", onUpgrade: createNotificationSocket) // shouldUpgrade: (Request) -> Headers
+		
 		// endpoints available only when logged in as THO or above
-		let tokenAuthGroup = addTokenCacheAuthGroup(to: alertRoutes).grouped(RequireTHOMiddleware())
-		tokenAuthGroup.get("announcement", announcementIDParam, use: getSingleAnnouncement)
-		tokenAuthGroup.post("announcement", "create", use: createAnnouncement)
-		tokenAuthGroup.post("announcement", announcementIDParam, "edit", use: editAnnouncement)
-		tokenAuthGroup.post("announcement", announcementIDParam, "delete", use: deleteAnnouncement)
-		tokenAuthGroup.delete("announcement", announcementIDParam, use: deleteAnnouncement)
+		let thoAuthGroup = addTokenCacheAuthGroup(to: alertRoutes).grouped(RequireTHOMiddleware())
+		thoAuthGroup.get("announcement", announcementIDParam, use: getSingleAnnouncement)
+		thoAuthGroup.post("announcement", "create", use: createAnnouncement)
+		thoAuthGroup.post("announcement", announcementIDParam, "edit", use: editAnnouncement)
+		thoAuthGroup.post("announcement", announcementIDParam, "delete", use: deleteAnnouncement)
+		thoAuthGroup.delete("announcement", announcementIDParam, use: deleteAnnouncement)
 
 	}
 	
@@ -168,6 +172,25 @@ struct AlertController: APIRouteCollection {
 		return Array(resultDict.values)
 	}
 	
+	/// `WS /api/v3/notification/socket`
+	/// 
+	/// Creates a notification socket for the user. The client of this socket will receive <doc:SocketNotificationData> updates,
+	/// generally when an event happens that would change a value in the user's <doc:UserNotificationData> struct.
+	/// 
+	/// This socket only sends <doc:SocketNotificationData> messages from the server to the client; there are no client-initiated
+	/// messages defined for this socket.
+	func createNotificationSocket(_ req: Request, _ ws: WebSocket) {
+		guard let user = try? req.auth.require(UserCacheData.self) else {
+			_ = ws.close()
+			return
+		}
+		let userSocket = UserSocket(userID: user.userID, socket: ws)
+		req.webSocketStore.storeSocket(userSocket)
+		ws.onClose.whenComplete { result in
+			req.webSocketStore.removeSocket(userSocket)
+		}
+	}
+	
 	// MARK: - Announcements
 
     /// `POST /api/v3/announcement/create`
@@ -188,7 +211,8 @@ struct AlertController: APIRouteCollection {
 		return announcement.save(on: req.db).throwingFlatMap {
 			return User.query(on: req.db).field(\.$id).all().throwingFlatMap { allUsers in
 				let userIDs = try allUsers.map { try $0.requireID() }
-				return try addNotifications(users: userIDs, type: .announcement(announcement.requireID()), on: req).transform(to: .created)
+				return try addNotifications(users: userIDs, type: .announcement(announcement.requireID()),
+						info: announcement.text, on: req).transform(to: .created)
 			}
 		}
 	}

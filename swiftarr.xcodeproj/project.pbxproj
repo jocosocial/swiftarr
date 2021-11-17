@@ -59,6 +59,8 @@
 		EA5BDED12739F9070099C150 /* SiteFileController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA5BDED02739F9070099C150 /* SiteFileController.swift */; };
 		EA5BDED3273E4AAF0099C150 /* SiteUserRoleMiddleware.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA5BDED2273E4AAF0099C150 /* SiteUserRoleMiddleware.swift */; };
 		EA5BDED5274248580099C150 /* NotificationType.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA5BDED4274248570099C150 /* NotificationType.swift */; };
+		EA5BDED727425FFE0099C150 /* WebSocketStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA5BDED627425FFE0099C150 /* WebSocketStorage.swift */; };
+		EA5BDED92743BDE00099C150 /* SocketStructs.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA5BDED82743BDE00099C150 /* SocketStructs.swift */; };
 		OBJ_2720 /* AdminController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_10 /* AdminController.swift */; };
 		OBJ_2721 /* AlertController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* AlertController.swift */; };
 		OBJ_2722 /* AuthController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* AuthController.swift */; };
@@ -8084,6 +8086,8 @@
 		EA5BDED02739F9070099C150 /* SiteFileController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteFileController.swift; sourceTree = "<group>"; };
 		EA5BDED2273E4AAF0099C150 /* SiteUserRoleMiddleware.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteUserRoleMiddleware.swift; sourceTree = "<group>"; };
 		EA5BDED4274248570099C150 /* NotificationType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NotificationType.swift; path = Sources/App/Enumerations/NotificationType.swift; sourceTree = SOURCE_ROOT; };
+		EA5BDED627425FFE0099C150 /* WebSocketStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSocketStorage.swift; sourceTree = "<group>"; };
+		EA5BDED82743BDE00099C150 /* SocketStructs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocketStructs.swift; sourceTree = "<group>"; };
 		OBJ_10 /* AdminController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminController.swift; sourceTree = "<group>"; };
 		OBJ_100 /* ImageHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageHandler.swift; sourceTree = "<group>"; };
 		OBJ_1000 /* bn_asn1.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = bn_asn1.c; sourceTree = "<group>"; };
@@ -13718,6 +13722,7 @@
 				OBJ_20 /* AdminControllerStructs.swift */,
 				OBJ_21 /* ControllerStructs.swift */,
 				OBJ_22 /* ModeratorControllerStructs.swift */,
+				EA5BDED82743BDE00099C150 /* SocketStructs.swift */,
 			);
 			path = Structs;
 			sourceTree = "<group>";
@@ -15361,6 +15366,7 @@
 				OBJ_30 /* EventType.swift */,
 				OBJ_31 /* FezType.swift */,
 				OBJ_32 /* LikeType.swift */,
+				EA5BDED4274248570099C150 /* NotificationType.swift */,
 				OBJ_33 /* ModeratorActionType.swift */,
 				OBJ_34 /* ReportType.swift */,
 				OBJ_35 /* UserAccessLevel.swift */,
@@ -15754,6 +15760,7 @@
 				OBJ_52 /* UserCache.swift */,
 				OBJ_53 /* UserRoleMiddleware.swift */,
 				OBJ_54 /* ValidatingJSONParser.swift */,
+				EA5BDED627425FFE0099C150 /* WebSocketStorage.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -17038,7 +17045,6 @@
 			isa = PBXGroup;
 			children = (
 				OBJ_98 /* APIRouteCollection.swift */,
-				EA5BDED4274248570099C150 /* NotificationType.swift */,
 				OBJ_99 /* ContentFilterable.swift */,
 				OBJ_100 /* ImageHandler.swift */,
 				OBJ_101 /* Reportable.swift */,
@@ -19476,6 +19482,7 @@
 				OBJ_2725 /* FezController.swift in Sources */,
 				OBJ_2726 /* ForumController.swift in Sources */,
 				OBJ_2727 /* ImageController.swift in Sources */,
+				EA5BDED92743BDE00099C150 /* SocketStructs.swift in Sources */,
 				EA0238F2271D1E9C00D5A168 /* BoardgameController.swift in Sources */,
 				OBJ_2728 /* ModerationController.swift in Sources */,
 				OBJ_2729 /* AdminControllerStructs.swift in Sources */,
@@ -19575,6 +19582,7 @@
 				OBJ_2812 /* SiteLoginController.swift in Sources */,
 				EA5BDED5274248580099C150 /* NotificationType.swift in Sources */,
 				OBJ_2813 /* SiteModController.swift in Sources */,
+				EA5BDED727425FFE0099C150 /* WebSocketStorage.swift in Sources */,
 				EA5BDEC627303DE60099C150 /* KaraokeSongs.swift in Sources */,
 				OBJ_2814 /* SiteSeamailController.swift in Sources */,
 				OBJ_2815 /* SiteTwittarController.swift in Sources */,

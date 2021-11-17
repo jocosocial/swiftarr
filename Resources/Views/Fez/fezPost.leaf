@@ -1,0 +1,24 @@
+<li class="list-group-item bg-transparent">
+	<div class="container-fluid">
+		<div class="row align-items-start justify-content-start">	
+			<div class="col g-0" style="flex: 0 0 40px;">
+				#avatar(fezPost.author)
+			</div>
+			<div class="col">
+				<div class="row">	
+					<div class="col">
+						#userByline(fezPost.author)
+					</div>
+					<div class="col-auto">
+						<span class="text-muted">#relativeTime(fezPost.timestamp)</span>
+					</div>
+				</div>
+				<div class="row">	
+					<div class="col">
+						#formatFezText(fezPost.text)
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</li>

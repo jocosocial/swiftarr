@@ -18,9 +18,12 @@ struct SiteSeamailController: SiteControllerUtils {
         privateRoutes.post("seamail", "create", use: seamailCreatePostHandler)
         privateRoutes.get("seamail", fezIDParam, use: seamailViewPageHandler)
         privateRoutes.post("seamail", fezIDParam, "post", use: seamailThreadPostHandler)
+		privateRoutes.webSocket("seamail", fezIDParam, "socket", onUpgrade: createFezSocket) 
 	}
 	
 // MARK: - Seamail
+	// GET /seamail
+	//
 	// Shows the root Seamail page, with a list of all conversations.
     func seamailRootPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		return apiQuery(req, endpoint: "/fez/joined?type=closed").throwingFlatMap { response in
@@ -39,6 +42,8 @@ struct SiteSeamailController: SiteControllerUtils {
     	}
     }
     
+    // GET /seamail/create
+    //
     // Shows the Create New Seamail page
     func seamailCreatePageHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		struct SeamaiCreatePageContext : Encodable {
@@ -54,6 +59,8 @@ struct SiteSeamailController: SiteControllerUtils {
 		return req.view.render("Fez/seamailCreate", ctx)
     }
     
+    // GET /seamail/usernames/search/STRING
+    //
     // Called by JS when searching for usernames to add to a seamail.
     func seamailUsernameAutocompleteHandler(_ req: Request) throws -> EventLoopFuture<Response> {
     	guard let searchString = req.parameters.get("searchString")?.percentEncodeFilePathEntry() else {
@@ -64,6 +71,8 @@ struct SiteSeamailController: SiteControllerUtils {
 		}
     }
     
+    // POST /seamail/create
+    //
     // POSTs a seamail creation request.
     func seamailCreatePostHandler(_ req: Request) throws -> EventLoopFuture<Response> {
     	let user = try req.auth.require(UserCacheData.self)
@@ -98,17 +107,13 @@ struct SiteSeamailController: SiteControllerUtils {
 				let postContentData = PostContentData(text: formContent.postText, images: [])
 				try req.content.encode(postContentData)
 			}).throwingFlatMap { response in
-				guard response.status.code < 300 else {
-					var errorResponse = try response.content.decode(ErrorResponse.self)
-					errorResponse.reason = "The conversation was created, but the first post couldn't be added to it because: " + 
-							errorResponse.reason
-					throw errorResponse
-				}
 				return response.encodeResponse(for: req)
 			}
     	}
     }
     
+    // GET /seamail/:fez_ID
+    // 
     // Shows a seamail thread. Participants up top, then a list of messages, then a form for composing.
 	func seamailViewPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
     	guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
@@ -119,9 +124,9 @@ struct SiteSeamailController: SiteControllerUtils {
      		struct SeamailThreadPageContext : Encodable {
 				var trunk: TrunkContext
     			var fez: FezData
-    			var oldPosts: [LeafFezPostData]
+    			var oldPosts: [SocketFezPostData]
     			var showDivider: Bool
-    			var newPosts: [LeafFezPostData]
+    			var newPosts: [SocketFezPostData]
      			var post: MessagePostContext
    			    			
     			init(_ req: Request, fez: FezData) throws {
@@ -137,12 +142,12 @@ struct SiteSeamailController: SiteControllerUtils {
 							let post = posts[index]
 							if index < members.readCount {
 								if let author = participantDictionary[post.authorID] {
-									oldPosts.append(LeafFezPostData(post: post, author: author))
+									oldPosts.append(SocketFezPostData(post: post, author: author))
 								}
 							}
 							else {
 								if let author = participantDictionary[post.authorID] {
-									newPosts.append(LeafFezPostData(post: post, author: author))
+									newPosts.append(SocketFezPostData(post: post, author: author))
 								}
 							}
 						} 
@@ -155,6 +160,34 @@ struct SiteSeamailController: SiteControllerUtils {
     	}
 	}
 	
+	// WS /seamail/:fez_ID/socket
+	//
+	// Opens a WebSocket that receives updates on the given Seamail. This websocket is intended for use by the
+	// web client and updates are in the form of HTML fragments.
+	// There are no messages intended to be sent from the client of this socket. Although this socket sends HTML for
+	// new posts to the client, new posts *created* by the client should use the regular POST method.
+	func createFezSocket(_ req: Request, _ ws: WebSocket) {
+		guard let user = try? req.auth.require(UserCacheData.self) else {
+			_ = ws.close()
+			return
+		}
+		_ = FriendlyFez.findFromParameter(fezIDParam, on: req).map { fez in
+			guard fez.participantArray.contains(user.userID), let fezID = try? fez.requireID() else {
+				_ = ws.close()
+				return
+			}
+			let userSocket = UserSocket(userID: user.userID, socket: ws, fezID: fezID, htmlOutput: true)
+			try? req.webSocketStore.storeFezSocket(userSocket)
+
+			ws.onClose.whenComplete { result in
+				try? req.webSocketStore.removeFezSocket(userSocket)
+			}
+		}
+	}
+
+	// POST /seamail/:fez_ID/post
+	//
+	// Creates a new message in a seamail thread.
 	func seamailThreadPostHandler(_ req: Request) throws -> EventLoopFuture<Response> {
     	guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
     		throw Abort(.badRequest, reason: "Missing fez_id")
@@ -164,15 +197,7 @@ struct SiteSeamailController: SiteControllerUtils {
     	return apiQuery(req, endpoint: "/fez/\(fezID)/post", method: .POST, beforeSend: { req throws in
 			try req.content.encode(postContent)
 		}).flatMapThrowing { response in
-// 			let fez = try response.content.decode(FezData.self)
-			if response.status.code < 300 {
-				return Response(status: .created)
-			}
-			else {
-				// This is that thing where we decode an error response from the API and then make it into an exception.
-				let error = try response.content.decode(ErrorResponse.self)
-				throw error
-			}
+			return Response(status: .created)
     	}
 	}
 }
