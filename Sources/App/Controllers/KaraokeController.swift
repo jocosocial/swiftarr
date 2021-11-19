@@ -26,7 +26,10 @@ struct KaraokeController: APIRouteCollection {
 	/// `GET /api/v3/karaoke`
 	/// 
 	/// Returns an array of karaoke songs in a structure designed to support pagination. Can be called while not logged in; 
-	/// if logged in favorite information is returned.
+	/// if logged in favorite information is returned. 
+	/// 
+	/// This call can't be used to browse the entire ~25000 song library. You must specify either a search string with >2 chars, or 
+	/// specify favorites=true.
 	/// 
 	/// **URL Query Parameters**
 	/// * `?search=STRING` - Only show songs whose artist or title contains the given string.
@@ -59,6 +62,11 @@ struct KaraokeController: APIRouteCollection {
 				filteringFavorites = true
 				songQuery.join(KaraokeFavorite.self, on: \KaraokeSong.$id == \KaraokeFavorite.$song.$id)
 						.filter(KaraokeFavorite.self, \.$user.$id == user.userID)
+			}
+		}
+		else {
+			if let fav = filters.favorite, fav.lowercased() == "true" {
+				throw Abort(.badRequest, reason: "Must be logged in to view favorites")
 			}
 		}
 		let hasSearchString = filters.search?.count ?? 0 >= 3

@@ -28,6 +28,18 @@ struct SiteSeamailController: SiteControllerUtils {
     func seamailRootPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		return apiQuery(req, endpoint: "/fez/joined?type=closed").throwingFlatMap { response in
  			let fezzes = try response.content.decode([FezData].self)
+ 			// Re-sort fezzes so ones with new msgs are first. Keep most-recent-change sort within each group.
+ 			var newMsgFezzes: [FezData] = []
+ 			var noNewMsgFezzes: [FezData] = []
+ 			fezzes.forEach {
+ 				if let members = $0.members, members.postCount > members.readCount {
+ 					newMsgFezzes.append($0)
+ 				}
+ 				else {
+ 					noNewMsgFezzes.append($0)
+ 				}
+ 			}
+ 			let allFezzes = newMsgFezzes + noNewMsgFezzes
      		struct SeamailRootPageContext : Encodable {
 				var trunk: TrunkContext
     			var fezzes: [FezData]
@@ -37,7 +49,7 @@ struct SiteSeamailController: SiteControllerUtils {
     				self.fezzes = fezzes
     			}
     		}
-    		let ctx = try SeamailRootPageContext(req, fezzes: fezzes)
+    		let ctx = try SeamailRootPageContext(req, fezzes: allFezzes)
 			return req.view.render("Fez/seamails", ctx)
     	}
     }

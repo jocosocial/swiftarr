@@ -233,7 +233,8 @@ extension APIRouteCollection {
 		case .forumMention: fallthrough		
 		case .alertwordTwarrt: fallthrough
 		case .alertwordPost:
-			hashFuture = req.redis.hget(type.redisFieldName(), from: type.redisKeyName(userID: userID), as: Int.self).flatMap { hitCount in
+			hashFuture = req.redis.hget(type.redisFieldName(), from: type.redisKeyName(userID: userID), as: Int.self).flatMap { hitCountOpt in
+				let hitCount = hitCountOpt ?? 0
 				if hitCount == 0 {
 					return req.eventLoop.future()
 				}

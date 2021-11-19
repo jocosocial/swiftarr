@@ -109,7 +109,7 @@ struct FezController: APIRouteCollection {
 
     /// `GET /api/v3/fez/joined`
     ///
-    /// Retrieve all the FriendlyFez chats that the user has joined.
+    /// Retrieve all the FriendlyFez chats that the user has joined. Results are sorted by descending fez update time.
 	/// 
 	/// **Query Parameters:**
 	/// - `?type=STRING` -	Only return fezzes of the given fezType. See `FezType` for a list.
@@ -123,6 +123,7 @@ struct FezController: APIRouteCollection {
         let user = try req.auth.require(User.self)
         let query = user.$joined_fezzes.$pivots.query(on: req.db)
         		.join(FriendlyFez.self, on: \FezParticipant.$fez.$id == \FriendlyFez.$id)
+        		.sort(FriendlyFez.self, \.$updatedAt, .descending)
 		if let typeStr = req.query[String.self, at: "type"], let fezType = FezType.fromAPIString(typeStr) {
 			query.filter(FriendlyFez.self, \.$fezType == fezType)
 		}
@@ -388,8 +389,9 @@ struct FezController: APIRouteCollection {
 	}
 							
     /// `POST /api/v3/fez/post/ID/delete`
+	/// `DELETE /api/v3/fez/post/ID`
     ///
-    /// Delete a `FezPost`.
+    /// Delete a `FezPost`. Must be author of post.
     ///
     /// - Parameter fezID: in URL path
     /// - Throws: 403 error if user is not the post author. 404 error if the fez is not
@@ -399,7 +401,7 @@ struct FezController: APIRouteCollection {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
         // get post
-        return FezPost.findFromParameter("post_id", on: req).flatMap { (post) in
+        return FezPost.findFromParameter(fezPostIDParam, on: req).flatMap { (post) in
 			guard post.$author.id == userID else {
 				return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "user cannot delete post"))
 			}

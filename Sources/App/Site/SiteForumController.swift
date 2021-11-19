@@ -220,8 +220,6 @@ struct SiteForumController: SiteControllerUtils {
 		privateRoutes.post("forumpost", "favorite", postIDParam, use: forumPostAddBookmarkPostHandler)
 		privateRoutes.delete("forumpost", "favorite", postIDParam, use: forumPostRemoveBookmarkPostHandler)
 		privateRoutes.get("forumpost", "search", use: forumPostSearchPageHandler)
-		
-		
 	}
 
 // Note: These groupings are roughly based on what type of URL parameters each method takes to identify its target:
