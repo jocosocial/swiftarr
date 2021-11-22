@@ -101,16 +101,18 @@
 						</div>				
 					#endfor
 				</div>
-				<div class="row mt-2">
-					<b>Wait List</b>
-				</div>
-				<div class="row mb-2 mx-0">
-					#for(participant in fez.members.waitingList):
-						<div class="col col-auto border text-nowrap">
-							#avatar(participant) #userByline(participant)
-						</div>				
-					#endfor
-				</div>
+				#if(count(fez.members.waitingList) > 0):
+					<div class="row mt-2">
+						<b>Wait List</b>
+					</div>
+					<div class="row mb-2 mx-0">
+						#for(participant in fez.members.waitingList):
+							<div class="col col-auto border text-nowrap">
+								#avatar(participant) #userByline(participant)
+							</div>				
+						#endfor
+					</div>
+				#endif
 				<div class="row align-items-center">
 					<div class="col">
 						<b>Posts</b>

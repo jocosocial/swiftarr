@@ -39,9 +39,9 @@ final class FriendlyFez: Model {
 	/// Where the fez is happening.
 	@OptionalField(key: "location") var location: String?
 	
-    /// Moderators can set several statuses on fezPosts that modify editability and visibility.
-    @Enum(key: "mod_status") var moderationStatus: ContentModerationStatus
-        
+	/// Moderators can set several statuses on fezPosts that modify editability and visibility.
+	@Enum(key: "mod_status") var moderationStatus: ContentModerationStatus
+		
 	/// Start time for the fez. Only meaningful for public fezzes that are organizing an activity.
 	@OptionalField(key: "start_time") var startTime: Date?
 
@@ -65,94 +65,84 @@ final class FriendlyFez: Model {
 	// fezzes should probably only be shown to participants, and be left out of searches.
 	@Field(key: "cancelled") var cancelled: Bool
   
-    /// An ordered list of participants in the fez. Newly joined members are appended to the array, meaning this array stays sorted by join time.. 
-    @Field(key: "participant_array") var participantArray: [UUID]
+	/// An ordered list of participants in the fez. Newly joined members are appended to the array, meaning this array stays sorted by join time.. 
+	@Field(key: "participant_array") var participantArray: [UUID]
 
 // MARK: Relationships
-    /// The creator of the fez.
-    @Parent(key: "owner") var owner: User
-    
+	/// The creator of the fez.
+	@Parent(key: "owner") var owner: User
+	
 	/// The participants in the fez. The pivot `FezParticipant` also maintains the read count for each participant.
 	@Siblings(through: FezParticipant.self, from: \.$fez, to: \.$user) var participants: [User]
 	
 	/// The posts participants have made in the fez.
 	@Children(for: \.$fez) var fezPosts: [FezPost]	
 	
-    /// The child `FriendlyFezEdit` accountability records of the fez.
-    @Children(for: \.$fez) var edits: [FriendlyFezEdit]
+	/// The child `FriendlyFezEdit` accountability records of the fez.
+	@Children(for: \.$fez) var edits: [FriendlyFezEdit]
 
 // MARK: Record-keeping
-    /// Timestamp of the model's creation, set automatically.
-    @Timestamp(key: "created_at", on: .create) var createdAt: Date?
-    
-    /// Timestamp of the model's last update, set automatically.
-    @Timestamp(key: "updated_at", on: .update) var updatedAt: Date?
-    
-    /// Timestamp of the model's soft-deletion, set automatically.
-    @Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
+	/// Timestamp of the model's creation, set automatically.
+	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
+	
+	/// Timestamp of the model's last update, set automatically.
+	@Timestamp(key: "updated_at", on: .update) var updatedAt: Date?
+	
+	/// Timestamp of the model's soft-deletion, set automatically.
+	@Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
 
 // MARK: Initialization
-    // Used by Fluent
+	// Used by Fluent
  	init() { }
  	
-    /// Initializes a new FriendlyFez.
-    ///
-    /// - Parameters:
-    ///   - owner: The ID of the owning entity.
-    ///   - barrelType: The type of information the barrel holds.
-    ///   - name: A name for the barrel.
-    ///   - modelUUIDs: The IDs of UUID-model barrel contents.
-    ///   - userInfo: A dictionary that holds string-type barrel contents.
-    init(
-        owner: User,
-        fezType: FezType,
-        title: String = "",
+	/// Initializes a new FriendlyFez.
+	///
+	/// - Parameters:
+	///   - owner: The ID of the owning entity.
+	///   - fezType: The type of fez being created.
+	///   - title: The title of the Fez.
+	///   - location: Where the Fez is being held.
+	///   - startTime: When participants should arrive.
+	///   - endTime: Estimated time the fez will complete.
+	///   - minCapacity: How many people are needed make a quorum.
+	///   - maxCapactiy: The max # of people who can attend. Users who join past this number are waitlisted.
+	init(
+		owner: UUID,
+		fezType: FezType,
+		title: String = "",
 		info: String = "",
 		location: String?,
 		startTime: Date?,
 		endTime: Date?,
 		minCapacity: Int = 0,
 		maxCapacity: Int
-    ) throws {
-		self.$owner.id = try owner.requireID()
-        self.$owner.value = owner
-        self.fezType = fezType
-        self.title = title
-        self.info = info
-        self.location = location
-        self.moderationStatus = .normal
-        self.startTime = startTime
-        self.endTime = endTime
-        self.minCapacity = minCapacity
-        self.maxCapacity = maxCapacity
-        self.postCount = 0
-        self.cancelled = false
-        
-//		self.$participants.attach(to: owner, on:)
-    }
-    
-    /// Initializes a closed FriendlyFez, also known as a Chat session.
-    init(owner: User) throws {
-		self.$owner.id = try owner.requireID()
-        self.$owner.value = owner
-        self.fezType = .closed
-        self.title = ""
-        self.info = ""
-        self.location = nil
-        self.moderationStatus = .normal
-        self.minCapacity = 0
-        self.maxCapacity = 0
-        self.postCount = 0
-        self.cancelled = false
+	) {
+		self.$owner.id = owner
+		self.fezType = fezType
+		self.title = title
+		self.info = info
+		self.location = location
+		self.moderationStatus = .normal
+		self.startTime = startTime
+		self.endTime = endTime
+		self.minCapacity = minCapacity
+		self.maxCapacity = maxCapacity
+		self.postCount = 0
+		self.cancelled = false
 	}
-
-	static func createClosedFez( owner: User, participants: [User], on db: Database) throws -> EventLoopFuture<FriendlyFez> {
-		let newFez = try FriendlyFez(owner: owner)
-		var futures: [EventLoopFuture<Void>] = []
-		for participant in participants {
-			futures.append(newFez.$participants.attach(participant, on: db))
-		}
-		return futures.flatten(on: db.eventLoop).transform(to: newFez)
+	
+	/// Initializes a closed FriendlyFez, also known as a Chat session.
+	init(owner: UUID)  {
+		self.$owner.id =  owner
+		self.fezType = .closed
+		self.title = ""
+		self.info = ""
+		self.location = nil
+		self.moderationStatus = .normal
+		self.minCapacity = 0
+		self.maxCapacity = 0
+		self.postCount = 0
+		self.cancelled = false
 	}
 }
 

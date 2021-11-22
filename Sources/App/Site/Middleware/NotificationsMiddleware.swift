@@ -36,7 +36,7 @@ struct NotificationsMiddleware: Middleware, SiteControllerUtils {
 					return next.respond(to: req)
 				}
 				req.session.data["lastNotificationCheckTime"] = String(Date().timeIntervalSince1970)
-				return apiQuery(req, endpoint: "/notification/user").throwingFlatMap { response in
+				return apiQuery(req, endpoint: "/notification/user", passThroughQuery: false).throwingFlatMap { response in
 					if response.status == .ok {
 						// I dislike decoding the response JSON just to re-encode it into a string for session storage.
 						// response.body?.getString(at: 0, length: response.body!.capacity)

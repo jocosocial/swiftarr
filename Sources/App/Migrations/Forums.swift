@@ -43,7 +43,7 @@ struct CreateForums: Migration {
 					let forum = try Forum(
 						title: adminForum,
 						category: category,
-						creator: admin,
+						creatorID: admin.requireID(),
 						isLocked: false
 					)
 					forums.append(forum)

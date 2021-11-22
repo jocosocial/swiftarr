@@ -36,7 +36,7 @@ struct SetInitialEventForums: Migration {
 							// Build an initial post in the forum with information about the event, and
 							// a callout for posters to discuss the event.
 							let postText = SetInitialEventForums.buildEventPostText(event)
-							let infoPost = try ForumPost(forum: forum, author: admin, text: postText)
+							let infoPost = try ForumPost(forum: forum, authorID: admin.requireID(), text: postText)
 						
 							// Associate the forum with the event
 							event.$forum.id = forum.id
@@ -69,7 +69,7 @@ struct SetInitialEventForums: Migration {
 		// build title and forum
 		let title = dateFormatter.string(from: event.startTime) + " \(event.title)"
 		let forum = try Forum(title: title, category: event.eventType == .shadow ? shadowCategory : officialCategory,
-				creator: creator, isLocked: false)
+				creatorID: creator.requireID(), isLocked: false)
 		return forum
     }
     

@@ -126,23 +126,28 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 	// Shows the root Fez page, with a list of all fezzes.
 	func fezRootPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		return apiQuery(req, endpoint: "/fez/open").throwingFlatMap { response in
-			let fezzes = try response.content.decode([FezData].self)
+			let fezList = try response.content.decode(FezListData.self)
 			struct FezRootPageContext : Encodable {
 				var trunk: TrunkContext
-				var fezzes: [FezData]
+				var fezList: FezListData
+				var paginator: PaginatorContext
 				var tab: FezTab
 				var typeSelection: String
 				var daySelection: Int?
 				
-				init(_ req: Request, fezzes: [FezData]) throws {
+				init(_ req: Request, fezList: FezListData) throws {
 					trunk = .init(req, title: "Looking For Group", tab: .none)
-					self.fezzes = fezzes
+					self.fezList = fezList
 					tab = .find
 					typeSelection = req.query[String.self, at: "type"] ?? "all"
 					daySelection = req.query[Int.self, at: "cruiseday"]
+    				let limit = fezList.paginator.limit
+					paginator = .init(fezList.paginator) { pageIndex in
+						"/fez?start=\(pageIndex * limit)&limit=\(limit)"
+					}
 				}
 			}
-			let ctx = try FezRootPageContext(req, fezzes: fezzes)
+			let ctx = try FezRootPageContext(req, fezList: fezList)
 			return req.view.render("Fez/fezRoot", ctx)
 		}
 	}
@@ -169,19 +174,24 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 	// Shows the Joined Fezzes page.
 	func joinedFezPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		return apiQuery(req, endpoint: "/fez/joined?excludetype=closed").throwingFlatMap { response in
-			let fezzes = try response.content.decode([FezData].self)
+			let fezList = try response.content.decode(FezListData.self)
 			struct JoinedFezPageContext : Encodable {
 				var trunk: TrunkContext
-				var fezzes: [FezData]
+				var fezList: FezListData
+				var paginator: PaginatorContext
 				var tab: FezTab
 				
-				init(_ req: Request, fezzes: [FezData]) throws {
+				init(_ req: Request, fezList: FezListData) throws {
 					trunk = .init(req, title: "LFG Joined Groups", tab: .none)
-					self.fezzes = fezzes
+					self.fezList = fezList
 					tab = .joined
+    				let limit = fezList.paginator.limit
+					paginator = .init(fezList.paginator) { pageIndex in
+						"/fez/joined?start=\(pageIndex * limit)&limit=\(limit)"
+					}
 				}
 			}
-			let ctx = try JoinedFezPageContext(req, fezzes: fezzes)
+			let ctx = try JoinedFezPageContext(req, fezList: fezList)
 			return req.view.render("Fez/fezJoined", ctx)
 		}
 	}
@@ -191,19 +201,24 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 	// Shows the Owned Fezzes page. These are the Fezzes a user has created.
 	func ownedFezPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		return apiQuery(req, endpoint: "/fez/owner?excludetype=closed").throwingFlatMap { response in
-			let fezzes = try response.content.decode([FezData].self)
+			let fezList = try response.content.decode(FezListData.self)
 			struct OwnedFezPageContext : Encodable {
 				var trunk: TrunkContext
-				var fezzes: [FezData]
+				var fezList: FezListData
+				var paginator: PaginatorContext
 				var tab: FezTab
 				
-				init(_ req: Request, fezzes: [FezData]) throws {
+				init(_ req: Request, fezList: FezListData) throws {
 					trunk = .init(req, title: "LFGs Created By You", tab: .none)
-					self.fezzes = fezzes
+					self.fezList = fezList
 					tab = .owned
+    				let limit = fezList.paginator.limit
+					paginator = .init(fezList.paginator) { pageIndex in
+						"/fez/joined?start=\(pageIndex * limit)&limit=\(limit)"
+					}
 				}
 			}
-			let ctx = try OwnedFezPageContext(req, fezzes: fezzes)
+			let ctx = try OwnedFezPageContext(req, fezList: fezList)
 			return req.view.render("Fez/fezOwned", ctx)
 		}
 	}

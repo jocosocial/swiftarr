@@ -9,6 +9,7 @@
 			    	<a class="btn btn-primary btn-sm" role="button" href="/seamail/create">New Seamail</a>
 				</div>
 			</div>
+			#extend("paginator")
 			<div class="list-group">
 				#if(count(fezzes) == 0):
 					<div class="row">
@@ -52,6 +53,7 @@
 					#endfor
 				#endif
 			</div>
+			#extend("paginator")
 		</div>
     #endexport
 #endextend

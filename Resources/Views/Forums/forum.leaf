@@ -76,7 +76,7 @@
 							</div>
 							<div class="row mt-1 justify-content-end row-cols-auto collapse" data-label="actionbar">	
 								<div class="col btn-group btn-group-sm" role="group" aria-label="Post actions">
-									<input type="checkbox" class="btn-check" autocomplete="off" data-action="favoriteForumPost" 
+									<input type="checkbox" class="btn-check" autocomplete="off" data-action="favorite" 
 											data-actionpath="/forumpost/favorite/#(forumPost.postID)"
 											data-istoggle="true"
 											data-errordiv="#(forumPost.postID)_errorDisplay"

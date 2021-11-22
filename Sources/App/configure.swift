@@ -58,13 +58,17 @@ public func configure(_ app: Application) throws {
 	try configurePrometheus(app)
     try routes(app)
 	try configureMigrations(app)
-	
-	// Add lifecycle handlers 
-	app.lifecycle.use(Application.UserCacheStartup())
-	
+		
 	// Settings loads values from Redis during startup, and Redis isn't available until app.boot() completes.
 	// Posts on RedisKit's github bug db say the solution is to call boot() early. 
 	try app.boot()
+	
+	// Right after boot, check that we can access everything.
+	try verifyConfiguration(app)
+	
+	// UserCache had previously done startup initialization with a lifecycle handler. However, Redis isn't ready 
+	// for use until its 'didBoot' lifecycle handler has run, and I don't like opaque ordering dependencies.
+	try app.initializeUserCache(app)
 	try configureSettings(app)
 }
 
@@ -118,24 +122,24 @@ func configureSettings(_ app: Application) throws {
 	// into a day of the cruise week (the time the schedule covers) for Events methods, because 'No Events Today' 
 	// makes testing schedule features difficult.
 	if app.environment == .testing {
-		Logger(label: "app.swiftarr.configuration") .info("Starting up in Testing mode.")
+		Logger(label: "app.swiftarr.configuration") .notice("Starting up in Testing mode.")
 		// Until we get a proper 2022 schedule, we're using the 2020 schedule for testing. 
 		Settings.shared.cruiseStartDate = Calendar.autoupdatingCurrent.date(from: DateComponents(calendar: Calendar.current, 
 			timeZone: TimeZone(abbreviation: "EST")!, year: 2020, month: 3, day: 7))!
 	}
 	else if app.environment == .development {
-		Logger(label: "app.swiftarr.configuration") .info("Starting up in Development mode.")
+		Logger(label: "app.swiftarr.configuration") .notice("Starting up in Development mode.")
 		// Until we get a proper 2022 schedule, we're using the 2020 schedule for testing. 
 		Settings.shared.cruiseStartDate = Calendar.autoupdatingCurrent.date(from: DateComponents(calendar: Calendar.current, 
 			timeZone: TimeZone(abbreviation: "EST")!, year: 2020, month: 3, day: 7))!
 	}
 	else if app.environment == .production {
-		Logger(label: "app.swiftarr.configuration") .info("Starting up in Production mode.")
+		Logger(label: "app.swiftarr.configuration") .notice("Starting up in Production mode.")
 		Settings.shared.cruiseStartDate = Calendar.autoupdatingCurrent.date(from: DateComponents(calendar: Calendar.current, 
 			timeZone: TimeZone(abbreviation: "EST")!, year: 2022, month: 3, day: 5))!
 	}
 	else {
-		Logger(label: "app.swiftarr.configuration") .info("Starting up in Custom \"\(app.environment.name)\" mode.")
+		Logger(label: "app.swiftarr.configuration") .notice("Starting up in Custom \"\(app.environment.name)\" mode.")
 		Settings.shared.cruiseStartDate = Calendar.autoupdatingCurrent.date(from: DateComponents(calendar: Calendar.current, 
 			timeZone: TimeZone(abbreviation: "EST")!, year: 2022, month: 3, day: 5))!
 	}
@@ -290,3 +294,33 @@ func configureMigrations(_ app: Application) throws {
 	app.migrations.add(SetInitialCategoryForumCounts(), to: .psql)
 }
   
+// Perform several sanity checks to verify that we can access the dbs and resource files that we need.
+// If we're misconfigured, this can emit more useful errors than the ones that'll come from deep inside db drivers.
+func verifyConfiguration(_ app: Application) throws {
+	// I'd like to test, in order:
+	//	- That a Postgres connection exists
+	//  - The db_user is authed
+	//  - We found the 'swiftarr' database
+	// But, my sql-fu isn't strong enough. So, I just do a dummy query. 
+	_ = User.query(on: app.db).with(\.$token).all().flatMapErrorThrowing { error in
+		app.logger.critical("Initial connection to Postgres failed. Is the db up and running?")
+		throw error
+	}
+
+	// Same idea for Redis. I'm not even sure what the 'steps' would be for diagnosing a connection error.
+	_ = app.redis.ping(with: "Swiftarr configuration check during app launch").flatMapErrorThrowing { error in
+		app.logger.critical("Initial connection to Redis failed. Is the db up and running?")
+		throw error
+	}
+	
+	// Next, check that the resource files are getting copied into the build directory. 
+	// What's going on? Instead of running the app at the root of the git hierarchy, Xcode makes a /DerivedData dir and runs
+	// apps (deep) inside there. A script build step is supposed to copy the contents of /Resources and /Seeds into the dir
+	// the app runs in. If that script breaks or didn't run, this will hopefully catch it and tell admins what's wrong.
+	let dir = DirectoryConfiguration.detect().workingDirectory
+	let swiftarrCSSPath = URL(fileURLWithPath: dir).appendingPathComponent("Resources/Assets/css/swiftarr.css").path
+	var isDir: ObjCBool = false
+	if !FileManager.default.fileExists(atPath: swiftarrCSSPath, isDirectory: &isDir), !isDir.boolValue {
+		app.logger.critical("Resource files not found during launchtime sanity check. This usually means the Resources directory isn't getting copied into the App directory in /DerivedData.")
+	}
+}

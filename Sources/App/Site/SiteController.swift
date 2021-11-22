@@ -115,6 +115,10 @@ struct PaginatorContext: Codable {
 			lastPageURL = urlForPage(totalPages - 1)
 		}
 	}
+	
+	init(_ paginator: Paginator, urlForPage: (Int) -> String) {
+		self.init(start: paginator.start, total: paginator.total, limit: paginator.limit, urlForPage: urlForPage)
+	}
 }
 
 // Leaf data used by the messagePostForm.

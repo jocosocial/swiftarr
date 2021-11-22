@@ -43,12 +43,11 @@ final class ForumEdit: Model {
     /// - Parameters:
     ///   - forum: The Forum that will be edited.
     ///   - editor: The User making the change.
-    init(forum: Forum, editor: User) throws
+    init(forum: Forum, editorID: UUID) throws
     {
         self.$forum.id = try forum.requireID()
         self.$forum.value = forum
         self.title = forum.title
-        self.$editor.id = try editor.requireID()
-        self.$editor.value = editor
+        self.$editor.id = editorID
     }
 }

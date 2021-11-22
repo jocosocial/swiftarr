@@ -47,17 +47,18 @@ struct CreateTestData: Migration {
         		guard let category = categories.first(where: { $0.title == "Egype" }) else {
         			throw Abort(.internalServerError, reason: "Test category doesn't exist;, can't make test posts.")
         		}
-				let thread = try Forum(title: "Say Hello Here", category: category, creator: admin)
+				let thread = try Forum(title: "Say Hello Here", category: category, creatorID: admin.requireID())
 				return thread.save(on: database).transform(to: thread)
 			}
         	.throwingFlatMap { (thread: Forum) in
+        		let adminID = try admin.requireID()
 				let posts: [ForumPost] = try [
-					ForumPost(forum: thread, author: admin, text: "First Post!"),
-					ForumPost(forum: thread, author: admin, text: "Second Post!"),
-					ForumPost(forum: thread, author: admin, text: longPost),
-					ForumPost(forum: thread, author: admin, text: "This is the fourth post in the stream.!"),
-					ForumPost(forum: thread, author: admin, text: "And then the fifth!"),
-					ForumPost(forum: thread, author: admin, text: "I'm just going to keep posting here. Posting is fun.!"),
+					ForumPost(forum: thread, authorID: adminID, text: "First Post!"),
+					ForumPost(forum: thread, authorID: adminID, text: "Second Post!"),
+					ForumPost(forum: thread, authorID: adminID, text: longPost),
+					ForumPost(forum: thread, authorID: adminID, text: "This is the fourth post in the stream.!"),
+					ForumPost(forum: thread, authorID: adminID, text: "And then the fifth!"),
+					ForumPost(forum: thread, authorID: adminID, text: "I'm just going to keep posting here. Posting is fun.!"),
 				]
 				let futures = posts.map { $0.save(on: database) }
 				return futures.flatten(on: database.eventLoop).transform(to: ())
@@ -75,7 +76,7 @@ struct CreateTestData: Migration {
 			return Category.query(on: database).filter(\.$title == "Egype").first()
 					.unwrap(or: Abort(.internalServerError, reason: "Category 'Test 1' does not exist; can't make test posts."))
 					.throwingFlatMap { category in
-				let thread = try Forum(title: "Long Thread Is Long", category: category, creator: users[0])
+				let thread = try Forum(title: "Long Thread Is Long", category: category, creatorID: users[0].requireID())
 				return thread.save(on: database).transform(to: thread)
 			}
 			.throwingFlatMap { (thread: Forum) in
@@ -96,7 +97,7 @@ struct CreateTestData: Migration {
 					default: postStr = "Okay then, let's do it!"
 					}
 					
-					let post = try ForumPost(forum: thread, author: users[Int.random(in:0...3)], text: "Post #\(index): \(postStr)")
+					let post = try ForumPost(forum: thread, authorID: users[Int.random(in:0...3)].requireID(), text: "Post #\(index): \(postStr)")
 					futures.append(post.save(on: database))
 				}
 				return futures.flatten(on: database.eventLoop).transform(to: ())

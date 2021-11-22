@@ -185,61 +185,59 @@ extension Application {
 
 	/// After boot but before handling requests, this code runs to fill the cache with data on all known
 	/// `User`s. LifecycleHandler is another part of Vapor's Services API.
-	struct UserCacheStartup: LifecycleHandler {
-		// Load all users into cache at startup.
-		func didBoot(_ app: Application) throws {
-			if app.environment.arguments.count > 1,
-					app.environment.arguments[1].lowercased().hasSuffix("migrate") {
-				return
-			}
-		
-			var initialStorage = UserCacheStorage()
-			var allUsers: [User]
-			// As it happens, we can diagnose several startup-time malfunctions here, as this is usually the first query each launch.
-			do {
-				allUsers = try User.query(on: app.db).with(\.$token).all().wait()
-			}
-			catch let error as NIO.IOError where error.errnoCode == 61 {
-				app.logger.critical("Initial connection to Postgres failed. Is the db up and running?")
-				throw error
-			}
-			catch let error as PostgresNIO.PostgresError {
-				app.logger.critical("Initial attempt to access Swiftarr DB tables failed. Is the DB set up (all migrations run)?")
-				throw error
-			}
-			try allUsers.forEach { user in
-				let userID = try user.requireID()
-				let barrelFuture = Barrel.query(on: app.db)
-					.filter(\.$ownerID == userID)
-					.filter(\.$barrelType ~~ [.userMute, .keywordMute, .keywordAlert])
-					.all()
-					
-				// Redis stores blocks as users you've blocked AND users who have blocked you,
-				// for all subaccounts of both you and the other user.
-				let redisKey: RedisKey = "rblocks:\(userID.uuidString)"
-				let blockFuture = app.redis.smembers(of: redisKey, as: UUID.self)
-			
-				let futures = barrelFuture.and(blockFuture).map { (barrels, blocks) in 
-					var mutes: [UUID]?
-					var muteWords: [String]?
-					var alertWords: [String]?
-					for barrel in barrels {
-						switch barrel.barrelType {
-							case .userMute: mutes = barrel.modelUUIDs
-							case .keywordMute: muteWords = barrel.userInfo["muteWords"]
-							case .keywordAlert: alertWords = barrel.userInfo["alertWords"]
-							default: continue
-						}
-					}
-					let compactBlocks = blocks.compactMap { $0 }
-					let cacheData = UserCacheData(userID: userID, user: user, blocks: compactBlocks,
-							mutes: mutes, mutewords: muteWords, alertwords: alertWords)
-					initialStorage.cacheUser(cacheData)
-				}
-				try futures.wait()
-			}
-			app.userCacheStorage = initialStorage
+	/// Load all users into cache at startup.
+	func initializeUserCache(_ app: Application) throws {
+		if app.environment.arguments.count > 1,
+				app.environment.arguments[1].lowercased().hasSuffix("migrate") {
+			return
 		}
+	
+		var initialStorage = UserCacheStorage()
+		var allUsers: [User]
+		// As it happens, we can diagnose several startup-time malfunctions here, as this is usually the first query each launch.
+		do {
+			allUsers = try User.query(on: app.db).with(\.$token).all().wait()
+		}
+		catch let error as NIO.IOError where error.errnoCode == 61 {
+			app.logger.critical("Initial connection to Postgres failed. Is the db up and running?")
+			throw error
+		}
+		catch let error as PostgresNIO.PostgresError {
+			app.logger.critical("Initial attempt to access Swiftarr DB tables failed. Is the DB set up (all migrations run)?")
+			throw error
+		}
+		try allUsers.forEach { user in
+			let userID = try user.requireID()
+			let barrelFuture = Barrel.query(on: app.db)
+				.filter(\.$ownerID == userID)
+				.filter(\.$barrelType ~~ [.userMute, .keywordMute, .keywordAlert])
+				.all()
+				
+			// Redis stores blocks as users you've blocked AND users who have blocked you,
+			// for all subaccounts of both you and the other user.
+			let redisKey: RedisKey = "rblocks:\(userID.uuidString)"
+			let blockFuture = app.redis.smembers(of: redisKey, as: UUID.self)
+		
+			let futures = barrelFuture.and(blockFuture).map { (barrels, blocks) in 
+				var mutes: [UUID]?
+				var muteWords: [String]?
+				var alertWords: [String]?
+				for barrel in barrels {
+					switch barrel.barrelType {
+						case .userMute: mutes = barrel.modelUUIDs
+						case .keywordMute: muteWords = barrel.userInfo["muteWords"]
+						case .keywordAlert: alertWords = barrel.userInfo["alertWords"]
+						default: continue
+					}
+				}
+				let compactBlocks = blocks.compactMap { $0 }
+				let cacheData = UserCacheData(userID: userID, user: user, blocks: compactBlocks,
+						mutes: mutes, mutewords: muteWords, alertwords: alertWords)
+				initialStorage.cacheUser(cacheData)
+			}
+			try futures.wait()
+		}
+		app.userCacheStorage = initialStorage
 	}
 
 }

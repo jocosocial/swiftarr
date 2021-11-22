@@ -27,11 +27,11 @@ struct SiteSeamailController: SiteControllerUtils {
 	// Shows the root Seamail page, with a list of all conversations.
     func seamailRootPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		return apiQuery(req, endpoint: "/fez/joined?type=closed").throwingFlatMap { response in
- 			let fezzes = try response.content.decode([FezData].self)
+ 			let fezList = try response.content.decode(FezListData.self)
  			// Re-sort fezzes so ones with new msgs are first. Keep most-recent-change sort within each group.
  			var newMsgFezzes: [FezData] = []
  			var noNewMsgFezzes: [FezData] = []
- 			fezzes.forEach {
+ 			fezList.fezzes.forEach {
  				if let members = $0.members, members.postCount > members.readCount {
  					newMsgFezzes.append($0)
  				}
@@ -42,14 +42,21 @@ struct SiteSeamailController: SiteControllerUtils {
  			let allFezzes = newMsgFezzes + noNewMsgFezzes
      		struct SeamailRootPageContext : Encodable {
 				var trunk: TrunkContext
+    			var fezList: FezListData
     			var fezzes: [FezData]
+				var paginator: PaginatorContext
     			
-    			init(_ req: Request, fezzes: [FezData]) throws {
+    			init(_ req: Request, fezList: FezListData, fezzes: [FezData]) throws {
     				trunk = .init(req, title: "Seamail", tab: .seamail)
+    				self.fezList = fezList
     				self.fezzes = fezzes
-    			}
+    				let limit = fezList.paginator.limit
+					paginator = .init(fezList.paginator) { pageIndex in
+						"/seamail?start=\(pageIndex * limit)&limit=\(limit)"
+					}
+   			}
     		}
-    		let ctx = try SeamailRootPageContext(req, fezzes: allFezzes)
+    		let ctx = try SeamailRootPageContext(req, fezList: fezList, fezzes: allFezzes)
 			return req.view.render("Fez/seamails", ctx)
     	}
     }

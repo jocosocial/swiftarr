@@ -31,11 +31,10 @@ final class FezParticipant: Model {
     /// Initializes a new `FezParticipant` pivot.
     ///
     /// - Parameters:
-    ///   - user: The left hand `User` model.
+    ///   - userID: The left hand `User` model.
     ///   - post: The right hand `FriendlyFez` model.
-    init(_ user: User, _ post: FriendlyFez) throws {
-        self.$user.id = try user.requireID()
-        self.$user.value = user
+    init(_ userID: UUID, _ post: FriendlyFez) throws {
+        self.$user.id = userID
         self.$fez.id = try post.requireID()
         self.$fez.value = post
         self.readCount = 0

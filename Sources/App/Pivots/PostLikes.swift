@@ -33,9 +33,8 @@ final class PostLikes: Model {
     /// - Parameters:
     ///   - user: The left hand `User` model.
     ///   - post: The right hand `ForumPost` model.
-    init(_ user: User, _ post: ForumPost) throws {
-        self.$user.id = try user.requireID()
-        self.$user.value = user
+    init(_ userID: UUID, _ post: ForumPost) throws {
+        self.$user.id = userID
         self.$post.id = try post.requireID()
         self.$post.value = post
     }
@@ -46,8 +45,8 @@ final class PostLikes: Model {
     ///   - user: The left hand `User` model.
     ///   - post: The right hand `ForumPost` model.
     ///   - likeType: The type of like reaction for this pivot.
-    convenience init(_ user: User, _ post: ForumPost, likeType: LikeType) throws {
-		try self.init(user, post)
+    convenience init(_ userID: UUID, _ post: ForumPost, likeType: LikeType) throws {
+		try self.init(userID, post)
         self.likeType = likeType
     }
 }

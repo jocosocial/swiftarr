@@ -3,19 +3,21 @@
     	<div class="container-md ms-0 mt-2">
 			#extend("Fez/fezNavbar")
 			<a class="btn btn-primary btn-sm mb-2" role="button" href="/fez/create">New LFG</a>
+			#extend("paginator")
 			<div class="list-group">
-				#if(count(fezzes) == 0):
+				#if(count(fezList.fezzes) == 0):
 					<div class="row">
 						<div class="col">
 							<li class="list-group-item">You haven't created any LFGs yet, but you can create one by tapping "New LFG".</li>
 						</div>
 					</div>
 				#else:
-					#for(fez in fezzes):
+					#for(fez in fezList.fezzes):
 						#extend("Fez/fezListItem")
 					#endfor
 				#endif
 			</div>
+			#extend("paginator")
 		</div>
     #endexport
 #endextend

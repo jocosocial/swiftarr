@@ -328,7 +328,7 @@ struct AdminController: APIRouteCollection {
 										if let existingEvent = existingEventDict[eventUID] {
 											let future = existingEvent.$forum.load(on: database).throwingFlatMap { (_: Void) -> EventLoopFuture<Void> in
 												if let forum = existingEvent.forum {
-													let newPost = try ForumPost(forum: forum, author: user, text: """
+													let newPost = try ForumPost(forum: forum, authorID: user.requireID(), text: """
 															Automatic Notification of Schedule Change: This event has been deleted from the \
 															schedule. Apologies to those planning on attending.
 															
@@ -362,7 +362,7 @@ struct AdminController: APIRouteCollection {
 											// Build an initial post in the forum with information about the event, and
 											// a callout for posters to discuss the event.
 											let postText = SetInitialEventForums.buildEventPostText(event)
-											let infoPost = try ForumPost(forum: forum, author: user, text: postText)
+											let infoPost = try ForumPost(forum: forum, authorID: user.requireID(), text: postText)
 										
 											// Associate the forum with the event
 											event.$forum.id = forum.id
@@ -370,7 +370,7 @@ struct AdminController: APIRouteCollection {
 											return event.save(on: database).flatMap {
 												return infoPost.save(on: database).throwingFlatMap { 
 													if makeForumPosts {
-														let newPost = try ForumPost(forum: forum, author: user, text: """
+														let newPost = try ForumPost(forum: forum, authorID: user.requireID(), text: """
 																Automatic Notification of Schedule Change: This event was just added to the \
 																schedule.
 																""")
@@ -436,7 +436,7 @@ struct AdminController: APIRouteCollection {
 											})
 											// Add post to forum detailing changes made to this event.
 											if makeForumPosts {
-												let newPost = try ForumPost(forum: forum, author: user, text: """
+												let newPost = try ForumPost(forum: forum, authorID: user.requireID(), text: """
 														Automatic Notification of Schedule Change: This event has changed.
 														
 														\(changes.contains(.undelete) ? "This event was canceled, but now is un-canceled.\r" : "")\

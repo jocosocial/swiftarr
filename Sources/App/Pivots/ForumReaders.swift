@@ -29,9 +29,8 @@ final class ForumReaders: Model {
     /// - Parameters:
     ///   - user: The associated `User` model.
     ///   - forum: The associated `Forum` model.
-    init(_ user: User, _ forum: Forum) throws {
-        self.$user.id = try user.requireID()
-        self.$user.value = user
+    init(_ userID: UUID, _ forum: Forum) throws {
+        self.$user.id = userID
         self.$forum.id = try forum.requireID()
         self.$forum.value = forum
         self.readCount = 0

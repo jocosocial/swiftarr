@@ -9648,13 +9648,10 @@
 		OBJ_267 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = Package.swift; path = "/Users/cfry/Code/swiftarr/.build/checkouts/fluent-postgres-driver/Package.swift"; sourceTree = "<group>"; };
 		OBJ_270 /* ConnectionPool+Postgres.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ConnectionPool+Postgres.swift"; sourceTree = "<group>"; };
 		OBJ_2700 /* Resources */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Resources; sourceTree = SOURCE_ROOT; };
-		OBJ_2702 /* __pycache__ */ = {isa = PBXFileReference; lastKnownFileType = folder; path = __pycache__; sourceTree = SOURCE_ROOT; };
 		OBJ_2703 /* docs */ = {isa = PBXFileReference; lastKnownFileType = folder; path = docs; sourceTree = SOURCE_ROOT; };
 		OBJ_2704 /* seeds */ = {isa = PBXFileReference; lastKnownFileType = folder; path = seeds; sourceTree = SOURCE_ROOT; };
 		OBJ_2705 /* scripts */ = {isa = PBXFileReference; lastKnownFileType = folder; path = scripts; sourceTree = SOURCE_ROOT; };
 		OBJ_2706 /* Prometheus */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Prometheus; sourceTree = SOURCE_ROOT; };
-		OBJ_2707 /* build */ = {isa = PBXFileReference; lastKnownFileType = folder; path = build; sourceTree = SOURCE_ROOT; };
-		OBJ_2708 /* DerivedData */ = {isa = PBXFileReference; lastKnownFileType = folder; path = DerivedData; sourceTree = SOURCE_ROOT; };
 		OBJ_2709 /* locustfile.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = locustfile.py; sourceTree = "<group>"; };
 		OBJ_2710 /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
 		OBJ_2711 /* API_cheatsheet.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = API_cheatsheet.md; sourceTree = "<group>"; };
@@ -15834,13 +15831,10 @@
 				OBJ_145 /* Dependencies */,
 				OBJ_2638 /* Products */,
 				OBJ_2700 /* Resources */,
-				OBJ_2702 /* __pycache__ */,
 				OBJ_2703 /* docs */,
 				OBJ_2704 /* seeds */,
 				OBJ_2705 /* scripts */,
 				OBJ_2706 /* Prometheus */,
-				OBJ_2707 /* build */,
-				OBJ_2708 /* DerivedData */,
 				OBJ_2709 /* locustfile.py */,
 				OBJ_2710 /* LICENSE */,
 				OBJ_2711 /* API_cheatsheet.md */,

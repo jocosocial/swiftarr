@@ -50,12 +50,11 @@ final class FriendlyFezEdit: Model {
     /// - Parameters:
     ///   - forum: The Forum that will be edited.
     ///   - editor: The User making the change.
-    init(fez: FriendlyFez, editor: User) throws
+    init(fez: FriendlyFez, editorID: UUID) throws
     {
         self.$fez.id = try fez.requireID()
         self.$fez.value = fez
-        self.$editor.id = try editor.requireID()
-        self.$editor.value = editor
+        self.$editor.id = editorID
         self.title = fez.title
         self.info = fez.info
         self.location = fez.location ?? ""

@@ -66,12 +66,11 @@ final class Forum: Model {
     ///   - categoryID: The category to which the forum belongs.
     ///   - creatorID: The ID of the creator of the forum.
     ///   - isLocked: Whether the forum is administratively locked.
-    init(title: String, category: Category, creator: User, isLocked: Bool = false) throws {
+    init(title: String, category: Category, creatorID: UUID, isLocked: Bool = false) throws {
         self.title = title
         self.$category.id = try category.requireID()
         self.$category.value = category
-        self.$creator.id = try creator.requireID()
-        self.$creator.value = creator
+        self.$creator.id = creatorID
         self.moderationStatus = .normal
         self.accessLevelToView = category.accessLevelToView
     }

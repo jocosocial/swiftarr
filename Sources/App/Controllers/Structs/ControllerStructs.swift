@@ -468,10 +468,19 @@ extension FezContentData: RCFValidatable {
 	}
 }
 
+/// Used to return data on a group of `FriendlyFez` objects.
+/// 
+/// 
+public struct FezListData: Content {
+	/// Pagination into the results set..
+	var paginator: Paginator
+    ///The fezzes in the result set.
+	var fezzes: [FezData]
+}
+
 /// Used to return a `FriendlyFez`'s data.
 ///
 /// Returned by these methods, with `members` set to nil.
-/// * `POST /api/v3/fez/create`
 /// * `POST /api/v3/fez/ID/join`
 /// * `POST /api/v3/fez/ID/unjoin`
 /// * `GET /api/v3/fez/joined`
@@ -483,6 +492,7 @@ extension FezContentData: RCFValidatable {
 /// 
 /// Returned by these  methods, with `members` populated.
 /// * `GET /api/v3/fez/ID`
+/// * `POST /api/v3/fez/create`
 /// * `POST /api/v3/fez/ID/post`
 /// * `POST /api/v3/fex/ID/post/ID/delete`
 
@@ -913,6 +923,33 @@ extension NoteData {
 		self.targetUser = try UserHeader(user: targetUser)
 		self.note = note.note
 	}
+}
+
+/// Composes into other structs to add pagination.
+/// 
+/// Generally this will be added to a top-level struct along with an array of some result type, like this:
+/// 
+/// ```
+/// 	struct SomeCollectionData: Content {
+/// 		var paginator: Paginator
+/// 		var collection: [CollectionElementType]
+/// 	}
+/// ```
+/// The Paginator lets you page through results, showing the total number of pages and the current page.
+/// The outer-level struct should document the sort ordering for the returned collection; the first element
+/// in the sorted collection is returned in the first result element when start = 0.
+/// 
+/// In many cases the size of the returned array will be smaller than limit, and not only at the end of the results.
+/// In several cases the results may be filtered after the database query returns. The next 'page' of results should
+/// be calculated with `start + limit`, not with collection.count.
+public struct Paginator: Content {
+    /// The total number of fezzes returnable by the request.
+    var total: Int
+	/// The index number of the first item in the fezzes array, relative to the overall returnable results.
+	var start: Int
+	/// The number of results requested. The fezzes array could be smaller than this number.
+	var limit: Int
+
 }
 
 /// Used to create or update a `ForumPost` or `Twarrt`. 

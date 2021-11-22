@@ -68,14 +68,13 @@ final class ForumPost: Model {
     ///   - image: The filename of any image content of the post.
     init(
         forum: Forum,
-        author: User,
+        authorID: UUID,
         text: String,
         images: [String]? = nil
     ) throws {
         self.$forum.id = try forum.requireID()
         self.$forum.value = forum
-        self.$author.id = try author.requireID()
-        self.$author.value = author
+        self.$author.id = authorID
         // We don't do much text manipulation on input, but let's normalize line endings.
         self.text = text.replacingOccurrences(of: "\r\n", with: "\r")
         self.images = images

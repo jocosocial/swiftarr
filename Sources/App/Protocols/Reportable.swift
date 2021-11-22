@@ -83,6 +83,24 @@ extension Reportable {
 		}
 		return req.eventLoop.future()
 	}
+	
+	/// If the change being made to the receiver is a mod exercising their mod powers, record the change in the ModeratorAction log.
+	/// If the change isn't the result of mod powers, do nothing. Most calls don't need to wait for completion, and can ignore the result.
+	/// Only call this function after you're sure the action is actually going to occur.
+	@discardableResult func logIfModeratorAction(_ action: ModeratorActionType, moderatorID: UUID, on req: Request) -> EventLoopFuture<Void> {
+		// Only log actions where a mod has to use their mod powers. That is, if a mod deletes their own tweet, don't log it.
+		// I believe "mod powers" == any change to content where the user making the change isn't the user who created the content.
+		// But, there's edge cases, such as a mod editing @admin auto-generated content, or one mod updating a post made by another mod.
+		guard authorUUID != moderatorID else {
+			return req.eventLoop.future()
+		}
+		return User.find(moderatorID, on: req.db).throwingFlatMap { moderator in
+			if let moderator = moderator, let modAction = try? ModeratorAction(content: self, action: action, moderator: moderator) {
+				return modAction.save(on: req.db)
+			}
+			return req.eventLoop.future()
+		}
+	}
 }
 
 extension Reportable where IDValue == Int {
