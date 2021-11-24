@@ -9,7 +9,8 @@ struct CreateTestData: Migration {
 		let futures: [EventLoopFuture<Void>] = [
 			createTestTwarrts(on: database),	
 			createTestForumPosts(on: database),
-			createTestLargeForumPosts(on: database)
+			createTestLargeForumPosts(on: database),
+			createTestLargeSeamailThread(on: database)
 		]
 		return futures.flatten(on: database.eventLoop).transform(to: ())
 	}
@@ -110,5 +111,44 @@ struct CreateTestData: Migration {
 		This is a long post with lots of text. Hi everyone. I'm the Admin. I'm posting here to test out how \
 		the server works. Does it handle longer posts well? I guess we'll find out soon enough, won't we?
 		"""
+
+	func createTestLargeSeamailThread(on database: Database) -> EventLoopFuture<Void> {
+		return User.query(on: database).filter(\.$username ~~ ["james", "heidi", "sam", "verified"]).all().throwingFlatMap { (users) in
+			guard users.count == 4 else {
+				throw Abort(.internalServerError, reason: "Users for large test thread don't exist.")
+			}
+			let bigFez = try FriendlyFez(owner: users[0].requireID())
+			bigFez.title = "Hey Everybody, Let's Make Lots of Posts"
+			bigFez.participantArray = try users.map { try $0.requireID() }
+			return bigFez.save(on: database).throwingFlatMap {
+				var futures: [EventLoopFuture<Void>] = []
+				futures.append(bigFez.$participants.attach(users, on: database, { $0.readCount = 0; $0.hiddenCount = 0 }))
+				for index in 0...824 {
+					var postStr: String
+					switch Int.random(in: 1...10) {
+					case 1: postStr = "First Post!"
+					case 2: postStr = "Hey everyone, I've got a great idea! What if we all jump in the air at the same time and try to rock the boat?"
+					case 3: postStr = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
+					case 4: postStr = "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using "
+					case 5: postStr = "All the Lorem Ipsum generators on the Internet tend to repeat predefined chunks as necessary, making this the first true generator on the Internet. It uses a dictionary of over 200 Latin words, combined with a handful of model sentence structures, to generate Lorem Ipsum which looks reasonable. The generated Lorem Ipsum is therefore always free from repetition, injected humour, or non-characteristic words etc."
+					case 6: postStr = "What he said."
+					case 7: postStr = "Wait. What. Really?"
+					case 8: postStr = "Well that's pretty random."
+					case 9: postStr = "Is anybody getting off the boat when we dock?"
+					case 10: postStr = "Let it go."
+					default: postStr = "Okay then, let's do it!"
+					}
+					
+					let post = try FezPost(fez: bigFez, authorID: users.randomElement()!.requireID(), 
+							text: "Post #\(index): \(postStr)", image: nil) 
+					futures.append(post.save(on: database))
+				}
+				return futures.flatten(on: database.eventLoop).flatMap {
+					bigFez.postCount = 825
+					return bigFez.save(on: database)
+				}
+			}
+		}
+	}
 }
 

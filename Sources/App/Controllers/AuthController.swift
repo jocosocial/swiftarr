@@ -243,9 +243,10 @@ struct AuthController: APIRouteCollection {
 			} else {
 				// otherwise generate and return new token
 				let token = try Token.generate(for: user)
-				return token.save(on: req.db).flatMapThrowing { _ in
-					req.userCache.updateUser(userID)
-					return try TokenStringData(user: user, token: token)
+				return token.save(on: req.db).throwingFlatMap { _ in
+					return req.userCache.updateUser(userID).flatMapThrowing { ucd in
+						return try TokenStringData(user: user, token: token)
+					}
 				}
 			}
 		}
@@ -282,9 +283,8 @@ struct AuthController: APIRouteCollection {
 				.first()
 				.unwrap(or: Abort(.conflict, reason: "user is not logged in"))
 				.flatMap { token in
-			return token.delete(on: req.db).flatMapThrowing {
-				try req.userCache.updateUser(user.requireID())
-				return .noContent
+			return token.delete(on: req.db).throwingFlatMap {
+				return try req.userCache.updateUser(user.requireID()).transform(to: .noContent)
 			}
         }
     }

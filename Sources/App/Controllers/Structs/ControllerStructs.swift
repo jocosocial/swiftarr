@@ -541,6 +541,8 @@ public struct FezData: Content, ResponseEncodable {
 		/// How many posts the user has read. If postCount > readCount, there's posts to be read. UI can also use readCount to set the initial view 
 		/// to the first unread message.ReadCount does not include posts from blocked/muted users.
 		var readCount: Int
+		/// Paginates the array in posts--gives the start and limit of the returned posts array relative to all the posts in the thread.
+		var paginator: Paginator?
 		/// The FezPosts in the fez discussion. Methods that return arrays of Fezzes, or that add or remove users, do not populate this field (it will be nil).
 		var posts: [FezPostData]?
 	}
@@ -941,15 +943,14 @@ extension NoteData {
 /// 
 /// In many cases the size of the returned array will be smaller than limit, and not only at the end of the results.
 /// In several cases the results may be filtered after the database query returns. The next 'page' of results should
-/// be calculated with `start + limit`, not with collection.count.
+/// be calculated with `start + limit`, not with `start + collection.count`.
 public struct Paginator: Content {
-    /// The total number of fezzes returnable by the request.
+    /// The total number of items returnable by the request.
     var total: Int
-	/// The index number of the first item in the fezzes array, relative to the overall returnable results.
+	/// The index number of the first item in the collection array, relative to the overall returnable results.
 	var start: Int
-	/// The number of results requested. The fezzes array could be smaller than this number.
+	/// The number of results requested. The collection array could be smaller than this number.
 	var limit: Int
-
 }
 
 /// Used to create or update a `ForumPost` or `Twarrt`. 

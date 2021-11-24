@@ -15,11 +15,21 @@ import FluentSQL
 /// See:
 /// * `WS /api/v3/fez/:fezID/socket`
 struct SocketFezPostData: Content {
+	/// PostID of the new post
 	var postID: Int
+	/// User that posted. Should be a current member of the fez; socket should get a `SocketMemberChangeData` adding a new user before any posts by that user.
+	/// But, there's a possible race condition where membership could change before the socket is opened. Unless you update FezData after opening the socket, you may
+	/// see posts from users that don't appear to be members of the fez.
 	var author: UserHeader
+	/// The text of this post.
 	var text: String
+	/// When the post was made.
 	var timestamp: Date
+	/// An optional image that may be attached to the post.
 	var image: String?
+	/// HTML fragment for the post, using the Swiftarr Web UI's front end. Fragment is built using the same semantic data available in the other fields in this struct. 
+	/// Please don't try parsing this to gather data. This field is here so the Javascript can insert HTML that matches what the HTTP endpoints render.
+	var html: String?
 }
 
 extension SocketFezPostData {	
@@ -50,8 +60,13 @@ extension SocketFezPostData {
 /// See:
 /// * `WS /api/v3/fez/:fezID/socket`
 struct SocketFezMemberChangeData: Content {
+	/// The user that joined/left.
 	var user: UserHeader
+	/// TRUE if this is a join.
 	var joined: Bool
+	/// HTML fragment for the action, using the Swiftarr Web UI's front end. Fragment is built using the same semantic data available in the other fields in this struct. 
+	/// Please don't try parsing this to gather data. This field is here so the Javascript can insert HTML that matches what the HTTP endpoints render.
+	var html: String?
 }
 
 /// Informs Notification WebSocket clients of a new notification.

@@ -294,8 +294,10 @@ struct SiteFriendlyFezController: SiteControllerUtils {
     }
     
     // GET /fez/ID
+    //
+    // Paginated.
     // 
-    // Shows a single Fez.
+    // Shows a single Fez with all its posts.
     func singleFezPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
     		throw "Invalid fez ID"
@@ -309,6 +311,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
     			var showDivider: Bool
     			var newPosts: [SocketFezPostData]
      			var post: MessagePostContext
+				var paginator: PaginatorContext
 				
 				init(_ req: Request, fez: FezData) throws {
 					trunk = .init(req, title: "LFG", tab: .none)
@@ -317,7 +320,10 @@ struct SiteFriendlyFezController: SiteControllerUtils {
     				newPosts = []
     				showDivider = false
     				post = .init(forType: .fezPost(fez))
-    				if let members = fez.members, let posts = members.posts {
+    				paginator = PaginatorContext(start: 0, total: 40, limit: 50, urlForPage: { pageIndex in
+						"/fez/\(fez.fezID)?start=\(pageIndex * 50)&limit=50"
+					})
+    				if let members = fez.members, let posts = members.posts, let paginator = members.paginator  {
 						let participantDictionary = members.participants.reduce(into: [:]) { $0[$1.userID] = $1 }
 						for index in 0..<posts.count {
 							let post = posts[index]
@@ -333,6 +339,10 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 							}
 						} 
 						self.showDivider = oldPosts.count > 0 && newPosts.count > 0
+						let limit = paginator.limit
+						self.paginator = PaginatorContext(paginator) { pageIndex in
+							"/fez/\(fez.fezID)?start=\(pageIndex * limit)&limit=\(limit)"
+						}
 					}
 				}
 			}
