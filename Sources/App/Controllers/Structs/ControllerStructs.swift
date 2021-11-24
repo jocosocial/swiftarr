@@ -644,18 +644,14 @@ public struct ForumData: Content {
     var isLocked: Bool
     /// Whether the user has favorited forum.
     var isFavorite: Bool
-    /// The total number of posts in the thread. Could be > posts.count even if all the viewable posts are being returned. If start + limit >= totalPosts this response has the last post in the thread.
-	var totalPosts: Int
-	/// The index number of the first post in the `posts` array. 0 is the index of the first post in the forum. This number is usually  a multiple of `limit` and indicates the page of results.
-	var start: Int
-	/// The number of posts the server attempted to gather. posts.count may be less than this number if posts were filtered out by blocks/mutes, or if start + limit > totalPosts.
-	var limit: Int
-    /// The posts in the forum.
+    /// The paginator contains the total number of posts in the forum, and the start and limit of the requested subset in `posts`.
+	var paginator: Paginator
+    /// Posts in the forum.
     var posts: [PostData]
 }
 
 extension ForumData {
-    init(forum: Forum, creator: UserHeader, isFavorite: Bool, posts: [PostData]) throws {
+    init(forum: Forum, creator: UserHeader, isFavorite: Bool, posts: [PostData], pager: Paginator) throws {
     	guard creator.userID == forum.$creator.id else {
     		throw Abort(.internalServerError, reason: "Internal server error--Forum's creator does not match.")
     	}
@@ -667,9 +663,7 @@ extension ForumData {
 		isLocked = forum.moderationStatus == .locked
 		self.isFavorite = isFavorite
 		self.posts = posts
-		self.totalPosts = 1
-		self.start = 0
-		self.limit = 50
+		self.paginator = pager
     }
 }
 
@@ -736,13 +730,10 @@ extension ForumListData {
 ///
 /// See `ForumController.categoriesHandler(_:)`
 public struct ForumSearchData: Content {
-	/// The index number of the first post in the `posts` array. 0 is the index of the first post in the forum. This number is usually  a multiple of `limit` and indicates the page of results.
-	var start: Int
-	/// The number of posts the server attempted to gather. posts.count may be less than this number if posts were filtered out by blocks/mutes, or if start + limit > totalPosts.
-	var limit: Int
-    /// The number of threads in this category
-    var numThreads: Int
-    ///The threads in the category. Only populated for /categories/ID.
+	/// Paginates the list of forum threads. `paginator.total` is the total number of forums that match the request parameters.
+	/// `limit` and `start` define a slice of the total results set being returned in `forumThreads`.
+	var paginator: Paginator
+    /// A slice of the set of forum threads that match the request parameters.
     var forumThreads: [ForumListData]
 }
 

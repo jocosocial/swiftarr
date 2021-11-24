@@ -244,7 +244,7 @@ struct ForumController: APIRouteCollection {
 			let resultQuery = countQuery.copy().sort(\.$createdAt, .descending).range(start..<(start + limit))
 			return countQuery.count().and(resultQuery.all()).throwingFlatMap { (forumCount, forums) in
 				return try buildForumListData(forums, on: req, userID: cacheUser.userID, favoritesBarrel: barrel).map { forumList in
-					return ForumSearchData(start: start, limit: limit, numThreads: forumCount, forumThreads: forumList)
+					return ForumSearchData(paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
 				}
 			}
 		}
@@ -608,7 +608,8 @@ struct ForumController: APIRouteCollection {
         return Barrel.query(on: req.db).filter(\.$ownerID == cacheUser.userID).filter(\.$barrelType == .taggedForum).first()
        			.flatMap { (barrel) in
             guard let barrel = barrel else {
-                 return req.eventLoop.future(ForumSearchData(start: start, limit: limit, numThreads: 0, forumThreads: []))
+				let pager = Paginator(total: 0, start: start, limit: limit)
+				return req.eventLoop.future(ForumSearchData(paginator: pager, forumThreads: []))
             }
 			// get forums
 			let countQuery = Forum.query(on: req.db).filter(\.$id ~~ barrel.modelUUIDs).filter(\.$creator.$id !~ cacheUser.getBlocks())
@@ -621,7 +622,7 @@ struct ForumController: APIRouteCollection {
 			}
 			return countQuery.count().and(rangeQuery.all()).throwingFlatMap { (forumCount, forums) in
 				return try buildForumListData(forums, on: req, userID: cacheUser.userID, forceIsFavorite: true).map { forumList in
-					return ForumSearchData(start: start, limit: limit, numThreads: forumCount, forumThreads: forumList)
+					return ForumSearchData(paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
 				}
             }
         }
@@ -669,7 +670,7 @@ struct ForumController: APIRouteCollection {
                     	let postData = try PostData(post: forumPost, author: creatorHeader, 
                     			bookmarked: false, userLike: nil, likeCount: 0)
 						let forumData = try ForumData(forum: forum, creator: creatorHeader,
-								isFavorite: false, posts: [postData])
+								isFavorite: false, posts: [postData], pager: Paginator(total: 1, start: 0, limit: 50))
 						return forumData
                     }
                 }
@@ -783,7 +784,7 @@ struct ForumController: APIRouteCollection {
             let resultQuery = countQuery.copy().sort(\.$title, .ascending).range(start..<(start + limit))
 			return countQuery.count().and(resultQuery.all()).throwingFlatMap { (forumCount, forums) in
 				return try buildForumListData(forums, on: req, userID: cacheUser.userID, favoritesBarrel: barrel).map { forumList in
-					return ForumSearchData(start: start, limit: limit, numThreads: forumCount, forumThreads: forumList)
+					return ForumSearchData(paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
 				}
 			}
         }
@@ -1156,11 +1157,9 @@ extension ForumController {
 						}
 						return try buildPostData(posts, userID: cacheUser.userID, on: req, mutewords: cacheUser.mutewords).flatMapThrowing { flattenedPosts in
 							let creatorHeader = try req.userCache.getHeader(forum.$creator.id)
-							var result = try ForumData(forum: forum, creator: creatorHeader, 
-									isFavorite: favoriteForumBarrel?.contains(forum) ?? false, posts: flattenedPosts)
-							result.start = start
-							result.limit = limit
-							result.totalPosts = postCount
+							let pager = Paginator(total: postCount, start: start, limit: limit)
+							let result = try ForumData(forum: forum, creator: creatorHeader, 
+									isFavorite: favoriteForumBarrel?.contains(forum) ?? false, posts: flattenedPosts, pager: pager)
 							return result
 						}
 					}

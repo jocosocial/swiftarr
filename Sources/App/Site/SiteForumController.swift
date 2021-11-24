@@ -21,8 +21,8 @@ struct ForumPageContext : Encodable {
 			category = CategoryData(categoryID: UUID(), title: "Unknown Category", 
 					isRestricted: false, numThreads: 0, forumThreads: nil)
 		}
-		paginator = .init(start: forum.start, total: forum.totalPosts, limit: forum.limit) { pageIndex in
-			"/forum/\(forum.forumID)?start=\(pageIndex * forum.limit)&limit=\(forum.limit)"
+		paginator = PaginatorContext(forum.paginator) { pageIndex in
+			"/forum/\(forum.forumID)?start=\(pageIndex * forum.paginator.limit)&limit=\(forum.paginator.limit)"
 		}
 	}
 }
@@ -51,8 +51,8 @@ struct ForumsSearchPageContext : Encodable {
 		trunk = .init(req, title: title, tab: .forums, search: "Search")
 		self.forums = forums
 		self.searchType = searchType
-		paginator = .init(start: forums.start, total: Int(forums.numThreads), limit: forums.limit) { pageIndex in
-			"/forum/favorites?start=\(pageIndex * forums.limit)&limit=\(forums.limit)"
+		paginator = .init(forums.paginator) { pageIndex in
+			"/forum/favorites?start=\(pageIndex * forums.paginator.limit)&limit=\(forums.paginator.limit)"
 		}
 		filterDescription = filterDesc
 	}
@@ -496,7 +496,7 @@ struct SiteForumController: SiteControllerUtils {
 	func forumFavoritesPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		return apiQuery(req, endpoint: "/forum/favorites").throwingFlatMap { response in
  			let forums = try response.content.decode(ForumSearchData.self)    	
-    		let ctx = try ForumsSearchPageContext(req, forums: forums, searchType: .favorite, filterDesc: "\(forums.numThreads) Favorites")
+    		let ctx = try ForumsSearchPageContext(req, forums: forums, searchType: .favorite, filterDesc: "\(forums.paginator.total) Favorites")
 			return req.view.render("Forums/forumsList", ctx)
     	}
 	}
@@ -531,7 +531,7 @@ struct SiteForumController: SiteControllerUtils {
 	func forumsByUserPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		return apiQuery(req, endpoint: "/forum/owner").throwingFlatMap { response in
  			let forums = try response.content.decode(ForumSearchData.self)    	
-    		let ctx = try ForumsSearchPageContext(req, forums: forums, searchType: .owned, filterDesc: "Your \(forums.numThreads) Forums")
+    		let ctx = try ForumsSearchPageContext(req, forums: forums, searchType: .owned, filterDesc: "Your \(forums.paginator.total) Forums")
 			return req.view.render("Forums/forumsList", ctx)
     	}
 	}
@@ -761,7 +761,7 @@ struct SiteForumController: SiteControllerUtils {
 			return apiQuery(req, endpoint: "/forum/match/\(pathSearch)", passThroughQuery: false).throwingFlatMap { response in
 				let responseData = try response.content.decode(ForumSearchData.self)
     			let ctx = try ForumsSearchPageContext(req, forums: responseData, searchType: .textSearch,
-    					filterDesc: "\(responseData.numThreads) Forums with \"\(formData.search)\"")
+    					filterDesc: "\(responseData.paginator.total) Forums with \"\(formData.search)\"")
 				return req.view.render("Forums/forumsList", ctx)
 			}
 		}
