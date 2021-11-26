@@ -266,7 +266,6 @@ static void fatal_jpeg_error(j_common_ptr cinfo)
 
 	if(jmpbufw != 0) {
 		longjmp(jmpbufw->jmpbuf, 1);
-		gd_error_ex(GD_ERROR, "gd-jpeg: EXTREMELY fatal error: longjmp returned control; terminating\n");
 	} else {
 		gd_error_ex(GD_ERROR, "gd-jpeg: EXTREMELY fatal error: jmpbuf unrecoverable; terminating\n");
 	}
@@ -1284,7 +1283,7 @@ boolean empty_output_buffer(j_compress_ptr cinfo)
 void term_destination(j_compress_ptr cinfo)
 {
 	my_dest_ptr dest = (my_dest_ptr) cinfo->dest;
-	int datacount = OUTPUT_BUF_SIZE - dest->pub.free_in_buffer;
+	int datacount = OUTPUT_BUF_SIZE - (int) dest->pub.free_in_buffer;
 
 	/* Write any data remaining in the buffer */
 	if(datacount > 0) {

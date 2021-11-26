@@ -21,10 +21,9 @@ struct ImportEvents: Migration {
             } else {
                 scheduleFile = "test-schedule.ics"
             }
-            let directoryConfig = DirectoryConfiguration.detect()
-            let schedulePath = directoryConfig.workingDirectory.appending("seeds/").appending(scheduleFile)
+            let schedulePath = Settings.shared.seedsDirectoryPath.appendingPathComponent(scheduleFile)
             // read file as string
-            guard let data = FileManager.default.contents(atPath: schedulePath),
+            guard let data = FileManager.default.contents(atPath: schedulePath.path),
                 let dataString = String(bytes: data, encoding: .utf8) else {
                     fatalError("Could not read schedule file.")
             }

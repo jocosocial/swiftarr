@@ -24,29 +24,6 @@ enum ImageSizeGroup: String {
 	case archive = "archive"
 }
 
-/// A `Protocol` used to provide image processing within RouteCollection controllers.
-
-extension Application {
-	var baseImagesDirectory: URL? {
-        get {
-            self.storage[ImageHandlerStorageKey.self]?.baseImagesDirectory
-        }
-        set {
-            self.storage[ImageHandlerStorageKey.self] = ImageHandlerStorage(baseImagesDirectory: newValue)
-        }
-    }
-    
-	/// This is the datatype that gets stored in UserCacheStorage. Vapor's Services API uses this.
-	struct ImageHandlerStorage {
-		var baseImagesDirectory: URL?
-	}
-	
-	/// Storage key used by Vapor's Services API. Used by UserCache to access its cache data.
-	struct ImageHandlerStorageKey: StorageKey {
-		typealias Value = ImageHandlerStorage
-	}
-}
-
 extension APIRouteCollection {
 
 	/// Returns the file system path for the given image filename. Makes sure all image directories in the path exist.
@@ -55,9 +32,7 @@ extension APIRouteCollection {
 	///		<WorkingDir>/images/<full/thumb>/<xx>/<filename>.jpg
 	/// where "xx" is the first 2 characters of the filename.
 	func getImagePath(for image: String, format: String? = nil, usage: ImageUsage, size: ImageSizeGroup, on req: Request) throws -> URL {
-		let baseImagesDirectory = req.application.baseImagesDirectory ?? 
-				URL(fileURLWithPath: DirectoryConfiguration.detect().workingDirectory).appendingPathComponent("images")
-		
+		let baseImagesDirectory = Settings.shared.userImagesRootPath
 		// Determine format extension to use. Caller can force a format with the 'format' parameter.
 		var imageFormat: String = format ?? URL(fileURLWithPath: image).pathExtension
 		if !(["bmp", "gif", "png", "tiff", "webp"].contains(imageFormat)) {
@@ -81,7 +56,7 @@ extension APIRouteCollection {
 			let fileURL = subDir.appendingPathComponent(filename + "." + imageFormat)
 			return fileURL
 		}
-		let staticBase =  baseImagesDirectory.appendingPathComponent("staticImages")
+		let staticBase = baseImagesDirectory.appendingPathComponent("staticImages")
 		if !FileManager().fileExists(atPath: staticBase.path) {
 			try FileManager().createDirectory(atPath: staticBase.path, withIntermediateDirectories: true)
 		}

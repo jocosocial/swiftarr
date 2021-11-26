@@ -32,6 +32,8 @@ import gd
 /// * ADMIN_PASSWORD:
 /// * RECOVERY_KEY:
 /// 
+/// * SWIFTARR_STATIC_FILES:  Root directory for `Resources` and `seeds`. 
+/// * SWIFTARR_USER_IMAGES:  Root directory for storing user-uploaded images. These images are referenced by filename in the db.
 ///
 /// Called before your application initializes. Calls several other config methods to do its work. Sub functions are only
 /// here for easier organization. If order-of-initialization issues arise, rearrange as necessary.
@@ -48,8 +50,11 @@ public func configure(_ app: Application) throws {
     }
 	ContentConfiguration.global.use(encoder: jsonEncoder, for: .json)
     ContentConfiguration.global.use(decoder: jsonDecoder, for: .json)
+    
+    // Set up all the settings that we don't need Redis to acquire. 
+    try configureBasicSettings(app)
 
-	// Remember: Settings are not available during configuration.
+	// Remember: Stored Settings are not available during configuration--only 'basic' settings.
 	try databaseConnectionConfiguration(app)
 	try HTTPServerConfiguration(app)
 	try configureMiddleware(app)
@@ -63,13 +68,16 @@ public func configure(_ app: Application) throws {
 	// Posts on RedisKit's github bug db say the solution is to call boot() early. 
 	try app.boot()
 	
-	// Right after boot, check that we can access everything.
+	// Check that we can access everything.
 	try verifyConfiguration(app)
 	
+	// Now load the settings that we need Redis access to acquire.
+	try configureStoredSettings(app)
+
 	// UserCache had previously done startup initialization with a lifecycle handler. However, Redis isn't ready 
 	// for use until its 'didBoot' lifecycle handler has run, and I don't like opaque ordering dependencies.
+	// As a lifecycle handler, our 'didBoot' callback got put in a list with Redis's, and we had to hope Vapor called them first.
 	try app.initializeUserCache(app)
-	try configureSettings(app)
 }
 
 func databaseConnectionConfiguration(_ app: Application) throws {
@@ -114,8 +122,7 @@ func databaseConnectionConfiguration(_ app: Application) throws {
 
 }
 
-func configureSettings(_ app: Application) throws {
-	try Settings.shared.readStoredSettings(app: app)
+func configureBasicSettings(_ app: Application) throws {
 
 	// Set the cruise start date to a date that works with the Schedule.ics file that we have. Until we have
 	// a 2022 schedule, we're using the 2020 schedule. Development builds by default will date-shift the current date
@@ -147,14 +154,49 @@ func configureSettings(_ app: Application) throws {
 	// Ask the GD Image library what filetypes are available on the local machine.
 	// gd, gd2, xbm, xpm, wbmp, some other useless formats culled.
 	let fileTypes = [".gif", ".bmp", ".tga", ".png", ".jpg", ".heif", ".heix", ".avif", ".tif", ".webp"]
-	let supportedInputTypes = fileTypes.filter { gdSupportsFileType($0, 0) != 0 }
-	let supportedOutputTypes = fileTypes.filter { gdSupportsFileType($0, 1) != 0 }
+	var supportedInputTypes = fileTypes.filter { gdSupportsFileType($0, 0) != 0 }
+	var supportedOutputTypes = fileTypes.filter { gdSupportsFileType($0, 1) != 0 }
+	if supportedInputTypes.contains(".jpg") {
+		supportedInputTypes.append(".jpeg")
+	}
+	if supportedOutputTypes.contains(".jpg") {
+		supportedOutputTypes.append(".jpeg")
+	}
 	Settings.shared.validImageInputTypes = supportedInputTypes
 	Settings.shared.validImageOutputTypes = supportedOutputTypes
 	
 	// On my machine: heif, heix, avif not supported
 	// [".gif", ".bmp", ".tga", ".png", ".jpg", ".tif", ".webp"] inputs
 	// [".gif", ".bmp",         ".png", ".jpg", ".tif", ".webp"] outputs
+	
+	// Figure out the likely path to the 'swiftarr' executable.
+	var likelyExecutablePath: String
+	let appPath = app.environment.arguments[0]
+	if appPath.isEmpty || !appPath.hasPrefix("/") {
+		likelyExecutablePath = DirectoryConfiguration.detect().workingDirectory
+	}
+	else {
+		likelyExecutablePath = URL(fileURLWithPath: appPath).deletingLastPathComponent().path
+	}
+	
+	// The "Resources" and "seeds" directories, found at the root of the Github repo, usually get copied into
+	// the same directory that holds the Swiftarr executable during the build process. 
+	let staticFilesRootPath = URL(fileURLWithPath: Environment.get("SWIFTARR_STATIC_FILES") ?? likelyExecutablePath)
+	Settings.shared.staticFilesRootPath = staticFilesRootPath
+	
+	// This sets the root dir for the "User Images" tree, which is where user uploaded images are stored.
+	// The postgres DB holds filenames that refer to files in this directory tree; ideally the lifetime of the 
+	// contents of this directory should be tied to the lifetime of the DB (that is, clear out this dir on DB reset).
+	if let userImagesOverridePath = Environment.get("SWIFTARR_USER_IMAGES") {
+		Settings.shared.userImagesRootPath = URL(fileURLWithPath: userImagesOverridePath)
+	}
+	else {
+		Settings.shared.userImagesRootPath = URL(fileURLWithPath: likelyExecutablePath).appendingPathComponent("images")
+	}
+}
+
+func configureStoredSettings(_ app: Application) throws {
+	try Settings.shared.readStoredSettings(app: app)
 }
 
 func HTTPServerConfiguration(_ app: Application) throws {
@@ -297,28 +339,66 @@ func configureMigrations(_ app: Application) throws {
 // Perform several sanity checks to verify that we can access the dbs and resource files that we need.
 // If we're misconfigured, this can emit more useful errors than the ones that'll come from deep inside db drivers.
 func verifyConfiguration(_ app: Application) throws {
-	// I'd like to test, in order:
-	//	- That a Postgres connection exists
-	//  - The db_user is authed
-	//  - We found the 'swiftarr' database
-	// But, my sql-fu isn't strong enough. So, I just do a dummy query. 
-	_ = User.query(on: app.db).with(\.$token).all().flatMapErrorThrowing { error in
-		app.logger.critical("Initial connection to Postgres failed. Is the db up and running?")
-		throw error
+	var postgresChecksFailed = false
+	// Test that we have a Postgres connection (requires that we've connected *and* authed).
+	if !postgresChecksFailed, let postgresDB = app.db as? PostgresDatabase {
+		do {
+			let connClosed = try postgresDB.withConnection { conn in
+				return postgresDB.eventLoop.future(conn.isClosed)
+			}.wait()
+			guard connClosed == false else {
+				throw "Postgres DB driver doesn't report any open connections."
+			}	
+		}
+		catch {
+			app.logger.critical("Launchtime sanity check: Postgres connection is not open. \(error)")
+			postgresChecksFailed = true
+		}
 	}
-
+	
+	// Test whether a 'swiftarr' database exists
+	if !postgresChecksFailed, let sqldb = app.db as? SQLDatabase {
+		do {
+			let query = try sqldb.raw("SELECT 1 FROM pg_database WHERE datname='swiftarr'").first().wait()
+			guard let sqlrow = query else  {
+				throw "No result from SQL query."
+			}
+			guard try sqlrow.decode(column: "?column?", as: Int.self) == 1 else {
+				throw "Database existence check failed in a weird way."
+			}
+		}
+		catch {
+			app.logger.critical("Launchtime sanity check: Could not find 'swiftarr' database in Postgres. \(error)")
+			postgresChecksFailed = true
+			
+			// We could probably do `SQL CREATE DATABASE 'swiftarr'` here?
+		}
+	}
+	
+	// Do a dummy query on the DB
+	if !postgresChecksFailed {
+		_ = User.query(on: app.db).count().flatMapThrowing { userCount in
+			guard userCount > 0 else {
+				throw "User table has zero users. Did the migrations all run?"
+			}
+			app.logger.notice("DB has \(userCount) users at launch.")
+		}.flatMapErrorThrowing { error in
+			app.logger.critical("Initial connection to Postgres failed. Is the db up and running? \(error)")
+			throw error
+		}
+	}
+	
 	// Same idea for Redis. I'm not even sure what the 'steps' would be for diagnosing a connection error.
 	_ = app.redis.ping(with: "Swiftarr configuration check during app launch").flatMapErrorThrowing { error in
 		app.logger.critical("Initial connection to Redis failed. Is the db up and running?")
 		throw error
 	}
-	
+
 	// Next, check that the resource files are getting copied into the build directory. 
 	// What's going on? Instead of running the app at the root of the git hierarchy, Xcode makes a /DerivedData dir and runs
 	// apps (deep) inside there. A script build step is supposed to copy the contents of /Resources and /Seeds into the dir
 	// the app runs in. If that script breaks or didn't run, this will hopefully catch it and tell admins what's wrong.
-	let dir = DirectoryConfiguration.detect().workingDirectory
-	let swiftarrCSSPath = URL(fileURLWithPath: dir).appendingPathComponent("Resources/Assets/css/swiftarr.css").path
+	let swiftarrCSSPath = Settings.shared.resourcesDirectoryPath.appendingPathComponent("Assets/css/swiftarr.css").path
 	var isDir: ObjCBool = false
 	if !FileManager.default.fileExists(atPath: swiftarrCSSPath, isDirectory: &isDir), !isDir.boolValue {
 		app.logger.critical("Resource files not found during launchtime sanity check. This usually means the Resources directory isn't getting copied into the App directory in /DerivedData.")

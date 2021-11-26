@@ -5,18 +5,7 @@ import Foundation
 import gd
 
 struct ImageController: APIRouteCollection {
-	// Important that this stays a constant; changing after creation is not thread-safe.
-	// Also, since this is based on DirectoryConfiguration, the value is process-wide, not Application-wide.
-	let imagesDirectory: URL
-	
-	// TODO: Currently this creates an images directory inside of `DerivedData`, meaning all images are deleted
-	// on "Clean Build Folder". This doesn't reset the database, so you end up with a DB referencing images that aren't there.
-	// It would be better to put images elsewhere and tie their lifecycle to the database.
-	init() {
-		let dir = DirectoryConfiguration.detect().workingDirectory
-		imagesDirectory = URL(fileURLWithPath: dir).appendingPathComponent("images")
-	}
- 
+
     /// Required. Registers routes to the incoming router.
     func registerRoutes(_ app: Application) throws {
         
@@ -197,7 +186,7 @@ struct ImageController: APIRouteCollection {
 		// this will give us 128 subdirs.
 		let subDirName = String(fileParam.prefix(2))
 			
-        let fileURL = imagesDirectory.appendingPathComponent(sizeGroup.rawValue)
+        let fileURL = Settings.shared.userImagesRootPath.appendingPathComponent(sizeGroup.rawValue)
         		.appendingPathComponent(subDirName)
         		.appendingPathComponent(fileUUID.uuidString + "." + fileExtension)
 		let response = req.fileio.streamFile(at: fileURL.path)

@@ -10347,67 +10347,67 @@
 		OBJ_995 /* socket.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = socket.c; sourceTree = "<group>"; };
 		OBJ_996 /* socket_helper.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = socket_helper.c; sourceTree = "<group>"; };
 		OBJ_998 /* blake2.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = blake2.c; sourceTree = "<group>"; };
-		"RediStack::RediStack::Product" /* RediStack.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = RediStack.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"SwiftPrometheus::Prometheus::Product" /* Prometheus.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Prometheus.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"async-http-client::AsyncHTTPClient::Product" /* AsyncHTTPClient.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = AsyncHTTPClient.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"async-kit::AsyncKit::Product" /* AsyncKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = AsyncKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"console-kit::ConsoleKit::Product" /* ConsoleKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = ConsoleKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"fluent-kit::FluentKit::Product" /* FluentKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = FluentKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"fluent-kit::FluentSQL::Product" /* FluentSQL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = FluentSQL.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"fluent-postgres-driver::FluentPostgresDriver::Product" /* FluentPostgresDriver.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = FluentPostgresDriver.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"fluent::Fluent::Product" /* Fluent.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Fluent.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"leaf-kit::LeafKit::Product" /* LeafKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = LeafKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"leaf::Leaf::Product" /* Leaf.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Leaf.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"multipart-kit::MultipartKit::Product" /* MultipartKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = MultipartKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"postgres-kit::PostgresKit::Product" /* PostgresKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = PostgresKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"postgres-nio::PostgresNIO::Product" /* PostgresNIO.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = PostgresNIO.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"redis::Redis::Product" /* Redis.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Redis.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"routing-kit::RoutingKit::Product" /* RoutingKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = RoutingKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"sql-kit::SQLKit::Product" /* SQLKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = SQLKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-backtrace::Backtrace::Product" /* Backtrace.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Backtrace.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-backtrace::CBacktrace::Product" /* CBacktrace.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CBacktrace.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-crypto::CCryptoBoringSSL::Product" /* CCryptoBoringSSL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CCryptoBoringSSL.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-crypto::CCryptoBoringSSLShims::Product" /* CCryptoBoringSSLShims.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CCryptoBoringSSLShims.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-crypto::Crypto::Product" /* Crypto.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Crypto.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-log::Logging::Product" /* Logging.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Logging.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-metrics::CoreMetrics::Product" /* CoreMetrics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CoreMetrics.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-metrics::Metrics::Product" /* Metrics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Metrics.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-nio-extras::CNIOExtrasZlib::Product" /* CNIOExtrasZlib.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CNIOExtrasZlib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-nio-extras::NIOExtras::Product" /* NIOExtras.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = NIOExtras.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-nio-extras::NIOHTTPCompression::Product" /* NIOHTTPCompression.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = NIOHTTPCompression.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-nio-extras::NIOSOCKS::Product" /* NIOSOCKS.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = NIOSOCKS.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-nio-http2::NIOHPACK::Product" /* NIOHPACK.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = NIOHPACK.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-nio-http2::NIOHTTP2::Product" /* NIOHTTP2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = NIOHTTP2.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-nio-ssl::CNIOBoringSSL::Product" /* CNIOBoringSSL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CNIOBoringSSL.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-nio-ssl::CNIOBoringSSLShims::Product" /* CNIOBoringSSLShims.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CNIOBoringSSLShims.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-nio-ssl::NIOSSL::Product" /* NIOSSL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = NIOSSL.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-nio-transport-services::NIOTransportServices::Product" /* NIOTransportServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = NIOTransportServices.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-nio::CNIOAtomics::Product" /* CNIOAtomics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CNIOAtomics.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-nio::CNIODarwin::Product" /* CNIODarwin.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CNIODarwin.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-nio::CNIOHTTPParser::Product" /* CNIOHTTPParser.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CNIOHTTPParser.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-nio::CNIOLinux::Product" /* CNIOLinux.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CNIOLinux.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-nio::CNIOSHA1::Product" /* CNIOSHA1.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CNIOSHA1.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-nio::CNIOWindows::Product" /* CNIOWindows.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CNIOWindows.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-nio::NIO::Product" /* NIO.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = NIO.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-nio::NIOConcurrencyHelpers::Product" /* NIOConcurrencyHelpers.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = NIOConcurrencyHelpers.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-nio::NIOCore::Product" /* NIOCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = NIOCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-nio::NIOEmbedded::Product" /* NIOEmbedded.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = NIOEmbedded.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-nio::NIOFoundationCompat::Product" /* NIOFoundationCompat.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = NIOFoundationCompat.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-nio::NIOHTTP1::Product" /* NIOHTTP1.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = NIOHTTP1.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-nio::NIOPosix::Product" /* NIOPosix.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = NIOPosix.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-nio::NIOTLS::Product" /* NIOTLS.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = NIOTLS.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-nio::NIOWebSocket::Product" /* NIOWebSocket.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = NIOWebSocket.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swift-nio::_NIODataStructures::Product" /* _NIODataStructures.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = _NIODataStructures.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swiftarr::App::Product" /* App.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = App.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swiftarr::AppTests::Product" /* AppTests.xctest */ = {isa = PBXFileReference; lastKnownFileType = file; path = AppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swiftarr::Run::Product" /* Run */ = {isa = PBXFileReference; lastKnownFileType = text; path = Run; sourceTree = BUILT_PRODUCTS_DIR; };
-		"swiftarr::gdOverrides::Product" /* gdOverrides.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = gdOverrides.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"vapor::CBase32::Product" /* CBase32.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CBase32.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"vapor::CBcrypt::Product" /* CBcrypt.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CBcrypt.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"vapor::COperatingSystem::Product" /* COperatingSystem.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = COperatingSystem.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"vapor::CURLParser::Product" /* CURLParser.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CURLParser.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"vapor::Vapor::Product" /* Vapor.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Vapor.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		"websocket-kit::WebSocketKit::Product" /* WebSocketKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = WebSocketKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"RediStack::RediStack::Product" /* RediStack.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = RediStack.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"SwiftPrometheus::Prometheus::Product" /* Prometheus.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Prometheus.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"async-http-client::AsyncHTTPClient::Product" /* AsyncHTTPClient.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = AsyncHTTPClient.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"async-kit::AsyncKit::Product" /* AsyncKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = AsyncKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"console-kit::ConsoleKit::Product" /* ConsoleKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = ConsoleKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"fluent-kit::FluentKit::Product" /* FluentKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = FluentKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"fluent-kit::FluentSQL::Product" /* FluentSQL.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = FluentSQL.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"fluent-postgres-driver::FluentPostgresDriver::Product" /* FluentPostgresDriver.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = FluentPostgresDriver.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"fluent::Fluent::Product" /* Fluent.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Fluent.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"leaf-kit::LeafKit::Product" /* LeafKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = LeafKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"leaf::Leaf::Product" /* Leaf.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Leaf.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"multipart-kit::MultipartKit::Product" /* MultipartKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = MultipartKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"postgres-kit::PostgresKit::Product" /* PostgresKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = PostgresKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"postgres-nio::PostgresNIO::Product" /* PostgresNIO.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = PostgresNIO.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"redis::Redis::Product" /* Redis.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Redis.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"routing-kit::RoutingKit::Product" /* RoutingKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = RoutingKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"sql-kit::SQLKit::Product" /* SQLKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = SQLKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-backtrace::Backtrace::Product" /* Backtrace.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Backtrace.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-backtrace::CBacktrace::Product" /* CBacktrace.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CBacktrace.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-crypto::CCryptoBoringSSL::Product" /* CCryptoBoringSSL.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CCryptoBoringSSL.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-crypto::CCryptoBoringSSLShims::Product" /* CCryptoBoringSSLShims.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CCryptoBoringSSLShims.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-crypto::Crypto::Product" /* Crypto.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Crypto.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-log::Logging::Product" /* Logging.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Logging.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-metrics::CoreMetrics::Product" /* CoreMetrics.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CoreMetrics.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-metrics::Metrics::Product" /* Metrics.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Metrics.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-nio-extras::CNIOExtrasZlib::Product" /* CNIOExtrasZlib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CNIOExtrasZlib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-nio-extras::NIOExtras::Product" /* NIOExtras.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NIOExtras.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-nio-extras::NIOHTTPCompression::Product" /* NIOHTTPCompression.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NIOHTTPCompression.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-nio-extras::NIOSOCKS::Product" /* NIOSOCKS.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NIOSOCKS.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-nio-http2::NIOHPACK::Product" /* NIOHPACK.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NIOHPACK.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-nio-http2::NIOHTTP2::Product" /* NIOHTTP2.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NIOHTTP2.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-nio-ssl::CNIOBoringSSL::Product" /* CNIOBoringSSL.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CNIOBoringSSL.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-nio-ssl::CNIOBoringSSLShims::Product" /* CNIOBoringSSLShims.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CNIOBoringSSLShims.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-nio-ssl::NIOSSL::Product" /* NIOSSL.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NIOSSL.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-nio-transport-services::NIOTransportServices::Product" /* NIOTransportServices.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NIOTransportServices.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-nio::CNIOAtomics::Product" /* CNIOAtomics.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CNIOAtomics.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-nio::CNIODarwin::Product" /* CNIODarwin.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CNIODarwin.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-nio::CNIOHTTPParser::Product" /* CNIOHTTPParser.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CNIOHTTPParser.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-nio::CNIOLinux::Product" /* CNIOLinux.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CNIOLinux.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-nio::CNIOSHA1::Product" /* CNIOSHA1.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CNIOSHA1.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-nio::CNIOWindows::Product" /* CNIOWindows.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CNIOWindows.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-nio::NIO::Product" /* NIO.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NIO.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-nio::NIOConcurrencyHelpers::Product" /* NIOConcurrencyHelpers.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NIOConcurrencyHelpers.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-nio::NIOCore::Product" /* NIOCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NIOCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-nio::NIOEmbedded::Product" /* NIOEmbedded.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NIOEmbedded.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-nio::NIOFoundationCompat::Product" /* NIOFoundationCompat.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NIOFoundationCompat.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-nio::NIOHTTP1::Product" /* NIOHTTP1.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NIOHTTP1.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-nio::NIOPosix::Product" /* NIOPosix.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NIOPosix.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-nio::NIOTLS::Product" /* NIOTLS.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NIOTLS.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-nio::NIOWebSocket::Product" /* NIOWebSocket.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = NIOWebSocket.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-nio::_NIODataStructures::Product" /* _NIODataStructures.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = _NIODataStructures.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swiftarr::App::Product" /* App.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = App.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swiftarr::AppTests::Product" /* AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = AppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swiftarr::Run::Product" /* Run */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; path = Run; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swiftarr::gdOverrides::Product" /* gdOverrides.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = gdOverrides.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"vapor::CBase32::Product" /* CBase32.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CBase32.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"vapor::CBcrypt::Product" /* CBcrypt.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CBcrypt.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"vapor::COperatingSystem::Product" /* COperatingSystem.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = COperatingSystem.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"vapor::CURLParser::Product" /* CURLParser.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CURLParser.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"vapor::Vapor::Product" /* Vapor.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Vapor.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"websocket-kit::WebSocketKit::Product" /* WebSocketKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = WebSocketKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -19353,7 +19353,7 @@
 			isa = PBXProject;
 			attributes = {
 				LastSwiftMigration = 9999;
-				LastUpgradeCheck = 9999;
+				LastUpgradeCheck = 1310;
 			};
 			buildConfigurationList = OBJ_2 /* Build configuration list for PBXProject "swiftarr" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -19361,6 +19361,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				Base,
 			);
 			mainGroup = OBJ_5;
 			productRefGroup = OBJ_2638 /* Products */;
@@ -25856,9 +25857,8 @@
 					"$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CURLParser",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/App_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-I/usr/local/Cellar/jpeg/9d/include",
@@ -25879,7 +25879,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = App;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -25918,9 +25918,8 @@
 					"$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CURLParser",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/App_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-I/usr/local/Cellar/jpeg/9d/include",
@@ -25941,7 +25940,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = App;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -25949,10 +25948,10 @@
 		OBJ_2996 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DRIVERKIT_DEPLOYMENT_TARGET = 19.0;
-				EMBEDDED_CONTENT_CONTAINS_SWIFT = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
@@ -25983,7 +25982,6 @@
 				INFOPLIST_FILE = swiftarr.xcodeproj/AppTests_Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @loader_path/../Frameworks @loader_path/Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-I/usr/local/Cellar/jpeg/9d/include",
@@ -26008,10 +26006,10 @@
 		OBJ_2997 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DRIVERKIT_DEPLOYMENT_TARGET = 19.0;
-				EMBEDDED_CONTENT_CONTAINS_SWIFT = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
@@ -26042,7 +26040,6 @@
 				INFOPLIST_FILE = swiftarr.xcodeproj/AppTests_Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @loader_path/../Frameworks @loader_path/Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-I/usr/local/Cellar/jpeg/9d/include",
@@ -26068,18 +26065,44 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				ENABLE_NS_ASSERTIONS = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					"SWIFT_PACKAGE=1",
 					"DEBUG=1",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_SWIFT_FLAGS = "$(inherited) -DXcode";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -26114,9 +26137,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/AsyncHTTPClient_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -26127,7 +26149,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = AsyncHTTPClient;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -26154,9 +26176,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/AsyncHTTPClient_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -26167,7 +26188,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = AsyncHTTPClient;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -26190,9 +26211,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/AsyncKit_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -26203,7 +26223,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = AsyncKit;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -26226,9 +26246,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/AsyncKit_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -26239,7 +26258,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = AsyncKit;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -26260,9 +26279,8 @@
 					"$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CBacktrace",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/Backtrace_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CBacktrace/module.modulemap";
@@ -26273,7 +26291,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = Backtrace;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -26294,9 +26312,8 @@
 					"$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CBacktrace",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/Backtrace_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CBacktrace/module.modulemap";
@@ -26307,7 +26324,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = Backtrace;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -26328,9 +26345,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-backtrace/Sources/CBacktrace/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/CBacktrace_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -26340,7 +26356,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				TARGET_NAME = CBacktrace;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -26361,9 +26377,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-backtrace/Sources/CBacktrace/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/CBacktrace_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -26373,7 +26388,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				TARGET_NAME = CBacktrace;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -26396,7 +26411,6 @@
 				INFOPLIST_FILE = swiftarr.xcodeproj/CBase32_Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -26429,7 +26443,6 @@
 				INFOPLIST_FILE = swiftarr.xcodeproj/CBase32_Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -26462,7 +26475,6 @@
 				INFOPLIST_FILE = swiftarr.xcodeproj/CBcrypt_Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -26495,7 +26507,6 @@
 				INFOPLIST_FILE = swiftarr.xcodeproj/CBcrypt_Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -26530,7 +26541,6 @@
 				INFOPLIST_FILE = swiftarr.xcodeproj/CCryptoBoringSSL_Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -26565,7 +26575,6 @@
 				INFOPLIST_FILE = swiftarr.xcodeproj/CCryptoBoringSSL_Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -26600,7 +26609,6 @@
 				INFOPLIST_FILE = swiftarr.xcodeproj/CCryptoBoringSSLShims_Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -26635,7 +26643,6 @@
 				INFOPLIST_FILE = swiftarr.xcodeproj/CCryptoBoringSSLShims_Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -26667,9 +26674,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/CNIOAtomics_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -26679,7 +26685,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				TARGET_NAME = CNIOAtomics;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -26701,9 +26707,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/CNIOAtomics_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -26713,7 +26718,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				TARGET_NAME = CNIOAtomics;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -26736,9 +26741,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio-ssl/Sources/CNIOBoringSSL/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/CNIOBoringSSL_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -26748,7 +26752,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				TARGET_NAME = CNIOBoringSSL;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -26771,9 +26775,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio-ssl/Sources/CNIOBoringSSL/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/CNIOBoringSSL_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -26783,7 +26786,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				TARGET_NAME = CNIOBoringSSL;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -26792,16 +26795,41 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = s;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					"SWIFT_PACKAGE=1",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_SWIFT_FLAGS = "$(inherited) -DXcode";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -26833,9 +26861,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio-ssl/Sources/CNIOBoringSSL/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/CNIOBoringSSLShims_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -26845,7 +26872,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				TARGET_NAME = CNIOBoringSSLShims;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -26869,9 +26896,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio-ssl/Sources/CNIOBoringSSL/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/CNIOBoringSSLShims_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -26881,7 +26907,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				TARGET_NAME = CNIOBoringSSLShims;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -26904,9 +26930,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIODarwin/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/CNIODarwin_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -26916,7 +26941,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				TARGET_NAME = CNIODarwin;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -26939,9 +26964,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIODarwin/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/CNIODarwin_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -26951,7 +26975,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				TARGET_NAME = CNIODarwin;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -26973,9 +26997,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio-extras/Sources/CNIOExtrasZlib/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/CNIOExtrasZlib_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = (
 					"$(inherited)",
@@ -26988,7 +27011,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				TARGET_NAME = CNIOExtrasZlib;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -27010,9 +27033,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio-extras/Sources/CNIOExtrasZlib/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/CNIOExtrasZlib_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = (
 					"$(inherited)",
@@ -27025,7 +27047,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				TARGET_NAME = CNIOExtrasZlib;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -27047,9 +27069,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOHTTPParser/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/CNIOHTTPParser_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -27059,7 +27080,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				TARGET_NAME = CNIOHTTPParser;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -27081,9 +27102,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOHTTPParser/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/CNIOHTTPParser_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -27093,7 +27113,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				TARGET_NAME = CNIOHTTPParser;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -27115,9 +27135,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOLinux/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/CNIOLinux_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -27127,7 +27146,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				TARGET_NAME = CNIOLinux;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -27149,9 +27168,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOLinux/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/CNIOLinux_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -27161,7 +27179,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				TARGET_NAME = CNIOLinux;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -27183,9 +27201,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOSHA1/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/CNIOSHA1_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -27195,7 +27212,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				TARGET_NAME = CNIOSHA1;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -27217,9 +27234,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOSHA1/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/CNIOSHA1_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -27229,7 +27245,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				TARGET_NAME = CNIOSHA1;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -27250,9 +27266,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/CNIOWindows_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -27262,7 +27277,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				TARGET_NAME = CNIOWindows;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -27283,9 +27298,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/CNIOWindows_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -27295,7 +27309,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				TARGET_NAME = CNIOWindows;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -27314,7 +27328,6 @@
 				INFOPLIST_FILE = swiftarr.xcodeproj/COperatingSystem_Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -27344,7 +27357,6 @@
 				INFOPLIST_FILE = swiftarr.xcodeproj/COperatingSystem_Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -27378,7 +27390,6 @@
 				INFOPLIST_FILE = swiftarr.xcodeproj/CURLParser_Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -27411,7 +27422,6 @@
 				INFOPLIST_FILE = swiftarr.xcodeproj/CURLParser_Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -27438,9 +27448,8 @@
 				);
 				HEADER_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = swiftarr.xcodeproj/ConsoleKit_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -27451,7 +27460,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = ConsoleKit;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -27468,9 +27477,8 @@
 				);
 				HEADER_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = swiftarr.xcodeproj/ConsoleKit_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -27481,7 +27489,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = ConsoleKit;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -27554,7 +27562,6 @@
 				INFOPLIST_FILE = swiftarr.xcodeproj/Crypto_Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include/module.modulemap";
@@ -27588,7 +27595,6 @@
 				INFOPLIST_FILE = swiftarr.xcodeproj/Crypto_Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include/module.modulemap";
@@ -27635,9 +27641,8 @@
 					"$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CURLParser",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/Fluent_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CBacktrace/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CURLParser/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/vapor/Sources/CBcrypt/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/vapor/Sources/CBase32/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -27648,7 +27653,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = Fluent;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -27684,9 +27689,8 @@
 					"$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CURLParser",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/Fluent_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CBacktrace/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CURLParser/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/vapor/Sources/CBcrypt/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/vapor/Sources/CBase32/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -27697,7 +27701,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = Fluent;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -27722,7 +27726,6 @@
 				INFOPLIST_FILE = swiftarr.xcodeproj/FluentKit_Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -27733,7 +27736,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = FluentKit;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -27758,7 +27761,6 @@
 				INFOPLIST_FILE = swiftarr.xcodeproj/FluentKit_Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -27769,7 +27771,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = FluentKit;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -27796,9 +27798,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/FluentPostgresDriver_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -27809,7 +27810,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = FluentPostgresDriver;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -27836,9 +27837,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/FluentPostgresDriver_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -27849,7 +27849,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = FluentPostgresDriver;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -27874,7 +27874,6 @@
 				INFOPLIST_FILE = swiftarr.xcodeproj/FluentSQL_Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -27885,7 +27884,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = FluentSQL;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -27910,7 +27909,6 @@
 				INFOPLIST_FILE = swiftarr.xcodeproj/FluentSQL_Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -27921,7 +27919,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = FluentSQL;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -27957,9 +27955,8 @@
 					"$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CURLParser",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/Leaf_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CBacktrace/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CURLParser/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/vapor/Sources/CBcrypt/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/vapor/Sources/CBase32/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -27970,7 +27967,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = Leaf;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -28006,9 +28003,8 @@
 					"$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CURLParser",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/Leaf_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CBacktrace/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CURLParser/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/vapor/Sources/CBcrypt/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/vapor/Sources/CBase32/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -28019,7 +28015,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = Leaf;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -28042,9 +28038,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/LeafKit_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -28055,7 +28050,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = LeafKit;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -28078,9 +28073,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/LeafKit_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -28091,7 +28085,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = LeafKit;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -28108,9 +28102,8 @@
 				);
 				HEADER_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = swiftarr.xcodeproj/Logging_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -28121,7 +28114,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = Logging;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -28138,9 +28131,8 @@
 				);
 				HEADER_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = swiftarr.xcodeproj/Logging_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -28151,7 +28143,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = Logging;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -28225,9 +28217,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/MultipartKit_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -28238,7 +28229,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = MultipartKit;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -28262,9 +28253,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/MultipartKit_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -28275,7 +28265,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = MultipartKit;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -28298,9 +28288,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIO_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -28311,7 +28300,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIO;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -28334,9 +28323,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIO_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -28347,7 +28335,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIO;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -28367,9 +28355,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOConcurrencyHelpers_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -28380,7 +28367,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOConcurrencyHelpers;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -28400,9 +28387,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOConcurrencyHelpers_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -28413,7 +28399,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOConcurrencyHelpers;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -28434,9 +28420,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOCore_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -28447,7 +28432,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOCore;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -28468,9 +28453,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOCore_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -28481,7 +28465,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOCore;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -28502,9 +28486,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOEmbedded_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -28515,7 +28498,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOEmbedded;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -28536,9 +28519,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOEmbedded_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -28549,7 +28531,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOEmbedded;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -28572,9 +28554,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOExtras_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -28585,7 +28566,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOExtras;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -28608,9 +28589,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOExtras_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -28621,7 +28601,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOExtras;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -28644,9 +28624,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOFoundationCompat_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -28657,7 +28636,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOFoundationCompat;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -28680,9 +28659,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOFoundationCompat_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -28693,7 +28671,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOFoundationCompat;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -28717,9 +28695,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOHPACK_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -28730,7 +28707,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOHPACK;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -28754,9 +28731,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOHPACK_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -28767,7 +28743,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOHPACK;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -28791,9 +28767,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOHTTP1_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -28804,7 +28779,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOHTTP1;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -28828,9 +28803,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOHTTP1_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -28841,7 +28815,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOHTTP1;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -28865,9 +28839,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOHTTP2_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -28878,7 +28851,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOHTTP2;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -28902,9 +28875,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOHTTP2_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -28915,7 +28887,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOHTTP2;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -28940,9 +28912,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio-extras/Sources/CNIOExtrasZlib/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOHTTPCompression_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -28953,7 +28924,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOHTTPCompression;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -28978,9 +28949,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio-extras/Sources/CNIOExtrasZlib/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOHTTPCompression_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -28991,7 +28961,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOHTTPCompression;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -29014,9 +28984,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOLinux/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOPosix_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -29027,7 +28996,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOPosix;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -29050,9 +29019,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOLinux/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOPosix_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -29063,7 +29031,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOPosix;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -29086,9 +29054,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOSOCKS_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -29099,7 +29066,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOSOCKS;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -29122,9 +29089,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOSOCKS_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -29135,7 +29101,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOSOCKS;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -29160,9 +29126,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio-ssl/Sources/CNIOBoringSSL/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOSSL_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -29173,7 +29138,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOSSL;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -29198,9 +29163,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio-ssl/Sources/CNIOBoringSSL/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOSSL_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -29211,7 +29175,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOSSL;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -29234,9 +29198,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOTLS_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -29247,7 +29210,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOTLS;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -29270,9 +29233,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOTLS_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -29283,7 +29245,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOTLS;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -29306,9 +29268,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOTransportServices_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -29319,7 +29280,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOTransportServices;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -29342,9 +29303,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOTransportServices_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -29355,7 +29315,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOTransportServices;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -29380,9 +29340,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOWebSocket_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -29393,7 +29352,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOWebSocket;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -29418,9 +29377,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/NIOWebSocket_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -29431,7 +29389,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = NIOWebSocket;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -29458,9 +29416,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/PostgresKit_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -29471,7 +29428,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = PostgresKit;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -29498,9 +29455,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/PostgresKit_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -29511,7 +29467,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = PostgresKit;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -29540,7 +29496,6 @@
 				INFOPLIST_FILE = swiftarr.xcodeproj/PostgresNIO_Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include/module.modulemap";
@@ -29580,7 +29535,6 @@
 				INFOPLIST_FILE = swiftarr.xcodeproj/PostgresNIO_Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include/module.modulemap";
@@ -29614,9 +29568,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/Prometheus_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -29627,7 +29580,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = Prometheus;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -29650,9 +29603,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/Prometheus_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -29663,7 +29615,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = Prometheus;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -29686,9 +29638,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/RediStack_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -29699,7 +29650,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = RediStack;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -29722,9 +29673,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/RediStack_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -29735,7 +29685,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = RediStack;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -29789,9 +29739,8 @@
 					"$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CURLParser",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/Redis_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CBacktrace/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CURLParser/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/vapor/Sources/CBcrypt/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/vapor/Sources/CBase32/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -29802,7 +29751,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = Redis;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -29838,9 +29787,8 @@
 					"$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CURLParser",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/Redis_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CBacktrace/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CURLParser/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/vapor/Sources/CBcrypt/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/vapor/Sources/CBase32/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -29851,7 +29799,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = Redis;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -29868,9 +29816,8 @@
 				);
 				HEADER_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = swiftarr.xcodeproj/RoutingKit_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -29881,7 +29828,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = RoutingKit;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -29898,9 +29845,8 @@
 				);
 				HEADER_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = swiftarr.xcodeproj/RoutingKit_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -29911,7 +29857,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = RoutingKit;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -29919,6 +29865,7 @@
 		OBJ_6105 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
 				CURRENT_PROJECT_VERSION = 1;
 				DRIVERKIT_DEPLOYMENT_TARGET = 19.0;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -29949,9 +29896,8 @@
 					"$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CURLParser",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/Run_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx @executable_path";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-I/usr/local/Cellar/jpeg/9d/include",
@@ -29970,7 +29916,7 @@
 				SWIFT_FORCE_STATIC_LINK_STDLIB = NO;
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = Run;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -29978,6 +29924,7 @@
 		OBJ_6106 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
 				CURRENT_PROJECT_VERSION = 1;
 				DRIVERKIT_DEPLOYMENT_TARGET = 19.0;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -30008,9 +29955,8 @@
 					"$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CURLParser",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/Run_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx @executable_path";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-I/usr/local/Cellar/jpeg/9d/include",
@@ -30029,7 +29975,7 @@
 				SWIFT_FORCE_STATIC_LINK_STDLIB = NO;
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = Run;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -30052,9 +29998,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/SQLKit_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -30065,7 +30010,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = SQLKit;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -30088,9 +30033,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/SQLKit_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -30101,7 +30045,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = SQLKit;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -30169,7 +30113,6 @@
 				INFOPLIST_FILE = swiftarr.xcodeproj/Vapor_Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CBacktrace/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CURLParser/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/vapor/Sources/CBcrypt/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/vapor/Sources/CBase32/include/module.modulemap";
@@ -30218,7 +30161,6 @@
 				INFOPLIST_FILE = swiftarr.xcodeproj/Vapor_Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSLShims/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-crypto/Sources/CCryptoBoringSSL/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CBacktrace/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/swiftarr.xcodeproj/GeneratedModuleMap/CURLParser/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/vapor/Sources/CBcrypt/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/vapor/Sources/CBase32/include/module.modulemap";
@@ -30256,9 +30198,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/WebSocketKit_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -30269,7 +30210,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = WebSocketKit;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -30296,9 +30237,8 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/WebSocketKit_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOWindows/include/module.modulemap";
@@ -30309,7 +30249,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = WebSocketKit;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -30326,9 +30266,8 @@
 				);
 				HEADER_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = swiftarr.xcodeproj/_NIODataStructures_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -30339,7 +30278,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = _NIODataStructures;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -30356,9 +30295,8 @@
 				);
 				HEADER_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = swiftarr.xcodeproj/_NIODataStructures_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -30369,7 +30307,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = _NIODataStructures;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -30500,9 +30438,8 @@
 					"$(SRCROOT)/Sources/gd",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/gdOverrides_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-I/usr/local/Cellar/jpeg/9d/include",
@@ -30522,7 +30459,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				TARGET_NAME = gdOverrides;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -30545,9 +30482,8 @@
 					"$(SRCROOT)/Sources/gd",
 				);
 				INFOPLIST_FILE = swiftarr.xcodeproj/gdOverrides_Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"-I/usr/local/Cellar/jpeg/9d/include",
@@ -30567,7 +30503,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				TARGET_NAME = gdOverrides;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
+				TVOS_DEPLOYMENT_TARGET = 12.0;
 				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;

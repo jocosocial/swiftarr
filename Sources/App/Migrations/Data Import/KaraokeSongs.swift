@@ -24,9 +24,8 @@ struct ImportKaraokeSongs: Migration {
             } else {
                 songsFilename = "JoCoKaraokeSongCatalog-heroku.txt"
             }
-            let directoryConfig = DirectoryConfiguration.detect()
-            let songsFilePath = directoryConfig.workingDirectory.appending("seeds/").appending(songsFilename)
-            let songsFile = try String(contentsOfFile: songsFilePath, encoding: .utf8)
+            let songsFilePath = Settings.shared.seedsDirectoryPath.appendingPathComponent(songsFilename)
+            let songsFile = try String(contentsOfFile: songsFilePath.path, encoding: .utf8)
 			var lines = songsFile.components(separatedBy: "\r\n")
 			if lines.count < 10 {
 				lines = songsFile.components(separatedBy: .newlines)

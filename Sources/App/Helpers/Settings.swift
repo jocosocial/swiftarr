@@ -117,6 +117,35 @@ final class Settings : Encodable {
 	
 	/// If FALSE, animated images are converted into static jpegs upon upload. Does not affect already uploaded images.
 	@StoredSettingsValue("allowAnimatedImages", defaultValue: true) var allowAnimatedImages: Bool
+	
+// MARK: Directories
+
+	/// The `Resources` and `seeds` directories will be inside this dir. 
+	@SettingsValue var staticFilesRootPath: URL = URL(fileURLWithPath: "/")
+	
+	/// User uploaded image will be inside this dir. 
+	@SettingsValue var userImagesRootPath: URL = URL(fileURLWithPath: "/")
+}
+
+/// Derivative directory paths. These are computed property getters that return a path based on a root path.
+/// These properties could be changed into their own roots by making them into their own `@SettingsValue`s.
+extension Settings {
+	/// Path to the 'seeds' directory. This dir holds a bunch of files that get ingested into the database in various ways.
+	var seedsDirectoryPath: URL {
+		staticFilesRootPath.appendingPathComponent("seeds")
+	}
+	
+	/// Path to the 'Resources' directory. This dir holds files the front-end UI uses, including css, js, static images, and the Leaf source files.
+	var resourcesDirectoryPath: URL {
+		staticFilesRootPath.appendingPathComponent("Resources")
+	}
+	
+	/// Path to the 'admin' directory, inside the 'seeds' directory. Certain seed files can be upload by admin here, and ingested while the server is running.
+	var adminDirectoryPath: URL {
+		let result = staticFilesRootPath.appendingPathComponent("seeds/admin")
+		try? FileManager.default.createDirectory(at: result, withIntermediateDirectories: true, attributes: nil)
+		return result
+	}
 }
 
 protocol StoredSetting {

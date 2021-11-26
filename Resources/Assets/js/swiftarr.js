@@ -504,3 +504,13 @@ function setDefaultAvatarImage() {
 	hiddenElem.value = hiddenElem.dataset.defaultvalue;
 	updatePhotoCardState(cardElement);
 }
+
+document.getElementById('imageCarouselModal')?.addEventListener('show.bs.modal', function(event) {
+	let pageImg = event.relatedTarget.querySelector('img');
+	let modalImg = event.target.querySelector('.swiftarr-closeup-image');
+	if (pageImg && modalImg) {
+		modalImg.src = pageImg.src;
+	}
+	deleteBtn.setAttribute('data-delete-postid', postElem.dataset.postid);
+})
+

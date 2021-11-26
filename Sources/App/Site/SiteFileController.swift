@@ -1,12 +1,12 @@
 import Vapor
 import Fluent
 
+/// Serves static files used bye the Web UI front end. Since these files are UI-level and not API-level entities, we serve
+/// these files directly from here--there's no need to forward calls through the API. This means if you're an API client, you
+/// shouldn't be using the files served from these endpoints.
 struct SiteFileController: SiteControllerUtils {
-	private static var filesRoot: URL = URL(fileURLWithPath: "/")
 
 	func registerRoutes(_ app: Application) throws {
-		let dir = DirectoryConfiguration.detect().workingDirectory
-		SiteFileController.filesRoot = URL(fileURLWithPath: dir).appendingPathComponent("Resources/Assets")
 	
 		// Routes that the user does not need to be logged in to access.
 		app.get("css", "**", use: streamCSSFile)
@@ -51,7 +51,8 @@ struct SiteFileController: SiteControllerUtils {
         }
 
         // create absolute file path
-        let filePath = SiteFileController.filesRoot.appendingPathComponent(basePath).appendingPathComponent(path).path
+        let filePath = Settings.shared.resourcesDirectoryPath.appendingPathComponent("Assets")
+        		.appendingPathComponent(basePath).appendingPathComponent(path).path
 
         // check if file exists and is not a directory
         var isDir: ObjCBool = false
@@ -61,9 +62,9 @@ struct SiteFileController: SiteControllerUtils {
 
         // stream the file, then add a "Cache-Control" header with a 24 hour freshness time.
         let response = req.fileio.streamFile(at: filePath)
-		if response.status == .ok || response.status == .notModified {
-			response.headers.cacheControl = .init(isPublic: true, maxAge: 3600 * 24)
-		}        
+//		if response.status == .ok || response.status == .notModified {
+//			response.headers.cacheControl = .init(isPublic: true, maxAge: 3600 * 24)
+//		}        
         return req.eventLoop.makeSucceededFuture(response)
 	}
 }

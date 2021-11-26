@@ -23,9 +23,8 @@ struct ImportBoardgames: Migration {
             } else {
                 gamesFile = "test-JoCoGamesCatalog.json"
             }
-            let directoryConfig = DirectoryConfiguration.detect()
-            let gamesFilePath = directoryConfig.workingDirectory.appending("seeds/").appending(gamesFile)
-            guard let data = FileManager.default.contents(atPath: gamesFilePath) else {
+            let gamesFilePath = Settings.shared.seedsDirectoryPath.appendingPathComponent(gamesFile)
+            guard let data = FileManager.default.contents(atPath: gamesFilePath.path) else {
 				fatalError("Could not read boardgames file.")
             }
             // parse to JsonGamesListGame array

@@ -625,10 +625,7 @@ struct AdminController: APIRouteCollection {
 	// Gets the path where the uploaded schedule is kept. Only one schedule file can be in the hopper at a time.
 	// This fn ensures intermediate directories are created.
 	func uploadSchedulePath() throws -> URL {
-		let dirPath = URL(fileURLWithPath: DirectoryConfiguration.detect().workingDirectory)
-				.appendingPathComponent("admin")
-		try FileManager.default.createDirectory(at: dirPath, withIntermediateDirectories: true, attributes: nil)
-		let filePath = dirPath.appendingPathComponent("uploadschedule.ics")
+		let filePath = Settings.shared.adminDirectoryPath.appendingPathComponent("uploadschedule.ics")
 		return filePath
 	}
 

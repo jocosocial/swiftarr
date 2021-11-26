@@ -31,10 +31,9 @@ struct CreateClientUsers: Migration {
             } else {
                 clientsFile = "test-registered-clients.txt"
             }
-            let directoryConfig = DirectoryConfiguration.detect()
-            let clientsPath = directoryConfig.workingDirectory.appending("seeds/").appending(clientsFile)
+            let clientsPath = Settings.shared.seedsDirectoryPath.appendingPathComponent(clientsFile)
             // read file as string
-            guard let data = FileManager.default.contents(atPath: clientsPath),
+            guard let data = FileManager.default.contents(atPath: clientsPath.path),
                 let dataString = String(bytes: data, encoding: .utf8) else {
                     fatalError("Could not read clients file.")
             }

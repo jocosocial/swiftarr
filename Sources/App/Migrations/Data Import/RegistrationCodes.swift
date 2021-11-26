@@ -26,10 +26,9 @@ struct ImportRegistrationCodes: Migration {
             } else {
                 codesFile = "test-registration-codes.txt"
             }
-            let directoryConfig = DirectoryConfiguration.detect()
-            let codesPath = directoryConfig.workingDirectory.appending("seeds/").appending(codesFile)
+            let codesPath = Settings.shared.seedsDirectoryPath.appendingPathComponent(codesFile)
             // read file as string
-            guard let data = FileManager.default.contents(atPath: codesPath),
+            guard let data = FileManager.default.contents(atPath: codesPath.path),
                 let dataString = String(bytes: data, encoding: .utf8) else {
                     fatalError("Could not read registration codes file.")
             }
