@@ -169,6 +169,15 @@ func configureBasicSettings(_ app: Application) throws {
 	// [".gif", ".bmp", ".tga", ".png", ".jpg", ".tif", ".webp"] inputs
 	// [".gif", ".bmp",         ".png", ".jpg", ".tif", ".webp"] outputs
 	
+	// Set the app's views dir, which is where all the Leaf template files are.
+	if let viewsDir = Bundle.module.resourceURL?.appendingPathComponent("Resources/Views") {
+		app.directory.viewsDirectory = viewsDir.path
+	}
+	// Also set the resources dir, although I don't think it's used anywhere.
+	if let resourcesDir = Bundle.module.resourceURL?.appendingPathComponent("Resources") {
+		app.directory.resourcesDirectory = resourcesDir.path
+	}
+		
 	// Figure out the likely path to the 'swiftarr' executable.
 	var likelyExecutablePath: String
 	let appPath = app.environment.arguments[0]
@@ -178,11 +187,6 @@ func configureBasicSettings(_ app: Application) throws {
 	else {
 		likelyExecutablePath = URL(fileURLWithPath: appPath).deletingLastPathComponent().path
 	}
-	
-	// The "Resources" and "seeds" directories, found at the root of the Github repo, usually get copied into
-	// the same directory that holds the Swiftarr executable during the build process. 
-	let staticFilesRootPath = URL(fileURLWithPath: Environment.get("SWIFTARR_STATIC_FILES") ?? likelyExecutablePath)
-	Settings.shared.staticFilesRootPath = staticFilesRootPath
 	
 	// This sets the root dir for the "User Images" tree, which is where user uploaded images are stored.
 	// The postgres DB holds filenames that refer to files in this directory tree; ideally the lifetime of the 
@@ -398,9 +402,14 @@ func verifyConfiguration(_ app: Application) throws {
 	// What's going on? Instead of running the app at the root of the git hierarchy, Xcode makes a /DerivedData dir and runs
 	// apps (deep) inside there. A script build step is supposed to copy the contents of /Resources and /Seeds into the dir
 	// the app runs in. If that script breaks or didn't run, this will hopefully catch it and tell admins what's wrong.
-	let swiftarrCSSPath = Settings.shared.resourcesDirectoryPath.appendingPathComponent("Assets/css/swiftarr.css").path
-	var isDir: ObjCBool = false
-	if !FileManager.default.fileExists(atPath: swiftarrCSSPath, isDirectory: &isDir), !isDir.boolValue {
+	var cssFileFound = false
+	if let swiftarrCSSURL = Bundle.module.url(forResource: "swiftarr", withExtension: "css", subdirectory: "Resources/Assets/css") {
+		var isDir: ObjCBool = false
+		if FileManager.default.fileExists(atPath: swiftarrCSSURL.path, isDirectory: &isDir), !isDir.boolValue {
+			cssFileFound = true
+		}
+	}
+	if !cssFileFound {
 		app.logger.critical("Resource files not found during launchtime sanity check. This usually means the Resources directory isn't getting copied into the App directory in /DerivedData.")
 	}
 }

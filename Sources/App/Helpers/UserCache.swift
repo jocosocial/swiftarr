@@ -253,7 +253,7 @@ extension Request {
 // MARK: UserHeaders
 		func getHeader(_ userID: UUID) throws -> UserHeader {
 			guard let user = getUser(userID) else {
-				throw Abort(.internalServerError, reason: "getUser should always return a cached value.")
+				throw Abort(.internalServerError, reason: "No user found with userID \(userID).")
 			}
 			return UserHeader(userID: userID, username: user.username, 
 					displayName: user.displayName, userImage: user.userImage)

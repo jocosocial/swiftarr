@@ -1,6 +1,7 @@
 import Vapor
 import Crypto
 import FluentSQL
+import os.log
 
 /// The collection of `/api/v3/auth/*` route endpoints and handler functions related
 /// to authentication.
@@ -231,23 +232,20 @@ struct AuthController: APIRouteCollection {
     func loginHandler(_ req: Request) throws -> EventLoopFuture<TokenStringData> {
     	// By the time we get here, basic auth has *already happened* via middleware that runs before the route handler.
         let user = try req.auth.require(User.self)
-        let userID = try user.requireID()
         // no login for punks
         guard user.accessLevel != .banned else {
             throw Abort(.forbidden, reason: "nope")
         }
+        let cacheUser = try req.userCache.getUser(user)
         // return existing token if one exists
-        return Token.query(on: req.db).filter(\.$user.$id == userID).first().throwingFlatMap { token in
-			if let token = token {
-				return try req.eventLoop.future(TokenStringData(user: user, token: token))
-			} else {
-				// otherwise generate and return new token
-				let token = try Token.generate(for: user)
-				return token.save(on: req.db).throwingFlatMap { _ in
-					return req.userCache.updateUser(userID).flatMapThrowing { ucd in
-						return try TokenStringData(user: user, token: token)
-					}
-				}
+        if let fastResult = TokenStringData(cacheUser: cacheUser) {
+			return req.eventLoop.future(fastResult)
+        }
+		// otherwise generate and return new token
+		let token = try Token.generate(for: user)
+		return token.save(on: req.db).throwingFlatMap { _ in
+			return req.userCache.updateUser(cacheUser.userID).flatMapThrowing { ucd in
+				return try TokenStringData(user: user, token: token)
 			}
 		}
     }

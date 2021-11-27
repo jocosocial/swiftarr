@@ -20,12 +20,14 @@ struct ImportKaraokeSongs: Migration {
         let songsFilename: String
         do {
             if try Environment.detect().name != "heroku" {
-                songsFilename = "2020JoCoKaraokeSongCatalog.txt"
+                songsFilename = "2020JoCoKaraokeSongCatalog"
             } else {
-                songsFilename = "JoCoKaraokeSongCatalog-heroku.txt"
+                songsFilename = "JoCoKaraokeSongCatalog-heroku"
             }
-            let songsFilePath = Settings.shared.seedsDirectoryPath.appendingPathComponent(songsFilename)
-            let songsFile = try String(contentsOfFile: songsFilePath.path, encoding: .utf8)
+            guard let songsFilePath = Bundle.module.url(forResource: songsFilename, withExtension: "txt", subdirectory: "seeds") else {
+				fatalError("Could not read karaoke songs file.")
+            }
+			let songsFile = try String(contentsOfFile: songsFilePath.path, encoding: .utf8) 
 			var lines = songsFile.components(separatedBy: "\r\n")
 			if lines.count < 10 {
 				lines = songsFile.components(separatedBy: .newlines)

@@ -22,11 +22,13 @@ struct ImportRegistrationCodes: Migration {
         do {
             // use static simple set of codes if just testing
             if (try Environment.detect().isRelease) {
-                codesFile = "registration-codes.txt"
+                codesFile = "registration-codes"
             } else {
-                codesFile = "test-registration-codes.txt"
+                codesFile = "test-registration-codes"
             }
-            let codesPath = Settings.shared.seedsDirectoryPath.appendingPathComponent(codesFile)
+            guard let codesPath = Bundle.module.url(forResource: codesFile, withExtension: "txt", subdirectory: "seeds") else {
+				fatalError("Could not read registration codes file.")
+            }
             // read file as string
             guard let data = FileManager.default.contents(atPath: codesPath.path),
                 let dataString = String(bytes: data, encoding: .utf8) else {

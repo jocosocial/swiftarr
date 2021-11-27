@@ -93,10 +93,11 @@ struct UsersController: APIRouteCollection {
     /// - Returns: <doc:UserHeader> containing the user's ID, `.displayedName` and profile image filename.
     func headerHandler(_ req: Request) throws -> UserHeader {
         let requester = try req.auth.require(UserCacheData.self)
-		guard let parameter = req.parameters.get(userIDParam.paramString) else {
+		guard let parameter = req.parameters.get(userIDParam.paramString, as: UUID.self) else {
 			throw Abort(.badRequest, reason: "UserID parameter missing")
 		}
-		guard let userHeader = req.userCache.getHeader(parameter), !requester.getBlocks().contains(userHeader.userID) else {
+		let userHeader = try req.userCache.getHeader(parameter)
+		guard !requester.getBlocks().contains(userHeader.userID) else {
 			throw Abort(.notFound, reason: "no user found for identifier '\(parameter)'")
 		}
 		return userHeader

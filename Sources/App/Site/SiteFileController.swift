@@ -51,20 +51,21 @@ struct SiteFileController: SiteControllerUtils {
         }
 
         // create absolute file path
-        let filePath = Settings.shared.resourcesDirectoryPath.appendingPathComponent("Assets")
-        		.appendingPathComponent(basePath).appendingPathComponent(path).path
+		guard let filePath = Bundle.module.url(forResource: path, withExtension: nil, subdirectory: "Resources/Assets/\(basePath)") else {
+			throw Abort(.notFound)
+		}
 
         // check if file exists and is not a directory
         var isDir: ObjCBool = false
-        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+        guard FileManager.default.fileExists(atPath: filePath.path, isDirectory: &isDir), !isDir.boolValue else {
 			throw Abort(.notFound)
         }
 
         // stream the file, then add a "Cache-Control" header with a 24 hour freshness time.
-        let response = req.fileio.streamFile(at: filePath)
-//		if response.status == .ok || response.status == .notModified {
-//			response.headers.cacheControl = .init(isPublic: true, maxAge: 3600 * 24)
-//		}        
+        let response = req.fileio.streamFile(at: filePath.path)
+		if response.status == .ok || response.status == .notModified {
+			response.headers.cacheControl = .init(isPublic: true, maxAge: 3600 * 24)
+		}        
         return req.eventLoop.makeSucceededFuture(response)
 	}
 }

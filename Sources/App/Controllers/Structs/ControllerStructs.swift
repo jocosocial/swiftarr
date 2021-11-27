@@ -1252,6 +1252,15 @@ public struct TokenStringData: Content {
     	self.accessLevel = user.accessLevel
         self.token = token.token
     }
+    
+    init?(cacheUser: UserCacheData) {
+    	guard let tokenString = cacheUser.token else {
+    		return nil
+    	}
+    	self.userID = cacheUser.userID
+    	self.accessLevel = cacheUser.accessLevel
+    	self.token = tokenString
+    }
 }
 
 /// Used to return a `Twarrt`'s data.

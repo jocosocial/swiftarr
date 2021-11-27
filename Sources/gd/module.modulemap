@@ -1,4 +1,5 @@
 module gd {
 	header "swiftgd_gd.h"
 	link "gd"
+	export *
 }
