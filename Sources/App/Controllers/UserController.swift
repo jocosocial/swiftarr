@@ -177,7 +177,7 @@ struct UserController: APIRouteCollection {
 			let normalizedKey = recoveryKey.lowercased().replacingOccurrences(of: " ", with: "")
 			
 			// create user
-			let passwordHash = try Bcrypt.hash(data.password)
+			let passwordHash = try Bcrypt.hash(data.password, cost: 9)
 			let recoveryHash = try Bcrypt.hash(normalizedKey)
 			let user = User(username: data.username, password: passwordHash, recoveryKey: recoveryHash,
 					verification: nil, parent: nil, accessLevel: .unverified)
