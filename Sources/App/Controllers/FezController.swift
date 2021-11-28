@@ -329,8 +329,8 @@ struct FezController: APIRouteCollection {
 	/// - Parameter requestBody: <doc:PostContentData> 
 	/// - Throws: 404 error if the fez is not available. A 5xx response should be reported
 	///   as a likely bug, please and thank you.
-	/// - Returns: 201 Created on success.
-	func postAddHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+	/// - Returns: <doc:FezPostData> containing the user's new post.
+	func postAddHandler(_ req: Request) throws -> EventLoopFuture<FezPostData> {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		try cacheUser.guardCanCreateContent()
 		// see PostContentData.validations()
@@ -391,7 +391,7 @@ struct FezController: APIRouteCollection {
 							pivot.readCount = fez.postCount - pivot.hiddenCount
 							_ = pivot.save(on: req.db)
 						}
-						return .created
+						return try FezPostData(post: post)
 					}
 				}
 			}
