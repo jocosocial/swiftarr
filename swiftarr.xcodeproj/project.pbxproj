@@ -26183,6 +26183,14 @@
 					"SWIFT_PACKAGE=1",
 					"DEBUG=1",
 				);
+				HEADER_SEARCH_PATHS = (
+					/opt/homebrew/local/include,
+					/usr/local/include,
+				);
+				LIBRARY_SEARCH_PATHS = (
+					/opt/homebrew/lib,
+					/usr/local/lib,
+				);
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_SWIFT_FLAGS = "$(inherited) -DXcode";
@@ -27023,7 +27031,16 @@
 					"$(inherited)",
 					"SWIFT_PACKAGE=1",
 				);
+				HEADER_SEARCH_PATHS = (
+					/opt/homebrew/local/include,
+					/usr/local/include,
+				);
+				LIBRARY_SEARCH_PATHS = (
+					/opt/homebrew/lib,
+					/usr/local/lib,
+				);
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				ONLY_ACTIVE_ARCH = YES;
 				OTHER_SWIFT_FLAGS = "$(inherited) -DXcode";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;

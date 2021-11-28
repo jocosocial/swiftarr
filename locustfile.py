@@ -334,7 +334,7 @@ class SeamailAPIUser(HttpUser):
 	def postAndDeleteMsg(self):
 		response = self.client.post("/api/v3/fez/" + self.fezID + "/post", json={ "text": "This is a Locust Seamail Post.", "images": [] }, 
 				headers = self.heidiAuth, name = "/api/v3/fez/:fez_id/post")
-		postID = str(response.json()["members"]["posts"][-1]["postID"])
+		postID = str(response.json()["postID"])
 		self.client.delete("/api/v3/fez/post/" + postID, headers = self.heidiAuth, name = "/api/v3/fez/post/:postID")
 
 class SeamailWebUser(HttpUser):

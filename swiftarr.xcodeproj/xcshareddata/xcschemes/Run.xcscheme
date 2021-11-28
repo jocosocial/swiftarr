@@ -41,7 +41,7 @@
       </Testables>
    </TestAction>
    <LaunchAction
-      buildConfiguration = "Debug"
+      buildConfiguration = "Release"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
@@ -63,15 +63,15 @@
       <CommandLineArguments>
          <CommandLineArgument
             argument = "serve"
-            isEnabled = "NO">
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "--env prod"
-            isEnabled = "NO">
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "--hostname 192.168.0.19"
-            isEnabled = "NO">
+            argument = "--hostname 192.168.0.77"
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "--log debug"
