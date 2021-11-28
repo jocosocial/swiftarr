@@ -170,11 +170,11 @@ func configureBasicSettings(_ app: Application) throws {
 	// [".gif", ".bmp",         ".png", ".jpg", ".tif", ".webp"] outputs
 	
 	// Set the app's views dir, which is where all the Leaf template files are.
-	if let viewsDir = Bundle.module.resourceURL?.appendingPathComponent("Resources/Views") {
+	if let viewsDir = Bundle(for: Settings.self).resourceURL?.appendingPathComponent("Resources/Views") {
 		app.directory.viewsDirectory = viewsDir.path
 	}
 	// Also set the resources dir, although I don't think it's used anywhere.
-	if let resourcesDir = Bundle.module.resourceURL?.appendingPathComponent("Resources") {
+	if let resourcesDir = Bundle(for: Settings.self).resourceURL?.appendingPathComponent("Resources") {
 		app.directory.resourcesDirectory = resourcesDir.path
 	}
 		
@@ -403,7 +403,7 @@ func verifyConfiguration(_ app: Application) throws {
 	// apps (deep) inside there. A script build step is supposed to copy the contents of /Resources and /Seeds into the dir
 	// the app runs in. If that script breaks or didn't run, this will hopefully catch it and tell admins what's wrong.
 	var cssFileFound = false
-	if let swiftarrCSSURL = Bundle.module.url(forResource: "swiftarr", withExtension: "css", subdirectory: "Resources/Assets/css") {
+	if let swiftarrCSSURL = Bundle(for: Settings.self).url(forResource: "swiftarr", withExtension: "css", subdirectory: "Resources/Assets/css") {
 		var isDir: ObjCBool = false
 		if FileManager.default.fileExists(atPath: swiftarrCSSURL.path, isDirectory: &isDir), !isDir.boolValue {
 			cssFileFound = true

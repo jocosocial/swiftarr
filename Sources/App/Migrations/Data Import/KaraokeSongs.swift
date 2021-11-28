@@ -24,7 +24,7 @@ struct ImportKaraokeSongs: Migration {
             } else {
                 songsFilename = "JoCoKaraokeSongCatalog-heroku"
             }
-            guard let songsFilePath = Bundle.module.url(forResource: songsFilename, withExtension: "txt", subdirectory: "seeds") else {
+            guard let songsFilePath = Bundle(for: Settings.self).url(forResource: songsFilename, withExtension: "txt", subdirectory: "seeds") else {
 				fatalError("Could not read karaoke songs file.")
             }
 			let songsFile = try String(contentsOfFile: songsFilePath.path, encoding: .utf8) 

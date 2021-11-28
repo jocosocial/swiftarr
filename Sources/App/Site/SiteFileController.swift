@@ -51,7 +51,7 @@ struct SiteFileController: SiteControllerUtils {
         }
 
         // create absolute file path
-		guard let filePath = Bundle.module.url(forResource: path, withExtension: nil, subdirectory: "Resources/Assets/\(basePath)") else {
+		guard let filePath = Bundle(for: Settings.self).url(forResource: path, withExtension: nil, subdirectory: "Resources/Assets/\(basePath)") else {
 			throw Abort(.notFound)
 		}
 

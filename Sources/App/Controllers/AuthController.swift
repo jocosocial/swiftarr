@@ -1,7 +1,6 @@
 import Vapor
 import Crypto
 import FluentSQL
-import os.log
 
 /// The collection of `/api/v3/auth/*` route endpoints and handler functions related
 /// to authentication.

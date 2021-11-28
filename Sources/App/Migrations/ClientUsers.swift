@@ -32,7 +32,7 @@ struct CreateClientUsers: Migration {
                 clientsFile = "test-registered-clients"
             }
             // read file as string
-            guard let clientsPath = Bundle.module.url(forResource: clientsFile, withExtension: "txt", subdirectory: "seeds"),
+            guard let clientsPath = Bundle(for: Settings.self).url(forResource: clientsFile, withExtension: "txt", subdirectory: "seeds"),
             		let data = FileManager.default.contents(atPath: clientsPath.path),
                 	let dataString = String(bytes: data, encoding: .utf8) else {
 				fatalError("Could not read clients file.")

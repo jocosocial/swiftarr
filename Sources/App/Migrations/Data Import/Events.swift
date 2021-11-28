@@ -22,7 +22,7 @@ struct ImportEvents: Migration {
                 scheduleFile = "test-schedule"
             }
             // read file as string
-            guard let schedulePath = Bundle.module.url(forResource: scheduleFile, withExtension: "ics", subdirectory: "seeds"),
+            guard let schedulePath = Bundle(for: Settings.self).url(forResource: scheduleFile, withExtension: "ics", subdirectory: "seeds"),
             		let data = FileManager.default.contents(atPath: schedulePath.path),
                 let dataString = String(bytes: data, encoding: .utf8) else {
                     fatalError("Could not read schedule file.")

@@ -23,7 +23,7 @@ struct ImportBoardgames: Migration {
             } else {
                 gamesFile = "test-JoCoGamesCatalog"
             }
-			guard let gamesFilePath = Bundle.module.url(forResource: gamesFile, withExtension: "json", subdirectory: "seeds"),
+			guard let gamesFilePath = Bundle(for: Settings.self).url(forResource: gamesFile, withExtension: "json", subdirectory: "seeds"),
             		let data = FileManager.default.contents(atPath: gamesFilePath.path) else {
 				fatalError("Could not read boardgames file.")
             }
