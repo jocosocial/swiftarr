@@ -68,6 +68,66 @@ public struct UserCacheData: Authenticatable, SessionAuthenticatable {
 	func makeHeader() -> UserHeader {
 		return UserHeader(userID: userID, username: username, displayName: displayName, userImage: userImage)
 	}
+	
+	/// Ensures that either the receiver can edit/delete other users' content (that is, they're a moderator), or that 
+	/// they authored the content they're trying to modify/delete themselves, and still have rights to edit
+	/// their own content (that is, they aren't banned/quarantined).
+	func guardCanCreateContent(customErrorString: String = "user cannot modify this content") throws {
+		if let quarantineEndDate = tempQuarantineUntil {
+			guard Date() > quarantineEndDate else {
+				throw Abort(.forbidden, reason: "User is temporarily quarantined; \(customErrorString)")
+			}
+		}
+		guard accessLevel.canCreateContent() else {
+			throw Abort(.forbidden, reason: customErrorString)
+		}
+	}
+	
+	/// Ensures that either the receiver can edit/delete other users' content (that is, they're a moderator), or that 
+	/// they authored the content they're trying to modify/delete themselves, and still have rights to edit
+	/// their own content (that is, they aren't banned/quarantined).
+	func guardCanModifyContent<T: Reportable>(_ content: T, customErrorString: String = "user cannot modify this content") throws {
+		if let quarantineEndDate = tempQuarantineUntil {
+			guard Date() > quarantineEndDate else {
+				throw Abort(.forbidden, reason: "User is temporarily quarantined and cannot modify content.")
+			}
+		}
+		let userIsContentCreator = userID == content.authorUUID
+		guard accessLevel.canEditOthersContent() || (userIsContentCreator && accessLevel.canCreateContent() &&
+				(content.moderationStatus == .normal || content.moderationStatus == .modReviewed)) else {
+			throw Abort(.forbidden, reason: customErrorString)
+		}
+		// If a mod reviews some content, and then the user edits their own content, it's no longer moderator reviewed.
+		// This code assumes the content is going to get saved by caller.
+		if userIsContentCreator && content.moderationStatus == .modReviewed {
+			content.moderationStatus = .normal
+		}
+	}
+}
+
+// MARK: UCD Authenticators
+extension UserCacheData {
+	// UserCacheData.BasicAuth lets the Login route auth a UserCacheData object using a basic Authorization header.
+	// This auth code uses the async version of verify. Async verify appears to perform better under Locust;
+	// I'm guessing that with sync verify we'd end up with all threads busy running Bcrypt when lots of logins came in
+	// at once, leading to incoming requests failing.
+	struct BasicAuth: BasicAuthenticator {
+		func authenticate(basic: BasicAuthorization, for request: Request) -> EventLoopFuture<Void> {
+			guard let cacheUser = request.userCache.getUser(username: basic.username) else {
+				return request.eventLoop.future()
+			}
+			return User.query(on: request.db).filter(\.$id == cacheUser.userID).first().flatMap { user in
+				guard let user = user else {
+					return request.eventLoop.future()
+				}
+				return request.password.async.verify(basic.password, created: user.password).map { isValid in
+					if isValid {
+						request.auth.login(cacheUser)
+					}
+				}
+			}
+		}
+	}
 
 	// UserCacheData.TokeAuthenticator lets routes auth a UserCacheData object from a token instead of 
 	// using Token.authenticator to auth a User object.
@@ -101,56 +161,20 @@ public struct UserCacheData: Authenticatable, SessionAuthenticatable {
 			return request.eventLoop.makeSucceededFuture(())
 		}
 	}
-	
-	/// Ensures that either the receiver can edit/delete other users' content (that is, they're a moderator), or that 
-    /// they authored the content they're trying to modify/delete themselves, and still have rights to edit
-	/// their own content (that is, they aren't banned/quarantined).
-	func guardCanCreateContent(customErrorString: String = "user cannot modify this content") throws {
-		if let quarantineEndDate = tempQuarantineUntil {
-			guard Date() > quarantineEndDate else {
-				throw Abort(.forbidden, reason: "User is temporarily quarantined; \(customErrorString)")
-			}
-		}
-		guard accessLevel.canCreateContent() else {
-			throw Abort(.forbidden, reason: customErrorString)
-		}
-	}
-    
-    /// Ensures that either the receiver can edit/delete other users' content (that is, they're a moderator), or that 
-    /// they authored the content they're trying to modify/delete themselves, and still have rights to edit
-	/// their own content (that is, they aren't banned/quarantined).
-	func guardCanModifyContent<T: Reportable>(_ content: T, customErrorString: String = "user cannot modify this content") throws {
-		if let quarantineEndDate = tempQuarantineUntil {
-			guard Date() > quarantineEndDate else {
-				throw Abort(.forbidden, reason: "User is temporarily quarantined and cannot modify content.")
-			}
-		}
-		let userIsContentCreator = userID == content.authorUUID
-		guard accessLevel.canEditOthersContent() || (userIsContentCreator && accessLevel.canCreateContent() &&
-				(content.moderationStatus == .normal || content.moderationStatus == .modReviewed)) else {
-			throw Abort(.forbidden, reason: customErrorString)
-		}
-		// If a mod reviews some content, and then the user edits their own content, it's no longer moderator reviewed.
-		// This code assumes the content is going to get saved by caller.
-		if userIsContentCreator && content.moderationStatus == .modReviewed {
-			content.moderationStatus = .normal
-		}
-	}
 }
-
 
 extension Application {
  	/// This is where UserCache stores its in-memory cache.
-    var userCacheStorage: UserCacheStorage {
-        get {
-            guard let result = self.storage[UserCacheStorageKey.self] else {
+	var userCacheStorage: UserCacheStorage {
+		get {
+			guard let result = self.storage[UserCacheStorageKey.self] else {
 				return UserCacheStorage()
-            }
-            return result
-        }
+			}
+			return result
+		}
  		set {
-            self.storage[UserCacheStorageKey.self] = newValue
-        }   
+			self.storage[UserCacheStorageKey.self] = newValue
+		}   
 	}
 
 	/// This is the datatype that gets stored in UserCacheStorage. Vapor's Services API uses this.
@@ -318,6 +342,14 @@ extension Request {
 			return cacheResult
 		}
 		
+		public func getUser(username: String) -> UserCacheData? {
+			let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
+			let cacheResult = cacheLock.withLock {
+				request.application.userCacheStorage.usersByName[username]
+			}
+			return cacheResult
+		}
+		
 		public func getUser(token: String) -> UserCacheData? {
 			let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
 			let cacheResult = cacheLock.withLock {
@@ -375,7 +407,7 @@ extension Request {
 					.filter(\.$ownerID == userUUID)
 					.filter(\.$barrelType ~~ [.userMute, .keywordMute, .keywordAlert])
 					.all()
-           		
+		   		
 			// Redis stores blocks as users you've blocked AND users who have blocked you,
 			// for all subaccounts of both you and the other user.
 			let redisKey: RedisKey = "rblocks:\(userUUID.uuidString)"

@@ -235,6 +235,8 @@ func configureMiddleware(_ app: Application) throws {
 	new.use(SwiftarrErrorMiddleware(environment: app.environment))
 	new.use(SiteErrorMiddleware(environment: app.environment))
 	app.middleware = new
+	
+	app.passwords.use(.bcrypt(cost: 9))
 }
 
 func configureSessions(_ app: Application) throws {

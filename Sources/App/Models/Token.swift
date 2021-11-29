@@ -44,5 +44,15 @@ final class Token: Model {
         self.$user.id = try user.requireID()
         self.$user.value = user
     }
+    
+    /// Initializes a new Token.
+    ///
+    /// - Parameters:
+    ///   - token: The generated token string.
+    ///   - userID: The `User` associated to the token.
+    init(token: String, userID: UUID) {
+        self.token = token
+        self.$user.id = userID
+    }
 }
 

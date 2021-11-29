@@ -70,7 +70,7 @@
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "--hostname 192.168.0.77"
+            argument = "--hostname 192.168.0.19"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
@@ -85,6 +85,16 @@
       savedToolIdentifier = ""
       useCustomWorkingDirectory = "NO"
       debugDocumentVersioning = "YES">
+      <BuildableProductRunnable
+         runnableDebuggingMode = "0">
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "swiftarr::Run"
+            BuildableName = "Run"
+            BlueprintName = "Run"
+            ReferencedContainer = "container:swiftarr.xcodeproj">
+         </BuildableReference>
+      </BuildableProductRunnable>
    </ProfileAction>
    <AnalyzeAction
       buildConfiguration = "Debug">

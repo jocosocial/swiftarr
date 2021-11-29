@@ -230,21 +230,21 @@ struct AuthController: APIRouteCollection {
     ///   be used for all subsequent HTTP requests, until expiry or revocation.
     func loginHandler(_ req: Request) throws -> EventLoopFuture<TokenStringData> {
     	// By the time we get here, basic auth has *already happened* via middleware that runs before the route handler.
-        let user = try req.auth.require(User.self)
+        let cacheUser = try req.auth.require(UserCacheData.self)
         // no login for punks
-        guard user.accessLevel != .banned else {
+        guard cacheUser.accessLevel != .banned else {
             throw Abort(.forbidden, reason: "nope")
         }
-        let cacheUser = try req.userCache.getUser(user)
         // return existing token if one exists
         if let fastResult = TokenStringData(cacheUser: cacheUser) {
 			return req.eventLoop.future(fastResult)
         }
 		// otherwise generate and return new token
-		let token = try Token.generate(for: user)
+    	let random = [UInt8].random(count: 16).base64
+        let token = Token(token: random, userID: cacheUser.userID)
 		return token.save(on: req.db).throwingFlatMap { _ in
 			return req.userCache.updateUser(cacheUser.userID).flatMapThrowing { ucd in
-				return try TokenStringData(user: user, token: token)
+				return TokenStringData(accessLevel: ucd.accessLevel, token: token)
 			}
 		}
     }

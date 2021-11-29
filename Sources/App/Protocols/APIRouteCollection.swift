@@ -48,7 +48,7 @@ extension APIRouteCollection {
 
 	/// For routes that require HTTP Basic Auth. Tokens won't work. Generally, this is only for the login route.
 	func addBasicAuthGroup(to: RoutesBuilder) -> RoutesBuilder {
-		return to.grouped([User.authenticator(), User.guardMiddleware()])
+		return to.grouped([UserCacheData.BasicAuth(), UserCacheData.guardMiddleware(throwing: Abort(.unauthorized, reason: "User not authenticated."))])
 	}
 
 	/// For routes that require a logged-in user. Applying this auth group to a route will make requests that don't have a valid token fail with a HTTP 401 error.
@@ -56,7 +56,7 @@ extension APIRouteCollection {
 		return to.grouped([Token.authenticator(), User.guardMiddleware()])
 	}
 	func addTokenCacheAuthGroup(to: RoutesBuilder) -> RoutesBuilder {
-		return to.grouped([UserCacheData.TokenAuthenticator(), UserCacheData.guardMiddleware()])
+		return to.grouped([UserCacheData.TokenAuthenticator(), UserCacheData.guardMiddleware(throwing: Abort(.unauthorized, reason: "User not authenticated."))])
 	}
 
 	/// Transforms a string that might represent a date (either a `Double` or an ISO 8601
