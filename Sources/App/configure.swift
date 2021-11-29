@@ -381,8 +381,12 @@ func verifyConfiguration(_ app: Application) throws {
 		}
 	}
 	
-	// Do a dummy query on the DB
-	if !postgresChecksFailed {
+	// Do a dummy query on the DB, if the active command is Run
+	var commandName = app.environment.arguments.count >= 1 ? app.environment.arguments[1].lowercased() : "serve"
+	if commandName.hasPrefix("-") {
+		commandName = "serve"
+	}
+	if !postgresChecksFailed, commandName == "serve" {
 		_ = User.query(on: app.db).count().flatMapThrowing { userCount in
 			guard userCount > 0 else {
 				throw "User table has zero users. Did the migrations all run?"

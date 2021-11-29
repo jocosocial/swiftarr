@@ -25,7 +25,7 @@ struct CreateTestUsers: Migration {
         // create users
         var users: [User] = []
         for username in usernames {
-            let password = try? Bcrypt.hash("password")
+            let password = try? Bcrypt.hash("password", cost: 9)
             guard let passwordHash = password else {
                 fatalError("could not create test users: password hash failed")
             }
