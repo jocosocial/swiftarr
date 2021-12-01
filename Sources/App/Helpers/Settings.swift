@@ -119,9 +119,13 @@ final class Settings : Encodable {
 	@StoredSettingsValue("allowAnimatedImages", defaultValue: true) var allowAnimatedImages: Bool
 	
 // MARK: Directories
+	/// Root dir for files used by Swiftarr. The front-end's CSS, JS, static image files, all the Leaf templates are in here,
+	/// as are all the seeds files used for database migrations by the backend..
+	/// The Resources and Seeds dirs get *copied* into this dir from the root of the git repo by the build system.
+	@SettingsValue var staticFilesRootPath: URL = URL(fileURLWithPath: "~")
 
-	/// User uploaded image will be inside this dir. 
-	@SettingsValue var userImagesRootPath: URL = URL(fileURLWithPath: "/")
+	/// User uploaded images will be inside this dir. 
+	@SettingsValue var userImagesRootPath: URL = URL(fileURLWithPath: "~/swiftarrImages")
 }
 
 /// Derivative directory paths. These are computed property getters that return a path based on a root path.
@@ -132,6 +136,11 @@ extension Settings {
 		let result = userImagesRootPath.appendingPathComponent("seeds/admin")
 		try? FileManager.default.createDirectory(at: result, withIntermediateDirectories: true, attributes: nil)
 		return result
+	}
+	
+	/// Path to the 'admin' directory, inside the 'seeds' directory. Certain seed files can be upload by admin here, and ingested while the server is running.
+	var seedsDirectoryPath: URL {
+		return staticFilesRootPath.appendingPathComponent("seeds")
 	}
 }
 

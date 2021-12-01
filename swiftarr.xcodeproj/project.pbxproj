@@ -45,6 +45,7 @@
 /* Begin PBXBuildFile section */
 		EA469925275336BF00996F06 /* seeds in CopyFiles */ = {isa = PBXBuildFile; fileRef = EA469924275336B900996F06 /* seeds */; };
 		EA469927275336CF00996F06 /* Resources in CopyFiles */ = {isa = PBXBuildFile; fileRef = EA469926275336CC00996F06 /* Resources */; };
+		EA46992A2756E35A00996F06 /* Private Swiftarr Config in CopyFiles */ = {isa = PBXBuildFile; fileRef = EA4699292756E35000996F06 /* Private Swiftarr Config */; };
 		OBJ_2786 /* AdminController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_10 /* AdminController.swift */; };
 		OBJ_2787 /* AlertController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* AlertController.swift */; };
 		OBJ_2788 /* AuthController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* AuthController.swift */; };
@@ -8117,11 +8118,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		EA4699282756E33700996F06 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 7;
+			files = (
+				EA46992A2756E35A00996F06 /* Private Swiftarr Config in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		EA469924275336B900996F06 /* seeds */ = {isa = PBXFileReference; lastKnownFileType = folder; name = seeds; path = Sources/App/seeds; sourceTree = "<group>"; };
 		EA469926275336CC00996F06 /* Resources */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Resources; path = Sources/App/Resources; sourceTree = "<group>"; };
+		EA4699292756E35000996F06 /* Private Swiftarr Config */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "Private Swiftarr Config"; sourceTree = "<group>"; };
 		OBJ_10 /* AdminController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminController.swift; sourceTree = "<group>"; };
 		OBJ_100 /* Token.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Token.swift; sourceTree = "<group>"; };
 		OBJ_1000 /* print.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = print.c; sourceTree = "<group>"; };
@@ -12557,6 +12569,7 @@
 			isa = PBXGroup;
 			children = (
 				OBJ_140 /* main.swift */,
+				EA4699292756E35000996F06 /* Private Swiftarr Config */,
 			);
 			name = Run;
 			path = Sources/Run;
@@ -19234,6 +19247,7 @@
 			buildPhases = (
 				OBJ_6213 /* Sources */,
 				OBJ_6215 /* Frameworks */,
+				EA4699282756E33700996F06 /* CopyFiles */,
 			);
 			buildRules = (
 			);

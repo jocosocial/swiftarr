@@ -1,6 +1,6 @@
 <div class="modal fade" id="imageCarouselModal" tabindex="-1" aria-hidden="true">
 		<div class="swiftarr-closeup-box">
-			<img class="swiftarr-closeup-image" src="/api/v3/image/full/39CB6F4C-9ECC-405D-9915-21D1F9C6B232.jpg">
+			<img class="swiftarr-closeup-image" src="">
 		</div>
 	<div class="modal-dialog m-0">
 	</div>

@@ -51,9 +51,9 @@ struct SiteFileController: SiteControllerUtils {
         }
 
         // create absolute file path
-		guard let filePath = Bundle(for: Settings.self).url(forResource: path, withExtension: nil, subdirectory: "Resources/Assets/\(basePath)") else {
-			throw Abort(.notFound)
-		}
+		let filePath = Settings.shared.staticFilesRootPath
+				.appendingPathComponent("Resources/Assets/\(basePath)")
+				.appendingPathComponent(path)
 
         // check if file exists and is not a directory
         var isDir: ObjCBool = false

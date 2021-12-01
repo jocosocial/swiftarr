@@ -19,12 +19,12 @@ struct ImportBoardgames: Migration {
         let gamesFile: String
         do {
             if (try Environment.detect().name != "heroku") {
-                gamesFile = "JoCoGamesCatalog"
+                gamesFile = "JoCoGamesCatalog.json"
             } else {
-                gamesFile = "test-JoCoGamesCatalog"
+                gamesFile = "test-JoCoGamesCatalog.json"
             }
-			guard let gamesFilePath = Bundle(for: Settings.self).url(forResource: gamesFile, withExtension: "json", subdirectory: "seeds"),
-            		let data = FileManager.default.contents(atPath: gamesFilePath.path) else {
+			let gamesFilePath = Settings.shared.seedsDirectoryPath.appendingPathComponent(gamesFile)
+			guard let data = FileManager.default.contents(atPath: gamesFilePath.path) else {
 				fatalError("Could not read boardgames file.")
             }
             // parse to JsonGamesListGame array

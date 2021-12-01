@@ -12,5 +12,6 @@ DerivedData/
 __pycache__/
 
 # Swiftarr project ignores
+/Sources/Run/Private Swiftarr Config/
 images/
 

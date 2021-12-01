@@ -27,13 +27,13 @@ struct CreateClientUsers: Migration {
         do {
             if (try Environment.detect().isRelease) {
                 // use static set of clients if just testing
-                clientsFile = "registered-clients"
+                clientsFile = "registered-clients.txt"
             } else {
-                clientsFile = "test-registered-clients"
+                clientsFile = "test-registered-clients.txt"
             }
             // read file as string
-            guard let clientsPath = Bundle(for: Settings.self).url(forResource: clientsFile, withExtension: "txt", subdirectory: "seeds"),
-            		let data = FileManager.default.contents(atPath: clientsPath.path),
+			let clientsPath = Settings.shared.seedsDirectoryPath.appendingPathComponent(clientsFile)
+			guard let data = FileManager.default.contents(atPath: clientsPath.path),
                 	let dataString = String(bytes: data, encoding: .utf8) else {
 				fatalError("Could not read clients file.")
             }

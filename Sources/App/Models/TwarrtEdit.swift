@@ -44,12 +44,12 @@ final class TwarrtEdit: Model {
     ///
     /// - Parameters:
     ///   - twarrt: The Twarrt that will be edited.
-    init(twarrt: Twarrt, editor: User) throws
+    init(twarrt: Twarrt, editorID: UUID) throws
     {
         self.$twarrt.id = try twarrt.requireID()
         self.$twarrt.value = twarrt
         self.text = twarrt.text
         self.images = twarrt.images
-        self.$editor.id = try editor.requireID()
+        self.$editor.id = editorID
     }
 }

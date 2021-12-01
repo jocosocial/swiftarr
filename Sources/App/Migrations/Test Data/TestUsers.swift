@@ -19,8 +19,6 @@ struct CreateTestUsers: Migration {
             "james": .verified,
             "heidi": .verified,
             "sam": .verified,
-            "moderator": .moderator,
-            "tho": .tho
         ]
         // create users
         var users: [User] = []

@@ -17,13 +17,13 @@ struct ImportEvents: Migration {
         let scheduleFile: String
         do {
             if (try Environment.detect().isRelease) {
-                scheduleFile = "schedule"
+                scheduleFile = "schedule.ics"
             } else {
-                scheduleFile = "test-schedule"
+                scheduleFile = "test-schedule.ics"
             }
             // read file as string
-            guard let schedulePath = Bundle(for: Settings.self).url(forResource: scheduleFile, withExtension: "ics", subdirectory: "seeds"),
-            		let data = FileManager.default.contents(atPath: schedulePath.path),
+			let schedulePath = Settings.shared.seedsDirectoryPath.appendingPathComponent(scheduleFile)
+            guard let data = FileManager.default.contents(atPath: schedulePath.path),
                 let dataString = String(bytes: data, encoding: .utf8) else {
                     fatalError("Could not read schedule file.")
             }

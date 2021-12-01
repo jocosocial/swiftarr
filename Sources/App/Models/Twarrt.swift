@@ -75,9 +75,8 @@ final class Twarrt: Model {
     ///   - text: The text content of the twarrt.
     ///   - image: The filename of any image content of the twarrt.
     ///   - replyTo: The twarrt being replied to, if any.
-    init(author: User, text: String, images: [String]? = nil, replyTo: Twarrt? = nil) throws {
-        self.$author.id = try author.requireID()
-        self.$author.value = author
+    init(authorID: UUID, text: String, images: [String]? = nil, replyTo: Twarrt? = nil) throws {
+        self.$author.id = authorID
         // We don't do much text manipulation on input, but let's normalize line endings.
         self.text = text.replacingOccurrences(of: "\r\n", with: "\r")
         self.images = images

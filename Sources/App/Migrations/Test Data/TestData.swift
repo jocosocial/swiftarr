@@ -33,7 +33,10 @@ struct CreateTestData: Migration {
     // Makes a single tweet by admin.
     func createTestTwarrts(on database: Database) -> EventLoopFuture<Void> {
         return User.query(on: database).first().throwingFlatMap { (admin) in
-			let twarrt = try Twarrt(author: admin!, text: "The one that is the first one.")
+        	guard let admin = admin else {
+        		throw "Could not find admin user."
+        	}	
+			let twarrt = try Twarrt(authorID: admin.requireID(), text: "The one that is the first one.")
 			return twarrt.save(on: database).transform(to: ())
 		}
     }

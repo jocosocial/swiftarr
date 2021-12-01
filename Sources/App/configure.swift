@@ -32,12 +32,17 @@ import gd
 /// * ADMIN_PASSWORD:
 /// * RECOVERY_KEY:
 /// 
-/// * SWIFTARR_STATIC_FILES:  Root directory for `Resources` and `seeds`. 
 /// * SWIFTARR_USER_IMAGES:  Root directory for storing user-uploaded images. These images are referenced by filename in the db.
 ///
 /// Called before your application initializes. Calls several other config methods to do its work. Sub functions are only
 /// here for easier organization. If order-of-initialization issues arise, rearrange as necessary.
 public func configure(_ app: Application) throws {
+
+	// Load the variables in the .env file into our environment. This calls `setenv` on each key-value pair in the file.
+	// Vapor is setup to load these files automatically, 
+	if let envFilePath = Bundle.main.path(forResource: "\(app.environment.name)", ofType: "env", inDirectory: "Private Swiftarr Config") {
+		DotEnvFile.load(path: envFilePath, on: .shared(app.eventLoopGroup), fileio: app.fileio, logger: app.logger)
+	}
     
     // use iso8601ms for dates
     let jsonEncoder = JSONEncoder()
@@ -117,9 +122,9 @@ func databaseConnectionConfiguration(_ app: Application) throws {
         // otherwise
         let redisHostname = Environment.get("REDIS_HOSTNAME") ?? "localhost"
         let redisPort = (app.environment == .testing) ? Int(Environment.get("REDIS_PORT") ?? "6380")! : 6379
-		app.redis.configuration = try RedisConfiguration(hostname: redisHostname, port: redisPort)
+        let redisPassword = Environment.get("REDIS_PASSWORD") ?? nil
+		app.redis.configuration = try RedisConfiguration(hostname: redisHostname, port: redisPort, password: redisPassword)
     }
-
 }
 
 func configureBasicSettings(_ app: Application) throws {
@@ -169,24 +174,26 @@ func configureBasicSettings(_ app: Application) throws {
 	// [".gif", ".bmp", ".tga", ".png", ".jpg", ".tif", ".webp"] inputs
 	// [".gif", ".bmp",         ".png", ".jpg", ".tif", ".webp"] outputs
 	
-	// Set the app's views dir, which is where all the Leaf template files are.
-	if let viewsDir = Bundle(for: Settings.self).resourceURL?.appendingPathComponent("Resources/Views") {
-		app.directory.viewsDirectory = viewsDir.path
-	}
-	// Also set the resources dir, although I don't think it's used anywhere.
-	if let resourcesDir = Bundle(for: Settings.self).resourceURL?.appendingPathComponent("Resources") {
-		app.directory.resourcesDirectory = resourcesDir.path
-	}
-		
-	// Figure out the likely path to the 'swiftarr' executable.
-	var likelyExecutablePath: String
-	let appPath = app.environment.arguments[0]
-	if appPath.isEmpty || !appPath.hasPrefix("/") {
-		likelyExecutablePath = DirectoryConfiguration.detect().workingDirectory
+	// So, the way to get files copied into a built app with SPM is to declare them as Resources of some sort and 
+	// the SPM build process will copy them into the app's directory tree in a Bundle. Xcode will also copy them
+	// into the app's directory tree as a Bundle, except it'll be in a different place with a different name and
+	// the bundle will have a different internal structure. Oh, and if you build with "vapor run" on the command line,
+	// the bundle with all the resources files in it will be in yet another different place. I *think* this code
+	// will handle all the cases, finding the bundle dir correctly. We also check that we can find our resource files
+	// on launch.
+	var resourcesPath: URL //: Bundle? = Bundle(for: Settings.self)
+	if Bundle(for: Settings.self).url(forResource: "swiftarr", withExtension: "css", subdirectory: "Resources/Assets/css") != nil {
+		resourcesPath = Bundle(for: Settings.self).resourceURL ?? Bundle(for: Settings.self).bundleURL
 	}
 	else {
-		likelyExecutablePath = URL(fileURLWithPath: appPath).deletingLastPathComponent().path
+		resourcesPath = Bundle.main.bundleURL.appendingPathComponent("swiftarr_App.bundle")
 	}
+	Settings.shared.staticFilesRootPath = resourcesPath
+	
+	// Set the app's views dir, which is where all the Leaf template files are.
+	app.directory.viewsDirectory = Settings.shared.staticFilesRootPath.appendingPathComponent("Resources/Views").path
+	// Also set the resources dir, although I don't think it's used anywhere.
+	app.directory.resourcesDirectory = Settings.shared.staticFilesRootPath.appendingPathComponent("Resources").path
 	
 	// This sets the root dir for the "User Images" tree, which is where user uploaded images are stored.
 	// The postgres DB holds filenames that refer to files in this directory tree; ideally the lifetime of the 
@@ -195,6 +202,16 @@ func configureBasicSettings(_ app: Application) throws {
 		Settings.shared.userImagesRootPath = URL(fileURLWithPath: userImagesOverridePath)
 	}
 	else {
+		// Figure out the likely path to the 'swiftarr' executable.
+		var likelyExecutablePath: String
+		let appPath = app.environment.arguments[0]
+		if appPath.isEmpty || !appPath.hasPrefix("/") {
+			likelyExecutablePath = DirectoryConfiguration.detect().workingDirectory
+		}
+		else {
+			likelyExecutablePath = URL(fileURLWithPath: appPath).deletingLastPathComponent().path
+		}
+		
 		Settings.shared.userImagesRootPath = URL(fileURLWithPath: likelyExecutablePath).appendingPathComponent("images")
 	}
 }
@@ -322,7 +339,7 @@ func configureMigrations(_ app: Application) throws {
 	app.migrations.add(CreateKaraokeFavoriteSchema(), to: .psql)
 
 	// Third, migrations that seed the db with initial data
-	app.migrations.add(CreateAdminUser(), to: .psql)
+	app.migrations.add(CreateAdminUsers(), to: .psql)
 	app.migrations.add(CreateClientUsers(), to: .psql)
 	app.migrations.add(CreateCategories(), to: .psql)
 //	app.migrations.add(CreateForums(), to: .psql)		// Adds some initial forum threads; not the event forum threads.
@@ -381,8 +398,8 @@ func verifyConfiguration(_ app: Application) throws {
 		}
 	}
 	
-	// Do a dummy query on the DB, if the active command is Run
-	var commandName = app.environment.arguments.count >= 1 ? app.environment.arguments[1].lowercased() : "serve"
+	// Do a dummy query on the DB, if the active command is `serve`.
+	var commandName = app.environment.arguments.count >= 2 ? app.environment.arguments[1].lowercased() : "serve"
 	if commandName.hasPrefix("-") {
 		commandName = "serve"
 	}
@@ -408,12 +425,12 @@ func verifyConfiguration(_ app: Application) throws {
 	// What's going on? Instead of running the app at the root of the git hierarchy, Xcode makes a /DerivedData dir and runs
 	// apps (deep) inside there. A script build step is supposed to copy the contents of /Resources and /Seeds into the dir
 	// the app runs in. If that script breaks or didn't run, this will hopefully catch it and tell admins what's wrong.
+	// "vapor run", similarly, creates a ".build" dir and runs apps (deep) inside there.
 	var cssFileFound = false
-	if let swiftarrCSSURL = Bundle(for: Settings.self).url(forResource: "swiftarr", withExtension: "css", subdirectory: "Resources/Assets/css") {
-		var isDir: ObjCBool = false
-		if FileManager.default.fileExists(atPath: swiftarrCSSURL.path, isDirectory: &isDir), !isDir.boolValue {
-			cssFileFound = true
-		}
+	let swiftarrCSSURL = Settings.shared.staticFilesRootPath.appendingPathComponent("Resources/Assets/css/swiftarr.css")
+	var isDir: ObjCBool = false
+	if FileManager.default.fileExists(atPath: swiftarrCSSURL.path, isDirectory: &isDir), !isDir.boolValue {
+		cssFileFound = true
 	}
 	if !cssFileFound {
 		app.logger.critical("Resource files not found during launchtime sanity check. This usually means the Resources directory isn't getting copied into the App directory in /DerivedData.")

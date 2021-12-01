@@ -118,16 +118,16 @@ struct TwitarrController: APIRouteCollection {
 		let tokenAuthGroup = addTokenAuthGroup(to: twitarrRoutes)
 		tokenAuthGroup.post(twarrtIDParam, "bookmark", use: bookmarkAddHandler)
 		tokenAuthGroup.post(twarrtIDParam, "bookmark", "remove", use: bookmarkRemoveHandler)
-		tokenAuthGroup.post("create", use: twarrtCreateHandler)
-		tokenAuthGroup.post(twarrtIDParam, "delete", use: twarrtDeleteHandler)
-		tokenAuthGroup.delete(twarrtIDParam, use: twarrtDeleteHandler)
-		tokenAuthGroup.post(twarrtIDParam, "reply", use: replyHandler)
-		tokenAuthGroup.post(twarrtIDParam, "unreact", use: twarrtUnreactHandler)
-		tokenAuthGroup.delete(twarrtIDParam, "laugh", use: twarrtUnreactHandler)
-		tokenAuthGroup.delete(twarrtIDParam, "like", use: twarrtUnreactHandler)
-		tokenAuthGroup.delete(twarrtIDParam, "love", use: twarrtUnreactHandler)
+		tokenCacheAuthGroup.post("create", use: twarrtCreateHandler)
+		tokenCacheAuthGroup.post(twarrtIDParam, "delete", use: twarrtDeleteHandler)
+		tokenCacheAuthGroup.delete(twarrtIDParam, use: twarrtDeleteHandler)
+		tokenCacheAuthGroup.post(twarrtIDParam, "reply", use: replyHandler)
+		tokenCacheAuthGroup.post(twarrtIDParam, "unreact", use: twarrtUnreactHandler)
+		tokenCacheAuthGroup.delete(twarrtIDParam, "laugh", use: twarrtUnreactHandler)
+		tokenCacheAuthGroup.delete(twarrtIDParam, "like", use: twarrtUnreactHandler)
+		tokenCacheAuthGroup.delete(twarrtIDParam, "love", use: twarrtUnreactHandler)
 		tokenAuthGroup.post(twarrtIDParam, "report", use: twarrtReportHandler)
-		tokenAuthGroup.post(twarrtIDParam, "update", use: twarrtUpdateHandler)
+		tokenCacheAuthGroup.post(twarrtIDParam, "update", use: twarrtUpdateHandler)
 	}
     
     // MARK: - tokenAuthGroup Handlers (logged in)
@@ -481,8 +481,8 @@ struct TwitarrController: APIRouteCollection {
     /// - Throws: 400 error if the replyTo twarrt is in quarantine.
     /// - Returns: A <doc:TwarrtData> containing the twarrt's contents and metadata. HTTP 201 status if successful.
     func replyHandler(_ req: Request) throws -> EventLoopFuture<Response> {
-        let user = try req.auth.require(User.self)
-		try user.guardCanCreateContent(customErrorString: "user cannot post twarrts")
+        let cacheUser = try req.auth.require(UserCacheData.self)
+		try cacheUser.guardCanCreateContent(customErrorString: "user cannot post twarrts")
 		let data = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
         // get replyTo twarrt
         return Twarrt.findFromParameter(twarrtIDParam, on: req).throwingFlatMap { (replyTo) in
@@ -492,8 +492,8 @@ struct TwitarrController: APIRouteCollection {
 			// process images
 			return self.processImages(data.images, usage: .twarrt, on: req).throwingFlatMap { (filenames) in
 				// create twarrt
-				let twarrt = try Twarrt(author: user, text: data.text, images: filenames, replyTo: replyTo)
-				return twarrt.save(on: req.db).flatMapThrowing { (savedTwarrt) in
+				let twarrt = try Twarrt(authorID: cacheUser.userID, text: data.text, images: filenames, replyTo: replyTo)
+				return twarrt.save(on: req.db).flatMapThrowing { 
 					processTwarrtMentions(twarrt: twarrt, editedText: nil, isCreate: true, on: req)
 					if replyTo.$replyGroup.id == nil {
 						// If the replyTo twarrt wasn't in a replyGroup, it becomes the head of a new one.
@@ -501,9 +501,8 @@ struct TwitarrController: APIRouteCollection {
 						_ = replyTo.save(on: req.db)
 					}
 					// return as TwarrtData with 201 status
-					let authorHeader = try req.userCache.getHeader(twarrt.$author.id)
 					let response = Response(status: .created)
-					try response.content.encode(TwarrtData(twarrt: twarrt, creator: authorHeader, isBookmarked: false,
+					try response.content.encode(TwarrtData(twarrt: twarrt, creator: cacheUser.makeHeader(), isBookmarked: false,
 							userLike: nil, likeCount: 0))
 					return response
 				}
@@ -518,19 +517,18 @@ struct TwitarrController: APIRouteCollection {
     /// - Parameter requestBody: <doc:PostContentData>
     /// - Returns: <doc:TwarrtData> containing the twarrt's contents and metadata. HTTP 201 status if successful.
     func twarrtCreateHandler(_ req: Request) throws -> EventLoopFuture<Response> {
-        let user = try req.auth.require(User.self)
-		try user.guardCanCreateContent(customErrorString: "user cannot post twarrts")
+        let cacheUser = try req.auth.require(UserCacheData.self)
+		try cacheUser.guardCanCreateContent(customErrorString: "user cannot post twarrts")
  		let data = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
         // process images
         return self.processImages(data.images, usage: .twarrt, on: req).throwingFlatMap { (filenames) in
             // create twarrt
-			let twarrt = try Twarrt(author: user, text: data.text, images: filenames)
+			let twarrt = try Twarrt(authorID: cacheUser.userID, text: data.text, images: filenames)
             return twarrt.save(on: req.db).flatMapThrowing { _ in
 				processTwarrtMentions(twarrt: twarrt, editedText: nil, isCreate: true, on: req)
                 // return as TwarrtData with 201 status
-				let authorHeader = try req.userCache.getHeader(twarrt.$author.id)
                 let response = Response(status: .created)
-                try response.content.encode(TwarrtData(twarrt: twarrt, creator: authorHeader, isBookmarked: false,
+                try response.content.encode(TwarrtData(twarrt: twarrt, creator: cacheUser.makeHeader(), isBookmarked: false,
 						userLike: nil, likeCount: 0))
                 return response
             }
@@ -546,11 +544,11 @@ struct TwitarrController: APIRouteCollection {
     /// - Throws: 403 error if the user is not permitted to delete.
     /// - Returns: 204 No Content on success.
     func twarrtDeleteHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        let user = try req.auth.require(User.self)
+        let cacheUser = try req.auth.require(UserCacheData.self)
         return Twarrt.findFromParameter(twarrtIDParam, on: req).throwingFlatMap { (twarrt) in
-			try user.guardCanModifyContent(twarrt, customErrorString: "user cannot delete twarrt")
+			try cacheUser.guardCanModifyContent(twarrt, customErrorString: "user cannot delete twarrt")
 			processTwarrtMentions(twarrt: twarrt, editedText: nil, on: req)
-			twarrt.logIfModeratorAction(.delete, user: user, on: req)
+			twarrt.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: req)
             return twarrt.delete(on: req.db).transform(to: .noContent)
         }
     }
@@ -644,16 +642,16 @@ struct TwitarrController: APIRouteCollection {
     /// - Throws: 403 error if user is is the twarrt's creator. 404 if no twarrt with the ID is found. 
     /// - Returns: <doc:TwarrtData> containing the updated like info.
     func twarrtUnreactHandler(_ req: Request) throws -> EventLoopFuture<TwarrtData> {
-        let user = try req.auth.require(User.self)
-        let userID = try user.requireID()
+        let cacheUser = try req.auth.require(UserCacheData.self)
         // get twarrt
-        return Twarrt.findFromParameter(twarrtIDParam, on: req).flatMap { twarrt in
-            guard twarrt.$author.id != userID else {
-                return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "user cannot like own post"))
+        return Twarrt.findFromParameter(twarrtIDParam, on: req).throwingFlatMap { twarrt in
+            guard twarrt.$author.id != cacheUser.userID else {
+                throw Abort(.forbidden, reason: "user cannot like own post")
             }
 			// remove pivot
-			return twarrt.$likes.detach(user, on: req.db).throwingFlatMap { (_) in
-				return try buildTwarrtData(from: twarrt, userID: userID, on: req)
+			return try TwarrtLikes.query(on: req.db).filter(\.$user.$id == cacheUser.userID).filter(\.$twarrt.$id == twarrt.requireID())
+					.delete().throwingFlatMap {
+				return try buildTwarrtData(from: twarrt, userID: cacheUser.userID, on: req)
 			}
         }
     }
@@ -667,12 +665,12 @@ struct TwitarrController: APIRouteCollection {
     /// - Throws: 403 error if user is not twarrt owner or has read-only access.
     /// - Returns: <doc:TwarrtData> containing the twarrt's contents and metadata.
     func twarrtUpdateHandler(_ req: Request) throws -> EventLoopFuture<Response> {
-        let user = try req.auth.require(User.self)
+        let cacheUser = try req.auth.require(UserCacheData.self)
 		let data = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
         return Twarrt.findFromParameter(twarrtIDParam, on: req).throwingFlatMap { (twarrt) in
 			// I *think* the author should be allowed to edit a quarantined twarrt?
 			// ensure user has write access
-			try user.guardCanModifyContent(twarrt, customErrorString: "user cannot modify twarrt")
+			try cacheUser.guardCanModifyContent(twarrt, customErrorString: "user cannot modify twarrt")
 			return processImages(data.images, usage: .twarrt, on: req).map { filenames in
 				return (twarrt, filenames)
 			}
@@ -683,7 +681,7 @@ struct TwitarrController: APIRouteCollection {
 			if twarrt.text != normalizedText || twarrt.images != filenames {
 				processTwarrtMentions(twarrt: twarrt, editedText: normalizedText, on: req)
 				// stash current twarrt contents before modifying
-				let twarrtEdit = try TwarrtEdit(twarrt: twarrt, editor: user)
+				let twarrtEdit = try TwarrtEdit(twarrt: twarrt, editorID: cacheUser.userID)
 				twarrt.text = normalizedText
 				twarrt.images = filenames
 				return twarrt.save(on: req.db)
@@ -693,8 +691,8 @@ struct TwitarrController: APIRouteCollection {
 			return req.eventLoop.future((twarrt, HTTPStatus.ok))
 		}
 		.throwingFlatMap { (twarrt: Twarrt, status: HTTPStatus) in
-			twarrt.logIfModeratorAction(.edit, user: user, on: req)
-			return try buildTwarrtData(from: twarrt, userID: user.requireID(), on: req).flatMapThrowing { twarrtData in
+			twarrt.logIfModeratorAction(.edit, moderatorID: cacheUser.userID, on: req)
+			return try buildTwarrtData(from: twarrt, userID: cacheUser.userID, on: req).flatMapThrowing { twarrtData in
 				// return updated twarrt as TwarrtData, with 201 status
 				let response = Response(status: status)
 				try response.content.encode(twarrtData)
