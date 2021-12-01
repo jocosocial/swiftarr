@@ -8,7 +8,7 @@ struct SiteAdminController: SiteControllerUtils {
 
 	func registerRoutes(_ app: Application) throws {
 		// Routes for non-shareable content. If you're not logged in we failscreen.
-		let privateAdminRoutes = getPrivateRoutes(app).grouped(SiteRequireAdminMiddleware()).grouped("admin")
+		let privateAdminRoutes = getPrivateRoutes(app).grouped(SiteRequireTHOMiddleware()).grouped("admin")
 		
 		privateAdminRoutes.get("", use: adminRootPageHandler)
 

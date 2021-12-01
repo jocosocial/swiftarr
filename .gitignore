@@ -12,6 +12,7 @@ DerivedData/
 __pycache__/
 
 # Swiftarr project ignores
-/Sources/Run/Private Swiftarr Config/
+/Sources/Run/Private Swiftarr Config/*
+!/Sources/Run/Private Swiftarr Config/Template.env
 images/
 
