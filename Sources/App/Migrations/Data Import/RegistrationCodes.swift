@@ -22,9 +22,9 @@ struct ImportRegistrationCodes: Migration {
         do {
             // use static simple set of codes if just testing
             if (try Environment.detect().isRelease) {
-                codesFile = "registration-codes"
+                codesFile = "registration-codes.txt"
             } else {
-                codesFile = "test-registration-codes"
+                codesFile = "test-registration-codes.txt"
             }
 			let codesPath = Settings.shared.seedsDirectoryPath.appendingPathComponent(codesFile)
             // read file as string
