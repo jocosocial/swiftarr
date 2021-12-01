@@ -122,7 +122,10 @@ func databaseConnectionConfiguration(_ app: Application) throws {
         // otherwise
         let redisHostname = Environment.get("REDIS_HOSTNAME") ?? "localhost"
         let redisPort = (app.environment == .testing) ? Int(Environment.get("REDIS_PORT") ?? "6380")! : 6379
-        let redisPassword = Environment.get("REDIS_PASSWORD") ?? nil
+        var redisPassword = Environment.get("REDIS_PASSWORD") ?? nil
+        if redisPassword == "" {
+        	redisPassword = nil
+        }
 		app.redis.configuration = try RedisConfiguration(hostname: redisHostname, port: redisPort, password: redisPassword)
     }
 }

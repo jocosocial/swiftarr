@@ -11,9 +11,11 @@ if [[ $REPLY =~ ^[Yy]$ ]]
 then
     # postgres
     echo "Postgres dropdb is going to ask for the password for user 'swiftarr'."
-	/Library/PostgreSQL/14/bin/dropdb -U swiftarr swiftarr && echo "db deleted successfully" || echo "dropdb failed. You may not want to continue?"
+#	/Library/PostgreSQL/14/bin/dropdb -U swiftarr swiftarr && echo "db deleted successfully" || echo "dropdb failed. You may not want to continue?"
+	/opt/homebrew/opt/postgresql/bin/dropdb -U swiftarr swiftarr && echo "db deleted successfully" || echo "dropdb failed. You may not want to continue?"
     echo "Postgres createdb is going to ask for the password for user 'swiftarr'."
-	/Library/PostgreSQL/14/bin/createdb -U swiftarr swiftarr && echo "swiftarr db created successfully."
+#	/Library/PostgreSQL/14/bin/createdb -U swiftarr swiftarr && echo "swiftarr db created successfully."
+	/opt/homebrew/opt/postgresql/bin/createdb -U swiftarr swiftarr && echo "swiftarr db created successfully."
 	
 	# redis
 	echo "Telling redis to flushall"
