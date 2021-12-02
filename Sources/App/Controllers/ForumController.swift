@@ -812,13 +812,14 @@ struct ForumController: APIRouteCollection {
 			// process images
 			return self.processImages(newPostData.images, usage: .forumPost, on: req).throwingFlatMap { (filenames) in
 				// create post
-				let forumPost = try ForumPost(forum: forum, authorID: cacheUser.userID, text: newPostData.text, images: filenames)
+				let effectiveAuthor = newPostData.effectiveAuthor(actualAuthor: cacheUser, on: req)
+				let forumPost = try ForumPost(forum: forum, authorID: effectiveAuthor.userID, text: newPostData.text, images: filenames)
 				return forumPost.save(on: req.db).flatMapThrowing { (_) in
 					// If the post @mentions anyone, update their mention counts
 					processForumMentions(forum: forum, post: forumPost, editedText: nil, isCreate: true, on: req)
 					// return as PostData, with 201 status
 					let response = Response(status: .created)
-					try response.content.encode(PostData(post: forumPost, author: cacheUser.makeHeader()))
+					try response.content.encode(PostData(post: forumPost, author: effectiveAuthor.makeHeader()))
 					return response
 				}
 			}

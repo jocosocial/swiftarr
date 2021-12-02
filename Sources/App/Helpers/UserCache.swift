@@ -105,7 +105,7 @@ public struct UserCacheData: Authenticatable, SessionAuthenticatable {
 	}
 }
 
-// MARK: UCD Authenticators
+// MARK: - UCD Authenticators
 extension UserCacheData {
 	// UserCacheData.BasicAuth lets the Login route auth a UserCacheData object using a basic Authorization header.
 	// This auth code uses the async version of verify. Async verify appears to perform better under Locust;
@@ -155,7 +155,8 @@ extension UserCacheData {
 		typealias User = App.UserCacheData
 		
 		func authenticate(sessionID: String, for request: Request) -> EventLoopFuture<Void> {
-			if let userID = UUID(sessionID), let foundUser = request.userCache.getUser(userID) {
+			if let userID = UUID(sessionID), let foundUser = request.userCache.getUser(userID),
+					let sessionToken = request.session.data["token"], sessionToken == foundUser.token {
 				request.auth.login(foundUser)
 			}
 			return request.eventLoop.makeSucceededFuture(())

@@ -46,6 +46,7 @@
 		EA469925275336BF00996F06 /* seeds in CopyFiles */ = {isa = PBXBuildFile; fileRef = EA469924275336B900996F06 /* seeds */; };
 		EA469927275336CF00996F06 /* Resources in CopyFiles */ = {isa = PBXBuildFile; fileRef = EA469926275336CC00996F06 /* Resources */; };
 		EA46992A2756E35A00996F06 /* Private Swiftarr Config in CopyFiles */ = {isa = PBXBuildFile; fileRef = EA4699292756E35000996F06 /* Private Swiftarr Config */; };
+		EA46993F275796F200996F06 /* PostContentData+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA46993E275796F100996F06 /* PostContentData+Extensions.swift */; };
 		OBJ_2786 /* AdminController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_10 /* AdminController.swift */; };
 		OBJ_2787 /* AlertController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* AlertController.swift */; };
 		OBJ_2788 /* AuthController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* AuthController.swift */; };
@@ -95,7 +96,7 @@
 		OBJ_2832 /* Format.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_61 /* Format.swift */; };
 		OBJ_2833 /* Geometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_62 /* Geometry.swift */; };
 		OBJ_2834 /* Image.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_63 /* Image.swift */; };
-		OBJ_2835 /* AdminUser.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_65 /* AdminUser.swift */; };
+		OBJ_2835 /* AdminUsers.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_65 /* AdminUsers.swift */; };
 		OBJ_2836 /* Categories.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_66 /* Categories.swift */; };
 		OBJ_2837 /* ClientUsers.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_67 /* ClientUsers.swift */; };
 		OBJ_2838 /* Boardgames.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_69 /* Boardgames.swift */; };
@@ -8134,6 +8135,8 @@
 		EA469924275336B900996F06 /* seeds */ = {isa = PBXFileReference; lastKnownFileType = folder; name = seeds; path = Sources/App/seeds; sourceTree = "<group>"; };
 		EA469926275336CC00996F06 /* Resources */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Resources; path = Sources/App/Resources; sourceTree = "<group>"; };
 		EA4699292756E35000996F06 /* Private Swiftarr Config */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "Private Swiftarr Config"; sourceTree = "<group>"; };
+		EA46993E275796F100996F06 /* PostContentData+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PostContentData+Extensions.swift"; sourceTree = "<group>"; };
+		EA4699422758DAEA00996F06 /* API Changelist.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "API Changelist.md"; sourceTree = "<group>"; };
 		OBJ_10 /* AdminController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminController.swift; sourceTree = "<group>"; };
 		OBJ_100 /* Token.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Token.swift; sourceTree = "<group>"; };
 		OBJ_1000 /* print.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = print.c; sourceTree = "<group>"; };
@@ -10133,7 +10136,7 @@
 		OBJ_647 /* SQLRaw.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLRaw.swift; sourceTree = "<group>"; };
 		OBJ_648 /* SQLReturning.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLReturning.swift; sourceTree = "<group>"; };
 		OBJ_649 /* SQLSelect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLSelect.swift; sourceTree = "<group>"; };
-		OBJ_65 /* AdminUser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminUser.swift; sourceTree = "<group>"; };
+		OBJ_65 /* AdminUsers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminUsers.swift; sourceTree = "<group>"; };
 		OBJ_650 /* SQLTableConstraintAlgorithm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLTableConstraintAlgorithm.swift; sourceTree = "<group>"; };
 		OBJ_651 /* SQLUpdate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLUpdate.swift; sourceTree = "<group>"; };
 		OBJ_652 /* SQLDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLDatabase.swift; sourceTree = "<group>"; };
@@ -15899,6 +15902,7 @@
 				OBJ_45 /* ForumPost+Extensions.swift */,
 				OBJ_46 /* Foundation+Extensions.swift */,
 				OBJ_47 /* Model+Extensions.swift */,
+				EA46993E275796F100996F06 /* PostContentData+Extensions.swift */,
 				OBJ_48 /* Token+Extensions.swift */,
 				OBJ_49 /* Twarrt+Extensions.swift */,
 				OBJ_50 /* User+Extensions.swift */,
@@ -16076,6 +16080,8 @@
 			children = (
 				OBJ_6 /* Package.swift */,
 				OBJ_7 /* Sources */,
+				EA469926275336CC00996F06 /* Resources */,
+				EA469924275336B900996F06 /* seeds */,
 				OBJ_150 /* Tests */,
 				OBJ_164 /* Dependencies */,
 				OBJ_2709 /* Products */,
@@ -16083,12 +16089,11 @@
 				OBJ_2773 /* scripts */,
 				OBJ_2774 /* Prometheus */,
 				OBJ_2776 /* locustfile.py */,
+				EA4699422758DAEA00996F06 /* API Changelist.md */,
 				OBJ_2777 /* LICENSE */,
 				OBJ_2778 /* README.md */,
 				OBJ_2779 /* CONTRIBUTING.md */,
 				OBJ_2780 /* Procfile */,
-				EA469926275336CC00996F06 /* Resources */,
-				EA469924275336B900996F06 /* seeds */,
 			);
 			sourceTree = "<group>";
 		};
@@ -16379,7 +16384,7 @@
 		OBJ_64 /* Migrations */ = {
 			isa = PBXGroup;
 			children = (
-				OBJ_65 /* AdminUser.swift */,
+				OBJ_65 /* AdminUsers.swift */,
 				OBJ_66 /* Categories.swift */,
 				OBJ_67 /* ClientUsers.swift */,
 				OBJ_68 /* Data Import */,
@@ -19705,7 +19710,7 @@
 				OBJ_2832 /* Format.swift in Sources */,
 				OBJ_2833 /* Geometry.swift in Sources */,
 				OBJ_2834 /* Image.swift in Sources */,
-				OBJ_2835 /* AdminUser.swift in Sources */,
+				OBJ_2835 /* AdminUsers.swift in Sources */,
 				OBJ_2836 /* Categories.swift in Sources */,
 				OBJ_2837 /* ClientUsers.swift in Sources */,
 				OBJ_2838 /* Boardgames.swift in Sources */,
@@ -19771,6 +19776,7 @@
 				OBJ_2898 /* SiteUserController.swift in Sources */,
 				OBJ_2899 /* configure.swift in Sources */,
 				OBJ_2900 /* routes.swift in Sources */,
+				EA46993F275796F200996F06 /* PostContentData+Extensions.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

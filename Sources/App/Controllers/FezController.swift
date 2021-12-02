@@ -101,7 +101,7 @@ struct FezController: APIRouteCollection {
 					// could have a waitlist of 5, then it stops showing up in 'open' searches.
 					if (fez.maxCapacity == 0 || fez.participantArray.count < Int(Double(fez.maxCapacity) * 1.5)) &&
 							!fez.participantArray.contains(cacheUser.userID) {
-						return try buildFezData(from: fez, with: nil, for: cacheUser.userID, on: req)
+						return try buildFezData(from: fez, with: nil, for: cacheUser, on: req)
 					}
 					return nil
 				}
@@ -141,7 +141,7 @@ struct FezController: APIRouteCollection {
 			return query.sort(FriendlyFez.self, \.$updatedAt, .descending).range(start..<(start + limit)).all().flatMapThrowing { pivots in
 				let fezDataArray = try pivots.map { pivot -> FezData in
 					let fez = try pivot.joined(FriendlyFez.self)
-					return try buildFezData(from: fez, with: pivot, for: user.userID, on: req)
+					return try buildFezData(from: fez, with: pivot, for: user, on: req)
 				}
 				return FezListData(paginator: Paginator(total: fezCount, start: start, limit: limit), fezzes: fezDataArray)
 			}
@@ -185,7 +185,7 @@ struct FezController: APIRouteCollection {
 				// convert to FezData
 				let fezDataArray = try fezzes.map { (fez) -> FezData in
 					let userParticipant = try fez.joined(FezParticipant.self)
-					return try buildFezData(from: fez, with: userParticipant, for: user.userID, on: req)
+					return try buildFezData(from: fez, with: userParticipant, for: user, on: req)
 				}
 				return FezListData(paginator: Paginator(total: fezCount, start: start, limit: limit), fezzes: fezDataArray)
 			}
@@ -227,12 +227,17 @@ struct FezController: APIRouteCollection {
 			}
 			return fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == cacheUser.userID).first()
 					.throwingFlatMap { pivot in
-				var fezData = try buildFezData(from: fez, with: pivot, for: cacheUser.userID, on: req)
-				if let pivot = pivot {
+				var fezData = try buildFezData(from: fez, with: pivot, for: cacheUser, on: req)
+				if pivot != nil || cacheUser.accessLevel.hasAccess(.moderator) {
 					return try buildPostsForFez(fez, pivot: pivot, on: req, user: cacheUser).throwingFlatMap { (posts, paginator) in
 						fezData.members?.paginator = paginator
 						fezData.members?.posts = posts
-						return pivot.save(on: req.db).transform(to: fezData)
+						if let pivot = pivot {
+							return pivot.save(on: req.db).transform(to: fezData)
+						}
+						else {
+							return req.eventLoop.future(fezData)
+						}
 					}
 				}
 				else {
@@ -279,7 +284,7 @@ struct FezController: APIRouteCollection {
 					newParticipant.hiddenCount = hiddenPostCount 
 					return newParticipant.save(on: req.db).flatMapThrowing {
 						try forwardMembershipChangeToSockets(fez, participantID: cacheUser.userID, joined: true, on: req)
-						let fezData = try buildFezData(from: fez, with: newParticipant, for: cacheUser.userID, on: req)
+						let fezData = try buildFezData(from: fez, with: newParticipant, for: cacheUser, on: req)
 						// return with 201 status
 						let response = Response(status: .created)
 						try response.content.encode(fezData)
@@ -312,7 +317,7 @@ struct FezController: APIRouteCollection {
 					.flatMapThrowing { (_) in
 				try deleteFezNotifications(userIDs: [cacheUser.userID], fez: fez, on: req)
 				try forwardMembershipChangeToSockets(fez, participantID: cacheUser.userID, joined: false, on: req)
-				return try buildFezData(from: fez, with: nil, for: cacheUser.userID, on: req)
+				return try buildFezData(from: fez, with: nil, for: cacheUser, on: req)
 			}
 		}
 	}
@@ -340,7 +345,7 @@ struct FezController: APIRouteCollection {
  		}
 		// get fez
 		return FriendlyFez.findFromParameter(fezIDParam, on: req).throwingFlatMap { fez in
-			guard fez.participantArray.contains(cacheUser.userID) else {
+			guard fez.participantArray.contains(cacheUser.userID) || cacheUser.accessLevel.hasAccess(.moderator) else {
 				throw Abort(.forbidden, reason: "user is not member of fez; cannot post")
 			}
 			guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
@@ -352,8 +357,9 @@ struct FezController: APIRouteCollection {
 			// process image
 			return self.processImages(data.images , usage: .fezPost, on: req).throwingFlatMap { (filenames) in
 				// create and save the new post, update fezzes' cached post count
+				let effectiveAuthor = data.effectiveAuthor(actualAuthor: cacheUser, on: req)
 				let filename = filenames.count > 0 ? filenames[0] : nil
-				let post = try FezPost(fez: fez, authorID: cacheUser.userID, text: data.text, image: filename)
+				let post = try FezPost(fez: fez, authorID: effectiveAuthor.userID, text: data.text, image: filename)
 				fez.postCount += 1
 				var saveFutures = [ post.save(on: req.db), fez.save(on: req.db) ]
 				// If any participants block or mute this user, increase their hidden post count as they won't see this post.
@@ -363,8 +369,8 @@ struct FezController: APIRouteCollection {
 					guard let participantCacheUser = req.userCache.getUser(participantUserID) else {
 						continue
 					}
-					if participantCacheUser.getBlocks().contains(cacheUser.userID) || 
-							participantCacheUser.getMutes().contains(cacheUser.userID) {
+					if participantCacheUser.getBlocks().contains(effectiveAuthor.userID) || 
+							participantCacheUser.getMutes().contains(effectiveAuthor.userID) {
 						let incrementHiddenFuture = getUserPivot(fez: fez, userID: participantUserID, on: req.db)
 								.flatMap { pivot -> EventLoopFuture<Void> in
 							pivot?.hiddenCount += 1
@@ -378,7 +384,7 @@ struct FezController: APIRouteCollection {
 					}
 				}
 				return saveFutures.flatten(on: req.eventLoop).throwingFlatMap {
-					var infoStr = "@\(cacheUser.username) wrote, \"\(post.text)\""
+					var infoStr = "@\(effectiveAuthor.username) wrote, \"\(post.text)\""
 					if fez.fezType != .closed {
 						infoStr.append(" in LFG \"\(fez.title)\".")
 					}
@@ -391,7 +397,7 @@ struct FezController: APIRouteCollection {
 							pivot.readCount = fez.postCount - pivot.hiddenCount
 							_ = pivot.save(on: req.db)
 						}
-						return try FezPostData(post: post)
+						return try FezPostData(post: post, author: effectiveAuthor.makeHeader())
 					}
 				}
 			}
@@ -509,7 +515,7 @@ struct FezController: APIRouteCollection {
 				return fez.$participants.attach(participants, on: req.db, { $0.readCount = 0; $0.hiddenCount = 0 }).throwingFlatMap { (_) in
 					return fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == user.userID)
 							.first().flatMapThrowing() { creatorPivot in
-						let fezData = try buildFezData(from: fez, with: creatorPivot, posts: [], for: user.userID, on: req)
+						let fezData = try buildFezData(from: fez, with: creatorPivot, posts: [], for: user, on: req)
 						// with 201 status
 						let response = Response(status: .created)
 						try response.content.encode(fezData)
@@ -542,7 +548,7 @@ struct FezController: APIRouteCollection {
 			return fez.save(on: req.db).throwingFlatMap {
 				return fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == cacheUser.userID).first()
 					.flatMapThrowing { pivot in
-						return try buildFezData(from: fez, with: pivot, for: cacheUser.userID, on: req)
+						return try buildFezData(from: fez, with: pivot, for: cacheUser, on: req)
 				}
 			}
 		}
@@ -610,7 +616,7 @@ struct FezController: APIRouteCollection {
 			fez.cancelled = false
 			return fez.save(on: req.db).throwingFlatMap { (_) in
 				return getUserPivot(fez: fez, userID: cacheUser.userID, on: req.db).flatMapThrowing { pivot in
-					return try buildFezData(from: fez, with: pivot, for: cacheUser.userID, on: req)
+					return try buildFezData(from: fez, with: pivot, for: cacheUser, on: req)
 				}
 			}
 		}
@@ -651,7 +657,7 @@ struct FezController: APIRouteCollection {
 					newParticipant.hiddenCount = hiddenPostCount 
 					return newParticipant.save(on: req.db).flatMapThrowing {
 						try forwardMembershipChangeToSockets(fez, participantID: userID, joined: true, on: req)
-						return try buildFezData(from: fez, with: newParticipant, for: requester.userID, on: req)
+						return try buildFezData(from: fez, with: newParticipant, for: requester, on: req)
 					}
 				}
 			}
@@ -685,7 +691,7 @@ struct FezController: APIRouteCollection {
 			return fez.save(on: req.db).and(fez.$participants.detach(user, on: req.db)).flatMapThrowing { (_) in
 				try deleteFezNotifications(userIDs: [userID], fez: fez, on: req)
 				try forwardMembershipChangeToSockets(fez, participantID: userID, joined: false, on: req)
-				return try buildFezData(from: fez, with: nil, for: requester.userID, on: req)
+				return try buildFezData(from: fez, with: nil, for: requester, on: req)
 			}
 		}
 	}
@@ -732,7 +738,7 @@ struct FezController: APIRouteCollection {
 			return
 		}
 		_ = FriendlyFez.findFromParameter(fezIDParam, on: req).map { fez in
-			guard fez.participantArray.contains(user.userID), let fezID = try? fez.requireID() else {
+			guard userCanViewMemberData(user: user, fez: fez), let fezID = try? fez.requireID() else {
 				_ = ws.close()
 				return
 			}
@@ -749,7 +755,7 @@ struct FezController: APIRouteCollection {
 	func forwardPostToSockets(_ fez: FriendlyFez, _ post: FezPost, on req: Request) throws {
 		try req.webSocketStore.getFezSockets(fez.requireID()).forEach { userSocket in
 			let postAuthor = try req.userCache.getHeader(post.$author.id)
-			guard fez.participantArray.contains(userSocket.userID), let socketOwner = req.userCache.getUser(userSocket.userID),
+			guard let socketOwner = req.userCache.getUser(userSocket.userID), userCanViewMemberData(user: socketOwner, fez: fez),
 					!(socketOwner.getBlocks().contains(postAuthor.userID) || socketOwner.getMutes().contains(postAuthor.userID)) else {
 				return 
 			}
@@ -783,7 +789,7 @@ struct FezController: APIRouteCollection {
 	func forwardMembershipChangeToSockets(_ fez: FriendlyFez, participantID: UUID, joined: Bool, on req: Request) throws {
 		try req.webSocketStore.getFezSockets(fez.requireID()).forEach { userSocket in
 			let participantHeader = try req.userCache.getHeader(participantID)
-			guard fez.participantArray.contains(userSocket.userID), let socketOwner = req.userCache.getUser(userSocket.userID),
+			guard let socketOwner = req.userCache.getUser(userSocket.userID), userCanViewMemberData(user: socketOwner, fez: fez),
 					!socketOwner.getBlocks().contains(participantHeader.userID) else {
 				return 
 			}
@@ -806,12 +812,12 @@ extension FezController {
 	// If pivot is not nil, the FezData's postCount and readCount is filled in. Pivot should always be nil if the current user
 	// is not a member of the fez.
 	func buildFezData(from fez: FriendlyFez, with pivot: FezParticipant? = nil, posts: [FezPostData]? = nil, 
-			for userID: UUID, on req: Request) throws -> FezData {
-		let userBlocks = req.userCache.getBlocks(userID)
+			for cacheUser: UserCacheData, on req: Request) throws -> FezData {
+		let userBlocks = cacheUser.getBlocks()
 		// init return struct
 		let ownerHeader = try req.userCache.getHeader(fez.$owner.id)
 		var fezData : FezData = try FezData(fez: fez, owner: ownerHeader)
-		if let pivot = pivot {
+		if pivot != nil || cacheUser.accessLevel.hasAccess(.moderator) {
 			let allParticipantHeaders = req.userCache.getHeaders(fez.participantArray)
 
 			// masquerade blocked users
@@ -833,17 +839,18 @@ extension FezController {
 				waitingList = []
 			}
 			fezData.members = FezData.MembersOnlyData(participants: participants, waitingList: waitingList, 
-					postCount: fez.postCount - pivot.hiddenCount, readCount: pivot.readCount, posts: posts)
+					postCount: fez.postCount - (pivot?.hiddenCount ?? 0), readCount: pivot?.readCount ?? 0, posts: posts)
 		}
-
 		return fezData
 	}
 	
 	// Remember that there can be posts by authors who are not currently participants.
-	func buildPostsForFez(_ fez: FriendlyFez, pivot: FezParticipant, on req: Request, user: UserCacheData) throws
+	func buildPostsForFez(_ fez: FriendlyFez, pivot: FezParticipant?, on req: Request, user: UserCacheData) throws
 			-> EventLoopFuture<([FezPostData], Paginator)> {
+		let readCount = pivot?.readCount ?? 0
+		let hiddenCount = pivot?.hiddenCount ?? 0
 		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
-		let start = (req.query[Int.self, at: "start"] ?? ((pivot.readCount - 1) / limit) * limit)
+		let start = (req.query[Int.self, at: "start"] ?? ((readCount - 1) / limit) * limit)
 				.clamped(to: 0...fez.postCount)
 		// get posts
 		return try FezPost.query(on: req.db)
@@ -854,12 +861,12 @@ extension FezController {
 				.range(start..<(start + limit))
 				.all()
 				.flatMapThrowing { (posts) in
-			let posts = try posts.map { try FezPostData(post: $0) }
-			let paginator = Paginator(total: fez.postCount - pivot.hiddenCount, start: start, limit: limit)
+			let posts = try posts.map { try FezPostData(post: $0, author: req.userCache.getHeader($0.$author.id)) }
+			let paginator = Paginator(total: fez.postCount - hiddenCount, start: start, limit: limit)
 			
 			// If this batch of posts is farther into the thread than the user has previously read, increase
 			// the user's read count.
-			if start + limit > pivot.readCount {
+			if let pivot = pivot, start + limit > pivot.readCount {
 				pivot.readCount = min(start + limit, fez.postCount - pivot.hiddenCount)
 				_ = pivot.save(on: req.db)
 				// If the user has now read all the posts (except those hidden from them) mark this notification as viewed.
@@ -877,26 +884,7 @@ extension FezController {
 				.first()
 	}
 
-
-	/// Returns a display string representation of a date stored as a string in either ISO8601
-	/// format or as a literal Double.
-	///
-	/// - Parameter string: The string representation of the date.
-	/// - Returns: String in date format "E, H:mm a", or "TBD" if the string value is "0" or
-	///   the date string is invalid.
-	func fezTimeString(from string: String) -> String {
-		let dateFormtter = DateFormatter()
-		dateFormtter.dateFormat = "E, h:mm a"
-		dateFormtter.timeZone = TimeZone(secondsFromGMT: 0)
-		switch string {
-			case "0":
-				return "TBD"
-			default:
-				if let date = FezController.dateFromParameter(string: string) {
-					return dateFormtter.string(from: date)
-				} else {
-					return "TBD"
-			}
-		}
+	func userCanViewMemberData(user: UserCacheData, fez: FriendlyFez) -> Bool {
+		return user.accessLevel.hasAccess(.moderator) || fez.participantArray.contains(user.userID) 
 	}
 }

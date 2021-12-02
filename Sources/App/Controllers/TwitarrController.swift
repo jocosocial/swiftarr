@@ -523,12 +523,13 @@ struct TwitarrController: APIRouteCollection {
         // process images
         return self.processImages(data.images, usage: .twarrt, on: req).throwingFlatMap { (filenames) in
             // create twarrt
-			let twarrt = try Twarrt(authorID: cacheUser.userID, text: data.text, images: filenames)
+			let effectiveAuthor = data.effectiveAuthor(actualAuthor: cacheUser, on: req)
+			let twarrt = try Twarrt(authorID: effectiveAuthor.userID, text: data.text, images: filenames)
             return twarrt.save(on: req.db).flatMapThrowing { _ in
 				processTwarrtMentions(twarrt: twarrt, editedText: nil, isCreate: true, on: req)
                 // return as TwarrtData with 201 status
                 let response = Response(status: .created)
-                try response.content.encode(TwarrtData(twarrt: twarrt, creator: cacheUser.makeHeader(), isBookmarked: false,
+                try response.content.encode(TwarrtData(twarrt: twarrt, creator: effectiveAuthor.makeHeader(), isBookmarked: false,
 						userLike: nil, likeCount: 0))
                 return response
             }

@@ -8,6 +8,7 @@ import Fluent
 // custom types to define enum-valued fields.
 struct CreateCustomEnums: Migration {
     func prepare(on database: Database) -> EventLoopFuture<Void> {
+ 		database.logger.log(level: .info, "Starting Migrations -- Creating enums.")
 		let enums = [
 			database.enum("moderation_status")
 				.case("normal")

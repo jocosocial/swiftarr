@@ -109,7 +109,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
         privateRoutes.post(fezIDParam, "members", "add", userIDParam, use: fezAddUserPostHandler)
         privateRoutes.post(fezIDParam, "members", "remove", userIDParam, use: fezRemoveUserPostHandler)
 		
-		privateRoutes.webSocket(fezIDParam, "socket", onUpgrade: createFezSocket) 
+		privateRoutes.webSocket(fezIDParam, "socket", shouldUpgrade: shouldCreateFezSocket, onUpgrade: createFezSocket) 
 
 		// Mods only
 		privateRoutes.post(fezIDParam, "delete", use: fezDeleteHandler)
@@ -307,6 +307,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 			struct FezPageContext : Encodable {
 				var trunk: TrunkContext
 				var fez: FezData
+				var userIsMember: Bool
     			var oldPosts: [SocketFezPostData]
     			var showDivider: Bool
     			var newPosts: [SocketFezPostData]
@@ -314,8 +315,10 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 				var paginator: PaginatorContext
 				
 				init(_ req: Request, fez: FezData) throws {
+    				let cacheUser = try req.auth.require(UserCacheData.self) 
 					trunk = .init(req, title: "LFG", tab: .none)
 					self.fez = fez
+					self.userIsMember = false
     				oldPosts = []
     				newPosts = []
     				showDivider = false
@@ -324,18 +327,15 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 						"/fez/\(fez.fezID)?start=\(pageIndex * 50)&limit=50"
 					})
     				if let members = fez.members, let posts = members.posts, let paginator = members.paginator  {
-						let participantDictionary = members.participants.reduce(into: [:]) { $0[$1.userID] = $1 }
+						self.userIsMember = members.participants.contains(where: { $0.userID == cacheUser.userID }) ||
+								members.waitingList.contains(where: { $0.userID == cacheUser.userID })
 						for index in 0..<posts.count {
 							let post = posts[index]
 							if index < members.readCount {
-								if let author = participantDictionary[post.authorID] {
-									oldPosts.append(SocketFezPostData(post: post, author: author))
-								}
+								oldPosts.append(SocketFezPostData(post: post))
 							}
 							else {
-								if let author = participantDictionary[post.authorID] {
-									newPosts.append(SocketFezPostData(post: post, author: author))
-								}
+								newPosts.append(SocketFezPostData(post: post))
 							}
 						} 
 						self.showDivider = oldPosts.count > 0 && newPosts.count > 0
@@ -351,28 +351,43 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		}
 	}
 	
+	// WS /fez/:fez_id/socket
+	//
+	// This fn is called before socket creation; its purpose is to check that the requested socket should be delivered.
+	// We do this by inferring from the result from /api/v3/fez/:fez_id -- if the result includes members-only data,
+	// we assume the user should be able to get updates to the members-only data.
+	func shouldCreateFezSocket(_ req: Request) -> EventLoopFuture<HTTPHeaders?> {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			return req.eventLoop.makeFailedFuture(Abort(.unauthorized, reason: "Invalid Fez ID"))
+    	}
+		return apiQuery(req, endpoint: "/fez/\(fezID)").throwingFlatMap { response in
+			let fez = try response.content.decode(FezData.self)
+			guard fez.members != nil else {
+				return req.eventLoop.makeFailedFuture(Abort(.unauthorized, reason: "Not authorized"))
+			}
+			return req.eventLoop.future([:])
+		}
+	}
+	
 	// WS /fez/:fez_ID/socket
 	//
 	// Opens a WebSocket that receives updates on the given Fez. This websocket is intended for use by the
-	// web client and updates are in the form of HTML fragments.
+	// web client and updates include HTML fragments ready for document insertion.
 	// There are no messages intended to be sent from the client of this socket. Although this socket sends HTML for
 	// new posts to the client, new posts *created* by the client should use the regular POST method.
 	func createFezSocket(_ req: Request, _ ws: WebSocket) {
-		guard let user = try? req.auth.require(UserCacheData.self) else {
+		guard let user = try? req.auth.require(UserCacheData.self),
+				 let fezID = req.parameters.get(fezIDParam.paramString, as: UUID.self) else {
 			_ = ws.close()
 			return
-		}
-		_ = FriendlyFez.findFromParameter(fezIDParam, on: req).map { fez in
-			guard fez.participantArray.contains(user.userID), let fezID = try? fez.requireID() else {
-				_ = ws.close()
-				return
-			}
-			let userSocket = UserSocket(userID: user.userID, socket: ws, fezID: fezID, htmlOutput: true)
-			try? req.webSocketStore.storeFezSocket(userSocket)
+    	}
+    	// Note: This kind of breaks UI-API separation as it makes webSocketStore a structure that operates 
+    	// at both levels.
+		let userSocket = UserSocket(userID: user.userID, socket: ws, fezID: fezID, htmlOutput: true)
+		try? req.webSocketStore.storeFezSocket(userSocket)
 
-			ws.onClose.whenComplete { result in
-				try? req.webSocketStore.removeFezSocket(userSocket)
-			}
+		ws.onClose.whenComplete { result in
+			try? req.webSocketStore.removeFezSocket(userSocket)
 		}
 	}
 	
@@ -384,7 +399,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 			throw Abort(.badRequest, reason: "Missing fez_id")
 		}
 		let postStruct = try req.content.decode(MessagePostFormContent.self)
-		let postContent = PostContentData(text: postStruct.postText ?? "", images: [])
+		let postContent = postStruct.buildPostContentData()
 		return apiQuery(req, endpoint: "/fez/\(fezID)/post", method: .POST, beforeSend: { req throws in
 			try req.content.encode(postContent)
 		}).flatMapThrowing { response in

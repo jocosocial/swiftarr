@@ -33,9 +33,9 @@ struct SocketFezPostData: Content {
 }
 
 extension SocketFezPostData {	
-	init(post: FezPostData, author: UserHeader) {
+	init(post: FezPostData) {
 		self.postID = post.postID
-		self.author = author
+		self.author = post.author
 		self.text = post.text
 		self.timestamp = post.timestamp
 		self.image = post.image

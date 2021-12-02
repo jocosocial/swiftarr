@@ -20,7 +20,8 @@ struct CreateAdminUsers: Migration {
     	let futures = [
     			createAdminUser(on: database), 
     			createTHOUser(on: database), 
-    			createModeratorUser(on: database)]
+    			createModeratorUser(on: database),
+    			createTwitarrTeamUser(on: database)]
     	return futures.flatten(on: database.eventLoop)
     }
     
@@ -45,10 +46,10 @@ struct CreateAdminUsers: Migration {
         do {
             if (try Environment.detect().isRelease) {
                 if password == "password" {
-                    print("Please set a proper ADMIN_PASSWORD environment variable.")
+					database.logger.log(level: .critical, "Please set a proper ADMIN_PASSWORD environment variable.")
                 }
                 if recoveryKey == "recovery key" {
-                    print("Please set a proper ADMIN_RECOVERY_KEY environment variable.")
+					database.logger.log(level: .critical, "Please set a proper ADMIN_RECOVERY_KEY environment variable.")
                 }
             }
         } catch let error {
@@ -86,33 +87,23 @@ struct CreateAdminUsers: Migration {
         do {
             if (try Environment.detect().isRelease) {
                 if password == "password" {
-                    print("Please set a proper THO_PASSWORD environment variable.")
+					database.logger.log(level: .critical, "Please set a proper THO_PASSWORD environment variable.")
                 }
                 if recoveryKey == "recovery key" {
-                    print("Please set a proper THO_RECOVERY_KEY environment variable.")
+					database.logger.log(level: .critical, "Please set a proper THO_RECOVERY_KEY environment variable.")
                 }
             }
         } catch let error {
             fatalError("Environment.detect() failed! error: \(error)")
         }
-        
         // abort if no sane values or encryption fails
-        guard !password.isEmpty, !recoveryKey.isEmpty,
-            let passwordHash = try? Bcrypt.hash(password),
-            let recoveryHash = try? Bcrypt.hash(recoveryKey) else {
-                fatalError("THO user creation failure: invalid password or recoveryKey")
+        guard !password.isEmpty, !recoveryKey.isEmpty, let passwordHash = try? Bcrypt.hash(password),
+            	let recoveryHash = try? Bcrypt.hash(recoveryKey) else {
+			fatalError("THO user creation failure: invalid password or recoveryKey")
         }
-        
         // create THO user directly
-        let user = User(
-            username: "THO",
-            password: passwordHash,
-            recoveryKey: recoveryHash,
-            verification: "generated user",
-			parent: nil,
-            accessLevel: .tho
-        )
-        // save user
+        let user = User(username: "THO", password: passwordHash, recoveryKey: recoveryHash, verification: "generated user",
+				parent: nil, accessLevel: .tho)
         return user.save(on: database)
     }
     
@@ -128,23 +119,35 @@ struct CreateAdminUsers: Migration {
         	password.append(String(Unicode.Scalar(Int.random(in: 33...126))!))
         	recoveryKey.append(String(Unicode.Scalar(Int.random(in: 33...126))!))
         }
-                
         // abort if no sane values or encryption fails
-        guard let passwordHash = try? Bcrypt.hash(password),
-            let recoveryHash = try? Bcrypt.hash(recoveryKey) else {
-                fatalError("Moderator user creation failure: invalid password or recoveryKey")
+        guard let passwordHash = try? Bcrypt.hash(password), let recoveryHash = try? Bcrypt.hash(recoveryKey) else {
+			fatalError("Moderator user creation failure: invalid password or recoveryKey")
         }
-        
-        // create admin user directly
-        let user = User(
-            username: "moderator",
-            password: passwordHash,
-            recoveryKey: recoveryHash,
-            verification: "generated user",
-			parent: nil,
-            accessLevel: .moderator
-        )
-        // save user
+        // create user directly
+        let user = User(username: "moderator", password: passwordHash, recoveryKey: recoveryHash, verification: "generated user",
+				parent: nil, accessLevel: .moderator)
+        return user.save(on: database)
+    }
+    
+    /// By design, nobody can log in as TwitarrTeam--the password is set to a randomly-generated value that is immediately forgotten.
+	/// However, anyone with moderotor access may post content *as* TwitarrTeam, in which case the TwitarrTeam account becomes
+	/// the author of the content instead of the current user.
+	/// 
+	/// ''Content' in this sense means tweets, forum posts, fez messages.
+    func createTwitarrTeamUser(on database: Database) -> EventLoopFuture<Void> {
+        var password = ""
+        var recoveryKey = ""
+        for _ in 0...50 {
+        	password.append(String(Unicode.Scalar(Int.random(in: 33...126))!))
+        	recoveryKey.append(String(Unicode.Scalar(Int.random(in: 33...126))!))
+        }
+        // abort if no sane values or encryption fails
+        guard let passwordHash = try? Bcrypt.hash(password), let recoveryHash = try? Bcrypt.hash(recoveryKey) else {
+			fatalError("TwitarrTeam user creation failure: invalid password or recoveryKey")
+        }
+        // create user directly
+        let user = User(username: "TwitarrTeam", password: passwordHash, recoveryKey: recoveryHash, verification: "generated user",
+				parent: nil, accessLevel: .moderator)
         return user.save(on: database)
     }
 }
