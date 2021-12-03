@@ -187,8 +187,9 @@ Logger(label: "app.swiftarr.configuration") .notice("About to look at bundles.")
 //		resourcesPath = Bundle(for: Settings.self).resourceURL ?? Bundle(for: Settings.self).bundleURL
 //	}
 //	else {
-		resourcesPath = Bundle.main.bundleURL.appendingPathComponent("swiftarr_App.bundle")
+//		resourcesPath = Bundle.main.bundleURL.appendingPathComponent("swiftarr_App.bundle")
 //	}
+	resourcesPath = Bundle.main.bundleURL.appendingPathComponent("swiftarr_App.resources")
 	Settings.shared.staticFilesRootPath = resourcesPath
 Logger(label: "app.swiftarr.configuration") .notice("Set static files path to \(Settings.shared.staticFilesRootPath.path).")
 	
