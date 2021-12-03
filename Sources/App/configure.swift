@@ -181,6 +181,7 @@ func configureBasicSettings(_ app: Application) throws {
 	// the bundle with all the resources files in it will be in yet another different place. I *think* this code
 	// will handle all the cases, finding the bundle dir correctly. We also check that we can find our resource files
 	// on launch.
+Logger(label: "app.swiftarr.configuration") .notice("About to look at bundles.")
 	var resourcesPath: URL //: Bundle? = Bundle(for: Settings.self)
 	if Bundle(for: Settings.self).url(forResource: "swiftarr", withExtension: "css", subdirectory: "Resources/Assets/css") != nil {
 		resourcesPath = Bundle(for: Settings.self).resourceURL ?? Bundle(for: Settings.self).bundleURL
@@ -189,6 +190,7 @@ func configureBasicSettings(_ app: Application) throws {
 		resourcesPath = Bundle.main.bundleURL.appendingPathComponent("swiftarr_App.bundle")
 	}
 	Settings.shared.staticFilesRootPath = resourcesPath
+Logger(label: "app.swiftarr.configuration") .notice("Set static files path to \(Settings.shared.staticFilesRootPath.path).")
 	
 	// Set the app's views dir, which is where all the Leaf template files are.
 	app.directory.viewsDirectory = Settings.shared.staticFilesRootPath.appendingPathComponent("Resources/Views").path
@@ -214,6 +216,8 @@ func configureBasicSettings(_ app: Application) throws {
 		
 		Settings.shared.userImagesRootPath = URL(fileURLWithPath: likelyExecutablePath).appendingPathComponent("images")
 	}
+Logger(label: "app.swiftarr.configuration") .notice("Set userImages path to \(Settings.shared.userImagesRootPath.path).")
+
 }
 
 func configureStoredSettings(_ app: Application) throws {
