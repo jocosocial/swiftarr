@@ -183,12 +183,12 @@ func configureBasicSettings(_ app: Application) throws {
 	// on launch.
 Logger(label: "app.swiftarr.configuration") .notice("About to look at bundles.")
 	var resourcesPath: URL //: Bundle? = Bundle(for: Settings.self)
-	if Bundle(for: Settings.self).url(forResource: "swiftarr", withExtension: "css", subdirectory: "Resources/Assets/css") != nil {
-		resourcesPath = Bundle(for: Settings.self).resourceURL ?? Bundle(for: Settings.self).bundleURL
-	}
-	else {
+//	if Bundle(for: Settings.self).url(forResource: "swiftarr", withExtension: "css", subdirectory: "Resources/Assets/css") != nil {
+//		resourcesPath = Bundle(for: Settings.self).resourceURL ?? Bundle(for: Settings.self).bundleURL
+//	}
+//	else {
 		resourcesPath = Bundle.main.bundleURL.appendingPathComponent("swiftarr_App.bundle")
-	}
+//	}
 	Settings.shared.staticFilesRootPath = resourcesPath
 Logger(label: "app.swiftarr.configuration") .notice("Set static files path to \(Settings.shared.staticFilesRootPath.path).")
 	
