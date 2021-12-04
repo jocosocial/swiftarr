@@ -169,7 +169,7 @@ struct ForumController: APIRouteCollection {
 				query.filter((dateFilterUsesUpdate ? \.$updatedAt : \.$createdAt) > afterDate)
 			}
 			return query.all().throwingFlatMap { forums in
-				return try buildForumListData(forums, on: req, userID: cacheUser.userID, favoritesBarrel: barrel).flatMapThrowing { forumList in
+				return try buildForumListData(forums, on: req, user: cacheUser, favoritesBarrel: barrel).flatMapThrowing { forumList in
 					return try CategoryData(category, restricted: category.accessLevelToCreate > cacheUser.accessLevel,
 							forumThreads: forumList)
 				}
@@ -243,7 +243,7 @@ struct ForumController: APIRouteCollection {
 					.filter(\.$accessLevelToView <= cacheUser.accessLevel)
 			let resultQuery = countQuery.copy().sort(\.$createdAt, .descending).range(start..<(start + limit))
 			return countQuery.count().and(resultQuery.all()).throwingFlatMap { (forumCount, forums) in
-				return try buildForumListData(forums, on: req, userID: cacheUser.userID, favoritesBarrel: barrel).map { forumList in
+				return try buildForumListData(forums, on: req, user: cacheUser, favoritesBarrel: barrel).map { forumList in
 					return ForumSearchData(paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
 				}
 			}
@@ -621,7 +621,7 @@ struct ForumController: APIRouteCollection {
 				default: _ = rangeQuery.sort(\.$createdAt, .descending)
 			}
 			return countQuery.count().and(rangeQuery.all()).throwingFlatMap { (forumCount, forums) in
-				return try buildForumListData(forums, on: req, userID: cacheUser.userID, forceIsFavorite: true).map { forumList in
+				return try buildForumListData(forums, on: req, user: cacheUser, forceIsFavorite: true).map { forumList in
 					return ForumSearchData(paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
 				}
             }
@@ -783,7 +783,7 @@ struct ForumController: APIRouteCollection {
             		.filter(\.$accessLevelToView <= cacheUser.accessLevel)
             let resultQuery = countQuery.copy().sort(\.$title, .ascending).range(start..<(start + limit))
 			return countQuery.count().and(resultQuery.all()).throwingFlatMap { (forumCount, forums) in
-				return try buildForumListData(forums, on: req, userID: cacheUser.userID, favoritesBarrel: barrel).map { forumList in
+				return try buildForumListData(forums, on: req, user: cacheUser, favoritesBarrel: barrel).map { forumList in
 					return ForumSearchData(paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
 				}
 			}
@@ -1044,31 +1044,65 @@ extension ForumController {
 		}
 	}
 	
+	/// Returns a dictionary mapping ForumIDs to ForumPosts, where each ForumPost is the last post made in its Forum by a user who isn't blocked or muted.
+	/// The code in the guard works by running a query for each Forum in the array; for 50 forums it takes ~82ms to resolve. The code in the bottom half of the fn
+	/// uses SQLKit to make a more complicated query, returning answers for all forums in one result set. Takes ~9ms.
+	func forumListGetLastPosts(_ forums: [Forum], on req: Request, user: UserCacheData) throws -> EventLoopFuture<[UUID : ForumPost]> {
+		guard let sql = req.db as? SQLDatabase else {
+			// Use Fluent to get the result if SQL database isn't available. This is likely much slower.
+			return forums.map { forum in
+				forum.$posts.query(on: req.db).sort(\.$createdAt, .descending).first()
+			}.flatten(on: req.eventLoop).map { posts in
+				let result: [UUID : ForumPost] = posts.reduce(into: [:]) { dict, post in 
+					if let post = post {
+						dict[post.$forum.id] = post 
+					}
+				}
+				return result
+			}
+		}
+		let forumUUIDArray = try forums.map { try $0.requireID() }
+		let forumFieldName = SQLIdentifier(ForumPost().$forum.$id.key.description)
+		let idFieldName = SQLIdentifier(ForumPost().$id.key.description)
+		let authorFieldName = SQLIdentifier(ForumPost().$author.$id.key.description)
+		let subSelect = sql.select()
+				.columns(SQLColumn(forumFieldName), SQLAlias(SQLFunction("MAX", args: "id"), as: SQLColumn("latestpostid")))
+				.from(ForumPost.schema)
+				.where(forumFieldName, .in, forumUUIDArray)
+				.groupBy(forumFieldName)
+		if !user.getBlocks().isEmpty || !user.getMutes().isEmpty {
+			subSelect.where(authorFieldName, .notIn, Array(user.getBlocks().union(user.getMutes())))
+		}
+		return sql.select()
+				.column("*")
+				.from(SQLGroupExpression(subSelect.query), as: SQLRaw("latestposts"))
+				.join(SQLIdentifier(ForumPost.schema), on: idFieldName, .equal, SQLRaw("latestposts.latestpostid"))
+				.all().flatMapThrowing { rows in
+			let posts: [UUID : ForumPost] = try rows.reduce(into: [:]) { dict, row in
+				let post = try row.decode(model: ForumPost.self)
+				dict[post.$forum.id] = post
+			}
+			return posts		
+		}
+	}
+	
+// Very useful snippet for debugging SQL statement builders.
+//		var s = SQLSerializer(database: sql)
+//		subSelect.query.serialize(to: &s)
+//		print(s.sql)
+	
 	/// Builds an array of `ForumListData` from the given `Forums`. `ForumListData` does not return post content, but does return post counts.
-	func buildForumListData(_ forums: [Forum], on req: Request, userID: UUID,
+	func buildForumListData(_ forums: [Forum], on req: Request, user: UserCacheData,
 			favoritesBarrel: Barrel? = nil, forceIsFavorite: Bool? = nil) throws -> EventLoopFuture<[ForumListData]> {
 		// get forum metadata
 		let forumIDs = try forums.map { try $0.requireID() }
 		let forumPostCountsFuture = try forums.childCountsPerModel(atPath: \.$posts, on: req.db)
-//		let readerPivotsFuture = user.$readForums.$pivots.query(on: req.db).filter(\.$forum.$id ~~ forumIDs).all()
-		let readerPivotsFuture = ForumReaders.query(on: req.db).filter(\.$user.$id == userID).filter(\.$forum.$id ~~ forumIDs).all()
-		let forumLastPostsFuture: [EventLoopFuture<ForumPost?>] = forums.map { forum in
-			forum.$posts.query(on: req.db).sort(\.$createdAt, .descending).first()
-		}
+		let readerPivotsFuture = ForumReaders.query(on: req.db).filter(\.$user.$id == user.userID).filter(\.$forum.$id ~~ forumIDs).all()
+		let forumLastPostsFuture = try forumListGetLastPosts(forums, on: req, user: user)
 		// resolve futures
 		return forumPostCountsFuture.and(readerPivotsFuture).flatMap { (postCounts, readerPivots) in
-			return forumLastPostsFuture.flatten(on: req.eventLoop).flatMapThrowing { forumLastPosts in
-				let postEnumeration: [(UUID, ForumPost)] = forumLastPosts.compactMap {
-					if let post = $0 { 
-						return (post.$forum.id, post) 
-					}
-					else {
-						return nil
-					}
-				}
-				let lastPostsDict = Dictionary(postEnumeration, uniquingKeysWith: { (first, _) in first })
-				let readerPivotsDict = Dictionary(readerPivots.map { ($0.$forum.id, $0) }, 
-						 uniquingKeysWith: { (first, _) in first })
+			return forumLastPostsFuture.flatMapThrowing { lastPostsDict in
+				let readerPivotsDict = readerPivots.reduce(into: [:]) { $0[$1.$forum.id] = $1 } 
 				let returnListData: [ForumListData] = try forums.map { forum in
 					let forumID = try forum.requireID()
 					let creatorHeader = try req.userCache.getHeader(forum.$creator.id)
