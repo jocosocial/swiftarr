@@ -3,6 +3,7 @@ import Redis
 import Fluent
 import FluentPostgresDriver
 import Leaf
+import LeafKit
 import Metrics
 import Prometheus
 import gd
@@ -181,17 +182,18 @@ func configureBasicSettings(_ app: Application) throws {
 	// the bundle with all the resources files in it will be in yet another different place. I *think* this code
 	// will handle all the cases, finding the bundle dir correctly. We also check that we can find our resource files
 	// on launch.
-Logger(label: "app.swiftarr.configuration") .notice("About to look at bundles.")
-	var resourcesPath: URL //: Bundle? = Bundle(for: Settings.self)
-//	if Bundle(for: Settings.self).url(forResource: "swiftarr", withExtension: "css", subdirectory: "Resources/Assets/css") != nil {
-//		resourcesPath = Bundle(for: Settings.self).resourceURL ?? Bundle(for: Settings.self).bundleURL
-//	}
-//	else {
-//		resourcesPath = Bundle.main.bundleURL.appendingPathComponent("swiftarr_App.bundle")
-//	}
-	resourcesPath = Bundle.main.bundleURL.appendingPathComponent("swiftarr_App.resources")
+	var resourcesPath: URL
+	if app.environment.name == "heroku" {
+		resourcesPath = Bundle.main.bundleURL.appendingPathComponent("swiftarr_App.resources")
+	}
+	else if Bundle(for: Settings.self).url(forResource: "swiftarr", withExtension: "css", subdirectory: "Resources/Assets/css") != nil {
+		resourcesPath = Bundle(for: Settings.self).resourceURL ?? Bundle(for: Settings.self).bundleURL
+	}
+	else {
+		resourcesPath = Bundle.main.bundleURL.appendingPathComponent("swiftarr_App.bundle")
+	}
 	Settings.shared.staticFilesRootPath = resourcesPath
-Logger(label: "app.swiftarr.configuration") .notice("Set static files path to \(Settings.shared.staticFilesRootPath.path).")
+	Logger(label: "app.swiftarr.configuration") .notice("Set static files path to \(Settings.shared.staticFilesRootPath.path).")
 	
 	// Set the app's views dir, which is where all the Leaf template files are.
 	app.directory.viewsDirectory = Settings.shared.staticFilesRootPath.appendingPathComponent("Resources/Views").path
@@ -217,8 +219,7 @@ Logger(label: "app.swiftarr.configuration") .notice("Set static files path to \(
 		
 		Settings.shared.userImagesRootPath = URL(fileURLWithPath: likelyExecutablePath).appendingPathComponent("images")
 	}
-Logger(label: "app.swiftarr.configuration") .notice("Set userImages path to \(Settings.shared.userImagesRootPath.path).")
-
+	Logger(label: "app.swiftarr.configuration") .notice("Set userImages path to \(Settings.shared.userImagesRootPath.path).")
 }
 
 func configureStoredSettings(_ app: Application) throws {
@@ -284,6 +285,12 @@ func configureSessions(_ app: Application) throws {
 func configureLeaf(_ app: Application) throws {
     app.views.use(.leaf)
     
+	if app.environment.name == "heroku" {
+		let herokuLeafSource = NIOLeafFiles(fileio: app.fileio, limits: [.toSandbox, .onlyLeafExtensions], 
+				sandboxDirectory: app.directory.workingDirectory, viewDirectory: app.directory.viewsDirectory, defaultExtension: "leaf")
+		try app.leaf.sources.register(source: "heroku", using: herokuLeafSource, searchable: true)
+	}
+
     // Custom Leaf tags
     app.leaf.tags["addJocomoji"] = AddJocomojiTag()
     app.leaf.tags["formatTwarrtText"] = FormatPostTextTag(.twarrt)
