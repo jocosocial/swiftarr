@@ -582,8 +582,8 @@ extension FezData {
 public struct FezPostData: Content {
     /// The ID of the fez post.
     var postID: Int
-    /// The ID of the fez post's author.
-    var authorID: UUID
+    /// The fez post's author.
+    var author: UserHeader
     /// The text content of the fez post.
     var text: String
     /// The time the post was submitted.
@@ -593,9 +593,12 @@ public struct FezPostData: Content {
 }
 
 extension FezPostData {    
-    init(post: FezPost) throws {
+    init(post: FezPost, author: UserHeader) throws {
+    	guard author.userID == post.$author.id else {
+    		throw Abort(.internalServerError, reason: "Internal server error--Post's author does not match.")
+    	}
     	self.postID = try post.requireID()
-    	self.authorID = post.$author.id
+    	self.author = author
     	self.text = post.text
     	self.timestamp = post.createdAt ?? post.updatedAt ?? Date()
     	self.image = post.image
@@ -944,7 +947,7 @@ public struct Paginator: Content {
 	var limit: Int
 }
 
-/// Used to create or update a `ForumPost` or `Twarrt`. 
+/// Used to create or update a `ForumPost`, `Twarrt`, or `FezPost`. 
 ///
 /// Required by:
 /// * `POST /api/v3/forum/ID/create`
@@ -963,6 +966,12 @@ public struct PostContentData: Content {
 	/// For new posts, images will generally contain all new image data. When editing existing posts, images may contain a mix of new and existing images. 
 	/// Reorder ImageUploadDatas to change presentation order. Set images to [] to remove images attached to post when editing.
     var images: [ImageUploadData]
+    /// If the poster has moderator privileges and this field is TRUE, this post will be authored by 'moderator' instead of the author.
+	/// Set this to FALSE unless the user is a moderator who specifically chooses this option.
+	var postAsModerator: Bool = false
+    /// If the poster has moderator privileges and this field is TRUE, this post will be authored by 'TwitarrTeam' instead of the author.
+	/// Set this to FALSE unless the user is a moderator who specifically chooses this option.
+	var postAsTwitarrTeam: Bool = false
 }
 
 extension PostContentData: RCFValidatable {

@@ -214,14 +214,18 @@ struct MessagePostContext: Encodable {
 		case .seamail:
 			formAction = "/seamail/create"
 			postSuccessURL = "/seamail"
+			photoFilenames = []
 		// For posting in an existing Seamail thread
 		case .seamailPost(let forSeamail):
 			formAction = "/seamail/\(forSeamail.fezID)/post"
 			postSuccessURL = "/seamail/\(forSeamail.fezID)"
+			photoFilenames = []
 		// For posting in an existing Fez thread
 		case .fezPost(let forFez):
 			formAction = "/fez/\(forFez.fezID)/post"
 			postSuccessURL = "/fez/\(forFez.fezID)"
+			messageTextPlaceholder = "Send a message"
+			photoFilenames = [""]
 		// For creating an announcement
 		case .announcement:
 			formAction = "/admin/announcement/create"
@@ -275,6 +279,24 @@ struct MessagePostFormContent : Codable {
 	let serverPhoto4: String?
 	let displayUntil: String? 				// Used for announcements
 	let cruiseDay: Int32? 					// Used for Daily Themes
+	let postAsTwitarrTeam: String?
+	let postAsModerator: String?
+}
+
+extension MessagePostFormContent {
+	// Builds a PostContentData from the form's contents. Doesn't validate, as we expect the PostContentData
+	// to be sent to an API route which will do that.
+	// I usually prefer struct conversion functions being set up as initialization of the dest type, but am
+	// making an exception here.
+	func buildPostContentData() -> PostContentData {
+		let images: [ImageUploadData] = [ImageUploadData(serverPhoto1, localPhoto1),
+				ImageUploadData(serverPhoto2, localPhoto2),
+				ImageUploadData(serverPhoto3, localPhoto3),
+				ImageUploadData(serverPhoto4, localPhoto4)].compactMap { $0 }
+		let postContent = PostContentData(text: postText ?? "", images: images,
+				postAsModerator: postAsModerator != nil, postAsTwitarrTeam: postAsTwitarrTeam != nil)
+		return postContent
+	}
 }
 
 struct ReportPageContext : Encodable {

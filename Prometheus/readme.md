@@ -21,3 +21,11 @@ This file contains the setup parameters to use with prometheus in order to get m
 Launch the prometheus server process with:
 
 `prometheus --config.file="swiftarr.yml"`
+
+### Metrics Browser
+
+Once the prometheus process is up and running, it'll poll the metrics endpoint every few seconds and store the data.
+You can then see a bunch of time-series data at http://localhost:9090/metrics 
+
+Prometheus is really designed for collecting metrics on a bunch of servers and allowing sysadmins to set alerts of 
+various sorts. But, it'll work for our purposes and wasn't too difficult to set up.

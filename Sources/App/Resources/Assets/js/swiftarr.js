@@ -275,7 +275,7 @@ function updatePhotoCardState(cardElement) {
 		imageRemoveButton.disabled = !imageVisible;
 	}
 	let nextCard = cardElement.nextElementSibling;
-	if (nextCard != null) {
+	if (nextCard != null && nextCard.classList.contains("card")) {
 		nextCard.style.display = imgContainer.style.display;
 	}
 }
@@ -288,15 +288,17 @@ function removeUploadImage() {
 	let cardElement = event.target.closest('.card');
 	let nextCard = cardElement;
 	while (nextCard = cardElement.nextElementSibling) {
+		if (!nextCard.classList.contains("card")) {
+			break;
+		}
 		cardElement.querySelector('.image-upload-input').files = nextCard.querySelector('.image-upload-input').files;
 		cardElement.querySelector('input[type="hidden"]').value = nextCard.querySelector('input[type="hidden"]').value;
 		updatePhotoCardState(cardElement);
 		cardElement = nextCard;
 	}
-	let lastCard = cardElement.parentElement.lastElementChild;
-	lastCard.querySelector('.image-upload-input').value = null
-	lastCard.querySelector('input[type="hidden"]').value = "";
-	updatePhotoCardState(lastCard);
+	cardElement.querySelector('.image-upload-input').value = null
+	cardElement.querySelector('input[type="hidden"]').value = "";
+	updatePhotoCardState(cardElement);
 }
 
 // Handles photo card 'swap' button, which swaps image N with N-1.
@@ -331,6 +333,7 @@ function submitAJAXForm(formElement, event) {
 				for (let elem of formElement.querySelectorAll('textarea')) {
 					elem.value = "";
 				}
+				formElement.querySelector('.twitarr-image-remove').click();
 			}
 			else if (successURL) {
 				location.assign(successURL);

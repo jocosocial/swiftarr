@@ -162,18 +162,13 @@ struct SiteSeamailController: SiteControllerUtils {
 						"/seamail/\(fez.fezID)?start=\(pageIndex * 50)&limit=50"
 					})
     				if let members = fez.members, let posts = members.posts, let paginator = members.paginator {
-						let participantDictionary = members.participants.reduce(into: [:]) { $0[$1.userID] = $1 }
 						for index in 0..<posts.count {
 							let post = posts[index]
 							if index + paginator.start < members.readCount {
-								if let author = participantDictionary[post.authorID] {
-									oldPosts.append(SocketFezPostData(post: post, author: author))
-								}
+								oldPosts.append(SocketFezPostData(post: post))
 							}
 							else {
-								if let author = participantDictionary[post.authorID] {
-									newPosts.append(SocketFezPostData(post: post, author: author))
-								}
+								newPosts.append(SocketFezPostData(post: post))
 							}
 						} 
 						self.showDivider = oldPosts.count > 0 && newPosts.count > 0
@@ -222,7 +217,7 @@ struct SiteSeamailController: SiteControllerUtils {
     		throw Abort(.badRequest, reason: "Missing fez_id")
     	}
 		let postStruct = try req.content.decode(MessagePostFormContent.self)
-		let postContent = PostContentData(text: postStruct.postText ?? "", images: [])
+		let postContent = postStruct.buildPostContentData()
     	return apiQuery(req, endpoint: "/fez/\(fezID)/post", method: .POST, beforeSend: { req throws in
 			try req.content.encode(postContent)
 		}).flatMapThrowing { response in

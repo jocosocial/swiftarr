@@ -15,29 +15,30 @@ struct AdminController: APIRouteCollection {
 		let modRoutes = app.grouped("api", "v3", "admin")
 								 
 		// endpoints available for Admins only
-		let adminAuthGroup = addTokenAuthGroup(to: modRoutes).grouped([RequireAdminMiddleware()])
-		adminAuthGroup.post("dailytheme", "create", use: addDailyThemeHandler)
-		adminAuthGroup.post("dailytheme", dailyThemeIDParam, "edit", use: editDailyThemeHandler)
-		adminAuthGroup.post("dailytheme", dailyThemeIDParam, "delete", use: deleteDailyThemeHandler)
-		adminAuthGroup.delete("dailytheme", dailyThemeIDParam, use: deleteDailyThemeHandler)
+		let thoAuthGroup = addTokenAuthGroup(to: modRoutes).grouped([RequireTHOMiddleware()])
+		thoAuthGroup.post("dailytheme", "create", use: addDailyThemeHandler)
+		thoAuthGroup.post("dailytheme", dailyThemeIDParam, "edit", use: editDailyThemeHandler)
+		thoAuthGroup.post("dailytheme", dailyThemeIDParam, "delete", use: deleteDailyThemeHandler)
+		thoAuthGroup.delete("dailytheme", dailyThemeIDParam, use: deleteDailyThemeHandler)
 		
+		thoAuthGroup.post("schedule", "update", use: scheduleUploadPostHandler)
+		thoAuthGroup.get("schedule", "verify", use: scheduleChangeVerificationHandler)
+		thoAuthGroup.post("schedule", "update", "apply", use: scheduleChangeApplyHandler)
+		
+		thoAuthGroup.get("regcodes", "stats", use: regCodeStatsHandler)
+		thoAuthGroup.get("regcodes", "find", searchStringParam, use: userForRegCodeHandler)
+
+		thoAuthGroup.get("moderators", use: getModeratorsHandler)
+		thoAuthGroup.post("moderator", "promote", userIDParam, use: makeModeratorHandler)
+		thoAuthGroup.post("moderator", "demote", userIDParam, use: removeModeratorHandler)
+		
+		thoAuthGroup.get("karaoke", "managers", use: getKaraokeManagers)
+		thoAuthGroup.post("karaoke", "manager", "promote", userIDParam, use: makeKaraokeManager)
+		thoAuthGroup.post("karaoke", "manager", "demote", userIDParam, use: removeKaraokeManager)
+
+		let adminAuthGroup = addTokenAuthGroup(to: modRoutes).grouped([RequireAdminMiddleware()])
 		adminAuthGroup.get("serversettings", use: settingsHandler)
 		adminAuthGroup.post("serversettings", "update", use: settingsUpdateHandler)
-
-		adminAuthGroup.post("schedule", "update", use: scheduleUploadPostHandler)
-		adminAuthGroup.get("schedule", "verify", use: scheduleChangeVerificationHandler)
-		adminAuthGroup.post("schedule", "update", "apply", use: scheduleChangeApplyHandler)
-		
-		adminAuthGroup.get("regcodes", "stats", use: regCodeStatsHandler)
-		adminAuthGroup.get("regcodes", "find", searchStringParam, use: userForRegCodeHandler)
-
-		adminAuthGroup.get("moderators", use: getModeratorsHandler)
-		adminAuthGroup.post("moderator", "promote", userIDParam, use: makeModeratorHandler)
-		adminAuthGroup.post("moderator", "demote", userIDParam, use: removeModeratorHandler)
-		
-		adminAuthGroup.get("karaoke", "managers", use: getKaraokeManagers)
-		adminAuthGroup.post("karaoke", "manager", "promote", userIDParam, use: makeKaraokeManager)
-		adminAuthGroup.post("karaoke", "manager", "demote", userIDParam, use: removeKaraokeManager)
 	}
 
     /// `POST /api/v3/admin/dailytheme/create`

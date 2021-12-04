@@ -271,11 +271,7 @@ struct SiteTwitarrController: SiteControllerUtils {
 	// POST /tweets/create
 	func tweetCreatePostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
 		let postStruct = try req.content.decode(MessagePostFormContent.self)
-		let images: [ImageUploadData] = [ImageUploadData(postStruct.serverPhoto1, postStruct.localPhoto1),
-				ImageUploadData(postStruct.serverPhoto2, postStruct.localPhoto2),
-				ImageUploadData(postStruct.serverPhoto3, postStruct.localPhoto3),
-				ImageUploadData(postStruct.serverPhoto4, postStruct.localPhoto4)].compactMap { $0 }
-		let postContent = PostContentData(text: postStruct.postText ?? "", images: images)
+		let postContent = postStruct.buildPostContentData()
 		return apiQuery(req, endpoint: "/twitarr/create", method: .POST, beforeSend: { req throws in
 			try req.content.encode(postContent)
 		}).flatMapThrowing { response in
@@ -296,7 +292,8 @@ struct SiteTwitarrController: SiteControllerUtils {
 				ImageUploadData(postStruct.serverPhoto2, postStruct.localPhoto2),
 				ImageUploadData(postStruct.serverPhoto3, postStruct.localPhoto3),
 				ImageUploadData(postStruct.serverPhoto4, postStruct.localPhoto4)].compactMap { $0 }
-		let postContent = PostContentData(text: postStruct.postText ?? "", images: images)
+		let postContent = PostContentData(text: postStruct.postText ?? "", images: images, 
+				postAsModerator: postStruct.postAsModerator != nil)
  		return apiQuery(req, endpoint: "/twitarr/\(twarrtID)/reply", method: .POST, beforeSend: { req throws in
 			try req.content.encode(postContent)
 		}).map { response in
@@ -338,7 +335,8 @@ struct SiteTwitarrController: SiteControllerUtils {
 				ImageUploadData(postStruct.serverPhoto2, postStruct.localPhoto2),
 				ImageUploadData(postStruct.serverPhoto3, postStruct.localPhoto3),
 				ImageUploadData(postStruct.serverPhoto4, postStruct.localPhoto4)].compactMap { $0 }
-		let postContent = PostContentData(text: postStruct.postText ?? "", images: images)
+		let postContent = PostContentData(text: postStruct.postText ?? "", images: images, 
+				postAsModerator: postStruct.postAsModerator != nil)
  		return apiQuery(req, endpoint: "/twitarr/\(twarrtID)/update", method: .POST, beforeSend: { req throws in
 			try req.content.encode(postContent)
 		}).flatMapThrowing { response in

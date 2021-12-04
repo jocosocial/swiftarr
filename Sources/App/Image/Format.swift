@@ -89,7 +89,14 @@ extension LibGdExportableFormatter {
         guard let bytesPtr = exportFunction(imagePtr, &size) else {
             throw GDError.invalidFormat
         }
-        return Data(bytes: bytesPtr, count: Int(size))
+        // RCF: The orig code (commented out) took the result of exportFunction, copied it into a Data,
+        // and dropped the bytesPtr without deallocating. I haven't looked at all the exporters, but it appears
+        // they return a malloc() block that needs releasing. Plus, the LibGdParametrizableExportFormatter does this,
+        // and the only difference is those exporters take an extra input parameter.
+//        return Data(bytes: bytesPtr, count: Int(size))
+        return Data(bytesNoCopy: bytesPtr,
+                    count: Int(size),
+                    deallocator: .custom({ ptr, _ in gdFree(ptr) }))
     }
 }
 
