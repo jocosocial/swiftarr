@@ -283,13 +283,18 @@ func configureSessions(_ app: Application) throws {
 }
 
 func configureLeaf(_ app: Application) throws {
-    app.views.use(.leaf)
     
-	if app.environment.name == "heroku" {
-		let herokuLeafSource = NIOLeafFiles(fileio: app.fileio, limits: [.toSandbox, .onlyLeafExtensions], 
-				sandboxDirectory: app.directory.workingDirectory, viewDirectory: app.directory.viewsDirectory, defaultExtension: "leaf")
-		try app.leaf.sources.register(source: "heroku", using: herokuLeafSource, searchable: true)
-	}
+    // Create a custom Leaf source that doesn't have the '.toVisibleFiles' limit and uses '.html' instead of '.leaf' as the 
+    // default extension. We need visible files turned off because of Heroku, which builds the app into a dir named ".swift-bin"
+    // and copies all the resources and views into there. And, settings the extension to .html gets Xcode syntax highlighting 
+    // to work without excessive futzing (you can manually set the type to HTML, per file, except Xcode keeps forgetting the setting).
+	let customLeafSource = NIOLeafFiles(fileio: app.fileio, limits: [.toSandbox, .requireExtensions], 
+			sandboxDirectory: app.directory.viewsDirectory, viewDirectory: app.directory.viewsDirectory, defaultExtension: "html")
+	let leafSources = LeafSources()
+	try leafSources.register(source: "swiftarrCustom", using: customLeafSource, searchable: true)
+	app.leaf.sources = leafSources
+	
+    app.views.use(.leaf)
 
     // Custom Leaf tags
     app.leaf.tags["addJocomoji"] = AddJocomojiTag()
