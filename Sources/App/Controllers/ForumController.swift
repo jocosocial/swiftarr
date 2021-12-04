@@ -1048,6 +1048,9 @@ extension ForumController {
 	/// The code in the guard works by running a query for each Forum in the array; for 50 forums it takes ~82ms to resolve. The code in the bottom half of the fn
 	/// uses SQLKit to make a more complicated query, returning answers for all forums in one result set. Takes ~9ms.
 	func forumListGetLastPosts(_ forums: [Forum], on req: Request, user: UserCacheData) throws -> EventLoopFuture<[UUID : ForumPost]> {
+		if forums.isEmpty {
+			return req.eventLoop.future([:])
+		}
 		guard let sql = req.db as? SQLDatabase else {
 			// Use Fluent to get the result if SQL database isn't available. This is likely much slower.
 			return forums.map { forum in
