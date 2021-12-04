@@ -1054,7 +1054,8 @@ extension ForumController {
 		guard let sql = req.db as? SQLDatabase else {
 			// Use Fluent to get the result if SQL database isn't available. This is likely much slower.
 			return forums.map { forum in
-				forum.$posts.query(on: req.db).sort(\.$createdAt, .descending).first()
+				forum.$posts.query(on: req.db).sort(\.$createdAt, .descending).filter(\.$author.$id !~ user.getBlocks())
+						.filter(\.$author.$id !~ user.getMutes()).first()
 			}.flatten(on: req.eventLoop).map { posts in
 				let result: [UUID : ForumPost] = posts.reduce(into: [:]) { dict, post in 
 					if let post = post {
