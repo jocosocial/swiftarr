@@ -51,7 +51,7 @@ class TwarrtAPIUser(HttpUser):
 		
 	@task
 	def newTwarrt(self):
-		response = self.client.post("/api/v3/twitarr/create", json={ "text": "This is a Locust post.", "images": [] }, headers = self.samAuth)
+		response = self.client.post("/api/v3/twitarr/create", json={ "text": "This is a Locust post.", "images": [], "postAsModerator": False, "postAsTwitarrTeam": False }, headers = self.samAuth)
 		maxTwarrt = response.json()["twarrtID"]
 		self.client.post("/api/v3/twitarr/" + str(maxTwarrt) + "/love", headers = self.heidiAuth, name="/api/v3/twitarr/:id/love")
 		self.client.post("/api/v3/twitarr/" + str(maxTwarrt) + "/like", headers = self.heidiAuth, name="/api/v3/twitarr/:id/like")
@@ -59,22 +59,22 @@ class TwarrtAPIUser(HttpUser):
 		self.client.post("/api/v3/twitarr/" + str(maxTwarrt) + "/unreact", headers = self.jamesAuth, name="/api/v3/twitarr/:id/unreact")
 		self.client.post("/api/v3/twitarr/" + str(maxTwarrt) + "/bookmark", headers = self.jamesAuth, name="/api/v3/twitarr/:id/bookmark")
 		self.client.post("/api/v3/twitarr/" + str(maxTwarrt) + "/bookmark/remove", headers = self.jamesAuth, name="/api/v3/twitarr/:id/bookmark/remove")
-		response = self.client.post("/api/v3/twitarr/" + str(maxTwarrt) + "/update", json={ "text": "Editing the text of this twarrt.", "images": [] }, headers = self.samAuth, name="/api/v3/twitarr/:id/update")
+		response = self.client.post("/api/v3/twitarr/" + str(maxTwarrt) + "/update", json={ "text": "Editing the text of this twarrt.", "images": [], "postAsModerator": False, "postAsTwitarrTeam": False }, headers = self.samAuth, name="/api/v3/twitarr/:id/update")
 
 	@task
 	def createDeleteTwarrt(self):
-		response = self.client.post("/api/v3/twitarr/create", json={ "text": "This is a Locust post that will get deleted", "images": [] }, headers = self.samAuth)
+		response = self.client.post("/api/v3/twitarr/create", json={ "text": "This is a Locust post that will get deleted", "images": [], "postAsModerator": False, "postAsTwitarrTeam": False }, headers = self.samAuth)
 		newTwarrtID = response.json()["twarrtID"]
 		self.client.delete("/api/v3/twitarr/" + str(newTwarrtID), headers = self.samAuth, name="/api/v3/twitarr/:id")
 
 	@task
 	def replyToTwarrt(self):
-		response = self.client.post("/api/v3/twitarr/" + str(random.choice(self.existingTwarrts)) + "/reply", json={ "text": "This is a Locust reply.", "images": [] }, headers = self.heidiAuth, name="/api/v3/twitarr/:id/reply")
+		response = self.client.post("/api/v3/twitarr/" + str(random.choice(self.existingTwarrts)) + "/reply", json={ "text": "This is a Locust reply.", "images": [], "postAsModerator": False, "postAsTwitarrTeam": False }, headers = self.heidiAuth, name="/api/v3/twitarr/:id/reply")
 		newTwarrtID = response.json()["twarrtID"]
 
 	@task
 	def reportTwarrt(self):
-		response = self.client.post("/api/v3/twitarr/create", json={ "text": "This is a Locust post that will get reported.", "images": [] }, headers = self.samAuth)
+		response = self.client.post("/api/v3/twitarr/create", json={ "text": "This is a Locust post that will get reported.", "images": [], "postAsModerator": False, "postAsTwitarrTeam": False }, headers = self.samAuth)
 		reportTwarrt = response.json()["twarrtID"]
 		response = self.client.post("/api/v3/twitarr/" + str(reportTwarrt) + "/report", json={ "message": "This is a Locust twarrt report." }, headers = self.heidiAuth, name="/api/v3/twitarr/:id/report")
 
@@ -126,7 +126,7 @@ class TwarrtUser(HttpUser):
 	@task
 	def createEditDeleteTweet(self):
 		self.client.post("/tweets/" + "/create", json={ "postText": "A Locust webclient post." }, name="/tweets/create")
-		response = self.client.post("/api/v3/twitarr/create", json={ "text": "This is a Locust api post that will be deleted.", "images": [] }, headers = self.samAuth)
+		response = self.client.post("/api/v3/twitarr/create", json={ "text": "This is a Locust api post that will be deleted.", "images": [], "postAsModerator": False, "postAsTwitarrTeam": False }, headers = self.samAuth)
 		newTwarrtID = str(response.json()["twarrtID"])
 		self.client.post("/tweets/edit/" + newTwarrtID, json={ "postText": "A Locust webclient post edit." }, name="/tweets/edit/:id")
 		self.client.post("/tweets/reply/" + newTwarrtID, json={ "postText": "A Locust webclient post reply." }, name="/tweets/reply/:id")
@@ -182,15 +182,15 @@ class ForumAPIUser(HttpUser):
 		lowerCat = next(catData["categoryID"] for catData in catResponse.json() if catData["title"] == "Lower Decks")
 		# Create forum in "Lower Decks" category
 		createResponse = self.client.post("/api/v3/forum/categories/" + lowerCat + "/create", 
-				json={ "title": "A Locust Forum", "firstPost":{"text": "hello this is my locust post", "images": [] }}, 
+				json={ "title": "A Locust Forum", "firstPost":{"text": "hello this is my locust post", "images": [], "postAsModerator": False, "postAsTwitarrTeam": False }},
 				headers = self.samAuth, name="/api/v3/forum/categories/:cat_id/create")
 		newForumID = createResponse.json()["forumID"]
 		# Add a post to the new forum
 		self.client.post("/api/v3/forum/" + newForumID + "/create", headers = self.samAuth, 
-				json={"text": "This is a reply in the Locust forum", "images": [] }, name="/api/v3/forum/:forum_id/create")
+				json={"text": "This is a reply in the Locust forum", "images": [], "postAsModerator": False, "postAsTwitarrTeam": False }, name="/api/v3/forum/:forum_id/create")
 		# Add another post
 		postResponse = self.client.post("/api/v3/forum/" + newForumID + "/create", headers = self.samAuth, 
-				json={"text": "This is a post we're going to delete.", "images": [] }, name="/api/v3/forum/:forum_id/create")
+				json={"text": "This is a post we're going to delete.", "images": [], "postAsModerator": False, "postAsTwitarrTeam": False }, name="/api/v3/forum/:forum_id/create")
 		postToDeleteID = str(postResponse.json()["postID"])
 		# Get details on the post
 		self.client.get("/api/v3/forum/post/" + postToDeleteID, headers = self.samAuth, name="/api/v3/forum/post/:post_id")
@@ -204,14 +204,14 @@ class ForumAPIUser(HttpUser):
 		catResponse = self.client.get("/api/v3/forum/categories", headers = self.samAuth)
 		lowerCat = next(catData["categoryID"] for catData in catResponse.json() if catData["title"] == "Lower Decks")
 		createResponse = self.client.post("/api/v3/forum/categories/" + lowerCat + "/create", 
-				json={ "title": "A Locust Forum To Rename", "firstPost":{"text": "hello this is my locust post", "images": [] }},
+				json={ "title": "A Locust Forum To Rename", "firstPost":{"text": "hello this is my locust post", "images": [], "postAsModerator": False, "postAsTwitarrTeam": False }},
 				headers = self.samAuth, name="/api/v3/forum/categories/:cat_id/create")
 		newForumID = createResponse.json()["forumID"]
 		postResponse = self.client.post("/api/v3/forum/" + newForumID + "/create", headers = self.samAuth, 
-				json={"text": "This is a reply in the Locust forum", "images": [] }, name="/api/v3/forum/:forum_id/create")
+				json={"text": "This is a reply in the Locust forum", "images": [], "postAsModerator": False, "postAsTwitarrTeam": False }, name="/api/v3/forum/:forum_id/create")
 		postID = str(postResponse.json()["postID"])
 		self.client.post("/api/v3/forum/post/" + postID + "/update", headers = self.samAuth, 
-				json={"text": "This is a post we've updated.", "images": [] }, name="/api/v3/forum/post/:post_id/update")
+				json={"text": "This is a post we've updated.", "images": [], "postAsModerator": False, "postAsTwitarrTeam": False }, name="/api/v3/forum/post/:post_id/update")
 		self.client.post("/api/v3/forum/" + newForumID + "/rename/A%20Locust%20Forum%20We%20Renamed", 
 				headers = self.samAuth, name="/api/v3/forum/:forum_id/rename/:new_name")
 
@@ -332,7 +332,7 @@ class SeamailAPIUser(HttpUser):
 
 	@task
 	def postAndDeleteMsg(self):
-		response = self.client.post("/api/v3/fez/" + self.fezID + "/post", json={ "text": "This is a Locust Seamail Post.", "images": [] }, 
+		response = self.client.post("/api/v3/fez/" + self.fezID + "/post", json={ "text": "This is a Locust Seamail Post.", "images": [], "postAsModerator": False, "postAsTwitarrTeam": False },
 				headers = self.heidiAuth, name = "/api/v3/fez/:fez_id/post")
 		postID = str(response.json()["postID"])
 		self.client.delete("/api/v3/fez/post/" + postID, headers = self.heidiAuth, name = "/api/v3/fez/post/:postID")
