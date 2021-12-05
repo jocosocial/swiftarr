@@ -1,8 +1,8 @@
-from locust import HttpUser, task, between
+from locust import HttpUser, task, between, FastHttpUser
 from locust import events
 import random
 
-class LoggedOutUser(HttpUser):
+class LoggedOutUser(FastHttpUser):
 	wait_time = between(1, 5)
 
 	def on_start(self):
@@ -24,7 +24,7 @@ class LoggedOutUser(HttpUser):
 	def boardgamePage(self):
 		self.client.get("/karaoke")
 
-class TwarrtAPIUser(HttpUser):
+class TwarrtAPIUser(FastHttpUser):
 	wait_time = between(1, 5)
 	samAuth = { "Authorization": "Bearer " }
 	heidiAuth = { "Authorization": "Bearer " }
@@ -78,7 +78,7 @@ class TwarrtAPIUser(HttpUser):
 		reportTwarrt = response.json()["twarrtID"]
 		response = self.client.post("/api/v3/twitarr/" + str(reportTwarrt) + "/report", json={ "message": "This is a Locust twarrt report." }, headers = self.heidiAuth, name="/api/v3/twitarr/:id/report")
 
-class TwarrtUser(HttpUser):
+class TwarrtUser(FastHttpUser):
 	wait_time = between(1, 5)
 	samAuth = { "Authorization": "Bearer " }
 	existingTwarrts = []
@@ -134,7 +134,7 @@ class TwarrtUser(HttpUser):
 		
 		
 		
-class ForumAPIUser(HttpUser):
+class ForumAPIUser(FastHttpUser):
 	wait_time = between(1, 5)
 	samAuth = { "Authorization": "Bearer " }
 	heidiAuth = { "Authorization": "Bearer " }
@@ -226,7 +226,7 @@ class ForumAPIUser(HttpUser):
 			self.client.post("/api/v3/forum/" + firstForum + "/favorite",  headers = self.samAuth, name="/api/v3/forum/:forum_id/favorite")
 			self.client.delete("/api/v3/forum/" + firstForum + "/favorite",  headers = self.samAuth, name="/api/v3/forum/:forum_id/favorite")
 
-class ForumWebUser(HttpUser):
+class ForumWebUser(FastHttpUser):
 	wait_time = between(1, 5)
 	jamesAuth = { "Authorization": "Bearer " }
 	eventsCategory = ""
@@ -290,7 +290,7 @@ class ForumWebUser(HttpUser):
 		# There's 2 different ways to get to search posts in the UI, with different <form>s.
 		self.client.get("/forumpost/search?search=hello", name="/forumpost/search")
 
-class SeamailAPIUser(HttpUser):
+class SeamailAPIUser(FastHttpUser):
 	wait_time = between(1, 5)
 	samAuth = { "Authorization": "Bearer " }
 	samID = ""
@@ -337,7 +337,7 @@ class SeamailAPIUser(HttpUser):
 		postID = str(response.json()["postID"])
 		self.client.delete("/api/v3/fez/post/" + postID, headers = self.heidiAuth, name = "/api/v3/fez/post/:postID")
 
-class SeamailWebUser(HttpUser):
+class SeamailWebUser(FastHttpUser):
 	wait_time = between(1, 5)
 	jamesAuth = { "Authorization": "Bearer " }
 	jamesID = ""
@@ -377,7 +377,7 @@ class SeamailWebUser(HttpUser):
 		newFezID = createResponse.json()["fezID"]
 		self.client.get("/seamail/" + newFezID, name="/seamail/:seamail_id")
 
-class EventsAPIUser(HttpUser):
+class EventsAPIUser(FastHttpUser):
 	wait_time = between(1, 5)
 	jamesAuth = { "Authorization": "Bearer " }
 	jamesID = ""
@@ -409,7 +409,7 @@ class EventsAPIUser(HttpUser):
 	def getFavoriteEvents(self):
 		self.client.get("/api/v3/events/favorites", headers = self.heidiAuth)
 
-class EventsWebUser(HttpUser):
+class EventsWebUser(FastHttpUser):
 	wait_time = between(1, 5)
 	jamesAuth = { "Authorization": "Bearer " }
 	jamesID = ""
@@ -428,7 +428,7 @@ class EventsWebUser(HttpUser):
 	def searchEvents(self):
 		self.client.get("/events?search=cruise")
 
-class BoardgamesAPIUser(HttpUser):
+class BoardgamesAPIUser(FastHttpUser):
 	wait_time = between(1, 5)
 	jamesAuth = { "Authorization": "Bearer " }
 	jamesID = ""
@@ -457,7 +457,7 @@ class BoardgamesAPIUser(HttpUser):
 	def getFavoriteBoardgames(self):
 		self.client.get("/api/v3/boardgames?favorite=true", headers = self.jamesAuth)
 
-class BoardgamesWebUser(HttpUser):
+class BoardgamesWebUser(FastHttpUser):
 	wait_time = between(1, 5)
 	heidiAuth = { "Authorization": "Bearer " }
 	
@@ -481,7 +481,7 @@ class BoardgamesWebUser(HttpUser):
 		fezGame = random.choice(boardgameIDs)
 		self.client.get("/boardgames/" + fezGame + "/createfez", name="/boardgames/:game_id/createFez")
 		
-class KaraokeAPIUser(HttpUser):
+class KaraokeAPIUser(FastHttpUser):
 	wait_time = between(1, 5)
 	heidiAuth = { "Authorization": "Bearer " }
 	
@@ -501,7 +501,7 @@ class KaraokeAPIUser(HttpUser):
 	def getFavoriteSongs(self):
 		self.client.get("/api/v3/karaoke?favorite=true", headers = self.heidiAuth)
 
-class KaraokeWebUser(HttpUser):
+class KaraokeWebUser(FastHttpUser):
 	wait_time = between(1, 5)
 	
 	@task
@@ -512,7 +512,7 @@ class KaraokeWebUser(HttpUser):
 	def viewSongSearch(self):
 		self.client.get("/karaoke?search=prince")
 
-class AlertAPIUser(HttpUser):
+class AlertAPIUser(FastHttpUser):
 	wait_time = between(1, 5)
 	jamesAuth = { "Authorization": "Bearer " }
 	jamesID = ""
@@ -534,7 +534,7 @@ class AlertAPIUser(HttpUser):
 	def getDailyThemes(self):
 		self.client.get("/api/v3/notification/dailythemes", headers = self.jamesAuth)
 
-class ProfileAPIUser(HttpUser):
+class ProfileAPIUser(FastHttpUser):
 	wait_time = between(1, 5)
 	jamesAuth = { "Authorization": "Bearer " }
 	jamesID = ""
