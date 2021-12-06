@@ -1,4 +1,4 @@
-//
+// Setup handlers at page load time
 for (let btn of document.querySelectorAll('[data-action]')) {
 	let action = btn.dataset.action;
 	if (action == "handleReports") {
@@ -15,6 +15,9 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 	}
 	else if (action == "clearTempBan") {
 		btn.addEventListener("click", clearTempQuarantineAction);
+	}
+	else if (action == "setCategory") {
+		btn.addEventListener("click", setForumCategoryAction);
 	}
 }
 
@@ -98,6 +101,20 @@ function clearTempQuarantineAction() {
 		return;
 	}
 	let req = new Request(path, { method: 'POST' });
+	fetch(req).then(function(response) {
+		if (response.ok) {
+			location.reload();
+		}
+		else {
+			console.log(response);
+		}
+	})
+}
+
+function setForumCategoryAction() {
+	let newCategory = event.target.dataset.newcategory;
+	let forumID = event.target.closest('[data-reportableid]').dataset.reportableid;
+	let req = new Request("/forum/" + forumID + "/setcategory/" + newCategory, { method: 'POST' });
 	fetch(req).then(function(response) {
 		if (response.ok) {
 			location.reload();

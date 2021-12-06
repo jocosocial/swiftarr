@@ -6,7 +6,7 @@ import FluentSQL
 	The collection of `/api/v3/mod/` route endpoints and handler functions related to moderation tasks.
 	
 	All routes in this group should be restricted to users with moderation priviliges. This controller returns data of 
-	a privledged nature, including contents of user reports, edit histories of user content, and log data about moderation actions.
+	a privileged nature, including contents of user reports, edit histories of user content, and log data about moderation actions.
 	
 	Note that some moderation actions aren't in this file. Most such endpoints have a handler method allowing a user
 	to operate on their own content, but also allowing a mod to operate on other users' content. For example, `twarrtUpdateHandler` lets
@@ -43,6 +43,7 @@ struct ModerationController: APIRouteCollection {
 		
 		moderatorAuthGroup.get("forum", forumIDParam, use: forumModerationHandler)
 		moderatorAuthGroup.post("forum", forumIDParam, "setstate", modStateParam, use: forumSetModerationStateHandler)
+		moderatorAuthGroup.post("forum", forumIDParam, "setcategory", categoryIDParam, use: forumSetCategoryHandler)
 
 		moderatorAuthGroup.get("fez", fezIDParam, use: fezModerationHandler)
 		moderatorAuthGroup.post("fez", fezIDParam, "setstate", modStateParam, use: fezSetModerationStateHandler)
@@ -346,6 +347,30 @@ struct ModerationController: APIRouteCollection {
 			try forum.moderationStatus.setFromParameterString(modState)
 			forum.logIfModeratorAction(ModeratorActionType.setFromModerationStatus(forum.moderationStatus), user: user, on: req)
 			return forum.save(on: req.db).transform(to: .ok)
+		}
+	}
+	
+	/// `POST /api/v3/mod/forum/:forum_ID/setcategory/:category_ID
+	///
+	/// Moderator only. Moves the indicated forum into the indicated category. Logs the action to the moderation log.
+	func forumSetCategoryHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+		let user = try req.auth.require(User.self)
+		return Category.findFromParameter(categoryIDParam, on: req).flatMap { newCategory in
+			return Forum.findFromParameter(forumIDParam, on: req, builder: { $0.with(\.$category) }).throwingFlatMap { forum in
+				let oldCategory = forum.category
+				oldCategory.forumCount -= 1
+				newCategory.forumCount += 1
+				// Set forum's new parent, also update the forum's accessLevelToView.
+				forum.accessLevelToView = newCategory.accessLevelToView
+				forum.$category.id = try newCategory.requireID()
+				forum.$category.value = newCategory
+				return req.db.transaction { db in
+					return forum.save(on: db).and(oldCategory.save(on: db).and(newCategory.save(on: db))).map { _ in
+						forum.logIfModeratorAction(.move, user: user, on: req)
+						return .ok
+					}
+				}
+			}
 		}
 	}
 

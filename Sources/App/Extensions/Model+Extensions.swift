@@ -4,41 +4,41 @@ import SQLKit
 
 extension Model where IDValue: LosslessStringConvertible {
 
-    /// Returns an `EventLoopFuture<Model>` that will match the ID given in a named request parameter. 
+	/// Returns an `EventLoopFuture<Model>` that will match the ID given in a named request parameter. 
 	/// For a route that has a  parameter named `userIDParam.paramString`,  `User.findFromParameter(userIDParam, req)`
 	/// will get the value of the parameter and use that to fetch the user with that ID from the User table.
 	/// Returns a failed future with an Abort error if: the parameter doesn't exist, the parameter's value can't be made into an IDValue 
 	/// for the Model type, or no Model type with that ID was found in the database.
-    ///
+	///
 	///	- Parameter param: A PathComponent describing a path component of type .parameter
-    /// - Parameter req: The incoming request `Container`, which provides the `EventLoop` on
-    ///   which the query must be run.
-    /// - Returns: `[UUID]` containing all the user's associated IDs.
+	/// - Parameter req: The incoming request `Container`, which provides the `EventLoop` on
+	///   which the query must be run.
+	/// - Returns: `[UUID]` containing all the user's associated IDs.
 	static func findFromParameter(_ param: PathComponent, on req: Request, builder: ((QueryBuilder<Self>) -> Void)? = nil) -> EventLoopFuture<Self> {
 		return findFromParameter(param.description, on: req, builder: builder)
 	}
 
-    /// Returns an `EventLoopFuture<Model>` that will match the ID given in a named request parameter. 
+	/// Returns an `EventLoopFuture<Model>` that will match the ID given in a named request parameter. 
 	/// For a route that has a ":userid" parameter,  `User.findFromParameter("userid", req)` will return that user from the User table.
 	/// Returns a failed future with an Abort error if: the parameter doesn't exist, the parameter's value can't be made into an IDValue 
 	/// for the Model type, or no Model type with that ID was found in the database.
-    ///
+	///
 	///	- Parameter param: The name of a request parameter e.g. "user_id"
-    /// - Parameter req: The incoming request `Container`, which provides the `EventLoop` on
-    ///   which the query must be run.
-    /// - Returns: `[UUID]` containing all the user's associated IDs.
+	/// - Parameter req: The incoming request `Container`, which provides the `EventLoop` on which the query must be run.
+	/// - Parameter builder:A block that runs during query construction; mostly lets callers add `.with()` clauses to the query.
+	/// - Returns: `[UUID]` containing all the user's associated IDs.
 	static func findFromParameter(_ param: String, on req: Request, builder: ((QueryBuilder<Self>) -> Void)? = nil) -> EventLoopFuture<Self> {
 		let paramName = param.hasPrefix(":") ? String(param.dropFirst()) : param
   		guard let paramVal = req.parameters.get(paramName) else {
-            return req.eventLoop.makeFailedFuture(Abort(.badRequest, reason: "Request parameter \(param) is missing."))
-        }
+			return req.eventLoop.makeFailedFuture(Abort(.badRequest, reason: "Request parameter \(param) is missing."))
+		}
   		guard let objectID = IDValue(paramVal) else {
-            return req.eventLoop.makeFailedFuture(
-            		Abort(.badRequest, reason: "Request parameter \(param) with value \(paramVal) is malformed."))
-        }
-        let query = Self.query(on: req.db).filter(\._$id == objectID)
+			return req.eventLoop.makeFailedFuture(
+					Abort(.badRequest, reason: "Request parameter \(param) with value \(paramVal) is malformed."))
+		}
+		let query = Self.query(on: req.db).filter(\._$id == objectID)
 		builder?(query)
-        return query.first().unwrap(or: Abort(.notFound, reason: "no value found for identifier '\(paramVal)'"))
+		return query.first().unwrap(or: Abort(.notFound, reason: "no value found for identifier '\(paramVal)'"))
 	}
 }
 
@@ -47,15 +47,15 @@ extension EventLoopFuture where Value: Model {
 	/// Converts an `EventLoopFuture<Model>` into a `EventLoopFuture<((Model, id)>`, where id is the Model's id value.
 	/// The tuple values may then be retrieved with something similar to `.map { (model, modelID) in ...`
 	/// This method is designed to be chained, often after a query, like so: `Model.query(...).first().addModelID().map ...`
-    public func addModelID(or error: @autoclosure @escaping () -> Error = FluentError.idRequired) 
-    		-> EventLoopFuture<(Value, Value.IDValue)> {
-        return self.flatMapThrowing { value in
-            guard let id = value.id else {
-                throw error()
-            }
-            return (value, id)
-        }
-    }
+	public func addModelID(or error: @autoclosure @escaping () -> Error = FluentError.idRequired) 
+			-> EventLoopFuture<(Value, Value.IDValue)> {
+		return self.flatMapThrowing { value in
+			guard let id = value.id else {
+				throw error()
+			}
+			return (value, id)
+		}
+	}
 }
 
 
@@ -73,8 +73,8 @@ extension EventLoopFuture {
 	/// makeFailedFuture(error) happens to be all we need at the moment, but that may change.
 	///
 	/// Anyway, this fn uses callback wrapping to wrap its callback inside a callback that catches errors, making it a real throwing flatMap().
-    @inlinable public func throwingFlatMap<NewValue>(file: StaticString = #file, line: UInt = #line,
-    		 _ callback: @escaping (Value) throws -> EventLoopFuture<NewValue>) -> EventLoopFuture<NewValue> {
+	@inlinable public func throwingFlatMap<NewValue>(file: StaticString = #file, line: UInt = #line,
+			 _ callback: @escaping (Value) throws -> EventLoopFuture<NewValue>) -> EventLoopFuture<NewValue> {
 		let wrappedCallback: (Value) -> EventLoopFuture<NewValue> = { value in
 			do {
 				return try callback(value)
@@ -84,7 +84,7 @@ extension EventLoopFuture {
 			}
 		}
 		return self.flatMap(wrappedCallback)
-    }
+	}
 }
 
 
@@ -151,34 +151,34 @@ extension SiblingsProperty {
 	public func attachOrEdit(
 		from: From,
 		to: To,
-        on database: Database,
-        _ edit: @escaping (Through) -> () = { _ in }
-    ) -> EventLoopFuture<Void> {
-        guard let fromID = from.id else {
-            fatalError("Cannot attach siblings relation to unsaved model.")
-        }
-        guard let toID = to.id else {
-            fatalError("Cannot attach unsaved model.")
-        }
+		on database: Database,
+		_ edit: @escaping (Through) -> () = { _ in }
+	) -> EventLoopFuture<Void> {
+		guard let fromID = from.id else {
+			fatalError("Cannot attach siblings relation to unsaved model.")
+		}
+		guard let toID = to.id else {
+			fatalError("Cannot attach unsaved model.")
+		}
 
-        return Through.query(on: database)
-            .filter(self.from.appending(path: \.$id) == fromID)
-            .filter(self.to.appending(path: \.$id) == toID)
-            .first()
-            .flatMap { pivotOptional in
-            	var pivot: Through
-            	switch pivotOptional {
+		return Through.query(on: database)
+			.filter(self.from.appending(path: \.$id) == fromID)
+			.filter(self.to.appending(path: \.$id) == toID)
+			.first()
+			.flatMap { pivotOptional in
+				var pivot: Through
+				switch pivotOptional {
 				case .some(let p):
 					pivot = p
 				case .none:
 					pivot = Through()
 					pivot[keyPath: self.from].id = fromID
 					pivot[keyPath: self.to].id = toID
-            	}
+				}
 				edit(pivot)
 				return pivot.save(on: database)
-        	}
-    }
+			}
+	}
 
 }
 
@@ -188,15 +188,15 @@ extension PathComponent {
 	/// from inside the route handler. Vapor uses ":parameter" when registering the route parameter, but uses "parameter" when 
 	/// retrieving it.
 	var paramString: String {
-        switch self {
-        case .anything:
-            return "*"
-        case .catchall:
-            return "**"
-        case .parameter(let name):
-            return name
-        case .constant(let constant):
-            return constant
-        }
+		switch self {
+		case .anything:
+			return "*"
+		case .catchall:
+			return "**"
+		case .parameter(let name):
+			return name
+		case .constant(let constant):
+			return constant
+		}
 	}
 }

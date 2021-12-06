@@ -27,9 +27,9 @@ struct ForumController: APIRouteCollection {
 
 			// Forums - CRUD first, then actions on forums
 		tokenCacheAuthGroup.post("categories", categoryIDParam, "create", use: forumCreateHandler)
-		tokenCacheAuthGroup.get(forumIDParam, use: forumHandler)
-		tokenCacheAuthGroup.get("post", postIDParam, "forum", use: postForumHandler)			// Returns the forum a post is in.
-		tokenCacheAuthGroup.get("forevent", ":event_id", use: eventForumHandler)
+		tokenCacheAuthGroup.get(forumIDParam, use: forumHandler)							// Returns a forum thread by ID
+		tokenCacheAuthGroup.get("post", postIDParam, "forum", use: postForumHandler)		// Returns the forum a post is in.
+		tokenCacheAuthGroup.get("forevent", ":event_id", use: eventForumHandler)			// Returns the forum for an event
 		tokenCacheAuthGroup.post(forumIDParam, "rename", ":new_name", use: forumRenameHandler)
 		tokenCacheAuthGroup.post(forumIDParam, "delete", use: forumDeleteHandler)
 		tokenCacheAuthGroup.delete(forumIDParam, use: forumDeleteHandler)

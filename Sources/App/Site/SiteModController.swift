@@ -41,6 +41,7 @@ struct SiteModController: SiteControllerUtils {
 
 		modRoutes.post("twarrt", twarrtIDParam, "setstate", modStateParam, use: setTwarrtModerationStatePostHandler)
 		modRoutes.post("forumpost", postIDParam, "setstate", modStateParam, use: setForumPostModerationStatePostHandler)
+		modRoutes.post("forum", forumIDParam, "setcategory", categoryIDParam, use: setForumCategoryPostHandler)
 		modRoutes.post("forum", forumIDParam, "setstate", modStateParam, use: setForumModerationStatePostHandler)
 		modRoutes.post("fez", fezIDParam, "setstate", modStateParam, use: setFezModerationStatePostHandler)
 		modRoutes.post("userprofile", userIDParam, "setstate", modStateParam, use: setUserProfileModerationStatePostHandler)
@@ -262,33 +263,55 @@ struct SiteModController: SiteControllerUtils {
 		guard let forumID = req.parameters.get(forumIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
-		return apiQuery(req, endpoint: "/mod/forum/\(forumID)").throwingFlatMap { response in
-			let modData = try response.content.decode(ForumModerationData.self)
-			struct ReportContext : Encodable {
-				var trunk: TrunkContext
-				var modData: ForumModerationData
-				var firstReport: ReportModerationData?
-				var finalEditAuthor: UserHeader?
-				
-				init(_ req: Request, modData: ForumModerationData) throws {
-					trunk = .init(req, title: "Reports", tab: .none)
-					self.modData = modData
-					firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
-					finalEditAuthor = modData.edits.last?.author
-					if self.modData.edits.count > 1 {
-						for index in (0...self.modData.edits.count - 2).reversed() {
-							self.modData.edits[index + 1].author = self.modData.edits[index].author
-							self.modData.edits[index + 1].author.username = "\(self.modData.edits[index + 1].author.username) edited to:"
+		return apiQuery(req, endpoint: "/forum/categories").flatMap { categoriesResponse in
+			return apiQuery(req, endpoint: "/mod/forum/\(forumID)").throwingFlatMap { response in
+				let modData = try response.content.decode(ForumModerationData.self)
+				let categoryData = try categoriesResponse.content.decode([CategoryData].self)
+				struct ReportContext : Encodable {
+					var trunk: TrunkContext
+					var modData: ForumModerationData
+					var firstReport: ReportModerationData?
+					var finalEditAuthor: UserHeader?
+					var categories: [CategoryData]
+					
+					init(_ req: Request, modData: ForumModerationData, categories: [CategoryData]) throws {
+						trunk = .init(req, title: "Reports", tab: .none)
+						self.modData = modData
+						self.categories = categories
+						firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
+						finalEditAuthor = modData.edits.last?.author
+						if self.modData.edits.count > 1 {
+							for index in (0...self.modData.edits.count - 2).reversed() {
+								self.modData.edits[index + 1].author = self.modData.edits[index].author
+								self.modData.edits[index + 1].author.username = "\(self.modData.edits[index + 1].author.username) edited to:"
+							}
+						}
+						if self.modData.edits.count > 0 {
+							self.modData.edits[0].author = modData.creator
+							self.modData.edits[0].author.username = "\(self.modData.edits[0].author.username) initially wrote:"
 						}
 					}
-					if self.modData.edits.count > 0 {
-						self.modData.edits[0].author = modData.creator
-						self.modData.edits[0].author.username = "\(self.modData.edits[0].author.username) initially wrote:"
-					}
 				}
+				let ctx = try ReportContext(req, modData: modData, categories: categoryData)
+				return req.view.render("moderation/forumView", ctx)
 			}
-			let ctx = try ReportContext(req, modData: modData)
-			return req.view.render("moderation/forumView", ctx)
+		}
+	}
+	
+	///	`POST /moderate/forum/:forum_ID/move/:category_ID`
+	///
+	/// Moves a forum thread into a new category. Once moved, the thread will have the same restrictions on viewability as other threads in the destination category.
+	/// This means we could make a 'forum dumpster' category that was mod-only and mods could move awful forum threads into it, and later review individual posts
+	/// and hand out bans. The utility of this approach is: without this we don't have a way to get a forum out of circulation without deleting the whole forum.
+	func setForumCategoryPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
+		guard let forumID = req.parameters.get(forumIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing forum ID parameter.")
+		}
+		guard let categoryID = req.parameters.get(categoryIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing category ID parameter.")
+		}
+		return apiQuery(req, endpoint: "/mod/forum/\(forumID)/setcategory/\(categoryID)", method: .POST).map { response in
+			return response.status
 		}
 	}
 	
@@ -302,7 +325,7 @@ struct SiteModController: SiteControllerUtils {
 		guard let modState = req.parameters.get(modStateParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
-		return apiQuery(req, endpoint: "/mod/forum/\(forumID)/setstate/\(modState)", method: .POST).map { response in
+		return apiQuery(req, endpoint: "/mod/forum/\(forumID)/setcategory/\(modState)", method: .POST).map { response in
 			return response.status
 		}
 	}

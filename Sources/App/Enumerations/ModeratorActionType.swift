@@ -7,6 +7,8 @@ public enum ModeratorActionType: String, Codable {
 	case edit
 	/// The moderator deleted somebody else's content. For `user` content, this means the user photo (users and profile fields can't be deleted).
 	case delete
+	/// The moderator moved somebody's content to another place. Currently this means they moved a forum to a new category.
+	case move
 	
 	/// The moderator has quarantined a user or a piece of content. Quarantined content still exists, but the server replaces the contents with a quarantine message.
 	/// A quarantined user can still read content, but cannot post or edit. 

@@ -12,6 +12,20 @@
 						<a class="btn btn-outline-primary btn-sm" href="/forum/#(modData.forumID)/edit">Edit</a>
 						<button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="\#deleteModal">Delete</button>
 						<span class="dropdown">
+							<button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="changeCategoryBtn" data-bs-toggle="dropdown" aria-expanded="false">
+								Change Category
+							</button>
+							<ul class="dropdown-menu" aria-labelledby="changeCategoryBtn">
+								#for(cat in categories):
+									#if(cat.categoryID == modData.categoryID):
+										<li><button class="dropdown-item disabled" type="button" data-action="setCategory" data-newcategory="#(cat.categoryID)">#(cat.title) <i>&lt;- current category</i></button></li>
+									#else:
+										<li><button class="dropdown-item" type="button" data-action="setCategory" data-newcategory="#(cat.categoryID)">#(cat.title)</button></li>
+									#endif
+								#endfor
+							</ul>
+						</span>
+						<span class="dropdown">
 							<button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
 								Set State
 							</button>

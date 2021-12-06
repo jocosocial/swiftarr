@@ -8,4 +8,8 @@ and the poster is a moderator, and the poster sets one of these options, the pos
 actual poster.
 * FezPostData had its UUID-valued `authorID` field changed to a `UserHeader` field named `author`.
 
+## Dec 5, 2021
 
+* Added a method to ModerationController to alow for mods to re-categorize forum threads: `POST /api/v3/mod/forum/:forum_ID/setcategory/:category_ID
+* Modified `ForumModerationData` to include the categoryID of a forum being moderated.
+* Added a new `ModeratorActionType` case called `move` for moderator log entries where mods use their new power.

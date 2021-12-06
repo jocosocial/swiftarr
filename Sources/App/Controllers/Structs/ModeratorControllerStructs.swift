@@ -92,6 +92,8 @@ extension ForumEditLogData {
 public struct ForumModerationData: Content {
     /// The forum's ID.
     var forumID: UUID
+    /// the forum's category.
+	var categoryID: UUID
     /// The forum's creator.
 	var creator: UserHeader
     /// The forum's title.
@@ -111,6 +113,7 @@ public struct ForumModerationData: Content {
 extension ForumModerationData {
 	init(_ forum: Forum, edits: [ForumEditLogData], reports: [ReportModerationData], on req: Request) throws {
 		forumID = try forum.requireID()
+		categoryID = forum.$category.id
 		creator = try req.userCache.getHeader(forum.$creator.id)
 		title = forum.title
 		createdAt = forum.createdAt ?? Date()
