@@ -1,4 +1,4 @@
-<li class="list-group-item bg-transparent">
+<li class="list-group-item bg-transparent" data-postid="#(fezPost.postID)">
 	<div class="container-fluid">
 		<div class="row align-items-start justify-content-start">	
 			<div class="col g-0" style="flex: 0 0 40px;">
@@ -13,10 +13,20 @@
 						<span class="text-muted">#relativeTime(fezPost.timestamp)</span>
 					</div>
 				</div>
-				<div class="row">	
+				<div class="row align-items-start">	
 					<div class="col">
 						#formatFezText(fezPost.text)
 					</div>
+					#if(showModButton || (userID == fezPost.author.userID)):
+						<div class="col col-auto btn-group" role="group">
+							#if(showModButton):
+								<a class="btn btn-outline-primary btn-sm" href="/moderate/fezpost/#(fezPost.postID)">Mod</a>
+							#endif
+							#if(userID == fezPost.author.userID):
+								<button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="\#deleteModal">Delete</button>
+							#endif
+						</div>
+					#endif
 				</div>
 				#if(fezPost.image):
 					<div class="row align-items-center justify-content-start flex-nowrap gx-1">	

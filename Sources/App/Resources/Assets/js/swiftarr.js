@@ -138,7 +138,7 @@ document.getElementById('deleteModal')?.addEventListener('show.bs.modal', functi
 	deleteBtn.setAttribute('data-delete-postid', postElem.dataset.postid);
 })
 
-// Deletes forums, forumposts, and tweets. Delete btn handler inside Delete Modal.
+// Deletes forums, forumposts, tweets, and fez posts. Delete btn handler inside Delete Modal.
 async function deleteAction() {
 	let postid = event.target.dataset.deletePostid;
 	let deleteType = event.target.dataset.deleteType;

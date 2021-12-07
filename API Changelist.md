@@ -10,6 +10,10 @@ actual poster.
 
 ## Dec 5, 2021
 
-* Added a method to ModerationController to alow for mods to re-categorize forum threads: `POST /api/v3/mod/forum/:forum_ID/setcategory/:category_ID
+* Added a method to ModerationController to allow for mods to re-categorize forum threads: `POST /api/v3/mod/forum/:forum_ID/setcategory/:category_ID
 * Modified `ForumModerationData` to include the categoryID of a forum being moderated.
 * Added a new `ModeratorActionType` case called `move` for moderator log entries where mods use their new power.
+
+## Dec 7, 2021
+
+* Added `FezPostModerationData` to ModeratorControllerStructs, allowing moderators to perform mod actions on fez posts.

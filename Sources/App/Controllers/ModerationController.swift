@@ -47,6 +47,9 @@ struct ModerationController: APIRouteCollection {
 
 		moderatorAuthGroup.get("fez", fezIDParam, use: fezModerationHandler)
 		moderatorAuthGroup.post("fez", fezIDParam, "setstate", modStateParam, use: fezSetModerationStateHandler)
+
+		moderatorAuthGroup.get("fezpost", fezPostIDParam, use: fezPostModerationHandler)
+		moderatorAuthGroup.post("fezpost", fezPostIDParam, "setstate", modStateParam, use: fezPostSetModerationStateHandler)
 		
 		moderatorAuthGroup.get("profile", userIDParam, use: profileModerationHandler)
 		moderatorAuthGroup.post("profile", userIDParam, "setstate", modStateParam, use: profileSetModerationStateHandler)
@@ -415,7 +418,7 @@ struct ModerationController: APIRouteCollection {
 
 	/// ` POST /api/v3/mod/fez/ID/setstate/STRING`
 	///
-	/// Moderator only. Sets the moderation state enum on the fez idententified by ID to the <doc:ContentModerationStatus> in STRING.
+	/// Moderator only. Sets the moderation state enum on the fez identified by ID to the <doc:ContentModerationStatus> in STRING.
 	/// Logs the action to the moderator log unless the current user owns the fez. 
 	///
     /// - Parameter fezID: in URL path.
@@ -431,6 +434,61 @@ struct ModerationController: APIRouteCollection {
 			try fez.moderationStatus.setFromParameterString(modState)
 			fez.logIfModeratorAction(ModeratorActionType.setFromModerationStatus(fez.moderationStatus), user: user, on: req)
 			return fez.save(on: req.db).transform(to: .ok)
+		}
+	}
+	
+	/// `GET /api/v3/mod/fezpost/:post_id`
+	///
+	/// Moderator only. Returns info admins and moderators need to review a Fez post. Works if post has been deleted. Shows
+	/// fez's quarantine and reviewed states.
+	///
+	/// The <doc:FezPostModerationData> contains:
+	/// * The current post contents, even if its deleted
+	/// * Previous edits of the fez post
+	/// * Reports against the post
+	/// * The post's current deletion and moderation status.
+	/// 
+    /// - Parameter fezPostID: in URL path.
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: <doc:FezPostModerationData> containing a bunch of data pertinient to moderating the forum.
+	func fezPostModerationHandler(_ req: Request) throws -> EventLoopFuture<FezPostModerationData> {
+		guard let postIDString = req.parameters.get(fezPostIDParam.paramString), let postID = Int(postIDString) else {
+			throw Abort(.badRequest, reason: "Request parameter \(fezPostIDParam.paramString) is missing.")
+		}
+		return FezPost.query(on: req.db).filter(\.$id == postID).withDeleted().first()
+				.unwrap(or: Abort(.notFound, reason: "no LFG POst found for identifier '\(postID)'")).flatMap { fezPost in
+			return Report.query(on: req.db)
+					.filter(\.$reportType == .fezPost)
+					.filter(\.$reportedID == postIDString)
+					.sort(\.$createdAt, .descending).all().flatMapThrowing { reports in
+				let authorHeader = try req.userCache.getHeader(fezPost.$author.id)
+				let fezPostData = try FezPostData(post: fezPost, author: authorHeader, overrideQuarantine: true)
+				let reportData = try reports.map { try ReportModerationData.init(req: req, report: $0) }
+				let modData = FezPostModerationData(fezPost: fezPostData, fezID: fezPost.$fez.id, isDeleted: fezPost.deletedAt != nil, 
+							moderationStatus: fezPost.moderationStatus, reports: reportData)
+				return modData
+			}
+		}
+	}
+
+	/// ` POST /api/v3/mod/fezpost/:post_id/setstate/STRING`
+	///
+	/// Moderator only. Sets the moderation state enum on the fez post identified by ID to the <doc:ContentModerationStatus> in STRING.
+	/// Logs the action to the moderator log unless the current user authored the post.
+	///
+    /// - Parameter fezPostID: in URL path.
+    /// - Parameter moderationState: in URL path. Value must match a <doc:ContentModerationStatus> rawValue.
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: `HTTPStatus` .ok if the requested moderation status was set.
+	func fezPostSetModerationStateHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+		let user = try req.auth.require(User.self)
+		guard let modState = req.parameters.get(modStateParam.paramString) else {
+			throw Abort(.badRequest, reason: "Request parameter `Moderation_State` is missing.")
+		}
+		return FezPost.findFromParameter(fezPostIDParam, on: req).throwingFlatMap { fezPost in
+			try fezPost.moderationStatus.setFromParameterString(modState)
+			fezPost.logIfModeratorAction(ModeratorActionType.setFromModerationStatus(fezPost.moderationStatus), user: user, on: req)
+			return fezPost.save(on: req.db).transform(to: .ok)
 		}
 	}
 	

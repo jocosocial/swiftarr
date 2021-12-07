@@ -272,8 +272,8 @@ struct AuthController: APIRouteCollection {
     /// - Returns: 204 No Content if the token was successfully deleted.
     func logoutHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
-        // revoke current auth
-        req.auth.logout(User.self)
+        // Close any open sockets, keep going if we get an error.
+        try? req.webSocketStore.handleUserLogout(user.requireID())
         // revoke token
         return try Token.query(on: req.db)
 				.filter(\.$user.$id == user.requireID())

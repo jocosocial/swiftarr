@@ -102,6 +102,8 @@ struct SiteFriendlyFezController: SiteControllerUtils {
         privateRoutes.post(fezIDParam, "join", use: fezJoinPostHandler)
         privateRoutes.post(fezIDParam, "leave", use: fezLeavePostHandler)
         privateRoutes.post(fezIDParam, "post", use: fezThreadPostHandler)
+        privateRoutes.post("post", postIDParam, "delete", use: fezPostDeleteHandler)
+        privateRoutes.delete("post", postIDParam, use: fezPostDeleteHandler)
         privateRoutes.post(fezIDParam, "cancel", use: fezCancelPostHandler)
 		privateRoutes.get("report", fezIDParam, use: fezReportPageHandler)
 		privateRoutes.post("report", fezIDParam, use: fezReportPostHandler)
@@ -307,18 +309,22 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 			struct FezPageContext : Encodable {
 				var trunk: TrunkContext
 				var fez: FezData
-				var userIsMember: Bool
-    			var oldPosts: [SocketFezPostData]
-    			var showDivider: Bool
-    			var newPosts: [SocketFezPostData]
-     			var post: MessagePostContext
-				var paginator: PaginatorContext
+				var userID: UUID
+				var userIsMember: Bool					// TRUE if user is member
+				var showModButton: Bool
+    			var oldPosts: [SocketFezPostData]		// Posts user has read already
+    			var showDivider: Bool					// TRUE if there a both old and new posts
+    			var newPosts: [SocketFezPostData]		// Posts user hasn't read.
+     			var post: MessagePostContext			// New post area
+				var paginator: PaginatorContext			// For > 50 posts in thread.
 				
 				init(_ req: Request, fez: FezData) throws {
     				let cacheUser = try req.auth.require(UserCacheData.self) 
 					trunk = .init(req, title: "LFG", tab: .none)
 					self.fez = fez
-					self.userIsMember = false
+					self.userID = cacheUser.userID
+					userIsMember = false
+					showModButton = trunk.userIsMod && fez.fezType != .closed
     				oldPosts = []
     				newPosts = []
     				showDivider = false
@@ -406,6 +412,20 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 			return Response(status: .created)
 		}
 	}
+	
+	// POST /fez/post/:fezPost_ID/delete
+	// DELETE /fez/post/:fezPost_ID
+	//
+	// Deletes a message posted in a fez. Must be author or mod.
+	func fezPostDeleteHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+		guard let postID = req.parameters.get(postIDParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing fez_id")
+		}
+		return apiQuery(req, endpoint: "/fez/post/\(postID)", method: .DELETE).map { response in
+			return response.status
+		}
+	}
+	
 	
 	// POST /fez/ID/join
 	//

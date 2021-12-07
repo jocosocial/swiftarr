@@ -36,15 +36,18 @@ struct SiteModController: SiteControllerUtils {
 		modRoutes.get("moderate", "forumpost", postIDParam, use: moderateForumPostContentPageHandler)
 		modRoutes.get("moderate", "forum", forumIDParam, use: moderateForumContentPageHandler)
 		modRoutes.get("moderate", "fez", fezIDParam, use: moderateFezContentPageHandler)
+		modRoutes.get("moderate", "fezpost", postIDParam, use: moderateFezPostContentPageHandler)
 		modRoutes.get("moderate", "userprofile", userIDParam, use: moderateUserProfileContentPageHandler)
 		modRoutes.get("moderate", "user", userIDParam, use: moderateUserContentPageHandler)
 
 		modRoutes.post("twarrt", twarrtIDParam, "setstate", modStateParam, use: setTwarrtModerationStatePostHandler)
 		modRoutes.post("forumpost", postIDParam, "setstate", modStateParam, use: setForumPostModerationStatePostHandler)
-		modRoutes.post("forum", forumIDParam, "setcategory", categoryIDParam, use: setForumCategoryPostHandler)
 		modRoutes.post("forum", forumIDParam, "setstate", modStateParam, use: setForumModerationStatePostHandler)
+		modRoutes.post("fezpost", postIDParam, "setstate", modStateParam, use: setFezPostModerationStatePostHandler)
 		modRoutes.post("fez", fezIDParam, "setstate", modStateParam, use: setFezModerationStatePostHandler)
 		modRoutes.post("userprofile", userIDParam, "setstate", modStateParam, use: setUserProfileModerationStatePostHandler)
+
+		modRoutes.post("forum", forumIDParam, "setcategory", categoryIDParam, use: setForumCategoryPostHandler)
 		modRoutes.post("moderate", "user", userIDParam, "setaccesslevel", accessLevelParam, use: setUserAccessLevelPostHandler)
 		modRoutes.post("moderate", "user", userIDParam, "tempquarantine", use: applyTempBanPostHandler)
 		modRoutes.post("moderate", "user", userIDParam, "tempquarantine", "delete", use: removeTempBanPostHandler)
@@ -197,6 +200,8 @@ struct SiteModController: SiteControllerUtils {
 		}
 	}
 
+	/// `GET /moderate/forumpost/:post_ID`
+	///
 	/// This shows a view that focuses on the *content* that was reported, showing:
 	/// * The post that was reported
 	/// * All reports made against this content
@@ -253,6 +258,8 @@ struct SiteModController: SiteControllerUtils {
 		}
 	}
 	
+	/// `GET /moderate/forum/:forum_ID`
+	///
 	/// This shows a view that focuses on the *content* that was reported, showing:
 	/// * The forum that was reported
 	/// * All reports made against this content
@@ -330,6 +337,8 @@ struct SiteModController: SiteControllerUtils {
 		}
 	}
 	
+	/// `GET /moderate/fez/:fez_ID`
+	///
 	/// This shows a view that focuses on the *content* that was reported, showing:
 	/// * The Fez that was reported
 	/// * All reports made against this content
@@ -381,6 +390,52 @@ struct SiteModController: SiteControllerUtils {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
 		return apiQuery(req, endpoint: "/mod/fez/\(fezID)/setstate/\(modState)", method: .POST).map { response in
+			return response.status
+		}
+	}
+	
+	/// `GET /moderate/fezpost/:fezpost_ID`
+	///
+	/// This shows a view that focuses on the *content* that was reported, showing:
+	/// * The Fez Post that was reported
+	/// * All reports made against this content
+	/// * All previous versions of this content
+	/// * (hopefully) Mod actions taken against this content already
+	/// * 
+	func moderateFezPostContentPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+		guard let fezPostID = req.parameters.get(postIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing search parameter.")
+		}
+		return apiQuery(req, endpoint: "/mod/fezpost/\(fezPostID)").throwingFlatMap { response in
+			let modData = try response.content.decode(FezPostModerationData.self)
+			struct ReportContext : Encodable {
+				var trunk: TrunkContext
+				var modData: FezPostModerationData
+				var firstReport: ReportModerationData?
+				var finalEditAuthor: UserHeader?
+				
+				init(_ req: Request, modData: FezPostModerationData) throws {
+					trunk = .init(req, title: "Fez Post Moderation", tab: .none)
+					self.modData = modData
+					firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
+				}
+			}
+			let ctx = try ReportContext(req, modData: modData)
+			return req.view.render("moderation/fezPostView", ctx)
+		}
+	}
+
+	///	`POST /moderate/fezpost/:post_ID/setstate/STRING`
+	///
+	/// Sets the moderation state of the given fez. Moderation states include "locked" and "quarantined", as well as a few others.
+	func setFezPostModerationStatePostHandler(_ req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
+		guard let postID = req.parameters.get(postIDParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing search parameter.")
+		}
+		guard let modState = req.parameters.get(modStateParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing search parameter.")
+		}
+		return apiQuery(req, endpoint: "/mod/fezpost/\(postID)/setstate/\(modState)", method: .POST).map { response in
 			return response.status
 		}
 	}

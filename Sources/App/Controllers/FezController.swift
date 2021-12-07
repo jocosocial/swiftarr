@@ -759,12 +759,15 @@ struct FezController: APIRouteCollection {
 					!(socketOwner.getBlocks().contains(postAuthor.userID) || socketOwner.getMutes().contains(postAuthor.userID)) else {
 				return 
 			}
-			struct FezPostContext: Encodable {
-				var fezPost: SocketFezPostData
-			}
 			var leafPost = try SocketFezPostData(post: post, author: postAuthor)
 			if userSocket.htmlOutput {
-				let ctx = FezPostContext(fezPost: leafPost)
+				struct FezPostContext: Encodable {
+					var userID: UUID
+					var fezPost: SocketFezPostData
+					var showModButton: Bool
+				}
+				let ctx = FezPostContext(userID: userSocket.userID, fezPost: leafPost, 
+						showModButton: socketOwner.accessLevel.hasAccess(.moderator) && fez.fezType != .closed)
 				_ = req.view.render("Fez/fezPost", ctx).flatMapThrowing { postBuffer in
 					if let data = postBuffer.data.getData(at: 0, length: postBuffer.data.readableBytes),
 							let htmlString = String(data: data, encoding: .utf8) {

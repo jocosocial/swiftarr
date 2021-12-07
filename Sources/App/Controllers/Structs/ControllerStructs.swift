@@ -593,15 +593,15 @@ public struct FezPostData: Content {
 }
 
 extension FezPostData {    
-    init(post: FezPost, author: UserHeader) throws {
+    init(post: FezPost, author: UserHeader, overrideQuarantine: Bool = false) throws {
     	guard author.userID == post.$author.id else {
     		throw Abort(.internalServerError, reason: "Internal server error--Post's author does not match.")
     	}
     	self.postID = try post.requireID()
     	self.author = author
-    	self.text = post.text
+    	self.text = post.moderationStatus.showsContent() || overrideQuarantine ? post.text : "Post is under moderator review."
     	self.timestamp = post.createdAt ?? post.updatedAt ?? Date()
-    	self.image = post.image
+    	self.image = post.moderationStatus.showsContent() || overrideQuarantine ? post.image : nil
     }
 }
 

@@ -34,7 +34,9 @@ extension Application {
 
 	/// This is the datatype that gets stored in UserCacheStorage. Vapor's Services API uses this.
 	struct WebSocketStorage {
+		// Stored by user, so userID : [UserSocket]
 		var notificationSockets: [UUID : [UserSocket]] = [:]
+		// Stored by fezID, so fezID : [UserSocket]
 		var fezSockets: [UUID : [UserSocket]] = [:]
 	}
 	
@@ -126,6 +128,25 @@ extension Request {
 				if let index = sockets.firstIndex(where: { $0.socketID == ws.socketID }) {
 					sockets.remove(at: index)
 					request.application.websocketStorage.fezSockets[fezID] = sockets
+				}
+			}
+		}
+
+// MARK: Logout
+		func handleUserLogout(_ userID: UUID) throws {
+			getSockets(userID).forEach { userSocket in
+				_ = userSocket.socket.close()
+				removeSocket(userSocket)
+			}
+			let cacheLock = request.application.locks.lock(for: Application.WebSocketStorageLockKey.self)
+			try cacheLock.withLock {
+				for socketArray in request.application.websocketStorage.fezSockets.values {
+					for userSocket in socketArray {
+						if userSocket.userID == userID {
+							_ = userSocket.socket.close()
+							try removeFezSocket(userSocket)
+						}
+					}
 				}
 			}
 		}

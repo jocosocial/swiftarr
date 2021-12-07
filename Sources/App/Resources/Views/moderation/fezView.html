@@ -6,7 +6,7 @@
 			    	<h6><b>Moderate Fez \##(modData.fez.fezID)</br>Titled: #(modData.fez.title)</b></h6>
 				</div>
 			</div>
-			<div class="row mb-3">
+			<div class="row justify-content-between mb-3">
 				<div class="col" data-reportabletype="fez" data-reportableid="#(modData.fez.fezID)" data-postid="#(modData.fez.fezID)">
 					#if(!modData.isDeleted):
 						<a class="btn btn-outline-primary btn-sm" href="/fez/#(modData.fez.fezID)/edit">Edit</a>
@@ -31,10 +31,10 @@
 			</div>				
     		<div class="row">
     			<div class="col col-auto">
-					<a class="btn btn-outline-primary btn-sm" href="/moderate/user/#(modData.fez.owner.userID)">Mod User</a>
+					Created by: #userByline(modData.fez.owner)<a class="btn btn-outline-primary btn-sm ms-2" href="/moderate/user/#(modData.fez.owner.userID)">Mod User</a>
 				</div>
 			</div>
-    		<div class="row">
+    		<div class="row mt-2">
     			#if(modData.isDeleted):
 					<h6><b>Fez has been Deleted.<br>Prior to delete, it looked like this:</b></h6>
     			#else:

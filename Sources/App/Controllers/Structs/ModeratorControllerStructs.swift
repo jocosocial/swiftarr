@@ -40,14 +40,30 @@ extension FezEditLogData {
 /// Used to return data a moderator needs to moderate a fez. 
 ///	
 /// Returned by:
-/// * `GET /api/v3/mod/fez/id`
+/// * `GET /api/v3/mod/fez/:fez_id`
+/// 
+/// Note that FezPosts can't be edited and don't have an edit log.
 ///
-/// See `ModerationController.forumModerationHandler(_:)`
+/// See `ModerationController.fezModerationHandler(_:)`
 public struct FezModerationData: Content {
 	var fez: FezData
 	var isDeleted: Bool
 	var moderationStatus: ContentModerationStatus
 	var edits: [FezEditLogData]
+	var reports: [ReportModerationData]
+}
+
+/// Used to return data a moderator needs to moderate a fez post.
+///	
+/// Returned by:
+/// * `GET /api/v3/mod/fezpost/:post_id`
+///
+/// See `ModerationController.fezPostModerationHandler(_:)`
+public struct FezPostModerationData: Content {
+	var fezPost: FezPostData
+	var fezID: UUID
+	var isDeleted: Bool
+	var moderationStatus: ContentModerationStatus
 	var reports: [ReportModerationData]
 }
 
