@@ -22,11 +22,11 @@ struct TweetPageContext: Encodable {
 	var isReplyGroup: Bool = false
 	var filterType: FilterType
 
-	init(_ req: Request, tweets: [TwarrtData]) throws {
+	init(_ req: Request, tweets: [TwarrtData], replyGroup: Int? = nil) throws {
 		trunk = .init(req, title: "Tweets", tab: .twarrts, search: "Search Tweets")
 		self.tweets = tweets
 		let queryStruct = try req.query.decode(TwarrtQueryOptions.self)
-		if let rg = queryStruct.replyGroup {
+		if let rg = queryStruct.replyGroup ?? replyGroup {
 			filterDesc = "Reply Thread"
 			if tweets.count == 1, tweets[0].replyGroupID == nil {
 				filterDesc = "In reply to this post:"
@@ -160,10 +160,11 @@ struct SiteTwitarrController: SiteControllerUtils {
 		// redirect-chained through /login and back.		
 		let globalRoutes = getGlobalRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .tweets))
 		globalRoutes.get("tweets", use: tweetsPageHandler)
-		globalRoutes.get("tweets", twarrtIDParam, use: tweetGetDetailHandler)
+		globalRoutes.get("tweets", twarrtIDParam, use: tweetReplyPageHandler)
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let privateRoutes = getPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .tweets))
+		privateRoutes.get("tweets", twarrtIDParam, "details", use: tweetGetDetailHandler)
 		privateRoutes.post("tweets", twarrtIDParam, "like", use: tweetLikeActionHandler)
 		privateRoutes.post("tweets", twarrtIDParam, "laugh", use: tweetLaughActionHandler)
 		privateRoutes.post("tweets", twarrtIDParam, "love", use: tweetLoveActionHandler)
@@ -191,6 +192,21 @@ struct SiteTwitarrController: SiteControllerUtils {
 		return apiQuery(req, endpoint: "/twitarr").throwingFlatMap { response in
  			let tweets = try response.content.decode([TwarrtData].self)
 			let ctx = try TweetPageContext(req, tweets: tweets)
+			return req.view.render("Tweets/tweets", ctx)
+		}
+	}
+	
+	/// `GET /tweets/:twarrt_ID`
+	///
+	/// Shorthand for `/tweets?replyGroup=<:twarrt_ID>`. A short, canonical way to indicate a single twarrt, similar to how Twitter works.
+	/// That is, when you send someone a link to a specific tweet with Twitter, you're really sending a link to the reply thread that start with that tweet.
+	func tweetReplyPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+		guard let twarrtIDString = req.parameters.get(twarrtIDParam.paramString), let twarrtID = Int(twarrtIDString) else {
+			throw Abort(.badRequest, reason: "Missing twarrt_id parameter.")
+		}
+		return apiQuery(req, endpoint: "/twitarr?replyGroup=\(twarrtID)").throwingFlatMap { response in
+ 			let tweets = try response.content.decode([TwarrtData].self)
+			let ctx = try TweetPageContext(req, tweets: tweets, replyGroup: twarrtID)
 			return req.view.render("Tweets/tweets", ctx)
 		}
 	}

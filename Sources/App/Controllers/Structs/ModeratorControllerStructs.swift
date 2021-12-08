@@ -67,11 +67,10 @@ public struct FezPostModerationData: Content {
 	var reports: [ReportModerationData]
 }
 
-/// Used to return `ForumEdit` data for moderators. The only primary data a ForumEdit stores is the title the forum had before the edit.
+/// Used to return `ForumEdit` data for moderators. ForumEdit only stores the title and category the forum had before the edit.
 ///
 ///	Included in:
-///	* `ForumPostModerationData`
-///	* `TwarrtModerationData`
+///	* `ForumModerationData`
 ///	
 /// Returned by:
 /// * `GET /api/v3/mod/forum/id`
@@ -87,6 +86,8 @@ public struct ForumEditLogData: Content {
     var author: UserHeader
     /// The title of the forum just BEFORE `author` edited it.
     var title: String
+    /// The category the forum was in just BEFORE `author` edited it.
+    var categoryID: UUID?
 }
 
 extension ForumEditLogData {
@@ -96,6 +97,7 @@ extension ForumEditLogData {
 		createdAt = edit.createdAt ?? Date()
 		author = try req.userCache.getHeader(edit.$editor.id)
 		title = edit.title
+		categoryID = edit.$category.id
 	}
 }
 

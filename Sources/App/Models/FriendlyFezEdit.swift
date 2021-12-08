@@ -44,7 +44,7 @@ final class FriendlyFezEdit: Model {
     // Used by Fluent
  	init() { }
  	        
-	/// Initializes a new ForumEdit with the current title of a `Forum`. Call on the post BEFORE editing it
+	/// Initializes a new FriendlyFezEdit with the current title of a `FriendlyFez`. Call on the post BEFORE editing it
 	/// to save previous contents.
     ///
     /// - Parameters:

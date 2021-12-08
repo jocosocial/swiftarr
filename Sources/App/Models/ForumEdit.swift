@@ -28,6 +28,9 @@ final class ForumEdit: Model {
     
     /// The parent `Forum` of the edit.
     @Parent(key: "forum") var forum: Forum
+    
+    /// The category the Forum was in before the edit happened, if the edit changed the category
+	@OptionalParent(key: "category") var category: Category?
 
     /// The `User` that performed the edit.
     @Parent(key: "editor") var editor: User
@@ -43,10 +46,11 @@ final class ForumEdit: Model {
     /// - Parameters:
     ///   - forum: The Forum that will be edited.
     ///   - editor: The User making the change.
-    init(forum: Forum, editorID: UUID) throws
+    init(forum: Forum, editorID: UUID, categoryChanged: Bool) throws
     {
         self.$forum.id = try forum.requireID()
         self.$forum.value = forum
+        self.$category.id = categoryChanged ? forum.$category.id : nil
         self.title = forum.title
         self.$editor.id = editorID
     }

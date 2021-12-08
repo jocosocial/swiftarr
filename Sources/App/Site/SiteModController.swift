@@ -23,14 +23,12 @@ struct SiteModController: SiteControllerUtils {
 	func registerRoutes(_ app: Application) throws {
 		// Routes that require login but are generally 'global' -- Two logged-in users could share this URL and both see the content
 		// Not for Seamails, pages for posting new content, mod pages, etc. Logged-out users given one of these links should get
-		// redirect-chained through /login and back.		
-//		let globalRoutes = getGlobalRoutes(app)
-
-		// Routes for non-shareable content. If you're not logged in we failscreen.
-		let modRoutes = getPrivateRoutes(app).grouped(SiteRequireModeratorMiddleware())
+		// redirect-chained through /login and back.	
+		//
+		// In this case, modRoutes are still Moderator-only. But, one mod could send another a link to one of these pages and it'd work.	
+		let modRoutes = getGlobalRoutes(app).grouped(SiteRequireModeratorMiddleware())
 		modRoutes.get("reports", use: reportsPageHandler)
 		modRoutes.get("moderator", "log",  use: moderatorLogPageHandler)
-		modRoutes.get("archivedimage", imageIDParam, use: archivedImageHandler)
 
 		modRoutes.get("moderate", "twarrt", twarrtIDParam, use: moderateTwarrtContentPageHandler)
 		modRoutes.get("moderate", "forumpost", postIDParam, use: moderateForumPostContentPageHandler)
@@ -40,20 +38,24 @@ struct SiteModController: SiteControllerUtils {
 		modRoutes.get("moderate", "userprofile", userIDParam, use: moderateUserProfileContentPageHandler)
 		modRoutes.get("moderate", "user", userIDParam, use: moderateUserContentPageHandler)
 
-		modRoutes.post("twarrt", twarrtIDParam, "setstate", modStateParam, use: setTwarrtModerationStatePostHandler)
-		modRoutes.post("forumpost", postIDParam, "setstate", modStateParam, use: setForumPostModerationStatePostHandler)
-		modRoutes.post("forum", forumIDParam, "setstate", modStateParam, use: setForumModerationStatePostHandler)
-		modRoutes.post("fezpost", postIDParam, "setstate", modStateParam, use: setFezPostModerationStatePostHandler)
-		modRoutes.post("fez", fezIDParam, "setstate", modStateParam, use: setFezModerationStatePostHandler)
-		modRoutes.post("userprofile", userIDParam, "setstate", modStateParam, use: setUserProfileModerationStatePostHandler)
+		// Routes for non-shareable content. If you're not logged in we failscreen.
+		let modPrivateRoutes = getPrivateRoutes(app).grouped(SiteRequireModeratorMiddleware())
+		modPrivateRoutes.get("archivedimage", imageIDParam, use: archivedImageHandler)
 
-		modRoutes.post("forum", forumIDParam, "setcategory", categoryIDParam, use: setForumCategoryPostHandler)
-		modRoutes.post("moderate", "user", userIDParam, "setaccesslevel", accessLevelParam, use: setUserAccessLevelPostHandler)
-		modRoutes.post("moderate", "user", userIDParam, "tempquarantine", use: applyTempBanPostHandler)
-		modRoutes.post("moderate", "user", userIDParam, "tempquarantine", "delete", use: removeTempBanPostHandler)
+		modPrivateRoutes.post("twarrt", twarrtIDParam, "setstate", modStateParam, use: setTwarrtModerationStatePostHandler)
+		modPrivateRoutes.post("forumpost", postIDParam, "setstate", modStateParam, use: setForumPostModerationStatePostHandler)
+		modPrivateRoutes.post("forum", forumIDParam, "setstate", modStateParam, use: setForumModerationStatePostHandler)
+		modPrivateRoutes.post("fezpost", postIDParam, "setstate", modStateParam, use: setFezPostModerationStatePostHandler)
+		modPrivateRoutes.post("fez", fezIDParam, "setstate", modStateParam, use: setFezModerationStatePostHandler)
+		modPrivateRoutes.post("userprofile", userIDParam, "setstate", modStateParam, use: setUserProfileModerationStatePostHandler)
 
-		modRoutes.post("reports", reportIDParam, "handle",  use: beginProcessingReportsPostHandler)
-		modRoutes.post("reports", reportIDParam, "close",  use: closeReportsPostHandler)
+		modPrivateRoutes.post("forum", forumIDParam, "setcategory", categoryIDParam, use: setForumCategoryPostHandler)
+		modPrivateRoutes.post("moderate", "user", userIDParam, "setaccesslevel", accessLevelParam, use: setUserAccessLevelPostHandler)
+		modPrivateRoutes.post("moderate", "user", userIDParam, "tempquarantine", use: applyTempBanPostHandler)
+		modPrivateRoutes.post("moderate", "user", userIDParam, "tempquarantine", "delete", use: removeTempBanPostHandler)
+
+		modPrivateRoutes.post("reports", reportIDParam, "handle",  use: beginProcessingReportsPostHandler)
+		modPrivateRoutes.post("reports", reportIDParam, "close",  use: closeReportsPostHandler)
 	}
 	
 	/// `GET /archivedimage/ID`
@@ -279,18 +281,32 @@ struct SiteModController: SiteControllerUtils {
 					var modData: ForumModerationData
 					var firstReport: ReportModerationData?
 					var finalEditAuthor: UserHeader?
+					var finalEditPrevCategory: String?
+					var currentCategory: String?
 					var categories: [CategoryData]
 					
 					init(_ req: Request, modData: ForumModerationData, categories: [CategoryData]) throws {
+						let categoryDict = categories.reduce(into: [:]) { $0[$1.categoryID] = $1 }
 						trunk = .init(req, title: "Reports", tab: .none)
 						self.modData = modData
 						self.categories = categories
 						firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
 						finalEditAuthor = modData.edits.last?.author
+						if let prevCat = modData.edits.last?.categoryID {
+							finalEditPrevCategory = categoryDict[prevCat]?.title ?? "unknown category"
+						}
+						currentCategory = categoryDict[modData.categoryID]?.title ?? "unknown"
 						if self.modData.edits.count > 1 {
 							for index in (0...self.modData.edits.count - 2).reversed() {
 								self.modData.edits[index + 1].author = self.modData.edits[index].author
-								self.modData.edits[index + 1].author.username = "\(self.modData.edits[index + 1].author.username) edited to:"
+								if let oldCat = self.modData.edits[index].categoryID {
+									let oldCatTitle = categoryDict[oldCat]?.title ?? "unknown category"
+									self.modData.edits[index + 1].author.username = 
+											"\(self.modData.edits[index + 1].author.username) changed the category from \"\(oldCatTitle)\""
+								}
+								else {
+									self.modData.edits[index + 1].author.username = "\(self.modData.edits[index + 1].author.username) edited to:"
+								}
 							}
 						}
 						if self.modData.edits.count > 0 {

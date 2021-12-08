@@ -361,9 +361,13 @@ struct ModerationController: APIRouteCollection {
 		return Category.findFromParameter(categoryIDParam, on: req).flatMap { newCategory in
 			return Forum.findFromParameter(forumIDParam, on: req, builder: { $0.with(\.$category) }).throwingFlatMap { forum in
 				let oldCategory = forum.category
+				guard try oldCategory.requireID() != newCategory.requireID() else {
+					throw Abort(.badRequest, reason: "Cannot move forum--forum is already in the requested category.")
+				}
 				oldCategory.forumCount -= 1
 				newCategory.forumCount += 1
 				// Set forum's new parent, also update the forum's accessLevelToView.
+				_ = try ForumEdit(forum: forum, editorID: user.requireID(), categoryChanged: true).save(on: req.db)
 				forum.accessLevelToView = newCategory.accessLevelToView
 				forum.$category.id = try newCategory.requireID()
 				forum.$category.value = newCategory

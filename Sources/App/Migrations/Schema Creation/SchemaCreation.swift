@@ -241,6 +241,7 @@ struct CreateForumEditSchema: Migration {
 				.field("title", .string, .required)
     			.field("created_at", .datetime)
  				.field("forum", .uuid, .required, .references("forums", "id"))
+ 				.field("category", .uuid, .references("categories", "id"))
  				.field("editor", .uuid, .required, .references("users", "id"))
 				.create()
 	}

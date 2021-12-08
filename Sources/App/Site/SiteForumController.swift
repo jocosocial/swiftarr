@@ -213,7 +213,7 @@ struct SiteForumController: SiteControllerUtils {
 		privateRoutes.post("forumpost", postIDParam, "delete", use: forumPostDeleteHandler)
 		privateRoutes.get("forumpost", "report", postIDParam, use: forumPostReportPageHandler)
 		privateRoutes.post("forumpost", "report", postIDParam, use: forumPostReportPostHandler)
-		privateRoutes.get("forumpost", postIDParam, use: forumGetPostDetails)
+		privateRoutes.get("forumpost", postIDParam, "details", use: forumGetPostDetails)
 		privateRoutes.get("forumpost", "mentions", use: userMentionsViewHandler)
 		privateRoutes.get("forumpost", "favorite", use: favoritePostsViewHandler)
 		privateRoutes.get("forumpost", "owned", use: forumPostsByUserViewHandler)

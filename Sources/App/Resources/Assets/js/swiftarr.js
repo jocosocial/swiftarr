@@ -187,7 +187,7 @@ function updateLikeCounts(postElement) {
 	let listType = postElement.closest('ul')?.dataset.listtype;
 	let postid = postElement.dataset.postid;
 	if (!listType || !postid) return;
-	fetch("/" + listType + "/" + postid)
+	fetch("/" + listType + "/" + postid + "/details")
 			.then(response => response.json())
 			.then(jsonStruct => {
 		let actionBar = postElement.querySelector('[data-label="actionbar"]');

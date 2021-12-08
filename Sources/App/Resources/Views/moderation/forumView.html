@@ -52,7 +52,7 @@
     			#if(modData.isDeleted):
 					<h6><b>Forum has been Deleted.<br>Prior to delete, it looked like this:</b></h6>
     			#else:
-					<h6><b>As it currently exists:</b></h6>
+					<h6><b>As it currently exists in "#(currentCategory)":</b></h6>
 				#endif
 			</div>
     		<div class="row">
@@ -69,7 +69,7 @@
 			#if(finalEditAuthor):
 				<div class="row">
 					<div class="col">
-						<i>Last edit by #userByline(finalEditAuthor)</i>
+						<i>Last edit by #userByline(finalEditAuthor)#if(finalEditPrevCategory):, who moved the forum from "#(finalEditPrevCategory)"#endif</i>
 					</div>
 				</div>
 			#endif

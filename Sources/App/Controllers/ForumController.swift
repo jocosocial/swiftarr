@@ -696,7 +696,7 @@ struct ForumController: APIRouteCollection {
             // must be forum owner or .moderator
 			try cacheUser.guardCanModifyContent(forum, customErrorString: "User cannot modify forum title.")
 			if forum.title != nameParameter {
-				_ = try ForumEdit(forum: forum, editorID: cacheUser.userID).save(on: req.db)
+				_ = try ForumEdit(forum: forum, editorID: cacheUser.userID, categoryChanged: false).save(on: req.db)
             	forum.title = nameParameter
   				forum.logIfModeratorAction(.edit, moderatorID: cacheUser.userID, on: req)
 				return forum.save(on: req.db).transform(to: .created)
