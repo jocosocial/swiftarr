@@ -287,6 +287,169 @@ struct UserController: APIRouteCollection {
         }
     }
     
+    /// `POST /api/v3/user/add`
+    ///
+    /// Adds a new `User` sub-account to the current user.
+    ///
+    /// An <doc:AddedUserData> structure is returned on success, containing the new user's ID
+    /// and username.
+    ///
+    /// - Note: API v3 supports a sub-account model, rather than the creation of individual
+    ///   accounts for multiple identities in prior versions. A sub-account inherits its parent
+    ///   user's `.accessLevel`, `.recoveryKey` and `.verification` values. Each `User`
+    ///   requires use of its own Bearer Authentication token and must log in individually;
+    ///   multiple accounts can all be simultaneously logged in.
+    ///
+    /// - Parameter requestBody: <doc:UserCreateData>
+    /// - Throws: 400 error if the username is an invalid format or password is not at least
+    ///   6 characters. 403 error if the user is banned or currently quarantined. 409 errpr if
+    ///   the username is not available.
+    /// - Returns: <doc:AddedUserData> containing the newly created user's ID and username.
+    func addHandler(_ req: Request) throws -> EventLoopFuture<Response> {
+        let user = try req.auth.require(User.self)
+        // see `UserCreateData.validations()`
+		let data = try ValidatingJSONDecoder().decode(UserCreateData.self, fromBodyOf: req)
+        // only upstanding citizens need apply--'validated' user level, not tmep-quarantined.
+        try user.guardCanCreateContent(customErrorString: "user not currently permitted to create sub-account")
+        let parentID = try user.$parent.id ?? user.requireID()
+        return try User.query(on: req.db).filter(\.$parent.$id == parentID).count()
+        		.and(user.parentAccount(on: req)).throwingFlatMap { (altAccountCount, parentAccount) in
+        	guard altAccountCount <= Settings.shared.maxAlternateAccounts else {
+        		throw Abort(.badRequest, reason: "Maximum number of alternate accounts reached.")
+        	}
+			// check if existing username
+			return User.query(on: req.db).filter(\.$username == data.username).first().throwingFlatMap { existingUser in
+				guard existingUser == nil else {
+					throw Abort(.conflict, reason: "username '\(data.username)' is not available")
+				}
+				// if user has a parent, sub-account inherits, else this account is parent
+				let passwordHash = try Bcrypt.hash(data.password)
+				// sub-account inherits .accessLevel, .recoveryKey and .verification
+				let subAccount = User(
+						username: data.username,
+						password: passwordHash,
+						recoveryKey: user.recoveryKey,
+						verification: user.verification,
+						parent: parentAccount,
+						accessLevel: user.accessLevel)
+				return req.db.transaction { (database) in
+					return subAccount.save(on: database).transform(to: subAccount).addModelID().flatMap { (newAccount, newAccountID) in
+						// initialize default barrels
+						return self.createDefaultBarrels(for: newAccount, on: database).transform(to: newAccount)
+					}
+				}.throwingFlatMap { newAccount in
+					let newAccountID = try newAccount.requireID()
+					return req.userCache.updateUser(newAccountID).flatMapThrowing { (cacheData) -> Response in
+						// return user data as .created
+						let addedUserData = AddedUserData(userID: newAccountID, username: newAccount.username)
+						let response = Response(status: .created)
+						try response.content.encode(addedUserData)
+						return response
+					}
+				}
+			}
+		}
+    }
+    
+    /// `GET /api/v3/user/whoami`
+    ///
+    /// Returns the current user's `.id`, `.username` and whether they're currently logged in.
+	///
+    /// - Returns: <doc:CurrentUserData> containing the current user's ID, username and logged in status.
+    func whoamiHandler(_ req: Request) throws -> EventLoopFuture<CurrentUserData> {
+        let user = req.auth.get(User.self)
+        // well, we have to unwrap somewhere
+        guard let me = user else {
+            throw Abort(.internalServerError, reason: "this is seriously not possible")
+        }
+        let currentUserData = try CurrentUserData(
+            userID: me.requireID(),
+            username: me.username,
+            // if there's a BasicAuthorization header, not logged in
+            isLoggedIn: req.headers.basicAuthorization != nil ? false : true
+        )
+        return req.eventLoop.future(currentUserData)
+    }
+    
+    /// `POST /api/v3/user/password`
+    ///
+    /// Updates a user's password to the supplied value, encrypted.
+    ///
+    /// - Parameter requestBody: <doc:UserPasswordData> struct containing the user's desired password.
+    /// - Throws: 400 error if the supplied password is not at least 6 characters. 403 error
+    ///   if the user is a `.client`.
+    /// - Returns: 201 Created on success.
+    func passwordHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+        let user = try req.auth.require(User.self)
+		// clients are hard-coded
+        guard user.accessLevel != .client else {
+            throw Abort(.forbidden, reason: "password change would break a client")
+        }
+        // see `UserPasswordData.validations()`
+		let data = try ValidatingJSONDecoder().decode(UserPasswordData.self, fromBodyOf: req)
+		guard try Bcrypt.verify(data.currentPassword, created: user.password) else {
+			throw Abort(.badRequest, reason: "Existing password doesn't match; cannot set new password")
+		}
+		
+        // encrypt, then update user
+        let passwordHash = try Bcrypt.hash(data.newPassword)
+        user.password = passwordHash
+        return user.save(on: req.db).transform(to: .created)
+    }
+    
+    /// `POST /api/v3/user/username`
+    /// `POST /api/v3/user/ID/username`				-- moderator use
+    ///
+    /// Changes a user's username to the supplied value, if possible. 
+    ///
+    /// - Parameter requestBody: <doc:UserUsernameData> containing the user's desired new username.
+    /// - Throws: 400 error if the username is an invalid format. 403 error if the user is a
+    ///   `.client`. 409 errpr if the username is not available.
+    /// - Returns: 201 Created on success.
+    func usernameHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+        let user = try req.auth.require(User.self)
+        let targetUserID = req.parameters.get("target_user", as: UUID.self)
+		return User.find(targetUserID, on: req.db).throwingFlatMap { foundTargetUser in
+			// If the request includes a targetUserID but we couldn't find them--bail. Otherwise `user` will be removing
+			// their own profile image, which is not what they intended.
+			guard targetUserID == nil || foundTargetUser != nil else {
+				throw Abort(.badRequest, reason: "Could not find user with userID \(targetUserID?.uuidString ?? "")")
+			}
+			// In the moderation route, foundTargetUser != nil and (usually) foundTargetUser != user. 
+			// If a user is editing their own image, foundTargetUser == nil.
+			let targetUser = foundTargetUser ?? user
+			try user.guardCanEditProfile(ofUser: targetUser)
+			// clients are hard-coded
+			guard targetUser.accessLevel != .client else {
+				throw Abort(.forbidden, reason: "username change would break a client")
+			}
+			// see `UserUsernameData.validations()`
+			let data = try ValidatingJSONDecoder().decode(UserUsernameData.self, fromBodyOf: req)
+			// check for existing username
+			return User.query(on: req.db)
+					.filter(\.$username == data.username)
+					.first()
+					.throwingFlatMap { (existingUser) in
+				// abort if name is already taken
+				guard existingUser == nil else {
+					throw Abort(.conflict, reason: "username '\(data.username)' is not available")
+				}
+				// record update for accountability
+				let oldProfileEdit = try ProfileEdit(target: targetUser, editor: user)
+				_ = oldProfileEdit.save(on: req.db)
+
+				targetUser.username = data.username
+				targetUser.buildUserSearchString()
+				return targetUser.save(on: req.db).flatMapThrowing {
+					try req.userCache.updateUser(targetUser.requireID())
+					return .created
+				}
+			}
+		}
+    }
+    
+
+// MARK: - Profile
     /// `POST /api/v3/user/image`
     ///
     /// Sets the user's profile image to the <doc:ImageUploadData> uploaded in the HTTP body. 
@@ -446,91 +609,8 @@ struct UserController: APIRouteCollection {
 			}
 		}
     }
-    
-    /// `GET /api/v3/user/whoami`
-    ///
-    /// Returns the current user's `.id`, `.username` and whether they're currently logged in.
-	///
-    /// - Returns: <doc:CurrentUserData> containing the current user's ID, username and logged in status.
-    func whoamiHandler(_ req: Request) throws -> EventLoopFuture<CurrentUserData> {
-        let user = req.auth.get(User.self)
-        // well, we have to unwrap somewhere
-        guard let me = user else {
-            throw Abort(.internalServerError, reason: "this is seriously not possible")
-        }
-        let currentUserData = try CurrentUserData(
-            userID: me.requireID(),
-            username: me.username,
-            // if there's a BasicAuthorization header, not logged in
-            isLoggedIn: req.headers.basicAuthorization != nil ? false : true
-        )
-        return req.eventLoop.future(currentUserData)
-    }
-    
-    /// `POST /api/v3/user/add`
-    ///
-    /// Adds a new `User` sub-account to the current user.
-    ///
-    /// An <doc:AddedUserData> structure is returned on success, containing the new user's ID
-    /// and username.
-    ///
-    /// - Note: API v3 supports a sub-account model, rather than the creation of individual
-    ///   accounts for multiple identities in prior versions. A sub-account inherits its parent
-    ///   user's `.accessLevel`, `.recoveryKey` and `.verification` values. Each `User`
-    ///   requires use of its own Bearer Authentication token and must log in individually;
-    ///   multiple accounts can all be simultaneously logged in.
-    ///
-    /// - Parameter requestBody: <doc:UserCreateData>
-    /// - Throws: 400 error if the username is an invalid format or password is not at least
-    ///   6 characters. 403 error if the user is banned or currently quarantined. 409 errpr if
-    ///   the username is not available.
-    /// - Returns: <doc:AddedUserData> containing the newly created user's ID and username.
-    func addHandler(_ req: Request) throws -> EventLoopFuture<Response> {
-        let user = try req.auth.require(User.self)
-        // see `UserCreateData.validations()`
-		let data = try ValidatingJSONDecoder().decode(UserCreateData.self, fromBodyOf: req)
-        // only upstanding citizens need apply--'validated' user level, not tmep-quarantined.
-        try user.guardCanCreateContent(customErrorString: "user not currently permitted to create sub-account")
-        let parentID = try user.$parent.id ?? user.requireID()
-        return try User.query(on: req.db).filter(\.$parent.$id == parentID).count()
-        		.and(user.parentAccount(on: req)).throwingFlatMap { (altAccountCount, parentAccount) in
-        	guard altAccountCount <= Settings.shared.maxAlternateAccounts else {
-        		throw Abort(.badRequest, reason: "Maximum number of alternate accounts reached.")
-        	}
-			// check if existing username
-			return User.query(on: req.db).filter(\.$username == data.username).first().throwingFlatMap { existingUser in
-				guard existingUser == nil else {
-					throw Abort(.conflict, reason: "username '\(data.username)' is not available")
-				}
-				// if user has a parent, sub-account inherits, else this account is parent
-				let passwordHash = try Bcrypt.hash(data.password)
-				// sub-account inherits .accessLevel, .recoveryKey and .verification
-				let subAccount = User(
-						username: data.username,
-						password: passwordHash,
-						recoveryKey: user.recoveryKey,
-						verification: user.verification,
-						parent: parentAccount,
-						accessLevel: user.accessLevel)
-				return req.db.transaction { (database) in
-					return subAccount.save(on: database).transform(to: subAccount).addModelID().flatMap { (newAccount, newAccountID) in
-						// initialize default barrels
-						return self.createDefaultBarrels(for: newAccount, on: database).transform(to: newAccount)
-					}
-				}.throwingFlatMap { newAccount in
-					let newAccountID = try newAccount.requireID()
-					return req.userCache.updateUser(newAccountID).flatMapThrowing { (cacheData) -> Response in
-						// return user data as .created
-						let addedUserData = AddedUserData(userID: newAccountID, username: newAccount.username)
-						let response = Response(status: .created)
-						try response.content.encode(addedUserData)
-						return response
-					}
-				}
-			}
-		}
-    }
-    
+
+// MARK: - Alertwords   
     /// `POST /api/v3/user/alertwords/add/STRING`
     ///
     /// Adds a string to the user's "Alert Keywords" barrel. The string is lowercased and stripped of punctuation before being added.
@@ -630,6 +710,93 @@ struct UserController: APIRouteCollection {
 		}
     }
 
+// MARK: - Barrels
+    /// `POST /api/v3/user/barrel`
+    ///
+    /// Creates a new user-owned `Barrel` based on the contents of the supplied <doc:BarrelCreateData>.
+    ///
+    /// The <doc:BarrelCreateData> must contain a `.name`, the other two fields are optional. If
+    /// seeding the barrel with UUIDs, only the `.uuidList` should be present. If seeding the
+    /// barrel with strings, only the `.stringList` should be present. If neither are provided,
+    /// the barrel is created as a UUID barrel of type `.seamonkey`.
+    ///
+    /// - Important: Do not send an empty array of strings in the `.stringList` field unless
+    ///   the barrel is intended as a string list. Omit the field entirely from the structure
+    ///   when submitting the request.
+    ///
+    /// The returned <doc:BarrelData> struct will always contain the barrel's name and an
+    /// initialzed array of <doc:SeaMonkey> (it will be empty if no seed UUIDs were supplied). If
+    /// the barrel is of type `.userWords`, a `.stringList` value will also be returned. The
+    /// presence or non-presence of this value is the client's cue as to what type of barrel
+    /// this is.
+    ///
+    /// - Parameter requestBody: <doc:BarrelCreateData> struct containing the barrel name and any seed UUIDs or
+    ///     seed string array.
+    /// - Returns: <doc:BarrelData> containing the newly created barrel's data contents.
+    func createBarrelHandler(_ req: Request) throws -> EventLoopFuture<Response> {
+        let user = try req.auth.require(User.self)
+        // see `BarrelCreateData.validations()`
+		let data = try ValidatingJSONDecoder().decode(BarrelCreateData.self, fromBodyOf: req)
+        // initialize barrel
+        let barrel = try Barrel(ownerID: user.requireID(),
+				// if no .stringList, it's a barrel of monkeys
+				barrelType: data.stringList == nil ? .seamonkey : .userWords,
+				name: data.name,
+				modelUUIDs: [],
+				userInfo: [:])
+        // if .userWords, set userInfo key:value, else update modelUUIDs if any
+        switch barrel.barrelType {
+            case .userWords:
+                if let strings = data.stringList {
+                    barrel.userInfo.updateValue(strings, forKey: "userWords")
+            }
+            default:
+                if let uuids = data.uuidList {
+                    barrel.modelUUIDs = uuids
+            }
+        }
+        return barrel.save(on: req.db).flatMap { (_) in
+            // create SeaMonkeys from any UUIDs
+            return User.query(on: req.db)
+					.filter(\.$id ~~ barrel.modelUUIDs)
+					.sort(\.$username, .ascending)
+					.all()
+					.flatMapThrowing { (users) in
+				// return as BarrelData, with 201 response
+				let barrelData = try BarrelData(barrel: barrel, users: users)
+				let response = Response(status: .created)
+				try response.content.encode(barrelData)
+				return response
+            }
+        }
+    }
+    
+    /// `POST /api/v3/user/barrels/ID/delete`
+    ///
+    /// Deletes the specified `Barrel`.
+    ///
+    /// - Parameter barrelID: In URL path. The barrel to delete.
+    /// - Throws: 400 error if the barrel type is not supported by the endpoint. 403 error if
+    ///   the barrel is not owned by the user. 404 or 500 error if the specified ID value is
+    ///   invalid.
+    /// - Returns: 204 NoContent on successful deletion.
+    func deleteBarrelHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+        let user = try req.auth.require(User.self)
+        // get barrel
+        return Barrel.findFromParameter(barrelIDParam, on: req).throwingFlatMap { barrel in
+			guard try barrel.ownerID == user.requireID() else {
+				throw Abort(.forbidden, reason: "user is not owner of barrel")
+			}
+			// only user types can be retrieved here
+			let userTypes: [BarrelType] = [.seamonkey, .userWords]
+			guard userTypes.contains(barrel.barrelType) else {
+				throw Abort(.badRequest,reason: "'\(barrel.barrelType)' barrel cannot be deleted")
+			}
+			// delete and return 204
+			return barrel.delete(on: req.db).transform(to: .noContent)
+        }
+    }
+
     /// `POST /api/v3/user/barrels/ID/add/STRING`
     ///
     /// Adds an item (either UUID or String) to the specified `Barrel`.
@@ -700,54 +867,6 @@ struct UserController: APIRouteCollection {
         }
     }
     
-    /// `GET /api/v3/user/barrels/ID`
-    ///
-    /// Returns the specified `Barrel`'s data as <doc:BarrelData>.
-    ///
-    /// - Parameter barrelID: In URL path. The target barrel.
-    /// - Throws: 400 error if the barrel type is not supported by the endpoint. 403 error if
-    ///   the barrel is not owned by the user. 404 or 500 error if the specified ID value is
-    ///   invalid.
-    /// - Returns: <doc:BarrelData> containing the barrel's ID, name, and contents.
-    func barrelHandler(_ req: Request) throws -> EventLoopFuture<BarrelData> {
-        let user = try req.auth.require(User.self)
-        let userID = try user.requireID()
-        // get barrel
-        return Barrel.findFromParameter(barrelIDParam, on: req).addModelID().flatMap { (barrel, barrelID) in
-            guard barrel.ownerID == userID else {
-                return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "user is not owner of barrel"))
-            }
-            // only user types can be retrieved here
-            let userTypes = UserController.userBarrelTypes
-            guard userTypes.contains(barrel.barrelType) else {
-                return req.eventLoop.makeFailedFuture(Abort( .badRequest,
-                    reason: "'\(barrel.barrelType)' barrel cannot be retrieved by this endpoint"))
-            }
-            // retrun as BarrelData
-            var barrelData = BarrelData(barrelID: barrelID, name: barrel.name, seamonkeys: [], stringList: [])
-            // populate .stringList
-            switch barrel.barrelType {
-                case .keywordAlert:
-                    barrelData.stringList = barrel.userInfo["alertWords"]
-                case .keywordMute:
-                    barrelData.stringList = barrel.userInfo["muteWords"]
-                case .userWords:
-                    barrelData.stringList = barrel.userInfo["userWords"]
-                default:
-                    barrelData.stringList = nil
-            }
-            // populate .seamonkeys
-            return User.query(on: req.db)
-					.filter(\.$id ~~ barrel.modelUUIDs)
-					.sort(\.$username, .ascending)
-					.all()
-					.flatMapThrowing { (users) in
-				barrelData.seamonkeys = try users.map { try SeaMonkey(user: $0) }
-				return barrelData
-            }
-        }
-    }
-
     /// `POST /api/v3/user/barrels/ID/remove/STRING`
     ///
     /// Removes an item (either UUID or String) from the specified `Barrel`.
@@ -835,6 +954,112 @@ struct UserController: APIRouteCollection {
         }
     }
 
+    /// `POST /api/v3/user/barrels/ID/rename/STRING`
+    ///
+    /// Renames the specified `Barrel`.
+    ///
+	/// - Parameter barrelID: In URL path. The target barrel.
+	/// - Parameter STRING: In URL path. The new name for the barrel.
+    /// - Throws: 400 error if the barrel type is not supported by the endpoint. 403 error if
+    ///   the barrel is not owned by the user. 404 or 500 error if the specified ID value is
+    ///   invalid.
+    /// - Returns: <doc:BarrelData> containing the updated barrel data.
+    func renameBarrelHandler(_ req: Request) throws -> EventLoopFuture<BarrelData> {
+        let user = try req.auth.require(User.self)
+        let userID = try user.requireID()
+		let param = req.parameters.get("barrel_name")
+        guard let newBarrelName = param else {
+        	throw Abort(.badRequest, reason: "No barrel name found in request.")
+        }
+        // get barrel
+        return Barrel.findFromParameter(barrelIDParam, on: req).addModelID().flatMap { (barrel, barrelID) in
+            guard barrel.ownerID == userID else {
+                return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "user is not owner of barrel"))
+            }
+            // only user types can be renamed
+            let userTypes: [BarrelType] = [.seamonkey, .userWords]
+            guard userTypes.contains(barrel.barrelType) else {
+                return req.eventLoop.makeFailedFuture(
+                		Abort(.badRequest, reason: "'\(barrel.barrelType)' barrel cannot be renamed"))
+            }
+            // get parameter
+            barrel.name = newBarrelName
+            return barrel.save(on: req.db).flatMap { (_) in
+                // return as BarrelData
+                var barrelData = BarrelData(
+                    barrelID: barrelID,
+                    name: barrel.name,
+                    seamonkeys: [],
+                    stringList: []
+                )
+                // populate .stringList
+                switch barrel.barrelType {
+                    case .userWords:
+                        barrelData.stringList = barrel.userInfo["userWords"]
+                    default:
+                        barrelData.stringList = nil
+                }
+                // populate .seamonkeys
+                return User.query(on: req.db)
+						.filter(\.$id ~~ barrel.modelUUIDs)
+						.sort(\.$username, .ascending)
+						.all()
+						.flatMapThrowing { (users) in
+					barrelData.seamonkeys = try users.map { try SeaMonkey(user: $0) }
+					return barrelData
+                }
+            }
+        }
+    }
+
+    /// `GET /api/v3/user/barrels/ID`
+    ///
+    /// Returns the specified `Barrel`'s data as <doc:BarrelData>.
+    ///
+    /// - Parameter barrelID: In URL path. The target barrel.
+    /// - Throws: 400 error if the barrel type is not supported by the endpoint. 403 error if
+    ///   the barrel is not owned by the user. 404 or 500 error if the specified ID value is
+    ///   invalid.
+    /// - Returns: <doc:BarrelData> containing the barrel's ID, name, and contents.
+    func barrelHandler(_ req: Request) throws -> EventLoopFuture<BarrelData> {
+        let user = try req.auth.require(User.self)
+        let userID = try user.requireID()
+        // get barrel
+        return Barrel.findFromParameter(barrelIDParam, on: req).addModelID().flatMap { (barrel, barrelID) in
+            guard barrel.ownerID == userID else {
+                return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "user is not owner of barrel"))
+            }
+            // only user types can be retrieved here
+            let userTypes = UserController.userBarrelTypes
+            guard userTypes.contains(barrel.barrelType) else {
+                return req.eventLoop.makeFailedFuture(Abort( .badRequest,
+                    reason: "'\(barrel.barrelType)' barrel cannot be retrieved by this endpoint"))
+            }
+            // retrun as BarrelData
+            var barrelData = BarrelData(barrelID: barrelID, name: barrel.name, seamonkeys: [], stringList: [])
+            // populate .stringList
+            switch barrel.barrelType {
+                case .keywordAlert:
+                    barrelData.stringList = barrel.userInfo["alertWords"]
+                case .keywordMute:
+                    barrelData.stringList = barrel.userInfo["muteWords"]
+                case .userWords:
+                    barrelData.stringList = barrel.userInfo["userWords"]
+                default:
+                    barrelData.stringList = nil
+            }
+            // populate .seamonkeys
+            return User.query(on: req.db)
+					.filter(\.$id ~~ barrel.modelUUIDs)
+					.sort(\.$username, .ascending)
+					.all()
+					.flatMapThrowing { (users) in
+				barrelData.seamonkeys = try users.map { try SeaMonkey(user: $0) }
+				return barrelData
+            }
+        }
+    }
+
     /// `GET /api/v3/user/barrels`
     ///
     /// Returns a list of all the user's barrels.
@@ -848,20 +1073,46 @@ struct UserController: APIRouteCollection {
         // get user's barrels, sorted by name
         let userTypes = UserController.userBarrelTypes
         return try Barrel.query(on: req.db)
-            .filter(\.$ownerID == user.requireID())
-            .filter(\.$barrelType ~~ userTypes)
-            .sort(\.$name, .ascending)
-            .all()
-            .flatMapThrowing { (barrels) in
-                // apply .barrelType sort
-                let sortedBarrels = barrels.sorted(by: { $0.barrelType < $1.barrelType })
-                // return as BarrelListData
-                return try sortedBarrels.map {
-                    try BarrelListData(barrelID: $0.requireID(), name: $0.name)
-                }
+				.filter(\.$ownerID == user.requireID())
+				.filter(\.$barrelType ~~ userTypes)
+				.sort(\.$name, .ascending)
+				.all()
+				.flatMapThrowing { (barrels) in
+			// apply .barrelType sort
+			let sortedBarrels = barrels.sorted(by: { $0.barrelType < $1.barrelType })
+			// return as BarrelListData
+			return try sortedBarrels.map {
+				try BarrelListData(barrelID: $0.requireID(), name: $0.name)
+			}
         }
     }
-    
+
+    /// `GET /api/v3/user/barrels/seamonkey`
+    ///
+    /// Returns a list of all the user's `.seamonkey` type barrels.
+    ///
+    /// - Note: While it can have other uses, this is primarily intended to provide easy
+    ///   access to user-defined filters on public content and recipient groups when
+    ///   initiating a `SeaMailThread`.
+    ///
+    /// - Returns: An array of <doc:BarrelListData> containing the barrel IDs and names.
+    func seamonkeyBarrelsHandler(_ req: Request) throws -> EventLoopFuture<[BarrelListData]> {
+        let user = try req.auth.require(User.self)
+        // get user's seamonkey barrels, sorted by name
+        return try Barrel.query(on: req.db)
+				.filter(\.$ownerID == user.requireID())
+				.filter(\.$barrelType == .seamonkey)
+				.sort(\.$name, .ascending)
+				.all()
+				.flatMapThrowing { (barrels) in
+			// convert to BarrelListData and return
+			return try barrels.map {
+				try BarrelListData(barrelID: $0.requireID(), name: $0.name)
+			}
+        }
+    }
+
+// MARK: - Blocks
     /// `GET /api/v3/user/blocks`
     ///
     /// Returns a list of the user's currently blocked users in <doc:BlockedUserData> format.
@@ -878,100 +1129,19 @@ struct UserController: APIRouteCollection {
 				.filter(\.$ownerID == barrelUserID)
 				.filter(\.$barrelType == .userBlock)
 				.first()
-				.unwrap(or: Abort(.internalServerError, reason: "blocks barrel not found"))
 				.map { barrel in
-			// return as BlockedUserData
-			let blockedUserHeaders = req.userCache.getHeaders(barrel.modelUUIDs).sorted { $0.username < $1.username }
-			return BlockedUserData(name: barrel.name, blockedUsers: blockedUserHeaders)
+			if let blockBarrel = barrel {
+				// return as BlockedUserData
+				let blockedUserHeaders = req.userCache.getHeaders(blockBarrel.modelUUIDs).sorted { $0.username < $1.username }
+				return BlockedUserData(name: blockBarrel.name, blockedUsers: blockedUserHeaders)
+			}
+			else {
+				return BlockedUserData(name: "Blocked Users", blockedUsers: [])
+			}
         }
     }
     
-    /// `POST /api/v3/user/barrel`
-    ///
-    /// Creates a new user-owned `Barrel` based on the contents of the supplied <doc:BarrelCreateData>.
-    ///
-    /// The <doc:BarrelCreateData> must contain a `.name`, the other two fields are optional. If
-    /// seeding the barrel with UUIDs, only the `.uuidList` should be present. If seeding the
-    /// barrel with strings, only the `.stringList` should be present. If neither are provided,
-    /// the barrel is created as a UUID barrel of type `.seamonkey`.
-    ///
-    /// - Important: Do not send an empty array of strings in the `.stringList` field unless
-    ///   the barrel is intended as a string list. Omit the field entirely from the structure
-    ///   when submitting the request.
-    ///
-    /// The returned <doc:BarrelData> struct will always contain the barrel's name and an
-    /// initialzed array of <doc:SeaMonkey> (it will be empty if no seed UUIDs were supplied). If
-    /// the barrel is of type `.userWords`, a `.stringList` value will also be returned. The
-    /// presence or non-presence of this value is the client's cue as to what type of barrel
-    /// this is.
-    ///
-    /// - Parameter requestBody: <doc:BarrelCreateData> struct containing the barrel name and any seed UUIDs or
-    ///     seed string array.
-    /// - Returns: <doc:BarrelData> containing the newly created barrel's data contents.
-    func createBarrelHandler(_ req: Request) throws -> EventLoopFuture<Response> {
-        let user = try req.auth.require(User.self)
-        // see `BarrelCreateData.validations()`
-		let data = try ValidatingJSONDecoder().decode(BarrelCreateData.self, fromBodyOf: req)
-        // initialize barrel
-        let barrel = try Barrel(ownerID: user.requireID(),
-				// if no .stringList, it's a barrel of monkeys
-				barrelType: data.stringList == nil ? .seamonkey : .userWords,
-				name: data.name,
-				modelUUIDs: [],
-				userInfo: [:])
-        // if .userWords, set userInfo key:value, else update modelUUIDs if any
-        switch barrel.barrelType {
-            case .userWords:
-                if let strings = data.stringList {
-                    barrel.userInfo.updateValue(strings, forKey: "userWords")
-            }
-            default:
-                if let uuids = data.uuidList {
-                    barrel.modelUUIDs = uuids
-            }
-        }
-        return barrel.save(on: req.db).flatMap { (_) in
-            // create SeaMonkeys from any UUIDs
-            return User.query(on: req.db)
-					.filter(\.$id ~~ barrel.modelUUIDs)
-					.sort(\.$username, .ascending)
-					.all()
-					.flatMapThrowing { (users) in
-				// return as BarrelData, with 201 response
-				let barrelData = try BarrelData(barrel: barrel, users: users)
-				let response = Response(status: .created)
-				try response.content.encode(barrelData)
-				return response
-            }
-        }
-    }
-    
-    /// `POST /api/v3/user/barrels/ID/delete`
-    ///
-    /// Deletes the specified `Barrel`.
-    ///
-    /// - Parameter barrelID: In URL path. The barrel to delete.
-    /// - Throws: 400 error if the barrel type is not supported by the endpoint. 403 error if
-    ///   the barrel is not owned by the user. 404 or 500 error if the specified ID value is
-    ///   invalid.
-    /// - Returns: 204 NoContent on successful deletion.
-    func deleteBarrelHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        let user = try req.auth.require(User.self)
-        // get barrel
-        return Barrel.findFromParameter(barrelIDParam, on: req).throwingFlatMap { barrel in
-			guard try barrel.ownerID == user.requireID() else {
-				throw Abort(.forbidden, reason: "user is not owner of barrel")
-			}
-			// only user types can be retrieved here
-			let userTypes: [BarrelType] = [.seamonkey, .userWords]
-			guard userTypes.contains(barrel.barrelType) else {
-				throw Abort(.badRequest,reason: "'\(barrel.barrelType)' barrel cannot be deleted")
-			}
-			// delete and return 204
-			return barrel.delete(on: req.db).transform(to: .noContent)
-        }
-    }
-
+// MARK: - Muted Users
     /// `GET /api/v3/user/mutes`
     ///
     /// Returns a list of the user's currently muted users in `MutedUserData` format.
@@ -993,6 +1163,7 @@ struct UserController: APIRouteCollection {
         }
     }
 
+// MARK: - Mutewords
 	/// `POST /api/v3/user/mutewords/add/STRING`
 	///
 	/// Adds a string to the user's "Muted Keywords" barrel.
@@ -1102,166 +1273,6 @@ struct UserController: APIRouteCollection {
             // create array for return
 			let notesData: [NoteData] = try notes.map { try NoteData(note: $0, targetUser: $0.noteSubject) }
             return notesData
-		}
-    }
-    
-    /// `POST /api/v3/user/barrels/ID/rename/STRING`
-    ///
-    /// Renames the specified `Barrel`.
-    ///
-	/// - Parameter barrelID: In URL path. The target barrel.
-	/// - Parameter STRING: In URL path. The new name for the barrel.
-    /// - Throws: 400 error if the barrel type is not supported by the endpoint. 403 error if
-    ///   the barrel is not owned by the user. 404 or 500 error if the specified ID value is
-    ///   invalid.
-    /// - Returns: <doc:BarrelData> containing the updated barrel data.
-    func renameBarrelHandler(_ req: Request) throws -> EventLoopFuture<BarrelData> {
-        let user = try req.auth.require(User.self)
-        let userID = try user.requireID()
-		let param = req.parameters.get("barrel_name")
-        guard let newBarrelName = param else {
-        	throw Abort(.badRequest, reason: "No barrel name found in request.")
-        }
-        // get barrel
-        return Barrel.findFromParameter(barrelIDParam, on: req).addModelID().flatMap { (barrel, barrelID) in
-            guard barrel.ownerID == userID else {
-                return req.eventLoop.makeFailedFuture(Abort(.forbidden, reason: "user is not owner of barrel"))
-            }
-            // only user types can be renamed
-            let userTypes: [BarrelType] = [.seamonkey, .userWords]
-            guard userTypes.contains(barrel.barrelType) else {
-                return req.eventLoop.makeFailedFuture(
-                		Abort(.badRequest, reason: "'\(barrel.barrelType)' barrel cannot be renamed"))
-            }
-            // get parameter
-            barrel.name = newBarrelName
-            return barrel.save(on: req.db).flatMap { (_) in
-                // return as BarrelData
-                var barrelData = BarrelData(
-                    barrelID: barrelID,
-                    name: barrel.name,
-                    seamonkeys: [],
-                    stringList: []
-                )
-                // populate .stringList
-                switch barrel.barrelType {
-                    case .userWords:
-                        barrelData.stringList = barrel.userInfo["userWords"]
-                    default:
-                        barrelData.stringList = nil
-                }
-                // populate .seamonkeys
-                return User.query(on: req.db)
-						.filter(\.$id ~~ barrel.modelUUIDs)
-						.sort(\.$username, .ascending)
-						.all()
-						.flatMapThrowing { (users) in
-					barrelData.seamonkeys = try users.map { try SeaMonkey(user: $0) }
-					return barrelData
-                }
-            }
-        }
-    }
-
-    /// `POST /api/v3/user/password`
-    ///
-    /// Updates a user's password to the supplied value, encrypted.
-    ///
-    /// - Parameter requestBody: <doc:UserPasswordData> struct containing the user's desired password.
-    /// - Throws: 400 error if the supplied password is not at least 6 characters. 403 error
-    ///   if the user is a `.client`.
-    /// - Returns: 201 Created on success.
-    func passwordHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        let user = try req.auth.require(User.self)
-		// clients are hard-coded
-        guard user.accessLevel != .client else {
-            throw Abort(.forbidden, reason: "password change would break a client")
-        }
-        // see `UserPasswordData.validations()`
-		let data = try ValidatingJSONDecoder().decode(UserPasswordData.self, fromBodyOf: req)
-		guard try Bcrypt.verify(data.currentPassword, created: user.password) else {
-			throw Abort(.badRequest, reason: "Existing password doesn't match; cannot set new password")
-		}
-		
-        // encrypt, then update user
-        let passwordHash = try Bcrypt.hash(data.newPassword)
-        user.password = passwordHash
-        return user.save(on: req.db).transform(to: .created)
-    }
-    
-    /// `GET /api/v3/user/barrels/seamonkey`
-    ///
-    /// Returns a list of all the user's `.seamonkey` type barrels.
-    ///
-    /// - Note: While it can have other uses, this is primarily intended to provide easy
-    ///   access to user-defined filters on public content and recipient groups when
-    ///   initiating a `SeaMailThread`.
-    ///
-    /// - Returns: An array of <doc:BarrelListData> containing the barrel IDs and names.
-    func seamonkeyBarrelsHandler(_ req: Request) throws -> EventLoopFuture<[BarrelListData]> {
-        let user = try req.auth.require(User.self)
-        // get user's seamonkey barrels, sorted by name
-        return try Barrel.query(on: req.db)
-				.filter(\.$ownerID == user.requireID())
-				.filter(\.$barrelType == .seamonkey)
-				.sort(\.$name, .ascending)
-				.all()
-				.flatMapThrowing { (barrels) in
-			// convert to BarrelListData and return
-			return try barrels.map {
-				try BarrelListData(barrelID: $0.requireID(), name: $0.name)
-			}
-        }
-    }
-
-    /// `POST /api/v3/user/username`
-    /// `POST /api/v3/user/ID/username`				-- moderator use
-    ///
-    /// Changes a user's username to the supplied value, if possible. 
-    ///
-    /// - Parameter requestBody: <doc:UserUsernameData> containing the user's desired new username.
-    /// - Throws: 400 error if the username is an invalid format. 403 error if the user is a
-    ///   `.client`. 409 errpr if the username is not available.
-    /// - Returns: 201 Created on success.
-    func usernameHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        let user = try req.auth.require(User.self)
-        let targetUserID = req.parameters.get("target_user", as: UUID.self)
-		return User.find(targetUserID, on: req.db).throwingFlatMap { foundTargetUser in
-			// If the request includes a targetUserID but we couldn't find them--bail. Otherwise `user` will be removing
-			// their own profile image, which is not what they intended.
-			guard targetUserID == nil || foundTargetUser != nil else {
-				throw Abort(.badRequest, reason: "Could not find user with userID \(targetUserID?.uuidString ?? "")")
-			}
-			// In the moderation route, foundTargetUser != nil and (usually) foundTargetUser != user. 
-			// If a user is editing their own image, foundTargetUser == nil.
-			let targetUser = foundTargetUser ?? user
-			try user.guardCanEditProfile(ofUser: targetUser)
-			// clients are hard-coded
-			guard targetUser.accessLevel != .client else {
-				throw Abort(.forbidden, reason: "username change would break a client")
-			}
-			// see `UserUsernameData.validations()`
-			let data = try ValidatingJSONDecoder().decode(UserUsernameData.self, fromBodyOf: req)
-			// check for existing username
-			return User.query(on: req.db)
-					.filter(\.$username == data.username)
-					.first()
-					.throwingFlatMap { (existingUser) in
-				// abort if name is already taken
-				guard existingUser == nil else {
-					throw Abort(.conflict, reason: "username '\(data.username)' is not available")
-				}
-				// record update for accountability
-				let oldProfileEdit = try ProfileEdit(target: targetUser, editor: user)
-				_ = oldProfileEdit.save(on: req.db)
-
-				targetUser.username = data.username
-				targetUser.buildUserSearchString()
-				return targetUser.save(on: req.db).flatMapThrowing {
-					try req.userCache.updateUser(targetUser.requireID())
-					return .created
-				}
-			}
 		}
     }
     

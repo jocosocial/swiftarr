@@ -24,15 +24,17 @@ is officially supported, which is currently limited to macOS or Linux (Ubuntu).
 ## Welcome to API v3
 
 * Users
-    - can create unlimited sub-accounts, all tied to one registration code
+    - can create multiple sub-accounts, all tied to one registration code
     - can change username
-    - can block other users (applies to all sub-accounts) throughout the platform
-    - each individual account can mute public content based on individual account or keyword
-    - can create unlimited lists of other users – aka: barrels of (sea)monkeys
+    - can create unlimited lists of other users 
 * Authentication
     - all authentication is done through HTTP headers
     - password recovery uses a a per-user (covers all sub-accounts) recovery key generated when the primary user
 account is created (the key is 3 words, nothing cryptic)
+* Filtering and Notifying
+    - a user can block other users (applies to all sub-accounts) throughout the platform
+    - each individual account can mute public content based on individual account or keyword
+    - users can add alertwords, and be notified when anyone creates public content containing those words
 * Clients
     - are a new class of account permitted to request certain bulk data
     - are static across all client instances (e.g. RainbowMonkey is a client and all instances use a hard-coded username/password)
@@ -40,7 +42,7 @@ account is created (the key is 3 words, nothing cryptic)
 * Barrels
     - are multi-purpose containers which can hold an array of IDs and/or a dictionary of strings
     - are used for block/mute/keyword lists, user-created lists, things not yet thought of
-    - a user's set of seamonkey barrels can be used for filtering or as "auto-complete" results
+    - a user's set of barrels can be used for filtering or as "auto-complete" results
 * Forums
     - all forums belong to a category
     - a category can be restricted ("official") or not (users can create forums therein)
@@ -48,17 +50,24 @@ account is created (the key is 3 words, nothing cryptic)
     - forum posts can be reacted to with the same laugh/like/love options as twitarr twarrts
     - forum posts can be bookmarked (this is private to the bookmarking user)
     - forum posts can filtered by boomarks, liked posts
+    - get notified when your name is @mentioned in a post, or when an alertword is posted
 * Events
     - each event on the schedule can have an "official" associated forum
+    - 'follow' events you want to attend, then filter on followed events to see your own personal schedule
+    - download individual events as .ics files for import into calendar apps
 * Twitarr
     - twarrts can be bookmarked (this is private to the bookmarking user)
-    - can be filtered by a user's seamonkey barrels (lists of users), bookmarks, liked twarrts
-* FriendlyFez / LFG
+    - can be filtered by a user's barrels (lists of users), bookmarks, liked twarrts
+    - get notified when your name is @mentioned, or when someone posts a twarrt containing an alertword
+* Looking For Group
     - users can create Looking For Group requests for... gaming, dining companions, meetups, activities, anything?
-    - fezzes can have a maximum capacity, with a waiting list, or an open-ended number of participants
-    - a fez can have specific start and/or end times, or can be "TBD"
-    - fezzes can have fez-specific (not a Forum) FezPost discussions
-    - fezzes respect user blocks for the creator, FezPosts respect both blocks and mutes
+    - LFGs can have a maximum capacity, with a waiting list, or an open-ended number of participants
+    - an LFG can have specific start and/or end times, or can be "TBD"
+    - LFGs have their own discussion thread
+    - LFGs respect user blocks for the creator, posts respect both blocks and mutes
+* Games
+	- List of all the games in the JoCo Games Library, with descriptions, avg. playtime, and number of players.
+	- Create an LFG to play a board game right from the games list.
 * More
     - soon™
 
@@ -70,10 +79,8 @@ account is created (the key is 3 words, nothing cryptic)
 * All authentication is done through HTTP headers. See `AuthController`.
 * All entities are referenced by ID (either UUID or Int). While usernames are unlikely to change often, they should be
 considered ephemeral and only ever be used to *attempt* to obtain an ID  (`api/v3/users/find/username`).
-* Images are the WIP that got shoved aside to push this out, very stubby at the moment.
 * Required HTTP payload structs can be encoded as either JSON or MultiPart.
 * Returned data is always JSON.
-* Query parameters are pretty much avoided in favor of endpoints except for the few necessary cases.
 * The intended on-boarding flow:
     1. "welcome!"
     2. username/password ---> recovery key
