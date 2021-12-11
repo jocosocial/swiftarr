@@ -260,6 +260,16 @@ func configureMiddleware(_ app: Application) throws {
 	var new = Middlewares()
 	new.use(SwiftarrErrorMiddleware(environment: app.environment))
 	new.use(SiteErrorMiddleware(environment: app.environment))
+	
+	// Set up CORS to allow any client hosted anywhere to access the API
+	var corsConfiguration = CORSMiddleware.Configuration(
+	    allowedOrigin: .all,
+	    allowedMethods: [.GET, .POST, .PUT, .OPTIONS, .DELETE, .PATCH],
+	    allowedHeaders: [.accept, .authorization, .contentType, .origin, .xRequestedWith, .userAgent, .accessControlAllowOrigin]
+	)
+	var corsMiddleware = CORSMiddleware(configuration: corsConfiguration)
+	new.use(corsMiddleware, at: .beginning)
+	
 	app.middleware = new
 	
 	app.passwords.use(.bcrypt(cost: 9))
