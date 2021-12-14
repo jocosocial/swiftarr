@@ -110,8 +110,8 @@ public struct BarrelData: Content {
     let barrelID: UUID
     /// The name of the barrel.
     let name: String
-    /// The barrel's `SeaMonkey` contents.
-    var seamonkeys: [SeaMonkey]
+    /// The barrel's `UserHeader` contents.
+    var seamonkeys: [UserHeader]
     /// An optional list of strings.
     var stringList: [String]?
 }
@@ -120,7 +120,7 @@ extension BarrelData {
 	init(barrel: Barrel, users: [User]? = nil) throws {
 		barrelID = try barrel.requireID()
 		name = barrel.name
-		seamonkeys = try users?.map { try SeaMonkey(user: $0) } ?? []
+		seamonkeys = try users?.map { try UserHeader(user: $0) } ?? []
 		stringList = barrel.userInfo["userWords"]
 	}
 }
@@ -1097,11 +1097,11 @@ public struct PostDetailData: Content {
     /// The current user's `LikeType` reaction on the post.
     var userLike: LikeType?
     /// The seamonkeys with "laugh" reactions on the post.
-    var laughs: [SeaMonkey]
+    var laughs: [UserHeader]
     /// The seamonkeys with "like" reactions on the post.
-    var likes: [SeaMonkey]
+    var likes: [UserHeader]
     /// The seamonkeys with "love" reactions on the post.
-    var loves: [SeaMonkey]
+    var loves: [UserHeader]
 }
 
 extension PostDetailData {
@@ -1197,29 +1197,6 @@ extension ProfilePublicData {
 public struct ReportData: Content {
     /// An optional message from the submitting user.
     var message: String
-}
-
-/// Returned by `Barrel`s as a unit representing a user.
-public struct SeaMonkey: Content {
-    /// The user's ID.
-    var userID: UUID
-    /// The user's username.
-    var username: String
-}
-
-extension SeaMonkey {
-	init(user: User) throws {
-		userID = try user.requireID()
-		username = user.username
-	}
-	
-	init(header: UserHeader) {
-		userID = header.userID
-		username = header.username
-	}
-	
-	static var Blocked: SeaMonkey { .init(userID: Settings.shared.blockedUserID, username: "BlockedUser") }
-	static var Available: SeaMonkey { .init(userID: Settings.shared.friendlyFezID, username: "AvailableSlot") }
 }
 
 /// Used to return a token string for use in HTTP Bearer Authentication.
@@ -1364,11 +1341,11 @@ public struct TwarrtDetailData: Content {
     /// The current user's `LikeType` reaction on the twarrt.
     var userLike: LikeType?
     /// The seamonkeys with "laugh" reactions on the post/twarrt.
-    var laughs: [SeaMonkey]
+    var laughs: [UserHeader]
     /// The seamonkeys with "like" reactions on the post/twarrt.
-    var likes: [SeaMonkey]
+    var likes: [UserHeader]
     /// The seamonkeys with "love" reactions on the post/twarrt.
-    var loves: [SeaMonkey]
+    var loves: [UserHeader]
 }
 
 /// A bool, wrapped in a struct. Used for the results of user capability queries.

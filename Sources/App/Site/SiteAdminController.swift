@@ -507,13 +507,13 @@ struct SiteAdminController: SiteControllerUtils {
 						return "User \"\(headers[0].username)\" is associated with registration code \"\(regCode)\""
 					}
 					else {
-						return "No user found for registration code \"\(regCode)\""
+						return "\(regCode) is a valid code, not associated with a user."
 					}
 				}.flatMapError { error in 
 					if let apiError = error as? ErrorResponse {
 						return req.eventLoop.future("Error: \(apiError.reason)")
 					}
-					return req.eventLoop.future("Error: \(error)")
+					return req.eventLoop.future("\(error)")
 				}
 			}
 			else {

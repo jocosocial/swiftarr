@@ -88,7 +88,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
         globalRoutes.get("", use: fezRootPageHandler)
         globalRoutes.get("joined", use: joinedFezPageHandler)
         globalRoutes.get("owned", use: ownedFezPageHandler)
-        globalRoutes.get("", fezIDParam, use: singleFezPageHandler)
+        globalRoutes.get(fezIDParam, use: singleFezPageHandler)
         globalRoutes.get("faq", use: fezFAQHandler)
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.

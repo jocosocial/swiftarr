@@ -258,20 +258,21 @@ func configureMiddleware(_ app: Application) throws {
 	// We want to replace the standard Error middleware with SwiftarrErrorMiddleware, and we do that by
 	// creating a new Middlewares().
 	var new = Middlewares()
-	new.use(SwiftarrErrorMiddleware(environment: app.environment))
-	new.use(SiteErrorMiddleware(environment: app.environment))
-	
+
 	// Set up CORS to allow any client hosted anywhere to access the API
-	var corsConfiguration = CORSMiddleware.Configuration(
+	let corsConfiguration = CORSMiddleware.Configuration(
 	    allowedOrigin: .all,
 	    allowedMethods: [.GET, .POST, .PUT, .OPTIONS, .DELETE, .PATCH],
 	    allowedHeaders: [.accept, .authorization, .contentType, .origin, .xRequestedWith, .userAgent, .accessControlAllowOrigin]
 	)
-	var corsMiddleware = CORSMiddleware(configuration: corsConfiguration)
+	let corsMiddleware = CORSMiddleware(configuration: corsConfiguration)
 	new.use(corsMiddleware, at: .beginning)
-	
+
+	new.use(SwiftarrErrorMiddleware(environment: app.environment))
+	new.use(SiteErrorMiddleware(environment: app.environment))		
 	app.middleware = new
 	
+	// Change the default bcrypt cost for user accounts
 	app.passwords.use(.bcrypt(cost: 9))
 }
 

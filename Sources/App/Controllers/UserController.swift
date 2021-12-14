@@ -860,7 +860,7 @@ struct UserController: APIRouteCollection {
 						.sort(\.$username, .ascending)
 						.all()
 						.flatMapThrowing { (users) in
-					barrelData.seamonkeys = try users.map { try SeaMonkey(user: $0) }
+					barrelData.seamonkeys = try users.map { try UserHeader(user: $0) }
 					return barrelData
 				}
 			}
@@ -943,7 +943,7 @@ struct UserController: APIRouteCollection {
                     .sort(\.$username, .ascending)
                     .all()
                     .flatMapThrowing { (users) in
-                        barrelData.seamonkeys = try users.map { try SeaMonkey(user: $0) }
+                        barrelData.seamonkeys = try users.map { try UserHeader(user: $0) }
                         return barrelData
                 }
             }
@@ -1005,7 +1005,7 @@ struct UserController: APIRouteCollection {
 						.sort(\.$username, .ascending)
 						.all()
 						.flatMapThrowing { (users) in
-					barrelData.seamonkeys = try users.map { try SeaMonkey(user: $0) }
+					barrelData.seamonkeys = try users.map { try UserHeader(user: $0) }
 					return barrelData
                 }
             }
@@ -1054,7 +1054,7 @@ struct UserController: APIRouteCollection {
 					.sort(\.$username, .ascending)
 					.all()
 					.flatMapThrowing { (users) in
-				barrelData.seamonkeys = try users.map { try SeaMonkey(user: $0) }
+				barrelData.seamonkeys = try users.map { try UserHeader(user: $0) }
 				return barrelData
             }
         }

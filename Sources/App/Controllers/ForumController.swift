@@ -341,9 +341,9 @@ struct ForumController: APIRouteCollection {
 					// init return struct
 					var postDetailData = try PostDetailData(post: post, author: req.userCache.getHeader(post.$author.id))
 					postDetailData.isBookmarked = bookmarked
-					postDetailData.laughs = req.userCache.getHeaders(laughUsers).map { SeaMonkey(header: $0) }
-					postDetailData.likes = req.userCache.getHeaders(likeUsers).map { SeaMonkey(header: $0) }
-					postDetailData.loves = req.userCache.getHeaders(loveUsers).map { SeaMonkey(header: $0) }
+					postDetailData.laughs = req.userCache.getHeaders(laughUsers)
+					postDetailData.likes = req.userCache.getHeaders(likeUsers)
+					postDetailData.loves = req.userCache.getHeaders(loveUsers)
 					return postDetailData
 				}
 			}

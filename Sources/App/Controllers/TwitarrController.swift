@@ -156,7 +156,7 @@ struct TwitarrController: APIRouteCollection {
 				let bookmarked = try barrel?.userInfo["bookmarks"]?.contains(twarrt.bookmarkIDString()) ?? false
 				// get users
 				let userUUIDs = twarrt.$likes.pivots.map { $0.$user.id }
-				let seamonkeys = req.userCache.getHeaders(userUUIDs).map { SeaMonkey(header: $0) }
+				let seamonkeys = req.userCache.getHeaders(userUUIDs)
 				// init return struct
 				guard let author = req.userCache.getUser(twarrt.$author.id)?.makeHeader() else {
 					throw Abort(.internalServerError, reason: "Could not find author of twarrt.")
