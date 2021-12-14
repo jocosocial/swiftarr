@@ -19,3 +19,7 @@ actual poster.
 * Added `FezPostModerationData` to ModeratorControllerStructs, allowing moderators to perform mod actions on fez posts.
 * Added `categoryID` to ForumEditLogData, a component of ForumModerationData. Changing the category of a forum now creates a log entry;
 the entry contains the previous category the forum was in.
+
+## Dec 14, 2021
+
+* Removed `SeaMonkey` struct, changing all API references to it into the very similar `UserHeader` struct instead.
