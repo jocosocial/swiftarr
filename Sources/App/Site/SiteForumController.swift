@@ -320,11 +320,7 @@ struct SiteForumController: SiteControllerUtils {
 		guard let forumTitle = postStruct.forumTitle else {
 			throw "Forum must have a ttile"
 		}
-		let images: [ImageUploadData] = [ImageUploadData(postStruct.serverPhoto1, postStruct.localPhoto1),
-				ImageUploadData(postStruct.serverPhoto2, postStruct.localPhoto2),
-				ImageUploadData(postStruct.serverPhoto3, postStruct.localPhoto3),
-				ImageUploadData(postStruct.serverPhoto4, postStruct.localPhoto4)].compactMap { $0 }
-		let postContent = PostContentData(text: postStruct.postText ?? "", images: images)
+		let postContent = postStruct.buildPostContentData()
 		let forumContent = ForumCreateData(title: forumTitle, firstPost: postContent)
 		return apiQuery(req, endpoint: "/forum/categories/\(catID)/create", method: .POST, beforeSend: { req throws in
 			try req.content.encode(forumContent)

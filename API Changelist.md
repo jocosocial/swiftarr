@@ -23,3 +23,4 @@ the entry contains the previous category the forum was in.
 ## Dec 14, 2021
 
 * Removed `SeaMonkey` struct, changing all API references to it into the very similar `UserHeader` struct instead.
+* Added a new ModeratorActionType: `post`. Used when a mod posts as @moderator or @TwittarTeam. Change only affects Mod-level API.

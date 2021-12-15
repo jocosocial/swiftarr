@@ -105,12 +105,15 @@ struct SiteFriendlyFezController: SiteControllerUtils {
         privateRoutes.post("post", postIDParam, "delete", use: fezPostDeleteHandler)
         privateRoutes.delete("post", postIDParam, use: fezPostDeleteHandler)
         privateRoutes.post(fezIDParam, "cancel", use: fezCancelPostHandler)
-		privateRoutes.get("report", fezIDParam, use: fezReportPageHandler)
-		privateRoutes.post("report", fezIDParam, use: fezReportPostHandler)
 		privateRoutes.get(fezIDParam, "members", use: fezMembersPageHandler)
         privateRoutes.post(fezIDParam, "members", "add", userIDParam, use: fezAddUserPostHandler)
         privateRoutes.post(fezIDParam, "members", "remove", userIDParam, use: fezRemoveUserPostHandler)
 		
+		privateRoutes.get("report", fezIDParam, use: fezReportPageHandler)
+		privateRoutes.post("report", fezIDParam, use: fezReportPostHandler)
+		privateRoutes.get("post", "report", postIDParam, use: fezPostReportPageHandler)
+		privateRoutes.post("post", "report", postIDParam, use: fezPostReportPostHandler)
+
 		privateRoutes.webSocket(fezIDParam, "socket", shouldUpgrade: shouldCreateFezSocket, onUpgrade: createFezSocket) 
 
 		// Mods only
@@ -507,9 +510,9 @@ struct SiteFriendlyFezController: SiteControllerUtils {
     	}
 	}
 	
-	// GET /fez/report/ID
+	// GET /fez/report/:fez_ID
 	//
-	// Shows the page for reporting on a fezzes' content.
+	// Shows the page for reporting on a fezzes' content. This reports on the Fez itself, not individual posts.
 	func fezReportPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		guard let fezID = req.parameters.get(fezIDParam.paramString) else {
 			throw Abort(.badRequest, reason: "Missing fez_id")
@@ -540,8 +543,34 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		}
     }	
     
-    // POST /fez/ID/delete
-    // DELETE /fez/ID
+	// GET /fez/post/report/:post_id
+	//
+	// Shows the report page for reporting on an individual post in a fez.
+	func fezPostReportPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+		guard let postID = req.parameters.get(postIDParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing post_id parameter.")
+		}
+		let ctx = try ReportPageContext(req, fezPostID: postID)
+		return req.view.render("reportCreate", ctx)
+	}
+	
+	// POST /fez/post/report/:post_id
+	//
+	// Submits a completed report.
+	func fezPostReportPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+		guard let postID = req.parameters.get(postIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing post_id parameter.")
+		}
+		let postStruct = try req.content.decode(ReportData.self)
+ 		return apiQuery(req, endpoint: "/fez/post/\(postID)/report", method: .POST, beforeSend: { req throws in
+			try req.content.encode(postStruct)
+		}).flatMapThrowing { response in
+			return .created
+		}
+	}
+
+    // POST /fez/:fez_ID/delete
+    // DELETE /fez/:fez_ID
     //
 	// Deletes a fez. Moderators only at the moment--owners may be able to delete, eventually.
     func fezDeleteHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
@@ -552,24 +581,4 @@ struct SiteFriendlyFezController: SiteControllerUtils {
     		return response.status
     	}
     }
-    
-    
-//	Title							 Starts: Time
-//	by: Owner						1 post, 1 new
-// 	Gaming							Duration: 1hr
-//
-//	Location				 9 of 10 participants
-//  Expands to show Info here
-   
-//	Title							    Time, 1hr
-//	by: Owner				 9 of 10 participants		OR: Full, 2 on waitlist
-// 	Gaming							1 post, 1 new 			
-//
-//	Location				 		
-//  Expands to show Info here
-//									Report   Join 
-
-// Inside the fez you can Leave, Post, DeletePost, Report, 
-// Creator can Cancel, Update, AddUser, RemoveUser
-    
 }

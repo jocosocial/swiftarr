@@ -28,36 +28,7 @@ extension APIRouteCollection {
 	var accessLevelParam: PathComponent { PathComponent(":access_level") }
 	var boardgameIDParam: PathComponent { PathComponent(":boardgame_id") }
 	var songIDParam: PathComponent { PathComponent(":karaoke_song+id") }
-	 
-	/// Adds Flexible Auth to a route. This route can be accessed without a token (while not logged in), but `req.auth.get(User.self)` will still
-	/// return a user if one is logged in. Route handlers for these routes should not call `req.auth.require(User.self)`. A route with no auth 
-	/// middleware will not auth any user and `.get(User.self)` will always return nil. The Basic and Token auth groups will throw an error if 
-	/// no user gets authenticated (specifically:` User.guardMiddleware` throws).
-	///
-	/// So, use this auth group for routes that can be accessed while not logged in, but which provide more (or different) data when a logged-in user
-	/// accesses the route.
-	func addFlexAuthGroup(to: RoutesBuilder) -> RoutesBuilder {
-		return to.grouped([Token.authenticator()])
-	}
-	
-	/// I'm moving auth over to UserCache, so that you'll auth a UserCacheData struct instead of a User model. Functionally, this means a `UserCacheData`
-	/// gets added to `req.auth` instead of a `User`. And, we avoid a SQL call per API call.
-	func addFlexCacheAuthGroup(to: RoutesBuilder) -> RoutesBuilder {
-		return to.grouped([UserCacheData.TokenAuthenticator()])
-	}
 
-	/// For routes that require HTTP Basic Auth. Tokens won't work. Generally, this is only for the login route.
-	func addBasicAuthGroup(to: RoutesBuilder) -> RoutesBuilder {
-		return to.grouped([UserCacheData.BasicAuth(), UserCacheData.guardMiddleware(throwing: Abort(.unauthorized, reason: "User not authenticated."))])
-	}
-
-	/// For routes that require a logged-in user. Applying this auth group to a route will make requests that don't have a valid token fail with a HTTP 401 error.
-	func addTokenAuthGroup(to: RoutesBuilder) -> RoutesBuilder {
-		return to.grouped([Token.authenticator(), User.guardMiddleware()])
-	}
-	func addTokenCacheAuthGroup(to: RoutesBuilder) -> RoutesBuilder {
-		return to.grouped([UserCacheData.TokenAuthenticator(), UserCacheData.guardMiddleware(throwing: Abort(.unauthorized, reason: "User not authenticated."))])
-	}
 
 	/// Transforms a string that might represent a date (either a `Double` or an ISO 8601
 	/// representation) into a `Date`, if possible.
@@ -91,7 +62,38 @@ extension APIRouteCollection {
 		return date
 	}
 	
-// MARK: Notification Management
+// MARK: - Auth Groups	 
+	/// Adds Flexible Auth to a route. This route can be accessed without a token (while not logged in), but `req.auth.get(User.self)` will still
+	/// return a user if one is logged in. Route handlers for these routes should not call `req.auth.require(User.self)`. A route with no auth 
+	/// middleware will not auth any user and `.get(User.self)` will always return nil. The Basic and Token auth groups will throw an error if 
+	/// no user gets authenticated (specifically:` User.guardMiddleware` throws).
+	///
+	/// So, use this auth group for routes that can be accessed while not logged in, but which provide more (or different) data when a logged-in user
+	/// accesses the route.
+	func addFlexAuthGroup(to: RoutesBuilder) -> RoutesBuilder {
+		return to.grouped([Token.authenticator()])
+	}
+	
+	/// I'm moving auth over to UserCache, so that you'll auth a UserCacheData struct instead of a User model. Functionally, this means a `UserCacheData`
+	/// gets added to `req.auth` instead of a `User`. And, we avoid a SQL call per API call.
+	func addFlexCacheAuthGroup(to: RoutesBuilder) -> RoutesBuilder {
+		return to.grouped([UserCacheData.TokenAuthenticator()])
+	}
+
+	/// For routes that require HTTP Basic Auth. Tokens won't work. Generally, this is only for the login route.
+	func addBasicAuthGroup(to: RoutesBuilder) -> RoutesBuilder {
+		return to.grouped([UserCacheData.BasicAuth(), UserCacheData.guardMiddleware(throwing: Abort(.unauthorized, reason: "User not authenticated."))])
+	}
+
+	/// For routes that require a logged-in user. Applying this auth group to a route will make requests that don't have a valid token fail with a HTTP 401 error.
+	func addTokenAuthGroup(to: RoutesBuilder) -> RoutesBuilder {
+		return to.grouped([Token.authenticator(), User.guardMiddleware()])
+	}
+	func addTokenCacheAuthGroup(to: RoutesBuilder) -> RoutesBuilder {
+		return to.grouped([UserCacheData.TokenAuthenticator(), UserCacheData.guardMiddleware(throwing: Abort(.unauthorized, reason: "User not authenticated."))])
+	}
+
+// MARK: - Notification Management
 	
 	// When we detect a twarrt or post with an alertword in it, call this method to find the users that are looking
 	// for that alertword and increment each of their hit counts. Differs from addNotifications because the list

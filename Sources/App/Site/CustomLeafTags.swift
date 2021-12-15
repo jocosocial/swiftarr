@@ -257,10 +257,10 @@ struct CruiseDayIndexTag: LeafTag {
 /// Inserts an <img> tag for the given user's avatar image. Presents a default image if the user doesn't have an image.
 /// Note: If we implement identicons at the API level, users will always have images, and the 'generic user' image here is just a fallback.
 ///
-/// First parameter is the file name of the image, second optional parameter is the size of the <img> to produce. This tag will select the best size image to reference
+/// First parameter is the UserHeader, second optional parameter is the size of the <img> to produce. This tag will select the best size image to reference
 /// based on the size of  the image tag it is being placed in. Only produces square image views.
 ///
-/// Usage: #avatar(imageFilename), #avatar(imageFilename, 800)
+/// Usage: #avatar(userHeader), #avatar(userHeader, 800)
 struct AvatarTag: UnsafeUnescapedLeafTag {
     func render(_ ctx: LeafContext) throws -> LeafData {
 		var imgSize = 40
@@ -273,7 +273,7 @@ struct AvatarTag: UnsafeUnescapedLeafTag {
 		}
 		let imgLoadSize = imgSize > 100 ? "full" : "thumb"
 		var imagePath = "/api/v3/image/user/identicon/\(userID)"
-		if let customImage = userHeader["userImage"] {
+		if let customImage = userHeader["userImage"]?.string {
 			imagePath = "/api/v3/image/\(imgLoadSize)/\(customImage)"
 		}
 		return LeafData.string("<img src=\"\(imagePath)\" width=\(imgSize) height=\(imgSize) alt=\"Avatar\">")

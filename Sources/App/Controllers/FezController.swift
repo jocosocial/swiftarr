@@ -384,6 +384,7 @@ struct FezController: APIRouteCollection {
 					}
 				}
 				return saveFutures.flatten(on: req.eventLoop).throwingFlatMap {
+      		      	post.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
 					var infoStr = "@\(effectiveAuthor.username) wrote, \"\(post.text)\""
 					if fez.fezType != .closed {
 						infoStr.append(" in LFG \"\(fez.title)\".")

@@ -289,7 +289,11 @@ struct UserController: APIRouteCollection {
     
     /// `POST /api/v3/user/add`
     ///
-    /// Adds a new `User` sub-account to the current user.
+    /// Adds a new `User` sub-account to the current user's primary account. You can create a new sub account while logged in 
+	/// on a sub account, but the new account is an sub of the primary account--there's no nesting or tree structure.
+	/// 
+	/// This method does not log in the newly created user. Users are limited to `Settings.shared.maxAlternateAccounts` 
+	/// alts, which is 6 by default.
     ///
     /// An <doc:AddedUserData> structure is returned on success, containing the new user's ID
     /// and username.

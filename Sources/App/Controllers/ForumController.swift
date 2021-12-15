@@ -652,12 +652,15 @@ struct ForumController: APIRouteCollection {
 			// process images
 			return self.processImages(data.firstPost.images, usage: .forumPost, on: req).throwingFlatMap { (imageFilenames) in
 				// create forum
-				let forum = try Forum(title: data.title, category: category, creatorID: cacheUser.userID, isLocked: false)
+				let effectiveAuthor = data.firstPost.effectiveAuthor(actualAuthor: cacheUser, on: req)
+				let forum = try Forum(title: data.title, category: category, creatorID: effectiveAuthor.userID, isLocked: false)
 				return forum.save(on: req.db).throwingFlatMap { (_) in
+            		forum.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
                     // create first post
-					let forumPost = try ForumPost(forum: forum, authorID: cacheUser.userID, text: data.firstPost.text, images: imageFilenames)
+					let forumPost = try ForumPost(forum: forum, authorID: effectiveAuthor.userID, text: data.firstPost.text, images: imageFilenames)
                     // return as ForumData
                     return forumPost.save(on: req.db).flatMapThrowing { (_) in
+            			forumPost.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
                     	// Update Category
                     	_ = category.$forums.query(on: req.db).count().map { count -> EventLoopFuture<Void> in
                     		category.forumCount = Int32(count)
@@ -666,7 +669,7 @@ struct ForumController: APIRouteCollection {
                     	// If the post @mentions anyone, update their mention counts
                     	processForumMentions(forum: forum, post: forumPost, editedText: nil, isCreate: true, on: req)
                     
-                    	let creatorHeader = cacheUser.makeHeader()
+                    	let creatorHeader = effectiveAuthor.makeHeader()
                     	let postData = try PostData(post: forumPost, author: creatorHeader, 
                     			bookmarked: false, userLike: nil, likeCount: 0)
 						let forumData = try ForumData(forum: forum, creator: creatorHeader,
@@ -815,6 +818,7 @@ struct ForumController: APIRouteCollection {
 				let effectiveAuthor = newPostData.effectiveAuthor(actualAuthor: cacheUser, on: req)
 				let forumPost = try ForumPost(forum: forum, authorID: effectiveAuthor.userID, text: newPostData.text, images: filenames)
 				return forumPost.save(on: req.db).flatMapThrowing { (_) in
+            		forumPost.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
 					// If the post @mentions anyone, update their mention counts
 					processForumMentions(forum: forum, post: forumPost, editedText: nil, isCreate: true, on: req)
 					// return as PostData, with 201 status

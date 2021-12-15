@@ -337,6 +337,14 @@ struct ReportPageContext : Encodable {
 		reportSuccessURL = req.headers.first(name: "Referer") ?? "/fez"
 	}
 	
+	// For reporting a fez post 
+	init(_ req: Request, fezPostID: String) throws {
+		trunk = .init(req, title: "Report LFG Post", tab: .none)
+		reportTitle = "Report LFG Post"
+		reportFormAction = "/fez/post/report/\(fezPostID)"
+		reportSuccessURL = req.headers.first(name: "Referer") ?? "/fez"
+	}
+	
 	// For reporting a user profile 
 	init(_ req: Request, userID: String) throws {
 		trunk = .init(req, title: "Report User Profile", tab: .none)

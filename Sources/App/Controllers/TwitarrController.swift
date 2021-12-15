@@ -464,7 +464,7 @@ struct TwitarrController: APIRouteCollection {
         }
     }
             
-    /// `POST /api/v3/twitarr/ID/reply`
+    /// `POST /api/v3/twitarr/:twarrt_ID/reply`
     ///
     /// Create a `Twarrt` as a reply to an existing twarrt. If the replyTo twarrt is in quarantine, the post is rejected.
 	/// 
@@ -492,8 +492,10 @@ struct TwitarrController: APIRouteCollection {
 			// process images
 			return self.processImages(data.images, usage: .twarrt, on: req).throwingFlatMap { (filenames) in
 				// create twarrt
-				let twarrt = try Twarrt(authorID: cacheUser.userID, text: data.text, images: filenames, replyTo: replyTo)
+				let effectiveAuthor = data.effectiveAuthor(actualAuthor: cacheUser, on: req)
+				let twarrt = try Twarrt(authorID: effectiveAuthor.userID, text: data.text, images: filenames, replyTo: replyTo)
 				return twarrt.save(on: req.db).flatMapThrowing { 
+            		twarrt.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
 					processTwarrtMentions(twarrt: twarrt, editedText: nil, isCreate: true, on: req)
 					if replyTo.$replyGroup.id == nil {
 						// If the replyTo twarrt wasn't in a replyGroup, it becomes the head of a new one.
@@ -526,6 +528,7 @@ struct TwitarrController: APIRouteCollection {
 			let effectiveAuthor = data.effectiveAuthor(actualAuthor: cacheUser, on: req)
 			let twarrt = try Twarrt(authorID: effectiveAuthor.userID, text: data.text, images: filenames)
             return twarrt.save(on: req.db).flatMapThrowing { _ in
+            	twarrt.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
 				processTwarrtMentions(twarrt: twarrt, editedText: nil, isCreate: true, on: req)
                 // return as TwarrtData with 201 status
                 let response = Response(status: .created)
