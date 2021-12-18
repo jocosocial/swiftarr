@@ -312,10 +312,10 @@ func configureLeaf(_ app: Application) throws {
 
     // Custom Leaf tags
     app.leaf.tags["addJocomoji"] = AddJocomojiTag()
-    app.leaf.tags["formatTwarrtText"] = FormatPostTextTag(.twarrt)
-    app.leaf.tags["formatPostText"] = FormatPostTextTag(.forumpost)
-    app.leaf.tags["formatFezText"] = FormatPostTextTag(.fez)
-    app.leaf.tags["formatSeamailText"] = FormatPostTextTag(.seamail)
+	app.leaf.tags["formatTwarrtText"] = try FormatPostTextTag(.twarrt, hostname: app.http.server.configuration.hostname)
+    app.leaf.tags["formatPostText"] = try FormatPostTextTag(.forumpost, hostname: app.http.server.configuration.hostname)
+    app.leaf.tags["formatFezText"] = try FormatPostTextTag(.fez, hostname: app.http.server.configuration.hostname)
+    app.leaf.tags["formatSeamailText"] = try FormatPostTextTag(.seamail, hostname: app.http.server.configuration.hostname)
     app.leaf.tags["relativeTime"] = RelativeTimeTag()
     app.leaf.tags["eventTime"] = EventTimeTag()
     app.leaf.tags["avatar"] = AvatarTag()

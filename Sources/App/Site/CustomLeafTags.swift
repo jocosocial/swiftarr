@@ -151,6 +151,14 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 			return $0
 		}
 		string = words.joined(separator: " ")
+		
+		// This uses a regex to find URL links that point to our server, and (somewhat) shorten them. 
+		// It attempts to use Vapor's configured hostname to match against.
+		// This would be cooler if we could parse the link path and make the link text into a description of
+		// where the link goes. e.g. "http://192.168.0.19:8081/fez/ADDBA5D9-1154-4033-88AE-07B12F3AE162"
+		// could have linktext "[An LFG Link]" or somesuch.
+		string = urlRegex.stringByReplacingMatches(in: string, options: [], range: NSRange(0..<string.count), 
+				withTemplate: "<a href=\"$0\">$1</a>")
 						
 		// Also convert newlines to HTML breaks.
 		string = string.replacingOccurrences(of: "\r\n", with: "<br>")
@@ -167,8 +175,12 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
     	case seamail
     }
     let usage: Usage
-    init(_ forUsage: Usage) {
+    let urlRegex: NSRegularExpression
+    init(_ forUsage: Usage, hostname: String) throws {
     	usage = forUsage
+    	let regexHostname = hostname.replacingOccurrences(of: ".", with: "\\.")
+    	let regexStr = "(?:https?://)?\(regexHostname)(?::[0-9]+)?([-A-Z0-9+&@#/%?=~_|!:,.;]*[A-Z0-9+&@#/%=~_|])"
+    	urlRegex = try NSRegularExpression(pattern: regexStr, options: .caseInsensitive)
     }
 }
 
