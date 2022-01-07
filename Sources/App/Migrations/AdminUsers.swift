@@ -147,7 +147,7 @@ struct CreateAdminUsers: Migration {
         }
         // create user directly
         let user = User(username: "TwitarrTeam", password: passwordHash, recoveryKey: recoveryHash, verification: "generated user",
-				parent: nil, accessLevel: .moderator)
+				parent: nil, accessLevel: .twitarrteam)
         return user.save(on: database)
     }
 }

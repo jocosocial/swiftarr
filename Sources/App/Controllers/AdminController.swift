@@ -13,25 +13,33 @@ struct AdminController: APIRouteCollection {
 		
 		// convenience route group for all /api/v3/admin endpoints
 		let modRoutes = app.grouped("api", "v3", "admin")
+		
+		// endpoints available to TwitarrTeam and above
+		let ttAuthGroup = addTokenAuthGroup(to: modRoutes).grouped([RequireTHOMiddleware()])
+		ttAuthGroup.post("schedule", "update", use: scheduleUploadPostHandler)
+		ttAuthGroup.get("schedule", "verify", use: scheduleChangeVerificationHandler)
+		ttAuthGroup.post("schedule", "update", "apply", use: scheduleChangeApplyHandler)
+		
+		ttAuthGroup.get("regcodes", "stats", use: regCodeStatsHandler)
+		ttAuthGroup.get("regcodes", "find", searchStringParam, use: userForRegCodeHandler)
 								 
-		// endpoints available for Admins only
+		// endpoints available for THO and Admin only
 		let thoAuthGroup = addTokenAuthGroup(to: modRoutes).grouped([RequireTHOMiddleware()])
 		thoAuthGroup.post("dailytheme", "create", use: addDailyThemeHandler)
 		thoAuthGroup.post("dailytheme", dailyThemeIDParam, "edit", use: editDailyThemeHandler)
 		thoAuthGroup.post("dailytheme", dailyThemeIDParam, "delete", use: deleteDailyThemeHandler)
 		thoAuthGroup.delete("dailytheme", dailyThemeIDParam, use: deleteDailyThemeHandler)
 		
-		thoAuthGroup.post("schedule", "update", use: scheduleUploadPostHandler)
-		thoAuthGroup.get("schedule", "verify", use: scheduleChangeVerificationHandler)
-		thoAuthGroup.post("schedule", "update", "apply", use: scheduleChangeApplyHandler)
-		
-		thoAuthGroup.get("regcodes", "stats", use: regCodeStatsHandler)
-		thoAuthGroup.get("regcodes", "find", searchStringParam, use: userForRegCodeHandler)
-
+			// Note that there's several promote method that promote to different access levels, but 
+			// only one demote, that returns the user to Verified.
 		thoAuthGroup.get("moderators", use: getModeratorsHandler)
+		thoAuthGroup.get("twitarrteam", use: getTwitarrTeamHandler)
+		thoAuthGroup.get("tho", use: getTHOHandler)
 		thoAuthGroup.post("moderator", "promote", userIDParam, use: makeModeratorHandler)
-		thoAuthGroup.post("moderator", "demote", userIDParam, use: removeModeratorHandler)
+		thoAuthGroup.post("twitarrteam", "promote", userIDParam, use: makeTwitarrTeamHandler)
+		thoAuthGroup.post("user", "demote", userIDParam, use: demoteToVerifiedHandler)
 		
+			// KaraokeManager isn't a separate access level; it's more like an ACL.
 		thoAuthGroup.get("karaoke", "managers", use: getKaraokeManagers)
 		thoAuthGroup.post("karaoke", "manager", "promote", userIDParam, use: makeKaraokeManager)
 		thoAuthGroup.post("karaoke", "manager", "demote", userIDParam, use: removeKaraokeManager)
@@ -39,6 +47,9 @@ struct AdminController: APIRouteCollection {
 		let adminAuthGroup = addTokenAuthGroup(to: modRoutes).grouped([RequireAdminMiddleware()])
 		adminAuthGroup.get("serversettings", use: settingsHandler)
 		adminAuthGroup.post("serversettings", "update", use: settingsUpdateHandler)
+		
+		// Only admin may promote to THO 
+		adminAuthGroup.post("tho", "promote", userIDParam, use: makeTHOHandler)
 	}
 
     /// `POST /api/v3/admin/dailytheme/create`
@@ -507,9 +518,10 @@ struct AdminController: APIRouteCollection {
 		}
 	}
 	
+// MARK: - Promote/Demote
     /// `GET /api/v3/admin/moderators`
 	/// 
-	///  Returns a list of all site moderators. Only admins may call this method.
+	///  Returns a list of all site moderators. Only THO and above may call this method.
 	///  
     /// - Returns: Array of <doc:UserHeader>.
 	func getModeratorsHandler(_ req: Request) throws -> EventLoopFuture<[UserHeader]> {
@@ -521,12 +533,14 @@ struct AdminController: APIRouteCollection {
     /// `POST /api/v3/admin/moderator/promote/:user_id`
 	/// 
 	/// Makes the target user a moderator. Only admins may call this method. The user must have an access level of `.verified` and not 
-	/// be temp-quarantined.
+	/// be temp-quarantined. Unlike the Moderator method that sets access levels, mod promotion only affects the requested account, not
+	/// other sub-accounts held by the same user.
 	///  
     /// - Throws: badRequest if the target user isn't verified, or if they're temp quarantined.
     /// - Returns: 200 OK if the user was made a mod.
 	func makeModeratorHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
 		return User.findFromParameter(userIDParam, on: req).throwingFlatMap { targetUser in
+			try guardNotSpecialAccount(targetUser)
 			if targetUser.accessLevel == .moderator {
 				throw Abort(.badRequest, reason: "Cannot promote: User is already a moderator.")
 			}
@@ -542,23 +556,120 @@ struct AdminController: APIRouteCollection {
 				}
 			}
 			targetUser.accessLevel = .moderator
-			return targetUser.save(on: req.db).transform(to: .ok)
+			return targetUser.save(on: req.db).flatMapThrowing { 
+				try req.userCache.updateUser(targetUser.requireID())
+				return .ok
+			}
 		}
 	}
 	
-    /// `POST /api/v3/admin/moderator/demote/:user_id`
+    /// `POST /api/v3/admin/user/demote/:user_id`
 	/// 
-	/// Sets the target user's accessLevel to `.verified` if it was `.moderator`. Only admins may call this method.
+	/// Sets the target user's accessLevel to `.verified` if it was `.moderator`, `.twitarrteam`, or `.tho`. 
+	/// Must be THO or higher to call any of these; must be admin to demote THO users.
 	///  
     /// - Throws: badRequest if the target user isn't a mod.
     /// - Returns: 200 OK if the user was demoted successfully.
-	func removeModeratorHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+	func demoteToVerifiedHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
 		return User.findFromParameter(userIDParam, on: req).throwingFlatMap { targetUser in
-			guard targetUser.accessLevel == .moderator else {
-				throw Abort(.badRequest, reason: "User is not a moderator: cannot remove moderator status.")
+			guard targetUser.accessLevel >= .moderator else {
+				throw Abort(.badRequest, reason: "User is not at moderator/twitarrteam/THO level: cannot demote to verified.")
 			}
+			try guardNotSpecialAccount(targetUser)
 			targetUser.accessLevel = .verified
-			return targetUser.save(on: req.db).transform(to: .ok)
+			return targetUser.save(on: req.db).flatMapThrowing { 
+				try req.userCache.updateUser(targetUser.requireID())
+				return .ok
+			}
+		}
+	}
+	
+    /// `GET /api/v3/admin/twitarrteam`
+	/// 
+	///  Returns a list of all TwitarrTeam members. Only THO and above may call this method.
+	///  
+    /// - Returns: Array of <doc:UserHeader>.
+	func getTwitarrTeamHandler(_ req: Request) throws -> EventLoopFuture<[UserHeader]> {
+		return User.query(on: req.db).filter(\.$accessLevel == .twitarrteam).all().flatMapThrowing { twitarrTeam in
+			return try twitarrTeam.map { try UserHeader(user: $0) }
+		}
+	}
+	
+    /// `POST /api/v3/admin/twitarrteam/promote/:user_id`
+	/// 
+	/// Makes the target user a member of TwitarrTeam. Only admins may call this method. The user must have an access level of `.verified` and not 
+	/// be temp-quarantined.
+	///  
+    /// - Throws: badRequest if the target user isn't verified, or if they're temp quarantined.
+    /// - Returns: 200 OK if the user was made a mod.
+	func makeTwitarrTeamHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+		return User.findFromParameter(userIDParam, on: req).throwingFlatMap { targetUser in
+			try guardNotSpecialAccount(targetUser)
+			if targetUser.accessLevel == .twitarrteam {
+				throw Abort(.badRequest, reason: "Cannot promote: User is already at level twitarrteam.")
+			}
+			if targetUser.accessLevel > .twitarrteam {
+				throw Abort(.badRequest, reason: "Cannot promote to twitarrteam: Access level is above twitarrteam!")
+			}
+			guard targetUser.accessLevel >= .verified else {
+				throw Abort(.badRequest, reason: "Only verified users may be promoted to twitarrteam.")
+			}
+			if let tempQuarantineEndTime = targetUser.tempQuarantineUntil {
+				guard tempQuarantineEndTime <= Date() else {
+					throw Abort(.badRequest, reason: "Temp Quarantined users may not be promoted to twitarrteam.")
+				}
+			}
+			targetUser.accessLevel = .twitarrteam
+			return targetUser.save(on: req.db).flatMapThrowing { 
+				try req.userCache.updateUser(targetUser.requireID())
+				return .ok
+			}
+		}
+	}
+	
+    /// `GET /api/v3/admin/tho`
+	/// 
+	///  Returns a list of all users with THO access level. Only THO and Admin may call this method.
+	///  
+	///  THO access level lets users promote other users to Modaerator and TwitarrTeam access, and demote to Banned status. THO users can also post notifications
+	///  and set daily themes.
+	///  
+    /// - Returns: Array of <doc:UserHeader>.
+	func getTHOHandler(_ req: Request) throws -> EventLoopFuture<[UserHeader]> {
+		return User.query(on: req.db).filter(\.$accessLevel == .tho).all().flatMapThrowing { tho in
+			return try tho.map { try UserHeader(user: $0) }
+		}
+	}
+	
+    /// `POST /api/v3/admin/tho/promote/:user_id`
+	/// 
+	/// Makes the target user a member of THO (The Home Office). Only admins may call this method. The user must have an access level of `.verified` and not 
+	/// be temp-quarantined.
+	///  
+    /// - Throws: badRequest if the target user isn't verified, or if they're temp quarantined.
+    /// - Returns: 200 OK if the user was made a mod.
+	func makeTHOHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+		return User.findFromParameter(userIDParam, on: req).throwingFlatMap { targetUser in
+			try guardNotSpecialAccount(targetUser)
+			if targetUser.accessLevel == .tho {
+				throw Abort(.badRequest, reason: "Cannot promote: User is already at level THO.")
+			}
+			if targetUser.accessLevel > .tho {
+				throw Abort(.badRequest, reason: "Cannot promote to THO: Access level is above THO!")
+			}
+			guard targetUser.accessLevel >= .verified else {
+				throw Abort(.badRequest, reason: "Only verified users may be promoted to THO.")
+			}
+			if let tempQuarantineEndTime = targetUser.tempQuarantineUntil {
+				guard tempQuarantineEndTime <= Date() else {
+					throw Abort(.badRequest, reason: "Temp Quarantined users may not be promoted to THO.")
+				}
+			}
+			targetUser.accessLevel = .tho
+			return targetUser.save(on: req.db).flatMapThrowing { 
+				try req.userCache.updateUser(targetUser.requireID())
+				return .ok
+			}
 		}
 	}
 	
@@ -577,8 +688,8 @@ struct AdminController: APIRouteCollection {
 	
 	/// `POST /api/v3/admin/karaoke/manager/promote/:user_id`
 	/// 
-	/// Makes the target user a karaoke manager. Only admins may call this method. The user must have an access level of `.verified` and not 
-	/// be temp-quarantined. Karaoke Manager status is orthogonal to a user's access level. 
+	/// Makes the target user a karaoke manager. Only THO and above may call this method. The user being promotedmust have an access level 
+	/// of `.verified` and not be temp-quarantined. Karaoke Manager status is orthogonal to a user's access level. 
 	///  
     /// - Throws: badRequest if the target user isn't verified, they're temp quarantined, or already a karaoke manager.
     /// - Returns: 200 OK if the user was made a karaoke manager.
@@ -629,7 +740,7 @@ struct AdminController: APIRouteCollection {
 		let filePath = Settings.shared.adminDirectoryPath.appendingPathComponent("uploadschedule.ics")
 		return filePath
 	}
-
+	
 }
 
 // Used internally to track the diffs involved in an calendar update.

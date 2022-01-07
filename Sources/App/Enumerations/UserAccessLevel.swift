@@ -18,8 +18,10 @@ public enum UserAccessLevel: String, Codable {
     case client
     /// An account whose owner is part of the Moderator Team.
     case moderator
+    /// Twitarr devs should have their accounts elevated to this level to help handle seamail to 'twitarrteam'
+	case twitarrteam
     /// An account officially associated with Management, has access to all `.moderator`
-    /// and a subset of `.admin` functions (the non-destructive ones).
+    /// and a subset of `.admin` functions (the non-destructive ones). Can ban users.
     case tho
     /// An Administrator account, unrestricted access.
     case admin
@@ -35,6 +37,7 @@ extension UserAccessLevel {
 			case "verified": return .verified
 			case "client": return .client
 			case "moderator": return .moderator
+			case "twitarrteam": return .twitarrteam
 			case "tho": return .tho
 			case "admin": return .admin
 			default: return nil
@@ -49,6 +52,7 @@ extension UserAccessLevel {
 			case .verified: return "Verified"
 			case .client: return "Client"
 			case .moderator: return "Moderator"
+			case .twitarrteam: return "TwitarrTeam"
 			case .tho: return "THO"
 			case .admin: return "Administrator"
 		}
@@ -93,8 +97,9 @@ extension UserAccessLevel: Comparable {
 				case .verified: return 4
 				case .client: return 5
 				case .moderator: return 6
-				case .tho: return 7
-				case .admin: return 8
+				case .twitarrteam: return 7
+				case .tho: return 8
+				case .admin: return 9
 			}
 		}
 		return orderFromEnum(val: lhs) < orderFromEnum(val: rhs)   		

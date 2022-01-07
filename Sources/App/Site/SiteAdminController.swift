@@ -8,43 +8,52 @@ struct SiteAdminController: SiteControllerUtils {
 
 	func registerRoutes(_ app: Application) throws {
 		// Routes for non-shareable content. If you're not logged in we failscreen.
-		let privateAdminRoutes = getPrivateRoutes(app).grouped(SiteRequireTHOMiddleware()).grouped("admin")
+		let privateTTRoutes = getPrivateRoutes(app).grouped(SiteRequireTwitarrTeamMiddleware()).grouped("admin")
 		
-		privateAdminRoutes.get("", use: adminRootPageHandler)
+		privateTTRoutes.get("", use: adminRootPageHandler)
 
-		privateAdminRoutes.get("announcements", use: announcementsAdminPageHandler)
-		privateAdminRoutes.get("announcement", "create", use: announcementCreatePageHandler)
-		privateAdminRoutes.post("announcement", "create", use: announcementCreatePostHandler)
-		privateAdminRoutes.get("announcement", announcementIDParam, "edit", use: announcementEditPageHandler)
-		privateAdminRoutes.post("announcement", announcementIDParam, "edit", use: announcementEditPostHandler)
-		privateAdminRoutes.post("announcement", announcementIDParam, "delete", use: announcementDeletePostHandler)
+		privateTTRoutes.get("announcements", use: announcementsAdminPageHandler)
+		privateTTRoutes.get("announcement", "create", use: announcementCreatePageHandler)
+		privateTTRoutes.post("announcement", "create", use: announcementCreatePostHandler)
+		privateTTRoutes.get("announcement", announcementIDParam, "edit", use: announcementEditPageHandler)
+		privateTTRoutes.post("announcement", announcementIDParam, "edit", use: announcementEditPostHandler)
+		privateTTRoutes.post("announcement", announcementIDParam, "delete", use: announcementDeletePostHandler)
 
-		privateAdminRoutes.get("dailythemes", use: dailyThemesViewHandler)
-		privateAdminRoutes.get("dailytheme", "create", use: dailyThemeCreateViewHandler)
-		privateAdminRoutes.post("dailytheme", "create", use: dailyThemeCreatePostHandler)
-		privateAdminRoutes.get("dailytheme", dailyThemeParam, "edit", use: dailyThemeEditViewHandler)
-		privateAdminRoutes.post("dailytheme", dailyThemeParam, "edit", use: dailyThemeEditPostHandler)
-		privateAdminRoutes.post("dailytheme", dailyThemeParam, "delete", use: dailyThemeDeletePostHandler)
-		privateAdminRoutes.delete("dailytheme", dailyThemeParam, use: dailyThemeDeletePostHandler)
+		privateTTRoutes.get("dailythemes", use: dailyThemesViewHandler)
+		privateTTRoutes.get("dailytheme", "create", use: dailyThemeCreateViewHandler)
+		privateTTRoutes.post("dailytheme", "create", use: dailyThemeCreatePostHandler)
+		privateTTRoutes.get("dailytheme", dailyThemeParam, "edit", use: dailyThemeEditViewHandler)
+		privateTTRoutes.post("dailytheme", dailyThemeParam, "edit", use: dailyThemeEditPostHandler)
+		privateTTRoutes.post("dailytheme", dailyThemeParam, "delete", use: dailyThemeDeletePostHandler)
+		privateTTRoutes.delete("dailytheme", dailyThemeParam, use: dailyThemeDeletePostHandler)
 		
-		privateAdminRoutes.get("serversettings", use: settingsViewHandler)
-		privateAdminRoutes.post("serversettings", use: settingsPostHandler)
+		privateTTRoutes.get("serversettings", use: settingsViewHandler)
+		privateTTRoutes.post("serversettings", use: settingsPostHandler)
 
-		privateAdminRoutes.get("scheduleupload", use: scheduleUploadViewHandler)
-		privateAdminRoutes.post("scheduleupload", use: scheduleUploadPostHandler)
-		privateAdminRoutes.get("scheduleverify", use: scheduleVerifyViewHandler)
-		privateAdminRoutes.post("scheduleverify", use: scheduleVerifyPostHandler)
-		privateAdminRoutes.get("scheduleupload", "complete", use: scheduleUpdateCompleteViewtHandler)
+		privateTTRoutes.get("scheduleupload", use: scheduleUploadViewHandler)
+		privateTTRoutes.post("scheduleupload", use: scheduleUploadPostHandler)
+		privateTTRoutes.get("scheduleverify", use: scheduleVerifyViewHandler)
+		privateTTRoutes.post("scheduleverify", use: scheduleVerifyPostHandler)
+		privateTTRoutes.get("scheduleupload", "complete", use: scheduleUpdateCompleteViewtHandler)
 
-		privateAdminRoutes.get("regcodes", use: getRegCodeHandler)
+		privateTTRoutes.get("regcodes", use: getRegCodeHandler)
 		
-		privateAdminRoutes.get("mods", use: getModsHandler)
-		privateAdminRoutes.post("user", userIDParam, "makemoderator", use: makeModerator)
-		privateAdminRoutes.post("user", userIDParam, "demotemoderator", use: demoteModerator)
+		privateTTRoutes.get("karaoke", "managers", use: getKaraokeManagersHandler)
+		privateTTRoutes.post("user", userIDParam, "karaoke", "manager", "promote", use: promoteKaraokeManager)
+		privateTTRoutes.post("user", userIDParam, "karaoke", "manager", "demote", use: demoteKaraokeManager)
+
+		// Mods, TwitarrTeam, and THO levels can all be promoted to, but they all demote back to Verified.
+		let privateTHORoutes = getPrivateRoutes(app).grouped(SiteRequireTHOMiddleware()).grouped("admin")
+		privateTHORoutes.get("mods", use: getModsHandler)
+		privateTHORoutes.get("twitarrteam", use: getTwitarrTeamHandler)
+		privateTHORoutes.get("tho", use: getTHOHandler)
+		privateTHORoutes.post("user", userIDParam, "moderator", "promote", use: promoteUserLevel)
+		privateTHORoutes.post("user", userIDParam, "twitarrteam", "promote", use: promoteUserLevel)
+		privateTHORoutes.post("user", userIDParam, "verified", "demote", use: demoteToVerified)
 		
-		privateAdminRoutes.get("karaoke", "managers", use: getKaraokeManagersHandler)
-		privateAdminRoutes.post("user", userIDParam, "karaoke", "manager", "promote", use: promoteKaraokeManager)
-		privateAdminRoutes.post("user", userIDParam, "karaoke", "manager", "demote", use: demoteKaraokeManager)
+		let privateAdminRoutes = getPrivateRoutes(app).grouped(SiteRequireAdminMiddleware()).grouped("admin")
+		privateAdminRoutes.post("user", userIDParam, "tho", "promote", use: promoteUserLevel)
+		
 		
 	}
 	
@@ -71,6 +80,24 @@ struct SiteAdminController: SiteControllerUtils {
 		}
 	}
 	
+	struct ManageUserLevelViewContext : Encodable {
+		var trunk: TrunkContext
+		var currentMembers: [UserHeader]
+		var userSearch: String
+		var searchResults: [UserHeader]?
+		var levelName: String
+		var targetLevel: String
+		
+		init(_ req: Request, current: [UserHeader], searchStr: String, searchResults: [UserHeader]?) throws {
+			trunk = .init(req, title: "Manage Moderators", tab: .none)
+			self.currentMembers = current
+			self.userSearch = searchStr
+			self.searchResults = searchResults
+			levelName = ""
+			targetLevel = ""
+		}
+	}
+
 	// GET /admin
 	// Shows the root admin page, which just shows links to other pages.
 	func adminRootPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
@@ -528,7 +555,7 @@ struct SiteAdminController: SiteControllerUtils {
 				var searchResults: String
 				
 				init(_ req: Request, stats: RegistrationCodeStatsData, searchResults: String) throws {
-					trunk = .init(req, title: "Schedule Update Complete", tab: .none)
+					trunk = .init(req, title: "Registration Codes", tab: .none)
 					self.stats = stats
 					self.searchResults = searchResults
 				}
@@ -540,6 +567,7 @@ struct SiteAdminController: SiteControllerUtils {
 	
 	// GET /admin/mods
 	//
+	// Only THO and above--mods cannot make more mods.
 	func getModsHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		var searchFuture: EventLoopFuture<[UserHeader]?> = req.eventLoop.future(nil)
 		var searchStr = ""
@@ -550,43 +578,82 @@ struct SiteAdminController: SiteControllerUtils {
 			}
 		}
 		return apiQuery(req, endpoint: "/admin/moderators").and(searchFuture).throwingFlatMap { (response, searchResults) in
-			let currentMods = try response.content.decode([UserHeader].self)
-			struct ManageModeratorsViewContext : Encodable {
-				var trunk: TrunkContext
-				var currentMods: [UserHeader]
-				var userSearch: String
-				var searchResults: [UserHeader]?
-				
-				init(_ req: Request, currentMods: [UserHeader], searchStr: String, searchResults: [UserHeader]?) throws {
-					trunk = .init(req, title: "Manage Moderators", tab: .none)
-					self.currentMods = currentMods
-					self.userSearch = searchStr
-					self.searchResults = searchResults
-				}
-			}
-			let ctx = try ManageModeratorsViewContext(req, currentMods: currentMods, searchStr: searchStr, searchResults: searchResults)
+			let currentMembers = try response.content.decode([UserHeader].self)
+			var ctx = try ManageUserLevelViewContext(req, current: currentMembers, searchStr: searchStr, searchResults: searchResults)
+			ctx.levelName = "Moderator"
+			ctx.targetLevel = "moderator"
 			return req.view.render("admin/showModerators", ctx)
 		}
 	}
 
-	// POST /admin/user/:user_id/makemoderator
+	// GET /admin/twitarrteam
 	//
-	func makeModerator(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+	// Only THO and above may see this
+	func getTwitarrTeamHandler(_ req: Request) throws -> EventLoopFuture<View> {
+		var searchFuture: EventLoopFuture<[UserHeader]?> = req.eventLoop.future(nil)
+		var searchStr = ""
+		if let str = req.query[String.self, at: "search"]?.percentEncodeFilePathEntry() {
+			searchStr = str
+			searchFuture = apiQuery(req, endpoint: "/users/match/allnames/\(searchStr)").flatMapThrowing { response in
+				return try response.content.decode([UserHeader].self)
+			}
+		}
+		return apiQuery(req, endpoint: "/admin/twitarrteam").and(searchFuture).throwingFlatMap { (response, searchResults) in
+			let currentMembers = try response.content.decode([UserHeader].self)
+			var ctx = try ManageUserLevelViewContext(req, current: currentMembers, searchStr: searchStr, searchResults: searchResults)
+			ctx.levelName = "TwitarrTeam"
+			ctx.targetLevel = "twitarrteam"
+			return req.view.render("admin/showModerators", ctx)
+		}
+	}
+	
+	// GET /admin/tho
+	//
+	// Only THO and above may see this
+	func getTHOHandler(_ req: Request) throws -> EventLoopFuture<View> {
+		var searchFuture: EventLoopFuture<[UserHeader]?> = req.eventLoop.future(nil)
+		var searchStr = ""
+		if let str = req.query[String.self, at: "search"]?.percentEncodeFilePathEntry() {
+			searchStr = str
+			searchFuture = apiQuery(req, endpoint: "/users/match/allnames/\(searchStr)").flatMapThrowing { response in
+				return try response.content.decode([UserHeader].self)
+			}
+		}
+		return apiQuery(req, endpoint: "/admin/tho").and(searchFuture).throwingFlatMap { (response, searchResults) in
+			let currentMembers = try response.content.decode([UserHeader].self)
+			var ctx = try ManageUserLevelViewContext(req, current: currentMembers, searchStr: searchStr, searchResults: searchResults)
+			ctx.levelName = "THO"
+			ctx.targetLevel = "tho"
+			return req.view.render("admin/showModerators", ctx)
+		}
+	}
+
+	// POST /admin/user/:user_id/moderator/promote
+	// POST /admin/user/:user_id/twitarrteam/promote
+	// POST /admin/user/:user_id/tho/promote
+	//
+	func promoteUserLevel(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
     	guard let userID = req.parameters.get(userIDParam.paramString)?.percentEncodeFilePathEntry() else {
     		throw "Invalid user ID"
     	}
-		return apiQuery(req, endpoint: "/admin/moderator/promote/\(userID)", method: .POST).map { response in
+    	var targetLevel = "moderator"
+    	if let pathCount = req.route?.path.count, pathCount == 5, let urlLevel = req.route?.path[3].paramString {
+    		if urlLevel == "twitarrteam" || urlLevel == "tho" {
+    			targetLevel = urlLevel
+    		}
+    	}
+		return apiQuery(req, endpoint: "/admin/\(targetLevel)/promote/\(userID)", method: .POST).map { response in
 			return response.status
 		}
 	}
 	
-	// POST /admin/user/:user_id/demotemoderator
+	// POST /admin/user/:user_id/verified/demote
 	//
-	func demoteModerator(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+	func demoteToVerified(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
     	guard let userID = req.parameters.get(userIDParam.paramString)?.percentEncodeFilePathEntry() else {
     		throw "Invalid user ID"
     	}
-		return apiQuery(req, endpoint: "/admin/moderator/demote/\(userID)", method: .POST).map { response in
+		return apiQuery(req, endpoint: "/admin/user/demote/\(userID)", method: .POST).map { response in
 			return response.status
 		}
 	}

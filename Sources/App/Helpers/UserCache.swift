@@ -142,7 +142,7 @@ extension UserCacheData {
 		typealias User = App.UserCacheData
 
 		func authenticate(bearer: BearerAuthorization, for request: Request) -> EventLoopFuture<Void> {
-			if let foundUser = request.userCache.getUser(token: bearer.token) {
+			if let foundUser = request.userCache.getUser(token: bearer.token), foundUser.accessLevel != .banned {
 				request.auth.login(foundUser)
 			}
 			return request.eventLoop.makeSucceededFuture(())

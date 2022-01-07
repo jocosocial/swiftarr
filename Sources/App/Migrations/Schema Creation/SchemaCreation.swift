@@ -24,6 +24,7 @@ struct CreateCustomEnums: Migration {
 				.case("verified")
 				.case("client")
 				.case("moderator")
+				.case("twitarrteam")
 				.case("tho")
 				.case("admin")
 				.create()

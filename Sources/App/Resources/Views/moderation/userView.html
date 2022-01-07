@@ -13,8 +13,8 @@
 							Set Access Level
 						</button>
 						<ul class="dropdown-menu" aria-labelledby="accessLevelMenuBtn" data-userid="#(modData.header.userID)">
-							<li><button class="dropdown-item" type="button" data-action="setAccessLevel" data-newstate="unverified">Unverified</button></li>
-							<li><button class="dropdown-item" type="button" data-action="setAccessLevel" data-newstate="banned">Banned</button></li>
+							<li><button class="dropdown-item" type="button" data-action="setAccessLevel" data-newstate="unverified" #if(!trunk.userIsTHO): disabled#endif>Unverified</button></li>
+							<li><button class="dropdown-item" type="button" data-action="setAccessLevel" data-newstate="banned"#if(!trunk.userIsTHO): disabled#endif>Banned</button></li>
 							<li><button class="dropdown-item" type="button" data-action="setAccessLevel" data-newstate="quarantined">Quarantined</button></li>
 							<li><button class="dropdown-item" type="button" data-action="setAccessLevel" data-newstate="verified">Verified</button></li>
 						</ul>

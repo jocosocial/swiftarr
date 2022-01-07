@@ -21,13 +21,30 @@
 				</a>		
 				<a class="list-group-item list-group-item-action" href="/admin/regcodes">
 					<b>Registration Codes</b>: View/Manage registration code table.
-				</a>		
-				<a class="list-group-item list-group-item-action" href="/admin/mods">
-					<b>Manage Moderators</b>: View/Manage moderators.
-				</a>		
+				</a>
+				#if(trunk.userIsTHO):
+					#if(trunk.username == "admin"):
+						<a class="list-group-item list-group-item-action" href="/admin/tho">
+							<b>Manage THO</b>: View/Manage THO members.
+						</a>
+					#else:
+						<a class="list-group-item list-group-item-action" href="/admin/tho">
+							<b>Manage THO</b>: View THO members.
+						</a>
+					#endif
+					<a class="list-group-item list-group-item-action" href="/admin/twitarrteam">
+						<b>Manage TwitarrTeam Members</b>: View/Manage members of TwitarrTeam.
+					</a>
+					<a class="list-group-item list-group-item-action" href="/admin/mods">
+						<b>Manage Moderators</b>: View/Manage moderators.
+					</a>
+				#endif
 				<a class="list-group-item list-group-item-action" href="/admin/karaoke/managers">
 					<b>Manage Karaoke Managers</b>: View/Manage Karaoke Managers.
 				</a>		
+				<a class="list-group-item list-group-item-action" href="/seamail?foruser=twitarrteam">
+					<b>TwitarrTeam Seamail</b>: Seamail to @twitarrteam
+				</a>
 			</div>
 		</div>
     #endexport

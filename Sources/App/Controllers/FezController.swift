@@ -117,18 +117,31 @@ struct FezController: APIRouteCollection {
 	/// **Query Parameters:**
 	/// - `?type=STRING` -	Only return fezzes of the given fezType. See `FezType` for a list.
 	/// - `?excludetype=STRING` - Don't return fezzes of the given type. See `FezType` for a list.
-	/// * `?start=INT` - The offset to the first result to return in the filtered + sorted array of results.
-	/// * `?limit=INT` - The maximum number of fezzes to return; defaults to 50.
+	/// - `?start=INT` - The offset to the first result to return in the filtered + sorted array of results.
+	/// - `?limit=INT` - The maximum number of fezzes to return; defaults to 50.
+	/// 
+	/// Moderators and above can use the `foruser` query parameter to access pseudo-accounts:
+	/// 
+	/// - `?foruser=NAME` - Access the "moderator" or "twitarrteam" seamail accounts.
 	///
 	/// `/GET /api/v3/fez/types` is  the canonical way to get the list of acceptable values. Type and excludetype are exclusive options, obv.
 	///
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: An array of <doc:FezData> containing all the fezzes joined by the user.
 	func joinedHandler(_ req: Request) throws -> EventLoopFuture<FezListData> {
-		let user = try req.auth.require(UserCacheData.self)
-		let start = (req.query[Int.self, at: "start"] ?? 0)
-		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
-		let query = FezParticipant.query(on: req.db).filter(\.$user.$id == user.userID)
+		struct QueryStruct: Content {
+			var type: String?
+			var excludetype: String?
+			var start: Int?
+			var limit: Int?
+			var foruser: String?
+		}
+		let urlQuery = try req.query.decode(QueryStruct.self)
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let effectiveUser = try getEffectiveUser(user: cacheUser, req: req)
+		let start = urlQuery.start ?? 0
+		let limit = (urlQuery.limit ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
+		let query = FezParticipant.query(on: req.db).filter(\.$user.$id == effectiveUser.userID)
 				.join(FriendlyFez.self, on: \FezParticipant.$fez.$id == \FriendlyFez.$id)
 		if let typeStr = req.query[String.self, at: "type"], let fezType = FezType.fromAPIString(typeStr) {
 			query.filter(FriendlyFez.self, \.$fezType == fezType)
@@ -141,7 +154,7 @@ struct FezController: APIRouteCollection {
 			return query.sort(FriendlyFez.self, \.$updatedAt, .descending).range(start..<(start + limit)).all().flatMapThrowing { pivots in
 				let fezDataArray = try pivots.map { pivot -> FezData in
 					let fez = try pivot.joined(FriendlyFez.self)
-					return try buildFezData(from: fez, with: pivot, for: user, on: req)
+					return try buildFezData(from: fez, with: pivot, for: effectiveUser, on: req)
 				}
 				return FezListData(paginator: Paginator(total: fezCount, start: start, limit: limit), fezzes: fezDataArray)
 			}
@@ -205,6 +218,10 @@ struct FezController: APIRouteCollection {
 	/// Start and limit only have an effect when the user is a member of the Fez. Limit defaults to 50 and start defaults to `(readCount / limit) * limit`, 
 	/// where readCount is how many posts the user has read already.
 	///
+	/// Moderators and above can use the `foruser` query parameter to access pseudo-accounts:
+	/// 
+	/// - `?foruser=NAME` - Access the "moderator" or "twitarrteam" seamail accounts.
+	///
 	/// When a member calls this method, it updates the member's `readCount`, marking all posts read up to `start + limit`.
 	/// However, the returned readCount is the value before updating. If there's 5 posts in the chat, and the member has read 3 of them, the returned
 	/// `FezData` has 5 posts, we return 3 in `FezData.readCount`field, and update the pivot's readCount to 5.
@@ -220,15 +237,16 @@ struct FezController: APIRouteCollection {
 	/// - Returns: <doc:FezData> with fez info and all discussion posts.
 	func fezHandler(_ req: Request) throws -> EventLoopFuture<FezData> {
 		let cacheUser = try req.auth.require(UserCacheData.self)
+		let effectiveUser = try getEffectiveUser(user: cacheUser, req: req)
 		// get fez
 		return FriendlyFez.findFromParameter(fezIDParam, on: req).throwingFlatMap { fez in
 			guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
 				throw Abort(.notFound, reason: "this fez is not available")
 			}
-			return fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == cacheUser.userID).first()
+			return fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == effectiveUser.userID).first()
 					.throwingFlatMap { pivot in
 				var fezData = try buildFezData(from: fez, with: pivot, for: cacheUser, on: req)
-				if pivot != nil || cacheUser.accessLevel.hasAccess(.moderator) {
+				if pivot != nil || (cacheUser.accessLevel.hasAccess(.moderator) && fez.fezType != .closed) {
 					return try buildPostsForFez(fez, pivot: pivot, on: req, user: cacheUser).throwingFlatMap { (posts, paginator) in
 						fezData.members?.paginator = paginator
 						fezData.members?.posts = posts
@@ -813,15 +831,20 @@ struct FezController: APIRouteCollection {
 
 extension FezController {
 
-	// If pivot is not nil, the FezData's postCount and readCount is filled in. Pivot should always be nil if the current user
-	// is not a member of the fez.
+	// MembersOnlyData is only filled in if:
+	//	* The user is a member of the fez (pivot is not nil) OR
+	//  * The user is a moderator and the fez is not private
+	// 
+	// Pivot should always be nil if the current user is not a member of the fez.
+	// To read the 'moderator' or 'twitarrteam' seamail, verify the requestor has access and call this fn with
+	// the effective user's account.
 	func buildFezData(from fez: FriendlyFez, with pivot: FezParticipant? = nil, posts: [FezPostData]? = nil, 
 			for cacheUser: UserCacheData, on req: Request) throws -> FezData {
 		let userBlocks = cacheUser.getBlocks()
 		// init return struct
 		let ownerHeader = try req.userCache.getHeader(fez.$owner.id)
 		var fezData : FezData = try FezData(fez: fez, owner: ownerHeader)
-		if pivot != nil || cacheUser.accessLevel.hasAccess(.moderator) {
+		if pivot != nil || (cacheUser.accessLevel.hasAccess(.moderator) && fez.fezType != .closed) {
 			let allParticipantHeaders = req.userCache.getHeaders(fez.participantArray)
 
 			// masquerade blocked users
@@ -890,5 +913,28 @@ extension FezController {
 
 	func userCanViewMemberData(user: UserCacheData, fez: FriendlyFez) -> Bool {
 		return user.accessLevel.hasAccess(.moderator) || fez.participantArray.contains(user.userID) 
+	}
+	
+	// For both Moderator and TwittarTeam access levels, there's a special user account with the same name.
+	// Seamail to @moderator and @TwitarrTeam may be read by any user with the respective access levels.
+	// Instead of designing a new entity for these group inboxes, 
+	func getEffectiveUser(user: UserCacheData, req: Request) throws -> UserCacheData {
+		guard let effectiveUserParam = req.query[String.self, at: "foruser"] else {
+			return user
+		}
+		var effectiveUser = user
+		if effectiveUserParam == "moderator", let modUser = req.userCache.getUser(username: "moderator") {
+			guard user.accessLevel.hasAccess(.moderator) else {
+				throw Abort(.forbidden, reason: "Only moderators can access moderator seamail.")
+			}
+			effectiveUser = modUser	
+		}
+		if effectiveUserParam == "twitarrteam", let ttUser = req.userCache.getUser(username: "TwitarrTeam") {
+			guard user.accessLevel.hasAccess(.twitarrteam) else {
+				throw Abort(.forbidden, reason: "Only TwitarrTeam members can access TwitarrTeam seamail.")
+			}
+			effectiveUser = ttUser	
+		}
+		return effectiveUser
 	}
 }

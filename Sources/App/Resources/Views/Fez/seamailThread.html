@@ -47,6 +47,8 @@
 								<div class="row mb-2"> 
 									<textarea class="form-control" maxlength="500" rows="3" name="postText" placeholder="Send a message"></textarea>
 								</div>
+								<div class="alert alert-danger mt-3 d-none" role="alert">
+								</div>				
 								<div class="row mb-2">
 									<div class="col gx-0">
 										<small>Please remember to abide by the<br><a href="/codeOfConduct">Code of Conduct</a></small>
@@ -55,8 +57,18 @@
 										<button type="submit" class="btn btn-primary">Post</button>
 									</div>
 								</div>
-								<div class="alert alert-danger mt-3 d-none" role="alert">
-								</div>				
+								#if(trunk.userIsMod && !post.isEdit):
+									<div class="row justify-content-end mt-2">
+										<div class="col col-auto form-check">
+											<input class="form-check-input" type="checkbox" value="" name="postAsTwitarrTeam" id="flexCheckDefault">
+											<label class="form-check-label small" for="flexCheckDefault">Post as TwitarrTeam</label>
+										</div>
+										<div class="col col-auto form-check gx-0">
+											<input class="form-check-input" type="checkbox" value="" name="postAsModerator" id="flexCheckDefault">
+											<label class="form-check-label small" for="flexCheckDefault">Post as Moderator</label>
+										</div>
+									</div>
+								#endif
 							</div>
 						</form>
 					</li>

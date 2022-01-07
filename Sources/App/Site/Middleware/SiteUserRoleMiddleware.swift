@@ -20,6 +20,16 @@ struct SiteRequireModeratorMiddleware: Middleware {
 	}
 }
 
+struct SiteRequireTwitarrTeamMiddleware: Middleware {
+
+	func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+		guard let user = request.auth.get(UserCacheData.self), user.accessLevel.hasAccess(.twitarrteam) else {
+			return request.eventLoop.future(error: Abort(.unauthorized))
+		}
+		return next.respond(to: request)
+	}
+}
+
 struct SiteRequireTHOMiddleware: Middleware {
 
 	func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {

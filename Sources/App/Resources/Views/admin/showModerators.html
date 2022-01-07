@@ -6,14 +6,14 @@
 					<nav aria-label="breadcrumb">
 						<ol class="breadcrumb">
 							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
-							<li class="breadcrumb-item active" aria-current="page">Show Moderators</li>
+							<li class="breadcrumb-item active" aria-current="page">Show #(levelName) Members</li>
 						</ol>
 					</nav>
 				</div>
 			</div>
 			<div class="row my-2">
 				<div class="col">
-					<b>Search for Users to Promote To Moderator</b>
+					<b>Search for Users to Promote To #(levelName)</b>
 				</div>
 			</div>
 			<div class="row my-2">
@@ -37,7 +37,7 @@
 								</div>
 								<div class="col col-auto">
 									<button type="button" class="btn btn-sm btn-primary" autocomplete="off" data-action="reload" 
-											data-actionpath="/admin/user/#(user.userID)/makemoderator"
+											data-actionpath="/admin/user/#(user.userID)/#(targetLevel)/promote"
 											data-errordiv="#(user.userID)_errorDisplay">
 										Promote
 										<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
@@ -46,7 +46,7 @@
 								</div>
 							</div>
 							<div class="text-end text-danger d-none" id="#(user.userID)_errorDisplay">
-								Could not promote to moderator: <span class="errortext"></span>
+								Could not promote to #(levelName): <span class="errortext"></span>
 							</div>
 						</li>
 					#endfor
@@ -54,16 +54,16 @@
 			#endif
 			<div class="row my-2">
 				<div class="col">
-					<b>Current Moderators:</b>
+					<b>Current #(levelName) members:</b>
 				</div>
 			</div>
 			<ul class="list-group">
-				#if(count(currentMods) == 0):
+				#if(count(currentMembers) == 0):
 					<li class="list-group-item bg-transparent">
-						<span class="text-center"><h6>No users have been promoted to moderator yet.</h6>
+						<span class="text-center"><h6>No users have been promoted to #(levelName) yet.</h6>
 					</li>
 				#else:
-					#for(mod in currentMods):
+					#for(mod in currentMembers):
 						<li class="list-group-item list-group-item-action" data-postid="#(ann.id)">		
 							<div class="row justify-content-between">
 								<div class="col">
@@ -71,7 +71,7 @@
 								</div>
 								<div class="col col-auto">
 									<button type="button" class="btn btn-sm btn-primary" autocomplete="off" data-action="reload" 
-											data-actionpath="/admin/user/#(mod.userID)/demotemoderator"
+											data-actionpath="/admin/user/#(mod.userID)/verified/demote"
 											data-errordiv="#(mod.userID)_modErrorDisplay">
 										Demote
 										<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>

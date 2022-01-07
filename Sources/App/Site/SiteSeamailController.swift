@@ -44,6 +44,7 @@ struct SiteSeamailController: SiteControllerUtils {
 				var trunk: TrunkContext
     			var fezList: FezListData
     			var fezzes: [FezData]
+    			var effectiveUser: String?
 				var paginator: PaginatorContext
     			
     			init(_ req: Request, fezList: FezListData, fezzes: [FezData]) throws {
@@ -54,7 +55,9 @@ struct SiteSeamailController: SiteControllerUtils {
 					paginator = .init(fezList.paginator) { pageIndex in
 						"/seamail?start=\(pageIndex * limit)&limit=\(limit)"
 					}
-   			}
+					effectiveUser = req.query[String.self, at: "foruser"]
+
+   				}
     		}
     		let ctx = try SeamailRootPageContext(req, fezList: fezList, fezzes: allFezzes)
 			return req.view.render("Fez/seamails", ctx)
@@ -158,6 +161,9 @@ struct SiteSeamailController: SiteControllerUtils {
     				newPosts = []
     				showDivider = false
     				post = .init(forType: .seamailPost(fez))
+    				if let foruser = req.query[String.self, at: "foruser"] {
+    					post.postSuccessURL.append("?foruser=\(foruser)")
+    				}
     				paginator = PaginatorContext(start: 0, total: 40, limit: 50, urlForPage: { pageIndex in
 						"/seamail/\(fez.fezID)?start=\(pageIndex * 50)&limit=50"
 					})

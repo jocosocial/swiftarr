@@ -2,16 +2,30 @@
     #export("body"):
     	<div class="container-md ms-0 mt-2 mb-5">
 			<div class="card mb-2">	
-				<div class="card-header bg-primary">
-					<span class="text-white">
-						<b>Today's Theme: #(dailyTheme.title)</b>
-					</span>
-				</div>
-				<div class="card-body bg-light">
-					#(dailyTheme.info)
-				</div>
 				#if(dailyTheme.image):
-					<img class="card-img-bottom" src="/api/v3/image/full/#(dailyTheme.image)" height=200 alt="Daily Theme Image">
+					<img class="card-img" src="/api/v3/image/full/#(dailyTheme.image)" alt="Daily Theme Image">
+ 					<div class="card-img-overlay">
+						<div class="card-header bg-primary-50">
+							<span class="text-white">
+								<b>Today's Theme: #(dailyTheme.title)</b>
+							</span>
+						</div>
+						<div class="card-body bg-light-50">
+							#(dailyTheme.info)
+						</div>
+					</div>
+				#else:
+					<div class="card-header bg-primary">
+						<span class="text-white">
+							<b>Today's Theme: #(dailyTheme.title)</b>
+						</span>
+					</div>
+					<div class="card-body bg-light">
+						#(dailyTheme.info)
+					</div>
+					#if(dailyTheme.image):
+						<img class="card-img-bottom" src="/api/v3/image/full/#(dailyTheme.image)" alt="Daily Theme Image">
+					#endif
 				#endif
 			</div>
 

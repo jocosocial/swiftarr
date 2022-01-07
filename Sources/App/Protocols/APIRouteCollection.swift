@@ -92,6 +92,27 @@ extension APIRouteCollection {
 	func addTokenCacheAuthGroup(to: RoutesBuilder) -> RoutesBuilder {
 		return to.grouped([UserCacheData.TokenAuthenticator(), UserCacheData.guardMiddleware(throwing: Abort(.unauthorized, reason: "User not authenticated."))])
 	}
+	
+// MARK: - Guards
+	// Throws an error if the given user is a 'special' account that cannot have its userAccessLevel changed.
+	func guardNotSpecialAccount(_ targetUser: User) throws {
+		guard targetUser.username != "moderator" else {
+			throw Abort(.badRequest, reason: "Cannot change access level of @moderator account.")
+		}
+		guard targetUser.username != "TwitarrTeam" else {
+			throw Abort(.badRequest, reason: "Cannot change access level of @twitarrteam account.")
+		}
+		guard targetUser.username != "THO" else {
+			throw Abort(.badRequest, reason: "Cannot change access level of @THO account.")
+		}
+		guard targetUser.username != "admin" else {
+			throw Abort(.badRequest, reason: "Cannot change access level of @admin account.")
+		}
+		// Can't change access level of Clients
+		guard targetUser.accessLevel != .client else {
+			throw Abort(.badRequest, reason: "Cannot change access level of Client accounts.")
+		}
+	}
 
 // MARK: - Notification Management
 	

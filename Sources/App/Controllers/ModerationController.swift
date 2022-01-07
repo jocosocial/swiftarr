@@ -590,8 +590,10 @@ struct ModerationController: APIRouteCollection {
 	/// Moderator only. Sets the accessLevel enum on the user idententified by userID to the <doc:UserAccessLevel> in STRING.
 	/// Moderators (and above) cannot use this method to change the access level of other mods (and above). Nor can they use this to
 	/// reduce their own access level to non-moderator status.
+	/// 
+	/// This method cannot be used to elevate access level to `moderator` or higher. APIs to do this are in AdminController.
 	///
-	/// The primary account and all sub-accounts linked to the given User account are affected by the temporary ban. The passed-in UserID may
+	/// The primary account and all sub-accounts linked to the given User account are affected by the change in access level. The passed-in UserID may
 	/// be either a primary or sub-account.
 	/// 
     /// - Parameter userID: in URL path.
@@ -608,18 +610,41 @@ struct ModerationController: APIRouteCollection {
 				[.unverified, .banned, .quarantined, .verified].contains(targetAccessLevel) else {
 			throw Abort(.badRequest, reason: "Invalid target accessLevel. Must be one of unverified, banned, quarantined, verified.")
 		}
+		guard ![.banned, .unverified].contains(targetAccessLevel) || user.accessLevel.hasAccess(.tho) else {
+			throw Abort(.badRequest, reason: "THO access level required to set access level to Banned or Unverified.")
+		}
 		return User.findFromParameter(userIDParam, on: req).throwingFlatMap { targetUser in
-			guard targetUser.accessLevel < UserAccessLevel.moderator,
-					targetUser.accessLevel != UserAccessLevel.client else {
-				throw Abort(.badRequest, reason: "You cannot modify user access level of Target user.")
-			}
 			return targetUser.allAccounts(on: req.db).throwingFlatMap { allAccounts in
+				try allAccounts.forEach { account in
+					try guardNotSpecialAccount(account)
+				}
+				// If the user has any accounts with Moderator or higher access, we can't bulk-modify, unless
+				// we're marking accounts Verified. Lowering the access level of a Mod should require approval 
+				// of someone who can promote/demote mods. And, banning all of a mod's accounts except the one 
+				// with Mod privileges doesn't work--they can just log onto the mod acct and un-ban themselves.
+				if targetAccessLevel != .verified {
+					try allAccounts.forEach { account in
+						if account.accessLevel >= UserAccessLevel.moderator {
+							throw Abort(.badRequest, reason: "Target user has \(allAccounts.count) accounts and their account \"\(account.username)\" has elevated access (Moderator or higher). You need to demote their access first.")
+						}
+					}
+				}			
+				// Log the action against the parent account.
 				if let modSettableAccessLevel = ModeratorActionType.setFromAccessLevel(targetAccessLevel) {
 					allAccounts[0].logIfModeratorAction(modSettableAccessLevel, user: user, on: req)
 				}
 				let futures = allAccounts.map { (targetUserAccount) -> EventLoopFuture<Void> in
-					targetUserAccount.accessLevel = targetAccessLevel
-					return targetUserAccount.save(on: req.db)
+					if targetUserAccount.accessLevel <= .verified {
+						targetUserAccount.accessLevel = targetAccessLevel
+					}
+					return targetUserAccount.save(on: req.db).throwingFlatMap {
+						// Close any open sockets, keep going if we get an error. Then, delete the user's login token
+						// and refresh the user cache.
+						try? req.webSocketStore.handleUserLogout(user.requireID())
+						return try Token.query(on: req.db).filter(\.$user.$id == targetUserAccount.requireID()).delete().throwingFlatMap {
+							return try req.userCache.updateUser(targetUserAccount.requireID()).transform(to: ())
+			}
+					}
 				}
 				return futures.flatten(on: req.eventLoop).transform(to: .ok)
 			}

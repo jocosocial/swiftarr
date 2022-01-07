@@ -27,8 +27,11 @@ struct SiteModController: SiteControllerUtils {
 		//
 		// In this case, modRoutes are still Moderator-only. But, one mod could send another a link to one of these pages and it'd work.	
 		let modRoutes = getGlobalRoutes(app).grouped(SiteRequireModeratorMiddleware())
+		modRoutes.get("moderator", use: moderatorRootPageHandler)
 		modRoutes.get("reports", use: reportsPageHandler)
+		modRoutes.get("reports", "closed", use: closedReportsPageHandler)
 		modRoutes.get("moderator", "log",  use: moderatorLogPageHandler)
+        modRoutes.get("moderator", "seamail", use: moderatorSeamailPageHandler)
 
 		modRoutes.get("moderate", "twarrt", twarrtIDParam, use: moderateTwarrtContentPageHandler)
 		modRoutes.get("moderate", "forumpost", postIDParam, use: moderateForumPostContentPageHandler)
@@ -58,6 +61,20 @@ struct SiteModController: SiteControllerUtils {
 		modPrivateRoutes.post("reports", reportIDParam, "close",  use: closeReportsPostHandler)
 	}
 	
+	// GET /moderator
+	// Shows the root moderator page, which just shows links to other pages.
+	func moderatorRootPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+		struct ModeratorRootPageContext : Encodable {
+			var trunk: TrunkContext
+			
+			init(_ req: Request) throws {
+				trunk = .init(req, title: "Moderator Pages", tab: .none)
+			}
+		}
+		let ctx = try ModeratorRootPageContext(req)
+		return req.view.render("moderation/root", ctx)
+	}
+
 	/// `GET /archivedimage/ID`
 	///
 	/// Moderators only. Returns an image from the image archive (user images that have been replaced by subsequent edits).
@@ -83,6 +100,29 @@ struct SiteModController: SiteControllerUtils {
 			let reports = try response.content.decode([ReportModerationData].self)
 			let reportedContentArray = generateContentGroups(from: reports)
 			let openReportContent = reportedContentArray.compactMap { $0.openCount > 0 ? $0 : nil }
+			
+			struct ReportsContext : Encodable {
+				var trunk: TrunkContext
+				var reports: [ReportContentGroup]
+				
+				init(_ req: Request, reports: [ReportContentGroup]) throws {
+					trunk = .init(req, title: "Reports", tab: .none)
+					self.reports = reports
+				}
+			}
+			let ctx = try ReportsContext(req, reports: openReportContent)
+			return req.view.render("moderation/reports", ctx)			
+		}
+	}
+	
+	/// `GET /reports/closed`
+	///
+	/// Shows moderators a summary of user-submitted reports, grouped by the content that was reported.
+	func closedReportsPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+		return apiQuery(req, endpoint: "/mod/reports").throwingFlatMap { response in
+			let reports = try response.content.decode([ReportModerationData].self)
+			let reportedContentArray = generateContentGroups(from: reports)
+			let openReportContent = reportedContentArray.compactMap { $0.openCount > 0 ? nil : $0 }
 			
 			struct ReportsContext : Encodable {
 				var trunk: TrunkContext
@@ -143,6 +183,43 @@ struct SiteModController: SiteControllerUtils {
 			let ctx = try LogContext(req, log: logData)
 			return req.view.render("moderation/moderatorActionLog", ctx)
 		}
+	}
+	
+	// `GET /moderator/seamail`
+	func moderatorSeamailPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+		return apiQuery(req, endpoint: "/fez/joined?type=closed").throwingFlatMap { response in
+ 			let fezList = try response.content.decode(FezListData.self)
+ 			// Re-sort fezzes so ones with new msgs are first. Keep most-recent-change sort within each group.
+ 			var newMsgFezzes: [FezData] = []
+ 			var noNewMsgFezzes: [FezData] = []
+ 			fezList.fezzes.forEach {
+ 				if let members = $0.members, members.postCount > members.readCount {
+ 					newMsgFezzes.append($0)
+ 				}
+ 				else {
+ 					noNewMsgFezzes.append($0)
+ 				}
+ 			}
+ 			let allFezzes = newMsgFezzes + noNewMsgFezzes
+     		struct SeamailRootPageContext : Encodable {
+				var trunk: TrunkContext
+    			var fezList: FezListData
+    			var fezzes: [FezData]
+				var paginator: PaginatorContext
+    			
+    			init(_ req: Request, fezList: FezListData, fezzes: [FezData]) throws {
+    				trunk = .init(req, title: "Seamail", tab: .seamail)
+    				self.fezList = fezList
+    				self.fezzes = fezzes
+    				let limit = fezList.paginator.limit
+					paginator = .init(fezList.paginator) { pageIndex in
+						"/seamail?start=\(pageIndex * limit)&limit=\(limit)"
+					}
+   				}
+    		}
+    		let ctx = try SeamailRootPageContext(req, fezList: fezList, fezzes: allFezzes)
+			return req.view.render("moderation/moderatorSeamail", ctx)
+    	}
 	}
 
 	///	`GET /moderate/twarrt/ID`

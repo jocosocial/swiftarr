@@ -23,4 +23,15 @@ the entry contains the previous category the forum was in.
 ## Dec 14, 2021
 
 * Removed `SeaMonkey` struct, changing all API references to it into the very similar `UserHeader` struct instead.
-* Added a new ModeratorActionType: `post`. Used when a mod posts as @moderator or @TwittarTeam. Change only affects Mod-level API.
+* Added a new ModeratorActionType: `post`. Used when a mod posts as @moderator or @TwitarrTeam. Change only affects Mod-level API.
+
+## Jan 6, 2022
+
+* Added 'twitarrteam' as a new access level. Members of the Twitarr dev team should be elevated to this access level. TwitarrTeam
+access is between Moderator and THO; importantly it gives access to the @TwitarrTeam seamail inbox.
+* Added a call to promote users to TwittarTeam, callable by THO and above, and a call to promote users to THO, callable by admin.
+* The call to downgrade access levels requires THO access to set 'banned' or 'unverified'. Moderator level still required to set
+'quarantined' or 'verified'.
+* added the '?foruser=' query parameter to several Fez API calls; used by moderators and TwittarTeam members to access their 
+respective shared Seamail inboxes. 
+
