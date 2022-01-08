@@ -4,7 +4,6 @@ services:
     build:
       context: ..
       dockerfile: scripts/Dockerfile.linux-testing
-    container_name: swiftarr
     depends_on:
       - postgres
       - redis
@@ -15,13 +14,11 @@ services:
       REDIS_PORT: 6379
 
   postgres:
-    image: postgres
-    container_name: postgres-test
+    image: docker.io/library/postgres:14.1
     environment:
       POSTGRES_DB: swiftarr-test
       POSTGRES_USER: swiftarr
       POSTGRES_PASSWORD: password
 
   redis:
-    image: redis:alpine
-    container_name: redis-test
+    image: docker.io/library/redis:6.2.6-alpine
