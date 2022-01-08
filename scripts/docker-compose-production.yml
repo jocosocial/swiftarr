@@ -1,0 +1,38 @@
+version: '3'
+services:
+  postgres:
+    image: docker.io/library/postgres:14.1
+    environment:
+      POSTGRES_DB: swiftarr
+      POSTGRES_USER: swiftarr
+      POSTGRES_PASSWORD: password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - 5432:5432 # @TODO shut this off
+
+  redis:
+    image: docker.io/library/redis:6.2.6-alpine
+
+  web:
+    build:
+      context: ..
+      dockerfile: scripts/Dockerfile.production
+      args:
+        env: production
+    ports:
+      - 8081:8081
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      DATABASE_HOSTNAME: postgres
+      DATABASE_DB: swiftarr
+      DATABASE_PASSWORD: password
+      REDIS_HOSTNAME: redis
+    volumes:
+      - images:/app/images
+
+volumes:
+  images:
+  pgdata:

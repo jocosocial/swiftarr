@@ -1,5 +1,5 @@
 Swiftarr Installation
-====================
+=====================
 
 MacOS
 -----
@@ -85,3 +85,21 @@ will need to be made for other distros (such as Ubuntu/Debian/etc).
 
 Docker
 ------
+This assumes you already have Docker or an equivalent OCI-compatible runtime
+available to you.
+
+### Prerequisites
+Other than the aforementioned runtime no additional prerequisites are needed.
+
+### Build
+1. A `docker-compose` file will handle the building of the server image. A
+   wrapper script has been provided for your benefit.
+   ```
+   scripts/production.sh build [--no-cache]
+   ```
+
+### Run
+1. `docker-compose` will similarly handle creating the whole stack.
+   ```
+   scripts/production.sh up [-d]
+   ```
