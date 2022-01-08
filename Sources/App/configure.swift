@@ -186,7 +186,7 @@ func configureBasicSettings(_ app: Application) throws {
 	// will handle all the cases, finding the bundle dir correctly. We also check that we can find our resource files
 	// on launch.
 	var resourcesPath: URL
-	if app.environment.name == "heroku" {
+	if app.environment.name == "heroku" || operatingSystemPlatform() == "Linux" {
 		resourcesPath = Bundle.main.bundleURL.appendingPathComponent("swiftarr_App.resources")
 	}
 	else if Bundle(for: Settings.self).url(forResource: "swiftarr", withExtension: "css", subdirectory: "Resources/Assets/css") != nil {
@@ -242,7 +242,7 @@ func HTTPServerConfiguration(_ app: Application) throws {
 		app.http.server.configuration.hostname = host
 	}
 	else if app.environment == .development {
-		app.http.server.configuration.hostname = "192.168.0.19"
+		app.http.server.configuration.hostname = "127.0.0.1"
 	}
 	else if app.environment == .production {
 		app.http.server.configuration.hostname = "joco.hollandamerica.com"
@@ -466,4 +466,25 @@ func verifyConfiguration(_ app: Application) throws {
 	if !cssFileFound {
 		app.logger.critical("Resource files not found during launchtime sanity check. This usually means the Resources directory isn't getting copied into the App directory in /DerivedData.")
 	}
+}
+
+// Found this in a Github search. Seems to be good enough for our needs unless someone has better ideas.
+// https://github.com/contentstack/contentstack-swift/blob/master/Sources/ContentstackConfig.swift
+func operatingSystemPlatform() -> String? {
+    let osName: String? = {
+        #if os(iOS)
+        return "iOS"
+        #elseif os(OSX)
+        return "macOS"
+        #elseif os(tvOS)
+        return "tvOS"
+        #elseif os(watchOS)
+        return "watchOS"
+        #elseif os(Linux)
+        return "Linux"
+        #else
+        return nil
+        #endif
+    }()
+    return osName
 }
