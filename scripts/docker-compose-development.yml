@@ -3,7 +3,6 @@ services:
 
   postgres:
     image: postgres
-    container_name: postgres
     environment:
       POSTGRES_DB: swiftarr
       POSTGRES_USER: swiftarr
@@ -13,13 +12,11 @@ services:
 
   redis:
     image: redis:alpine
-    container_name: redis
     ports:
       - 6379:6379
 
   postgres-test:
     image: postgres
-    container_name: postgres-test
     environment:
       POSTGRES_DB: swiftarr-test
       POSTGRES_USER: swiftarr
@@ -29,6 +26,5 @@ services:
 
   redis-test:
     image: redis:alpine
-    container_name: redis-test
     ports:
       - 6380:6379
