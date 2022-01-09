@@ -412,6 +412,8 @@ func verifyConfiguration(_ app: Application) throws {
 	}
 	
 	// Test whether a 'swiftarr' database exists
+	// @TODO make the database name use whatever is configured for the app. Potentially could
+	// be called something other than 'swiftarr'.
 	if !postgresChecksFailed, let sqldb = app.db as? SQLDatabase {
 		do {
 			let query = try sqldb.raw("SELECT 1 FROM pg_database WHERE datname='swiftarr'").first().wait()
