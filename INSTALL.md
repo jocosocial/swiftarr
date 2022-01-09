@@ -125,4 +125,20 @@ This only applies to the Linux-Testing or Stack configurations.
    The database is initially populated based on the environment that you specified.
 
    By default, this will expose the application at http://localhost:8081 assuming 
-   all went well.   
+   all went well.
+2. When you are done you can terminate and optionally delete everything using the same tooling.
+   ```
+   scripts/stack.sh -e production down [-v]
+   ```
+
+### Manual Database Migration
+1. If you set `AUTO_MIGRATE` to `false` in your config and wish to perform a manual migration,
+   you can do this by calling:
+   ```
+   scripts/stack.sh -e development run web /app/Run migrate --yes
+   ```
+2. Then you can restart the initial container that was created and died because
+   there was no DB for it at the time.
+   ```
+   scripts/stack.sh -e development restart web
+   ```

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Setup any prereqs needed for the init container that
+# Setup any prereqs needed for the init sequence that
 # will seed the database.
 
 # Bail if something goes wrong and print out what we're doing.
@@ -12,7 +12,6 @@ set -ex
 export DEBIAN_FRONTEND=noninteractive
 
 # Basic prereqs
-# Annoyingly the Makefile from the Toolbox requires sudo.
 apt-get -qq update
 apt-get install -y \
   curl libatomic1 libicu60 libxml2 gnupg2 \
@@ -30,6 +29,6 @@ WAIT_VERSION=2.7.2
 curl -sL -o /wait "https://github.com/ufoscout/docker-compose-wait/releases/download/${WAIT_VERSION}/wait"
 chmod +x /wait
 
-# Cleanup
+# Cleanup & Lockdown
 apt-get clean
-#rm -r /var/lib/apt/lists/*
+rm -r /var/lib/apt/lists/*

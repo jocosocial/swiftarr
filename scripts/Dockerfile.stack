@@ -1,5 +1,5 @@
 # Builder image
-FROM swift:5.5.2 as builder
+FROM swift:5.5.2-bionic as builder
 
 ARG env
 

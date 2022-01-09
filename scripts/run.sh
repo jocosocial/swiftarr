@@ -14,6 +14,7 @@ if [ "${AUTO_MIGRATE}" = true ]; then
 
   if [ $? != 0 ]; then
     echo "Database not initialized. Running migration..."
+    # Papa Bless - https://theswiftdev.com/server-side-swift-projects-inside-docker-using-vapor-4/
     /app/Run migrate --yes --env "${ENVIRONMENT}"
   else
     echo "Database already initialized."

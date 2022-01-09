@@ -5,15 +5,28 @@ environment="production"
 stackname="swiftarr"
 filename="./scripts/docker-compose-stack.yml"
 
+function usage () {
+  echo "Usage:"
+  echo "-e: environment name (default: ${environment})"
+  echo "-n: stack name (default: ${stackname})"
+  echo "-f: compose file path (default: ${filename})"
+  echo "-h: help"
+  echo ""
+  echo "Any remaining arguments are dumped into docker-compose."
+  echo ""
+  exit 0
+}
+
 # https://www.baeldung.com/linux/use-command-line-arguments-in-bash-script
 # Make sure these don't overlap with raw docker-compose options, or if they do
 # it is somewhat known.
-while getopts e:n:f: flag
+while getopts e:n:f:h: flag
 do
     case "${flag}" in
         e) environment=${OPTARG};;
         n) stackname=${OPTARG};;
         f) filename=${OPTARG};;
+        h) usage;;
         *) continue;;
     esac
 done
