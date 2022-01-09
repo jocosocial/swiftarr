@@ -1,0 +1,14 @@
+# Init image
+FROM swift:5.5.2
+
+COPY scripts/init-prereqs.sh /
+RUN /init-prereqs.sh
+
+WORKDIR /opt
+RUN git clone --depth 1 --origin 18.3.3 https://github.com/vapor/toolbox
+WORKDIR /opt/toolbox
+RUN make install
+
+WORKDIR /init
+COPY scripts/init.sh /
+CMD /init.sh

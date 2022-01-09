@@ -8,8 +8,6 @@ services:
       POSTGRES_PASSWORD: password
     volumes:
       - pgdata:/var/lib/postgresql/data
-    ports:
-      - 5432:5432 # @TODO shut this off
 
   redis:
     image: docker.io/library/redis:6.2.6-alpine
@@ -32,6 +30,18 @@ services:
       REDIS_HOSTNAME: redis
     volumes:
       - images:/app/images
+
+  init:
+    build:
+      context: ..
+      dockerfile: scripts/Dockerfile.init
+    volumes:
+      - ..:/init
+    environment:
+      PGHOST: postgres
+      PGDATABSE: swiftarr
+      PGUSER: swiftarr
+      PGPASSWORD: password
 
 volumes:
   images:

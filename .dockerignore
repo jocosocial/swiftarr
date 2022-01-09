@@ -6,4 +6,5 @@ Package.resolved
 build
 docs
 scripts
-
+!scripts/init.sh
+!scripts/init-prereqs.sh
