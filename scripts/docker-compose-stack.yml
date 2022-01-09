@@ -3,9 +3,9 @@ services:
   postgres:
     image: docker.io/library/postgres:14.1
     environment:
-      POSTGRES_DB: swiftarr
-      POSTGRES_USER: swiftarr
-      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ${DATABASE_DB}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
 
@@ -15,8 +15,9 @@ services:
   web:
     build:
       context: ..
-      dockerfile: scripts/Dockerfile.production
+      dockerfile: scripts/Dockerfile.stack
       args:
+        # We always build the image in production mode.
         env: production
     ports:
       - 8081:8081
@@ -25,14 +26,15 @@ services:
       - redis
     environment:
       DATABASE_HOSTNAME: postgres
-      DATABASE_DB: swiftarr
-      DATABASE_USER: swiftarr
-      DATABASE_PASSWORD: password
+      DATABASE_DB: ${DATABASE_DB}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
       REDIS_HOSTNAME: redis
       WAIT_HOSTS: postgres:5432,redis:6379
       WAIT_HOSTS_TIMEOUT: 300
       WAIT_SLEEP_INTERVAL: 5
       WAIT_HOST_CONNECT_TIMEOUT: 10
+      ENVIRONMENT: ${ENVIRONMENT}
     volumes:
       - images:/app/images
 
