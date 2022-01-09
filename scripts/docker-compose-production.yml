@@ -26,22 +26,15 @@ services:
     environment:
       DATABASE_HOSTNAME: postgres
       DATABASE_DB: swiftarr
+      DATABASE_USER: swiftarr
       DATABASE_PASSWORD: password
       REDIS_HOSTNAME: redis
+      WAIT_HOSTS: postgres:5432,redis:6379
+      WAIT_HOSTS_TIMEOUT: 300
+      WAIT_SLEEP_INTERVAL: 5
+      WAIT_HOST_CONNECT_TIMEOUT: 10
     volumes:
       - images:/app/images
-
-  init:
-    build:
-      context: ..
-      dockerfile: scripts/Dockerfile.init
-    volumes:
-      - ..:/init
-    environment:
-      PGHOST: postgres
-      PGDATABSE: swiftarr
-      PGUSER: swiftarr
-      PGPASSWORD: password
 
 volumes:
   images:

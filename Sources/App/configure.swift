@@ -22,6 +22,7 @@ import gd
 /// * DATABASE_HOSTNAME:
 /// * DATABASE_PORT:
 /// * DATABASE_DB:
+/// * DATABASE_USER:
 /// * DATABASE_PASSWORD:
 /// 
 /// * REDIS_URL:

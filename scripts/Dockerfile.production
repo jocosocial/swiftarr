@@ -4,26 +4,36 @@ FROM swift:5.5.2 as builder
 ARG env
 
 RUN apt-get -qq update && apt-get install -y \
-  libssl-dev zlib1g-dev libgd-dev \
-  && rm -r /var/lib/apt/lists/*
+    libssl-dev zlib1g-dev libgd-dev
+
 WORKDIR /app
-COPY . .
+# Not copying "." means that changes to the runtime scripts do not trigger
+# a complete application rebuild, which saves a lot of time.
+COPY ./Sources /app/Sources
+COPY ./Package.* /app
+COPY ./Tests /app/Tests
+
 RUN mkdir -p /build/lib && cp -R /usr/lib/swift/linux/*.so* /build/lib
 RUN swift build -c release && mv `swift build -c release --show-bin-path` /build/bin
 
 # Production image
 FROM ubuntu:18.04
+
 ARG env
-# DEBIAN_FRONTEND=noninteractive for automatic UTC configuration in tzdata
-RUN apt-get -qq update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-  libatomic1 libicu60 libxml2 libcurl4 libz-dev libbsd0 tzdata libgd3 \
-  && rm -r /var/lib/apt/lists/*
+ENV ENVIRONMENT=$env
+ENV AUTO_MIGRATE=true
+
+# Image setup
+COPY scripts/init-prereqs.sh /
+RUN /init-prereqs.sh
+
+# App installation
 WORKDIR /app
 COPY --from=builder /build/bin/Run /app
 COPY --from=builder /build/lib/* /usr/lib/
 COPY --from=builder /build/bin/swiftarr_App.resources /app/swiftarr_App.resources
-# Uncomment the next line if you need to load resources from the `Public` directory
-#COPY --from=builder /app/Public ./Public
-ENV ENVIRONMENT=$env
+# @TODO tests???
 
-ENTRYPOINT ./Run serve --env $ENVIRONMENT --hostname 0.0.0.0 --port 8081
+# Run
+COPY scripts/run.sh /
+CMD ["/run.sh"]
