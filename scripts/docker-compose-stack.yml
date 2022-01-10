@@ -20,7 +20,7 @@ services:
         # We always build the image in production mode.
         env: production
     ports:
-      - 8081:8081
+      - ${PORT}:${PORT}
     depends_on:
       - postgres
       - redis
