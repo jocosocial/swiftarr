@@ -23,4 +23,4 @@ else
   echo "Automatic database migration was disabled."
 fi
 
-/app/Run serve --env "${ENVIRONMENT}" --hostname 0.0.0.0 --port 8081
+/app/Run serve --env "${ENVIRONMENT}" --hostname ${hostname} --port ${PORT}

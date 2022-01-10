@@ -91,10 +91,14 @@ func databaseConnectionConfiguration(_ app: Application) throws {
 	// configure PostgreSQL connection
     // note: environment variable nomenclature is vapor.cloud compatible
     // support for Heroku environment
+
+  // Specify a database connection timeout in case we find ourselves stuck on a slow laptop.
+  let databaseTimeoutSeconds = Int64(Environment.get("DATABASE_TIMEOUT") ?? "10")
+
 	if let databaseURL = Environment.get("DATABASE_URL"), var postgresConfig = PostgresConfiguration(url: databaseURL) {
 		postgresConfig.tlsConfiguration = .makeClientConfiguration()
 		postgresConfig.tlsConfiguration?.certificateVerification = .none
-		app.databases.use(.postgres(configuration: postgresConfig), as: .psql)
+		app.databases.use(.postgres(configuration: postgresConfig, connectionPoolTimeout: .seconds(databaseTimeoutSeconds!)), as: .psql)
     } else 
     {
         // otherwise
@@ -111,7 +115,7 @@ func databaseConnectionConfiguration(_ app: Application) throws {
             postgresPort = 5432
         }
 		app.databases.use(.postgres(hostname: postgresHostname, port: postgresPort, username: postgresUser, 
-				password: postgresPassword, database: postgresDB), as: .psql)
+				password: postgresPassword, database: postgresDB, connectionPoolTimeout: .seconds(databaseTimeoutSeconds!)), as: .psql)
     }
     
     // configure Redis connection
