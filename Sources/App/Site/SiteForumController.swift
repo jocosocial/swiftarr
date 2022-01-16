@@ -318,7 +318,7 @@ struct SiteForumController: SiteControllerUtils {
     	}
 		let postStruct = try req.content.decode(MessagePostFormContent.self)
 		guard let forumTitle = postStruct.forumTitle else {
-			throw "Forum must have a ttile"
+			throw "Forum must have a title"
 		}
 		let postContent = postStruct.buildPostContentData()
 		let forumContent = ForumCreateData(title: forumTitle, firstPost: postContent)

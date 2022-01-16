@@ -674,6 +674,17 @@ struct ForumController: APIRouteCollection {
                     			bookmarked: false, userLike: nil, likeCount: 0)
 						let forumData = try ForumData(forum: forum, creator: creatorHeader,
 								isFavorite: false, posts: [postData], pager: Paginator(total: 1, start: 0, limit: 50))
+
+						// Automatically favorite the forum for its creator. Maybe we should add a boolean for this?
+						// This could stand to be deduped with `favoriteAddHandler` above.
+						let barrelFuture = Barrel.query(on: req.db).filter(\.$ownerID == cacheUser.userID).filter(\.$barrelType == .taggedForum).first().unwrap(orReplace: Barrel(ownerID: cacheUser.userID, barrelType: .taggedForum))
+						_ = barrelFuture.map { (barrel) -> EventLoopFuture<Void> in 
+							if !barrel.modelUUIDs.contains(forumData.forumID) {
+								barrel.modelUUIDs.append(forumData.forumID)
+							}
+							return barrel.save(on: req.db)
+						}
+						// Original request for creation of the forum
 						return forumData
                     }
                 }
