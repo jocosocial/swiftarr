@@ -2,8 +2,7 @@ version: '3'
 services:
 
   postgres:
-    image: postgres
-    container_name: postgres
+    image: docker.io/library/postgres:14.1
     environment:
       POSTGRES_DB: swiftarr
       POSTGRES_USER: swiftarr
@@ -12,7 +11,6 @@ services:
       - 5432:5432
 
   redis:
-    image: redis:alpine
-    container_name: redis
+    image: docker.io/library/redis:6.2.6-alpine
     ports:
       - 6379:6379

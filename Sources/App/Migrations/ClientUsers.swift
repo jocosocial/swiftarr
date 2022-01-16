@@ -35,7 +35,7 @@ struct CreateClientUsers: Migration {
 			let clientsPath = Settings.shared.seedsDirectoryPath.appendingPathComponent(clientsFile)
 			guard let data = FileManager.default.contents(atPath: clientsPath.path),
                 	let dataString = String(bytes: data, encoding: .utf8) else {
-				fatalError("Could not read clients file.")
+				fatalError("Could not read clients file at \(clientsPath).")
             }
             // transform to array
             let clientsArray = dataString.components(separatedBy: .newlines)

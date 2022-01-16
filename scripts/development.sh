@@ -4,31 +4,18 @@
 # (just postgres and redis docker containers running on standard ports
 # and their *-test counterparts running on +1 ports for testing)
 #
-# up: create postgres and redis containers if necessary, then start
-# start: start any stopped database container services
-# stop: stop any running database container services
-# remove: remove stopped containers (to reset databases)
+# Any arguments to docker-compose can be provided as arguments to this script.
+# For example:
+#   * scripts/development.sh up -d
+#   * scripts/development.sh down
+#   * scripts/development.sh restart postgres
+#
+# This does break backwards compatibility since "remove" is not a docker-compose
+# verb (rm is the equivalent under the hood). While extended parameters could be
+# provided in the form of "${@:2}" (all params except the first one, thanks StackOverflow)
+# this requires any new verbs to be supported by this wrapper which feels overly
+# complex.
 
-if [ $# -lt 1 ]; then
-    echo "Usage: $0 COMMAND"
-    echo "Valid commands are 'up', 'start', 'stop', 'remove'."
-    exit
-fi
-
-case "$1" in
-    up)     echo "creating dev database services"
-            docker-compose -f scripts/docker-compose-development.yml up
-            ;;
-    start)  echo "starting dev database services"
-            docker-compose -f scripts/docker-compose-development.yml start
-            ;;
-    stop)   echo "stopping dev database services"
-            docker-compose -f scripts/docker-compose-development.yml stop
-            ;;
-    remove) echo "removing dev database containers"
-            docker-compose -f scripts/docker-compose-development.yml rm
-            ;;
-    *)      echo "parameter '$1' not understood (must be 'up' 'start' 'stop' or 'remove'"
-            ;;
-esac
-
+COMPOSE_PROJECT_NAME="swiftarr"
+COMPOSE_FILE="scripts/docker-compose-development.yml"
+docker-compose -p ${COMPOSE_PROJECT_NAME} -f ${COMPOSE_FILE} "$@"
