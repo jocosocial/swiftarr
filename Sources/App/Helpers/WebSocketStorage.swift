@@ -68,7 +68,7 @@ extension Request {
 			return cacheResult ?? []
 		}
 		
-		func getSockets(_ userIDs: [UUID]) -> [UserSocket] {
+		func getSockets<T: Sequence>(_ userIDs: T) -> [UserSocket] where T.Element == UUID {
 			let cacheLock = request.application.locks.lock(for: Application.WebSocketStorageLockKey.self)
 			let cacheResult = cacheLock.withLock { () -> [UserSocket] in 
 				let dict = request.application.websocketStorage.notificationSockets

@@ -9,6 +9,7 @@ struct ReportContentGroup: Codable {
 	var reportedUser: UserHeader
 	var firstReport: ReportModerationData
 	var openCount: Int
+	var handledBy: UserHeader?
 	var contentURL: String
 	var reports: [ReportModerationData]
 }
@@ -32,6 +33,7 @@ struct SiteModController: SiteControllerUtils {
 		modRoutes.get("reports", "closed", use: closedReportsPageHandler)
 		modRoutes.get("moderator", "log",  use: moderatorLogPageHandler)
         modRoutes.get("moderator", "seamail", use: moderatorSeamailPageHandler)
+		modRoutes.get("moderator", "guide", use: moderatorGuidePageHandler)
 
 		modRoutes.get("moderate", "twarrt", twarrtIDParam, use: moderateTwarrtContentPageHandler)
 		modRoutes.get("moderate", "forumpost", postIDParam, use: moderateForumPostContentPageHandler)
@@ -68,7 +70,7 @@ struct SiteModController: SiteControllerUtils {
 			var trunk: TrunkContext
 			
 			init(_ req: Request) throws {
-				trunk = .init(req, title: "Moderator Pages", tab: .none)
+				trunk = .init(req, title: "Moderator Pages", tab: .moderator)
 			}
 		}
 		let ctx = try ModeratorRootPageContext(req)
@@ -106,7 +108,7 @@ struct SiteModController: SiteControllerUtils {
 				var reports: [ReportContentGroup]
 				
 				init(_ req: Request, reports: [ReportContentGroup]) throws {
-					trunk = .init(req, title: "Reports", tab: .none)
+					trunk = .init(req, title: "Reports", tab: .moderator)
 					self.reports = reports
 				}
 			}
@@ -129,7 +131,7 @@ struct SiteModController: SiteControllerUtils {
 				var reports: [ReportContentGroup]
 				
 				init(_ req: Request, reports: [ReportContentGroup]) throws {
-					trunk = .init(req, title: "Reports", tab: .none)
+					trunk = .init(req, title: "Reports", tab: .moderator)
 					self.reports = reports
 				}
 			}
@@ -176,7 +178,7 @@ struct SiteModController: SiteControllerUtils {
 				var log: [ModeratorActionLogData]
 				
 				init(_ req: Request, log: [ModeratorActionLogData]) throws {
-					trunk = .init(req, title: "Moderator Action Log", tab: .none)
+					trunk = .init(req, title: "Moderator Action Log", tab: .moderator)
 					self.log = log
 				}
 			}
@@ -208,7 +210,7 @@ struct SiteModController: SiteControllerUtils {
 				var paginator: PaginatorContext
     			
     			init(_ req: Request, fezList: FezListData, fezzes: [FezData]) throws {
-    				trunk = .init(req, title: "Seamail", tab: .seamail)
+    				trunk = .init(req, title: "Seamail", tab: .moderator)
     				self.fezList = fezList
     				self.fezzes = fezzes
     				let limit = fezList.paginator.limit
@@ -220,6 +222,20 @@ struct SiteModController: SiteControllerUtils {
     		let ctx = try SeamailRootPageContext(req, fezList: fezList, fezzes: allFezzes)
 			return req.view.render("moderation/moderatorSeamail", ctx)
     	}
+	}
+	
+	/// `GET /moderator/guide`
+	/// 
+	/// 
+	func moderatorGuidePageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+		struct GuideContext : Encodable {
+			var trunk: TrunkContext
+			init(_ req: Request) throws {
+				trunk = .init(req, title: "Moderator Guide", tab: .moderator)
+			}
+		}
+		let ctx = try GuideContext(req)
+		return req.view.render("moderation/guide", ctx)
 	}
 
 	///	`GET /moderate/twarrt/ID`
@@ -242,7 +258,7 @@ struct SiteModController: SiteControllerUtils {
 				var finalEditAuthor: UserHeader?
 				
 				init(_ req: Request, modData: TwarrtModerationData) throws {
-					trunk = .init(req, title: "Reports", tab: .none)
+					trunk = .init(req, title: "Reports", tab: .moderator)
 					self.modData = modData
 					firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
 					finalEditAuthor = modData.edits.last?.author
@@ -300,7 +316,7 @@ struct SiteModController: SiteControllerUtils {
 				var finalEditAuthor: UserHeader?
 				
 				init(_ req: Request, modData: ForumPostModerationData) throws {
-					trunk = .init(req, title: "Reports", tab: .none)
+					trunk = .init(req, title: "Reports", tab: .moderator)
 					self.modData = modData
 					firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
 					finalEditAuthor = modData.edits.last?.author
@@ -364,7 +380,7 @@ struct SiteModController: SiteControllerUtils {
 					
 					init(_ req: Request, modData: ForumModerationData, categories: [CategoryData]) throws {
 						let categoryDict = categories.reduce(into: [:]) { $0[$1.categoryID] = $1 }
-						trunk = .init(req, title: "Reports", tab: .none)
+						trunk = .init(req, title: "Reports", tab: .moderator)
 						self.modData = modData
 						self.categories = categories
 						firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
@@ -425,7 +441,7 @@ struct SiteModController: SiteControllerUtils {
 		guard let modState = req.parameters.get(modStateParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
-		return apiQuery(req, endpoint: "/mod/forum/\(forumID)/setcategory/\(modState)", method: .POST).map { response in
+		return apiQuery(req, endpoint: "/mod/forum/\(forumID)/setstate/\(modState)", method: .POST).map { response in
 			return response.status
 		}
 	}
@@ -451,7 +467,7 @@ struct SiteModController: SiteControllerUtils {
 				var finalEditAuthor: UserHeader?
 				
 				init(_ req: Request, modData: FezModerationData) throws {
-					trunk = .init(req, title: "Fez Moderation", tab: .none)
+					trunk = .init(req, title: "Fez Moderation", tab: .moderator)
 					self.modData = modData
 					firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
 					finalEditAuthor = modData.edits.last?.author
@@ -508,7 +524,7 @@ struct SiteModController: SiteControllerUtils {
 				var finalEditAuthor: UserHeader?
 				
 				init(_ req: Request, modData: FezPostModerationData) throws {
-					trunk = .init(req, title: "Fez Post Moderation", tab: .none)
+					trunk = .init(req, title: "Fez Post Moderation", tab: .moderator)
 					self.modData = modData
 					firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
 				}
@@ -549,7 +565,7 @@ struct SiteModController: SiteControllerUtils {
 				var finalEditAuthor: UserHeader?
 				
 				init(_ req: Request, modData: ProfileModerationData) throws {
-					trunk = .init(req, title: "User Profile Moderation", tab: .none)
+					trunk = .init(req, title: "User Profile Moderation", tab: .moderator)
 					self.modData = modData
 					firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
 					finalEditAuthor = modData.edits.last?.author
@@ -606,7 +622,7 @@ struct SiteModController: SiteControllerUtils {
 				var reportGroups: [ReportContentGroup]
 				
 				init(_ req: Request, modData: UserModerationData) throws {
-					trunk = .init(req, title: "User Moderation", tab: .none)
+					trunk = .init(req, title: "User Moderation", tab: .moderator)
 					self.modData = modData
 					accessLevelString = modData.accessLevel.visibleName()
 					reportGroups = generateContentGroups(from: modData.reports)
@@ -681,6 +697,9 @@ func generateContentGroups(from reports: [ReportModerationData]) -> [ReportConte
 		if let index = reportedContentArray.firstIndex(where: { report.reportedID == $0.reportedID && report.type == $0.reportType }) {
 			var content = reportedContentArray[index]
 			content.openCount += report.isClosed ? 0 : 1
+			if report.handledBy != nil {
+				content.handledBy = report.handledBy
+			}
 			if content.firstReport.creationTime > report.creationTime {
 				content.firstReport = report
 			}
@@ -699,7 +718,7 @@ func generateContentGroups(from reports: [ReportModerationData]) -> [ReportConte
 			case .userProfile: 	contentURL = "/moderate/userprofile/\(report.reportedID)"
 		}
 		var newGroup = ReportContentGroup(reportType: report.type, reportedID: report.reportedID, reportedUser: report.reportedUser, 
-				firstReport: report, openCount: 0, contentURL: contentURL, reports: [report])
+				firstReport: report, openCount: 0, handledBy: report.handledBy, contentURL: contentURL, reports: [report])
 		newGroup.openCount += report.isClosed ? 0 : 1
 		reportedContentArray.append(newGroup)
 	}

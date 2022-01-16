@@ -1495,6 +1495,24 @@ public struct UserNotificationData: Content {
 	
 	/// For each alertword the user has, this returns data on hit counts for that word.
 	var alertWords: [UserNotificationAlertwordData]
+	
+	/// Notification counts that are only relevant for Moderators (and TwitarrTeam).
+	public struct ModeratorNotificationData: Content {
+		/// The total number of open user reports. Does not count in-process reports (reports being 'handled' by a mod already). 
+		/// This value counts multiple reports on the same piece of content as separate reports. 
+		var openReportCount: Int
+		
+		/// The number of Seamails to @moderator (more precisely, ones where @moderator is a participant) that have new messages.
+		/// This value is very similar to `newSeamailMessageCount`, but for any moderator it gives the number of new seamails for @moderator.
+		var newModeratorSeamailMessageCount: Int
+
+		/// The number of Seamails to @TwitarrTeam. Nil if user isn't a member of TwitarrTeam. This is in the Moderator struct because I didn't 
+		/// want to make *another* sub-struct for TwitarrTeam, just to hold one value.
+		var newTTSeamailMessageCount: Int?
+	}
+	
+	/// Will be nil for non-moderator accounts.
+	var moderatorData: ModeratorNotificationData?
 }
 
 extension UserNotificationData	{

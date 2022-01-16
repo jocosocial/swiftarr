@@ -31,7 +31,7 @@ struct FezCreateUpdatePageContext : Encodable {
 
 	init(_ req: Request, fezToUpdate: FezData? = nil) throws {
 		if let fez = fezToUpdate {
-			trunk = .init(req, title: "Update Looking For Group", tab: .none)
+			trunk = .init(req, title: "Update Looking For Group", tab: .lfg)
 			self.fez = fezToUpdate
 			pageTitle = "Update Looking For Group"
 			fezTitle = fez.title
@@ -48,7 +48,7 @@ struct FezCreateUpdatePageContext : Encodable {
 			submitButtonTitle = "Update"
 		}
 		else {
-			trunk = .init(req, title: "New Looking For Group", tab: .none)
+			trunk = .init(req, title: "New Looking For Group", tab: .lfg)
 			pageTitle = "Create a New LFG"
 			formAction = "/fez/create"
 			minPeople = 2
@@ -59,7 +59,7 @@ struct FezCreateUpdatePageContext : Encodable {
 	// Builds a Create Fez page for a fez, prefilled to play the indicated boardgame.
 	// If `game` is an expansion set, you can optionally pass the baseGame in as well. 
 	init(_ req: Request, forGame game: BoardgameData, baseGame: BoardgameData? = nil) {
-		trunk = .init(req, title: "New LFG", tab: .none)
+		trunk = .init(req, title: "New LFG", tab: .lfg)
 		pageTitle = "Create LFG to play a Boardgame"
 		fezTitle = "Play \(game.gameName)"
 		fezLocation = "Dining Room, Deck 3 Aft"
@@ -141,7 +141,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 				var daySelection: Int?
 				
 				init(_ req: Request, fezList: FezListData) throws {
-					trunk = .init(req, title: "Looking For Group", tab: .none)
+					trunk = .init(req, title: "Looking For Group", tab: .lfg)
 					self.fezList = fezList
 					tab = .find
 					typeSelection = req.query[String.self, at: "type"] ?? "all"
@@ -166,7 +166,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 			var tab: FezTab
 			
 			init(_ req: Request) throws {
-				trunk = .init(req, title: "Looking For Group", tab: .none)
+				trunk = .init(req, title: "Looking For Group", tab: .lfg)
 				tab = .faq
 			}
 		}
@@ -187,7 +187,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 				var tab: FezTab
 				
 				init(_ req: Request, fezList: FezListData) throws {
-					trunk = .init(req, title: "LFG Joined Groups", tab: .none)
+					trunk = .init(req, title: "LFG Joined Groups", tab: .lfg)
 					self.fezList = fezList
 					tab = .joined
     				let limit = fezList.paginator.limit
@@ -214,7 +214,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 				var tab: FezTab
 				
 				init(_ req: Request, fezList: FezListData) throws {
-					trunk = .init(req, title: "LFGs Created By You", tab: .none)
+					trunk = .init(req, title: "LFGs Created By You", tab: .lfg)
 					self.fezList = fezList
 					tab = .owned
     				let limit = fezList.paginator.limit
@@ -323,7 +323,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 				
 				init(_ req: Request, fez: FezData) throws {
     				let cacheUser = try req.auth.require(UserCacheData.self) 
-					trunk = .init(req, title: "LFG", tab: .none)
+					trunk = .init(req, title: "LFG", tab: .lfg)
 					self.fez = fez
 					self.userID = cacheUser.userID
 					userIsMember = false

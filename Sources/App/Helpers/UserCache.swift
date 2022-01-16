@@ -375,6 +375,14 @@ extension Request {
 			return users
 		}
 		
+		func allUsersWithAccessLevel(_ level: UserAccessLevel) -> [UserCacheData] {
+			let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
+			let users = cacheLock.withLock({
+				request.application.userCacheStorage.usersByID.compactMap { $0.value.accessLevel >= level ? $0.value : nil }
+			})
+			return users
+		}
+		
 // MARK: updating		
 		@discardableResult
 		public func updateUser(_ userUUID: UUID) -> EventLoopFuture<UserCacheData> {

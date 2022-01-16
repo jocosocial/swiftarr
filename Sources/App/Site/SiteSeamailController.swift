@@ -48,14 +48,15 @@ struct SiteSeamailController: SiteControllerUtils {
 				var paginator: PaginatorContext
     			
     			init(_ req: Request, fezList: FezListData, fezzes: [FezData]) throws {
-    				trunk = .init(req, title: "Seamail", tab: .seamail)
+					effectiveUser = req.query[String.self, at: "foruser"]
+					let (title, tab) = titleAndTab(for: req)
+    				trunk = .init(req, title: title, tab: tab)
     				self.fezList = fezList
     				self.fezzes = fezzes
     				let limit = fezList.paginator.limit
 					paginator = .init(fezList.paginator) { pageIndex in
 						"/seamail?start=\(pageIndex * limit)&limit=\(limit)"
 					}
-					effectiveUser = req.query[String.self, at: "foruser"]
 
    				}
     		}
@@ -155,7 +156,8 @@ struct SiteSeamailController: SiteControllerUtils {
 				var paginator: PaginatorContext
    			    			
     			init(_ req: Request, fez: FezData) throws {
-    				trunk = .init(req, title: "Seamail", tab: .seamail)
+					let (title, tab) = titleAndTab(for: req)
+					trunk = .init(req, title: title, tab: tab)
     				self.fez = fez
     				oldPosts = []
     				newPosts = []
@@ -230,4 +232,25 @@ struct SiteSeamailController: SiteControllerUtils {
 			return Response(status: .created)
     	}
 	}
+}
+
+	
+// Returns the correct page title and tab name for the effective user.
+// Fileprivate (instead of in an extension) because struct initializers can't access their containing object.
+fileprivate func titleAndTab(for req: Request) -> (String, TrunkContext.Tab) {
+	let effectiveUser = req.query[String.self, at: "foruser"]
+	var title: String
+	var tab: TrunkContext.Tab
+	switch effectiveUser?.lowercased() {
+		case "twitarrteam": 
+			title = "TwitarrTeam Seamail"
+			tab = .admin
+		case "moderator": 
+			title = "Moderator Seamail"
+			tab = .moderator
+		default: 
+			title = "Seamail"
+			tab = .seamail
+	}
+	return (title, tab)
 }

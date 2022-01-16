@@ -20,7 +20,7 @@
 			<div class="row">
 				<div class="col pe-0 mt-1">	  
 					<span class="link-light navbar-brand me-2" data-bs-toggle="collapse" data-bs-target="\#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-						<span class="#if(trunk.alertCounts.newAnnouncementCount > 0):border-bottom border-danger#endif#if(trunk.tab == "twitarr"): fw-bold#endif">
+						<span class="#if(trunk.alertCounts.newAnnouncementCount > 0):border-bottom border-danger#endif#if(trunk.inTwitarrSubmenu): fw-bold#endif">
 							Twit-arr			
 						</span>
 					</span>
@@ -57,7 +57,9 @@
 			<div class="collapse navbar-collapse" id="navbarSupportedContent">
 				<ul class="navbar-nav navbar-dark bg-transparent mb-3">
 					<li class="nav-item d-flex align-items-center">
-						<a class="nav-link active" href="/">Home</a> 
+						<a class="nav-link #if(trunk.tab == "home"): active#endif" href="/">
+							<span class="#if(trunk.alertCounts.newAnnouncementCount > 0):border-bottom border-danger#endif">Home</span>
+						</a> 
 						#if(trunk.alertCounts.newAnnouncementCount > 1):
 							<span class="text-muted"><i>#(trunk.alertCounts.newAnnouncementCount) New Announcements</i></span>
 						#elseif(trunk.alertCounts.newAnnouncementCount == 1):
@@ -69,23 +71,48 @@
 						#endif
 					</li>
 					<li class="nav-item">
-						<a class="nav-link" href="/fez">Looking For Group</a>
+						<a class="nav-link #if(trunk.tab == "lfg"): active#endif" href="/fez">
+							<span class="#if(trunk.alertCounts.newFezMessageCount > 0):border-bottom border-danger#endif">Looking For Group</span>
+						</a>
+						#if(trunk.alertCounts.newFezMessageCount > 0):
+							<span class="text-muted"><i>#(trunk.alertCounts.newFezMessageCount) Msg#if(trunk.alertCounts.newFezMessageCount > 1):s#endif</i></span>
+						#endif
 					</li>
 					<li class="nav-item">
-						<a class="nav-link" href="/boardgames">Games</a>
+						<a class="nav-link #if(trunk.tab == "games"): active#endif" href="/boardgames">Games</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link" href="/karaoke">Karaoke</a>
+						<a class="nav-link #if(trunk.tab == "karaoke"): active#endif" href="/karaoke">Karaoke</a>
 					</li>
 					#if(trunk.userIsMod):
 						<hr class="main-menu-divider">
-						<li class="nav-item">
-							<a class="nav-link" href="/moderator">Moderator Pages</a>
+						<li class="nav-item d-flex align-items-center">
+							<a class="nav-link #if(trunk.tab == "moderator"): active#endif" href="/moderator">
+								<span class="#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 0 || trunk.alertCounts.moderatorData.openReportCount):border-bottom border-danger#endif">Moderator Pages</span>
+							</a>
+							#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 1):
+								<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount) Msgs</i></span>
+							#elseif(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount == 1):
+								<span class="text-muted"><i>1 Msg</i></span>
+							#endif
+							#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 0 && trunk.alertCounts.moderatorData.openReportCount > 0):
+								<span class="text-muted"><i>,&nbsp;</i></span>
+							#endif
+							#if(trunk.alertCounts.moderatorData.openReportCount > 1):
+								<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.openReportCount) Reports</i></span>
+							#elseif(trunk.alertCounts.moderatorData.openReportCount == 1):
+								<span class="text-muted"><i>1 Report</i></span>
+							#endif
 						</li>
 					#endif
 					#if(trunk.userIsTHO):
-						<li class="nav-item">
-							<a class="nav-link" href="/admin">Admin Pages</a>
+						<li class="nav-item d-flex align-items-center">
+							<a class="nav-link#if(trunk.tab == "admin"): active#endif" href="/admin">
+								<span class="#if(trunk.alertCounts.moderatorData.newTTSeamailMessageCount > 0):border-bottom border-danger#endif">Admin Pages</span>
+							</a>
+							#if(trunk.alertCounts.moderatorData.newTTSeamailMessageCount > 0):
+								<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newTTSeamailMessageCount) Msg#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 1):s#endif</i></span>
+							#endif
 						</li>
 					#endif
 					<hr class="main-menu-divider">

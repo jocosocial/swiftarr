@@ -247,7 +247,7 @@ struct FezController: APIRouteCollection {
 					.throwingFlatMap { pivot in
 				var fezData = try buildFezData(from: fez, with: pivot, for: cacheUser, on: req)
 				if pivot != nil || (cacheUser.accessLevel.hasAccess(.moderator) && fez.fezType != .closed) {
-					return try buildPostsForFez(fez, pivot: pivot, on: req, user: cacheUser).throwingFlatMap { (posts, paginator) in
+					return try buildPostsForFez(fez, pivot: pivot, on: req, user: effectiveUser).throwingFlatMap { (posts, paginator) in
 						fezData.members?.paginator = paginator
 						fezData.members?.posts = posts
 						if let pivot = pivot {
@@ -364,13 +364,17 @@ struct FezController: APIRouteCollection {
 		// get fez
 		return FriendlyFez.findFromParameter(fezIDParam, on: req).throwingFlatMap { fez in
 			guard fez.participantArray.contains(cacheUser.userID) || cacheUser.accessLevel.hasAccess(.moderator) else {
-				throw Abort(.forbidden, reason: "user is not member of fez; cannot post")
+				throw Abort(.forbidden, reason: "user is not member of LFG; cannot post")
 			}
 			guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
-				throw Abort(.notFound, reason: "fez is not available")
+				throw Abort(.notFound, reason: "LFG is not available")
 			}
 			guard fez.fezType != .closed || data.images.count == 0 else {
 				throw Abort(.badRequest, reason: "Private conversations can't contain photos.")
+			}
+			guard fez.moderationStatus != .locked else {
+				// Note: Users should still be able to post in a quarantined LFG so they can figure out what (else) to do.
+				throw Abort(.badRequest, reason: "LFG is locked; cannot post.")
 			}
 			// process image
 			return self.processImages(data.images , usage: .fezPost, on: req).throwingFlatMap { (filenames) in
@@ -520,6 +524,7 @@ struct FezController: APIRouteCollection {
 	/// - Returns: <doc:FezData> containing the newly created fez.
 	func createHandler(_ req: Request) throws -> EventLoopFuture<Response> {
 		let user = try req.auth.require(UserCacheData.self)
+		try user.guardCanCreateContent(customErrorString: "User cannot create LFG.")
 		// see `FezContentData.validations()`
 		let data = try ValidatingJSONDecoder().decode(FezContentData.self, fromBodyOf: req)
 		let fez = FriendlyFez(owner: user.userID, fezType: data.fezType, title: data.title, info: data.info,
