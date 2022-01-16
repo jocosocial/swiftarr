@@ -31,9 +31,9 @@
 						<div class="row">
 							<div class="col">
 								#if(count(report.reports) == 1):
-									#if(report.reports.handledBy):
+									#if(report.handledBy):
 										#if(report.isClosed):
-											Closed by #userByline(report.reports.handledBy, "nolink")
+											Closed by #userByline(report.handledBy, "nolink")
 										#else:
 											Being Handled by #userByline(report.handledBy, "nolink")
 										#endif

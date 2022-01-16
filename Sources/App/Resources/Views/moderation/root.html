@@ -9,6 +9,9 @@
 			<div class="list-group">
 				<a class="list-group-item list-group-item-action" href="/reports">
 					<b>Open Reports</b>: View user reports and take action
+					#if(trunk.alertCounts.moderatorData.openReportCount > 0):
+						<div><span class="text-muted border-bottom border-danger"><i>#(trunk.alertCounts.moderatorData.openReportCount) Open Report#if(trunk.alertCounts.moderatorData.openReportCount > 1):s#endif</i></span></div>
+					#endif
 				</a>		
 				<a class="list-group-item list-group-item-action" href="/reports/closed">
 					<b>Closed Reports</b>: Review closed user reports
@@ -18,7 +21,13 @@
 				</a>	
 				<a class="list-group-item list-group-item-action" href="/seamail?foruser=moderator">
 					<b>Moderator Seamail</b>: Seamail to @moderator
+					#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 0):
+						<div><span class="text-muted border-bottom border-danger"><i>#(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount) New Message#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 1):s#endif</i></span></div>
+					#endif
 				</a>
+				<a class="list-group-item list-group-item-action" href="/moderator/guide">
+					<b>Moderator Guide</b>: Moderator Guidelines, Capabilities, and Responsibilities
+				</a>	
 			</div>
 		</div>
     #endexport

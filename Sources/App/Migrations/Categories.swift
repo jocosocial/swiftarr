@@ -14,6 +14,7 @@ struct CreateCategories: Migration {
 		// categories only mods can see and post in
         let moderatorCategories: [String] = [
             "Moderators Only",
+            "Mods Only Dumpster Fire"
         ]
         for modCategory in moderatorCategories {
             let category = Category(title: modCategory, viewAccess: .moderator, createForumAccess: .moderator)

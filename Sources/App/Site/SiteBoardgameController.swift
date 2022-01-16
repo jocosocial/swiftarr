@@ -12,7 +12,7 @@ struct GameListContext: Encodable {
 	var paginator: PaginatorContext
 
 	init(_ req: Request, games: BoardgameResponseData) throws {
-		trunk = .init(req, title: "Board Games List", tab: .none, search: "Search")
+		trunk = .init(req, title: "Board Games List", tab: .games, search: "Search")
 		self.games = games
 		searchText = req.query[String.self, at: "search"] ?? ""
 		if req.query[String.self, at: "favorite"]?.lowercased() == "true" {
@@ -40,7 +40,7 @@ struct GameExpansionsContext: Encodable {
 	var games: [BoardgameData]
 
 	init(_ req: Request, games: [BoardgameData]) throws {
-		trunk = .init(req, title: "Board Games + Expansions", tab: .none)
+		trunk = .init(req, title: "Board Games + Expansions", tab: .games)
 		self.games = games
 	}
 }

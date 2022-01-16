@@ -10,14 +10,23 @@ struct TrunkContext: Encodable {
 	
 	// current nav item
 	enum Tab: String, Codable {
-		case twitarr
 		case twarrts
 		case forums
 		case seamail
 		case events
+
+		// Under the Twitarr title
+		case home
+		case lfg
+		case games
+		case karaoke
+		case moderator
+		case admin
+		
 		case none
 	}
 	var tab: Tab
+	var inTwitarrSubmenu: Bool
 	
 	var userIsLoggedIn: Bool
 	var userIsMod: Bool
@@ -64,6 +73,7 @@ struct TrunkContext: Encodable {
 		
 		self.title = title
 		self.tab = tab
+		self.inTwitarrSubmenu = [.home, .lfg, .games, .karaoke, .moderator, .admin].contains(tab)
 		self.searchPrompt = search
 		
 		newTweetAlertwords = alertCounts.alertWords.contains { $0.newTwarrtMentionCount > 0 }
@@ -331,7 +341,7 @@ struct ReportPageContext : Encodable {
 	
 	// For reporting a fez (The fez itself: title, info, location)
 	init(_ req: Request, fezID: String) throws {
-		trunk = .init(req, title: "Report LFG Content", tab: .none)
+		trunk = .init(req, title: "Report LFG Content", tab: .lfg)
 		reportTitle = "Report LFG Content"
 		reportFormAction = "/fez/report/\(fezID)"
 		reportSuccessURL = req.headers.first(name: "Referer") ?? "/fez"
@@ -339,7 +349,7 @@ struct ReportPageContext : Encodable {
 	
 	// For reporting a fez post 
 	init(_ req: Request, fezPostID: String) throws {
-		trunk = .init(req, title: "Report LFG Post", tab: .none)
+		trunk = .init(req, title: "Report LFG Post", tab: .lfg)
 		reportTitle = "Report LFG Post"
 		reportFormAction = "/fez/post/report/\(fezPostID)"
 		reportSuccessURL = req.headers.first(name: "Referer") ?? "/fez"
@@ -395,7 +405,7 @@ struct SiteController: SiteControllerUtils {
 					var dailyTheme: DailyThemeData?
 					
 					init(_ req: Request, announcements: [AnnouncementData], theme: DailyThemeData) throws {
-						trunk = .init(req, title: "Twitarr", tab: .twitarr)
+						trunk = .init(req, title: "Twitarr", tab: .home)
 						self.announcements = announcements
 						self.dailyTheme = theme
 					}

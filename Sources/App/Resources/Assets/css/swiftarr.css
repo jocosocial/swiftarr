@@ -109,3 +109,10 @@ duration-select:focus {
 	max-height: 100vh;
 	margin: auto;
 }
+
+.bg-primary-50 {
+	background-color: #0d6efd80 !important;
+}
+.bg-light-50 {
+	background-color: #f8f9fa80 !important;
+}

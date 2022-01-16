@@ -104,7 +104,7 @@ struct AlertController: APIRouteCollection {
 							nextEventFuture = req.eventLoop.future(eventDate)
 						}
 					}
-					return nextEventFuture.map { nextEventDate in
+					return nextEventFuture.flatMap { nextEventDate in
 						var result = UserNotificationData(newFezCount: unreadFezCount, newSeamailCount: unreadSeamailCount,
 								newAnnouncementCount: newAnnouncements, activeAnnouncementCount: actives.count, nextEvent: nextEventDate)
 						result.twarrtMentionCount = hash["twarrtMention"]?.int ?? 0
@@ -112,7 +112,10 @@ struct AlertController: APIRouteCollection {
 						result.forumMentionCount = hash["forumMention"]?.int ?? 0
 						result.newForumMentionCount = max(result.forumMentionCount - (hash["forumMention_viewed"]?.int ?? 0), 0)
 						result.alertWords = getNewAlertWordCounts(hash: hash)
-						return result
+						return getModeratorNotifications(for: user, on: req).map { modNotificationData in
+							result.moderatorData = modNotificationData
+							return result
+						}
 					}
 				}
 			}
@@ -170,6 +173,33 @@ struct AlertController: APIRouteCollection {
 			resultDict[word] = entry
 		}
 		return Array(resultDict.values)
+	}
+	
+	/// Returns a ModeratorNotificationData structure containing counts for open reports, seamails to @moderator with unread messages, and (if user is in TwitarrTeam) 
+	/// seamails to @TwitarrTeam with unread messages. If the user is not a moderator, returns nil.
+	func getModeratorNotifications(for user: UserCacheData, on req: Request) -> EventLoopFuture<UserNotificationData.ModeratorNotificationData?> {
+		guard user.accessLevel.hasAccess(.moderator), let moderator = req.userCache.getUser(username: "moderator") else {
+			return req.eventLoop.future(nil)
+		}
+		return Report.query(on: req.db).filter(\.$isClosed == false).filter(\.$actionGroup == nil).count().flatMap { reportCount in
+			return req.redis.hvals(in: NotificationType.seamailUnreadMsg(moderator.userID)
+					.redisKeyName(userID: moderator.userID), as: Int.self)
+					.flatMap { seamailHash in
+				let moderatorUnreadCount = seamailHash.reduce(0) { $1 ?? 0 > 0 ? $0 + 1 : $0 }
+				var twittarTeamFuture: EventLoopFuture<Int?> = req.eventLoop.future(nil)
+				if user.accessLevel.hasAccess(.twitarrteam), let ttUser = req.userCache.getUser(username: "TwitarrTeam") {
+					twittarTeamFuture = req.redis.hvals(in: NotificationType.seamailUnreadMsg(ttUser.userID)
+							.redisKeyName(userID: ttUser.userID), as: Int.self)
+							.map { ttSeamailHash in
+						return ttSeamailHash.reduce(0) { $1 ?? 0 > 0 ? $0 + 1 : $0 }
+					}
+				}
+				return twittarTeamFuture.map { ttUnreadCount in
+					return UserNotificationData.ModeratorNotificationData(openReportCount: reportCount, 
+							newModeratorSeamailMessageCount: moderatorUnreadCount, newTTSeamailMessageCount: ttUnreadCount)
+				}
+			}
+		}
 	}
 	
 	/// `WS /api/v3/notification/socket`

@@ -148,6 +148,7 @@ extension APIRouteCollection {
 	@discardableResult func addNotifications(users: [UUID], type: NotificationType, info: String, on req: Request) -> EventLoopFuture<Void> {
 		var hashFutures: [EventLoopFuture<Int>]
 		var forwardToSockets = true	
+		var notifyUsers = Set(users)
 		switch type {
 		case .announcement:
 			// Force cache of active announcementIDs to get rebuilt
@@ -163,15 +164,25 @@ extension APIRouteCollection {
 				}
 			}
 			forwardToSockets = false
+		case .seamailUnreadMsg:
+			// For seamail msgs with "moderator" or "TwitarrTeam" in the memberlist, add all team members to the
+			// notify list.
+			if let mod = req.userCache.getUser(username: "moderator"), notifyUsers.contains(mod.userID) {
+				notifyUsers.formUnion(req.userCache.allUsersWithAccessLevel(.moderator).map { $0.userID } )
+			}
+			if let ttUser = req.userCache.getUser(username: "TwitarrTeam"), notifyUsers.contains(ttUser.userID) {
+				notifyUsers.formUnion(req.userCache.allUsersWithAccessLevel(.twitarrteam).map { $0.userID } )
+			}
+			fallthrough
 		default:
-			hashFutures = users.map { userID in
+			hashFutures = notifyUsers.map { userID in
 				req.redis.hincrby(1, field: type.redisFieldName(), in: type.redisKeyName(userID: userID))
 			}
 		}
 
 		if forwardToSockets {
 			// Send a message to all involved users with open websockets.
-			let socketeers = req.webSocketStore.getSockets(users)
+			let socketeers = req.webSocketStore.getSockets(notifyUsers)
 			if socketeers.count > 0 {
 				let msgStruct = SocketNotificationData(type, info: info)
 				if let jsonData = try? JSONEncoder().encode(msgStruct), let jsonDataStr = String(data: jsonData, encoding: .utf8) {
@@ -182,11 +193,11 @@ extension APIRouteCollection {
 			}
 		}
 
-		hashFutures.append(req.redis.sadd(users, to: "UsersWithNotificationStateChange"))
+		let notifyUsersArray = Array(notifyUsers)
+		hashFutures.append(req.redis.sadd(notifyUsersArray, to: "UsersWithNotificationStateChange"))
 		return hashFutures.flatten(on: req.eventLoop).transform(to: ())
-		
 	}
-	
+		
 	// When a twarrt or post with an alertword in it gets edited/deleted and the alertword is removed,
 	// you'll need to call this method to find the users that are looking for that alertword and decreemnt their hit counts.
 	// Differs from subtractNotifications because the list of users to notify is itself stored in Redis.	

@@ -56,7 +56,7 @@ struct SiteKaraokeController: SiteControllerUtils {
 					var favoriteBtnURL: String
 
 					init(_ req: Request, searchStr: String, songs: KaraokeSongResponseData, isMgr: Bool, showingFavorites: Bool) throws {
-						trunk = .init(req, title: "Latest Karaoke Songs", tab: .none)
+						trunk = .init(req, title: "Latest Karaoke Songs", tab: .karaoke)
 						self.songs = songs
 						self.searchText = searchStr
 						userIsKaraokeMgr = isMgr
@@ -87,7 +87,7 @@ struct SiteKaraokeController: SiteControllerUtils {
 					var songs: [KaraokePerformedSongsData]
 
 					init(_ req: Request, songs: [KaraokePerformedSongsData]) throws {
-						trunk = .init(req, title: "Latest Karaoke Songs", tab: .none)
+						trunk = .init(req, title: "Latest Karaoke Songs", tab: .karaoke)
 						self.songs = songs
 					}
 				}
@@ -129,7 +129,7 @@ struct SiteKaraokeController: SiteControllerUtils {
 				var song: KaraokeSongData
 
 				init(_ req: Request, song: KaraokeSongData) throws {
-					trunk = .init(req, title: "Latest Karaoke Songs", tab: .none)
+					trunk = .init(req, title: "Latest Karaoke Songs", tab: .karaoke)
 					self.song = song
 				}
 			}

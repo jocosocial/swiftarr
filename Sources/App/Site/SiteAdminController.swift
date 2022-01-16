@@ -89,7 +89,7 @@ struct SiteAdminController: SiteControllerUtils {
 		var targetLevel: String
 		
 		init(_ req: Request, current: [UserHeader], searchStr: String, searchResults: [UserHeader]?) throws {
-			trunk = .init(req, title: "Manage Moderators", tab: .none)
+			trunk = .init(req, title: "Manage Moderators", tab: .admin)
 			self.currentMembers = current
 			self.userSearch = searchStr
 			self.searchResults = searchResults
@@ -105,7 +105,7 @@ struct SiteAdminController: SiteControllerUtils {
 			var trunk: TrunkContext
 			
 			init(_ req: Request) throws {
-				trunk = .init(req, title: "Server Admin", tab: .none)
+				trunk = .init(req, title: "Server Admin", tab: .admin)
 			}
 		}
 		let ctx = try AdminRootPageContext(req)
@@ -124,7 +124,7 @@ struct SiteAdminController: SiteControllerUtils {
 				var announcements: [AnnouncementViewData]
 				
 				init(_ req: Request, announcements: [AnnouncementViewData]) throws {
-					trunk = .init(req, title: "Announcements", tab: .none)
+					trunk = .init(req, title: "Announcements", tab: .admin)
 					self.announcements = announcements
 				}
 			}
@@ -141,7 +141,7 @@ struct SiteAdminController: SiteControllerUtils {
 			var timeZoneName: String
 
 			init(_ req: Request) throws {
-				trunk = .init(req, title: "Create Announcement", tab: .none)
+				trunk = .init(req, title: "Create Announcement", tab: .admin)
 				self.post = .init(forType: .announcement)
 				timeZoneName = TimeZone.autoupdatingCurrent.abbreviation() ?? "EST"
 			}
@@ -188,7 +188,7 @@ struct SiteAdminController: SiteControllerUtils {
 				var timeZoneName: String
 
 				init(_ req: Request, data: AnnouncementData) throws {
-					trunk = .init(req, title: "Edit Announcement", tab: .none)
+					trunk = .init(req, title: "Edit Announcement", tab: .admin)
 					self.post = .init(forType: .announcementEdit(data))
 					timeZoneName = TimeZone.autoupdatingCurrent.abbreviation() ?? "EST"
 				}
@@ -248,7 +248,7 @@ struct SiteAdminController: SiteControllerUtils {
 				var themes: [DailyThemeData]
 
 				init(_ req: Request, data: [DailyThemeData]) throws {
-					trunk = .init(req, title: "Daily Tmemes", tab: .none)
+					trunk = .init(req, title: "Daily Tmemes", tab: .admin)
 					themes = data
 				}
 			}
@@ -265,7 +265,7 @@ struct SiteAdminController: SiteControllerUtils {
 			var breadcrumb: String
 
 			init(_ req: Request) throws {
-				trunk = .init(req, title: "Create New Daily Theme", tab: .none)
+				trunk = .init(req, title: "Create New Daily Theme", tab: .admin)
 				post = .init(forType: .theme)
 				breadcrumb = "Create New Daily Theme"
 			}
@@ -304,7 +304,7 @@ struct SiteAdminController: SiteControllerUtils {
 				
 
 				init(_ req: Request, _ theme: DailyThemeData) throws {
-					trunk = .init(req, title: "Edit Daily Theme", tab: .none)
+					trunk = .init(req, title: "Edit Daily Theme", tab: .admin)
 					post = .init(forType: .themeEdit(theme))
 					breadcrumb = "Edit Daily Theme"
 				}
@@ -354,7 +354,7 @@ struct SiteAdminController: SiteControllerUtils {
 				var appFeatureNames: [String]
 
 				init(_ req: Request, settings: SettingsAdminData) throws {
-					trunk = .init(req, title: "Edit Daily Theme", tab: .none)
+					trunk = .init(req, title: "Edit Daily Theme", tab: .admin)
 					self.settings = settings
 					clientAppNames = SwiftarrClientApp.allCases.compactMap { $0 == .unknown ? nil : $0.rawValue }
 					appFeatureNames = SwiftarrFeature.allCases.compactMap { $0 == .unknown ? nil : $0.rawValue }
@@ -430,7 +430,7 @@ struct SiteAdminController: SiteControllerUtils {
 			var trunk: TrunkContext
 
 			init(_ req: Request) throws {
-				trunk = .init(req, title: "Upload Schedule", tab: .none)
+				trunk = .init(req, title: "Upload Schedule", tab: .admin)
 			}
 		}
 		let ctx = try ScheduleUploadViewContext(req)
@@ -467,7 +467,7 @@ struct SiteAdminController: SiteControllerUtils {
 				var diff: EventUpdateDifferenceData
 				
 				init(_ req: Request, differenceData: EventUpdateDifferenceData) throws {
-					trunk = .init(req, title: "Edit Daily Theme", tab: .none)
+					trunk = .init(req, title: "Edit Daily Theme", tab: .admin)
 					self.diff = differenceData
 				}
 			}
@@ -513,7 +513,7 @@ struct SiteAdminController: SiteControllerUtils {
 				var trunk: TrunkContext
 				
 				init(_ req: Request) throws {
-					trunk = .init(req, title: "Schedule Update Complete", tab: .none)
+					trunk = .init(req, title: "Schedule Update Complete", tab: .admin)
 				}
 			}
 			let ctx = try ScheduleUpdateCompleteViewContext(req)
@@ -555,7 +555,7 @@ struct SiteAdminController: SiteControllerUtils {
 				var searchResults: String
 				
 				init(_ req: Request, stats: RegistrationCodeStatsData, searchResults: String) throws {
-					trunk = .init(req, title: "Registration Codes", tab: .none)
+					trunk = .init(req, title: "Registration Codes", tab: .admin)
 					self.stats = stats
 					self.searchResults = searchResults
 				}
@@ -678,7 +678,7 @@ struct SiteAdminController: SiteControllerUtils {
 				var searchResults: [UserHeader]?
 				
 				init(_ req: Request, currentMgrs: [UserHeader], searchStr: String, searchResults: [UserHeader]?) throws {
-					trunk = .init(req, title: "Karaoke Managers", tab: .none)
+					trunk = .init(req, title: "Karaoke Managers", tab: .admin)
 					self.currentMgrs = currentMgrs
 					self.userSearch = searchStr
 					self.searchResults = searchResults
