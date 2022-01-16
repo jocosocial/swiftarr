@@ -230,18 +230,27 @@ struct SiteForumController: SiteControllerUtils {
 	//
 	// Shows a list of forum categories
     func forumCategoriesPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-		return apiQuery(req, endpoint: "/forum/categories").throwingFlatMap { response in
+		return apiQuery(req, endpoint: "/forum/categories")
+				.and(apiQuery(req, endpoint: "/forum/favorites")).throwingFlatMap { (response, countResponse) in
+
+			// Someday perhaps personal categories and their information should also come
+			// from an API endpoint. Today is not a good day to die.
+			let favoriteForums = try countResponse.content.decode(ForumSearchData.self)
  			let categories = try response.content.decode([CategoryData].self)
+
      		struct ForumCatPageContext : Encodable {
 				var trunk: TrunkContext
     			var categories: [CategoryData]
+				var forumFavoriteCount: Int
     			
-    			init(_ req: Request, cats: [CategoryData]) throws {
+    			init(_ req: Request, cats: [CategoryData], forumFavoriteCount: Int) throws {
     				trunk = .init(req, title: "Forum Categories", tab: .forums, search: "Search")
     				self.categories = cats
+					self.forumFavoriteCount = forumFavoriteCount
     			}
     		}
-    		let ctx = try ForumCatPageContext(req, cats: categories)
+
+    		let ctx = try ForumCatPageContext(req, cats: categories, forumFavoriteCount: favoriteForums.paginator.total)
 			return req.view.render("Forums/forumCategories", ctx)
     	}
     }
