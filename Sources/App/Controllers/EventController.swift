@@ -18,6 +18,7 @@ struct EventController: APIRouteCollection {
         let optionalAuthGroup = addFlexCacheAuthGroup(to: eventRoutes)
         optionalAuthGroup.get(use: eventsHandler)
         optionalAuthGroup.get(eventIDParam, use: singleEventHandler)
+		optionalAuthGroup.get("locations", use: eventLocationsHandler)
         
         // endpoints available only when logged in
         let tokenAuthGroup = addTokenCacheAuthGroup(to: eventRoutes)
@@ -148,7 +149,21 @@ struct EventController: APIRouteCollection {
     	}
     }
 
-    
+	/// `GET /api/v3/events/locations`
+	///
+	/// Retrieve an array of all event locations.
+	/// 
+	/// - Returns: Array of <doc:EventLocation>.
+	func eventLocationsHandler(_ req: Request) throws -> EventLoopFuture<[EventLocation]> {
+		return Event.query(on: req.db).unique().sort(\.$location).all(\.$location).flatMapThrowing { locations in
+			// This doesn't handle an emptystring location as well as I'd hope.
+			// Not sure how much to care about that right now.
+			return locations.map { location in 
+				return EventLocation(location)
+			}
+		}
+	}
+
     // MARK: - tokenAuthGroup Handlers (logged in)
     // All handlers in this route group require a valid HTTP Bearer Authentication
     // header in the request.
