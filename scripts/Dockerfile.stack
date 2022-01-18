@@ -25,6 +25,8 @@ ENV AUTO_MIGRATE=true
 
 # Image setup
 COPY scripts/init-prereqs.sh /
+COPY scripts/run.sh /
+RUN mkdir /app/images
 RUN /init-prereqs.sh
 
 # App installation
@@ -34,6 +36,10 @@ COPY --from=builder /build/lib/* /usr/lib/
 COPY --from=builder /build/bin/swiftarr_App.resources /app/swiftarr_App.resources
 # @TODO tests???
 
+# User
+RUN useradd -U -d /app -c "Swiftarr App User" -s /bin/bash swiftarr
+RUN chown -R swiftarr:swiftarr /app
+USER swiftarr:swiftarr
+
 # Run
-COPY scripts/run.sh /
 CMD ["/run.sh"]
