@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Defaults
-stackname="swiftarr"
 environment="production"
+stackname="swiftarr"
 filename="./scripts/docker-compose-stack.yml"
 
 function usage () {
