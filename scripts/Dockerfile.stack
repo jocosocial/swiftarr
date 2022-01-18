@@ -26,7 +26,7 @@ ENV AUTO_MIGRATE=true
 # Image setup
 COPY scripts/init-prereqs.sh /
 COPY scripts/run.sh /
-RUN mkdir /app/images
+RUN mkdir -p /app/images
 RUN /init-prereqs.sh
 
 # App installation
