@@ -2,29 +2,33 @@ version: '3'
 services:
 
   postgres:
-    image: docker.io/library/postgres:14.1
+    image: docker.io/bitnami/postgresql:14
     environment:
-      POSTGRES_DB: swiftarr
-      POSTGRES_USER: swiftarr
-      POSTGRES_PASSWORD: password
+      POSTGRESQL_DATABASE: swiftarr
+      POSTGRESQL_USERNAME: swiftarr
+      POSTGRESQL_PASSWORD: password
     ports:
       - 5432:5432
 
   redis:
-    image: docker.io/library/redis:6.2.6-alpine
+    image: docker.io/bitnami/redis:6.2
     ports:
       - 6379:6379
+    environment:
+      ALLOW_EMPTY_PASSWORD: "yes"
 
   postgres-test:
-    image: docker.io/library/postgres:14.1
+    image: docker.io/bitnami/postgresql:14
     environment:
-      POSTGRES_DB: swiftarr-test
-      POSTGRES_USER: swiftarr
-      POSTGRES_PASSWORD: password
+      POSTGRESQL_DATABASE: swiftarr-test
+      POSTGRESQL_USERNAME: swiftarr
+      POSTGRESQL_PASSWORD: password
     ports:
       - 5433:5432
 
   redis-test:
-    image: docker.io/library/redis:6.2.6-alpine
+    image: docker.io/bitnami/redis:6.2
     ports:
       - 6380:6379
+    environment:
+      ALLOW_EMPTY_PASSWORD: "yes"

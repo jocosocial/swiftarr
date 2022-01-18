@@ -12,13 +12,18 @@ services:
       DATABASE_PORT: 5432
       REDIS_HOSTNAME: redis
       REDIS_PORT: 6379
+    volumes:
+      # This is needed since "Private Swiftarr Config" is listed in the .dockerignore file.
+      - ../Sources/Run/Private Swiftarr Config:/swiftarr/Sources/Run/Private Swiftarr Config:ro
 
   postgres:
-    image: docker.io/library/postgres:14.1
+    image: docker.io/bitnami/postgresql:14
     environment:
-      POSTGRES_DB: swiftarr-test
-      POSTGRES_USER: swiftarr
-      POSTGRES_PASSWORD: password
+      POSTGRESQL_DATABASE: swiftarr-test
+      POSTGRESQL_USERNAME: swiftarr
+      POSTGRESQL_PASSWORD: password
 
   redis:
-    image: docker.io/library/redis:6.2.6-alpine
+    image: docker.io/bitnami/redis:6.2
+    environment:
+      ALLOW_EMPTY_PASSWORD: "yes"
