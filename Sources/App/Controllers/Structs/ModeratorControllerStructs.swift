@@ -65,7 +65,6 @@ public struct FezPostModerationData: Content {
 	var isDeleted: Bool
 	var moderationStatus: ContentModerationStatus
 	var reports: [ReportModerationData]
-	var friendlyFezType: FezType
 }
 
 /// Used to return `ForumEdit` data for moderators. ForumEdit only stores the title and category the forum had before the edit.

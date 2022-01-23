@@ -461,25 +461,16 @@ struct ModerationController: APIRouteCollection {
 		}
 		return FezPost.query(on: req.db).filter(\.$id == postID).withDeleted().first()
 				.unwrap(or: Abort(.notFound, reason: "no LFG POst found for identifier '\(postID)'")).flatMap { fezPost in
-			// There HAS to be a way to access the fezPost.$fez.fezType property but I do not
-			// have the brain cells or smarts to figure out how. Keeps giving me weird esoteric
-			// errors I don't understand yet. For the moment this gets us what we need.
-			// The FriendlyFez (aka parent) of the FezPost is needed to determine whether it is
-			// "private" or not which influences clients which route to take for it (/seamail vs
-			// /fez/).
-			return FriendlyFez.query(on: req.db).filter(\.$id == fezPost.$fez.id).first()
-					.unwrap(or: Abort(.notFound, reason: "no FriendlyFez found for identifier '\(fezPost.$fez.id)'")).flatMap { friendlyFez in 
-				return Report.query(on: req.db)
-						.filter(\.$reportType == .fezPost)
-						.filter(\.$reportedID == postIDString)
-						.sort(\.$createdAt, .descending).all().flatMapThrowing { reports in
-					let authorHeader = try req.userCache.getHeader(fezPost.$author.id)
-					let fezPostData = try FezPostData(post: fezPost, author: authorHeader, overrideQuarantine: true)
-					let reportData = try reports.map { try ReportModerationData.init(req: req, report: $0) }
-					let modData = FezPostModerationData(fezPost: fezPostData, fezID: fezPost.$fez.id, isDeleted: fezPost.deletedAt != nil, 
-								moderationStatus: fezPost.moderationStatus, reports: reportData, friendlyFezType: friendlyFez.fezType)
-					return modData
-				}
+			return Report.query(on: req.db)
+					.filter(\.$reportType == .fezPost)
+					.filter(\.$reportedID == postIDString)
+					.sort(\.$createdAt, .descending).all().flatMapThrowing { reports in
+				let authorHeader = try req.userCache.getHeader(fezPost.$author.id)
+				let fezPostData = try FezPostData(post: fezPost, author: authorHeader, overrideQuarantine: true)
+				let reportData = try reports.map { try ReportModerationData.init(req: req, report: $0) }
+				let modData = FezPostModerationData(fezPost: fezPostData, fezID: fezPost.$fez.id, isDeleted: fezPost.deletedAt != nil, 
+							moderationStatus: fezPost.moderationStatus, reports: reportData)
+				return modData
 			}
 		}
 	}
