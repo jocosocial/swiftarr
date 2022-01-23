@@ -230,27 +230,18 @@ struct SiteForumController: SiteControllerUtils {
 	//
 	// Shows a list of forum categories
     func forumCategoriesPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-		return apiQuery(req, endpoint: "/forum/categories")
-				.and(apiQuery(req, endpoint: "/forum/favorites")).throwingFlatMap { (response, countResponse) in
-
-			// Someday perhaps personal categories and their information should also come
-			// from an API endpoint. Today is not a good day to die.
-			let favoriteForums = try countResponse.content.decode(ForumSearchData.self)
+		return apiQuery(req, endpoint: "/forum/categories").throwingFlatMap { response in
  			let categories = try response.content.decode([CategoryData].self)
-
      		struct ForumCatPageContext : Encodable {
 				var trunk: TrunkContext
     			var categories: [CategoryData]
-				var forumFavoriteCount: Int
     			
-    			init(_ req: Request, cats: [CategoryData], forumFavoriteCount: Int) throws {
+    			init(_ req: Request, cats: [CategoryData]) throws {
     				trunk = .init(req, title: "Forum Categories", tab: .forums, search: "Search")
     				self.categories = cats
-					self.forumFavoriteCount = forumFavoriteCount
     			}
     		}
-
-    		let ctx = try ForumCatPageContext(req, cats: categories, forumFavoriteCount: favoriteForums.paginator.total)
+    		let ctx = try ForumCatPageContext(req, cats: categories)
 			return req.view.render("Forums/forumCategories", ctx)
     	}
     }
@@ -327,7 +318,7 @@ struct SiteForumController: SiteControllerUtils {
     	}
 		let postStruct = try req.content.decode(MessagePostFormContent.self)
 		guard let forumTitle = postStruct.forumTitle else {
-			throw "Forum must have a title"
+			throw "Forum must have a ttile"
 		}
 		let postContent = postStruct.buildPostContentData()
 		let forumContent = ForumCreateData(title: forumTitle, firstPost: postContent)
