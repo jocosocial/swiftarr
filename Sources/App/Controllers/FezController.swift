@@ -492,12 +492,20 @@ struct FezController: APIRouteCollection {
 	///
 	/// - Parameter postID: in URL path, the ID of the post being reported.
 	/// - Parameter requestBody: <doc:ReportData> payload in the HTTP body.
+	/// - Throws: 400 error if the post is private.
+	/// - Throws: 404 error if the parent fez of the post could not be found.
 	/// - Returns: 201 Created on success.
 	func reportFezPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
 		let submitter = try req.auth.require(User.self)
 		let data = try req.content.decode(ReportData.self)		
 		return FezPost.findFromParameter(fezPostIDParam, on: req).throwingFlatMap { reportedPost in
-			return try reportedPost.fileReport(submitter: submitter, submitterMessage: data.message, on: req)
+			return FriendlyFez.find(reportedPost.$fez.id, on: req.db)
+					.unwrap(or: Abort(.notFound, reason: "could not find parent fez")).throwingFlatMap { reportedFriendlyFez in
+				guard reportedFriendlyFez.fezType != FezType.closed else {
+					throw Abort(.badRequest, reason: "cannot report private (closed) fez posts")
+				}
+				return try reportedPost.fileReport(submitter: submitter, submitterMessage: data.message, on: req)
+			}
 		}
 	}
 
