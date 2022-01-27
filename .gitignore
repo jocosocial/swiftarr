@@ -7,6 +7,7 @@ build/
 xcuserdata/
 DerivedData/
 .swiftpm
+.cache
 
 # Python ignores
 __pycache__/
