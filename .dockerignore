@@ -9,3 +9,4 @@ scripts
 !scripts/run.sh
 !scripts/init-prereqs.sh
 Sources/Run/Private\ Swiftarr\ Config
+Sources/App/seeds

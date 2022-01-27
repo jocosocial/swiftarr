@@ -27,6 +27,7 @@ services:
     env_file:
       - "../Sources/Run/Private Swiftarr Config/${ENVIRONMENT}.env"
     volumes:
+      - "../Sources/App/seeds:/app/swiftarr_App.resources/seeds:ro"
       - images:/app/images
 
 volumes:
