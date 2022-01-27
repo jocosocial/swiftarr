@@ -111,6 +111,9 @@ available to you. And `docker-compose` (or equivalent).
    
 2. Docker-Compose < 1.26.0 has a bug that causes `env_file` processing to not escape values correctly. If you see strange behavior like timeouts or bad database configuration check your version. 1.25.6 is broken and 1.28.6 works.
 
+3. I assume that your user is a part of the `docker` group and can run `docker` commands without issue. If this is a problem see the Docker instructions for adding
+   that group to the system and getting yourself to be a part of it. While everything could probably work under `sudo` it has not been tested.
+
 ### Build
 This only applies to the Linux-Testing or Stack configurations.
 
@@ -195,7 +198,7 @@ To achieve the second option above:
    ```
    mkdir ./.build
    docker cp buildertemp:/app/.build/workspace-state.json ./.build/
-   docker cp buildertemp:/app/.build/checkouts /.build/
+   docker cp buildertemp:/app/.build/checkouts ./.build/
    ```
 5. Verify that you now have a `./.build` that looks like this:
    ```
@@ -208,3 +211,18 @@ To achieve the second option above:
    ```
    docker rm buildertemp
    ```
+
+Once this is complete if you were to re-run the `scripts/stack.sh -e production build` it would trigger a new build since the builder will
+detect that you've changed the source of the Swift dependencies (from internet pulls to local files). It will want to rebuild but you'll be
+able to do so without downloading anything from the internet. This can be observed by initiating the build and doing a packet capture against
+it. For example:
+
+```bash
+# In terminal #1
+scripts/stack.sh -e production build
+
+# In terminal #1
+docker ps
+docker inspect ${name_or_id_of_the_running_builder_container} | grep IPAddress
+sudo tcpdump -nn -i any host 172.17.0.2 # or whatever the IP is
+```
