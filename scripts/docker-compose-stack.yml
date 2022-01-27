@@ -11,6 +11,8 @@ services:
     image: docker.io/bitnami/redis:6.2
     env_file:
       - "../Sources/Run/Private Swiftarr Config/${ENVIRONMENT}.env"
+    volumes:
+      - redisdata:/bitnami/redis/data
 
   web:
     build:
@@ -33,3 +35,4 @@ services:
 volumes:
   images:
   pgdata:
+  redisdata:
