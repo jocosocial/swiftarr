@@ -11,8 +11,7 @@
 						<li class="list-group-item border border-danger collapse show has-action-bar bg-light" 
 								data-eventid="#(upcomingEvent.eventID)" 
 								data-eventfavorite=#if(upcomingEvent.isFavorite == true):"true"#else:"false"#endif
-								data-eventcategory="#(upcomingEvent.eventType)"
-								data-eventlocation="#(upcomingEvent.location)">
+								data-eventcategory="#(upcomingEvent.eventType)">
 							<div class="container-fluid px-2">
 								<div class="text-center text-danger">An event you follow is starting soon™</div>
 								<div class="row">	
@@ -70,21 +69,6 @@
 						</ul>
 					</div>
 				</div>
-				<div class="col col-auto">
-					<div class="dropdown">
-						<button class="btn btn-outline-primary dropdown-toggle btn-sm" type="button" id="eventLocationFilterMenu" data-bs-toggle="dropdown" data-selected="all" aria-expanded="false">
-							All Locations
-						</button>
-						<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="eventLocationFilterMenu">
-							<li><button class="dropdown-item active" type="button" data-action="filterEventLocation" data-selection="all">All Locations</button></li>
-							<li><hr class="dropdown-divider"></li>
-							<li><h6 class="dropdown-header">Only show:</h6></li>
-							#for(location in locations):
-							<li><button class="dropdown-item" type="button" data-action="filterEventLocation" data-selection="#(location.location)">#(location.location)</button></li>
-							#endfor
-						</ul>
-					</div>
-				</div>
 				<div class="col btn-group btn-group-sm col-auto" role="group" aria-label="Event Filters">
 					<button class="btn btn-outline-primary #if(!trunk.userIsLoggedIn):d-none#endif" type="button" data-bs-toggle="button" data-action="eventFiltersChanged" id="eventFollowingFilter">Following</button>
 				</div>								
@@ -133,7 +117,6 @@
 						data-eventid="#(event.eventID)" 
 						data-eventfavorite=#if(event.isFavorite == true):"true"#else:"false"#endif
 						data-eventcategory="#(event.eventType)"
-						data-eventlocation="#(event.location)"
 						data-cruiseday="#cruiseDayIndex(event.startTime)">				
 					<div class="container-fluid">
 						<div class="row">	

@@ -68,10 +68,8 @@ struct SiteEventsController: SiteControllerUtils {
     		filterString = "Today's " + filterString
 		}
 		let queryString: String = components.percentEncodedQuery ?? ""
-		return apiQuery(req, endpoint: "/events?\(queryString)", passThroughQuery: false)
-				.and(apiQuery(req, endpoint: "/events/locations")).throwingFlatMap { (response, locationResponse) in
+    return apiQuery(req, endpoint: "/events?\(queryString)", passThroughQuery: false).throwingFlatMap { response in
  			let events = try response.content.decode([EventData].self)
-			let locations = try locationResponse.content.decode([EventLocation].self)
      		struct EventPageContext : Encodable {
      			struct CruiseDay : Encodable {
      				var name: String
@@ -86,9 +84,8 @@ struct SiteEventsController: SiteControllerUtils {
     			var upcomingEvent: EventData?
     			var filterString: String
     			var useAllDays: Bool
-				var locations: [EventLocation]
 
-				init(_ req: Request, events: [EventData], dayOfCruise: Int, filterString: String, allDays: Bool, locations: [EventLocation]) {
+				init(_ req: Request, events: [EventData], dayOfCruise: Int, filterString: String, allDays: Bool) {
     				self.events = events
     				trunk = .init(req, title: "Events", tab: .events, search: "Search Events")
     				isBeforeCruise = Date() < Settings.shared.cruiseStartDate
@@ -113,11 +110,10 @@ struct SiteEventsController: SiteControllerUtils {
 					}
 					self.filterString = filterString
 					self.useAllDays = allDays
-					self.locations = locations
     			}
     		}
     		let eventContext = EventPageContext(req, events: events, dayOfCruise: dayOfCruise, 
-					filterString: filterString, allDays: useAllDays, locations: locations)
+					filterString: filterString, allDays: useAllDays)
 			return req.view.render("events", eventContext)
     	}
     }

@@ -423,20 +423,6 @@ extension EventData {
 	}
 }
 
-/// Used for an events location
-///
-/// Returned by:
-/// * `GET /api/v3/events/locations`
-///
-public struct EventLocation: Content {
-	var location: String
-
-	init (_ location: String) {
-		/// Location title/name/identifying string
-		self.location = location
-	}
-}
-
 /// Used to create or update a `FriendlyFez`.
 ///
 /// Required by:

@@ -21,7 +21,6 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 		case "delete": btn.addEventListener("click", deleteAction); break;
 		case "eventFiltersChanged": btn.addEventListener("click", filterEvents); break;
 		case "filterEventType": btn.addEventListener("click", eventFilterDropdownTappedAction); break;
-		case "filterEventLocation": btn.addEventListener("click", eventFilterDropdownTappedAction); break;
 		case "filterFezDay": 
 			dropdownButtonSetup(btn); 
 			btn.addEventListener("click", fezDayFilterDropdownTappedAction);
@@ -377,7 +376,6 @@ function eventFilterDropdownTappedAction() {
 function filterEvents() {
 	let onlyFollowing = document.getElementById("eventFollowingFilter").classList.contains("active")
 	let category = document.getElementById("eventFilterMenu").dataset.selected;
-	let location = document.getElementById("eventLocationFilterMenu").dataset.selected;
 	let dayCheckboxes = document.getElementById("cruiseDayButtonGroup").querySelectorAll('input');
 	let selectedDays = [];
 	for (let checkbox of dayCheckboxes) {
@@ -388,7 +386,6 @@ function filterEvents() {
 	for (let listItem of document.querySelectorAll('[data-eventid]')) {
 		let hideEvent = (onlyFollowing && listItem.dataset.eventfavorite == "false") ||
 				(category && category != "all" && category != listItem.dataset.eventcategory) ||
-				(location && location != "all" && location != listItem.dataset.eventlocation) ||
 				(selectedDays.length > 0 && !selectedDays.includes(listItem.dataset.cruiseday))
 		if (hideEvent && listItem.classList.contains("show")) {
 			new bootstrap.Collapse(listItem)
