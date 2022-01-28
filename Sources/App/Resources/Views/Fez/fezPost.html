@@ -27,18 +27,20 @@
 						</div>
 					</div>
 				#endif
-				<div class="row mt-1 justify-content-end row-cols-auto collapse" data-label="actionbar">
-					<div class="col col-auto btn-group btn-group-sm" role="group" aria-label="Post actions">
-						#if(showModButton):
-							<a class="btn btn-outline-primary btn-sm" href="/moderate/fezpost/#(fezPost.postID)">Mod</a>
-						#endif
-						#if(userID == fezPost.author.userID):
-							<button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="\#deleteModal">Delete</button>
-						#elseif(fez.fezType != "closed"):
-							<a class="btn btn-outline-primary" href="/fez/post/report/#(fezPost.postID)">Report</a>
-						#endif
+				#if(fez.fezType != "closed"):
+					<div class="row mt-1 justify-content-end row-cols-auto collapse" data-label="actionbar">
+						<div class="col col-auto btn-group btn-group-sm" role="group" aria-label="Post actions">
+							#if(showModButton):
+								<a class="btn btn-outline-primary btn-sm" href="/moderate/fezpost/#(fezPost.postID)">Mod</a>
+							#endif
+							#if(userID == fezPost.author.userID):
+								<button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="\#deleteModal">Delete</button>
+							#else:
+								<a class="btn btn-outline-primary" href="/fez/post/report/#(fezPost.postID)">Report</a>
+							#endif
+						</div>
 					</div>
-				</div>
+				#endif
 			</div>
 		</div>
 	</div>
