@@ -444,11 +444,10 @@ struct ModerationController: APIRouteCollection {
 	/// `GET /api/v3/mod/fezpost/:post_id`
 	///
 	/// Moderator only. Returns info admins and moderators need to review a Fez post. Works if post has been deleted. Shows
-	/// fez's quarantine and reviewed states.
+	/// fez's quarantine and reviewed states.  Unlike most other content types, Fez Posts cannot be edited (although they may be deleted).
 	///
 	/// The <doc:FezPostModerationData> contains:
 	/// * The current post contents, even if its deleted
-	/// * Previous edits of the fez post
 	/// * Reports against the post
 	/// * The post's current deletion and moderation status.
 	/// 
@@ -614,6 +613,9 @@ struct ModerationController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "THO access level required to set access level to Banned or Unverified.")
 		}
 		return User.findFromParameter(userIDParam, on: req).throwingFlatMap { targetUser in
+			guard targetUser.accessLevel != .banned || user.accessLevel.hasAccess(.tho) else {
+				throw Abort(.badRequest, reason: "THO access level required to change access level from Banned.")
+			}
 			return targetUser.allAccounts(on: req.db).throwingFlatMap { allAccounts in
 				try allAccounts.forEach { account in
 					try guardNotSpecialAccount(account)

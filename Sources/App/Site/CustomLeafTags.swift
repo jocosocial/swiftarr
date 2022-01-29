@@ -157,9 +157,22 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		// This would be cooler if we could parse the link path and make the link text into a description of
 		// where the link goes. e.g. "http://192.168.0.19:8081/fez/ADDBA5D9-1154-4033-88AE-07B12F3AE162"
 		// could have linktext "[An LFG Link]" or somesuch.
-		string = urlRegex.stringByReplacingMatches(in: string, options: [], range: NSRange(0..<string.count), 
-				withTemplate: "<a href=\"$0\">$1</a>")
-						
+		let matches = urlRegex.matches(in: string, range: NSRange(0..<string.count))
+		for match in matches.reversed() {
+			if let stringRange = Range(match.range(at: 0), in: string) {
+				var urlStr = String(string[stringRange])
+				// iOS Safari doesn't put "http(s)://" at the start links copied from the linkbar.
+				if !urlStr.hasPrefix("http") {
+					urlStr = "http://" + urlStr
+				}
+				var shortenedLinkText = urlStr
+				if match.numberOfRanges > 1, let range2 = Range(match.range(at: 1), in: string) {
+					shortenedLinkText = String(string[range2])
+				}
+				string.replaceSubrange(stringRange, with: "<a href=\"\(urlStr)\">\(shortenedLinkText)</a>")
+			}
+		}
+
 		// Also convert newlines to HTML breaks.
 		string = string.replacingOccurrences(of: "\r\n", with: "<br>")
 		string = string.replacingOccurrences(of: "\r", with: "<br>")

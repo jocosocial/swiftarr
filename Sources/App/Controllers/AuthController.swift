@@ -110,7 +110,7 @@ struct AuthController: APIRouteCollection {
 				.throwingFlatMap { (user, userID) in
 			// no login for punks
 			guard user.accessLevel != .banned else {
-				throw Abort(.forbidden, reason: "nope")
+				throw Abort(.forbidden, reason: "User is banned, and cannot login.")
 			}
 			// abort if account is seeing potential brute-force attack
 			guard user.recoveryAttempts < 5 else {
@@ -233,7 +233,7 @@ struct AuthController: APIRouteCollection {
         let cacheUser = try req.auth.require(UserCacheData.self)
         // no login for punks
         guard cacheUser.accessLevel != .banned else {
-            throw Abort(.forbidden, reason: "nope")
+            throw Abort(.forbidden, reason: "User is banned, and cannot login.")
         }
         // return existing token if one exists
         if let fastResult = TokenStringData(cacheUser: cacheUser) {

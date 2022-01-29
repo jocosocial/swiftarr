@@ -68,7 +68,7 @@ struct SiteEventsController: SiteControllerUtils {
     		filterString = "Today's " + filterString
 		}
 		let queryString: String = components.percentEncodedQuery ?? ""
-		return apiQuery(req, endpoint: "/events?\(queryString)", passThroughQuery: false).throwingFlatMap { response in
+    return apiQuery(req, endpoint: "/events?\(queryString)", passThroughQuery: false).throwingFlatMap { response in
  			let events = try response.content.decode([EventData].self)
      		struct EventPageContext : Encodable {
      			struct CruiseDay : Encodable {
@@ -84,14 +84,14 @@ struct SiteEventsController: SiteControllerUtils {
     			var upcomingEvent: EventData?
     			var filterString: String
     			var useAllDays: Bool
-    			
-    			init(_ req: Request, events: [EventData], dayOfCruise: Int, filterString: String, allDays: Bool) {
+
+				init(_ req: Request, events: [EventData], dayOfCruise: Int, filterString: String, allDays: Bool) {
     				self.events = events
     				trunk = .init(req, title: "Events", tab: .events, search: "Search Events")
     				isBeforeCruise = Date() < Settings.shared.cruiseStartDate
     				isAfterCruise = Date() > Calendar.autoupdatingCurrent.date(byAdding: .day, value: Settings.shared.cruiseLengthInDays, 
     						to: Settings.shared.cruiseStartDate) ?? Date()
-    				
+
     				// Set up the day buttons, one for each day of the cruise.		
 					let daynames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
     				days = Array<CruiseDay>()
@@ -99,7 +99,7 @@ struct SiteEventsController: SiteControllerUtils {
     					let weekday = (Settings.shared.cruiseStartDayOfWeek + dayIndex - 2) % 7
     					days.append(CruiseDay(name: daynames[weekday], index: dayIndex - 1, activeDay: dayIndex == dayOfCruise))
     				}
-    				
+
     				if let _ = trunk.alertCounts.nextFollowedEventTime {
     					let secondsPerWeek = 60 * 60 * 24 * 7
     					let partialWeek = Int(Date().timeIntervalSince(Settings.shared.cruiseStartDate)) % secondsPerWeek
@@ -113,7 +113,7 @@ struct SiteEventsController: SiteControllerUtils {
     			}
     		}
     		let eventContext = EventPageContext(req, events: events, dayOfCruise: dayOfCruise, 
-    				filterString: filterString, allDays: useAllDays)
+					filterString: filterString, allDays: useAllDays)
 			return req.view.render("events", eventContext)
     	}
     }
