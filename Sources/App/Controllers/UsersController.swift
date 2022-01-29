@@ -94,7 +94,7 @@ struct UsersController: APIRouteCollection {
     func headerHandler(_ req: Request) throws -> UserHeader {
         let requester = try req.auth.require(UserCacheData.self)
 		guard let parameter = req.parameters.get(userIDParam.paramString, as: UUID.self) else {
-			throw Abort(.badRequest, reason: "UserID parameter missing")
+			throw Abort(.badRequest, reason: "UserID parameter missing or invalid UUID")
 		}
 		let userHeader = try req.userCache.getHeader(parameter)
 		guard !requester.getBlocks().contains(userHeader.userID) else {

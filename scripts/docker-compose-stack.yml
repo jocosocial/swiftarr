@@ -1,16 +1,18 @@
 version: '3'
 services:
   postgres:
-    image: docker.io/library/postgres:14.1
+    image: docker.io/bitnami/postgresql:14
     env_file:
       - "../Sources/Run/Private Swiftarr Config/${ENVIRONMENT}.env"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/bitnami/postgresql
 
   redis:
-    image: docker.io/library/redis:6.2.6-alpine
+    image: docker.io/bitnami/redis:6.2
     env_file:
       - "../Sources/Run/Private Swiftarr Config/${ENVIRONMENT}.env"
+    volumes:
+      - redisdata:/bitnami/redis/data
 
   web:
     build:
@@ -27,8 +29,10 @@ services:
     env_file:
       - "../Sources/Run/Private Swiftarr Config/${ENVIRONMENT}.env"
     volumes:
+      - "../Sources/App/seeds:/app/swiftarr_App.resources/seeds:ro"
       - images:/app/images
 
 volumes:
   images:
   pgdata:
+  redisdata:

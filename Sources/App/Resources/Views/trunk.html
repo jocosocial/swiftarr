@@ -57,7 +57,7 @@
 			<div class="collapse navbar-collapse" id="navbarSupportedContent">
 				<ul class="navbar-nav navbar-dark bg-transparent mb-3">
 					<li class="nav-item d-flex align-items-center">
-						<a class="nav-link #if(trunk.tab == "home"): active#endif" href="/">
+						<a class="nav-link #if(trunk.tab == "home"): active#endif" href="/">
 							<span class="#if(trunk.alertCounts.newAnnouncementCount > 0):border-bottom border-danger#endif">Home</span>
 						</a> 
 						#if(trunk.alertCounts.newAnnouncementCount > 1):
@@ -71,7 +71,7 @@
 						#endif
 					</li>
 					<li class="nav-item">
-						<a class="nav-link #if(trunk.tab == "lfg"): active#endif" href="/fez">
+						<a class="nav-link #if(trunk.tab == "lfg"): active#endif" href="/fez">
 							<span class="#if(trunk.alertCounts.newFezMessageCount > 0):border-bottom border-danger#endif">Looking For Group</span>
 						</a>
 						#if(trunk.alertCounts.newFezMessageCount > 0):

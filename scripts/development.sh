@@ -16,6 +16,6 @@
 # this requires any new verbs to be supported by this wrapper which feels overly
 # complex.
 
-COMPOSE_PROJECT_NAME="swiftarr"
+COMPOSE_PROJECT_NAME="swiftarr_development"
 COMPOSE_FILE="scripts/docker-compose-development.yml"
 docker-compose -p ${COMPOSE_PROJECT_NAME} -f ${COMPOSE_FILE} "$@"
