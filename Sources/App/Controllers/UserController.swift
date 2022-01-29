@@ -636,9 +636,10 @@ struct UserController: APIRouteCollection {
         guard let cleanParam = cleanedParams.first, cleanParam.count > 3 else {
         	throw Abort(.badRequest, reason: "Cannot set alerts on very short or very common words")
         }
-        // get alertwords barrel
+        // Get alertwords barrel. Create a dummy one if the user doesn't already have one.
+        // We don't need to save it since that will happen when the user adds a word to it.
         return user.getBookmarkBarrel(of: .keywordAlert, on: req.db)
-				.unwrap(or: Abort(.internalServerError, reason: "alert keywords barrel not found")).flatMap { barrel in
+				.unwrap(orReplace: Barrel(ownerID: userID, barrelType: .keywordAlert)).flatMap { barrel in
 			// add string
 			var alertWords = barrel.userInfo["alertWords"] ?? []
 			alertWords.append(cleanParam)
@@ -663,12 +664,14 @@ struct UserController: APIRouteCollection {
     /// - Returns: <doc:AlertKeywordData> containing the current alert keywords as an array of strings.
     func alertwordsHandler(_ req: Request) throws -> EventLoopFuture<AlertKeywordData> {
         let user = try req.auth.require(User.self)
-        // get alertwords barrel
-        return try Barrel.query(on: req.db)
-				.filter(\.$ownerID == user.requireID())
+        let userID = try user.requireID()
+        // Get alertwords barrel. Create a dummy one if the user doesn't already have one.
+        // We don't need to save it since that will happen when the user adds a word to it.
+        return Barrel.query(on: req.db)
+				.filter(\.$ownerID == userID)
 				.filter(\.$barrelType == .keywordAlert)
 				.first()
-				.unwrap(or: Abort(.internalServerError, reason: "alert keywords barrel not found"))
+				.unwrap(orReplace: Barrel(ownerID: userID, barrelType: .keywordAlert))
 				.map { (barrel) in
 			// return as AlertKeywordData
 			let alertKeywordData = AlertKeywordData(name: barrel.name, keywords: barrel.userInfo["alertWords"] ?? [])
@@ -1154,12 +1157,14 @@ struct UserController: APIRouteCollection {
     /// - Returns: <doc:MutedUserData> containing the currently muted users as an array of <doc:SeaMonkey>.
     func mutesHandler(_ req: Request) throws -> EventLoopFuture<MutedUserData> {
         let user = try req.auth.require(User.self)
-        // retrieve mutes barrel
+        let userID = try user.requireID()
+        // Retrieve mutes barrel. Create a dummy one if the user doesn't already have one.
+        // We don't need to save it since that will happen when the user adds a word to it.
         return try Barrel.query(on: req.db)
 				.filter(\.$ownerID == user.requireID())
 				.filter(\.$barrelType == .userMute)
 				.first()
-				.unwrap(or: Abort(.internalServerError, reason: "mutes barrel not found"))
+				.unwrap(orReplace: Barrel(ownerID: userID, barrelType: .userMute))
 				.map { (barrel) in
 			// return as MutedUserData
 			let mutedUserHeaders = req.userCache.getHeaders(barrel.modelUUIDs).sorted { $0.username < $1.username }
@@ -1182,12 +1187,13 @@ struct UserController: APIRouteCollection {
         guard let parameter = param else {
         	throw Abort(.badRequest, reason: "No mute word to add found in request.")
         }
-        // get barrel
+        // Get mutewords barrel. Create a dummy one if the user doesn't already have one.
+        // We don't need to save it since that will happen when the user adds a word to it.
         return try Barrel.query(on: req.db)
 				.filter(\.$ownerID == user.requireID())
 				.filter(\.$barrelType == .keywordMute)
 				.first()
-				.unwrap(or: Abort(.internalServerError, reason: "muted keywords barrel not found"))
+				.unwrap(orReplace: Barrel(ownerID: userID, barrelType: .keywordMute))
 				.flatMap { (barrel) in
 			// add string
 			var muteWords = barrel.userInfo["muteWords"] ?? []
@@ -1209,12 +1215,14 @@ struct UserController: APIRouteCollection {
 	/// - Returns: <doc:MuteKeywordData> containing the current muting keywords as an array of  strings.
     func mutewordsHandler(_ req: Request) throws -> EventLoopFuture<MuteKeywordData> {
         let user = try req.auth.require(User.self)
-        // get mutewords barrel
+        let userID = try user.requireID()
+        // Get mutewords barrel. Create a dummy one if the user doesn't already have one.
+        // We don't need to save it since that will happen when the user adds a word to it.
         return try Barrel.query(on: req.db)
 				.filter(\.$ownerID == user.requireID())
 				.filter(\.$barrelType == .keywordMute)
 				.first()
-				.unwrap(or: Abort(.internalServerError, reason: "mute keywords barrel not found"))
+				.unwrap(orReplace: Barrel(ownerID: userID, barrelType: .keywordMute))
 				.map { (barrel) in
 			// return as MuteKeywordData
 			let muteKeywordData = MuteKeywordData(name: barrel.name, keywords: barrel.userInfo["muteWords"] ?? [])

@@ -1,12 +1,14 @@
 # Mac OS ignores
 .DS_Store
 
-# Xcode ignores
+# IDE ignores
 .build
 build/
 xcuserdata/
 DerivedData/
 .swiftpm
+.vscode
+.idea
 
 # Python ignores
 __pycache__/
