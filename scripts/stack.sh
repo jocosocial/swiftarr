@@ -37,7 +37,7 @@ if [ -z "${environment}" ]; then
   echo "Must specify an environment (development/production) with '-e' as the first parameter."
   exit 1
 else
-  echo "Managing stack in ${environment} mode."
+  echo "Managing stack \"${stackname}\" in \"${environment}\" mode."
   echo "Arguments for docker-compose are: \"${@}\""
   echo "Using compose file at ${filename}."
 fi

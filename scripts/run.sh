@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# Launch script for running an instance of Swiftarr in its container environment.
+
 echo "Swiftarr start."
 
 echo "Waiting for dependencies..."

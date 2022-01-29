@@ -7,6 +7,8 @@
 # start: start any stopped container services
 # stop: stop any running container services
 # remove: remove stopped containers (to fully reset)
+# build: build any dependent images
+# logs: get logs
 
 if [ $# -lt 1 ]; then
     echo "Usage: $0 COMMAND"
@@ -14,18 +16,28 @@ if [ $# -lt 1 ]; then
     exit
 fi
 
+COMPOSE_PROJECT_NAME="swiftarr_testing"
+COMPOSE_FILE="scripts/docker-compose-linux-testing.yml"
+COMPOSE="docker-compose -p ${COMPOSE_PROJECT_NAME} -f ${COMPOSE_FILE}"
+
 case "$1" in
     up)     echo "starting linux-testing"
-            docker-compose -f scripts/docker-compose-linux-testing.yml up --abort-on-container-exit
+            ${COMPOSE} up --abort-on-container-exit
             ;;
     start)  echo "starting swiftarr test containers"
-            docker-compose -f scripts/docker-compose-linux-testing.yml start
+            ${COMPOSE} start
             ;;
     stop)   echo "stopping swiftarr test containers"
-            docker-compose -f scripts/docker-compose-linux-testing.yml stop
+            ${COMPOSE} stop
+            ;;
+    build)   echo "build swiftarr test container images"
+            ${COMPOSE} build
+            ;;
+    logs)   echo "gets logs from this stack"
+            ${COMPOSE} logs
             ;;
     remove) echo "removing test containers"
-            docker-compose -f scripts/docker-compose-linux-testing.yml rm
+            ${COMPOSE} rm
             ;;
     *)      echo "parameter '$1' not understood (must be 'up' 'start' 'stop' or 'remove'"
             ;;

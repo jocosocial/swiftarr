@@ -1,4 +1,4 @@
-FROM swift:latest
+FROM swift:5.5.2-bionic
 
 RUN apt-get -qq update && apt-get install -y \
     libssl-dev zlib1g-dev libgd-dev \
@@ -6,6 +6,9 @@ RUN apt-get -qq update && apt-get install -y \
 
 WORKDIR /swiftarr
 COPY . .
+
+# Something goes wrong with this image when trying to use a different user.
+# Blows up with the package cache config. As such we cannot become not-root.
 
 RUN swift package resolve
 RUN swift package clean
