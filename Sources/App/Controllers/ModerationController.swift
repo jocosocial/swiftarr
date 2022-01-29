@@ -613,6 +613,9 @@ struct ModerationController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "THO access level required to set access level to Banned or Unverified.")
 		}
 		return User.findFromParameter(userIDParam, on: req).throwingFlatMap { targetUser in
+			guard targetUser.accessLevel != .banned || user.accessLevel.hasAccess(.tho) else {
+				throw Abort(.badRequest, reason: "THO access level required to change access level from Banned.")
+			}
 			return targetUser.allAccounts(on: req.db).throwingFlatMap { allAccounts in
 				try allAccounts.forEach { account in
 					try guardNotSpecialAccount(account)
