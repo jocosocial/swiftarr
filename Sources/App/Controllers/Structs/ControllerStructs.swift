@@ -265,6 +265,8 @@ public struct CategoryData: Content {
     var categoryID: UUID
     /// The title of the category.
     var title: String
+    /// The purpose string for the category.
+    var purpose: String
     /// If TRUE, the user cannot create/modify threads in this forum. Should be sorted to top of category list.
     var isRestricted: Bool
     /// The number of threads in this category
@@ -277,6 +279,7 @@ extension CategoryData {
 	init(_ cat: Category, restricted: Bool, forumThreads: [ForumListData]? = nil) throws {
 		categoryID = try cat.requireID()
 		title = cat.title
+		purpose = cat.purpose
 		isRestricted = restricted
 		numThreads = cat.forumCount
 		self.forumThreads = forumThreads

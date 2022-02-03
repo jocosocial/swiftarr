@@ -22,6 +22,9 @@ final class Category: Model {
     /// The title of the category.
     @Field(key: "title") var title: String
     
+    /// A short string describing what the Category is for. Color commentary for the category.
+    @Field(key: "purpose") var purpose: String
+    
     /// Minimum access level to view posts in this category. Usually set to `.quarantined`. But, a category reserved for moderators only
     /// could have this set to `.moderator`.
     @Enum(key: "view_access_level") var accessLevelToView: UserAccessLevel
@@ -58,12 +61,9 @@ final class Category: Model {
     /// - Parameters:
     ///   - title: The title for the the category.
     ///   - isRestricted: Whether users can create forums in the category.
-    init(
-        title: String,
-        viewAccess: UserAccessLevel = .quarantined,
-        createForumAccess: UserAccessLevel = .verified
-    ) {
+    init(title: String,  purpose: String, viewAccess: UserAccessLevel = .quarantined, createForumAccess: UserAccessLevel = .verified) {
         self.title = title
+        self.purpose = purpose
         self.accessLevelToView = viewAccess
         self.accessLevelToCreate = createForumAccess
         self.forumCount = 0

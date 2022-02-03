@@ -3,7 +3,12 @@ import Fluent
 
 
 /// A `Migration` that creates an initial set of categories for `Forum`s.
-struct CreateCategories: Migration {    
+struct CreateCategories: Migration {  
+	struct CategoryCreateInfo {
+		var title: String
+		var purpose: String
+	}
+  
     /// Required by `Migration` protocol. Creates an initial set of categories for forums.
     ///
     /// - Parameter database: A connection to the database, provided automatically.
@@ -12,37 +17,38 @@ struct CreateCategories: Migration {
 		var categories: [Category] = []
 		
 		// categories only mods can see and post in
-        let moderatorCategories: [String] = [
-            "Moderators Only",
-            "Mods Only Dumpster Fire"
+        let moderatorCategories: [CategoryCreateInfo] = [
+			.init(title: "Moderators Only", purpose: "Mod Chat. Only Mods can see this."),
+			.init(title: "Mods Only Dumpster Fire", purpose: "Mods: Move flamewar theads here"),
         ]
         for modCategory in moderatorCategories {
-            let category = Category(title: modCategory, viewAccess: .moderator, createForumAccess: .moderator)
+            let category = Category(title: modCategory.title, purpose: modCategory.purpose, viewAccess: .moderator, 
+            		createForumAccess: .moderator)
             categories.append(category)
         }
         
 		// categories to which users cannot directly add forums
-        let adminCategories: [String] = [
-            "Event Forums",
-            "Shadow Event Forums"
+        let adminCategories: [CategoryCreateInfo] = [
+            .init(title: "Event Forums", purpose: "A thread for each Official event"),
+			.init(title: "Shadow Event Forums", purpose: "A thread for each Shadow event"),
         ]
         for adminCategory in adminCategories {
-            let category = Category(title: adminCategory, createForumAccess: .moderator)
+            let category = Category(title: adminCategory.title, purpose: adminCategory.purpose, createForumAccess: .moderator)
             categories.append(category)
         }
 
         // categories to which users can add forums
-        let userCategories: [String] = [
-            "Twit-arr Support",
-            "Help Desk",
-            "General",
-            "Lower Decks",
-            "Upper Decks",
-            "Activities",
-            "Egype"
+        let userCategories: [CategoryCreateInfo] = [
+            .init(title: "Help Desk", purpose: "Need help? Ask here."),
+			.init(title: "General", purpose: "Discuss amongst yourselves"),
+            .init(title: "Covid", purpose: "No hate, only hugs. Except for Covid—hate Covid."),
+            .init(title: "Activities", purpose: "Things to do that aren't Events. Pokemon, KrakenMail, puzzles..."),
+			.init(title: "Safe Space", purpose: "No hate, only hugs"),
+			.init(title: "Egype", purpose: "Did a performer do something silly? Do you want to meme about it?"),
+			
         ]
         for userCategory in userCategories {
-            let category = Category(title: userCategory)
+            let category = Category(title: userCategory.title, purpose: userCategory.purpose)
             categories.append(category)
         }
         // save categories

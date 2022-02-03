@@ -18,7 +18,7 @@ struct ForumPageContext : Encodable {
 			category = cat[0]
 		}
 		else {
-			category = CategoryData(categoryID: UUID(), title: "Unknown Category", 
+			category = CategoryData(categoryID: UUID(), title: "Unknown Category", purpose: "",
 					isRestricted: false, numThreads: 0, forumThreads: nil)
 		}
 		paginator = PaginatorContext(forum.paginator) { pageIndex in
@@ -299,7 +299,7 @@ struct SiteForumController: SiteControllerUtils {
 						category = cat[0]
 					}
 					else {
-						category = CategoryData(categoryID: UUID(), title: "Unknown Category", 
+						category = CategoryData(categoryID: UUID(), title: "Unknown Category", purpose: "",
 								isRestricted: false, numThreads: 0, forumThreads: nil)
 					}
 				}

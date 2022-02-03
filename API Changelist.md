@@ -35,3 +35,7 @@ access is between Moderator and THO; importantly it gives access to the @Twitarr
 * added the '?foruser=' query parameter to several Fez API calls; used by moderators and TwittarTeam members to access their 
 respective shared Seamail inboxes. 
 
+## Feb 2, 2022
+
+* Added a "purpose" string to CategoryData. Intent is to give users an idea of what each category is for, to increase likelihood
+that various categories will be used and will contain appropriate content. 

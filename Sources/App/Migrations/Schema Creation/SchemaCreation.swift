@@ -133,6 +133,7 @@ struct CreateCategorySchema: Migration {
 					.id()
 					.field("title", .string, .required)
 					.unique(on: "title")
+					.field("purpose", .string, .required)
 					.field("view_access_level", userAccessLevel, .required)
 					.field("create_access_level", userAccessLevel, .required)
 					.field("forumCount", .int32, .required)
