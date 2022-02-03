@@ -473,6 +473,13 @@ func verifyConfiguration(_ app: Application) throws {
 	if !cssFileFound {
 		app.logger.critical("Resource files not found during launchtime sanity check. This usually means the Resources directory isn't getting copied into the App directory in /DerivedData.")
 	}
+
+	// Enable sharing anything out of the Public directory (at the app root). The directory does not
+	// have to exist when the app starts so it can be mounted in at any time. By default this translates
+	// to "Public" (adjacent to Sources in the code repo) or "/app/Public" in Docker.
+	let fileMiddleware = FileMiddleware(publicDirectory: app.directory.publicDirectory)
+	app.middleware.use(fileMiddleware)
+	app.logger.notice("Serving static content from \(app.directory.publicDirectory).")
 }
 
 // Found this in a Github search. Seems to be good enough for our needs unless someone has better ideas.
