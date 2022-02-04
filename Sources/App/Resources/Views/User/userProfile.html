@@ -62,6 +62,10 @@
 					</div>
 				</form>
 			#endif
+					<div class="row mx-1 mt-2 list-group">
+						<a href="/tweets?byUser=#(profile.header.userID)" class="list-group-item list-group-item-action">View Twarrts by @#(profile.header.username)</a>
+						<a href="/forum/search?creatorid=#(profile.header.userID)&searchType=forums" class="list-group-item list-group-item-action">View Forums by @#(profile.header.username)</a>
+					</div>
 			<div class="row mt-2">
 				<div class="col btn-group btn-group-sm col-auto mx-1" role="group" aria-label="Profile actions">
 					#if(trunk.userID == profile.header.userID):

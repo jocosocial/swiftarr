@@ -742,29 +742,38 @@ struct SiteForumController: SiteControllerUtils {
     // Shows results of forum or post searches from the header search bar.
 	func forumSearchPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		struct FormData : Content {
-			var search: String
+			var search: String?
+			var creator: String?
+			var creatorid: String?
 			var searchType: String
 		}
 		let formData = try req.query.decode(FormData.self)
 		if formData.searchType == "forums" {
-			guard let pathSearch = formData.search.percentEncodeFilePathEntry() else {
-				throw Abort(.badRequest, reason: "Invalid search string.")
-			}
-			return apiQuery(req, endpoint: "/forum/match/\(pathSearch)", passThroughQuery: false).throwingFlatMap { response in
+			return apiQuery(req, endpoint: "/forum/search", passThroughQuery: true).throwingFlatMap { response in
 				let responseData = try response.content.decode(ForumSearchData.self)
+				var filterDesc = "Forums"
+				if let creator = formData.creator {
+					filterDesc.append(contentsOf: " by \(creator)")
+				}
+				if let _ = formData.creatorid, !responseData.forumThreads.isEmpty {
+					filterDesc.append(contentsOf: " by \(responseData.forumThreads[0].creator.username)")
+				}
+				if let searchStr = formData.search {
+					filterDesc.append(contentsOf: " with \"\(searchStr)\"")
+				}
     			let ctx = try ForumsSearchPageContext(req, forums: responseData, searchType: .textSearch,
-    					filterDesc: "\(responseData.paginator.total) Forums with \"\(formData.search)\"")
+    					filterDesc: "\(responseData.paginator.total) \(filterDesc)")
 				return req.view.render("Forums/forumsList", ctx)
 			}
 		}
 		else {
 			// search for posts
-			guard let querySearch = formData.search.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+			guard let querySearch = formData.search?.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
 				throw Abort(.badRequest, reason: "Invalid search string.")
 			}
 			return apiQuery(req, endpoint: "/forum/post/search?search=\(querySearch)").throwingFlatMap { response in
 				let responseData = try response.content.decode(PostSearchData.self)
-    			let ctx = try PostSearchPageContext(req, posts: responseData, searchType: .textSearch, searchString: formData.search)
+    			let ctx = try PostSearchPageContext(req, posts: responseData, searchType: .textSearch, searchString: formData.search ?? "")
 				return req.view.render("Forums/forumPostsList", ctx)
 			}
 		}

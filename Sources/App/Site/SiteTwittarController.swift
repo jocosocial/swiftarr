@@ -35,7 +35,7 @@ struct TweetPageContext: Encodable {
 			post = .init(forType: .tweetReply(rg))
 		} else {
 			post = .init(forType: .tweet)
-			filterDesc = "Tweets"
+			filterDesc = "Twarrts"
 		}
 		
 		var filters: [String] = []
@@ -57,8 +57,13 @@ struct TweetPageContext: Encodable {
 				filterType = .byUser
 			}
 			else {
-				// Sucks, as it'll append the UUID not the username
-				filters.append(" by '\(byUser)'")
+				// byUser is a UUID; try to guess the username
+				if !tweets.isEmpty {
+					filters.append(" by '\(tweets[0].author.username)'")
+				}
+				else {
+					filters.append(" by user")
+				}
 			}
 		}
 		if let byUsername = queryStruct.byUsername {

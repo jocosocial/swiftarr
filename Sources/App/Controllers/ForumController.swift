@@ -42,6 +42,7 @@ struct ForumController: APIRouteCollection {
 		tokenCacheAuthGroup.post(forumIDParam, "favorite", "remove", use: favoriteRemoveHandler)
 		tokenCacheAuthGroup.delete(forumIDParam, "favorite", use: favoriteRemoveHandler)
 
+		tokenCacheAuthGroup.get("search", use: forumSearchHandler)
 		tokenCacheAuthGroup.get("match", ":search_string", use: forumMatchHandler)
 		tokenCacheAuthGroup.get("owner", use: ownerHandler)
 
@@ -212,6 +213,54 @@ struct ForumController: APIRouteCollection {
 	}
 	
 	
+	/// `GET /api/v3/forum/search`
+	///
+	/// Retrieve all `Forum`s in all categories that match the specified criteria. Results will be sorted in decending order of creation time.
+	/// Does not return results from categories for which the user does not have access.
+	///
+	/// **URL Query Parameters**:
+	/// * `?start=INT` - The index into the array of forums to start returning results. 0 for first forum.
+	/// * `?limit=INT` - The max # of entries to return. Defaults to 50. Clamped to a max value set in Settings.
+	/// 
+	/// * `?search=STRING` - Matches forums with STRING in their title.
+	/// * `?creator=STRING` - Matches forums created by the given username.
+	/// * `?creatorid=STRING` - Matches forums created by the given userID.
+	///
+	/// - Parameter searchString: In the URL path.
+	/// - Returns: An array of <doc:ForumListData> containing all matching forums.
+	func forumSearchHandler(_ req: Request) throws -> EventLoopFuture<ForumSearchData> {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let start = (req.query[Int.self, at: "start"] ?? 0)
+		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
+		let countQuery = Forum.query(on: req.db)
+				.filter(\.$creator.$id !~ cacheUser.getBlocks())
+				.filter(\.$accessLevelToView <= cacheUser.accessLevel)
+		// postgres "_" and "%" are wildcards, so escape for literals
+		if var search = req.query[String.self, at: "search"] {
+			search = search.replacingOccurrences(of: "_", with: "\\_")
+			search = search.replacingOccurrences(of: "%", with: "\\%")
+			search = search.trimmingCharacters(in: .whitespacesAndNewlines)
+			countQuery.filter(\.$title, .custom("ILIKE"), "%\(search)%")
+		}
+		if let creator = req.query[String.self, at: "creator"], let creatingUser = req.userCache.getUser(username: creator) {
+			countQuery.filter(\.$creator.$id == creatingUser.userID)
+		}
+		if let creatorID = req.query[UUID.self, at: "creatorid"], let creatingUser = req.userCache.getUser(creatorID) {
+			countQuery.filter(\.$creator.$id == creatingUser.userID)
+		}
+		// get user's blocks and taggedForum barrel
+        return Barrel.query(on: req.db).filter(\.$ownerID == cacheUser.userID).filter(\.$barrelType == .taggedForum).first()
+				.throwingFlatMap { (barrel) in
+			// get forums, remove blocks
+			let resultQuery = countQuery.copy().sort(\.$createdAt, .descending).range(start..<(start + limit))
+			return countQuery.count().and(resultQuery.all()).throwingFlatMap { (forumCount, forums) in
+				return try buildForumListData(forums, on: req, user: cacheUser, favoritesBarrel: barrel).map { forumList in
+					return ForumSearchData(paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
+				}
+			}
+		}
+	}
+
 	/// `GET /api/v3/forum/match/STRING`
 	///
 	/// Retrieve all `Forum`s in all categories whose title contains the specified string. Results will be sorted in decending order of creation time.
