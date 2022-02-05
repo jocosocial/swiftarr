@@ -179,9 +179,9 @@ class ForumAPIUser(FastHttpUser):
 	def createForum(self):
 		# get categories, find "Lower Decks"
 		catResponse = self.client.get("/api/v3/forum/categories", headers = self.samAuth)
-		lowerCat = next(catData["categoryID"] for catData in catResponse.json() if catData["title"] == "Lower Decks")
+		generalCat = next(catData["categoryID"] for catData in catResponse.json() if catData["title"] == "General")
 		# Create forum in "Lower Decks" category
-		createResponse = self.client.post("/api/v3/forum/categories/" + lowerCat + "/create", 
+		createResponse = self.client.post("/api/v3/forum/categories/" + generalCat + "/create", 
 				json={ "title": "A Locust Forum", "firstPost":{"text": "hello this is my locust post", "images": [], "postAsModerator": False, "postAsTwitarrTeam": False }},
 				headers = self.samAuth, name="/api/v3/forum/categories/:cat_id/create")
 		newForumID = createResponse.json()["forumID"]
@@ -202,8 +202,8 @@ class ForumAPIUser(FastHttpUser):
 	@task
 	def createRenameForum(self):
 		catResponse = self.client.get("/api/v3/forum/categories", headers = self.samAuth)
-		lowerCat = next(catData["categoryID"] for catData in catResponse.json() if catData["title"] == "Lower Decks")
-		createResponse = self.client.post("/api/v3/forum/categories/" + lowerCat + "/create", 
+		generalCat = next(catData["categoryID"] for catData in catResponse.json() if catData["title"] == "General")
+		createResponse = self.client.post("/api/v3/forum/categories/" + generalCat + "/create", 
 				json={ "title": "A Locust Forum To Rename", "firstPost":{"text": "hello this is my locust post", "images": [], "postAsModerator": False, "postAsTwitarrTeam": False }},
 				headers = self.samAuth, name="/api/v3/forum/categories/:cat_id/create")
 		newForumID = createResponse.json()["forumID"]
@@ -218,8 +218,8 @@ class ForumAPIUser(FastHttpUser):
 	@task
 	def favoriteForum(self):
 		catResponse = self.client.get("/api/v3/forum/categories", headers = self.samAuth)
-		lowerCat = next(catData["categoryID"] for catData in catResponse.json() if catData["title"] == "Lower Decks")
-		forumsResponse = self.client.get("/api/v3/forum/categories/" + lowerCat, headers = self.samAuth, 
+		generalCat = next(catData["categoryID"] for catData in catResponse.json() if catData["title"] == "General")
+		forumsResponse = self.client.get("/api/v3/forum/categories/" + generalCat, headers = self.samAuth, 
 				name="/api/v3/forum/categories/:cat_id")
 		if len(forumsResponse.json()["forumThreads"]) > 0:
 			firstForum = forumsResponse.json()["forumThreads"][0]["forumID"]
