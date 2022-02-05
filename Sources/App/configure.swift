@@ -473,6 +473,16 @@ func verifyConfiguration(_ app: Application) throws {
 	if !cssFileFound {
 		app.logger.critical("Resource files not found during launchtime sanity check. This usually means the Resources directory isn't getting copied into the App directory in /DerivedData.")
 	}
+
+  // FileMiddleware checks eTags and will respond with NotModified, but doesn't set cache-control,
+  // which we probably show for static files. That was the main reason for creating SiteFileController
+  // and using it instead of FileMiddleware.
+  //
+  // SiteFileController just serves static files: images, css, and javascript files. Improvements over
+  // fileMiddleware are that fileMiddleware ran globally on every request, and we couldn’t set
+  // cache-control headers with fileMiddleware.
+  //
+  // tldr: Don't use the FileMiddleware.
 }
 
 // Found this in a Github search. Seems to be good enough for our needs unless someone has better ideas.
