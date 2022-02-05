@@ -426,13 +426,14 @@ struct TwitarrController: APIRouteCollection {
                 // ensure bookmark doesn't exist
                 var bookmarks = barrel.userInfo["bookmarks"] ?? []
                 let twarrtIDStr = String(twarrtID)
-                guard !bookmarks.contains(twarrtIDStr) else {
-                    return req.eventLoop.makeFailedFuture(Abort(.badRequest, reason: "twarrt already bookmarked"))
+                var result = HTTPStatus.ok
+                if !bookmarks.contains(twarrtIDStr) {
+             		// add twarrt and return 201
+					bookmarks.append(twarrtIDStr)
+					barrel.userInfo["bookmarks"] = bookmarks
+					result = .created
                 }
-                // add twarrt and return 201
-                bookmarks.append(twarrtIDStr)
-                barrel.userInfo["bookmarks"] = bookmarks
-                return barrel.save(on: req.db).transform(to: .created)
+                return barrel.save(on: req.db).transform(to: result) 
             }
         }
     }
@@ -455,11 +456,13 @@ struct TwitarrController: APIRouteCollection {
                 var bookmarks = barrel.userInfo["bookmarks"] ?? []
                 // remove twarrt and return 204
                 let twarrtID = String(twarrtID)
+                var result = HTTPStatus.ok
                 if let index = bookmarks.firstIndex(of: twarrtID) {
                     bookmarks.remove(at: index)
+                    result = .noContent
                 }
                 barrel.userInfo["bookmarks"] = bookmarks
-                return barrel.save(on: req.db).transform(to: .noContent)
+                return barrel.save(on: req.db).transform(to: result)
             }
         }
     }

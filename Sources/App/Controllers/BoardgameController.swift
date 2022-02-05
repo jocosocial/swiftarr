@@ -1,5 +1,6 @@
 import Vapor
 import Fluent
+import PostgresNIO
 
 /// Methods for accessing the list of boardgames available in the onboard Games Library.
 struct BoardgameController: APIRouteCollection {
@@ -108,12 +109,17 @@ struct BoardgameController: APIRouteCollection {
     /// Add the specified `Boardgame` to the user's favorite boardgame list. Must be logged in
     ///
     /// - Parameter boardgameID: in URL path
-    /// - Returns: 201 Created on success.
+    /// - Returns: 201 Created on success; 200 OK if already favorited.
     func addFavorite(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
 		let user = try req.auth.require(UserCacheData.self)
 		return Boardgame.findFromParameter(boardgameIDParam, on: req).throwingFlatMap { boardgame in
 			let fav = try BoardgameFavorite(user.userID, boardgame)
-			return fav.save(on: req.db).transform(to: .created)
+			return fav.save(on: req.db).transform(to: .created).flatMapErrorThrowing { err in
+				if let sqlError = err as? PostgresError, sqlError.code == .uniqueViolation {
+					return .ok
+				}
+				throw err
+			}
 		} 
     }
     
@@ -123,7 +129,7 @@ struct BoardgameController: APIRouteCollection {
     /// Remove the specified `Boardgame` from the user's boardgame favorite list.
     ///
     /// - Parameter boardgameID: in URL path
-    /// - Returns: 204 No Content on success.
+    /// - Returns: 204 No Content on success; 200 OK if already not a favorite.
     func removeFavorite(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
 		let user = try req.auth.require(UserCacheData.self)
         guard let boardgameID = req.parameters.get(boardgameIDParam.paramString, as: UUID.self) else {
@@ -132,7 +138,7 @@ struct BoardgameController: APIRouteCollection {
         return BoardgameFavorite.query(on: req.db).filter(\.$user.$id == user.userID)
         		.filter(\.$boardgame.$id == boardgameID).first().throwingFlatMap { pivot in
         	guard let pivot = pivot else {
-        		throw Abort(.notFound, reason: "Cannot remove favorite: User has not favorited this boardgame.")
+        		return req.eventLoop.future(.ok)
         	}
         	return pivot.delete(on: req.db).transform(to: .noContent)
         }

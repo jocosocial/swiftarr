@@ -1,5 +1,6 @@
 import Vapor
 import Fluent
+import PostgresNIO
 
 /// Methods for accessing the list of boardgames available in the onboard Games Library.
 struct KaraokeController: APIRouteCollection {
@@ -126,8 +127,13 @@ struct KaraokeController: APIRouteCollection {
     func addFavorite(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(UserCacheData.self)
         return KaraokeSong.findFromParameter(songIDParam, on: req).throwingFlatMap { song in
-        	let newFav = try  KaraokeFavorite(user.userID, song)
-        	return newFav.save(on: req.db).transform(to: .created)
+        	let newFav = try KaraokeFavorite(user.userID, song)
+        	return newFav.save(on: req.db).transform(to: .created).flatMapErrorThrowing { err in
+				if let sqlError = err as? PostgresError, sqlError.code == .uniqueViolation {
+					return .ok
+				}
+				throw err
+			}
 		}
     }
     
@@ -146,7 +152,7 @@ struct KaraokeController: APIRouteCollection {
         return KaraokeFavorite.query(on: req.db).filter(\.$user.$id == user.userID)
         		.filter(\.$song.$id == songID).first().throwingFlatMap { pivot in
         	guard let pivot = pivot else {
-        		throw Abort(.notFound, reason: "Cannot remove favorite: User has not favorited this song.")
+        		return req.eventLoop.future(.ok)
         	}
         	return pivot.delete(on: req.db).transform(to: .noContent)
         }
@@ -154,9 +160,9 @@ struct KaraokeController: APIRouteCollection {
     
     /// `GET /api/v3/karaoke/userismanager`
     ///
-    /// 
+    /// Returns TRUE in isAuthorized if the user is a Karaoke Manager, meaning they can create entries in  the Karaoke Song Log.
     ///
-    /// - Returns: 201 Created on success.
+    /// - Returns: 200 OK
     func userCanLogKaraokeSongPerformances(_ req: Request) throws -> EventLoopFuture<UserAuthorizedToCreateKaraokeLogs> {
     	let user = try req.auth.require(UserCacheData.self)
     	return req.redis.sismember(user.userID, of: "KaraokeSongManagers").map { isMember in

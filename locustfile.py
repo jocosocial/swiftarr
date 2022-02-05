@@ -446,8 +446,8 @@ class BoardgamesAPIUser(FastHttpUser):
 		self.client.get("/api/v3/boardgames/expansions/" + random.choice(boardgameIDs), 
 				headers = self.jamesAuth, name="/api/v3/boardgames/expansions/:game_id")
 		favGame = random.choice(boardgameIDs)
-		self.client.post("/api/v3/boardgames/" + favGame + "/favorite", headers = self.jamesAuth, name="/api/v3/boardgames/:event_id/favorite")
-		self.client.delete("/api/v3/boardgames/" + favGame + "/favorite", headers = self.jamesAuth, name="/api/v3/boardgames/:event_id/favorite")
+		self.client.post("/api/v3/boardgames/" + favGame + "/favorite", headers = self.jamesAuth, name="/api/v3/boardgames/:game_id/favorite")
+		self.client.delete("/api/v3/boardgames/" + favGame + "/favorite", headers = self.jamesAuth, name="/api/v3/boardgames/:game_id/favorite")
 
 	@task
 	def searchBoardgames(self):

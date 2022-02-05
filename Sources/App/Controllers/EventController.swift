@@ -157,7 +157,7 @@ struct EventController: APIRouteCollection {
     /// Add the specified `Event` to the user's tagged events list.
     ///
     /// - Parameter eventID: in URL path
-    /// - Returns: 201 Created on success.
+    /// - Returns: 201 Created on success; 200 OK if already favorited.
     func favoriteAddHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(UserCacheData.self)
         // get event
@@ -175,6 +175,9 @@ struct EventController: APIRouteCollection {
 					barrel.modelUUIDs.append(eventID)
 					_ = storeNextEventTime(userID: user.userID, eventBarrel: barrel, on: req)
 				}
+				else {
+					return req.eventLoop.future(.ok)
+				}
 				return barrel.save(on: req.db).transform(to: .created)
 			}
         }
@@ -187,7 +190,7 @@ struct EventController: APIRouteCollection {
     ///
     /// - Parameter eventID: in URL path
     /// - Throws: 400 error if the event was not favorited.
-    /// - Returns: 204 No Content on success.
+    /// - Returns: 204 No Content on success; 200 OK if event is already not favorited.
     func favoriteRemoveHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(UserCacheData.self)
         // get event
@@ -200,13 +203,11 @@ struct EventController: APIRouteCollection {
 					.first()
 					.flatMap { eventBarrel in
 				guard let barrel = eventBarrel else {
-					return req.eventLoop.makeFailedFuture(
-							Abort(.badRequest, reason: "user has not tagged any events"))
+					return req.eventLoop.future(.ok)
 				}
 				// remove event
 				guard let index = barrel.modelUUIDs.firstIndex(of: eventID) else {
-					return req.eventLoop.makeFailedFuture(
-							Abort(.badRequest, reason: "event was not tagged"))
+					return req.eventLoop.future(.ok)
 				}
 				barrel.modelUUIDs.remove(at: index)
 				_ = storeNextEventTime(userID: user.userID, eventBarrel: barrel, on: req)

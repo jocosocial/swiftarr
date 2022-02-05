@@ -533,30 +533,28 @@ struct ForumController: APIRouteCollection {
     ///
     /// - Parameter postID: In the URL path.
     /// - Throws: 400 error if the post is already bookmarked.
-    /// - Returns: 201 Created on success.
+    /// - Returns: 201 Created on success; 200 OK if already bookmarked.
     func bookmarkAddHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
         // get post and user's bookmarkedPost barrel
         return ForumPost.findFromParameter(postIDParam, on: req)
-        	.and(user.getBookmarkBarrel(of: .bookmarkedPost, on: req.db))
-        	.flatMapThrowing { (post, bookmarkBarrel) -> Barrel in
-                // create barrel if needed
-                let barrel = bookmarkBarrel ?? Barrel(ownerID: userID, barrelType: .bookmarkedPost, name: "Posts")
-                // ensure bookmark doesn't exist
-                var bookmarks = barrel.userInfo["bookmarks"] ?? []
-                let postIDStr = try post.bookmarkIDString()
-                guard !bookmarks.contains(postIDStr) else {
-                    throw Abort(.badRequest, reason: "post already bookmarked")
-                }
-                // add post and return 201
-                bookmarks.append(postIDStr)
-                barrel.userInfo["bookmarks"] = bookmarks
-                return barrel
+				.and(user.getBookmarkBarrel(of: .bookmarkedPost, on: req.db))
+				.flatMapThrowing { (post, bookmarkBarrel) in
+			// create barrel if needed
+			let barrel = bookmarkBarrel ?? Barrel(ownerID: userID, barrelType: .bookmarkedPost, name: "Posts")
+			// ensure bookmark doesn't exist
+			var bookmarks = barrel.userInfo["bookmarks"] ?? []
+			let postIDStr = try post.bookmarkIDString()
+			guard !bookmarks.contains(postIDStr) else {
+				return .ok
 			}
-			.flatMap { barrel in
-                return barrel.save(on: req.db).transform(to: .created)
-            }
+			// add post and return 201
+			bookmarks.append(postIDStr)
+			barrel.userInfo["bookmarks"] = bookmarks
+			_ = barrel.save(on: req.db)
+			return .created
+		}
     }
     
     /// `POST /api/v3/forum/post/ID/bookmark/remove`
@@ -571,23 +569,21 @@ struct ForumController: APIRouteCollection {
         let user = try req.auth.require(User.self)
         // get post and user's bookmarkedPost barrel
         return ForumPost.findFromParameter(postIDParam, on: req)
-        	.and(user.getBookmarkBarrel(of: .bookmarkedPost, on: req.db))
-        	.flatMapThrowing { (post, bookmarkBarrel) -> Barrel in
-                guard let barrel = bookmarkBarrel else {
-                    throw Abort(.badRequest, reason: "user has not bookmarked any posts")
-                }
-                var bookmarks = barrel.userInfo["bookmarks"] ?? []
-                // remove post and return 204
-                let postIDStr = try post.bookmarkIDString()
-                if let index = bookmarks.firstIndex(of: postIDStr) {
-                    bookmarks.remove(at: index)
-                }
-                barrel.userInfo["bookmarks"] = bookmarks
-                return barrel
+				.and(user.getBookmarkBarrel(of: .bookmarkedPost, on: req.db))
+				.flatMapThrowing { (post, bookmarkBarrel) in
+			guard let barrel = bookmarkBarrel else {
+				return .ok
 			}
-			.flatMap { barrel in
-                return barrel.save(on: req.db).transform(to: .noContent)
-            }
+			var bookmarks = barrel.userInfo["bookmarks"] ?? []
+			// remove post and return 204
+			let postIDStr = try post.bookmarkIDString()
+			if let index = bookmarks.firstIndex(of: postIDStr) {
+				bookmarks.remove(at: index)
+			}
+			barrel.userInfo["bookmarks"] = bookmarks
+			_ = barrel.save(on: req.db)
+			return .noContent
+		}
     }
     
     /// `POST /api/v3/forum/ID/favorite`
@@ -595,7 +591,7 @@ struct ForumController: APIRouteCollection {
     /// Add the specified `Forum` to the user's tagged forums list.
     ///
     /// - Parameter forumID: In the URL path.
-    /// - Returns: 201 Created on success.
+    /// - Returns: 201 Created on success; 200 OK if already favorited.
     func favoriteAddHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let cacheUser = try req.auth.require(UserCacheData.self)
         // get forum and barrel
@@ -608,6 +604,9 @@ struct ForumController: APIRouteCollection {
 			if !barrel.modelUUIDs.contains(forumID) {
 				barrel.modelUUIDs.append(forumID)
 			}
+			else {
+				return req.eventLoop.future(.ok)
+			}
 			return barrel.save(on: req.db).transform(to: .created)
 		}
     }
@@ -619,7 +618,7 @@ struct ForumController: APIRouteCollection {
     ///
     /// - Parameter forumID: In the URL path.
     /// - Throws: 400 error if the forum was not favorited.
-    /// - Returns: 204 No Content on success.
+    /// - Returns: 204 No Content on success; 200 OK if already not favorited.
     func favoriteRemoveHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let cacheUser = try req.auth.require(UserCacheData.self)
         // get forum and barrel
@@ -632,7 +631,7 @@ struct ForumController: APIRouteCollection {
 			}
 			// remove forum
 			guard let index = barrel.modelUUIDs.firstIndex(of: forumID) else {
-				return req.eventLoop.makeFailedFuture(Abort(.badRequest, reason: "forum was not tagged"))
+				return req.eventLoop.future(.ok)
 			}
 			barrel.modelUUIDs.remove(at: index)
 			return barrel.save(on: req.db).transform(to: .noContent)
