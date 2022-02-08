@@ -64,9 +64,9 @@
 							<span class="text-muted"><i>#(trunk.alertCounts.newAnnouncementCount) New Announcements</i></span>
 						#elseif(trunk.alertCounts.newAnnouncementCount == 1):
 							<span class="text-muted"><i>1 New Announcement</i></span>
-						#elseif(trunk.alertCounts.activeAnnouncementCount > 1):
-							<span class="text-muted"><i>#(trunk.alertCounts.activeAnnouncementCount) Announcements</i></span>
-						#elseif(trunk.alertCounts.activeAnnouncementCount == 1):
+						#elseif(count(trunk.alertCounts.activeAnnouncementIDs) > 1):
+							<span class="text-muted"><i>#(count(trunk.alertCounts.activeAnnouncementIDs)) Announcements</i></span>
+						#elseif(count(trunk.alertCounts.activeAnnouncementIDs) == 1):
 							<span class="text-muted"><i>1 Announcement</i></span>
 						#endif
 					</li>

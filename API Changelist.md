@@ -39,3 +39,9 @@ respective shared Seamail inboxes.
 
 * Added a "purpose" string to CategoryData. Intent is to give users an idea of what each category is for, to increase likelihood
 that various categories will be used and will contain appropriate content. 
+
+## Feb 8, 2022
+
+* Changed "activeAnnouncementCount" in UserNotificationData to "activeAnnouncementIDs". The new value is an array of all the 
+announcement IDs that are currently active. activeAnnouncementIDs.count is equal to the old value. This fixes an issue where
+it was possible to have a new announcement where clients couldn't detect it.

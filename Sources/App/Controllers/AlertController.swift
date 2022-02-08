@@ -79,7 +79,7 @@ struct AlertController: APIRouteCollection {
         guard let user = req.auth.get(UserCacheData.self) else {
         	return getActiveAnnouncementIDs(on: req).map { activeAnnouncementIDs in
 				var result = UserNotificationData()
-				result.activeAnnouncementCount = activeAnnouncementIDs.count
+				result.activeAnnouncementIDs = activeAnnouncementIDs
 				result.disabledFeatures = Settings.shared.disabledFeatures.buildDisabledFeatureArray()
 				return result
 			}
@@ -106,7 +106,7 @@ struct AlertController: APIRouteCollection {
 					}
 					return nextEventFuture.flatMap { nextEventDate in
 						var result = UserNotificationData(newFezCount: unreadFezCount, newSeamailCount: unreadSeamailCount,
-								newAnnouncementCount: newAnnouncements, activeAnnouncementCount: actives.count, nextEvent: nextEventDate)
+								activeAnnouncementIDs: actives, newAnnouncementCount: newAnnouncements, nextEvent: nextEventDate)
 						result.twarrtMentionCount = hash["twarrtMention"]?.int ?? 0
 						result.newTwarrtMentionCount = max(result.twarrtMentionCount - (hash["twarrtMention_viewed"]?.int ?? 0), 0)
 						result.forumMentionCount = hash["forumMention"]?.int ?? 0

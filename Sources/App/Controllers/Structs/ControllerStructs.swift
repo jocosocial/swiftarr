@@ -1470,8 +1470,8 @@ public struct UserNotificationData: Content {
 	/// If the list is empty, no features have been deisabled. 
 	var disabledFeatures: [DisabledFeature]
 
-	/// Count of all active announcements 
-	var activeAnnouncementCount: Int
+	/// IDs of all active announcements 
+	var activeAnnouncementIDs: [Int]
 	
 /// All fields below this line will be 0 or null if called when not logged in.
 	
@@ -1519,13 +1519,13 @@ public struct UserNotificationData: Content {
 }
 
 extension UserNotificationData	{
-	init(newFezCount: Int, newSeamailCount: Int, newAnnouncementCount: Int, activeAnnouncementCount: Int, 
+	init(newFezCount: Int, newSeamailCount: Int, activeAnnouncementIDs: [Int], newAnnouncementCount: Int, 
 			nextEvent: Date?) {
 		serverTime = ISO8601DateFormatter().string(from: Date())
 		serverTimeOffset = TimeZone.autoupdatingCurrent.secondsFromGMT()
 		serverTimeZone = TimeZone.autoupdatingCurrent.abbreviation() ?? ""
 		self.disabledFeatures = Settings.shared.disabledFeatures.buildDisabledFeatureArray()
-		self.activeAnnouncementCount = activeAnnouncementCount
+		self.activeAnnouncementIDs = activeAnnouncementIDs
 		self.newAnnouncementCount = newAnnouncementCount
 		self.twarrtMentionCount = 0
 		self.newTwarrtMentionCount = 0
@@ -1543,7 +1543,7 @@ extension UserNotificationData	{
 		serverTimeOffset = TimeZone.autoupdatingCurrent.secondsFromGMT()
 		serverTimeZone = TimeZone.autoupdatingCurrent.abbreviation() ?? ""
 		self.disabledFeatures = []
-		self.activeAnnouncementCount = 0
+		self.activeAnnouncementIDs = []
 		self.newAnnouncementCount = 0
 		self.twarrtMentionCount = 0
 		self.newTwarrtMentionCount = 0
