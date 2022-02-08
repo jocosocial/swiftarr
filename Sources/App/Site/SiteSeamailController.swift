@@ -67,19 +67,36 @@ struct SiteSeamailController: SiteControllerUtils {
     
     // GET /seamail/create
     //
+    // Query Parameters:
+	// * `?withuser=UUID` - auto-adds the given user to the conversation.
+    //
     // Shows the Create New Seamail page
     func seamailCreatePageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+    	var userFuture: EventLoopFuture<UserHeader?>
+		if let initialUser = req.query[UUID.self, at: "withuser"] {
+			userFuture = apiQuery(req, endpoint: "/users/\(initialUser)").flatMapThrowing { response in
+				return try response.content.decode(UserHeader.self)
+			}
+		}
+		else {
+			userFuture = req.eventLoop.future(nil)
+		}
+    	
 		struct SeamaiCreatePageContext : Encodable {
 			var trunk: TrunkContext
 			var post: MessagePostContext
+			var withUser: UserHeader?
 			
-			init(_ req: Request) throws {
+			init(_ req: Request, withUser: UserHeader?) throws {
 				trunk = .init(req, title: "New Seamail", tab: .seamail)
+				self.withUser = withUser
 				post = .init(forType: .seamail)
 			}
 		}
-		let ctx = try SeamaiCreatePageContext(req)
-		return req.view.render("Fez/seamailCreate", ctx)
+		return userFuture.throwingFlatMap { header in
+			let ctx = try SeamaiCreatePageContext(req, withUser: header)
+			return req.view.render("Fez/seamailCreate", ctx)
+		}
     }
     
     // GET /seamail/usernames/search/STRING

@@ -11,7 +11,7 @@
 					<ul class="container-md mx-0 px-0 list-group">
 						<li class="list-group-item bg-transparent mb-3">				
 							<form class="ajax" action="#(post.formAction)" enctype="multipart/form-data" method="POST" data-successurl="#(post.postSuccessURL)">
-								<input type="hidden" name="participants" id="participants_hidden" value="">
+								<input type="hidden" name="participants" id="participants_hidden" value="#(withUser.userID)">
 								<div class="row mb-3">
 									<div class="input-group">
 										<span class="input-group-text" id="basic-addon1">@</span>
@@ -31,10 +31,19 @@
 									<div class="col"><b>Participants:</b></div>
 								</div>
 								<ul class="list-group mx-0" id="named_participants">
-									<li class="list-group-item d-flex flex-row justify-content-between" data-uuid="#(trunk.userID)">
-										<div>@#(trunk.username)</div>
-										<div><i>creator</i></div>
+									<li class="list-group-item swiftarr-namecell" data-uuid="#(trunk.userID)">
+										<div class="row justify-content-between align-items-baseline">
+											<div class="col">@#(trunk.username)</div>
+											<div class="col col-auto"><i>creator</i></div>
+										</div>
 									</li>
+									#if(withUser != nil):
+										<li class="list-group-item swiftarr-namecell" data-userid="#(withUser.userID)">
+											<div class="row justify-content-between align-items-baseline">
+												<div class="col col-auto username-here">@#(withUser.username)</div>
+											</div>
+										</li>
+									#endif
 								</ul>
 								<div class="row my-3">
 									<div class="input-group">
@@ -66,7 +75,7 @@
 		<template id="potentialMemberTemplate">
 			<li class="list-group-item list-group-item-action swiftarr-namecell">
 				<div class="row justify-content-between align-items-baseline">
-					<div class="col col-auto ms-2 username-here"></div>
+					<div class="col col-auto username-here"></div>
 					<label class="col col-auto btn btn-sm btn-primary px-3">
 						<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload">
 						<span class="button-title-here">Add</span>
