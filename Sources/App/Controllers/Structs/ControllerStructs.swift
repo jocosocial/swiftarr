@@ -200,6 +200,8 @@ public struct BoardgameData: Content {
 	var minPlayers: Int?
 	/// From BGG's API.
 	var maxPlayers: Int?
+	/// From BGG's API. This is the value from the "numPlayers" poll that got the highest number of "Best" votes.
+	var suggestedPlayers: Int?
 
 	/// From BGG's API. Playtime in minutes.
 	var minPlayingTime: Int?
@@ -233,6 +235,7 @@ extension BoardgameData {
 		
 		self.minPlayers = game.minPlayers
 		self.maxPlayers = game.maxPlayers
+		self.suggestedPlayers = game.suggestedPlayers
 		
 		self.minPlayingTime = game.minPlayingTime
 		self.maxPlayingTime = game.maxPlayingTime
@@ -1131,7 +1134,7 @@ extension PostDetailData {
 ///
 /// See `UsersController.profileHandler(_:)`.
 public struct ProfilePublicData: Content {
-    /// Basic info abou thte user--their ID, username, displayname, and avatar image.
+    /// Basic info about the user--their ID, username, displayname, and avatar image.
     var header: UserHeader
     /// An optional real world name of the user.
     var realName: String

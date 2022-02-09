@@ -86,6 +86,7 @@ struct CreateBoardgameSchema: Migration {
 
 				.field("minPlayers", .int)
 				.field("maxPlayers", .int)
+				.field("suggestedPlayers", .int)
 
 				.field("minPlayingTime", .int)
 				.field("maxPlayingTime", .int)

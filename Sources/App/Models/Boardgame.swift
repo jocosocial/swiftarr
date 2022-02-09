@@ -31,6 +31,7 @@ final class Boardgame: Model {
 
 	@OptionalField(key: "minPlayers") var minPlayers: Int?
 	@OptionalField(key: "maxPlayers") var maxPlayers: Int?
+	@OptionalField(key: "suggestedPlayers") var suggestedPlayers: Int?
 
 	@OptionalField(key: "minPlayingTime") var minPlayingTime: Int?
 	@OptionalField(key: "maxPlayingTime") var maxPlayingTime: Int?
@@ -76,6 +77,7 @@ final class Boardgame: Model {
 		
 		self.minPlayers = jsonGame.minPlayers
 		self.maxPlayers = jsonGame.maxPlayers
+		self.suggestedPlayers = jsonGame.suggestedPlayers
 		
 		self.minPlayingTime = jsonGame.minPlayingTime
 		self.maxPlayingTime = jsonGame.maxPlayingTime

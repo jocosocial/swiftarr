@@ -45,3 +45,6 @@ that various categories will be used and will contain appropriate content.
 * Changed "activeAnnouncementCount" in UserNotificationData to "activeAnnouncementIDs". The new value is an array of all the 
 announcement IDs that are currently active. activeAnnouncementIDs.count is equal to the old value. This fixes an issue where
 it was possible to have a new announcement where clients couldn't detect it.
+* Added "suggestedPlayers" to BoardgameData. This value comes from BoardGameGeek's XML API, and is the value from the "bestNumPlayers"
+poll that has the highest number of "best" votes. Roughly, this value should be the community's idea of the 'ideal' number of players
+for this game.
