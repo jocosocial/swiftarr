@@ -22,6 +22,7 @@ struct TrunkContext: Encodable {
 		case karaoke
 		case moderator
 		case admin
+		case time
 		
 		case none
 	}
@@ -424,17 +425,23 @@ struct SiteController: SiteControllerUtils {
 	///
 	/// Timezone information page.
 	func timePageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-		struct TimePageContext : Encodable {
-			var trunk: TrunkContext
-			var serverDate: Date
+		return apiQuery(req, endpoint: "/client/time").throwingFlatMap { serverTimeResponse in
+			let serverTime = try serverTimeResponse.content.decode(String.self)
 
-			init(_ req: Request) throws {
-				trunk = .init(req, title: "Twitarr", tab: .home)
-				serverDate = Date()
+			struct TimePageContext : Encodable {
+				var trunk: TrunkContext
+				var serverTime: String
+
+				init(_ req: Request, serverTime: String) throws {
+					trunk = .init(req, title: "Twitarr", tab: .time)
+					self.serverTime = serverTime
+				}
 			}
+
+			let ctx = try TimePageContext(req, serverTime: serverTime)
+			return req.view.render("time", ctx)
 		}
-		let ctx = try TimePageContext(req)
-		return req.view.render("time", ctx)
+
 	}
     
 }

@@ -18,6 +18,9 @@ struct ClientController: APIRouteCollection {
 		// convenience route group for all /api/v3/client endpoints
 		let clientRoutes = app.grouped("api", "v3", "client")
 
+        // open access endpoints
+        clientRoutes.get("time", use: clientTimeHandler)
+
 		// endpoints available only when logged in
 		let tokenAuthGroup = addTokenAuthGroup(to: clientRoutes)
 		tokenAuthGroup.get("user", "updates", "since", ":date", use: userUpdatesHandler)
@@ -139,6 +142,17 @@ struct ClientController: APIRouteCollection {
 		}
 		return promise.futureResult
 	}
+
+    /// `GET /api/v3/client/time`
+    ///
+    /// Return the current time on the server in ISO8601 format. Useful for figuring out when you are.
+    func clientTimeHandler(_ req: Request) -> EventLoopFuture<String> {
+        // https://stackoverflow.com/questions/58307194/swift-utc-timezone-is-not-utc
+        let formatter = DateFormatter()
+        formatter.timeZone = TimeZone.current
+        formatter.setLocalizedDateFormatFromTemplate("MMMM dd hh:mm a zzzz")
+        return req.eventLoop.makeSucceededFuture(formatter.string(from: Date()))
+    }
 
     // MARK: - Helper Functions
 }
