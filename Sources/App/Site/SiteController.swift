@@ -372,8 +372,12 @@ struct SiteController: SiteControllerUtils {
 		// Routes that the user does not need to be logged in to access.
 		let openRoutes = getOpenRoutes(app)
         openRoutes.get(use: rootPageHandler)
+		openRoutes.get("time", use: timePageHandler)
 	}
 	
+	/// GET /
+	///
+	/// Root page. This has a surprising number of queries.
     func rootPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		return apiQuery(req, endpoint: "/notification/announcements").throwingFlatMap { response in
  			let announcements = try response.content.decode([AnnouncementData].self)
@@ -415,6 +419,23 @@ struct SiteController: SiteControllerUtils {
 			}
 		}
     }
+
+	/// GET /time
+	///
+	/// Timezone information page.
+	func timePageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+		struct TimePageContext : Encodable {
+			var trunk: TrunkContext
+			var serverDate: Date
+
+			init(_ req: Request) throws {
+				trunk = .init(req, title: "Twitarr", tab: .home)
+				serverDate = Date()
+			}
+		}
+		let ctx = try TimePageContext(req)
+		return req.view.render("time", ctx)
+	}
     
 }
     
