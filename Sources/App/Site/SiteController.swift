@@ -429,7 +429,7 @@ struct SiteController: SiteControllerUtils {
 	/// Timezone information page.
 	func timePageHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		return apiQuery(req, endpoint: "/client/time").throwingFlatMap { serverTimeResponse in
-			let serverTime = try serverTimeResponse.content.decode(String.self)
+			let serverTimeData = try serverTimeResponse.content.decode(ServerTimeData.self)
 
 			struct TimePageContext : Encodable {
 				var trunk: TrunkContext
@@ -443,12 +443,7 @@ struct SiteController: SiteControllerUtils {
 				}
 			}
 
-			let formatter = DateFormatter()
-			formatter.timeZone = TimeZone(abbreviation: Settings.shared.displayTimeZone) ?? TimeZone.autoupdatingCurrent
-        	formatter.setLocalizedDateFormatFromTemplate("MMMM dd hh:mm a zzzz")
-			let displayTime = formatter.string(from: Date())
-
-			let ctx = try TimePageContext(req, serverTime: serverTime, displayTime: displayTime)
+			let ctx = try TimePageContext(req, serverTime: serverTimeData.serverTimeHuman(), displayTime: serverTimeData.displayTimeHuman())
 			return req.view.render("time", ctx)
 		}
 

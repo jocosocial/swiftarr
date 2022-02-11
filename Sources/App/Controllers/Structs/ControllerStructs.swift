@@ -1737,7 +1737,8 @@ fileprivate func usernameValidations(username: String) -> [String] {
 }
 
 /// Time information struct. This gives a couple values that a client can use to determine what time it really is.
-public struct ClientTimeData: Content {
+/// Maybe someday this will also include a list of the different time changes.
+public struct ServerTimeData: Content {
 	/// Current time and date according to the server.
 	var serverTime: Date
 	/// Current time zone of the server.
@@ -1747,12 +1748,24 @@ public struct ClientTimeData: Content {
 	/// Time zone of the Display Time.
 	var displayTimeZone: TimeZone
 
-	func to_human_s(date: Date = Date(), timeZone: TimeZone = TimeZone.autoupdatingCurrent) -> String {
+	/// Internal function to take a given date and timezone and return the time in a human-readable
+	/// pretty format that we just happened to decide on.
+	private func to_human_s(date: Date = Date(), timeZone: TimeZone) -> String {
 		let formatter = DateFormatter()
         formatter.timeZone = timeZone
 		// This formatting was arbitrarily taken from Twitarr v2.
         formatter.setLocalizedDateFormatFromTemplate("MMMM dd hh:mm a zzzz")
 		return formatter.string(from: date)
+	}
+
+	/// Quick accessor to pretty-formatted server time.
+	public func serverTimeHuman() -> String {
+		return to_human_s(date: self.serverTime, timeZone: self.serverTimeZone)
+	}
+
+	/// Quick accessor to pretty-foramtted display time.
+	public func displayTimeHuman() -> String {
+		return to_human_s(date: self.displayTime, timeZone: self.displayTimeZone)
 	}
 
 	init(serverTime: Date = Date(), displayTime: Date = Date(), displayTimeZoneAbbreviation: String = Settings.shared.displayTimeZone) {

@@ -147,8 +147,8 @@ struct ClientController: APIRouteCollection {
     ///
     /// Return some information on the current time configuration of the server. This also
     /// should provide hints to clients on how to render time correctly.
-    func clientTimeHandler(_ req: Request) -> EventLoopFuture<ClientTimeStruct> {
-        return req.eventLoop.makeSucceededFuture(ClientTimeData())
+    func clientTimeHandler(_ req: Request) -> EventLoopFuture<ServerTimeData> {
+        return req.eventLoop.makeSucceededFuture(ServerTimeData())
     }
 
     // MARK: - Helper Functions
