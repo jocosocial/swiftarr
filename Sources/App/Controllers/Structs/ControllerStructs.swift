@@ -1525,8 +1525,8 @@ extension UserNotificationData	{
 	init(newFezCount: Int, newSeamailCount: Int, activeAnnouncementIDs: [Int], newAnnouncementCount: Int, 
 			nextEvent: Date?) {
 		serverTime = ISO8601DateFormatter().string(from: Date())
-		serverTimeOffset = TimeZone.autoupdatingCurrent.secondsFromGMT()
-		serverTimeZone = TimeZone.autoupdatingCurrent.abbreviation() ?? ""
+		serverTimeOffset = Settings.shared.getDisplayTimeZone().secondsFromGMT()
+		serverTimeZone = Settings.shared.displayTimeZoneAbbr
 		self.disabledFeatures = Settings.shared.disabledFeatures.buildDisabledFeatureArray()
 		self.activeAnnouncementIDs = activeAnnouncementIDs
 		self.newAnnouncementCount = newAnnouncementCount
@@ -1543,8 +1543,8 @@ extension UserNotificationData	{
 	// Initializes an dummy struct, for when there's no user logged in.
 	init() {
 		serverTime = ISO8601DateFormatter().string(from: Date())
-		serverTimeOffset = TimeZone.autoupdatingCurrent.secondsFromGMT()
-		serverTimeZone = TimeZone.autoupdatingCurrent.abbreviation() ?? ""
+		serverTimeOffset = Settings.shared.getDisplayTimeZone().secondsFromGMT()
+		serverTimeZone = Settings.shared.displayTimeZoneAbbr
 		self.disabledFeatures = []
 		self.activeAnnouncementIDs = []
 		self.newAnnouncementCount = 0

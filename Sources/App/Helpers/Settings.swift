@@ -151,6 +151,7 @@ extension Settings {
 extension Settings {
 	/// TimeZone to use for rendering any time.
 	func  getDisplayTimeZone() -> TimeZone {
+		print("DOING THE TIME THING")
 		return TimeZone(abbreviation: displayTimeZoneAbbr) ?? TimeZone.autoupdatingCurrent
 	}
 }
