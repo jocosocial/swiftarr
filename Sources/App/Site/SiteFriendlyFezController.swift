@@ -28,8 +28,14 @@ struct FezCreateUpdatePageContext : Encodable {
 	var info: String = ""
 	var formAction: String
 	var submitButtonTitle: String = "Create"
+	var timeZoneName: String
+	
+	// I really don't like this.
+	let tz = TimeZone(abbreviation: Settings.shared.displayTimeZone) ?? TimeZone.autoupdatingCurrent
 
 	init(_ req: Request, fezToUpdate: FezData? = nil) throws {
+		
+		self.timeZoneName = tz.abbreviation()!
 		if let fez = fezToUpdate {
 			trunk = .init(req, title: "Update Looking For Group", tab: .lfg)
 			self.fez = fezToUpdate
@@ -75,6 +81,7 @@ struct FezCreateUpdatePageContext : Encodable {
 		}
 		formAction = "/fez/create"
 		submitButtonTitle = "Create"
+		self.timeZoneName = tz.abbreviation()!
 	}
 }
 	

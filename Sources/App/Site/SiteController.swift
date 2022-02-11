@@ -570,6 +570,7 @@ extension SiteControllerUtils {
 	// (at least with the 2019 version of the spec; IIRC previous versions had ambiguities preventing general-case parsing).
 	func dateFromW3DatetimeString(_ dateStr: String) -> Date? {
 		let dateFormatter = DateFormatter()
+		dateFormatter.timeZone = TimeZone(abbreviation: Settings.shared.displayTimeZone) ?? TimeZone.autoupdatingCurrent
 		dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSXXXXX"
 		if let date = dateFormatter.date(from: dateStr) {
 			return date

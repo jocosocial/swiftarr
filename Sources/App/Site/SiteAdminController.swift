@@ -143,7 +143,8 @@ struct SiteAdminController: SiteControllerUtils {
 			init(_ req: Request) throws {
 				trunk = .init(req, title: "Create Announcement", tab: .admin)
 				self.post = .init(forType: .announcement)
-				timeZoneName = TimeZone.autoupdatingCurrent.abbreviation() ?? "EST"
+				let tz = TimeZone(abbreviation: Settings.shared.displayTimeZone) ?? TimeZone.autoupdatingCurrent
+				timeZoneName = tz.abbreviation()!
 			}
 		}
 		let ctx = try AnnouncementEditContext(req)
