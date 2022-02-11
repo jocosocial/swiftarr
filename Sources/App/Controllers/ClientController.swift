@@ -145,13 +145,10 @@ struct ClientController: APIRouteCollection {
 
     /// `GET /api/v3/client/time`
     ///
-    /// Return the current time on the server in ISO8601 format. Useful for figuring out when you are.
-    func clientTimeHandler(_ req: Request) -> EventLoopFuture<String> {
-        // https://stackoverflow.com/questions/58307194/swift-utc-timezone-is-not-utc
-        let formatter = DateFormatter()
-        formatter.timeZone = TimeZone.current
-        formatter.setLocalizedDateFormatFromTemplate("MMMM dd hh:mm a zzzz")
-        return req.eventLoop.makeSucceededFuture(formatter.string(from: Date()))
+    /// Return some information on the current time configuration of the server. This also
+    /// should provide hints to clients on how to render time correctly.
+    func clientTimeHandler(_ req: Request) -> EventLoopFuture<ClientTimeStruct> {
+        return req.eventLoop.makeSucceededFuture(ClientTimeData())
     }
 
     // MARK: - Helper Functions

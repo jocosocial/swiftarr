@@ -434,14 +434,21 @@ struct SiteController: SiteControllerUtils {
 			struct TimePageContext : Encodable {
 				var trunk: TrunkContext
 				var serverTime: String
+				var displayTime: String
 
-				init(_ req: Request, serverTime: String) throws {
+				init(_ req: Request, serverTime: String, displayTime: String) throws {
 					trunk = .init(req, title: "Twitarr", tab: .time)
 					self.serverTime = serverTime
+					self.displayTime = displayTime
 				}
 			}
 
-			let ctx = try TimePageContext(req, serverTime: serverTime)
+			let formatter = DateFormatter()
+			formatter.timeZone = TimeZone(abbreviation: Settings.shared.displayTimeZone) ?? TimeZone.autoupdatingCurrent
+        	formatter.setLocalizedDateFormatFromTemplate("MMMM dd hh:mm a zzzz")
+			let displayTime = formatter.string(from: Date())
+
+			let ctx = try TimePageContext(req, serverTime: serverTime, displayTime: displayTime)
 			return req.view.render("time", ctx)
 		}
 
