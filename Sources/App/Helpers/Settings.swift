@@ -105,6 +105,9 @@ final class Settings : Encodable {
 
 	/// The length in days of the cruise, includes partial days. A cruise that embarks on Saturday and returns the next Saturday should have a value of 8.
 	@SettingsValue var cruiseLengthInDays: Int = 8
+
+	/// The time zone to display time in.
+	@StoredSettingsValue("displayTimeZone", defaultValue: "EST") var displayTimeZone: String
 	
 // MARK: Images
 	/// The  set of image file types that we can parse with the GD library. I believe GD hard-codes these values on install based on what ./configure finds.

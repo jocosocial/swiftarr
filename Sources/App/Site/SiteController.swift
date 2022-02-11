@@ -39,6 +39,8 @@ struct TrunkContext: Encodable {
 	var eventStartingSoon: Bool
 	var newTweetAlertwords: Bool
 	var newForumAlertwords: Bool
+
+	var displayTimeZone: TimeZone
 	
 	init(_ req: Request, title: String, tab: Tab, search: String? = nil) {
 		if let user = req.auth.get(UserCacheData.self) {
@@ -76,6 +78,7 @@ struct TrunkContext: Encodable {
 		self.tab = tab
 		self.inTwitarrSubmenu = [.home, .lfg, .games, .karaoke, .moderator, .admin].contains(tab)
 		self.searchPrompt = search
+		self.displayTimeZone = TimeZone(abbreviation: Settings.shared.displayTimeZone) ?? TimeZone(abbreviation: "UTC")!
 		
 		newTweetAlertwords = alertCounts.alertWords.contains { $0.newTwarrtMentionCount > 0 }
 		newForumAlertwords = alertCounts.alertWords.contains { $0.newForumMentionCount > 0 }

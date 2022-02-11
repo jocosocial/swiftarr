@@ -382,6 +382,7 @@ struct SiteAdminController: SiteControllerUtils {
 			var allowAnimatedImages: String?
 			var disableAppName: String
 			var disableFeatureName: String
+			var displayTimeZone: String
 			// In the .leaf file, the name property for the select that sets this is "reenable[]". 
 			// The "[]" in the name is magic, somewhere in multipart-kit. It collects all form-data value with the same name into an array.
 			var reenable: [String]?				
@@ -413,7 +414,8 @@ struct SiteAdminController: SiteControllerUtils {
 				postAutoQuarantineThreshold: postStruct.postAutoQuarantineThreshold, 
 				userAutoQuarantineThreshold: postStruct.userAutoQuarantineThreshold, 
 				allowAnimatedImages: postStruct.allowAnimatedImages == "on",
-				enableFeatures: enablePairs, disableFeatures: disablePairs)
+				enableFeatures: enablePairs, disableFeatures: disablePairs,
+				displayTimeZone: postStruct.displayTimeZone)
 		return apiQuery(req, endpoint: "/admin/serversettings/update", method: .POST, beforeSend: { req throws in
 			try req.content.encode(apiPostContent)
 		}).flatMapThrowing { response in

@@ -110,6 +110,7 @@ public struct SettingsAdminData: Content {
 	var allowAnimatedImages: Bool
 	/// Currently disabled app:feature pairs.
 	var disabledFeatures: [SettingsAppFeaturePair]
+	var displayTimeZone: String
 }
 
 extension SettingsAdminData {
@@ -123,6 +124,7 @@ extension SettingsAdminData {
 		self.postAutoQuarantineThreshold = settings.postAutoQuarantineThreshold
 		self.userAutoQuarantineThreshold = settings.userAutoQuarantineThreshold
 		self.allowAnimatedImages = settings.allowAnimatedImages
+		self.displayTimeZone = settings.displayTimeZone
 		disabledFeatures = []
 		for (app, features) in settings.disabledFeatures.value {
 			for feature in features {
@@ -153,4 +155,5 @@ public struct SettingsUpdateData: Content {
 	var enableFeatures: [SettingsAppFeaturePair]
 	/// App:feature pairs to disable. Only list deltas here; no need to re-list currently disabled app:feature pairs..
 	var disableFeatures: [SettingsAppFeaturePair]
+	var displayTimeZone: String?
 }
