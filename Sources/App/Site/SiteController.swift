@@ -78,7 +78,7 @@ struct TrunkContext: Encodable {
 		self.tab = tab
 		self.inTwitarrSubmenu = [.home, .lfg, .games, .karaoke, .moderator, .admin].contains(tab)
 		self.searchPrompt = search
-		self.displayTimeZone = TimeZone(abbreviation: Settings.shared.displayTimeZone) ?? TimeZone(abbreviation: "UTC")!
+		self.displayTimeZone = Settings.shared.getDisplayTimeZone()
 		
 		newTweetAlertwords = alertCounts.alertWords.contains { $0.newTwarrtMentionCount > 0 }
 		newForumAlertwords = alertCounts.alertWords.contains { $0.newForumMentionCount > 0 }
@@ -570,7 +570,7 @@ extension SiteControllerUtils {
 	// (at least with the 2019 version of the spec; IIRC previous versions had ambiguities preventing general-case parsing).
 	func dateFromW3DatetimeString(_ dateStr: String) -> Date? {
 		let dateFormatter = DateFormatter()
-		dateFormatter.timeZone = TimeZone(abbreviation: Settings.shared.displayTimeZone) ?? TimeZone.autoupdatingCurrent
+		dateFormatter.timeZone = Settings.shared.getDisplayTimeZone()
 		dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSXXXXX"
 		if let date = dateFormatter.date(from: dateStr) {
 			return date

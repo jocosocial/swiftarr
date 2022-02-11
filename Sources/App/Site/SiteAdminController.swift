@@ -143,8 +143,7 @@ struct SiteAdminController: SiteControllerUtils {
 			init(_ req: Request) throws {
 				trunk = .init(req, title: "Create Announcement", tab: .admin)
 				self.post = .init(forType: .announcement)
-				let tz = TimeZone(abbreviation: Settings.shared.displayTimeZone) ?? TimeZone.autoupdatingCurrent
-				timeZoneName = tz.abbreviation()!
+				timeZoneName = Settings.shared.displayTimeZoneAbbr
 			}
 		}
 		let ctx = try AnnouncementEditContext(req)
@@ -191,7 +190,7 @@ struct SiteAdminController: SiteControllerUtils {
 				init(_ req: Request, data: AnnouncementData) throws {
 					trunk = .init(req, title: "Edit Announcement", tab: .admin)
 					self.post = .init(forType: .announcementEdit(data))
-					timeZoneName = TimeZone.autoupdatingCurrent.abbreviation() ?? "EST"
+					timeZoneName = Settings.shared.displayTimeZoneAbbr
 				}
 			}
 			let ctx = try AnnouncementEditContext(req, data: announcementData)
@@ -383,7 +382,7 @@ struct SiteAdminController: SiteControllerUtils {
 			var allowAnimatedImages: String?
 			var disableAppName: String
 			var disableFeatureName: String
-			var displayTimeZone: String
+			var displayTimeZoneAbbr: String
 			// In the .leaf file, the name property for the select that sets this is "reenable[]". 
 			// The "[]" in the name is magic, somewhere in multipart-kit. It collects all form-data value with the same name into an array.
 			var reenable: [String]?				
@@ -416,7 +415,7 @@ struct SiteAdminController: SiteControllerUtils {
 				userAutoQuarantineThreshold: postStruct.userAutoQuarantineThreshold, 
 				allowAnimatedImages: postStruct.allowAnimatedImages == "on",
 				enableFeatures: enablePairs, disableFeatures: disablePairs,
-				displayTimeZone: postStruct.displayTimeZone)
+				displayTimeZoneAbbr: postStruct.displayTimeZoneAbbr)
 		return apiQuery(req, endpoint: "/admin/serversettings/update", method: .POST, beforeSend: { req throws in
 			try req.content.encode(apiPostContent)
 		}).flatMapThrowing { response in

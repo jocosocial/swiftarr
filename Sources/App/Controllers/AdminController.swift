@@ -143,7 +143,7 @@ struct AdminController: APIRouteCollection {
 			throw Abort(.forbidden, reason: "Admin only")
 		}
  		let data = try ValidatingJSONDecoder().decode(SettingsUpdateData.self, fromBodyOf: req)
-		guard TimeZone(abbreviation: data.displayTimeZone ?? "") != nil else {
+		guard TimeZone(abbreviation: data.displayTimeZoneAbbr ?? "") != nil else {
 			throw Abort(.badRequest, reason: "Bad time zone given.")
 		}
  		if let value = data.maxAlternateAccounts {
@@ -173,8 +173,8 @@ struct AdminController: APIRouteCollection {
  		if let value = data.allowAnimatedImages {
  			Settings.shared.allowAnimatedImages = value
  		}
-		if let value = data.displayTimeZone {
-			Settings.shared.displayTimeZone = value
+		if let value = data.displayTimeZoneAbbr {
+			Settings.shared.displayTimeZoneAbbr = value
 		}
  		var localDisables = Settings.shared.disabledFeatures.value
  		for pair in data.enableFeatures {

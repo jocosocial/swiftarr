@@ -255,8 +255,7 @@ struct EventTimeTag: LeafTag {
 		dateFormatter.dateStyle = .short
 		dateFormatter.timeStyle = .short
 		dateFormatter.locale = Locale(identifier: "en_US")
-		let timeZone = TimeZone(abbreviation: Settings.shared.displayTimeZone) ?? TimeZone.autoupdatingCurrent
-		dateFormatter.timeZone = timeZone
+		dateFormatter.timeZone = Settings.shared.getDisplayTimeZone()
 		var timeString = dateFormatter.string(from: Date(timeIntervalSince1970: startTimeDouble))
 		dateFormatter.dateStyle = .none
 		timeString.append(" - \(dateFormatter.string(from: Date(timeIntervalSince1970: endTimeDouble)))")

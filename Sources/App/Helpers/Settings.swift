@@ -107,7 +107,7 @@ final class Settings : Encodable {
 	@SettingsValue var cruiseLengthInDays: Int = 8
 
 	/// The time zone to display time in.
-	@StoredSettingsValue("displayTimeZone", defaultValue: "EST") var displayTimeZone: String
+	@StoredSettingsValue("displayTimeZoneAbbr", defaultValue: "EST") var displayTimeZoneAbbr: String
 	
 // MARK: Images
 	/// The  set of image file types that we can parse with the GD library. I believe GD hard-codes these values on install based on what ./configure finds.
@@ -144,6 +144,14 @@ extension Settings {
 	/// Path to the 'admin' directory, inside the 'seeds' directory. Certain seed files can be upload by admin here, and ingested while the server is running.
 	var seedsDirectoryPath: URL {
 		return staticFilesRootPath.appendingPathComponent("seeds")
+	}
+}
+
+/// Provide one common place to get the displayTimeZone, and anything else that comes along.
+extension Settings {
+	/// TimeZone to use for rendering any time.
+	func  getDisplayTimeZone() -> TimeZone {
+		return TimeZone(abbreviation: displayTimeZoneAbbr) ?? TimeZone.autoupdatingCurrent
 	}
 }
 

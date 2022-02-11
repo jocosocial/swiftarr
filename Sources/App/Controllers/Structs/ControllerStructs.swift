@@ -1768,10 +1768,10 @@ public struct ServerTimeData: Content {
 		return to_human_s(date: self.displayTime, timeZone: self.displayTimeZone)
 	}
 
-	init(serverTime: Date = Date(), displayTime: Date = Date(), displayTimeZoneAbbreviation: String = Settings.shared.displayTimeZone) {
+	init(serverTime: Date = Date(), displayTime: Date = Date()) {
 		self.serverTime = serverTime
 		self.serverTimeZone = TimeZone.autoupdatingCurrent
 		self.displayTime = displayTime
-		self.displayTimeZone = TimeZone(abbreviation: displayTimeZoneAbbreviation) ?? TimeZone.autoupdatingCurrent
+		self.displayTimeZone = Settings.shared.getDisplayTimeZone()
 	}
 }
