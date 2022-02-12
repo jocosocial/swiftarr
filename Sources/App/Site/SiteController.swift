@@ -434,7 +434,7 @@ struct SiteController: SiteControllerUtils {
 			var displayTime: String
 
 			init(_ req: Request) throws {
-				trunk = .init(req, title: "Twitarr", tab: .time)
+				trunk = .init(req, title: "Time Zone Check", tab: .time)
 
 				// We split into two formatters to prevent accidental contamination of either.
 				let serverDateFormatter = DateFormatter()

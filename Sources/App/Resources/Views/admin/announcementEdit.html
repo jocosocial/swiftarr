@@ -27,7 +27,7 @@
 									#if(timeZoneName != "EST"):
 									<div class="alert alert-warning">We are currently presenting time in #(timeZoneName)! Please do any necessary conversions when creating an announcement.</div>
 									#endif
-									Display Until: <input type="datetime-local" name="displayUntil" value="#(post.displayUntil)"> #(timeZoneName)
+									Display Until: <input type="datetime-local" name="displayUntil" #if(post.displayUntil != ""):value="#localTime(post.displayUntil)"#endif> #(timeZoneName)
 								</div>
 							</div>
 							<div class="alert alert-danger mt-3 d-none" role="alert">

@@ -167,7 +167,6 @@ func configureBasicSettings(_ app: Application) throws {
 		Logger(label: "app.swiftarr.configuration") .notice("Starting up in Custom \"\(app.environment.name)\" mode.")
 		Settings.shared.cruiseStartDate = portCalendar.date(from: DateComponents(year: 2022, month: 3, day: 5))!
 	}
-	print(Settings.shared.cruiseStartDate)
 	
 	// Ask the GD Image library what filetypes are available on the local machine.
 	// gd, gd2, xbm, xpm, wbmp, some other useless formats culled.
@@ -332,6 +331,7 @@ func configureLeaf(_ app: Application) throws {
     app.leaf.tags["userByline"] = UserBylineTag()
     app.leaf.tags["cruiseDayIndex"] = CruiseDayIndexTag()
     app.leaf.tags["gameRating"] = GameRatingTag()
+	app.leaf.tags["localTime"] = LocalTimeTag()
 }
 
 func configurePrometheus(_ app: Application) throws {

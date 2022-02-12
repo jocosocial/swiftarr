@@ -284,6 +284,28 @@ struct StaticTimeTag: LeafTag {
     }
 }
 
+/// Return an ISO8601-ish time string for use with the datetime-local input type.
+/// It cannot take an ISO8601 since that requires a timezone to be included (suffix
+/// of [+-]H:MM) and the input chokes on that. So here we translate the following:
+///
+/// "2022-02-13 02:00:00 +0000" (Date) -> "2022-02-12T18:00:00" (String)
+///
+struct LocalTimeTag: LeafTag {
+	func render(_ ctx: LeafContext) throws -> LeafData {
+		try ctx.requireParameterCount(1)
+		print(ctx.parameters)
+		guard let inputTimeDouble = ctx.parameters[0].double else {
+            throw "Leaf: Unable to convert parameter to double for date"
+        }
+
+		// https://www.objc.io/blog/2018/12/04/unexpected-results-from-a-date-formatter/
+		let dateFormatter = DateFormatter()
+		dateFormatter.timeZone = Settings.shared.getDisplayTimeZone()
+		dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+		return LeafData.string(dateFormatter.string(from: Date(timeIntervalSince1970: inputTimeDouble)))
+	}
+}
+
 /// Turns a Date into a indexed day of the cruise, with embarkation day being day 0. Used to get the day on which an event happens.
 /// This code counts ''days' as starting/ending at 3AM instead of midnight, as there are often after-midnight events but rarely 3AM events.
 ///
