@@ -263,9 +263,12 @@ struct EventTimeTag: LeafTag {
 	}
 }
 
+/// Returns a string describing a time. Unlike EventTimeTag this is used for a single point in time rather
+/// than a range or duration.
+///
+/// Usage in Leaf templates:: #staticTime(startTime) -> String
 struct StaticTimeTag: LeafTag {
     func render(_ ctx: LeafContext) throws -> LeafData {
-        print(ctx.parameters)
         try ctx.requireParameterCount(1)
         guard let inputTimeDouble = ctx.parameters[0].double else {
             throw "Leaf: Unable to convert parameter to double for date"
