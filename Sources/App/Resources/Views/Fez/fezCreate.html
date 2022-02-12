@@ -71,6 +71,9 @@
 								</div>
 								<div class="row mb-2">
 									<div class="col">
+										#if(timeZoneName != "EST"):
+										<div class="alert alert-warning">We are currently presenting time in #(timeZoneName)! Please do any necessary conversions when creating an event.</div>
+										#endif
 										Start Time: <input type="datetime-local" name="starttime" id="datetime" #if(startTime):value="#date(startTime)"#endif"> #(timeZoneName)
 									</div>
 								</div>
