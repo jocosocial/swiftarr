@@ -87,9 +87,9 @@ struct FezController: APIRouteCollection {
 			futureFezzes.filter(\.$fezType == typeFilter)
 		}
 		if let dayFilter = req.query[Int.self, at: "cruiseday"] {
-			let dayStart = Calendar.autoupdatingCurrent.date(byAdding: .day, value: dayFilter, to: Settings.shared.cruiseStartDate) ??
+			let dayStart = Settings.shared.getDisplayCalendar().date(byAdding: .day, value: dayFilter, to: Settings.shared.cruiseStartDate) ??
 					Settings.shared.cruiseStartDate
-			let dayEnd = Calendar.autoupdatingCurrent.date(byAdding: .day, value: dayFilter, to: dayStart) ??
+			let dayEnd = Settings.shared.getDisplayCalendar().date(byAdding: .day, value: dayFilter, to: dayStart) ??
 					Date()
 			futureFezzes.filter(\.$startTime > dayStart).filter(\.$startTime < dayEnd)
 		}

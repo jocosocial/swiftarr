@@ -687,7 +687,7 @@ struct ModerationController: APIRouteCollection {
 					}
 				}
 				else { 
-					if let endDate = Calendar.autoupdatingCurrent.date(byAdding: .hour, value: quarantineHours, to: Date()) {
+					if let endDate = Settings.shared.getDisplayCalendar().date(byAdding: .hour, value: quarantineHours, to: Date()) {
 						allAccounts.forEach { $0.tempQuarantineUntil = endDate }
 					}
 					else {

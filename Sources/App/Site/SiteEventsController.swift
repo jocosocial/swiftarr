@@ -62,7 +62,7 @@ struct SiteEventsController: SiteControllerUtils {
     		dayOfCruise = cruisedayParam
 		}		
 		else if components.queryItems!.isEmpty {
-			let thisWeekday = Calendar.autoupdatingCurrent.component(.weekday, from: Date())
+			let thisWeekday = Settings.shared.getDisplayCalendar().component(.weekday, from: Date())
 			dayOfCruise = (7 + thisWeekday - Settings.shared.cruiseStartDayOfWeek) % 7 + 1
     		components.queryItems?.append(URLQueryItem(name: "cruiseday", value: String(dayOfCruise)))
     		filterString = "Today's " + filterString
@@ -89,7 +89,7 @@ struct SiteEventsController: SiteControllerUtils {
     				self.events = events
     				trunk = .init(req, title: "Events", tab: .events, search: "Search Events")
     				isBeforeCruise = Date() < Settings.shared.cruiseStartDate
-    				isAfterCruise = Date() > Calendar.autoupdatingCurrent.date(byAdding: .day, value: Settings.shared.cruiseLengthInDays, 
+    				isAfterCruise = Date() > Settings.shared.getDisplayCalendar().date(byAdding: .day, value: Settings.shared.cruiseLengthInDays, 
     						to: Settings.shared.cruiseStartDate) ?? Date()
 
     				// Set up the day buttons, one for each day of the cruise.		

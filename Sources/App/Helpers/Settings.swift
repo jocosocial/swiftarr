@@ -97,6 +97,7 @@ final class Settings : Encodable {
     
 // MARK: Dates
 	/// A Date set to midnight on the day the cruise ship leaves port, in the timezone the ship leaves from. Used by the Events Controller for date arithimetic.
+	/// The default here should usually get overwritten in configure.swift.
 	@SettingsValue var cruiseStartDate: Date = Calendar.autoupdatingCurrent.date(from: DateComponents(calendar: Calendar.current, 
 			timeZone: TimeZone(abbreviation: "EST")!, year: 2020, month: 3, day: 7))!
 	
@@ -147,11 +148,20 @@ extension Settings {
 	}
 }
 
-/// Provide one common place to get the displayTimeZone, and anything else that comes along.
+/// Provide one common place for time-related objects.
 extension Settings {
 	/// TimeZone to use for rendering any time.
 	func  getDisplayTimeZone() -> TimeZone {
 		return TimeZone(abbreviation: displayTimeZoneAbbr) ?? TimeZone.autoupdatingCurrent
+	}
+
+	/// Calendar to use for calculating dates (like what day it is).
+	/// .current vs .autoupdatingCurrent had some weird implications for TimeZone so I hope
+	/// this doesn't do the same here. Time will tell.... pun very much intended.
+	func getDisplayCalendar() -> Calendar {
+		var cal = Calendar.autoupdatingCurrent
+		cal.timeZone = getDisplayTimeZone()
+		return cal
 	}
 }
 

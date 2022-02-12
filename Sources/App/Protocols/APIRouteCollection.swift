@@ -295,19 +295,19 @@ extension APIRouteCollection {
 			var filterDate = Date()
 			// If the cruise is in the future or more than 10 days in the past, construct a fake date during the cruise week
 			let secondsPerDay = 24 * 60 * 60.0
-			if cruiseStartDate.timeIntervalSinceNow > 0 ||
-				cruiseStartDate.timeIntervalSinceNow < 0 - Double(Settings.shared.cruiseLengthInDays) * secondsPerDay {
-				var filterDateComponents = Calendar.autoupdatingCurrent.dateComponents(in: TimeZone(abbreviation: "EST")!, 
-						from: cruiseStartDate)
-				let currentDateComponents = Calendar.autoupdatingCurrent.dateComponents(in: TimeZone(abbreviation: "EST")!, 
-						from: Date())
+			if cruiseStartDate.timeIntervalSinceNow > 0 || cruiseStartDate.timeIntervalSinceNow < 0 - Double(Settings.shared.cruiseLengthInDays) * secondsPerDay {
+				// This filtering nonsense is whack. There is a way to do .DateComponents() without needing the in: but then you
+				// have to specify the Calendar.Components that you want. Since I don't have enough testing around this I'm going
+				// to keep pumping the timezone in which lets me bypass that requirement.
+				var filterDateComponents = Settings.shared.getDisplayCalendar().dateComponents(in: Settings.shared.getDisplayTimeZone(), from: cruiseStartDate)
+				let currentDateComponents = Settings.shared.getDisplayCalendar().dateComponents(in: Settings.shared.getDisplayTimeZone(), from: Date())
 				filterDateComponents.hour = currentDateComponents.hour
 				filterDateComponents.minute = currentDateComponents.minute
 				filterDateComponents.second = currentDateComponents.second
-				filterDate = Calendar.autoupdatingCurrent.date(from: filterDateComponents) ?? Date()
+				filterDate = Settings.shared.getDisplayCalendar().date(from: filterDateComponents) ?? Date()
 				if let currentDayOfWeek = currentDateComponents.weekday {
 					let daysToAdd = (7 + currentDayOfWeek - Settings.shared.cruiseStartDayOfWeek) % 7 
-					if let adjustedDate = Calendar.autoupdatingCurrent.date(byAdding: .day, value: daysToAdd, to: filterDate) {
+					if let adjustedDate = Settings.shared.getDisplayCalendar().date(byAdding: .day, value: daysToAdd, to: filterDate) {
 						filterDate = adjustedDate
 					}
 				}

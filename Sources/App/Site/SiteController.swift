@@ -387,7 +387,7 @@ struct SiteController: SiteControllerUtils {
  			let announcements = try response.content.decode([AnnouncementData].self)
 			return apiQuery(req, endpoint: "/notification/dailythemes").throwingFlatMap { themeResponse in
  				let themes = try themeResponse.content.decode([DailyThemeData].self)
- 				let cal = Calendar.autoupdatingCurrent
+ 				let cal = Settings.shared.getDisplayCalendar()
 				let components = cal.dateComponents([.day], from: cal.startOfDay(for: Settings.shared.cruiseStartDate), 
 						to: cal.startOfDay(for: Date()))
 				let cruiseDay = Int32(components.day ?? 0)
