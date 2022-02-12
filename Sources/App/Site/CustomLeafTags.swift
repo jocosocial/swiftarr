@@ -263,6 +263,24 @@ struct EventTimeTag: LeafTag {
 	}
 }
 
+struct StaticTimeTag: LeafTag {
+    func render(_ ctx: LeafContext) throws -> LeafData {
+        print(ctx.parameters)
+        try ctx.requireParameterCount(1)
+        guard let inputTimeDouble = ctx.parameters[0].double else {
+            throw "Leaf: Unable to convert parameter to double for date"
+        }
+
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .short
+        dateFormatter.timeStyle = .short
+        dateFormatter.locale = Locale(identifier: "en_US")
+        dateFormatter.timeZone = Settings.shared.getDisplayTimeZone()
+        let timeString = dateFormatter.string(from: Date(timeIntervalSince1970: inputTimeDouble))
+        return LeafData.string(timeString)
+    }
+}
+
 /// Turns a Date into a indexed day of the cruise, with embarkation day being day 0. Used to get the day on which an event happens.
 /// This code counts ''days' as starting/ending at 3AM instead of midnight, as there are often after-midnight events but rarely 3AM events.
 ///

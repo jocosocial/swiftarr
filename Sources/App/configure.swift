@@ -323,6 +323,7 @@ func configureLeaf(_ app: Application) throws {
     app.leaf.tags["formatSeamailText"] = try FormatPostTextTag(.seamail, hostname: app.http.server.configuration.hostname)
     app.leaf.tags["relativeTime"] = RelativeTimeTag()
     app.leaf.tags["eventTime"] = EventTimeTag()
+    app.leaf.tags["staticTime"] = StaticTimeTag()
     app.leaf.tags["avatar"] = AvatarTag()
     app.leaf.tags["userByline"] = UserBylineTag()
     app.leaf.tags["cruiseDayIndex"] = CruiseDayIndexTag()
