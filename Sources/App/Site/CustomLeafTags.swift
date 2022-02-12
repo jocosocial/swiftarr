@@ -258,9 +258,6 @@ struct EventTimeTag: LeafTag {
 		dateFormatter.timeZone = Settings.shared.getDisplayTimeZone()
 		var timeString = dateFormatter.string(from: Date(timeIntervalSince1970: startTimeDouble))
 		dateFormatter.dateStyle = .none
-		print("Leaf timezone is: \(dateFormatter.timeZone)")
-		print("Leaf startTimeDouble is \(startTimeDouble) which is \(Date(timeIntervalSince1970: startTimeDouble))")
-		print("Leaf timeString became \(timeString)")
 		timeString.append(" - \(dateFormatter.string(from: Date(timeIntervalSince1970: endTimeDouble)))")
 		return LeafData.string(timeString)
 	}

@@ -18,9 +18,6 @@ struct ClientController: APIRouteCollection {
 		// convenience route group for all /api/v3/client endpoints
 		let clientRoutes = app.grouped("api", "v3", "client")
 
-        // open access endpoints
-        clientRoutes.get("time", use: clientTimeHandler)
-
 		// endpoints available only when logged in
 		let tokenAuthGroup = addTokenAuthGroup(to: clientRoutes)
 		tokenAuthGroup.get("user", "updates", "since", ":date", use: userUpdatesHandler)
@@ -142,14 +139,6 @@ struct ClientController: APIRouteCollection {
 		}
 		return promise.futureResult
 	}
-
-    /// `GET /api/v3/client/time`
-    ///
-    /// Return some information on the current time configuration of the server. This also
-    /// should provide hints to clients on how to render time correctly.
-    func clientTimeHandler(_ req: Request) -> EventLoopFuture<ServerTimeData> {
-        return req.eventLoop.makeSucceededFuture(ServerTimeData())
-    }
 
     // MARK: - Helper Functions
 }

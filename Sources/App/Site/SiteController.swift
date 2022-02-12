@@ -428,25 +428,36 @@ struct SiteController: SiteControllerUtils {
 	///
 	/// Timezone information page.
 	func timePageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-		return apiQuery(req, endpoint: "/client/time").throwingFlatMap { serverTimeResponse in
-			let serverTimeData = try serverTimeResponse.content.decode(ServerTimeData.self)
+		struct TimePageContext : Encodable {
+			var trunk: TrunkContext
+			var serverTime: String
+			var displayTime: String
 
-			struct TimePageContext : Encodable {
-				var trunk: TrunkContext
-				var serverTime: String
-				var displayTime: String
+			init(_ req: Request) throws {
+				trunk = .init(req, title: "Twitarr", tab: .time)
 
-				init(_ req: Request, serverTime: String, displayTime: String) throws {
-					trunk = .init(req, title: "Twitarr", tab: .time)
-					self.serverTime = serverTime
-					self.displayTime = displayTime
-				}
+				// We split into two formatters to prevent accidental contamination of either.
+				let serverDateFormatter = DateFormatter()
+				serverDateFormatter.timeZone = TimeZone.current
+				serverDateFormatter.setLocalizedDateFormatFromTemplate("MMMM dd hh:mm a zzzz")
+				let displayDateFormatter = DateFormatter()
+				// This could use the GMToffset stuff but then it renders a different time zone
+				// name leading to inconsistencies. For eaxmple, if the setting is "AST" then
+				// this would render "GMT-04:00" which is the same thing in effect but more
+				// confusing for people to read.
+				displayDateFormatter.timeZone = Settings.shared.getDisplayTimeZone()
+				displayDateFormatter.setLocalizedDateFormatFromTemplate("MMMM dd hh:mm a zzzz")
+				// serverDate is a Date() that is a precise moment in time represented as an ISO8601 string in UTC.
+				// There is no implicit timezone information contained there.
+				let serverDate = ISO8601DateFormatter().date(from: trunk.alertCounts.serverTime) ?? Date()
+
+				self.serverTime = serverDateFormatter.string(from: serverDate)
+				self.displayTime = displayDateFormatter.string(from: serverDate)
 			}
-
-			let ctx = try TimePageContext(req, serverTime: serverTimeData.serverTimeHuman(), displayTime: serverTimeData.displayTimeHuman())
-			return req.view.render("time", ctx)
 		}
 
+		let ctx = try TimePageContext(req)
+		return req.view.render("time", ctx)
 	}
     
 }

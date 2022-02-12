@@ -354,7 +354,7 @@ struct SiteAdminController: SiteControllerUtils {
 				var appFeatureNames: [String]
 
 				init(_ req: Request, settings: SettingsAdminData) throws {
-					trunk = .init(req, title: "Edit Daily Theme", tab: .admin)
+					trunk = .init(req, title: "Edit Server Settings", tab: .admin)
 					self.settings = settings
 					clientAppNames = SwiftarrClientApp.allCases.compactMap { $0 == .unknown ? nil : $0.rawValue }
 					appFeatureNames = SwiftarrFeature.allCases.compactMap { $0 == .unknown ? nil : $0.rawValue }
@@ -469,7 +469,7 @@ struct SiteAdminController: SiteControllerUtils {
 				var diff: EventUpdateDifferenceData
 				
 				init(_ req: Request, differenceData: EventUpdateDifferenceData) throws {
-					trunk = .init(req, title: "Edit Daily Theme", tab: .admin)
+					trunk = .init(req, title: "Verify Schedule Changes", tab: .admin)
 					self.diff = differenceData
 				}
 			}
