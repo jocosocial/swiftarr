@@ -125,7 +125,8 @@ struct SiteEventsController: SiteControllerUtils {
 		return apiQuery(req, endpoint: "/events/\(eventID)").throwingFlatMap { response in
  			let event = try response.content.decode(EventData.self)
 			let icsString = buildEventICS(event: event)
-			let headers = HTTPHeaders([("Content-Disposition", "attachment; filename=\(event.title).ics")])
+			let cleanEventTitle = event.title.replacingOccurrences(of: "\"", with: "")
+			let headers = HTTPHeaders([("Content-Disposition", "attachment; filename=\"\(cleanEventTitle).ics\"")])
 			return icsString.encodeResponse(status: .ok, headers: headers, for: req)
 		}
     }

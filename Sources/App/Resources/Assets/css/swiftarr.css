@@ -29,6 +29,10 @@ hr.newline:after {
 	opacity: 100%;
 }
 
+.navbar-brand {
+  cursor: pointer;
+}
+
 .nav-item.nav-link.active {
   font-weight: 700;
 }
