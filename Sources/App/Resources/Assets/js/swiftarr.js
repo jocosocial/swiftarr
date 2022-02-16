@@ -342,6 +342,7 @@ function submitAJAXForm(formElement, event) {
 				formElement.querySelector('.twitarr-image-remove').click();
 			}
 			else if (successURL) {
+				formElement.reset();
 				location.assign(successURL);
 			}
 			else {

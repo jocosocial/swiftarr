@@ -96,11 +96,13 @@ struct SocketNotificationData: Content {
 	/// The type of event that happened. See <doc:SocketNotificationData.NotificationTypeData> for values.
 	var type: NotificationTypeData
 	/// A string describing what happened, suitable for adding to a notification alert.
-	var info: String 
+	var info: String
+	/// An ID of an Announcement, Fez, Twarrt, ForumPost, or Event.
+	var contentID: String
 }
 
 extension SocketNotificationData {
-	init(_ type: NotificationType, info: String) {
+	init(_ type: NotificationType, info: String, id: String) {
 		switch type {
 			case .announcement: self.type = .announcement
 			case .fezUnreadMsg: self.type = .fezUnreadMsg
@@ -112,5 +114,6 @@ extension SocketNotificationData {
 			case .nextFollowedEventTime: self.type = .followedEventStarting
 		}
 		self.info = info
+		self.contentID = id
 	}
 }

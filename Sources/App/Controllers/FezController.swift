@@ -247,7 +247,7 @@ struct FezController: APIRouteCollection {
 					.throwingFlatMap { pivot in
 				var fezData = try buildFezData(from: fez, with: pivot, for: cacheUser, on: req)
 				if pivot != nil || (cacheUser.accessLevel.hasAccess(.moderator) && fez.fezType != .closed) {
-					return try buildPostsForFez(fez, pivot: pivot, on: req, user: effectiveUser).throwingFlatMap { (posts, paginator) in
+					return try buildPostsForFez(fez, pivot: pivot, on: req, user: cacheUser).throwingFlatMap { (posts, paginator) in
 						fezData.members?.paginator = paginator
 						fezData.members?.posts = posts
 						if let pivot = pivot {
@@ -911,7 +911,7 @@ extension FezController {
 				_ = pivot.save(on: req.db)
 				// If the user has now read all the posts (except those hidden from them) mark this notification as viewed.
 				if pivot.readCount + pivot.hiddenCount >= fez.postCount {
-					try markNotificationViewed(userID: user.userID, type: fez.notificationType(), on: req)
+					try markNotificationViewed(user: user, type: fez.notificationType(), on: req)
 				}
 			}
 			return (posts, paginator)
@@ -930,7 +930,7 @@ extension FezController {
 	
 	// For both Moderator and TwittarTeam access levels, there's a special user account with the same name.
 	// Seamail to @moderator and @TwitarrTeam may be read by any user with the respective access levels.
-	// Instead of designing a new entity for these group inboxes, 
+	// Instead of designing a new entity for these group inboxes, they're just users that can't log in.
 	func getEffectiveUser(user: UserCacheData, req: Request) throws -> UserCacheData {
 		guard let effectiveUserParam = req.query[String.self, at: "foruser"] else {
 			return user

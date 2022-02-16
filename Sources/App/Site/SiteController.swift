@@ -228,7 +228,7 @@ struct MessagePostContext: Encodable {
 		// For posting in an existing Seamail thread
 		case .seamailPost(let forSeamail):
 			formAction = "/seamail/\(forSeamail.fezID)/post"
-			postSuccessURL = "/seamail/\(forSeamail.fezID)"
+			postSuccessURL = "/seamail/\(forSeamail.fezID)#afterposts"
 			photoFilenames = []
 		// For posting in an existing Fez thread
 		case .fezPost(let forFez):

@@ -700,7 +700,10 @@ struct ModerationController: APIRouteCollection {
 				}
 				return allAccounts.map { (targetUserAccount) -> EventLoopFuture<Void> in
 					return targetUserAccount.save(on: req.db)
-				}.flatten(on: req.eventLoop).transform(to: .ok)
+				}.flatten(on: req.eventLoop).throwingFlatMap {
+					let allAccountIDs = try allAccounts.map { try $0.requireID() }
+					return req.userCache.updateUsers(allAccountIDs).transform(to: .ok)
+				}
 			}
 		}
 	}

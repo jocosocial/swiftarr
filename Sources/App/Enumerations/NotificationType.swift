@@ -40,18 +40,18 @@ enum NotificationType {
 	case fezUnreadMsg(UUID)
 	/// A new message posted to a fez. Associated value is the ID of the fez. (NOT the id of the new message).
 	case seamailUnreadMsg(UUID)
-	/// A twarrt has been posted that contained a word that a user was alerting on. Associated value is the alert word that matched.
-	/// Could also happen if an existing twarrt was edited, and the edit adds the alert word to the text.
-	case alertwordTwarrt(String)
-	/// A new forum post that contains a word that a user was alerting on. Associated value is the alert word that matched.
-	/// Could also happen if an existing post was edited, and the edit adds the alert word to the text.
-	case alertwordPost(String)
-	/// A new or edited twarrt that now @mentions a user. 
-	case twarrtMention
-	/// A new or edited forum post that now @mentions a user.
-	case forumMention
-	/// A new or edited forum post that now @mentions a user.
-	case nextFollowedEventTime(Date?)
+	/// A twarrt has been posted that contained a word that a user was alerting on. Associated value is a tuple. First is the alert word that matched.
+	/// Second is the twarrt id. Could also happen if an existing twarrt was edited, and the edit adds the alert word to the text.
+	case alertwordTwarrt(String, Int)
+	/// A new forum post that contains a word that a user was alerting on. Associated value is a tuple. First is the alert word that matched.
+	/// Second is the post ID. Could also happen if an existing post was edited, and the edit adds the alert word to the text.
+	case alertwordPost(String, Int)
+	/// A new or edited twarrt that now @mentions a user. Associated value is the twarrt ID.
+	case twarrtMention(Int)
+	/// A new or edited forum post that now @mentions a user. Associated value is the post ID.
+	case forumMention(Int)
+	/// An upcoming event that the user has followed.
+	case nextFollowedEventTime(Date?, UUID?)
 	
 	/// Returns the hash field name used to store info about this notification type in Redis.
 	func redisFieldName() -> String {
@@ -59,8 +59,8 @@ enum NotificationType {
 			case .announcement: return "announcement"
 			case .fezUnreadMsg(let msgID): return msgID.uuidString
 			case .seamailUnreadMsg(let msgID): return msgID.uuidString
-			case .alertwordTwarrt(let str): return "alertwordTweet-\(str)"
-			case .alertwordPost(let str): return "alertwordPost-\(str)"
+			case .alertwordTwarrt(let str, _): return "alertwordTweet-\(str)"
+			case .alertwordPost(let str, _): return "alertwordPost-\(str)"
 			case .twarrtMention: return "twarrtMention"
 			case .forumMention: return "forumMention"
 			case .nextFollowedEventTime: return "nextFollowedEventTime"
@@ -95,5 +95,18 @@ enum NotificationType {
 	static func redisKeyForFez(_ fez: FriendlyFez, userID: UUID) throws -> RedisKey {
 		return try fez.fezType == .closed ? NotificationType.seamailUnreadMsg(fez.requireID()).redisKeyName(userID: userID) :
 				NotificationType.fezUnreadMsg(fez.requireID()).redisKeyName(userID: userID)
+	}
+	
+	func objectID() -> String {
+		switch self {
+		case .announcement(let id): return String(id)
+		case .fezUnreadMsg(let uuid): return String(uuid)
+		case .seamailUnreadMsg(let uuid): return String(uuid)
+		case .alertwordTwarrt(_, let id): return String(id)
+		case .alertwordPost(_, let id): return String(id)
+		case .twarrtMention(let id): return String(id)
+		case .forumMention(let id): return String(id)
+		case .nextFollowedEventTime(_, let uuid): return uuid != nil ? String(uuid!) : ""
+		}
 	}
 }

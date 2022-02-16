@@ -18,7 +18,7 @@ final class FezParticipant: Model {
     @Field(key: "hidden_count") var hiddenCount: Int
         
 // MARK: Relationships
-    /// The associated `User` who likes this.
+    /// The associated `User` who is a member of the fez..
 	@Parent(key: "user") var user: User
 
     /// The associated `FriendlyFez` the user is a member of.
