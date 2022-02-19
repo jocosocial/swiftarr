@@ -246,10 +246,17 @@ struct SiteAdminController: SiteControllerUtils {
 			struct ThemeDataViewContext : Encodable {
 				var trunk: TrunkContext
 				var themes: [DailyThemeData]
+				var currentCruiseDay: Int
 
 				init(_ req: Request, data: [DailyThemeData]) throws {
 					trunk = .init(req, title: "Daily Tmemes", tab: .admin)
 					themes = data
+					
+					let cal = Calendar.current
+					let components = cal.dateComponents([.day], from: cal.startOfDay(for: Settings.shared.cruiseStartDate), 
+							to: cal.startOfDay(for: Date()))
+					currentCruiseDay = Int(components.day ?? 0)
+
 				}
 			}
 			let ctx = try ThemeDataViewContext(req, data: themeData)
