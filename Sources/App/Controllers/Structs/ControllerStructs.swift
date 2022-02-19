@@ -1470,8 +1470,10 @@ public struct UserNotificationData: Content {
 	var serverTimeZone: String
 	/// Features that are turned off by the server. If the `appName` for a feature is `all`, the feature is disabled at the API layer.
 	/// For all other appName values, the disable is just a notification that the client should not show the feature to users.
-	/// If the list is empty, no features have been deisabled. 
+	/// If the list is empty, no features have been disabled. 
 	var disabledFeatures: [DisabledFeature]
+	/// The name of the shipboard Wifi network
+	var shipWifiSSID: String?
 
 	/// IDs of all active announcements 
 	var activeAnnouncementIDs: [Int]
@@ -1528,6 +1530,7 @@ extension UserNotificationData	{
 		serverTimeOffset = TimeZone.autoupdatingCurrent.secondsFromGMT()
 		serverTimeZone = TimeZone.autoupdatingCurrent.abbreviation() ?? ""
 		self.disabledFeatures = Settings.shared.disabledFeatures.buildDisabledFeatureArray()
+		self.shipWifiSSID = Settings.shared.shipWifiSSID
 		self.activeAnnouncementIDs = activeAnnouncementIDs
 		self.newAnnouncementCount = newAnnouncementCount
 		self.twarrtMentionCount = 0
@@ -1546,6 +1549,7 @@ extension UserNotificationData	{
 		serverTimeOffset = TimeZone.autoupdatingCurrent.secondsFromGMT()
 		serverTimeZone = TimeZone.autoupdatingCurrent.abbreviation() ?? ""
 		self.disabledFeatures = []
+		self.shipWifiSSID = nil
 		self.activeAnnouncementIDs = []
 		self.newAnnouncementCount = 0
 		self.twarrtMentionCount = 0

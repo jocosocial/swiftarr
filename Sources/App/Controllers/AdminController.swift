@@ -170,6 +170,9 @@ struct AdminController: APIRouteCollection {
  		if let value = data.allowAnimatedImages {
  			Settings.shared.allowAnimatedImages = value
  		}
+ 		if let value = data.shipWifiSSID {
+ 			Settings.shared.shipWifiSSID = value
+ 		}
  		var localDisables = Settings.shared.disabledFeatures.value
  		for pair in data.enableFeatures {
  			if let app = SwiftarrClientApp(rawValue: pair.app), let feature = SwiftarrFeature(rawValue: pair.feature) {

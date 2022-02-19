@@ -361,7 +361,7 @@ struct SiteAdminController: SiteControllerUtils {
 				var appFeatureNames: [String]
 
 				init(_ req: Request, settings: SettingsAdminData) throws {
-					trunk = .init(req, title: "Edit Daily Theme", tab: .admin)
+					trunk = .init(req, title: "Edit Server Settings", tab: .admin)
 					self.settings = settings
 					clientAppNames = SwiftarrClientApp.allCases.compactMap { $0 == .unknown ? nil : $0.rawValue }
 					appFeatureNames = SwiftarrFeature.allCases.compactMap { $0 == .unknown ? nil : $0.rawValue }
@@ -386,6 +386,7 @@ struct SiteAdminController: SiteControllerUtils {
 			var forumAutoQuarantineThreshold: Int
 			var postAutoQuarantineThreshold: Int
 			var userAutoQuarantineThreshold: Int
+			var shipWifiSSID: String?
 			var allowAnimatedImages: String?
 			var disableAppName: String
 			var disableFeatureName: String
@@ -420,7 +421,8 @@ struct SiteAdminController: SiteControllerUtils {
 				postAutoQuarantineThreshold: postStruct.postAutoQuarantineThreshold, 
 				userAutoQuarantineThreshold: postStruct.userAutoQuarantineThreshold, 
 				allowAnimatedImages: postStruct.allowAnimatedImages == "on",
-				enableFeatures: enablePairs, disableFeatures: disablePairs)
+				enableFeatures: enablePairs, disableFeatures: disablePairs,
+				shipWifiSSID: postStruct.shipWifiSSID)
 		return apiQuery(req, endpoint: "/admin/serversettings/update", method: .POST, beforeSend: { req throws in
 			try req.content.encode(apiPostContent)
 		}).flatMapThrowing { response in
