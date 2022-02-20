@@ -21,7 +21,7 @@
 						</span>
 					</div>
 					<div class="card-body bg-light">
-						#(dailyTheme.info)
+						#formatTwarrtText(dailyTheme.info)
 					</div>
 					#if(dailyTheme.image):
 						<img class="card-img-bottom" src="/api/v3/image/full/#(dailyTheme.image)" alt="Daily Theme Image">
@@ -39,7 +39,7 @@
 							</span>
 						</div>
 						<div class="card-body bg-light">
-							#(ann.text)<br>
+							#formatTwarrtText(ann.text)<br>
 							<span class="text-muted"><i>Display Until #date(ann.displayUntil, "MMM dd, hh:mm:ss a")</i></span>
 						</div>
 					</div>
