@@ -472,7 +472,7 @@ struct ForumController: APIRouteCollection {
 						.trimmingCharacters(in: .whitespacesAndNewlines)
 				query = query.filter(\.$text, .custom("ILIKE"), "%\(searchStr)%")
 				if !searchStr.contains(" ") && start == 0 {
-					markNotificationViewed(userID: cacheUser.userID, type: .alertwordPost(searchStr), on: req)
+					markNotificationViewed(user: cacheUser, type: .alertwordPost(searchStr, 0), on: req)
 				}
 			}
 			if var hashtag = req.query[String.self, at: "hashtag"] {
@@ -515,7 +515,7 @@ struct ForumController: APIRouteCollection {
 					if let postFilter = postFilterMentions {
 						postFilteredPosts = posts.compactMap { $0.filterForMention(of: postFilter) }
 						if postFilter == "@\(cacheUser.username)" {
-							markNotificationViewed(userID: cacheUser.userID, type: .forumMention, on: req)
+							markNotificationViewed(user: cacheUser, type: .forumMention(0), on: req)
 						}
 					}
 					return try buildPostData(postFilteredPosts, userID: cacheUser.userID, on: req, mutewords: cacheUser.mutewords).map { postData in
@@ -1306,6 +1306,7 @@ extension ForumController {
 	// mentioned `User`s.
 	@discardableResult func processForumMentions(forum: Forum, post: ForumPost, editedText: String?, 
 			isCreate: Bool = false, on req: Request) -> EventLoopFuture<Void> {
+		let postID = post.id ?? 0
 // Mentions
 		var futures: [EventLoopFuture<Void>] = []
 		let (subtracts, adds) = post.getMentionsDiffs(editedString: editedText, isCreate: isCreate)
@@ -1313,7 +1314,7 @@ extension ForumController {
 			let subtractUUIDs = req.userCache.getUsers(usernames: subtracts).compactMap { 
 				$0.accessLevel.hasAccess(forum.accessLevelToView) ? $0.userID : nil
 			}
-			futures.append(subtractNotifications(users: subtractUUIDs, type: .forumMention, on: req))
+			futures.append(subtractNotifications(users: subtractUUIDs, type: .forumMention(postID), on: req))
 		}
 		if !adds.isEmpty {
 			let addUUIDs = req.userCache.getUsers(usernames: adds).compactMap { 
@@ -1324,7 +1325,7 @@ extension ForumController {
 				authorText = "User @\(authorName)"
 			}
 			let infoStr = "\(authorText) wrote a forum post that @mentioned you."
-			futures.append(addNotifications(users: addUUIDs, type: .forumMention, info: infoStr, on: req))
+			futures.append(addNotifications(users: addUUIDs, type: .forumMention(postID), info: infoStr, on: req))
 		}
 // Alertwords
 		let (alertSubtracts, alertAdds) = post.getAlertwordDiffs(editedString: editedText, isCreate: isCreate)
@@ -1334,7 +1335,7 @@ extension ForumController {
 			let addingAlertWords = alertAdds.intersection(alertSet)
 			var wordFutures: [EventLoopFuture<Void>] = []
 			subtractingAlertWords.forEach { word in
-				wordFutures.append(subtractAlertwordNotifications(type: .alertwordPost(word), minAccess: forum.accessLevelToView, on: req))
+				wordFutures.append(subtractAlertwordNotifications(type: .alertwordPost(word, postID), minAccess: forum.accessLevelToView, on: req))
 			}
 			if addingAlertWords.count > 0 {
 				var authorText = "A user"
@@ -1343,7 +1344,7 @@ extension ForumController {
 				}
 				addingAlertWords.forEach { word in
 					let infoStr = "\(authorText) wrote a forum post containing your alert word '\(word)'."
-					wordFutures.append(addAlertwordNotifications(type: .alertwordPost(word), minAccess: forum.accessLevelToView,
+					wordFutures.append(addAlertwordNotifications(type: .alertwordPost(word, postID), minAccess: forum.accessLevelToView,
 							info: infoStr, on: req))
 				}
 			}
@@ -1370,7 +1371,7 @@ extension ForumController {
 		}
 		return mentionAdjustCounts.compactMap { username, value in
 			if let userID = req.userCache.getHeader(username)?.userID {
-				return subtractNotifications(users: [userID], type: .forumMention, subtractCount: value, on: req)
+				return subtractNotifications(users: [userID], type: .forumMention(0), subtractCount: value, on: req)
 			}
 			return nil
 		}.flatten(on: req.eventLoop)

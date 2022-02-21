@@ -68,7 +68,10 @@ final class Settings : Encodable {
 
 	/// Each key-value pair is a feature that's tu
 	@StoredSettingsValue("disabledFeatures", defaultValue: DisabledFeaturesGroup(value: [:])) var disabledFeatures: DisabledFeaturesGroup
-    
+
+	/// The name of the onboard Wifi network. Delivered to cients in the notification endpoint.
+	@StoredSettingsValue("shipWifiSSID", defaultValue: "") var shipWifiSSID: String
+	    
 // MARK: Limits
     /// The maximum number of alt accounts per primary user account.
     @StoredSettingsValue("maxAlternateAccounts", defaultValue: 6) var maxAlternateAccounts: Int

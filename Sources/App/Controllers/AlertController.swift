@@ -95,7 +95,8 @@ struct AlertController: APIRouteCollection {
 					let userHighestReadAnnouncement = hash["announcement_viewed"]?.int ?? 0
 					let newAnnouncements = actives.reduce(0) { $1 > userHighestReadAnnouncement ? $0 + 1 : $0 }
 					var nextEventFuture: EventLoopFuture<Date?> = req.eventLoop.future(nil)
-					if let nextEventStr = hash["nextFollowedEventTime"]?.string, let doubleDate = Double(nextEventStr) {
+					if let nextEventStr = hash[NotificationType.nextFollowedEventTime(nil, nil).redisFieldName()]?.string, 
+							let doubleDate = Double(nextEventStr) {
 						let eventDate = Date(timeIntervalSince1970: doubleDate)
 						if Date() > eventDate {
 							nextEventFuture = storeNextEventTime(userID: user.userID, eventBarrel: nil, on: req)
@@ -178,19 +179,15 @@ struct AlertController: APIRouteCollection {
 	/// Returns a ModeratorNotificationData structure containing counts for open reports, seamails to @moderator with unread messages, and (if user is in TwitarrTeam) 
 	/// seamails to @TwitarrTeam with unread messages. If the user is not a moderator, returns nil.
 	func getModeratorNotifications(for user: UserCacheData, on req: Request) -> EventLoopFuture<UserNotificationData.ModeratorNotificationData?> {
-		guard user.accessLevel.hasAccess(.moderator), let moderator = req.userCache.getUser(username: "moderator") else {
+		guard user.accessLevel.hasAccess(.moderator) else {
 			return req.eventLoop.future(nil)
 		}
 		return Report.query(on: req.db).filter(\.$isClosed == false).filter(\.$actionGroup == nil).count().flatMap { reportCount in
-			return req.redis.hvals(in: NotificationType.seamailUnreadMsg(moderator.userID)
-					.redisKeyName(userID: moderator.userID), as: Int.self)
-					.flatMap { seamailHash in
+			return req.redis.hvals(in: "UnreadModSeamails-\(user.userID)", as: Int.self).flatMap { seamailHash in
 				let moderatorUnreadCount = seamailHash.reduce(0) { $1 ?? 0 > 0 ? $0 + 1 : $0 }
 				var twittarTeamFuture: EventLoopFuture<Int?> = req.eventLoop.future(nil)
-				if user.accessLevel.hasAccess(.twitarrteam), let ttUser = req.userCache.getUser(username: "TwitarrTeam") {
-					twittarTeamFuture = req.redis.hvals(in: NotificationType.seamailUnreadMsg(ttUser.userID)
-							.redisKeyName(userID: ttUser.userID), as: Int.self)
-							.map { ttSeamailHash in
+				if user.accessLevel.hasAccess(.twitarrteam) {
+					twittarTeamFuture = req.redis.hvals(in: "UnreadTTSeamails-\(user.userID)", as: Int.self).map { ttSeamailHash in
 						return ttSeamailHash.reduce(0) { $1 ?? 0 > 0 ? $0 + 1 : $0 }
 					}
 				}
@@ -280,8 +277,8 @@ struct AlertController: APIRouteCollection {
 				if let annID = $0.id, annID > maxID { maxID = annID }
 				return try AnnouncementData(from: $0, authorHeader: authorHeader) 
 			}
-			if let userID = user?.userID, includeInactives == false {
-				_ = markNotificationViewed(userID: userID, type: .announcement(maxID), on: req)
+			if let user = user, includeInactives == false {
+				_ = markNotificationViewed(user: user, type: .announcement(maxID), on: req)
 			}
 			return result
 		}

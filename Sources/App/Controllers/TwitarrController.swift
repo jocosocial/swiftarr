@@ -111,21 +111,22 @@ struct TwitarrController: APIRouteCollection {
 		let tokenCacheAuthGroup = addTokenCacheAuthGroup(to: twitarrRoutes)
 		tokenCacheAuthGroup.get("", use: twarrtsHandler)
 		tokenCacheAuthGroup.get(twarrtIDParam, use: twarrtHandler)
-		tokenCacheAuthGroup.post(twarrtIDParam, "laugh", use: twarrtLaughHandler)
-		tokenCacheAuthGroup.post(twarrtIDParam, "like", use: twarrtLikeHandler)
-		tokenCacheAuthGroup.post(twarrtIDParam, "love", use: twarrtLoveHandler)
-		
-		let tokenAuthGroup = addTokenAuthGroup(to: twitarrRoutes)
-		tokenAuthGroup.post(twarrtIDParam, "bookmark", use: bookmarkAddHandler)
-		tokenAuthGroup.post(twarrtIDParam, "bookmark", "remove", use: bookmarkRemoveHandler)
 		tokenCacheAuthGroup.post("create", use: twarrtCreateHandler)
 		tokenCacheAuthGroup.post(twarrtIDParam, "delete", use: twarrtDeleteHandler)
 		tokenCacheAuthGroup.delete(twarrtIDParam, use: twarrtDeleteHandler)
 		tokenCacheAuthGroup.post(twarrtIDParam, "reply", use: replyHandler)
+		
+		tokenCacheAuthGroup.post(twarrtIDParam, "laugh", use: twarrtLaughHandler)
+		tokenCacheAuthGroup.post(twarrtIDParam, "like", use: twarrtLikeHandler)
+		tokenCacheAuthGroup.post(twarrtIDParam, "love", use: twarrtLoveHandler)
 		tokenCacheAuthGroup.post(twarrtIDParam, "unreact", use: twarrtUnreactHandler)
 		tokenCacheAuthGroup.delete(twarrtIDParam, "laugh", use: twarrtUnreactHandler)
 		tokenCacheAuthGroup.delete(twarrtIDParam, "like", use: twarrtUnreactHandler)
 		tokenCacheAuthGroup.delete(twarrtIDParam, "love", use: twarrtUnreactHandler)
+
+		let tokenAuthGroup = addTokenAuthGroup(to: twitarrRoutes)
+		tokenAuthGroup.post(twarrtIDParam, "bookmark", use: bookmarkAddHandler)
+		tokenAuthGroup.post(twarrtIDParam, "bookmark", "remove", use: bookmarkRemoveHandler)
 		tokenAuthGroup.post(twarrtIDParam, "report", use: twarrtReportHandler)
 		tokenCacheAuthGroup.post(twarrtIDParam, "update", use: twarrtUpdateHandler)
 	}
@@ -300,7 +301,7 @@ struct TwitarrController: APIRouteCollection {
 		if let searchStr = filters.search {
 			futureTwarrts.filter(\.$text, .custom("ILIKE"), "%\(searchStr)%")
 			if !searchStr.contains(" ") && start == 0 {
-				markNotificationViewed(userID: cachedUser.userID, type: .alertwordTwarrt(searchStr), on: req)
+				markNotificationViewed(user: cachedUser, type: .alertwordTwarrt(searchStr, 0), on: req)
 			}
 		}
 		if var hashtag = filters.hashtag {
@@ -395,7 +396,7 @@ struct TwitarrController: APIRouteCollection {
 						postFilteredTwarrts = twarrts.compactMap { $0.filterForMention(of: postFilter) }
 						// This also clears new mentions in cases where the user got their mentions plus additional filters.
 						if postFilter == "@\(cachedUser.username)" {
-							markNotificationViewed(userID: cachedUser.userID, type: .twarrtMention, on: req)
+							markNotificationViewed(user: cachedUser, type: .twarrtMention(0), on: req)
 						}
 					}
 				
@@ -499,7 +500,7 @@ struct TwitarrController: APIRouteCollection {
 				let twarrt = try Twarrt(authorID: effectiveAuthor.userID, text: data.text, images: filenames, replyTo: replyTo)
 				return twarrt.save(on: req.db).flatMapThrowing { 
             		twarrt.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
-					processTwarrtMentions(twarrt: twarrt, editedText: nil, isCreate: true, on: req)
+					try processTwarrtMentions(twarrt: twarrt, editedText: nil, isCreate: true, on: req)
 					if replyTo.$replyGroup.id == nil {
 						// If the replyTo twarrt wasn't in a replyGroup, it becomes the head of a new one.
 						replyTo.$replyGroup.id = replyTo.id
@@ -532,7 +533,7 @@ struct TwitarrController: APIRouteCollection {
 			let twarrt = try Twarrt(authorID: effectiveAuthor.userID, text: data.text, images: filenames)
             return twarrt.save(on: req.db).flatMapThrowing { _ in
             	twarrt.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
-				processTwarrtMentions(twarrt: twarrt, editedText: nil, isCreate: true, on: req)
+				try processTwarrtMentions(twarrt: twarrt, editedText: nil, isCreate: true, on: req)
                 // return as TwarrtData with 201 status
                 let response = Response(status: .created)
                 try response.content.encode(TwarrtData(twarrt: twarrt, creator: effectiveAuthor.makeHeader(), isBookmarked: false,
@@ -554,7 +555,7 @@ struct TwitarrController: APIRouteCollection {
         let cacheUser = try req.auth.require(UserCacheData.self)
         return Twarrt.findFromParameter(twarrtIDParam, on: req).throwingFlatMap { (twarrt) in
 			try cacheUser.guardCanModifyContent(twarrt, customErrorString: "user cannot delete twarrt")
-			processTwarrtMentions(twarrt: twarrt, editedText: nil, on: req)
+			try processTwarrtMentions(twarrt: twarrt, editedText: nil, on: req)
 			twarrt.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: req)
             return twarrt.delete(on: req.db).transform(to: .noContent)
         }
@@ -686,7 +687,7 @@ struct TwitarrController: APIRouteCollection {
 			// update if there are changes
 			let normalizedText = data.text.replacingOccurrences(of: "\r\n", with: "\r")
 			if twarrt.text != normalizedText || twarrt.images != filenames {
-				processTwarrtMentions(twarrt: twarrt, editedText: normalizedText, on: req)
+				try processTwarrtMentions(twarrt: twarrt, editedText: normalizedText, on: req)
 				// stash current twarrt contents before modifying
 				let twarrtEdit = try TwarrtEdit(twarrt: twarrt, editorID: cacheUser.userID)
 				twarrt.text = normalizedText
@@ -768,19 +769,20 @@ extension TwitarrController {
 	// 		the user calls the notification endpoint they are informed of the new alertword hits.
 	//	3. finds hashtags 
 	@discardableResult func processTwarrtMentions(twarrt: Twarrt, editedText: String?, 
-			isCreate: Bool = false, on req: Request) -> EventLoopFuture<Void> {	
+			isCreate: Bool = false, on req: Request) throws -> EventLoopFuture<Void> {	
+		let twarrtID = try twarrt.requireID()
 		// Mentions
 		let (subtracts, adds) = twarrt.getMentionsDiffs(editedString: editedText, isCreate: isCreate)
 		var mentionsFutures: [EventLoopFuture<Void>] = []
 		if !subtracts.isEmpty {
 			let subtractUUIDs = req.userCache.getHeaders(usernames: subtracts).map { $0.userID }
-			mentionsFutures.append(subtractNotifications(users: subtractUUIDs, type: .twarrtMention, on: req))
+			try mentionsFutures.append(subtractNotifications(users: subtractUUIDs, type: .twarrtMention(twarrt.requireID()), on: req))
 		}
 		if !adds.isEmpty {
 			let addUUIDs = req.userCache.getHeaders(usernames: adds).map { $0.userID }
 			let authorName = req.userCache.getUser(twarrt.$author.id)?.username
 			let infoStr = "\(authorName == nil ? "A user" : "User @\(authorName!)") posted a twarrt that @mentioned you."
-			mentionsFutures.append(addNotifications(users: addUUIDs, type: .twarrtMention, info: infoStr, on: req))
+			try mentionsFutures.append(addNotifications(users: addUUIDs, type: .twarrtMention(twarrt.requireID()), info: infoStr, on: req))
 		}
 		
 		// Alert words check
@@ -791,13 +793,13 @@ extension TwitarrController {
 			let addingAlertWords = alertAdds.intersection(alertSet)
 			var futures: [EventLoopFuture<Void>] = []
 			subtractingAlertWords.forEach { word in
-				futures.append(subtractAlertwordNotifications(type: .alertwordTwarrt(word), on: req))
+				futures.append(subtractAlertwordNotifications(type: .alertwordTwarrt(word, twarrtID), on: req))
 			}
 			if addingAlertWords.count > 0 {
 				let authorName = req.userCache.getUser(twarrt.$author.id)?.username
 				addingAlertWords.forEach { word in
 					let infoStr = "\(authorName == nil ? "A user" : "User @\(authorName!)") posted a twarrt containing your alert word '\(word)'."
-					futures.append(addAlertwordNotifications(type: .alertwordTwarrt(word), info: infoStr, on: req))
+					futures.append(addAlertwordNotifications(type: .alertwordTwarrt(word, twarrtID), info: infoStr, on: req))
 				}
 			}
 			return futures.flatten(on: req.eventLoop).transform(to: ())

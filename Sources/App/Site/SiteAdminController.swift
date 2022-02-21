@@ -248,10 +248,17 @@ struct SiteAdminController: SiteControllerUtils {
 			struct ThemeDataViewContext : Encodable {
 				var trunk: TrunkContext
 				var themes: [DailyThemeData]
+				var currentCruiseDay: Int
 
 				init(_ req: Request, data: [DailyThemeData]) throws {
 					trunk = .init(req, title: "Daily Tmemes", tab: .admin)
 					themes = data
+					
+					let cal = Calendar.current
+					let components = cal.dateComponents([.day], from: cal.startOfDay(for: Settings.shared.cruiseStartDate), 
+							to: cal.startOfDay(for: Date()))
+					currentCruiseDay = Int(components.day ?? 0)
+
 				}
 			}
 			let ctx = try ThemeDataViewContext(req, data: themeData)
@@ -381,6 +388,7 @@ struct SiteAdminController: SiteControllerUtils {
 			var forumAutoQuarantineThreshold: Int
 			var postAutoQuarantineThreshold: Int
 			var userAutoQuarantineThreshold: Int
+			var shipWifiSSID: String?
 			var allowAnimatedImages: String?
 			var disableAppName: String
 			var disableFeatureName: String
@@ -417,7 +425,8 @@ struct SiteAdminController: SiteControllerUtils {
 				userAutoQuarantineThreshold: postStruct.userAutoQuarantineThreshold, 
 				allowAnimatedImages: postStruct.allowAnimatedImages == "on",
 				enableFeatures: enablePairs, disableFeatures: disablePairs,
-				displayTimeZoneAbbr: postStruct.displayTimeZoneAbbr)
+				displayTimeZoneAbbr: postStruct.displayTimeZoneAbbr,
+				shipWifiSSID: postStruct.shipWifiSSID)
 		return apiQuery(req, endpoint: "/admin/serversettings/update", method: .POST, beforeSend: { req throws in
 			try req.content.encode(apiPostContent)
 		}).flatMapThrowing { response in

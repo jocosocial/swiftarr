@@ -508,17 +508,31 @@ struct UsersController: APIRouteCollection {
         let requesterFuture = requester.allAccountIDs(on: req)
         let unblockFuture = user.allAccountIDs(on: req)
         return requesterFuture.and(unblockFuture).flatMap { (ruuids, buuids) in
-			var futures: [EventLoopFuture<Int>] = []
-        	ruuids.forEach { ruuid in
-				futures.append(req.redis.srem(buuids, from: "rblocks:\(ruuid)"))
+        	guard let unblockParentID = buuids.first else  {
+        		return req.eventLoop.future()
         	}
-        	buuids.forEach { buuid in
-				futures.append(req.redis.srem(ruuids, from: "rblocks:\(buuid)"))
-        	}
-			return futures.flatten(on: req.eventLoop).flatMap { (_) in
-				return req.userCache.updateUsers(ruuids)
-						.and(req.userCache.updateUsers(buuids))
-						.transform(to: ())
+        	return Barrel.query(on: req.db).filter(\.$ownerID == unblockParentID)
+					.filter(\.$barrelType == .userBlock)
+					.first()
+					.unwrap(or: Abort(.internalServerError, reason: "userBlock barrel not found"))
+					.flatMap { unblockingBarrel in
+				// If the person we're unblocking has somehow blocked *us*, don't actually remove the 
+				// Redis blocks, but do still update the Barrel.
+				if !Set(unblockingBarrel.modelUUIDs).isDisjoint(with: ruuids) {
+        			return req.eventLoop.future()
+				}
+				var futures: [EventLoopFuture<Int>] = []
+				ruuids.forEach { ruuid in
+					futures.append(req.redis.srem(buuids, from: "rblocks:\(ruuid)"))
+				}
+				buuids.forEach { buuid in
+					futures.append(req.redis.srem(ruuids, from: "rblocks:\(buuid)"))
+				}
+				return futures.flatten(on: req.eventLoop).flatMap { (_) in
+					return req.userCache.updateUsers(ruuids)
+							.and(req.userCache.updateUsers(buuids))
+							.transform(to: ())
+				}
 			}
         }
     }

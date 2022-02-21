@@ -122,12 +122,12 @@ extension APIRouteCollection {
 	@discardableResult func addAlertwordNotifications(type: NotificationType, minAccess: UserAccessLevel = .quarantined,
 			info: String, on req: Request) -> EventLoopFuture<Void> {
 		switch type {
-		case .alertwordTwarrt(let word):
+		case .alertwordTwarrt(let word, _):
 			return req.redis.smembers(of: "alertwordUsers-\(word)", as: UUID.self).flatMap { userIDOptionals in
 				let userIDs = userIDOptionals.compactMap { $0 }
 				return addNotifications(users: userIDs, type: type, info: "Your alert word '\(word)", on: req)
 			}
-		case .alertwordPost(let word):
+		case .alertwordPost(let word, _):
 			return req.redis.smembers(of: "alertwordUsers-\(word)", as: UUID.self).flatMap { userIDOptionals in
 				let userIDs = userIDOptionals.compactMap { $0 }
 				let validUserIDs = req.userCache.getUsers(userIDs).compactMap { $0.accessLevel >= minAccess ? $0.userID : nil }
@@ -146,45 +146,56 @@ extension APIRouteCollection {
 	//
 	// Adding a new notification will also send out an update to all relevant users who are listening on notification sockets. 
 	@discardableResult func addNotifications(users: [UUID], type: NotificationType, info: String, on req: Request) -> EventLoopFuture<Void> {
-		var hashFutures: [EventLoopFuture<Int>]
+		var hashFutures: [EventLoopFuture<Int>] = []
 		var forwardToSockets = true	
-		var notifyUsers = Set(users)
 		switch type {
 		case .announcement:
 			// Force cache of active announcementIDs to get rebuilt
 			hashFutures = [req.redis.delete("ActiveAnnouncementIDs")]
-		case .nextFollowedEventTime(let date):
-			// Force cache of active announcementIDs to get rebuilt
+		case .nextFollowedEventTime(let date, let id):
+			// 
 			hashFutures = users.map { userID in
 				if let doubleDate = date?.timeIntervalSince1970 {
-					return req.redis.hset(type.redisFieldName(), to: doubleDate, in: type.redisKeyName(userID: userID)).transform(to: 0)
+					return req.redis.hset(type.redisFieldName(), to: doubleDate, in: type.redisKeyName(userID: userID)).flatMap { _ in
+						return req.redis.hset("nextFollowedEventID", to: id, in: type.redisKeyName(userID: userID)).transform(to: 0)
+					}
 				}
 				else {
-					return req.redis.hdel(type.redisFieldName(), from: type.redisKeyName(userID: userID))
+					return req.redis.hdel(type.redisFieldName(), from: type.redisKeyName(userID: userID)).flatMap { _ in
+						return req.redis.hdel("nextFollowedEventID", from: type.redisKeyName(userID: userID))
+					}
 				}
 			}
 			forwardToSockets = false
 		case .seamailUnreadMsg:
 			// For seamail msgs with "moderator" or "TwitarrTeam" in the memberlist, add all team members to the
-			// notify list.
-			if let mod = req.userCache.getUser(username: "moderator"), notifyUsers.contains(mod.userID) {
-				notifyUsers.formUnion(req.userCache.allUsersWithAccessLevel(.moderator).map { $0.userID } )
+			// notify list. This is so all team members have individual read counts.
+			if let mod = req.userCache.getUser(username: "moderator"), users.contains(mod.userID) {
+				let modList = req.userCache.allUsersWithAccessLevel(.moderator).map { $0.userID }
+				modList.forEach { modUserID in 
+					hashFutures.append(req.redis.hincrby(1, field: type.redisFieldName(), in: "UnreadModSeamails-\(modUserID)"))
+				}
 			}
-			if let ttUser = req.userCache.getUser(username: "TwitarrTeam"), notifyUsers.contains(ttUser.userID) {
-				notifyUsers.formUnion(req.userCache.allUsersWithAccessLevel(.twitarrteam).map { $0.userID } )
+			if let ttUser = req.userCache.getUser(username: "TwitarrTeam"), users.contains(ttUser.userID) {
+				let ttList = req.userCache.allUsersWithAccessLevel(.twitarrteam).map { $0.userID }
+				ttList.forEach { ttUserID in 
+					hashFutures.append(req.redis.hincrby(1, field: type.redisFieldName(), in: "UnreadTTSeamails-\(ttUserID)"))
+				}
 			}
+			// Users who aren't "moderator" and are in the thread see it as a normal thread.
 			fallthrough
 		default:
-			hashFutures = notifyUsers.map { userID in
-				req.redis.hincrby(1, field: type.redisFieldName(), in: type.redisKeyName(userID: userID))
+			users.forEach { userID in
+				hashFutures.append(req.redis.hincrby(1, field: type.redisFieldName(), in: type.redisKeyName(userID: userID)))
 			}
 		}
 
 		if forwardToSockets {
 			// Send a message to all involved users with open websockets.
-			let socketeers = req.webSocketStore.getSockets(notifyUsers)
+			let socketeers = req.webSocketStore.getSockets(users)
 			if socketeers.count > 0 {
-				let msgStruct = SocketNotificationData(type, info: info)
+//				req.logger.log(level: .info, "Socket: Sending \(type) msg to \(socketeers.count) client.")
+				let msgStruct = SocketNotificationData(type, info: info, id: type.objectID())
 				if let jsonData = try? JSONEncoder().encode(msgStruct), let jsonDataStr = String(data: jsonData, encoding: .utf8) {
 					socketeers.forEach { userSocket in
 						userSocket.socket.send(jsonDataStr)
@@ -193,7 +204,7 @@ extension APIRouteCollection {
 			}
 		}
 
-		let notifyUsersArray = Array(notifyUsers)
+		let notifyUsersArray = Array(users)
 		hashFutures.append(req.redis.sadd(notifyUsersArray, to: "UsersWithNotificationStateChange"))
 		return hashFutures.flatten(on: req.eventLoop).transform(to: ())
 	}
@@ -204,12 +215,12 @@ extension APIRouteCollection {
 	@discardableResult func subtractAlertwordNotifications(type: NotificationType, minAccess: UserAccessLevel = .quarantined,
 			on req: Request) -> EventLoopFuture<Void> {
 		switch type {
-		case .alertwordTwarrt(let word):
+		case .alertwordTwarrt(let word, _):
 			return req.redis.smembers(of: "alertwordUsers-\(word)", as: UUID.self).flatMap { userIDOptionals in
 				let userIDs = userIDOptionals.compactMap { $0 }
 				return subtractNotifications(users: userIDs, type: type, on: req)
 			}
-		case .alertwordPost(let word):
+		case .alertwordPost(let word, _):
 			return req.redis.smembers(of: "alertwordUsers-\(word)", as: UUID.self).flatMap { userIDOptionals in
 				let userIDs = userIDOptionals.compactMap { $0 }
 				let validUserIDs = req.userCache.getUsers(userIDs).compactMap { $0.accessLevel >= minAccess ? $0.userID : nil }
@@ -221,7 +232,7 @@ extension APIRouteCollection {
 	}
 	
 	// When an event happens that could reduce notification counts for someone (e.g. a user deletes a Twarrt with an @mention) 
-	// call this method to do the notification bookkeeping.
+	// call this method to do the notification bookkeeping. DON'T call this to mark notifications as "seen".
 	@discardableResult func subtractNotifications(users: [UUID], type: NotificationType, subtractCount: Int = 1, on req: Request) -> EventLoopFuture<Void> {
 		var hashFutures: [EventLoopFuture<Int>] = []
 		switch type {
@@ -258,29 +269,38 @@ extension APIRouteCollection {
 	// When a user does an action that might clear a notification call this to handle bookkeeping.
 	// Actions that could clear notifications: Viewing their @mentions (clears @mention notifications), viewing alert word hits,
 	// viewing announcements, reading seamails.
-	@discardableResult func markNotificationViewed(userID: UUID, type: NotificationType, on req: Request) -> EventLoopFuture<Void> {
+	@discardableResult func markNotificationViewed(user: UserCacheData, type: NotificationType, on req: Request) -> EventLoopFuture<Void> {
 		var hashFuture: EventLoopFuture<Void>
 		switch type {
 		case .announcement(let id): 
-			hashFuture = req.redis.hset(type.redisViewedFieldName(), to: id, in: type.redisKeyName(userID: userID)).transform(to: ())
+			hashFuture = req.redis.hset(type.redisViewedFieldName(), to: id, in: type.redisKeyName(userID: user.userID)).transform(to: ())
 		case .twarrtMention: fallthrough
 		case .forumMention: fallthrough		
 		case .alertwordTwarrt: fallthrough
 		case .alertwordPost:
-			hashFuture = req.redis.hget(type.redisFieldName(), from: type.redisKeyName(userID: userID), as: Int.self).flatMap { hitCountOpt in
+			hashFuture = req.redis.hget(type.redisFieldName(), from: type.redisKeyName(userID: user.userID), as: Int.self).flatMap { hitCountOpt in
 				let hitCount = hitCountOpt ?? 0
 				if hitCount == 0 {
 					return req.eventLoop.future()
 				}
-				return req.redis.hset(type.redisViewedFieldName(), to: hitCount, in: type.redisKeyName(userID: userID)).transform(to: ())
+				return req.redis.hset(type.redisViewedFieldName(), to: hitCount, in: type.redisKeyName(userID: user.userID)).transform(to: ())
 			}
-		case .fezUnreadMsg: fallthrough
-		case .seamailUnreadMsg:
-			hashFuture = req.redis.hset(type.redisFieldName(), to: 0, in: type.redisKeyName(userID: userID)).transform(to: ())
+		case .seamailUnreadMsg: 
+			hashFuture = req.redis.hset(type.redisFieldName(), to: 0, in: type.redisKeyName(userID: user.userID)).transform(to: ())
+			// It's possible this is a mod viewing mail to @moderator, not their own. We can't tell from here.
+			// But, we can just clear the modmail hash for this thread ID.
+			if user.accessLevel.hasAccess(.moderator) {
+				_ = req.redis.hset(type.redisFieldName(), to: 0, in: "UnreadModSeamails-\(user.userID)")
+			}
+			if user.accessLevel.hasAccess(.twitarrteam) {
+				_ = req.redis.hset(type.redisFieldName(), to: 0, in: "UnreadTTSeamails-\(user.userID)")
+			}
+		case .fezUnreadMsg: 
+			hashFuture = req.redis.hset(type.redisFieldName(), to: 0, in: type.redisKeyName(userID: user.userID)).transform(to: ())
 		case .nextFollowedEventTime: 
 			return req.eventLoop.future()	// Can't be cleared
 		}
-		return hashFuture.and(req.redis.sadd(userID, to: "UsersWithNotificationStateChange")).transform(to: ())
+		return hashFuture.and(req.redis.sadd(user.userID, to: "UsersWithNotificationStateChange")).transform(to: ())
 	}
 	
 	// Calculates the start time of the earliest future followed event. Caches the value in Redis for quick access.
@@ -317,7 +337,9 @@ extension APIRouteCollection {
 					.sort(\.$startTime, .ascending)
 					.first()
 					.map { event in
-				addNotifications(users: [userID], type: .nextFollowedEventTime(event?.startTime), info: "", on: req)
+				if let event = event, let id = event.id {
+					addNotifications(users: [userID], type: .nextFollowedEventTime(event.startTime, id), info: "", on: req)
+				}
 				return event?.startTime
 			}
 		}

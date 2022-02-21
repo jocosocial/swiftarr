@@ -111,6 +111,7 @@ public struct SettingsAdminData: Content {
 	/// Currently disabled app:feature pairs.
 	var disabledFeatures: [SettingsAppFeaturePair]
 	var displayTimeZoneAbbr: String
+	var shipWifiSSID: String?
 }
 
 extension SettingsAdminData {
@@ -131,6 +132,7 @@ extension SettingsAdminData {
 				disabledFeatures.append(SettingsAppFeaturePair(app: app.rawValue, feature: feature.rawValue))
 			}
 		}
+		self.shipWifiSSID = settings.shipWifiSSID
 	}
 }
 
@@ -155,5 +157,8 @@ public struct SettingsUpdateData: Content {
 	var enableFeatures: [SettingsAppFeaturePair]
 	/// App:feature pairs to disable. Only list deltas here; no need to re-list currently disabled app:feature pairs..
 	var disableFeatures: [SettingsAppFeaturePair]
+  /// Time zone to display to people
 	var displayTimeZoneAbbr: String?
+	/// The wifi name of the onboard wifi network
+	var shipWifiSSID: String?
 }

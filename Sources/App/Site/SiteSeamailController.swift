@@ -180,8 +180,11 @@ struct SiteSeamailController: SiteControllerUtils {
     				newPosts = []
     				showDivider = false
     				post = .init(forType: .seamailPost(fez))
-    				if let foruser = req.query[String.self, at: "foruser"] {
-    					post.postSuccessURL.append("?foruser=\(foruser)")
+    				if let foruser = req.query[String.self, at: "foruser"], var comp = URLComponents(string: post.postSuccessURL) {
+						comp.query = "foruser=\(foruser)"
+						if let newstr = comp.string {
+							post.postSuccessURL = newstr
+						}
     				}
     				paginator = PaginatorContext(start: 0, total: 40, limit: 50, urlForPage: { pageIndex in
 						"/seamail/\(fez.fezID)?start=\(pageIndex * 50)&limit=50"

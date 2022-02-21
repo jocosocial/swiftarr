@@ -75,13 +75,13 @@ async function spinnerButtonAction() {
 	setActionButtonsState(tappedButton, false);
 	try {
 		var response = await fetch(req);
-		// A console message is generated "Fetch failed loading" for operations that
-		// return no content (such as 201 and 204). To silence this we pretend to care
-		// about the output so that the message is not eroniously interpreted as a problem.
-		// https://stackoverflow.com/questions/57477805/why-do-i-get-fetch-failed-loading-when-it-actually-worked
-		await response.text();
-
 		if (response.ok) {
+			// A console message is generated "Fetch failed loading" for operations that
+			// return no content (such as 201 and 204). To silence this we pretend to care
+			// about the output so that the message is not eroniously interpreted as a problem.
+			// https://stackoverflow.com/questions/57477805/why-do-i-get-fetch-failed-loading-when-it-actually-worked
+			await response.text();
+
 			switch(tappedButton.dataset.action) {
 				case "like": 
 				case "laugh": 
@@ -342,6 +342,7 @@ function submitAJAXForm(formElement, event) {
 				formElement.querySelector('.twitarr-image-remove').click();
 			}
 			else if (successURL) {
+				formElement.reset();
 				location.assign(successURL);
 			}
 			else {
