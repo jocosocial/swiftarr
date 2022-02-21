@@ -45,7 +45,7 @@
 								</div>
 								#for(performance in song.performances):
 										<div class="alert alert-info mb-0" role="alert">
-											#formatPostText(performance.performers) performed this song on: #date(performance.time, "MMM dd, hh:mm a")
+											#formatPostText(performance.performers) performed this song on: #staticTime(performance.time)
 										</div>
 								#endfor
 								<div class="collapse" data-label="actionbar">	

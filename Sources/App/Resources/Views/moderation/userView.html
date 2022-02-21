@@ -26,7 +26,7 @@
 				#if(modData.tempQuarantineEndTime):
 					<div class="row mb-3">
 						<div class="col">
-							User is currently quarantined until #date(modData.tempQuarantineEndTime, "MMM dd, hh:mm:ss a")
+							User is currently quarantined until #staticTime(modData.tempQuarantineEndTime)
 						</div>
 					</div>
 				#endif
