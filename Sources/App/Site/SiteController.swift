@@ -247,9 +247,10 @@ struct MessagePostContext: Encodable {
 		// For editing an announcement
 		case .announcementEdit(let announcementData):
 			messageText = announcementData.text
-			let dateFormatter = DateFormatter()
-			dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm"
-			displayUntil = dateFormatter.string(from: announcementData.displayUntil)
+			// @TODO this is a hack to get around us storing displayUntil as a String.
+			// I don't have the energy to re-work all uses of it to be a proper Double/Date
+			// with the new leafs that can render the appropriate local time string.
+			displayUntil = String(announcementData.displayUntil.timeIntervalSince1970)
 			formAction = "/admin/announcement/\(announcementData.id)/edit"
 			postSuccessURL = "/admin/announcements"
 			isEdit = true

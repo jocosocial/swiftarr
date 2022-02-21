@@ -293,7 +293,6 @@ struct StaticTimeTag: LeafTag {
 struct LocalTimeTag: LeafTag {
 	func render(_ ctx: LeafContext) throws -> LeafData {
 		try ctx.requireParameterCount(1)
-		print(ctx.parameters)
 		guard let inputTimeDouble = ctx.parameters[0].double else {
             throw "Leaf: Unable to convert parameter to double for date"
         }
