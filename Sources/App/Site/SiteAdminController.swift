@@ -194,8 +194,6 @@ struct SiteAdminController: SiteControllerUtils {
 				}
 			}
 			let ctx = try AnnouncementEditContext(req, data: announcementData)
-			print(announcementData)
-			print(ctx.post)
 			return req.view.render("admin/announcementEdit", ctx)
 		}
 	}
