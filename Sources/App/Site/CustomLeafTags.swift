@@ -279,7 +279,7 @@ struct StaticTimeTag: LeafTag {
         dateFormatter.timeStyle = .short
         dateFormatter.locale = Locale(identifier: "en_US")
         dateFormatter.timeZone = Settings.shared.getDisplayTimeZone()
-        let timeString = dateFormatter.string(from: Date(timeIntervalSince1970: inputTimeDouble))
+        let timeString = "\(dateFormatter.string(from: Date(timeIntervalSince1970: inputTimeDouble))) \(dateFormatter.timeZone.abbreviation()!)"
         return LeafData.string(timeString)
     }
 }
