@@ -34,6 +34,23 @@ struct RequireModeratorMiddleware: Middleware {
 	}
 }
 
+struct RequireTwitarrTeamMiddleware: Middleware {
+
+	func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+		var isAuthed = false
+		if let user = request.auth.get(User.self), user.accessLevel.hasAccess(.twitarrteam) {
+			isAuthed = true
+		}
+		if let user = request.auth.get(UserCacheData.self), user.accessLevel.hasAccess(.twitarrteam) {
+			isAuthed = true
+		}
+		guard isAuthed else {
+			return request.eventLoop.future(error: Abort(.unauthorized))
+		}
+		return next.respond(to: request)
+	}
+}
+
 struct RequireTHOMiddleware: Middleware {
 
 	func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {

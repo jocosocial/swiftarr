@@ -1,6 +1,7 @@
 import Vapor
 import Crypto
 import FluentSQL
+import Dispatch
 
 /// The collection of `/api/v3/admin` route endpoints and handler functions related to admin tasks.
 ///
@@ -15,7 +16,7 @@ struct AdminController: APIRouteCollection {
 		let modRoutes = app.grouped("api", "v3", "admin")
 		
 		// endpoints available to TwitarrTeam and above
-		let ttAuthGroup = addTokenAuthGroup(to: modRoutes).grouped([RequireTHOMiddleware()])
+		let ttAuthGroup = addTokenAuthGroup(to: modRoutes).grouped([RequireTwitarrTeamMiddleware()])
 		ttAuthGroup.post("schedule", "update", use: scheduleUploadPostHandler)
 		ttAuthGroup.get("schedule", "verify", use: scheduleChangeVerificationHandler)
 		ttAuthGroup.post("schedule", "update", "apply", use: scheduleChangeApplyHandler)
@@ -123,10 +124,6 @@ struct AdminController: APIRouteCollection {
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: <doc:SettingsAdminData>
 	func settingsHandler(_ req: Request) throws -> SettingsAdminData {
-		let user = try req.auth.require(User.self)
-		guard user.accessLevel.hasAccess(.admin) else {
-			throw Abort(.forbidden, reason: "Admin only")
-		}
 		return SettingsAdminData(Settings.shared)
 	}
 	
@@ -138,10 +135,6 @@ struct AdminController: APIRouteCollection {
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `HTTP 200 OK` if the settings were updated.
 	func settingsUpdateHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-		let user = try req.auth.require(User.self)
-		guard user.accessLevel.hasAccess(.admin) else {
-			throw Abort(.forbidden, reason: "Admin only")
-		}
  		let data = try ValidatingJSONDecoder().decode(SettingsUpdateData.self, fromBodyOf: req)
  		if let value = data.maxAlternateAccounts {
  			Settings.shared.maxAlternateAccounts = value
@@ -208,17 +201,13 @@ struct AdminController: APIRouteCollection {
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `HTTP 200 OK`
 	func scheduleUploadPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-		let user = try req.auth.require(User.self)
-		guard user.accessLevel.hasAccess(.admin) else {
-			throw Abort(.forbidden, reason: "Admin only")
-		}
 		var schedule = try req.content.decode(EventsUpdateData.self).schedule
         schedule = schedule.replacingOccurrences(of: "&amp;", with: "&")
         schedule = schedule.replacingOccurrences(of: "\\,", with: ",")
 		let filepath = try uploadSchedulePath()
 		// If we attempt an upload, it's important we end up with the uploaded file or nothing at the filepath.
 		// Leaving the previous file there would be bad.
-		try FileManager.default.removeItem(at: filepath)
+		try? FileManager.default.removeItem(at: filepath)
 		return req.fileio.writeFile(ByteBuffer(string: schedule), at: filepath.path).transform(to: .ok)
 	}
 	
@@ -308,12 +297,8 @@ struct AdminController: APIRouteCollection {
     /// - Returns: `HTTP 200 OK`
 	func scheduleChangeApplyHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
-        guard user.accessLevel.hasAccess(.admin) else {
-            throw Abort(.forbidden, reason: "admins only")
-        }
 		let processDeletes = req.query[String.self, at: "processDeletes"]?.lowercased() == "true"
 		let makeForumPosts = req.query[String.self, at: "forumPosts"]?.lowercased() == "true"
-        
 		let filepath = try uploadSchedulePath()
 		return req.fileio.collectFile(at: filepath.path).throwingFlatMap { buffer in
 			guard let scheduleFileStr = buffer.getString(at: 0, length: buffer.readableBytes) else {
@@ -321,9 +306,9 @@ struct AdminController: APIRouteCollection {
 			}
 			let updateEvents = EventParser().parse(scheduleFileStr)
 
-            let officialResult = Category.query(on: req.db).filter(\.$title, .custom("ILIKE"), "event%").first()
-            let shadowResult = Category.query(on: req.db).filter(\.$title, .custom("ILIKE"), "shadow%").first()
-            return EventLoopFuture.whenAllSucceed([officialResult, shadowResult], on: req.eventLoop).flatMap { categories in
+			let officialResult = Category.query(on: req.db).filter(\.$title, .custom("ILIKE"), "event%").first()
+			let shadowResult = Category.query(on: req.db).filter(\.$title, .custom("ILIKE"), "shadow%").first()
+			return EventLoopFuture.whenAllSucceed([officialResult, shadowResult], on: req.eventLoop).flatMap { categories in
 				return Event.query(on: req.db).withDeleted().with(\.$forum).all().flatMap { existingEvents in
 					return req.db.transaction { database in
 						do {
@@ -476,7 +461,7 @@ struct AdminController: APIRouteCollection {
 					}
 				}
 			}
-        }
+		}
 	}
 	
     /// `GET /api/v3/admin/regcodes/stats`
