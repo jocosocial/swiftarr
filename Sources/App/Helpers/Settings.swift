@@ -101,7 +101,7 @@ final class Settings : Encodable {
 // MARK: Dates
 	/// A Date set to midnight on the day the cruise ship leaves port, in the timezone the ship leaves from. Used by the Events Controller for date arithimetic.
 	@SettingsValue var cruiseStartDate: Date = Calendar.autoupdatingCurrent.date(from: DateComponents(calendar: Calendar.current, 
-			timeZone: TimeZone(abbreviation: "EST")!, year: 2020, month: 3, day: 7))!
+			timeZone: TimeZone(abbreviation: "EST")!, year: 2022, month: 3, day: 5))!
 	
 	/// The day of week when the cruise embarks, expressed as number as Calendar's .weekday uses them: Range 1...7, Sunday == 1.
 	@SettingsValue var cruiseStartDayOfWeek: Int = 7

@@ -152,7 +152,7 @@ func configureBasicSettings(_ app: Application) throws {
 		Logger(label: "app.swiftarr.configuration") .notice("Starting up in Development mode.")
 		// Until we get a proper 2022 schedule, we're using the 2020 schedule for testing. 
 		Settings.shared.cruiseStartDate = Calendar.autoupdatingCurrent.date(from: DateComponents(calendar: Calendar.current, 
-			timeZone: TimeZone(abbreviation: "EST")!, year: 2020, month: 3, day: 7))!
+			timeZone: TimeZone(abbreviation: "EST")!, year: 2022, month: 3, day: 5))!
 	}
 	else if app.environment == .production {
 		Logger(label: "app.swiftarr.configuration") .notice("Starting up in Production mode.")
