@@ -163,7 +163,7 @@ struct UserController: APIRouteCollection {
 		let data = try ValidatingJSONDecoder().decode(UserCreateData.self, fromBodyOf: req)
         // check for existing username so we can return 409 Conflict status instead
         // of the default super-unfriendly 500 for unique constraint violation
-        return User.query(on: req.db).filter(\.$username == data.username).first().throwingFlatMap { (existingUser) in
+        return User.query(on: req.db).filter(\.$username, .custom("ilike"), data.username).first().throwingFlatMap { (existingUser) in
 			// abort if name is already taken
 			guard existingUser == nil else {
 				throw Abort(.conflict, reason: "username '\(data.username)' is not available")
@@ -322,7 +322,7 @@ struct UserController: APIRouteCollection {
         		throw Abort(.badRequest, reason: "Maximum number of alternate accounts reached.")
         	}
 			// check if existing username
-			return User.query(on: req.db).filter(\.$username == data.username).first().throwingFlatMap { existingUser in
+			return User.query(on: req.db).filter(\.$username, .custom("ilike"), data.username).first().throwingFlatMap { existingUser in
 				guard existingUser == nil else {
 					throw Abort(.conflict, reason: "username '\(data.username)' is not available")
 				}
@@ -431,7 +431,7 @@ struct UserController: APIRouteCollection {
 			let data = try ValidatingJSONDecoder().decode(UserUsernameData.self, fromBodyOf: req)
 			// check for existing username
 			return User.query(on: req.db)
-					.filter(\.$username == data.username)
+					.filter(\.$username, .custom("ilike"), data.username)
 					.first()
 					.throwingFlatMap { (existingUser) in
 				// abort if name is already taken
