@@ -151,16 +151,15 @@ func configureBasicSettings(_ app: Application) throws {
 
 	if app.environment == .testing {
 		Logger(label: "app.swiftarr.configuration") .notice("Starting up in Testing mode.")
-		// Until we get a proper 2022 schedule, we're using the 2020 schedule for testing. 
-		Settings.shared.cruiseStartDate = portCalendar.date(from: DateComponents(year: 2020, month: 3, day: 7))!
+		Settings.shared.cruiseStartDate = portCalendar.date(from: DateComponents(year: 2022, month: 3, day: 7))!
 	}
 	else if app.environment == .development {
 		Logger(label: "app.swiftarr.configuration") .notice("Starting up in Development mode.")
-		// Until we get a proper 2022 schedule, we're using the 2020 schedule for testing. 
-		Settings.shared.cruiseStartDate = portCalendar.date(from: DateComponents(year: 2020, month: 3, day: 7))!
+		Settings.shared.cruiseStartDate = portCalendar.date(from: DateComponents(year: 2022, month: 3, day: 5))!
 	}
 	else if app.environment == .production {
 		Logger(label: "app.swiftarr.configuration") .notice("Starting up in Production mode.")
+		// Until we get a proper future schedule, we're using the current schedule for testing. 
 		Settings.shared.cruiseStartDate = portCalendar.date(from: DateComponents(year: 2022, month: 3, day: 5))!
 	}
 	else {

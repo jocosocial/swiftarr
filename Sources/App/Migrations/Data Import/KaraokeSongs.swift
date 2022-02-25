@@ -20,7 +20,7 @@ struct ImportKaraokeSongs: Migration {
         let songsFilename: String
         do {
             if try Environment.detect().name != "heroku" {
-                songsFilename = "2020JoCoKaraokeSongCatalog.txt"
+                songsFilename = "2022JoCoKaraokeSongCatalog.txt"
             } else {
                 songsFilename = "JoCoKaraokeSongCatalog-heroku.txt"
             }

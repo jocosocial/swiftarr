@@ -68,7 +68,7 @@ struct SiteEventsController: SiteControllerUtils {
     		filterString = "Today's " + filterString
 		}
 		let queryString: String = components.percentEncodedQuery ?? ""
-    return apiQuery(req, endpoint: "/events?\(queryString)", passThroughQuery: false).throwingFlatMap { response in
+		return apiQuery(req, endpoint: "/events?\(queryString)", passThroughQuery: false).throwingFlatMap { response in
  			let events = try response.content.decode([EventData].self)
      		struct EventPageContext : Encodable {
      			struct CruiseDay : Encodable {

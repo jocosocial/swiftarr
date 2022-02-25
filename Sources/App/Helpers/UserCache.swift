@@ -186,13 +186,13 @@ extension Application {
 		
 		mutating func cacheUser(_ data: UserCacheData) {
 			if let existing = usersByID[data.userID] {
-				usersByName.removeValue(forKey: existing.username)
+				usersByName.removeValue(forKey: existing.username.lowercased())
 				if let token = existing.token {
 					usersByToken.removeValue(forKey: token)
 				}
 			}
 			self.usersByID[data.userID] = data
-			self.usersByName[data.username] = data
+			self.usersByName[data.username.lowercased()] = data
 			if let token = data.token {
 				self.usersByToken[token] = data
 			}
@@ -287,7 +287,7 @@ extension Request {
 		func getHeader(_ username: String) -> UserHeader? {
 			let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
 			if let user = cacheLock.withLock({
-				request.application.userCacheStorage.usersByName[username]
+				request.application.userCacheStorage.usersByName[username.lowercased()]
 			}) {
 				return UserHeader(userID: user.userID, username: user.username, 
 						displayName: user.displayName, userImage: user.userImage)
@@ -346,7 +346,7 @@ extension Request {
 		public func getUser(username: String) -> UserCacheData? {
 			let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
 			let cacheResult = cacheLock.withLock {
-				request.application.userCacheStorage.usersByName[username]
+				request.application.userCacheStorage.usersByName[username.lowercased()]
 			}
 			return cacheResult
 		}
@@ -370,7 +370,7 @@ extension Request {
 		func getUsers<Names: Collection>(usernames: Names) -> [UserCacheData] where Names.Element == String {
 			let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
 			let users = cacheLock.withLock({
-				usernames.compactMap { request.application.userCacheStorage.usersByName[$0] }
+				usernames.compactMap { request.application.userCacheStorage.usersByName[$0.lowercased()] }
 			})
 			return users
 		}
