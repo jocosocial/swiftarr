@@ -4,7 +4,12 @@ import Fluent
 
 /// A `Migration` that populates the `RegistrationCode` database from a `registration-codes.txt`
 /// file located in the `seeds/` subdirectory of the project.
+/// 
 
+// Python Test Reg Code Generator:
+// for x in range(2000):
+//    "".join(random.choices(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'], k=6))
+    
 struct ImportRegistrationCodes: Migration {
     
     /// Required by `Migration` protocol. Reads either a test or production text file in the
@@ -37,19 +42,25 @@ struct ImportRegistrationCodes: Migration {
             // transform to array
             let codesArray = normalizedString.components(separatedBy: .newlines)
             
-            // populate the RegistrationCodes database
-            var savedCodes = [EventLoopFuture<Void>]()
-            for code in codesArray {
-                // stray newlines make empty elements
-                guard !code.isEmpty else {
-                    continue
-                }
-                let registrationCode = RegistrationCode(code: code)
-                savedCodes.append(registrationCode.save(on: database))
-            }
-            // resolve the futures and return Void
-            return savedCodes.flatten(on: database.eventLoop).transform(to: ())
-        
+			// Creating one reg code at a time is slow, but we get timeout errros if we try to stuff too many
+			// creates into a single flatten. So, chunking the creates into batches of 100. 
+			let save100Codes = { (startIndex: Int) -> EventLoopFuture<Void> in
+				let endIndex = min(startIndex + 100, codesArray.count)
+				var regCodes: [RegistrationCode] = []
+				for codeIndex in startIndex..<endIndex {
+					let registrationCode = RegistrationCode(code: codesArray[codeIndex])
+					regCodes.append(registrationCode)
+				}
+				return regCodes.create(on: database)
+			}
+
+			var rollupFutures: [EventLoopFuture<Void>] = []
+			for index in stride(from: 0, through: codesArray.count, by: 100) {
+				rollupFutures.append(save100Codes(index))
+				database.logger.info("Imported \(index) registration codes.")
+			}
+			return rollupFutures.flatten(on: database.eventLoop)
+
         } catch let error {
             fatalError("Import Registration Codes failed! error: \(error)")
         }
