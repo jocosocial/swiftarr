@@ -242,6 +242,13 @@ struct RelativeTimeTag: LeafTag {
 }
 
 /// Returns a string descibing when an event is taking place. Shows both the start and end time.
+///
+/// Events come to us from the Sched dump which THO populates as "consistent-boat-EST-based-UTC".
+/// Meaning that the raw values from Sched are in UTC and the events are scheduled for EST and not
+/// adjusted for any time-zone changes. This means that on any day where the boat (display) time zone
+/// changes the Sched is off by that offset. Since EST is given as the reference point for
+/// timezoneless time on the ship we call that "Port Time" and always render events based on that
+/// perspective so that it will be consistent.
 /// 
 /// Usage in Leaf templates:: #eventTime(startTime, endTime) -> String
 struct EventTimeTag: LeafTag {
@@ -255,7 +262,31 @@ struct EventTimeTag: LeafTag {
 		dateFormatter.dateStyle = .short
 		dateFormatter.timeStyle = .short
 		dateFormatter.locale = Locale(identifier: "en_US")
+		dateFormatter.timeZone = Settings.shared.portTimeZone
+
+		var timeString = dateFormatter.string(from: Date(timeIntervalSince1970: startTimeDouble))
+		dateFormatter.dateStyle = .none
+		timeString.append(" - \(dateFormatter.string(from: Date(timeIntervalSince1970: endTimeDouble)))")
+		return LeafData.string(timeString)
+	}
+}
+
+/// Returns a string descibing when an LFG is taking place. Shows both the start and end time.
+/// 
+/// Usage in Leaf templates:: #eventTime(startTime, endTime) -> String
+struct FezTimeTag: LeafTag {
+	func render(_ ctx: LeafContext) throws -> LeafData {
+        try ctx.requireParameterCount(2)
+		guard let startTimeDouble = ctx.parameters[0].double, let endTimeDouble = ctx.parameters[1].double else {
+            throw "Leaf: Unable to convert parameter to double for date"
+		}
+
+		let dateFormatter = DateFormatter()
+		dateFormatter.dateStyle = .short
+		dateFormatter.timeStyle = .short
+		dateFormatter.locale = Locale(identifier: "en_US")
 		dateFormatter.timeZone = Settings.shared.getDisplayTimeZone()
+
 		var timeString = dateFormatter.string(from: Date(timeIntervalSince1970: startTimeDouble))
 		dateFormatter.dateStyle = .none
 		timeString.append(" - \(dateFormatter.string(from: Date(timeIntervalSince1970: endTimeDouble)))")
