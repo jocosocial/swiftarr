@@ -136,9 +136,6 @@ struct AdminController: APIRouteCollection {
     /// - Returns: `HTTP 200 OK` if the settings were updated.
 	func settingsUpdateHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
  		let data = try ValidatingJSONDecoder().decode(SettingsUpdateData.self, fromBodyOf: req)
-		guard TimeZone(abbreviation: data.displayTimeZoneAbbr ?? "") != nil else {
-			throw Abort(.badRequest, reason: "Bad time zone given.")
-		}
  		if let value = data.maxAlternateAccounts {
  			Settings.shared.maxAlternateAccounts = value
  		}
@@ -167,6 +164,9 @@ struct AdminController: APIRouteCollection {
  			Settings.shared.allowAnimatedImages = value
  		}
 		if let value = data.displayTimeZoneAbbr {
+			guard TimeZone(abbreviation: value) != nil else {
+				throw Abort(.badRequest, reason: "Bad time zone given.")
+			}
 			Settings.shared.displayTimeZoneAbbr = value
 		}
  		if let value = data.shipWifiSSID {
