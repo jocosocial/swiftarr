@@ -153,7 +153,7 @@ func configureBasicSettings(_ app: Application) throws {
 
 	if app.environment == .testing {
 		Logger(label: "app.swiftarr.configuration") .notice("Starting up in Testing mode.")
-		Settings.shared.cruiseStartDate = portCalendar.date(from: DateComponents(year: 2022, month: 3, day: 7))!
+		Settings.shared.cruiseStartDate = portCalendar.date(from: DateComponents(year: 2022, month: 3, day: 5))!
 	}
 	else if app.environment == .development {
 		Logger(label: "app.swiftarr.configuration") .notice("Starting up in Development mode.")

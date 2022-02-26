@@ -252,7 +252,7 @@ struct SiteAdminController: SiteControllerUtils {
 					trunk = .init(req, title: "Daily Tmemes", tab: .admin)
 					themes = data
 					
-					let cal = Calendar.current
+					let cal = Settings.shared.getDisplayCalendar()
 					let components = cal.dateComponents([.day], from: cal.startOfDay(for: Settings.shared.cruiseStartDate), 
 							to: cal.startOfDay(for: Date()))
 					currentCruiseDay = Int(components.day ?? 0)
