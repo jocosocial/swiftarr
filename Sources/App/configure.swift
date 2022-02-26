@@ -147,7 +147,9 @@ func configureBasicSettings(_ app: Application) throws {
 	// well-known we can safely rely on it here. Perhaps someday make it an environment variable or some other
 	// method of configuration for app startup?
 	var portCalendar = Calendar.current
-	portCalendar.timeZone = TimeZone(abbreviation: "EST")!
+	let portTimeZone = TimeZone(abbreviation: "EST")!
+	portCalendar.timeZone = portTimeZone
+	Settings.shared.portTimeZone = portTimeZone
 
 	if app.environment == .testing {
 		Logger(label: "app.swiftarr.configuration") .notice("Starting up in Testing mode.")

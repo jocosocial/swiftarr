@@ -112,6 +112,9 @@ final class Settings : Encodable {
 
 	/// Abbreviation of the time zone that we should display data in.
 	@StoredSettingsValue("displayTimeZoneAbbr", defaultValue: "EST") var displayTimeZoneAbbr: String
+
+	/// TimeZone representative of where we departed port from.
+	@SettingsValue var portTimeZone: TimeZone = TimeZone(abbreviation: "EST")!
 	
 // MARK: Images
 	/// The  set of image file types that we can parse with the GD library. I believe GD hard-codes these values on install based on what ./configure finds.
@@ -154,7 +157,7 @@ extension Settings {
 /// Provide one common place for time-related objects.
 extension Settings {
 	/// TimeZone to use for rendering any time.
-	func  getDisplayTimeZone() -> TimeZone {
+	func getDisplayTimeZone() -> TimeZone {
 		return TimeZone(abbreviation: displayTimeZoneAbbr) ?? TimeZone.autoupdatingCurrent
 	}
 

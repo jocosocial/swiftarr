@@ -433,27 +433,33 @@ struct SiteController: SiteControllerUtils {
 			var trunk: TrunkContext
 			var serverTime: String
 			var displayTime: String
+			var portTime: String
 
 			init(_ req: Request) throws {
 				trunk = .init(req, title: "Time Zone Check", tab: .time)
 
+				let dateFormatTemplate = "MMMM dd hh:mm a zzzz"
 				// We split into two formatters to prevent accidental contamination of either.
 				let serverDateFormatter = DateFormatter()
 				serverDateFormatter.timeZone = TimeZone.current
-				serverDateFormatter.setLocalizedDateFormatFromTemplate("MMMM dd hh:mm a zzzz")
+				serverDateFormatter.setLocalizedDateFormatFromTemplate(dateFormatTemplate)
 				let displayDateFormatter = DateFormatter()
 				// This could use the GMToffset stuff but then it renders a different time zone
 				// name leading to inconsistencies. For eaxmple, if the setting is "AST" then
 				// this would render "GMT-04:00" which is the same thing in effect but more
 				// confusing for people to read.
 				displayDateFormatter.timeZone = Settings.shared.getDisplayTimeZone()
-				displayDateFormatter.setLocalizedDateFormatFromTemplate("MMMM dd hh:mm a zzzz")
+				displayDateFormatter.setLocalizedDateFormatFromTemplate(dateFormatTemplate)
+				let portDateFormatter = DateFormatter()
+				portDateFormatter.timeZone = Settings.shared.portTimeZone
+				portDateFormatter.setLocalizedDateFormatFromTemplate(dateFormatTemplate)
 				// serverDate is a Date() that is a precise moment in time represented as an ISO8601 string in UTC.
 				// There is no implicit timezone information contained there.
 				let serverDate = ISO8601DateFormatter().date(from: trunk.alertCounts.serverTime) ?? Date()
 
 				self.serverTime = serverDateFormatter.string(from: serverDate)
 				self.displayTime = displayDateFormatter.string(from: serverDate)
+				self.portTime = portDateFormatter.string(from: serverDate)
 			}
 		}
 
