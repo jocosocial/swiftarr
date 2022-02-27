@@ -47,6 +47,7 @@
 		EA469927275336CF00996F06 /* Resources in CopyFiles */ = {isa = PBXBuildFile; fileRef = EA469926275336CC00996F06 /* Resources */; };
 		EA46992A2756E35A00996F06 /* Private Swiftarr Config in CopyFiles */ = {isa = PBXBuildFile; fileRef = EA4699292756E35000996F06 /* Private Swiftarr Config */; };
 		EA46993F275796F200996F06 /* PostContentData+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA46993E275796F100996F06 /* PostContentData+Extensions.swift */; };
+		EA78426A27CAEF62003D8E7F /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA78424F27CAD883003D8E7F /* main.swift */; };
 		OBJ_2786 /* AdminController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_10 /* AdminController.swift */; };
 		OBJ_2787 /* AlertController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* AlertController.swift */; };
 		OBJ_2788 /* AuthController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* AuthController.swift */; };
@@ -8129,6 +8130,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		EA78426127CAEC59003D8E7F /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
@@ -8137,6 +8147,8 @@
 		EA4699292756E35000996F06 /* Private Swiftarr Config */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "Private Swiftarr Config"; sourceTree = "<group>"; };
 		EA46993E275796F100996F06 /* PostContentData+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PostContentData+Extensions.swift"; sourceTree = "<group>"; };
 		EA4699422758DAEA00996F06 /* API Changelist.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "API Changelist.md"; sourceTree = "<group>"; };
+		EA78424F27CAD883003D8E7F /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		EA78426327CAEC59003D8E7F /* munger */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = munger; sourceTree = BUILT_PRODUCTS_DIR; };
 		OBJ_10 /* AdminController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminController.swift; sourceTree = "<group>"; };
 		OBJ_100 /* Token.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Token.swift; sourceTree = "<group>"; };
 		OBJ_1000 /* print.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = print.c; sourceTree = "<group>"; };
@@ -10521,6 +10533,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		EA78426027CAEC59003D8E7F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		OBJ_2901 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 0;
@@ -11678,6 +11697,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		EA78424E27CAD883003D8E7F /* Schedule Munger */ = {
+			isa = PBXGroup;
+			children = (
+				EA78424F27CAD883003D8E7F /* main.swift */,
+			);
+			path = "Schedule Munger";
+			sourceTree = "<group>";
+		};
 		OBJ_1004 /* include */ = {
 			isa = PBXGroup;
 			children = (
@@ -15591,6 +15618,7 @@
 				"websocket-kit::WebSocketKit::Product" /* WebSocketKit.framework */,
 				"swift-nio::_NIODataStructures::Product" /* _NIODataStructures.framework */,
 				"swiftarr::gdOverrides::Product" /* gdOverrides.framework */,
+				EA78426327CAEC59003D8E7F /* munger */,
 			);
 			name = Products;
 			sourceTree = BUILT_PRODUCTS_DIR;
@@ -16084,6 +16112,7 @@
 				EA469924275336B900996F06 /* seeds */,
 				OBJ_150 /* Tests */,
 				OBJ_164 /* Dependencies */,
+				EA78424E27CAD883003D8E7F /* Schedule Munger */,
 				OBJ_2709 /* Products */,
 				OBJ_2772 /* docs */,
 				OBJ_2773 /* scripts */,
@@ -17434,6 +17463,23 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
+		EA78426227CAEC59003D8E7F /* Schedule Munger */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EA78426727CAEC5A003D8E7F /* Build configuration list for PBXNativeTarget "Schedule Munger" */;
+			buildPhases = (
+				EA78425F27CAEC59003D8E7F /* Sources */,
+				EA78426027CAEC59003D8E7F /* Frameworks */,
+				EA78426127CAEC59003D8E7F /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "Schedule Munger";
+			productName = "Schedule Munger";
+			productReference = EA78426327CAEC59003D8E7F /* munger */;
+			productType = "com.apple.product-type.tool";
+		};
 		"RediStack::RediStack" /* RediStack */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = OBJ_6023 /* Build configuration list for PBXNativeTarget "RediStack" */;
@@ -19546,7 +19592,15 @@
 			isa = PBXProject;
 			attributes = {
 				LastSwiftMigration = 9999;
+				LastSwiftUpdateCheck = 1320;
 				LastUpgradeCheck = 9999;
+				TargetAttributes = {
+					EA78426227CAEC59003D8E7F = {
+						CreatedOnToolsVersion = 13.2.1;
+						DevelopmentTeam = FQD36VNG36;
+						ProvisioningStyle = Automatic;
+					};
+				};
 			};
 			buildConfigurationList = OBJ_2 /* Build configuration list for PBXProject "swiftarr" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -19652,11 +19706,20 @@
 				"swiftarr::swiftarrPackageTests::ProductTarget" /* swiftarrPackageTests */,
 				"vapor::SwiftPMPackageDescription" /* vaporPackageDescription */,
 				"websocket-kit::SwiftPMPackageDescription" /* websocket-kitPackageDescription */,
+				EA78426227CAEC59003D8E7F /* Schedule Munger */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
+		EA78425F27CAEC59003D8E7F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EA78426A27CAEF62003D8E7F /* main.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		OBJ_2785 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 0;
@@ -26064,6 +26127,121 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		EA78426827CAEC5A003D8E7F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = FQD36VNG36;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 12.1;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = munger;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		EA78426927CAEC5A003D8E7F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEVELOPMENT_TEAM = FQD36VNG36;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 12.1;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = munger;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 		OBJ_2783 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -31207,6 +31385,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		EA78426727CAEC5A003D8E7F /* Build configuration list for PBXNativeTarget "Schedule Munger" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EA78426827CAEC5A003D8E7F /* Debug */,
+				EA78426927CAEC5A003D8E7F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		OBJ_2 /* Build configuration list for PBXProject "swiftarr" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
