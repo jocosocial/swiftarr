@@ -1533,7 +1533,7 @@ END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
 DTSTART:20220308T023000Z
-DTEND:20220308T080000Z
+DTEND:20220308T070000Z
 SUMMARY:Nighttime Quiet Zone
 DESCRIPTION:The starboard side of the Lido Marketplace will be designated the "quiet side" after 9 pm. No gaming\, no meetings\, no loud noises\, please. Take yer excessive noise over to the port side\, please—or to the back deck\, where the 24/7 pizza is!
 CATEGORIES:
@@ -1545,7 +1545,7 @@ END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
 DTSTART:20220308T030000Z
-DTEND:20220308T080000Z
+DTEND:20220308T070000Z
 SUMMARY:General Crafting Area
 DESCRIPTION:A number of tables in the rear starboard side of the Lower Main Dining Room are dedicated for crafting during all hours except during dinner setup and seatings (i.e.\, except between 3 pm - 10 pm). Look for the table signs indicating these tables. No glue\, glitter\, paints or "generally messy" crafting at these tables\, please.
 CATEGORIES:
@@ -1653,7 +1653,7 @@ END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
 DTSTART:20220308T070000Z
-DTEND:20220308T080000Z
+DTEND:20220308T070000Z
 SUMMARY:Set clocks forward one hour
 DESCRIPTION:Set your clocks forward to 3 am.
 CATEGORIES:
@@ -1664,8 +1664,8 @@ URL:http://jococruise2022.sched.com/event/c600dd99603c6a827404466ae19579dc
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220308T130000Z
-DTEND:20220308T200000Z
+DTSTART:20220308T120000Z
+DTEND:20220308T190000Z
 SUMMARY:Daytime Quiet Zone
 DESCRIPTION:No gaming\, no meetings\, no loud noises before 3 pm\, please! See signs for designated Quiet Zone tables in the rear port area of the Dining Room.
 CATEGORIES:
@@ -1676,8 +1676,8 @@ URL:http://jococruise2022.sched.com/event/5357800110769119c912b5c9bce4dabe
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220308T130000Z
-DTEND:20220308T200000Z
+DTSTART:20220308T120000Z
+DTEND:20220308T190000Z
 SUMMARY:General Crafting Area
 DESCRIPTION:A number of tables in the rear starboard side of the Lower Main Dining Room are dedicated for crafting during all hours except during dinner setup and seatings (i.e.\, except between 3 pm - 10 pm). Look for the table signs indicating these tables. No glue\, glitter\, paints or "generally messy" crafting at these tables\, please.
 CATEGORIES:
@@ -1688,8 +1688,8 @@ URL:http://jococruise2022.sched.com/event/3251eba350b91f5b24f1248cfc8e9338
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220308T130000Z
-DTEND:20220308T140000Z
+DTSTART:20220308T120000Z
+DTEND:20220308T130000Z
 SUMMARY:Morning All Levels Yoga
 DESCRIPTION:Inclusive all levels yoga on the Lido or where ever makes sense
 CATEGORIES:SHADOW CRUISE
@@ -1700,8 +1700,8 @@ URL:http://jococruise2022.sched.com/event/397d3f34d93e9bc13c1cbc8363e6f447
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220308T144500Z
-DTEND:20220308T154500Z
+DTSTART:20220308T134500Z
+DTEND:20220308T144500Z
 SUMMARY:Friends of Bill W.
 DESCRIPTION:
 CATEGORIES:
@@ -1712,8 +1712,8 @@ URL:http://jococruise2022.sched.com/event/fbc16f65e48c6eac17b72135fcac6038
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220308T150000Z
-DTEND:20220308T220000Z
+DTSTART:20220308T140000Z
+DTEND:20220308T210000Z
 SUMMARY:Info Desk Hours
 DESCRIPTION:If you need information\, well heck we have information! Come here for any JoCo Cruise-related questions or issues you may have.\n\nIf you have questions or problems relating to the ship—your cabin\, billing\, etc—please go to the ship’s Guest Services Desk\, located on the opposite side of the Atrium on Deck 1.
 CATEGORIES:
@@ -1724,8 +1724,8 @@ URL:http://jococruise2022.sched.com/event/80d685b8d37ddae87319b35afefb006e
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220308T150000Z
-DTEND:20220308T183000Z
+DTSTART:20220308T140000Z
+DTEND:20220308T173000Z
 SUMMARY:"Magic: The Gathering" Draft
 DESCRIPTION:Join us for a free Magic: the Gathering draft\, where you'll open booster packs and select cards to build a brand new deck. Thanks to some generous volunteers\, you even get to keep the cards!
 CATEGORIES:GAMING
@@ -1736,8 +1736,8 @@ URL:http://jococruise2022.sched.com/event/bdfa0ea24b1854c8fde8adfa5280c73d
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220308T150000Z
-DTEND:20220308T160000Z
+DTSTART:20220308T140000Z
+DTEND:20220308T150000Z
 SUMMARY:That First Book
 DESCRIPTION:Every author’s journey begins with that first step...that very first book. What was it? How did it come about? What was it like bringing it out? Did it succeed or fail? And what lessons from that whole experience informs where the author is today?
 CATEGORIES:Q&AMP;A / PANEL
@@ -1748,8 +1748,8 @@ URL:http://jococruise2022.sched.com/event/1fed35c47a7b6f962fe9650b2893d5ab
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220308T150000Z
-DTEND:20220308T160000Z
+DTSTART:20220308T140000Z
+DTEND:20220308T150000Z
 SUMMARY:JPTA: JoCoNaut Postcard Trading Alliance Meetup!
 DESCRIPTION:Want to meet your Joco-lovin' postcard pals while you're *in the same room*? Interested in swapping cards with another Naut? Excited about getting (and sending!) Fun Mail all year 'round? Come hang out with us!!
 CATEGORIES:SHADOW CRUISE
@@ -1760,8 +1760,8 @@ URL:http://jococruise2022.sched.com/event/0e0f5082b2c9faf0156a36f1823859f7
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220308T153000Z
-DTEND:20220308T183000Z
+DTSTART:20220308T143000Z
+DTEND:20220308T173000Z
 SUMMARY:Kid-Friendly Games
 DESCRIPTION:Learn how to play games with the whole family! Games like Flapjack Flipout\, Loopin Louie\, Bananagrams\, Hey That's My Fish\, and more! Drop in anytime!
 CATEGORIES:GAMING
@@ -1772,8 +1772,8 @@ URL:http://jococruise2022.sched.com/event/5a00e07a88eb9a080098a4442da67165
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220308T160000Z
-DTEND:20220308T173000Z
+DTSTART:20220308T150000Z
+DTEND:20220308T163000Z
 SUMMARY:Multi-day Bananagrams Tournament
 DESCRIPTION:Are you REALLY good at Bananagrams? You are? Oh. huh. No\, that’s not weird at all. Good for you! We’re having a multi-day tournament of BANANAGRAMS. Join other word scrambling enthusiasts and work your way up the brackets over the days of Joco to finally reach your lifelong goal of being crowned master of all things bananagram! If you’ve never played the game before\, Bananagrams is an easy game to learn; all are welcome! Prizes will be awarded to winners!NOTE: there are limited slots available for this tournament; look for the signup sheet near the Game Library in the Upper Main Dining Room (Deck 3\, Aft) once you're onboard.
 CATEGORIES:GAMING
@@ -1784,8 +1784,8 @@ URL:http://jococruise2022.sched.com/event/b352e730516745e0dbafa45cfceff11d
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220308T160000Z
-DTEND:20220308T170000Z
+DTSTART:20220308T150000Z
+DTEND:20220308T160000Z
 SUMMARY:Voice Acting
 DESCRIPTION:Our panel of experienced voice actors talk about...well\, whatever they care to talk about. It will almost definitely be voice acting-related.
 CATEGORIES:Q&AMP;A / PANEL
@@ -1796,8 +1796,8 @@ URL:http://jococruise2022.sched.com/event/13d38fcd5ce8c8f45782f6b9f19fdbdd
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220308T160000Z
-DTEND:20220308T173000Z
+DTSTART:20220308T150000Z
+DTEND:20220308T163000Z
 SUMMARY:Everything You Ever Wanted to Know About Guide/Service Dogs
 DESCRIPTION:There's a dog on the ship! How? Why? Why can't I pet her? What are service dogs\, anyway? Rachel and Marleigh (and Echo) will explain the life and training of guide dogs\, talk about their adventures\, and highlight how service dogs can change lives.
 CATEGORIES:SHADOW CRUISE
@@ -1808,8 +1808,8 @@ URL:http://jococruise2022.sched.com/event/fcba3b5e206d199ce6369f67a5a99c99
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220308T160000Z
-DTEND:20220308T170000Z
+DTSTART:20220308T150000Z
+DTEND:20220308T160000Z
 SUMMARY:Origami Dragon
 DESCRIPTION:Learn to fold a Wen's Dragon.
 CATEGORIES:SHADOW CRUISE
@@ -1820,8 +1820,8 @@ URL:http://jococruise2022.sched.com/event/45569e7af1db605626c1a5593fc2a7a2
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220308T160000Z
-DTEND:20220308T173000Z
+DTSTART:20220308T150000Z
+DTEND:20220308T163000Z
 SUMMARY:Swing Dance Lesson and Dance Party!
 DESCRIPTION:Come swing out with Kira and Erik! Join us for a beginning swing dance/lindy hop lesson\, followed by a dance party with nerdy swing music. No partner or experience necessary.
 CATEGORIES:SHADOW CRUISE
@@ -1832,8 +1832,8 @@ URL:http://jococruise2022.sched.com/event/800415cf5d776d246778bff90a48e2f7
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220308T163000Z
-DTEND:20220308T173000Z
+DTSTART:20220308T153000Z
+DTEND:20220308T163000Z
 SUMMARY:Board Game Prototyper's Playtime
 DESCRIPTION:Do you have wild ideas about how you might make a board game? Do you think it would be fun to craft with the craftiest\, to invent the silliest\, strategi-est game? Well! You're in luck!A pile of blank cubes and coins\, cards and cardboard appear! What will they become??
 CATEGORIES:SHADOW CRUISE
@@ -1844,8 +1844,8 @@ URL:http://jococruise2022.sched.com/event/c1ac993fb1d55a54f95cf039a0417538
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220308T163000Z
-DTEND:20220308T173000Z
+DTSTART:20220308T153000Z
+DTEND:20220308T163000Z
 SUMMARY:Hardly Strictly Sea Shanteys!
 DESCRIPTION:Bring your voices! Come share your favorite sea shanteys with your fellow JoConauts! We will have lyric sheets available.
 CATEGORIES:SHADOW CRUISE
@@ -1856,8 +1856,8 @@ URL:http://jococruise2022.sched.com/event/de7fb201cbe2ac370b73b3b1c1df4f3d
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220308T163000Z
-DTEND:20220308T173000Z
+DTSTART:20220308T153000Z
+DTEND:20220308T163000Z
 SUMMARY:Juggle Jam
 DESCRIPTION:Learn to juggle balls\, clubs and rings\, along with other object manipulation and circus skills!
 CATEGORIES:SHADOW CRUISE
@@ -1868,8 +1868,8 @@ URL:http://jococruise2022.sched.com/event/e9bd437fc7d6757b19e683e6a23f962a
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220308T163000Z
-DTEND:20220308T173000Z
+DTSTART:20220308T153000Z
+DTEND:20220308T163000Z
 SUMMARY:Sea Creature Crash Course
 DESCRIPTION:A crash-course lecture on marine dwelling charismatic megafauna given by a marine ecologist. Whale\, dolphins\, octopus\, squid (aka Kraken!)\, cuttlefish\, seals\, sea lions\, and so much more! Family friendly.
 CATEGORIES:SHADOW CRUISE
@@ -1880,8 +1880,8 @@ URL:http://jococruise2022.sched.com/event/064bd8c5139e0bd428af95ef070aad4e
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220308T170000Z
-DTEND:20220308T180000Z
+DTSTART:20220308T160000Z
+DTEND:20220308T170000Z
 SUMMARY:Yo Ho\, Yo Ho\, A Writer’s Life For Me: or\, Everything You Ever Wanted to Know about Writing But Needed to Be on a Boat to Ask
 DESCRIPTION:Ever had a question about writing\, or publishing\, or being a writer\, or writing advice\, or about a specific writer on the cruise or their work? Guess what? This is the panel for you! Bring your questions\, otherwise we’ll just sit on stage awkwardly for an hour.
 CATEGORIES:Q&AMP;A / PANEL
@@ -1892,8 +1892,8 @@ URL:http://jococruise2022.sched.com/event/744350e4b48be7d8366a5659cd784fbd
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220308T180000Z
-DTEND:20220309T010000Z
+DTSTART:20220308T170000Z
+DTEND:20220309T000000Z
 SUMMARY:Port of Call - St. Croix
 DESCRIPTION:
 CATEGORIES:
@@ -1904,8 +1904,8 @@ URL:http://jococruise2022.sched.com/event/8a43f23f8e3231cc6f7363e223ada8fa
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220308T180000Z
-DTEND:20220308T190000Z
+DTSTART:20220308T170000Z
+DTEND:20220308T180000Z
 SUMMARY:The JV Club
 DESCRIPTION:Remember what it was like to be an awkward teenager? And remember how some things haven’t really changed that much for you since then? Join proud dork Janet Varney as she explores the highs and lows of the bygone years with some of her favorite women as they talk their way through the terrible teens into adult-lescence. Warning: This Podcast Contains Sincerity.
 CATEGORIES:LIVE PODCAST
@@ -1916,8 +1916,8 @@ URL:http://jococruise2022.sched.com/event/c84e150411e477123889cd1f03a60252
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220308T190000Z
-DTEND:20220308T213000Z
+DTSTART:20220308T180000Z
+DTEND:20220308T203000Z
 SUMMARY:Room unavailable
 DESCRIPTION:
 CATEGORIES:
@@ -1928,8 +1928,8 @@ URL:http://jococruise2022.sched.com/event/02c32bc4f214aaf71a28f4b6ae3ef726
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220308T190000Z
-DTEND:20220308T200000Z
+DTSTART:20220308T180000Z
+DTEND:20220308T190000Z
 SUMMARY:All Bodies Welcome Pool Party
 DESCRIPTION:
 CATEGORIES:PARTY
@@ -1940,8 +1940,8 @@ URL:http://jococruise2022.sched.com/event/e5f5f8301bd20d4a7f0b3c3a117806f2
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220308T210000Z
-DTEND:20220308T220000Z
+DTSTART:20220308T200000Z
+DTEND:20220308T210000Z
 SUMMARY:Billboard Onboard Happy Hour
 DESCRIPTION:Happy hour! Your second drink is only $2!
 CATEGORIES:
@@ -1952,8 +1952,8 @@ URL:http://jococruise2022.sched.com/event/2633006e4e423769ef7c90f3f0845165
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220308T210000Z
-DTEND:20220308T220000Z
+DTSTART:20220308T200000Z
+DTEND:20220308T210000Z
 SUMMARY:Ocean Bar Happy Hour
 DESCRIPTION:Happy hour! Your second drink is only $2!
 CATEGORIES:
@@ -1964,8 +1964,8 @@ URL:http://jococruise2022.sched.com/event/e0046c1e0e9661edb1d04599c24aff4b
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220308T220000Z
-DTEND:20220309T020000Z
+DTSTART:20220308T210000Z
+DTEND:20220309T010000Z
 SUMMARY:Dinner (Open Dining)
 DESCRIPTION:Dinner on this evening is "Open Dining"; you can come to the dining room anytime between 5 pm and 9 pm. NOTE: Fixed Seating table assignments and dining times will still apply.\n\nThe ship does request that if you're coming to the main dining room that night\, please try to roughly correspond with your usual dining time\, so that the staff and kitchen don't get swarmed all at once.
 CATEGORIES:
@@ -1976,8 +1976,8 @@ URL:http://jococruise2022.sched.com/event/3b1d5b80d0312e0572bd7535cb9f5ad7
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220308T220000Z
-DTEND:20220309T000000Z
+DTSTART:20220308T210000Z
+DTEND:20220308T230000Z
 SUMMARY:Room unavailable
 DESCRIPTION:
 CATEGORIES:
@@ -1988,8 +1988,8 @@ URL:http://jococruise2022.sched.com/event/1c7c86cddaddcedf2136dab76fafba12
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220308T230000Z
-DTEND:20220309T020000Z
+DTSTART:20220308T220000Z
+DTEND:20220309T010000Z
 SUMMARY:Puzzled Pint
 DESCRIPTION:Puzzled Pint (puzzledpint.com) happens on the second Tuesday of every month. There are four puzzles all leading up to a meta-puzzle at the end. This month's theme is "Internet Shopping". Every team solves on their own\, so\, you are free to arrive at any time.
 CATEGORIES:SHADOW CRUISE
@@ -2000,8 +2000,8 @@ URL:http://jococruise2022.sched.com/event/43a879e7265814757a48988b9bcea69e
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220309T000000Z
-DTEND:20220309T010000Z
+DTSTART:20220308T230000Z
+DTEND:20220309T000000Z
 SUMMARY:Room unavailable
 DESCRIPTION:
 CATEGORIES:
@@ -2012,8 +2012,8 @@ URL:http://jococruise2022.sched.com/event/159b86bc7847c0687f48b4d0c028bdc1
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220309T003000Z
-DTEND:20220309T023000Z
+DTSTART:20220308T233000Z
+DTEND:20220309T013000Z
 SUMMARY:Dress Party
 DESCRIPTION:Join Drew and many of the JoCo Cruise Crew on their night off to celebrate in style. The style\, specifically\, is a dress that you wear. Dresses are not required but are preferred. This event was formerly known as "Drew's Crew's Booze-n-Brews Cruise Schmooze Dress Party"\, which is a title Paul really loves\, so it is included here.This event will organically morph into a dance party (with DJ Riz Rollins) at no specific time.
 CATEGORIES:PARTY
@@ -2024,8 +2024,8 @@ URL:http://jococruise2022.sched.com/event/1a7acdf22251f39ebbc6debe1871a34a
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220309T020000Z
-DTEND:20220309T040000Z
+DTSTART:20220309T010000Z
+DTEND:20220309T030000Z
 SUMMARY:B.B. King's All-Star Band
 DESCRIPTION:Listen\, dance\, and enjoy the sound of the ship's own B.B. King's All-Star Band\, an eight-piece band with two vocalists backed by rhythm and horn sections. This was a huge hit on the last JoCo Cruise\, and we're excited to have them back again!
 CATEGORIES:READING / PERFORMANCE
@@ -2036,7 +2036,7 @@ URL:http://jococruise2022.sched.com/event/a701db09a0543f412ece8af6ea3ef162
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220309T023000Z
+DTSTART:20220309T013000Z
 DTEND:20220309T080000Z
 SUMMARY:Nighttime Quiet Zone
 DESCRIPTION:The starboard side of the Lido Marketplace will be designated the "quiet side" after 9 pm. No gaming\, no meetings\, no loud noises\, please. Take yer excessive noise over to the port side\, please—or to the back deck\, where the 24/7 pizza is!
@@ -2048,8 +2048,8 @@ URL:http://jococruise2022.sched.com/event/fcee06f4baf55e22e7c884d007c81977
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220309T023000Z
-DTEND:20220309T053000Z
+DTSTART:20220309T013000Z
+DTEND:20220309T043000Z
 SUMMARY:Blood on the Clocktower
 DESCRIPTION:Blood on the Clocktower is a bluffing game enjoyed by 5 to 20 players on opposing teams of Good and Evil\, overseen by a Storyteller player who conducts the action and makes crucial decisions.
 CATEGORIES:SHADOW CRUISE
@@ -2060,8 +2060,8 @@ URL:http://jococruise2022.sched.com/event/bd74d92329cf359dc84a7a0a255caa3f
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220309T023000Z
-DTEND:20220309T043000Z
+DTSTART:20220309T013000Z
+DTEND:20220309T033000Z
 SUMMARY:Copious drinking and watch party of “The Net” (1995\, Sandra Bullock)
 DESCRIPTION:Pretty much what the title suggests. This thing is an abomination\, and absolutely needs to have a bunch of nerds drink and watch.
 CATEGORIES:SHADOW CRUISE
@@ -2072,8 +2072,8 @@ URL:http://jococruise2022.sched.com/event/d3b7a7714c9366be2c885ee9fff04a72
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220309T023000Z
-DTEND:20220309T040000Z
+DTSTART:20220309T013000Z
+DTEND:20220309T030000Z
 SUMMARY:Open Mic Comedynauts
 DESCRIPTION:Add some extra funny to your day with stand up comedy performances from fellow JoCo cruise friends. We'll sprinkle our experienced comedians in with newbies\, so if you always wanted to give stand up a shot get together your best 3-5 minutes and sign up at the info desk!
 CATEGORIES:SHADOW CRUISE
@@ -2084,8 +2084,8 @@ URL:http://jococruise2022.sched.com/event/d296cf760e7aeaa395270f4188ceab71
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220309T023000Z
-DTEND:20220309T033000Z
+DTSTART:20220309T013000Z
+DTEND:20220309T023000Z
 SUMMARY:Science Quiz Show\, the Third
 DESCRIPTION:Test your scientific (and not-so-scientific) knowledge! The quiz master will show you pictures in a range of categories: people\, places\, animals\, objects. Work in teams to answer the questions and increase your score; you might win a totally negligible prize!
 CATEGORIES:SHADOW CRUISE
@@ -2096,7 +2096,7 @@ URL:http://jococruise2022.sched.com/event/2fb50104b20a1af95cd2e75ef70f5936
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220309T030000Z
+DTSTART:20220309T020000Z
 DTEND:20220309T080000Z
 SUMMARY:General Crafting Area
 DESCRIPTION:A number of tables in the rear starboard side of the Lower Main Dining Room are dedicated for crafting during all hours except during dinner setup and seatings (i.e.\, except between 3 pm - 10 pm). Look for the table signs indicating these tables. No glue\, glitter\, paints or "generally messy" crafting at these tables\, please.
@@ -2108,8 +2108,8 @@ URL:http://jococruise2022.sched.com/event/8382e89d9ef5bf718a2b2fdb6ebb381d
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220309T030000Z
-DTEND:20220309T060000Z
+DTSTART:20220309T020000Z
+DTEND:20220309T050000Z
 SUMMARY:Tomb of the Bitchin’ Chimera\, with DMs Ursula Vernon & Kevin Sonney
 DESCRIPTION:Kevin Sonney and Ursula Vernon DM a silly and surreal one-shot campaign. Can you stop the Roc-Gull from crapping all over Tiny Town? D&D 5e\, pre-gen characters will be provided.\n\nSpace will be very limited\, so if you're interested in taking part\, please fill out this brief application form; participants will be selected via random drawing and notified on Thursday\, March 3.\n\nThat said\, spectators are welcome!
 CATEGORIES:GAMING
@@ -2120,8 +2120,8 @@ URL:http://jococruise2022.sched.com/event/83e065f5d5cc56cbde5b1c744d67e379
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220309T030000Z
-DTEND:20220309T043000Z
+DTSTART:20220309T020000Z
+DTEND:20220309T033000Z
 SUMMARY:Jonathan Coulton (Full Band Show)
 DESCRIPTION:
 CATEGORIES:READING / PERFORMANCE
@@ -2132,8 +2132,8 @@ URL:http://jococruise2022.sched.com/event/c17a38737c3474d5acf043aa6e8fd588
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220309T040000Z
-DTEND:20220309T053000Z
+DTSTART:20220309T030000Z
+DTEND:20220309T043000Z
 SUMMARY:Karaoke
 DESCRIPTION:Get your sing on in B.B. King's Blues Club with this JoCo Cruise tradition.
 CATEGORIES:
@@ -2144,7 +2144,7 @@ URL:http://jococruise2022.sched.com/event/e72da8364a52d94562f1a3dbec297b50
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220309T043000Z
+DTSTART:20220309T033000Z
 DTEND:20220309T073000Z
 SUMMARY:Call of Cthulhu - Welcome Home
 DESCRIPTION:A family moves into their new home\, one owner from new. The movers have already been and gone\, so all that's left is unpacking a hundred boxes and getting settled in their new house. And taking a nap in the living room.
@@ -2156,7 +2156,7 @@ URL:http://jococruise2022.sched.com/event/d247a9feaf629a4e5f9b1273944281c2
 END:VEVENT
 BEGIN:VEVENT
 DTSTAMP:20220223T065327Z
-DTSTART:20220309T070000Z
+DTSTART:20220309T060000Z
 DTEND:20220309T080000Z
 SUMMARY:Set your clocks back one hour
 DESCRIPTION:Set your clocks back to 1 am at this time.
