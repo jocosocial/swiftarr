@@ -249,6 +249,12 @@ struct RelativeTimeTag: LeafTag {
 /// changes the Sched is off by that offset. Since EST is given as the reference point for
 /// timezoneless time on the ship we call that "Port Time" and always render events based on that
 /// perspective so that it will be consistent.
+///
+/// For 2022 a munger was developed so that the days of odd time zones get their UTC times adjusted
+/// by the difference between Port Timezone and AST (which was our only transition). As such there
+/// is currently no functional difference between EvenTimeTag and FezTimeTag. It is being left in
+/// the code so that some day we can define programatic timezone transitions and not have to do
+/// munging of the input.
 /// 
 /// Usage in Leaf templates:: #eventTime(startTime, endTime) -> String
 struct EventTimeTag: LeafTag {
@@ -262,7 +268,7 @@ struct EventTimeTag: LeafTag {
 		dateFormatter.dateStyle = .short
 		dateFormatter.timeStyle = .short
 		dateFormatter.locale = Locale(identifier: "en_US")
-		dateFormatter.timeZone = Settings.shared.portTimeZone
+		dateFormatter.timeZone = Settings.shared.getDisplayTimeZone()
 
 		var timeString = dateFormatter.string(from: Date(timeIntervalSince1970: startTimeDouble))
 		dateFormatter.dateStyle = .none
