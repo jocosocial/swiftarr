@@ -163,6 +163,12 @@ struct AdminController: APIRouteCollection {
  		if let value = data.allowAnimatedImages {
  			Settings.shared.allowAnimatedImages = value
  		}
+		if let value = data.displayTimeZoneAbbr {
+			guard TimeZone(abbreviation: value) != nil else {
+				throw Abort(.badRequest, reason: "Bad time zone given.")
+			}
+			Settings.shared.displayTimeZoneAbbr = value
+		}
  		if let value = data.shipWifiSSID {
  			Settings.shared.shipWifiSSID = value
  		}

@@ -242,6 +242,19 @@ struct RelativeTimeTag: LeafTag {
 }
 
 /// Returns a string descibing when an event is taking place. Shows both the start and end time.
+///
+/// Events come to us from the Sched dump which THO populates as "consistent-boat-EST-based-UTC".
+/// Meaning that the raw values from Sched are in UTC and the events are scheduled for EST and not
+/// adjusted for any time-zone changes. This means that on any day where the boat (display) time zone
+/// changes the Sched is off by that offset. Since EST is given as the reference point for
+/// timezoneless time on the ship we call that "Port Time" and always render events based on that
+/// perspective so that it will be consistent.
+///
+/// For 2022 a munger was developed so that the days of odd time zones get their UTC times adjusted
+/// by the difference between Port Timezone and AST (which was our only transition). As such there
+/// is currently no functional difference between EvenTimeTag and FezTimeTag. It is being left in
+/// the code so that some day we can define programatic timezone transitions and not have to do
+/// munging of the input.
 /// 
 /// Usage in Leaf templates:: #eventTime(startTime, endTime) -> String
 struct EventTimeTag: LeafTag {
@@ -255,11 +268,77 @@ struct EventTimeTag: LeafTag {
 		dateFormatter.dateStyle = .short
 		dateFormatter.timeStyle = .short
 		dateFormatter.locale = Locale(identifier: "en_US")
-		dateFormatter.timeZone = TimeZone.autoupdatingCurrent
+		dateFormatter.timeZone = Settings.shared.getDisplayTimeZone()
+
 		var timeString = dateFormatter.string(from: Date(timeIntervalSince1970: startTimeDouble))
 		dateFormatter.dateStyle = .none
 		timeString.append(" - \(dateFormatter.string(from: Date(timeIntervalSince1970: endTimeDouble)))")
 		return LeafData.string(timeString)
+	}
+}
+
+/// Returns a string descibing when an LFG is taking place. Shows both the start and end time.
+/// 
+/// Usage in Leaf templates:: #eventTime(startTime, endTime) -> String
+struct FezTimeTag: LeafTag {
+	func render(_ ctx: LeafContext) throws -> LeafData {
+        try ctx.requireParameterCount(2)
+		guard let startTimeDouble = ctx.parameters[0].double, let endTimeDouble = ctx.parameters[1].double else {
+            throw "Leaf: Unable to convert parameter to double for date"
+		}
+
+		let dateFormatter = DateFormatter()
+		dateFormatter.dateStyle = .short
+		dateFormatter.timeStyle = .short
+		dateFormatter.locale = Locale(identifier: "en_US")
+		dateFormatter.timeZone = Settings.shared.getDisplayTimeZone()
+
+		var timeString = dateFormatter.string(from: Date(timeIntervalSince1970: startTimeDouble))
+		dateFormatter.dateStyle = .none
+		timeString.append(" - \(dateFormatter.string(from: Date(timeIntervalSince1970: endTimeDouble)))")
+		return LeafData.string(timeString)
+	}
+}
+
+/// Returns a string describing a time. Unlike EventTimeTag this is used for a single point in time rather
+/// than a range or duration.
+///
+/// Usage in Leaf templates:: #staticTime(startTime) -> String
+struct StaticTimeTag: LeafTag {
+    func render(_ ctx: LeafContext) throws -> LeafData {
+        try ctx.requireParameterCount(1)
+        guard let inputTimeDouble = ctx.parameters[0].double else {
+            throw "Leaf: Unable to convert parameter to double for date"
+        }
+
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .short
+        dateFormatter.timeStyle = .short
+        dateFormatter.locale = Locale(identifier: "en_US")
+        dateFormatter.timeZone = Settings.shared.getDisplayTimeZone()
+        let timeString = "\(dateFormatter.string(from: Date(timeIntervalSince1970: inputTimeDouble))) \(dateFormatter.timeZone.abbreviation()!)"
+        return LeafData.string(timeString)
+    }
+}
+
+/// Return an ISO8601-ish time string for use with the datetime-local input type.
+/// It cannot take an ISO8601 since that requires a timezone to be included (suffix
+/// of [+-]H:MM) and the input chokes on that. So here we translate the following:
+///
+/// "2022-02-13 02:00:00 +0000" (Date) -> "2022-02-12T18:00:00" (String)
+///
+struct LocalTimeTag: LeafTag {
+	func render(_ ctx: LeafContext) throws -> LeafData {
+		try ctx.requireParameterCount(1)
+		guard let inputTimeDouble = ctx.parameters[0].double else {
+            throw "Leaf: Unable to convert parameter to double for date"
+        }
+
+		// https://www.objc.io/blog/2018/12/04/unexpected-results-from-a-date-formatter/
+		let dateFormatter = DateFormatter()
+		dateFormatter.timeZone = Settings.shared.getDisplayTimeZone()
+		dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+		return LeafData.string(dateFormatter.string(from: Date(timeIntervalSince1970: inputTimeDouble)))
 	}
 }
 

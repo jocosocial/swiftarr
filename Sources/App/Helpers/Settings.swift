@@ -100,6 +100,7 @@ final class Settings : Encodable {
     
 // MARK: Dates
 	/// A Date set to midnight on the day the cruise ship leaves port, in the timezone the ship leaves from. Used by the Events Controller for date arithimetic.
+	/// The default here should usually get overwritten in configure.swift.
 	@SettingsValue var cruiseStartDate: Date = Calendar.autoupdatingCurrent.date(from: DateComponents(calendar: Calendar.current, 
 			timeZone: TimeZone(abbreviation: "EST")!, year: 2022, month: 3, day: 5))!
 	
@@ -108,6 +109,12 @@ final class Settings : Encodable {
 
 	/// The length in days of the cruise, includes partial days. A cruise that embarks on Saturday and returns the next Saturday should have a value of 8.
 	@SettingsValue var cruiseLengthInDays: Int = 8
+
+	/// Abbreviation of the time zone that we should display data in.
+	@StoredSettingsValue("displayTimeZoneAbbr", defaultValue: "EST") var displayTimeZoneAbbr: String
+
+	/// TimeZone representative of where we departed port from.
+	@SettingsValue var portTimeZone: TimeZone = TimeZone(abbreviation: "EST")!
 	
 // MARK: Images
 	/// The  set of image file types that we can parse with the GD library. I believe GD hard-codes these values on install based on what ./configure finds.
@@ -144,6 +151,23 @@ extension Settings {
 	/// Path to the 'admin' directory, inside the 'seeds' directory. Certain seed files can be upload by admin here, and ingested while the server is running.
 	var seedsDirectoryPath: URL {
 		return staticFilesRootPath.appendingPathComponent("seeds")
+	}
+}
+
+/// Provide one common place for time-related objects.
+extension Settings {
+	/// TimeZone to use for rendering any time.
+	func getDisplayTimeZone() -> TimeZone {
+		return TimeZone(abbreviation: displayTimeZoneAbbr) ?? TimeZone.autoupdatingCurrent
+	}
+
+	/// Calendar to use for calculating dates (like what day it is).
+	/// .current vs .autoupdatingCurrent had some weird implications for TimeZone so I hope
+	/// this doesn't do the same here. Time will tell.... pun very much intended.
+	func getDisplayCalendar() -> Calendar {
+		var cal = Calendar.autoupdatingCurrent
+		cal.timeZone = getDisplayTimeZone()
+		return cal
 	}
 }
 

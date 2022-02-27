@@ -22,6 +22,7 @@ struct TrunkContext: Encodable {
 		case karaoke
 		case moderator
 		case admin
+		case time
 		
 		case none
 	}
@@ -38,6 +39,8 @@ struct TrunkContext: Encodable {
 	var eventStartingSoon: Bool
 	var newTweetAlertwords: Bool
 	var newForumAlertwords: Bool
+
+	var displayTimeZone: TimeZone
 	
 	init(_ req: Request, title: String, tab: Tab, search: String? = nil) {
 		if let user = req.auth.get(UserCacheData.self) {
@@ -75,6 +78,7 @@ struct TrunkContext: Encodable {
 		self.tab = tab
 		self.inTwitarrSubmenu = [.home, .lfg, .games, .karaoke, .moderator, .admin].contains(tab)
 		self.searchPrompt = search
+		self.displayTimeZone = Settings.shared.getDisplayTimeZone()
 		
 		newTweetAlertwords = alertCounts.alertWords.contains { $0.newTwarrtMentionCount > 0 }
 		newForumAlertwords = alertCounts.alertWords.contains { $0.newForumMentionCount > 0 }
@@ -243,9 +247,10 @@ struct MessagePostContext: Encodable {
 		// For editing an announcement
 		case .announcementEdit(let announcementData):
 			messageText = announcementData.text
-			let dateFormatter = DateFormatter()
-			dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm"
-			displayUntil = dateFormatter.string(from: announcementData.displayUntil)
+			// @TODO this is a hack to get around us storing displayUntil as a String.
+			// I don't have the energy to re-work all uses of it to be a proper Double/Date
+			// with the new leafs that can render the appropriate local time string.
+			displayUntil = String(announcementData.displayUntil.timeIntervalSince1970)
 			formAction = "/admin/announcement/\(announcementData.id)/edit"
 			postSuccessURL = "/admin/announcements"
 			isEdit = true
@@ -372,14 +377,18 @@ struct SiteController: SiteControllerUtils {
 		// Routes that the user does not need to be logged in to access.
 		let openRoutes = getOpenRoutes(app)
         openRoutes.get(use: rootPageHandler)
+		openRoutes.get("time", use: timePageHandler)
 	}
 	
+	/// GET /
+	///
+	/// Root page. This has a surprising number of queries.
     func rootPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
 		return apiQuery(req, endpoint: "/notification/announcements").throwingFlatMap { response in
  			let announcements = try response.content.decode([AnnouncementData].self)
 			return apiQuery(req, endpoint: "/notification/dailythemes").throwingFlatMap { themeResponse in
  				let themes = try themeResponse.content.decode([DailyThemeData].self)
- 				let cal = Calendar.autoupdatingCurrent
+ 				let cal = Settings.shared.getDisplayCalendar()
 				let components = cal.dateComponents([.day], from: cal.startOfDay(for: Settings.shared.cruiseStartDate), 
 						to: cal.startOfDay(for: Date()))
 				let cruiseDay = Int32(components.day ?? 0)
@@ -415,6 +424,48 @@ struct SiteController: SiteControllerUtils {
 			}
 		}
     }
+
+	/// GET /time
+	///
+	/// Timezone information page.
+	func timePageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+		struct TimePageContext : Encodable {
+			var trunk: TrunkContext
+			var serverTime: String
+			var displayTime: String
+			var portTime: String
+
+			init(_ req: Request) throws {
+				trunk = .init(req, title: "Time Zone Check", tab: .time)
+
+				let dateFormatTemplate = "MMMM dd hh:mm a zzzz"
+				// We split into two formatters to prevent accidental contamination of either.
+				let serverDateFormatter = DateFormatter()
+				serverDateFormatter.timeZone = TimeZone.current
+				serverDateFormatter.setLocalizedDateFormatFromTemplate(dateFormatTemplate)
+				let displayDateFormatter = DateFormatter()
+				// This could use the GMToffset stuff but then it renders a different time zone
+				// name leading to inconsistencies. For eaxmple, if the setting is "AST" then
+				// this would render "GMT-04:00" which is the same thing in effect but more
+				// confusing for people to read.
+				displayDateFormatter.timeZone = Settings.shared.getDisplayTimeZone()
+				displayDateFormatter.setLocalizedDateFormatFromTemplate(dateFormatTemplate)
+				let portDateFormatter = DateFormatter()
+				portDateFormatter.timeZone = Settings.shared.portTimeZone
+				portDateFormatter.setLocalizedDateFormatFromTemplate(dateFormatTemplate)
+				// serverDate is a Date() that is a precise moment in time represented as an ISO8601 string in UTC.
+				// There is no implicit timezone information contained there.
+				let serverDate = ISO8601DateFormatter().date(from: trunk.alertCounts.serverTime) ?? Date()
+
+				self.serverTime = serverDateFormatter.string(from: serverDate)
+				self.displayTime = displayDateFormatter.string(from: serverDate)
+				self.portTime = portDateFormatter.string(from: serverDate)
+			}
+		}
+
+		let ctx = try TimePageContext(req)
+		return req.view.render("time", ctx)
+	}
     
 }
     
@@ -537,6 +588,7 @@ extension SiteControllerUtils {
 	// (at least with the 2019 version of the spec; IIRC previous versions had ambiguities preventing general-case parsing).
 	func dateFromW3DatetimeString(_ dateStr: String) -> Date? {
 		let dateFormatter = DateFormatter()
+		dateFormatter.timeZone = Settings.shared.getDisplayTimeZone()
 		dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSXXXXX"
 		if let date = dateFormatter.date(from: dateStr) {
 			return date

@@ -81,7 +81,7 @@ struct EventController: APIRouteCollection {
 			}
 		}
 		var serverCalendar = Calendar(identifier: .gregorian)
-		serverCalendar.timeZone = req.application.environment == .testing ? TimeZone(abbreviation: "EST")! : TimeZone.autoupdatingCurrent
+		serverCalendar.timeZone = Settings.shared.getDisplayTimeZone()
 		// For the purpose of events, 'days' start and end at 3 AM.
 		let cruiseStartDate = serverCalendar.date(byAdding: .hour, value: 3, to: Settings.shared.cruiseStartDate) ??
 				Settings.shared.cruiseStartDate

@@ -143,7 +143,7 @@ struct SiteAdminController: SiteControllerUtils {
 			init(_ req: Request) throws {
 				trunk = .init(req, title: "Create Announcement", tab: .admin)
 				self.post = .init(forType: .announcement)
-				timeZoneName = TimeZone.autoupdatingCurrent.abbreviation() ?? "EST"
+				timeZoneName = Settings.shared.displayTimeZoneAbbr
 			}
 		}
 		let ctx = try AnnouncementEditContext(req)
@@ -190,7 +190,7 @@ struct SiteAdminController: SiteControllerUtils {
 				init(_ req: Request, data: AnnouncementData) throws {
 					trunk = .init(req, title: "Edit Announcement", tab: .admin)
 					self.post = .init(forType: .announcementEdit(data))
-					timeZoneName = TimeZone.autoupdatingCurrent.abbreviation() ?? "EST"
+					timeZoneName = Settings.shared.displayTimeZoneAbbr
 				}
 			}
 			let ctx = try AnnouncementEditContext(req, data: announcementData)
@@ -252,7 +252,7 @@ struct SiteAdminController: SiteControllerUtils {
 					trunk = .init(req, title: "Daily Tmemes", tab: .admin)
 					themes = data
 					
-					let cal = Calendar.current
+					let cal = Settings.shared.getDisplayCalendar()
 					let components = cal.dateComponents([.day], from: cal.startOfDay(for: Settings.shared.cruiseStartDate), 
 							to: cal.startOfDay(for: Date()))
 					currentCruiseDay = Int(components.day ?? 0)
@@ -390,6 +390,7 @@ struct SiteAdminController: SiteControllerUtils {
 			var allowAnimatedImages: String?
 			var disableAppName: String
 			var disableFeatureName: String
+			var displayTimeZoneAbbr: String
 			// In the .leaf file, the name property for the select that sets this is "reenable[]". 
 			// The "[]" in the name is magic, somewhere in multipart-kit. It collects all form-data value with the same name into an array.
 			var reenable: [String]?				
@@ -422,6 +423,7 @@ struct SiteAdminController: SiteControllerUtils {
 				userAutoQuarantineThreshold: postStruct.userAutoQuarantineThreshold, 
 				allowAnimatedImages: postStruct.allowAnimatedImages == "on",
 				enableFeatures: enablePairs, disableFeatures: disablePairs,
+				displayTimeZoneAbbr: postStruct.displayTimeZoneAbbr,
 				shipWifiSSID: postStruct.shipWifiSSID)
 		return apiQuery(req, endpoint: "/admin/serversettings/update", method: .POST, beforeSend: { req throws in
 			try req.content.encode(apiPostContent)
@@ -476,7 +478,7 @@ struct SiteAdminController: SiteControllerUtils {
 				var diff: EventUpdateDifferenceData
 				
 				init(_ req: Request, differenceData: EventUpdateDifferenceData) throws {
-					trunk = .init(req, title: "Edit Daily Theme", tab: .admin)
+					trunk = .init(req, title: "Verify Schedule Changes", tab: .admin)
 					self.diff = differenceData
 				}
 			}

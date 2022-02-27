@@ -524,3 +524,20 @@ document.getElementById('imageCarouselModal')?.addEventListener('show.bs.modal',
 	deleteBtn.setAttribute('data-delete-postid', postElem.dataset.postid);
 })
 
+// It would be really nice if we could easily break this out into a time-only script. But since
+// we don't have a pattern for that yet I'm not looking to re-invent the wheel just yet.
+window.addEventListener('DOMContentLoaded', function() {
+	if (document.getElementById('browserTimeDisplay')) {
+		browserTime = new Date();
+		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/formatToParts
+		var formatter = new Intl.DateTimeFormat('en-us', {
+			month: 'long',
+			day: '2-digit',
+			hour: 'numeric', // Swift is supposed to give 2-digit but it isn't working. At least this matches.
+			minute: '2-digit',
+			hour12: true,
+			timeZoneName: 'long'
+		  });
+		document.getElementById('browserTimeDisplay').innerHTML = formatter.format(browserTime)
+	}
+})

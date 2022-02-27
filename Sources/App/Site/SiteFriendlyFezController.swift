@@ -28,8 +28,11 @@ struct FezCreateUpdatePageContext : Encodable {
 	var info: String = ""
 	var formAction: String
 	var submitButtonTitle: String = "Create"
+	var timeZoneName: String
 
 	init(_ req: Request, fezToUpdate: FezData? = nil) throws {
+		
+		self.timeZoneName = Settings.shared.displayTimeZoneAbbr
 		if let fez = fezToUpdate {
 			trunk = .init(req, title: "Update Looking For Group", tab: .lfg)
 			self.fez = fezToUpdate
@@ -75,6 +78,7 @@ struct FezCreateUpdatePageContext : Encodable {
 		}
 		formAction = "/fez/create"
 		submitButtonTitle = "Create"
+		self.timeZoneName = Settings.shared.displayTimeZoneAbbr
 	}
 }
 	

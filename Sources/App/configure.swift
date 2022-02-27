@@ -142,27 +142,31 @@ func configureBasicSettings(_ app: Application) throws {
 	// a 2022 schedule, we're using the 2020 schedule. Development builds by default will date-shift the current date
 	// into a day of the cruise week (the time the schedule covers) for Events methods, because 'No Events Today' 
 	// makes testing schedule features difficult.
+
+	// We do not have the displayCalendar yet so we have to build our own. Since the departure port/timezone is
+	// well-known we can safely rely on it here. Perhaps someday make it an environment variable or some other
+	// method of configuration for app startup?
+	var portCalendar = Calendar.current
+	let portTimeZone = TimeZone(abbreviation: "EST")!
+	portCalendar.timeZone = portTimeZone
+	Settings.shared.portTimeZone = portTimeZone
+
 	if app.environment == .testing {
 		Logger(label: "app.swiftarr.configuration") .notice("Starting up in Testing mode.")
-		// Until we get a proper 2022 schedule, we're using the 2020 schedule for testing. 
-		Settings.shared.cruiseStartDate = Calendar.autoupdatingCurrent.date(from: DateComponents(calendar: Calendar.current, 
-			timeZone: TimeZone(abbreviation: "EST")!, year: 2020, month: 3, day: 7))!
+		Settings.shared.cruiseStartDate = portCalendar.date(from: DateComponents(year: 2022, month: 3, day: 5))!
 	}
 	else if app.environment == .development {
 		Logger(label: "app.swiftarr.configuration") .notice("Starting up in Development mode.")
-		// Until we get a proper 2022 schedule, we're using the 2020 schedule for testing. 
-		Settings.shared.cruiseStartDate = Calendar.autoupdatingCurrent.date(from: DateComponents(calendar: Calendar.current, 
-			timeZone: TimeZone(abbreviation: "EST")!, year: 2022, month: 3, day: 5))!
+		Settings.shared.cruiseStartDate = portCalendar.date(from: DateComponents(year: 2022, month: 3, day: 5))!
 	}
 	else if app.environment == .production {
 		Logger(label: "app.swiftarr.configuration") .notice("Starting up in Production mode.")
-		Settings.shared.cruiseStartDate = Calendar.autoupdatingCurrent.date(from: DateComponents(calendar: Calendar.current, 
-			timeZone: TimeZone(abbreviation: "EST")!, year: 2022, month: 3, day: 5))!
+		// Until we get a proper future schedule, we're using the current schedule for testing. 
+		Settings.shared.cruiseStartDate = portCalendar.date(from: DateComponents(year: 2022, month: 3, day: 5))!
 	}
 	else {
 		Logger(label: "app.swiftarr.configuration") .notice("Starting up in Custom \"\(app.environment.name)\" mode.")
-		Settings.shared.cruiseStartDate = Calendar.autoupdatingCurrent.date(from: DateComponents(calendar: Calendar.current, 
-			timeZone: TimeZone(abbreviation: "EST")!, year: 2022, month: 3, day: 5))!
+		Settings.shared.cruiseStartDate = portCalendar.date(from: DateComponents(year: 2022, month: 3, day: 5))!
 	}
 	
 	// Ask the GD Image library what filetypes are available on the local machine.
@@ -323,10 +327,13 @@ func configureLeaf(_ app: Application) throws {
     app.leaf.tags["formatSeamailText"] = try FormatPostTextTag(.seamail, hostname: app.http.server.configuration.hostname)
     app.leaf.tags["relativeTime"] = RelativeTimeTag()
     app.leaf.tags["eventTime"] = EventTimeTag()
+    app.leaf.tags["staticTime"] = StaticTimeTag()
+	app.leaf.tags["fezTime"] = FezTimeTag()
     app.leaf.tags["avatar"] = AvatarTag()
     app.leaf.tags["userByline"] = UserBylineTag()
     app.leaf.tags["cruiseDayIndex"] = CruiseDayIndexTag()
     app.leaf.tags["gameRating"] = GameRatingTag()
+	app.leaf.tags["localTime"] = LocalTimeTag()
 }
 
 func configurePrometheus(_ app: Application) throws {

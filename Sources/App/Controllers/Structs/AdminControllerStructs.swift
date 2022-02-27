@@ -110,6 +110,7 @@ public struct SettingsAdminData: Content {
 	var allowAnimatedImages: Bool
 	/// Currently disabled app:feature pairs.
 	var disabledFeatures: [SettingsAppFeaturePair]
+	var displayTimeZoneAbbr: String
 	var shipWifiSSID: String?
 }
 
@@ -124,6 +125,7 @@ extension SettingsAdminData {
 		self.postAutoQuarantineThreshold = settings.postAutoQuarantineThreshold
 		self.userAutoQuarantineThreshold = settings.userAutoQuarantineThreshold
 		self.allowAnimatedImages = settings.allowAnimatedImages
+		self.displayTimeZoneAbbr = settings.displayTimeZoneAbbr
 		disabledFeatures = []
 		for (app, features) in settings.disabledFeatures.value {
 			for feature in features {
@@ -155,6 +157,8 @@ public struct SettingsUpdateData: Content {
 	var enableFeatures: [SettingsAppFeaturePair]
 	/// App:feature pairs to disable. Only list deltas here; no need to re-list currently disabled app:feature pairs..
 	var disableFeatures: [SettingsAppFeaturePair]
+  /// Time zone to display to people
+	var displayTimeZoneAbbr: String?
 	/// The wifi name of the onboard wifi network
 	var shipWifiSSID: String?
 }
