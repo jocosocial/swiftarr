@@ -86,9 +86,6 @@ extension APIRouteCollection {
 	}
 
 	/// For routes that require a logged-in user. Applying this auth group to a route will make requests that don't have a valid token fail with a HTTP 401 error.
-	func addTokenAuthGroup(to: RoutesBuilder) -> RoutesBuilder {
-		return to.grouped([Token.authenticator(), User.guardMiddleware()])
-	}
 	func addTokenCacheAuthGroup(to: RoutesBuilder) -> RoutesBuilder {
 		return to.grouped([UserCacheData.TokenAuthenticator(), UserCacheData.guardMiddleware(throwing: Abort(.unauthorized, reason: "User not authenticated."))])
 	}

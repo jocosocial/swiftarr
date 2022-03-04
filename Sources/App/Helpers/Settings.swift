@@ -47,8 +47,8 @@ final class Settings : Encodable {
 		}
 		
 		// Call after setting value
-		func writeToRedis(redis: RedisClient) -> EventLoopFuture<Bool> {
-			return redis.hset(redisField, to: wrappedValue, in: "Settings")
+		func writeToRedis(redis: RedisClient) async throws -> Bool {
+			return try await redis.hset(redisField, to: wrappedValue, in: "Settings").get()
 		}
 	}
 	
@@ -173,7 +173,7 @@ extension Settings {
 
 protocol StoredSetting {
 	func readFromRedis(redis: RedisClient) -> EventLoopFuture<Void>
-	func writeToRedis(redis: RedisClient) -> EventLoopFuture<Bool>
+	func writeToRedis(redis: RedisClient) async throws -> Bool
 }
 
 extension Settings {
@@ -189,14 +189,12 @@ extension Settings {
 	}
 	
 	// Stores all settings to Redis
-	func storeSettings(on req: Request) throws -> EventLoopFuture<[Bool]> {
-		let futures = Mirror(reflecting: self).children.compactMap { child -> EventLoopFuture<Bool>? in
-			guard let storedSetting = child.value as? StoredSetting else {
-				return nil
+	func storeSettings(on req: Request) async throws {
+		for child in Mirror(reflecting: self).children {
+			if let storedSetting = child.value as? StoredSetting {
+				_ = try await storedSetting.writeToRedis(redis: req.redis)
 			}
-			return storedSetting.writeToRedis(redis: req.redis)
 		}
-		return futures.flatten(on: req.eventLoop)
 	}
 }
 

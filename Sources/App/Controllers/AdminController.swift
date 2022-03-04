@@ -13,10 +13,10 @@ struct AdminController: APIRouteCollection {
 	func registerRoutes(_ app: Application) throws {
 		
 		// convenience route group for all /api/v3/admin endpoints
-		let modRoutes = app.grouped("api", "v3", "admin")
+		let adminRoutes = app.grouped("api", "v3", "admin")
 		
 		// endpoints available to TwitarrTeam and above
-		let ttAuthGroup = addTokenAuthGroup(to: modRoutes).grouped([RequireTwitarrTeamMiddleware()])
+		let ttAuthGroup = addTokenCacheAuthGroup(to: adminRoutes).grouped([RequireTwitarrTeamMiddleware()])
 		ttAuthGroup.post("schedule", "update", use: scheduleUploadPostHandler)
 		ttAuthGroup.get("schedule", "verify", use: scheduleChangeVerificationHandler)
 		ttAuthGroup.post("schedule", "update", "apply", use: scheduleChangeApplyHandler)
@@ -25,7 +25,7 @@ struct AdminController: APIRouteCollection {
 		ttAuthGroup.get("regcodes", "find", searchStringParam, use: userForRegCodeHandler)
 								 
 		// endpoints available for THO and Admin only
-		let thoAuthGroup = addTokenAuthGroup(to: modRoutes).grouped([RequireTHOMiddleware()])
+		let thoAuthGroup = addTokenAuthGroup(to: adminRoutes).grouped([RequireTHOMiddleware()])
 		thoAuthGroup.post("dailytheme", "create", use: addDailyThemeHandler)
 		thoAuthGroup.post("dailytheme", dailyThemeIDParam, "edit", use: editDailyThemeHandler)
 		thoAuthGroup.post("dailytheme", dailyThemeIDParam, "delete", use: deleteDailyThemeHandler)
@@ -45,7 +45,7 @@ struct AdminController: APIRouteCollection {
 		thoAuthGroup.post("karaoke", "manager", "promote", userIDParam, use: makeKaraokeManager)
 		thoAuthGroup.post("karaoke", "manager", "demote", userIDParam, use: removeKaraokeManager)
 
-		let adminAuthGroup = addTokenAuthGroup(to: modRoutes).grouped([RequireAdminMiddleware()])
+		let adminAuthGroup = addTokenAuthGroup(to: adminRoutes).grouped([RequireAdminMiddleware()])
 		adminAuthGroup.get("serversettings", use: settingsHandler)
 		adminAuthGroup.post("serversettings", "update", use: settingsUpdateHandler)
 		
@@ -61,17 +61,16 @@ struct AdminController: APIRouteCollection {
     /// - Parameter requestBody: <doc:DailyThemeUploadData>
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `HTTP 201 Created` if the theme was added successfully.
-	func addDailyThemeHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        let user = try req.auth.require(User.self)
+	func addDailyThemeHandler(_ req: Request) async throws -> HTTPStatus {
+        let user = try req.auth.require(UserCacheData.self)
 		try user.guardCanCreateContent(customErrorString: "user cannot add daily themes")
  		let data = try ValidatingJSONDecoder().decode(DailyThemeUploadData.self, fromBodyOf: req)
  		let imageArray = data.image != nil ? [data.image!] : []
-        // process images
-        return self.processImages(imageArray, usage: .dailyTheme, on: req).throwingFlatMap { filenames in
-        	let filename = filenames.isEmpty ? nil : filenames[0]
-			let dailyTheme = DailyTheme(title: data.title, info: data.info, image: filename, day: data.cruiseDay)		
-			return dailyTheme.save(on: req.db).transform(to: .created)
-		}
+        let filenames = try await processImages(imageArray, usage: .dailyTheme, on: req)
+		let filename = filenames.isEmpty ? nil : filenames[0]
+		let dailyTheme = DailyTheme(title: data.title, info: data.info, image: filename, day: data.cruiseDay)		
+		try await dailyTheme.save(on: req.db)
+		return .created
 	}
 	
     /// `POST /api/v3/admin/dailytheme/ID/edit`
@@ -83,22 +82,19 @@ struct AdminController: APIRouteCollection {
     /// - Parameter requestBody: <doc:DailyThemeUploadData>
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `HTTP 201 Created` if the theme was added successfully.
-	func editDailyThemeHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        let user = try req.auth.require(User.self)
+	func editDailyThemeHandler(_ req: Request) async throws -> HTTPStatus {
+        let user = try req.auth.require(UserCacheData.self)
 		try user.guardCanCreateContent(customErrorString: "user cannot add daily themes")
  		let data = try ValidatingJSONDecoder().decode(DailyThemeUploadData.self, fromBodyOf: req)
- 		let imageArray = data.image != nil ? [data.image!] : []
- 		return DailyTheme.findFromParameter(dailyThemeIDParam, on: req).throwingFlatMap { dailyTheme in
-			// process images
-			return self.processImages(imageArray, usage: .dailyTheme, on: req).throwingFlatMap { filenames in
-        		let filename = filenames.isEmpty ? nil : filenames[0]
-				dailyTheme.title = data.title
-				dailyTheme.info = data.info
-				dailyTheme.image = filename
-				dailyTheme.cruiseDay = data.cruiseDay
-				return dailyTheme.save(on: req.db).transform(to: .created)
-			}
-		}
+ 		let dailyTheme = try await DailyTheme.findFromParameter(dailyThemeIDParam, on: req)
+		// process images
+		let filenames = try await processImages(data.image != nil ? [data.image!] : [], usage: .dailyTheme, on: req)
+		dailyTheme.title = data.title
+		dailyTheme.info = data.info
+		dailyTheme.image = filenames.isEmpty ? nil : filenames[0]
+		dailyTheme.cruiseDay = data.cruiseDay
+		try await dailyTheme.save(on: req.db)
+		return .created
 	}
 	
     /// `POST /api/v3/admin/dailytheme/ID/delete`
@@ -109,12 +105,12 @@ struct AdminController: APIRouteCollection {
     /// - Parameter dailyThemeID:in URL path
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `HTTP 204 noContent` if the theme was deleted successfully.
-	func deleteDailyThemeHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        let user = try req.auth.require(User.self)
+	func deleteDailyThemeHandler(_ req: Request) async throws -> HTTPStatus {
+        let user = try req.auth.require(UserCacheData.self)
 		try user.guardCanCreateContent(customErrorString: "user cannot delete daily themes")
-		return DailyTheme.findFromParameter(dailyThemeIDParam, on: req).flatMap { theme in
-			return theme.delete(on: req.db).transform(to: .noContent)
-		}
+		let theme = try await DailyTheme.findFromParameter(dailyThemeIDParam, on: req)
+		try await theme.delete(on: req.db)
+		return .noContent
 	}
 	
     /// `GET /api/v3/admin/serversettings`
@@ -134,7 +130,7 @@ struct AdminController: APIRouteCollection {
     /// - Parameter requestBody: <doc:SettingsUpdateData>
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `HTTP 200 OK` if the settings were updated.
-	func settingsUpdateHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+	func settingsUpdateHandler(_ req: Request) async throws -> HTTPStatus {
  		let data = try ValidatingJSONDecoder().decode(SettingsUpdateData.self, fromBodyOf: req)
  		if let value = data.maxAlternateAccounts {
  			Settings.shared.maxAlternateAccounts = value
@@ -192,7 +188,8 @@ struct AdminController: APIRouteCollection {
 			}
  		}
  		Settings.shared.disabledFeatures = DisabledFeaturesGroup(value: localDisables)
-		return try Settings.shared.storeSettings(on: req).transform(to: HTTPStatus.ok)
+		try await Settings.shared.storeSettings(on: req)
+		return .ok
 	}
 	
     /// `POST /api/v3/admin/schedule/update`
@@ -206,7 +203,7 @@ struct AdminController: APIRouteCollection {
     /// - Parameter requestBody: <doc:EventsUpdateData> which is really one big String (the .ics file) wrapped in JSON.
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: `HTTP 200 OK`
-	func scheduleUploadPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+	func scheduleUploadPostHandler(_ req: Request) async throws -> HTTPStatus {
 		var schedule = try req.content.decode(EventsUpdateData.self).schedule
         schedule = schedule.replacingOccurrences(of: "&amp;", with: "&")
         schedule = schedule.replacingOccurrences(of: "\\,", with: ",")
@@ -214,7 +211,8 @@ struct AdminController: APIRouteCollection {
 		// If we attempt an upload, it's important we end up with the uploaded file or nothing at the filepath.
 		// Leaving the previous file there would be bad.
 		try? FileManager.default.removeItem(at: filepath)
-		return req.fileio.writeFile(ByteBuffer(string: schedule), at: filepath.path).transform(to: .ok)
+		try await req.fileio.writeFile(ByteBuffer(string: schedule), at: filepath.path)
+		return .ok
 	}
 	
     /// `GET /api/v3/admin/schedule/verify`
