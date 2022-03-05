@@ -377,6 +377,7 @@ struct SiteController: SiteControllerUtils {
 		// Routes that the user does not need to be logged in to access.
 		let openRoutes = getOpenRoutes(app)
         openRoutes.get(use: rootPageHandler)
+        openRoutes.get("about", use: aboutTwitarrViewHandler)
 		openRoutes.get("time", use: timePageHandler)
 	}
 	
@@ -423,6 +424,21 @@ struct SiteController: SiteControllerUtils {
 				return req.view.render("home", ctx)
 			}
 		}
+    }
+    
+    /// GET /about
+	///
+	///
+    func aboutTwitarrViewHandler(_ req: Request) throws -> EventLoopFuture<View> {
+    	struct AboutPageContext : Encodable {
+			var trunk: TrunkContext
+			
+			init(_ req: Request) throws {
+				trunk = .init(req, title: "About Twitarr", tab: .home)
+			}
+		}
+		let ctx = try AboutPageContext(req)
+		return req.view.render("aboutTwitarr", ctx)
     }
 
 	/// GET /time
