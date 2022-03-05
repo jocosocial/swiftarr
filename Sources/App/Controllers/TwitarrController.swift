@@ -294,7 +294,8 @@ struct TwitarrController: APIRouteCollection {
 			futureTwarrts.filter(\.$createdAt < date)
 		}
 		else if let from = filters.from?.lowercased(), from == "first" {
-			searchDescending = false
+		// rcf FIXME: Removing this because of a Kraken issue.
+//			searchDescending = false
 		}
 		
 		// Process query params that filter for specific content.
