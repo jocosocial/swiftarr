@@ -194,6 +194,11 @@ struct UserController: APIRouteCollection {
 				}
 			}
 			
+			// ACTUALLY, no reg code is an error now
+			guard let _ = normalizedCode else {
+				throw Abort(.badRequest, reason: "Registration Code required to create account.")
+			}
+			
 			// wrap in a transaction to ensure each user has an associated profile
 			return req.db.transaction { (database) in
 				var result: EventLoopFuture<RegistrationCode?>
