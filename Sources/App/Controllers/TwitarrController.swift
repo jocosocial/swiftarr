@@ -85,9 +85,11 @@ public struct TwarrtQueryOptions: Content {
 		if let afterDate = afterDate { elements.append(URLQueryItem(name: "afterDate", value: afterDate)) }
 		if let beforeDate = beforeDate { elements.append(URLQueryItem(name: "beforeDate", value: beforeDate)) }
 		if let from = from { elements.append(URLQueryItem(name: "from", value: from)) }
-		let newOffset = max(start ?? 0 + startOffset, 0)
-		if newOffset != 0 { elements.append(URLQueryItem(name: "start", value: String(newOffset))) }
 		if let limit = limit { elements.append(URLQueryItem(name: "limit", value: String(limit))) }
+		if (start ?? 0) + startOffset > 0 {
+			let newOffset = max((start ?? 0) + startOffset, 0)
+			elements.append(URLQueryItem(name: "start", value: String(newOffset)))
+		}
 		if let replyGroup = replyGroup { elements.append(URLQueryItem(name: "replyGroup", value: String(replyGroup))) }
 
 		components.queryItems = elements

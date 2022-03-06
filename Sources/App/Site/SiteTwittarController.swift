@@ -112,7 +112,7 @@ struct TweetPageContext: Encodable {
 					topMorePostsURL = queryStruct.buildQuery(baseURL: "/tweets", startOffset: 0 - queryStruct.computedLimit())
 					topMorePostsLabel = "Older"
 				}
-				bottomMorePostsURL = queryStruct.buildQuery(baseURL: "/tweets", startOffset: tweets.count)
+				bottomMorePostsURL = queryStruct.buildQuery(baseURL: "/tweets", startOffset: queryStruct.computedLimit())
 				bottomMorePostsLabel = "Newer"
 			}
 			else {
@@ -129,7 +129,7 @@ struct TweetPageContext: Encodable {
 					topMorePostsLabel = "Newer"
 				}
 				if let last = tweets.last, last.twarrtID != 1 {
-					bottomMorePostsURL = queryStruct.buildQuery(baseURL: "/tweets", startOffset: tweets.count)
+					bottomMorePostsURL = queryStruct.buildQuery(baseURL: "/tweets", startOffset: queryStruct.computedLimit())
 					bottomMorePostsLabel = "Older"
 				}
 			}
