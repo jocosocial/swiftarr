@@ -31,6 +31,7 @@ struct TrunkContext: Encodable {
 	
 	var userIsLoggedIn: Bool
 	var userIsMod: Bool
+	var userIsTwitarrTeam: Bool
 	var userIsTHO: Bool
 	var username: String
 	var userID: UUID
@@ -47,6 +48,7 @@ struct TrunkContext: Encodable {
 			let userAccessLevel = UserAccessLevel(rawValue: req.session.data["accessLevel"] ?? "banned") ?? .banned
 			userIsLoggedIn = true
 			userIsMod = userAccessLevel.hasAccess(.moderator)
+			userIsTwitarrTeam = userAccessLevel.hasAccess(.twitarrteam)
 			userIsTHO = userAccessLevel.hasAccess(.tho)
 			username = user.username
 			userID = user.userID
@@ -54,6 +56,7 @@ struct TrunkContext: Encodable {
 		else {
 			userIsLoggedIn = false
 			userIsMod = false
+			userIsTwitarrTeam = false
 			userIsTHO = false
 			username = ""
 			userID = UUID()
