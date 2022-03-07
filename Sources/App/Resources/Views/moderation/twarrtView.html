@@ -10,7 +10,7 @@
 				<div class="col" data-reportabletype="twarrt" data-reportableid="#(modData.twarrt.twarrtID)">
 					#if(!modData.isDeleted):
 						<a class="btn btn-outline-primary btn-sm" href="/tweets/edit/#(modData.twarrt.twarrtID)">Edit</a>
-						<button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="\#deleteModal">Delete</button>
+						<button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-postid="#(modData.twarrt.twarrtID)" data-bs-target="\#deleteModal">Delete</button>
 						<span class="dropdown">
 							<button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
 								Set State
