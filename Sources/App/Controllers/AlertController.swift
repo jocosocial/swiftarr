@@ -113,6 +113,10 @@ struct AlertController: APIRouteCollection {
 						result.forumMentionCount = hash["forumMention"]?.int ?? 0
 						result.newForumMentionCount = max(result.forumMentionCount - (hash["forumMention_viewed"]?.int ?? 0), 0)
 						result.alertWords = getNewAlertWordCounts(hash: hash)
+						
+						// FIXME: workaround for Kraken bug with decoding nextFollowedEventTime
+						result.nextFollowedEventTime = nil
+						
 						return getModeratorNotifications(for: user, on: req).map { modNotificationData in
 							result.moderatorData = modNotificationData
 							return result
