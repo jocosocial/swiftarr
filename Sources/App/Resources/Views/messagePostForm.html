@@ -68,10 +68,12 @@
 				</div>
 				#if(trunk.userIsMod && !post.isEdit):
 					<div class="row justify-content-end mt-2">
-						<div class="col col-auto form-check">
-							<input class="form-check-input" type="checkbox" name="postAsTwitarrTeam" value="" id="flexCheckDefault">
-							<label class="form-check-label small" for="flexCheckDefault">Post as TwitarrTeam</label>
-						</div>
+						#if(trunk.userIsTwitarrTeam && !post.isEdit):
+							<div class="col col-auto form-check">
+								<input class="form-check-input" type="checkbox" name="postAsTwitarrTeam" value="" id="flexCheckDefault">
+								<label class="form-check-label small" for="flexCheckDefault">Post as TwitarrTeam</label>
+							</div>
+						#endif
 						<div class="col col-auto form-check gx-0">
 							<input class="form-check-input" type="checkbox" value="" name="postAsModerator" id="flexCheckDefault">
 							<label class="form-check-label small" for="flexCheckDefault">Post as Moderator</label>
