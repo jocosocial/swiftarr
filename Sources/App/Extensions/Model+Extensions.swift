@@ -14,8 +14,8 @@ extension Model where IDValue: LosslessStringConvertible {
 	/// - Parameter req: The incoming request `Container`, which provides the `EventLoop` on
 	///   which the query must be run.
 	/// - Returns: `[UUID]` containing all the user's associated IDs.
-	static func findFromParameter(_ param: PathComponent, on req: Request, builder: ((QueryBuilder<Self>) -> Void)? = nil) -> EventLoopFuture<Self> {
-		return findFromParameter(param.description, on: req, builder: builder)
+	static func findFromParameter(_ param: PathComponent, on req: Request, builder: ((QueryBuilder<Self>) -> Void)? = nil) async throws -> Self {
+		return try await findFromParameter(param.description, on: req, builder: builder)
 	}
 
 	/// Returns an `EventLoopFuture<Model>` that will match the ID given in a named request parameter. 
@@ -27,18 +27,20 @@ extension Model where IDValue: LosslessStringConvertible {
 	/// - Parameter req: The incoming request `Container`, which provides the `EventLoop` on which the query must be run.
 	/// - Parameter builder:A block that runs during query construction; mostly lets callers add `.with()` clauses to the query.
 	/// - Returns: `[UUID]` containing all the user's associated IDs.
-	static func findFromParameter(_ param: String, on req: Request, builder: ((QueryBuilder<Self>) -> Void)? = nil) -> EventLoopFuture<Self> {
+	static func findFromParameter(_ param: String, on req: Request, builder: ((QueryBuilder<Self>) -> Void)? = nil) async throws -> Self {
 		let paramName = param.hasPrefix(":") ? String(param.dropFirst()) : param
   		guard let paramVal = req.parameters.get(paramName) else {
-			return req.eventLoop.makeFailedFuture(Abort(.badRequest, reason: "Request parameter \(param) is missing."))
+			throw Abort(.badRequest, reason: "Request parameter \(param) is missing.")
 		}
   		guard let objectID = IDValue(paramVal) else {
-			return req.eventLoop.makeFailedFuture(
-					Abort(.badRequest, reason: "Request parameter \(param) with value \(paramVal) is malformed."))
+			throw Abort(.badRequest, reason: "Request parameter \(param) with value \(paramVal) is malformed.")
 		}
 		let query = Self.query(on: req.db).filter(\._$id == objectID)
 		builder?(query)
-		return query.first().unwrap(or: Abort(.notFound, reason: "no value found for identifier '\(paramVal)'"))
+		guard let result = try await query.first() else {
+			throw Abort(.notFound, reason: "no value found for identifier '\(paramVal)'")
+		}
+		return result
 	}
 }
 
