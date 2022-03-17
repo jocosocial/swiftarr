@@ -47,7 +47,7 @@ struct AlertController: APIRouteCollection {
 	
 	// MARK: - Hashtags
 	
-	func getHashtagsHandler(_ req: Request) throws -> EventLoopFuture<[String]> {
+	func getHashtagsHandler(_ req: Request) async throws -> [String] {
 		guard var paramVal = req.parameters.get(searchStringParam.paramString), paramVal.count >= 1 else {
             throw Abort(.badRequest, reason: "Request parameter \(searchStringParam.paramString) is missing.")
         }
@@ -57,14 +57,11 @@ struct AlertController: APIRouteCollection {
 		guard paramVal.count >= 1, paramVal.count < 50, paramVal.allSatisfy({ $0.isLetter || $0.isNumber }) else {
             throw Abort(.badRequest, reason: "Request parameter \(searchStringParam.paramString) is malformed.")
 		}
-		return req.redis.zrangebylex(from: "hashtags", withValuesBetween: (min: .inclusive(paramVal), max: .inclusive("\(paramVal)\u{FF}")), 
-				limitBy: (offset: 0, count: 10)).map { respvalues in
-			let strings = respvalues.map { $0.description }
-			return strings
-		}
+		let strings = try await req.redis.zrangebylex(from: "hashtags", 
+				withValuesBetween: (min: .inclusive(paramVal), max: .inclusive("\(paramVal)\u{FF}")), 
+				limitBy: (offset: 0, count: 10)).get()
+		return strings.map { $0.description }
 	}
-
-
 
 	// MARK: - Notifications
 		
@@ -75,74 +72,60 @@ struct AlertController: APIRouteCollection {
 	/// 
     /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
     /// - Returns: <doc:UserNotificationData>
-	func globalNotificationHandler(_ req: Request) throws -> EventLoopFuture<UserNotificationData> {
+	func globalNotificationHandler(_ req: Request) async throws -> UserNotificationData {
         guard let user = req.auth.get(UserCacheData.self) else {
-        	return getActiveAnnouncementIDs(on: req).map { activeAnnouncementIDs in
-				var result = UserNotificationData()
-				result.activeAnnouncementIDs = activeAnnouncementIDs
-				result.disabledFeatures = Settings.shared.disabledFeatures.buildDisabledFeatureArray()
-				return result
-			}
+        	let activeAnnouncementIDs = try await getActiveAnnouncementIDs(on: req)
+			var result = UserNotificationData()
+			result.activeAnnouncementIDs = activeAnnouncementIDs
+			result.disabledFeatures = Settings.shared.disabledFeatures.buildDisabledFeatureArray()
+			return result
         }
 		// Get the number of fezzes with unread messages
-		return req.redis.hvals(in: NotificationType.fezUnreadMsg(user.userID).redisKeyName(userID: user.userID), as: Int.self)
-				.and(req.redis.hvals(in: NotificationType.seamailUnreadMsg(user.userID).redisKeyName(userID: user.userID), 
-				as: Int.self)).flatMap { (fezHash, seamailHash) in
-			let unreadFezCount = fezHash.reduce(0) { $1 ?? 0 > 0 ? $0 + 1 : $0 }
-			let unreadSeamailCount = seamailHash.reduce(0) { $1 ?? 0 > 0 ? $0 + 1 : $0 }
-			return getActiveAnnouncementIDs(on: req).flatMap { actives in 
-				return req.redis.hgetall(from: NotificationType.redisHashKeyForUser(user.userID)).flatMap { hash in
-					let userHighestReadAnnouncement = hash["announcement_viewed"]?.int ?? 0
-					let newAnnouncements = actives.reduce(0) { $1 > userHighestReadAnnouncement ? $0 + 1 : $0 }
-					var nextEventFuture: EventLoopFuture<Date?> = req.eventLoop.future(nil)
-					if let nextEventStr = hash[NotificationType.nextFollowedEventTime(nil, nil).redisFieldName()]?.string, 
-							let doubleDate = Double(nextEventStr) {
-						let eventDate = Date(timeIntervalSince1970: doubleDate)
-						if Date() > eventDate {
-							nextEventFuture = storeNextEventTime(userID: user.userID, eventBarrel: nil, on: req)
-						}
-						else {
-							nextEventFuture = req.eventLoop.future(eventDate)
-						}
-					}
-					return nextEventFuture.flatMap { nextEventDate in
-						var result = UserNotificationData(newFezCount: unreadFezCount, newSeamailCount: unreadSeamailCount,
-								activeAnnouncementIDs: actives, newAnnouncementCount: newAnnouncements, nextEvent: nextEventDate)
-						result.twarrtMentionCount = hash["twarrtMention"]?.int ?? 0
-						result.newTwarrtMentionCount = max(result.twarrtMentionCount - (hash["twarrtMention_viewed"]?.int ?? 0), 0)
-						result.forumMentionCount = hash["forumMention"]?.int ?? 0
-						result.newForumMentionCount = max(result.forumMentionCount - (hash["forumMention_viewed"]?.int ?? 0), 0)
-						result.alertWords = getNewAlertWordCounts(hash: hash)
-						
-						// FIXME: workaround for Kraken bug with decoding nextFollowedEventTime
-						result.nextFollowedEventTime = nil
-						
-						return getModeratorNotifications(for: user, on: req).map { modNotificationData in
-							result.moderatorData = modNotificationData
-							return result
-						}
-					}
-				}
+		let fezHash = try await req.redis.hvals(in: NotificationType.fezUnreadMsg(user.userID).redisKeyName(userID: user.userID), as: Int.self).get()
+		let seamailHash = try await	req.redis.hvals(in: NotificationType.seamailUnreadMsg(user.userID).redisKeyName(userID: user.userID), 
+				as: Int.self).get()
+		let unreadFezCount = fezHash.reduce(0) { $1 ?? 0 > 0 ? $0 + 1 : $0 }
+		let unreadSeamailCount = seamailHash.reduce(0) { $1 ?? 0 > 0 ? $0 + 1 : $0 }
+		let actives = try await getActiveAnnouncementIDs(on: req)
+		let hash = try await req.redis.hgetall(from: NotificationType.redisHashKeyForUser(user.userID)).get()
+		let userHighestReadAnnouncement = hash["announcement_viewed"]?.int ?? 0
+		let newAnnouncements = actives.reduce(0) { $1 > userHighestReadAnnouncement ? $0 + 1 : $0 }
+		// Get the next event date
+		var nextEventDate: Date?
+		if let nextEventStr = hash[NotificationType.nextFollowedEventTime(nil, nil).redisFieldName()]?.string, 
+				let doubleDate = Double(nextEventStr) {
+			if Date() > Date(timeIntervalSince1970: doubleDate) {
+				// The previously cached event already happend; figure out what's next
+				nextEventDate = try await storeNextEventTime(userID: user.userID, eventBarrel: nil, on: req)
 			}
+		}
+		var result = UserNotificationData(newFezCount: unreadFezCount, newSeamailCount: unreadSeamailCount,
+				activeAnnouncementIDs: actives, newAnnouncementCount: newAnnouncements, nextEvent: nextEventDate)
+		result.twarrtMentionCount = hash["twarrtMention"]?.int ?? 0
+		result.newTwarrtMentionCount = max(result.twarrtMentionCount - (hash["twarrtMention_viewed"]?.int ?? 0), 0)
+		result.forumMentionCount = hash["forumMention"]?.int ?? 0
+		result.newForumMentionCount = max(result.forumMentionCount - (hash["forumMention_viewed"]?.int ?? 0), 0)
+		result.alertWords = getNewAlertWordCounts(hash: hash)
+				
+		result.moderatorData = try await getModeratorNotifications(for: user, on: req)
+		return result
 		}
 	}
 	
 	// Pulls an array of active announcement IDs from Redis, from a key that expires every minute. If the key is expired,
 	// rebuilds it by querying Announcements. Could be optimized a bit by setting expire time to the first expiring announcement,
 	// and making sure we delete the key when announcements are added/edited/deleted. 
-	func getActiveAnnouncementIDs(on req: Request) -> EventLoopFuture<[Int]> {
-		return req.redis.get("ActiveAnnouncementIDs", as: String.self).flatMap { alertIDStr in
-			if let idStr = alertIDStr {
-				return req.eventLoop.future(idStr.split(separator: " ").compactMap { Int($0) })
-			}
-			else {
-				return Announcement.query(on: req.db).filter(\.$displayUntil > Date()).all().flatMapThrowing() { activeAnnouncements in
-					let ids = try activeAnnouncements.map { try $0.requireID() }
-					let idStr = ids.map { String($0) }.joined(separator: " ")
-					_ = req.redis.set("ActiveAnnouncementIDs", to: idStr, onCondition: .none, expiration: .seconds(60))
-					return ids 
-				}
-			}
+	func getActiveAnnouncementIDs(on req: Request) async throws -> [Int] {
+		let alertIDStr = try await req.redis.get("ActiveAnnouncementIDs", as: String.self).get()
+		if let idStr = alertIDStr {
+			return idStr.split(separator: " ").compactMap { Int($0) }
+		}
+		else {
+			let activeAnnouncements = try await Announcement.query(on: req.db).filter(\.$displayUntil > Date()).all()
+			let ids = try activeAnnouncements.map { try $0.requireID() }
+			let idStr = ids.map { String($0) }.joined(separator: " ")
+			_ = req.redis.set("ActiveAnnouncementIDs", to: idStr, onCondition: .none, expiration: .seconds(60))
+			return ids 
 		}
 	}
 	
@@ -182,25 +165,20 @@ struct AlertController: APIRouteCollection {
 	
 	/// Returns a ModeratorNotificationData structure containing counts for open reports, seamails to @moderator with unread messages, and (if user is in TwitarrTeam) 
 	/// seamails to @TwitarrTeam with unread messages. If the user is not a moderator, returns nil.
-	func getModeratorNotifications(for user: UserCacheData, on req: Request) -> EventLoopFuture<UserNotificationData.ModeratorNotificationData?> {
+	func getModeratorNotifications(for user: UserCacheData, on req: Request) async throws -> UserNotificationData.ModeratorNotificationData? {
 		guard user.accessLevel.hasAccess(.moderator) else {
-			return req.eventLoop.future(nil)
+			return nil
 		}
-		return Report.query(on: req.db).filter(\.$isClosed == false).filter(\.$actionGroup == nil).count().flatMap { reportCount in
-			return req.redis.hvals(in: "UnreadModSeamails-\(user.userID)", as: Int.self).flatMap { seamailHash in
-				let moderatorUnreadCount = seamailHash.reduce(0) { $1 ?? 0 > 0 ? $0 + 1 : $0 }
-				var twittarTeamFuture: EventLoopFuture<Int?> = req.eventLoop.future(nil)
-				if user.accessLevel.hasAccess(.twitarrteam) {
-					twittarTeamFuture = req.redis.hvals(in: "UnreadTTSeamails-\(user.userID)", as: Int.self).map { ttSeamailHash in
-						return ttSeamailHash.reduce(0) { $1 ?? 0 > 0 ? $0 + 1 : $0 }
-					}
-				}
-				return twittarTeamFuture.map { ttUnreadCount in
-					return UserNotificationData.ModeratorNotificationData(openReportCount: reportCount, 
-							newModeratorSeamailMessageCount: moderatorUnreadCount, newTTSeamailMessageCount: ttUnreadCount)
-				}
-			}
+		let reportCount = try await Report.query(on: req.db).filter(\.$isClosed == false).filter(\.$actionGroup == nil).count()
+		let seamailHash = try await req.redis.hvals(in: "UnreadModSeamails-\(user.userID)", as: Int.self).get()
+		let moderatorUnreadCount = seamailHash.reduce(0) { $1 ?? 0 > 0 ? $0 + 1 : $0 }
+		var ttUnreadCount = 0
+		if user.accessLevel.hasAccess(.twitarrteam) {
+			let ttSeamailHash = try await req.redis.hvals(in: "UnreadTTSeamails-\(user.userID)", as: Int.self).get()
+			ttUnreadCount = ttSeamailHash.reduce(0) { $1 ?? 0 > 0 ? $0 + 1 : $0 }
 		}
+		return UserNotificationData.ModeratorNotificationData(openReportCount: reportCount, 
+				newModeratorSeamailMessageCount: moderatorUnreadCount, newTTSeamailMessageCount: ttUnreadCount)
 	}
 	
 	/// `WS /api/v3/notification/socket`
@@ -231,21 +209,18 @@ struct AlertController: APIRouteCollection {
 	/// 
     /// - Parameter requestBody: <doc:AnnouncementCreateData>
     /// - Returns: `HTTPStatus` 201 on success.
-	func createAnnouncement(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+	func createAnnouncement(_ req: Request) async throws -> HTTPStatus {
 		let user = try req.auth.require(UserCacheData.self)
 		guard user.accessLevel.hasAccess(.tho) else {
 			throw Abort(.forbidden, reason: "THO only")
 		}
 		let announcementData = try ValidatingJSONDecoder().decode(AnnouncementCreateData.self, fromBodyOf: req)
 		let announcement = Announcement(authorID: user.userID, text: announcementData.text, displayUntil: announcementData.displayUntil)
-			
-		return announcement.save(on: req.db).throwingFlatMap {
-			return User.query(on: req.db).field(\.$id).all().throwingFlatMap { allUsers in
-				let userIDs = try allUsers.map { try $0.requireID() }
-				return try addNotifications(users: userIDs, type: .announcement(announcement.requireID()),
-						info: announcement.text, on: req).transform(to: .created)
-			}
-		}
+		try await announcement.save(on: req.db)
+		let allUsers = try await User.query(on: req.db).field(\.$id).all()
+		let userIDs = try allUsers.map { try $0.requireID() }
+		return try addNotifications(users: userIDs, type: .announcement(announcement.requireID()),
+				info: announcement.text, on: req).transform(to: .created)
 	}
 	
     /// `GET /api/v3/notification/announcements`

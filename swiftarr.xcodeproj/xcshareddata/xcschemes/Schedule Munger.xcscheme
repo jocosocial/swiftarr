@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "EA78426227CAEC59003D8E7F"
-               BuildableName = "Schedule Munger"
+               BuildableName = "munger"
                BlueprintName = "Schedule Munger"
                ReferencedContainer = "container:swiftarr.xcodeproj">
             </BuildableReference>
@@ -45,7 +45,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "EA78426227CAEC59003D8E7F"
-            BuildableName = "Schedule Munger"
+            BuildableName = "munger"
             BlueprintName = "Schedule Munger"
             ReferencedContainer = "container:swiftarr.xcodeproj">
          </BuildableReference>
@@ -68,7 +68,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "EA78426227CAEC59003D8E7F"
-            BuildableName = "Schedule Munger"
+            BuildableName = "munger"
             BlueprintName = "Schedule Munger"
             ReferencedContainer = "container:swiftarr.xcodeproj">
          </BuildableReference>

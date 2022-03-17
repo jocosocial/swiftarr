@@ -142,24 +142,31 @@ extension APIRouteCollection {
 	// blocking or muting it, or not in the group that receives the content).
 	//
 	// Adding a new notification will also send out an update to all relevant users who are listening on notification sockets. 
-	@discardableResult func addNotifications(users: [UUID], type: NotificationType, info: String, on req: Request) -> EventLoopFuture<Void> {
-		var hashFutures: [EventLoopFuture<Int>] = []
+	func addNotifications(users: [UUID], type: NotificationType, info: String, on req: Request) async throws {
 		var forwardToSockets = true	
 		switch type {
 		case .announcement:
 			// Force cache of active announcementIDs to get rebuilt
-			hashFutures = [req.redis.delete("ActiveAnnouncementIDs")]
+			_ = try await req.redis.delete("ActiveAnnouncementIDs").get()
 		case .nextFollowedEventTime(let date, let id):
 			// 
-			hashFutures = users.map { userID in
-				if let doubleDate = date?.timeIntervalSince1970 {
-					return req.redis.hset(type.redisFieldName(), to: doubleDate, in: type.redisKeyName(userID: userID)).flatMap { _ in
-						return req.redis.hset("nextFollowedEventID", to: id, in: type.redisKeyName(userID: userID)).transform(to: 0)
+			await withThrowingTaskGroup(of: Void.self) { group in
+				for userID in users {
+					if let doubleDate = date?.timeIntervalSince1970 {
+						group.addTask {
+							_ = try await req.redis.hset(type.redisFieldName(), to: doubleDate, in: type.redisKeyName(userID: userID)).get()
+						}
+						group.addTask {
+							_ = try await req.redis.hset("nextFollowedEventID", to: id, in: type.redisKeyName(userID: userID)).get()
+						}
 					}
-				}
-				else {
-					return req.redis.hdel(type.redisFieldName(), from: type.redisKeyName(userID: userID)).flatMap { _ in
-						return req.redis.hdel("nextFollowedEventID", from: type.redisKeyName(userID: userID))
+					else {
+						group.addTask {
+							_ = try await req.redis.hdel(type.redisFieldName(), from: type.redisKeyName(userID: userID)).get()
+						}
+						group.addTask {
+							_ = try await req.redis.hdel("nextFollowedEventID", from: type.redisKeyName(userID: userID)).get()
+						}
 					}
 				}
 			}
@@ -301,44 +308,42 @@ extension APIRouteCollection {
 	}
 	
 	// Calculates the start time of the earliest future followed event. Caches the value in Redis for quick access.
-	func storeNextEventTime(userID: UUID, eventBarrel: Barrel?, on req: Request) -> EventLoopFuture<Date?> {
-		let futureBarrel: EventLoopFuture<Barrel?> = eventBarrel != nil ?  req.eventLoop.future(eventBarrel) :
-				Barrel.query(on: req.db).filter(\.$ownerID == userID).filter(\.$barrelType == .taggedEvent).first()
-		return futureBarrel.flatMap { barrel in
-			guard let eventBarrel = barrel else {
-				return req.eventLoop.future(nil)
-			}
-			let cruiseStartDate = Settings.shared.cruiseStartDate
-			var filterDate = Date()
-			// If the cruise is in the future or more than 10 days in the past, construct a fake date during the cruise week
-			let secondsPerDay = 24 * 60 * 60.0
-			if cruiseStartDate.timeIntervalSinceNow > 0 || cruiseStartDate.timeIntervalSinceNow < 0 - Double(Settings.shared.cruiseLengthInDays) * secondsPerDay {
-				// This filtering nonsense is whack. There is a way to do .DateComponents() without needing the in: but then you
-				// have to specify the Calendar.Components that you want. Since I don't have enough testing around this I'm going
-				// to keep pumping the timezone in which lets me bypass that requirement.
-				var filterDateComponents = Settings.shared.getDisplayCalendar().dateComponents(in: Settings.shared.getDisplayTimeZone(), from: cruiseStartDate)
-				let currentDateComponents = Settings.shared.getDisplayCalendar().dateComponents(in: Settings.shared.getDisplayTimeZone(), from: Date())
-				filterDateComponents.hour = currentDateComponents.hour
-				filterDateComponents.minute = currentDateComponents.minute
-				filterDateComponents.second = currentDateComponents.second
-				filterDate = Settings.shared.getDisplayCalendar().date(from: filterDateComponents) ?? Date()
-				if let currentDayOfWeek = currentDateComponents.weekday {
-					let daysToAdd = (7 + currentDayOfWeek - Settings.shared.cruiseStartDayOfWeek) % 7 
-					if let adjustedDate = Settings.shared.getDisplayCalendar().date(byAdding: .day, value: daysToAdd, to: filterDate) {
-						filterDate = adjustedDate
-					}
-				}
-			}			
-			return Event.query(on: req.db).filter(\.$id ~~ eventBarrel.modelUUIDs)
-					.filter(\.$startTime > filterDate)
-					.sort(\.$startTime, .ascending)
-					.first()
-					.map { event in
-				if let event = event, let id = event.id {
-					addNotifications(users: [userID], type: .nextFollowedEventTime(event.startTime, id), info: "", on: req)
-				}
-				return event?.startTime
-			}
+	func storeNextEventTime(userID: UUID, eventBarrel: Barrel?, on req: Request) async throws -> Date? {
+		var barrel = eventBarrel
+		if barrel == nil {
+			barrel = try await Barrel.query(on: req.db).filter(\.$ownerID == userID).filter(\.$barrelType == .taggedEvent).first()
 		}
+		guard let foundBarrel = barrel else{
+			return nil
+		}
+		let cruiseStartDate = Settings.shared.cruiseStartDate
+		var filterDate = Date()
+		// If the cruise is in the future or more than 10 days in the past, construct a fake date during the cruise week
+		let secondsPerDay = 24 * 60 * 60.0
+		if cruiseStartDate.timeIntervalSinceNow > 0 || cruiseStartDate.timeIntervalSinceNow < 0 - Double(Settings.shared.cruiseLengthInDays) * secondsPerDay {
+			// This filtering nonsense is whack. There is a way to do .DateComponents() without needing the in: but then you
+			// have to specify the Calendar.Components that you want. Since I don't have enough testing around this I'm going
+			// to keep pumping the timezone in which lets me bypass that requirement.
+			var filterDateComponents = Settings.shared.getDisplayCalendar().dateComponents(in: Settings.shared.getDisplayTimeZone(), from: cruiseStartDate)
+			let currentDateComponents = Settings.shared.getDisplayCalendar().dateComponents(in: Settings.shared.getDisplayTimeZone(), from: Date())
+			filterDateComponents.hour = currentDateComponents.hour
+			filterDateComponents.minute = currentDateComponents.minute
+			filterDateComponents.second = currentDateComponents.second
+			filterDate = Settings.shared.getDisplayCalendar().date(from: filterDateComponents) ?? Date()
+			if let currentDayOfWeek = currentDateComponents.weekday {
+				let daysToAdd = (7 + currentDayOfWeek - Settings.shared.cruiseStartDayOfWeek) % 7 
+				if let adjustedDate = Settings.shared.getDisplayCalendar().date(byAdding: .day, value: daysToAdd, to: filterDate) {
+					filterDate = adjustedDate
+				}
+			}
+		}			
+		let event = try await Event.query(on: req.db).filter(\.$id ~~ foundBarrel.modelUUIDs)
+				.filter(\.$startTime > filterDate)
+				.sort(\.$startTime, .ascending)
+				.first()
+		if let event = event, let id = event.id {
+			addNotifications(users: [userID], type: .nextFollowedEventTime(event.startTime, id), info: "", on: req)
+		}
+		return event?.startTime
 	}
 }

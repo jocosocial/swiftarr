@@ -43,6 +43,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		EA2EA47627E2CC6400790942 /* RedisWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2EA47527E2CC6400790942 /* RedisWrapper.swift */; };
 		EA469925275336BF00996F06 /* seeds in CopyFiles */ = {isa = PBXBuildFile; fileRef = EA469924275336B900996F06 /* seeds */; };
 		EA469927275336CF00996F06 /* Resources in CopyFiles */ = {isa = PBXBuildFile; fileRef = EA469926275336CC00996F06 /* Resources */; };
 		EA46992A2756E35A00996F06 /* Private Swiftarr Config in CopyFiles */ = {isa = PBXBuildFile; fileRef = EA4699292756E35000996F06 /* Private Swiftarr Config */; };
@@ -8142,6 +8143,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		EA2EA47527E2CC6400790942 /* RedisWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RedisWrapper.swift; sourceTree = "<group>"; };
 		EA469924275336B900996F06 /* seeds */ = {isa = PBXFileReference; lastKnownFileType = folder; name = seeds; path = Sources/App/seeds; sourceTree = "<group>"; };
 		EA469926275336CC00996F06 /* Resources */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Resources; path = Sources/App/Resources; sourceTree = "<group>"; };
 		EA4699292756E35000996F06 /* Private Swiftarr Config */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "Private Swiftarr Config"; sourceTree = "<group>"; };
@@ -16151,6 +16153,7 @@
 				OBJ_56 /* UserCache.swift */,
 				OBJ_57 /* UserRoleMiddleware.swift */,
 				OBJ_58 /* ValidatingJSONParser.swift */,
+				EA2EA47527E2CC6400790942 /* RedisWrapper.swift */,
 				OBJ_59 /* WebSocketStorage.swift */,
 			);
 			path = Helpers;
@@ -19724,6 +19727,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 0;
 			files = (
+				EA2EA47627E2CC6400790942 /* RedisWrapper.swift in Sources */,
 				OBJ_2786 /* AdminController.swift in Sources */,
 				OBJ_2787 /* AlertController.swift in Sources */,
 				OBJ_2788 /* AuthController.swift in Sources */,
