@@ -20,7 +20,7 @@ let package = Package(
 	targets: [
         .systemLibrary(name: "gd", pkgConfig: "gdlib", providers: [.apt(["libgd-dev"]), .brew(["gd"])]),
         .systemLibrary(name: "jpeg", pkgConfig: "libjpeg", providers: [.apt(["libjpeg-dev"]), .brew(["jpeg"])]),
-        .target(name: "gdOverrides", dependencies: ["gd", "jpeg"]),
+        .target(name: "gdOverrides", dependencies: ["gd", "jpeg"], publicHeadersPath: "."),
 		.target(name: "App", dependencies: ["gd",
 											"jpeg",
 											"gdOverrides",
