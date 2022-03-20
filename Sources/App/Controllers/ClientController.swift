@@ -170,6 +170,47 @@ struct ClientController: APIRouteCollection {
         var alerts: [AlertmanagerAlert]
     }
 
+    func buildFezData(from fez: FriendlyFez, with pivot: FezParticipant? = nil, posts: [FezPostData]? = nil, 
+            for cacheUser: UserCacheData, on req: Request) throws -> FezData {
+        let userBlocks = cacheUser.getBlocks()
+        // init return struct
+        let ownerHeader = try req.userCache.getHeader(fez.$owner.id)
+        var fezData : FezData = try FezData(fez: fez, owner: ownerHeader)
+        if pivot != nil || (cacheUser.accessLevel.hasAccess(.moderator) && fez.fezType != .closed) {
+            let allParticipantHeaders = req.userCache.getHeaders(fez.participantArray)
+
+            // masquerade blocked users
+            let valids = allParticipantHeaders.map { (member: UserHeader) -> UserHeader in
+                if userBlocks.contains(member.userID) {
+                    return UserHeader.Blocked
+                }
+                return member
+            }
+            // populate fezData's participant list and waiting list
+            var participants: [UserHeader]
+            var waitingList: [UserHeader]
+            if valids.count > fez.maxCapacity && fez.maxCapacity > 0 {
+                participants = Array(valids[valids.startIndex..<fez.maxCapacity])
+                waitingList = Array(valids[fez.maxCapacity..<valids.endIndex])
+            }
+            else {
+                participants = valids
+                waitingList = []
+            }
+            fezData.members = FezData.MembersOnlyData(participants: participants, waitingList: waitingList, 
+                    postCount: fez.postCount - (pivot?.hiddenCount ?? 0), readCount: pivot?.readCount ?? 0, posts: posts)
+        }
+       
+       
+        return fezData
+    }
+
+    // func getUserPivot(fez: FriendlyFez, userID: UUID, on db: Database) -> EventLoopFuture<FezParticipant?> {
+	// 	return fez.$participants.$pivots.query(on: db)
+	// 			.filter(\.$user.$id == userID)
+	// 			.first()
+	// }
+
     func prometheusAlertHandler(_ req: Request) async throws -> Response {
         // let futureString: EventLoopFuture<String> = "Hello"
         // return EventLoopFuture<String>("hello")
@@ -189,7 +230,8 @@ struct ClientController: APIRouteCollection {
         let fez = FriendlyFez(owner: sourceUser.userID, fezType: FezType.closed, title: "Prometheus Alert", info: "",
 				location: nil, startTime: nil, endTime: nil,
 				minCapacity: 0, maxCapacity: 0)
-        fez.participantArray = [sourceUser.userID, destinationUser.userID]
+        var initialUsers = [sourceUser.userID, destinationUser.userID]
+        fez.participantArray = initialUsers
 
         // https://theswiftdev.com/beginners-guide-to-the-asyncawait-concurrency-api-in-vapor-fluent/
         print("saving fez")
@@ -199,7 +241,49 @@ struct ClientController: APIRouteCollection {
         fez.postCount += 1
         print("saving post")
         try await post.save(on: req.db)
-        try await fez.save(on: req.db)
+        // try await fez.save(on: req.db)
+
+        
+
+        // try await fez.save(on: req.db).flatMap { _ in
+		// 	return User.query(on: req.db).filter(\.$id ~~ initialUsers).all().flatMap { participants in
+		// 		return fez.$participants.attach(participants, on: req.db, { $0.readCount = 0; $0.hiddenCount = 0 }).throwingFlatMap { (_) in
+		// 			return fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == sourceUser.userID)
+		// 					.first().flatMapThrowing() { creatorPivot -> FezParticipant in
+		// 				let fezData = try buildFezData(from: fez, with: creatorPivot, posts: [], for: req.userCache.getUser(username: "client")!, on: req)
+		// 				// with 201 status
+		// 				let response = Response(status: .created)
+		// 				try response.content.encode(fezData)
+		// 			}
+		// 		}
+		// 	}
+		// }
+
+        // try await getUserPivot(fez: fez, userID: sourceUser.userID, on: req.db).flatMapThrowing { pivot -> Void in
+        //     // A user posting is assumed to have read all prev posts. (even if this proves untrue, we should increment
+        //     // readCount as they've read the post they just wrote!)
+        //     if let pivot = pivot {
+        //         pivot.readCount = fez.postCount - pivot.hiddenCount
+        //         _ = pivot.save(on: req.db)
+        //         print("doing the thing?")
+        //     }
+        //     // return try FezPostData(post: post, author: effectiveAuthor.makeHeader())
+        // }
+
+        try await fez.save(on: req.db).flatMap { _ in
+			return User.query(on: req.db).filter(\.$id ~~ initialUsers).all().flatMap { participants in
+				return fez.$participants.attach(participants, on: req.db, { $0.readCount = 0; $0.hiddenCount = 0 }).throwingFlatMap { (_) in
+					return fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == sourceUser.userID)
+							.first().flatMapThrowing() { creatorPivot -> Response in
+						let fezData = try buildFezData(from: fez, with: creatorPivot, posts: [], for: req.userCache.getUser(sourceUser.userID)!, on: req)
+						// with 201 status
+						let response = Response(status: .created)
+						try response.content.encode(fezData)
+						return response
+					}
+				}
+			}
+		}
 
 
 
