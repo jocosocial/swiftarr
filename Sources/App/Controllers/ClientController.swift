@@ -26,6 +26,7 @@ struct ClientController: APIRouteCollection {
 		// Endpoints available with HTTP Basic auth. I'd prefer token auth for this, but setting that up looks difficult.
 		let basicAuthGroup = addBasicAuthGroup(to: clientRoutes)
 		basicAuthGroup.get("metrics", use: prometheusMetricsSource)
+        basicAuthGroup.post("alert", use: prometheusAlertHandler)
     }
 
     // MARK: - tokenAuthGroup Handlers (logged in)
@@ -124,8 +125,7 @@ struct ClientController: APIRouteCollection {
 	/// by Prometheus.
     ///
     /// - Requires: `x-swiftarr-user` header in the request.
-    /// - Throws: 400 error if no valid date string provided. 401 error if the required header
-    ///   is missing or invalid. 403 error if user is not a registered client.
+    /// - Throws: 403 error if user is not a registered client.
     /// - Returns: Data about what requests are being called, how long they take to complete, how the databases are doing, what the server's CPU utilization is,
 	/// plus a bunch of other metrics data. All the data is in some opaquish Prometheus format.
 	func prometheusMetricsSource(_ req: Request) -> EventLoopFuture<String> {
@@ -139,6 +139,85 @@ struct ClientController: APIRouteCollection {
 		}
 		return promise.futureResult
 	}
+
+    /// Prometheus webhook alert object. Applied from https://prometheus.io/docs/alerting/latest/configuration/#webhook_config
+    public struct AlertmanagerAlert: Content {
+        var status: String
+        var labels: [String:String]
+        var annotations: [String:String]
+        var startsAt: String
+        var endsAt: String
+        // Identifies the entity that caused the alert.
+        var generatorURL: String
+        // Fingerprint to identify the alert.
+        var fingerprint: String
+    }
+
+    /// Prometheus Amertmanager webhook payload. Applied from https://prometheus.io/docs/alerting/latest/configuration/#webhook_config
+    public struct AlertmanagerWebhookPayload: Content {
+        var version: String
+        /// Key identifying the group of alerts (e.g. to deduplicate).
+        var groupKey: String
+        /// How many alerts have been truncated due to "max_alerts".
+        var truncatedAlerts: Int
+        var status: String
+        var receiver: String
+        var groupLabels: [String:String]
+        var commonLabels: [String:String]
+        var commonAnnotations: [String:String]
+        /// backlink to the Alertmanager.
+        var externalURL: String
+        var alerts: [AlertmanagerAlert]
+    }
+
+    func prometheusAlertHandler(_ req: Request) async throws -> Response {
+        // let futureString: EventLoopFuture<String> = "Hello"
+        // return EventLoopFuture<String>("hello")
+        let data = try ValidatingJSONDecoder().decode(AlertmanagerWebhookPayload.self, fromBodyOf: req)
+        guard data.receiver.components(separatedBy: "-").indices.contains(1) else {
+            throw Abort(.badRequest, reason: "receiver (\(data.receiver)) must be in the format \"twitarr-${user_name}\".")
+        }
+        let seamailUser = data.receiver.components(separatedBy: "-")[1]        
+        guard let destinationUser = req.userCache.getHeader(seamailUser) else {
+            throw Abort(.badRequest, reason: "User \(seamailUser) not found.")
+        }
+        req.logger.info("Alertmanager webhook received destined for user '\(seamailUser)' (\(destinationUser.userID)).")
+
+        // temporary
+        let sourceUser = req.userCache.getHeader("client")!
+
+        let fez = FriendlyFez(owner: sourceUser.userID, fezType: FezType.closed, title: "Prometheus Alert", info: "",
+				location: nil, startTime: nil, endTime: nil,
+				minCapacity: 0, maxCapacity: 0)
+        fez.participantArray = [sourceUser.userID, destinationUser.userID]
+
+        // https://theswiftdev.com/beginners-guide-to-the-asyncawait-concurrency-api-in-vapor-fluent/
+        print("saving fez")
+        try await fez.save(on: req.db)
+        print("attmpting post")
+        let post = try FezPost(fez: fez, authorID: sourceUser.userID, text: "blarg blarg", image: nil)
+        fez.postCount += 1
+        print("saving post")
+        try await post.save(on: req.db)
+        try await fez.save(on: req.db)
+
+
+
+        print("Done?")
+
+        // let fezContent = FezContentData(fezType: .closed, title: formContent.subject, info: "", startTime: nil, endTime: nil,
+				// location: nil, minCapacity: 0, maxCapacity: 0, initialUsers: participants)
+    	// return apiQuery(req, endpoint: "/fez/create", method: .POST, beforeSend: { req throws i
+        // let fez = FriendlyFez(owner: user.userID, fezType: data.fezType, title: data.title, info: data.info,
+				// location: data.location, startTime: data.startTime, endTime: data.endTime,
+				// minCapacity: data.minCapacity, maxCapacity: data.maxCapacity)
+		// This filters out anyone on the creator's blocklist and any duplicate IDs.
+		// var creatorBlocks = user.getBlocks()
+		// let initialUsers = ([user.userID] + data.initialUsers).filter { creatorBlocks.insert($0).inserted }
+		// fez.participantArray = initialUsers
+
+        return Response(status: .ok)
+    }
 
     // MARK: - Helper Functions
 }
