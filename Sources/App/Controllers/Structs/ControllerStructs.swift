@@ -1739,3 +1739,37 @@ fileprivate func usernameValidations(username: String) -> [String] {
 	}
 	return errorStrings
 }
+
+/// Prometheus webhook alert object.
+/// Applied from https://prometheus.io/docs/alerting/latest/configuration/#webhook_config
+///
+public struct AlertmanagerAlert: Content {
+	var status: String
+	var labels: [String:String]
+	var annotations: [String:String]
+	var startsAt: String
+	var endsAt: String
+	// Identifies the entity that caused the alert.
+	var generatorURL: String
+	// Fingerprint to identify the alert.
+	var fingerprint: String
+}
+
+/// Prometheus Amertmanager webhook payload.
+/// Applied from https://prometheus.io/docs/alerting/latest/configuration/#webhook_config
+///
+public struct AlertmanagerWebhookPayload: Content {
+	var version: String
+	/// Key identifying the group of alerts (e.g. to deduplicate).
+	var groupKey: String
+	/// How many alerts have been truncated due to "max_alerts".
+	var truncatedAlerts: Int
+	var status: String
+	var receiver: String
+	var groupLabels: [String:String]
+	var commonLabels: [String:String]
+	var commonAnnotations: [String:String]
+	/// backlink to the Alertmanager.
+	var externalURL: String
+	var alerts: [AlertmanagerAlert]
+}
