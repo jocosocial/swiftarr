@@ -41,10 +41,13 @@ import gd
 public func configure(_ app: Application) throws {
 
 	// Load the variables in the .env file into our environment. This calls `setenv` on each key-value pair in the file.
-	// Vapor is setup to load these files automatically, 
+	// Vapor is setup to load these files automatically,
 	if let envFilePath = Bundle.main.path(forResource: "\(app.environment.name)", ofType: "env", inDirectory: "Private Swiftarr Config") {
 		DotEnvFile.load(path: envFilePath, on: .shared(app.eventLoopGroup), fileio: app.fileio, logger: app.logger)
+	} else {
+		Logger(label: "app.swiftarr.configuration") .warning("No config file detected for environment '\(app.environment.name)'. Defaulting to shell environment and code defaults.")
 	}
+	// print(Bundle.main.path(forResource: "\(app.environment.name)", ofType: "env", inDirectory: "Private Swiftarr Config"))
     
     // use iso8601ms for dates
     let jsonEncoder = JSONEncoder()
@@ -240,14 +243,14 @@ func configureStoredSettings(_ app: Application) throws {
 
 func HTTPServerConfiguration(_ app: Application) throws {
 	// run API on port 8081 by default and set a 10MB hard limit on file size
-    let port = Int(Environment.get("PORT") ?? "8081")!
+    let port = Int(Environment.get("SWIFTARR_PORT") ?? "8081")!
 	app.http.server.configuration.port = port
 	app.routes.defaultMaxBodySize = "10mb"
 	
 	// Enable HTTP response compression.
 	// app.http.server.configuration.responseCompression = .enabled
 	
-	if let host = Environment.get("hostname") {
+	if let host = Environment.get("SWIFTARR_IP") {
 		app.http.server.configuration.hostname = host
 	}
 	else if app.environment == .development {

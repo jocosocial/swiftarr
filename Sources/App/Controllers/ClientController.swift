@@ -146,6 +146,10 @@ struct ClientController: APIRouteCollection {
     /// in which the server ran out of disk space. We have Prometheus metrics for this but no way to tell us about it without
     /// checking the dashboards manually. This endpoint translates that payload into a Seamail that can be sent to an arbitrary
     /// user (usually TwitarrTeam).
+    /// 
+    /// It is expected that Alertmanager receivers are configured with a pattern of "twitarr-${username}". Where username is a
+    /// valid username in Twitarr. This probably explodes with spaces or weird characters but since we expect it to only
+    /// be "admin" or "twitarrteam" this should be fine.
     ///
     /// This should be used very judiciously and only for actionable alerts! On-call sucks in the real world and I don't want
     /// people to get spammed with messages while on vacation.
@@ -153,11 +157,10 @@ struct ClientController: APIRouteCollection {
     /// - Throws: 403 error if user is not a registered client.
     /// - Returns: 201 created.
     func prometheusAlertHandler(_ req: Request) async throws -> Response {
-        // let futureString: EventLoopFuture<String> = "Hello"
-        // return EventLoopFuture<String>("hello")
+        // Figure out who we are sending to.
         let data = try ValidatingJSONDecoder().decode(AlertmanagerWebhookPayload.self, fromBodyOf: req)
         guard data.receiver.components(separatedBy: "-").indices.contains(1) else {
-            throw Abort(.badRequest, reason: "receiver (\(data.receiver)) must be in the format \"twitarr-${user_name}\".")
+            throw Abort(.badRequest, reason: "receiver (\(data.receiver)) must be in the format \"twitarr-${username}\".")
         }
         let seamailUser = data.receiver.components(separatedBy: "-")[1]        
         guard let destinationUser = req.userCache.getHeader(seamailUser) else {
@@ -165,16 +168,21 @@ struct ClientController: APIRouteCollection {
         }
         req.logger.info("Alertmanager webhook received destined for user '\(seamailUser)' (\(destinationUser.userID)).")
 
-        // temporary
-        let sourceUser = req.userCache.getHeader("client")!
+        // Acquire the source user, which is a prometheus service account we create on database initialization.
+        guard let sourceUser = req.userCache.getHeader("prometheus") else {
+            throw Abort(.internalServerError, reason: "User prometheus not found.")
+        }
 
+        // Construct the seamail (fez) based on the data we got in the webhook call.
         let fez = FriendlyFez(owner: sourceUser.userID, fezType: FezType.closed, title: "Prometheus Alert", info: "",
 				location: nil, startTime: nil, endTime: nil,
 				minCapacity: 0, maxCapacity: 0)
-        var initialUsers = [sourceUser.userID, destinationUser.userID]
+        let initialUsers = [sourceUser.userID, destinationUser.userID]
         fez.participantArray = initialUsers
 
         // https://theswiftdev.com/beginners-guide-to-the-asyncawait-concurrency-api-in-vapor-fluent/
+        //
+        // @TODO figure out if we can reduce these.
         print("saving fez")
         try await fez.save(on: req.db)
         print("attmpting post")
@@ -184,8 +192,8 @@ struct ClientController: APIRouteCollection {
         try await post.save(on: req.db)
         // try await fez.save(on: req.db)
 
-        // THIS IS THE GOOD ONE
-        try await fez.save(on: req.db).flatMap { _ in
+        // @TODO need to deconstruct this.
+        fez.save(on: req.db).flatMap { _ in
 			return User.query(on: req.db).filter(\.$id ~~ initialUsers).all().flatMap { participants in
 				return fez.$participants.attach(participants, on: req.db, { $0.readCount = 0; $0.hiddenCount = 0 }).throwingFlatMap { (_) in
 					return fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == sourceUser.userID)
@@ -199,6 +207,8 @@ struct ClientController: APIRouteCollection {
 				}
 			}
 		}
+        // It's possible that Alertmanager could do something with the information
+        // it gets back but that can be a project for a different day.
         return Response(status: .ok)
     }
 }
