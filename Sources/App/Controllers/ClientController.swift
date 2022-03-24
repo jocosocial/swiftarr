@@ -124,7 +124,6 @@ struct ClientController: APIRouteCollection {
 	/// is connected, it will poll this endpoint for metrics updates. You can then view Swiftarr metrics data with charts and graphs in a web page served
 	/// by Prometheus.
     ///
-    /// - Requires: `x-swiftarr-user` header in the request.
     /// - Throws: 403 error if user is not a registered client.
     /// - Returns: Data about what requests are being called, how long they take to complete, how the databases are doing, what the server's CPU utilization is,
 	/// plus a bunch of other metrics data. All the data is in some opaquish Prometheus format.
@@ -140,6 +139,19 @@ struct ClientController: APIRouteCollection {
 		return promise.futureResult
 	}
 
+    /// `POST /api/v3/client/alert`
+    ///
+    /// For use with the [Prometheus Alertmanager](https://prometheus.io/docs/alerting/latest/alertmanager/). A webhook can
+    /// be configured to POST a payload containing information about actively firing/cleared alerts. A situation arose on JoCo 2022
+    /// in which the server ran out of disk space. We have Prometheus metrics for this but no way to tell us about it without
+    /// checking the dashboards manually. This endpoint translates that payload into a Seamail that can be sent to an arbitrary
+    /// user (usually TwitarrTeam).
+    ///
+    /// This should be used very judiciously and only for actionable alerts! On-call sucks in the real world and I don't want
+    /// people to get spammed with messages while on vacation.
+    /// 
+    /// - Throws: 403 error if user is not a registered client.
+    /// - Returns: 201 created.
     func prometheusAlertHandler(_ req: Request) async throws -> Response {
         // let futureString: EventLoopFuture<String> = "Hello"
         // return EventLoopFuture<String>("hello")
@@ -187,17 +199,11 @@ struct ClientController: APIRouteCollection {
 				}
 			}
 		}
-
-
-
-        print("Done?")
-
         return Response(status: .ok)
     }
-
-    // MARK: - Helper Functions
 }
 
 extension ClientController: FezProtocol {
-    /// This page intentionally left blank
+    /// This page intentionally left blank. In case we have extra things to add later on
+    /// I'm keeping it seperate even though this could be done above.
 }
