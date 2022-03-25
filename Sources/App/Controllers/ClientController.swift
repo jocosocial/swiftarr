@@ -174,7 +174,7 @@ struct ClientController: APIRouteCollection {
         }
 
         // Construct the seamail (fez) based on the data we got in the webhook call.
-        let fez = FriendlyFez(owner: sourceUser.userID, fezType: FezType.closed, title: "Prometheus Alert", info: "",
+        let fez = FriendlyFez(owner: sourceUser.userID, fezType: FezType.closed, title: data.getSummarySubject(), info: "",
 				location: nil, startTime: nil, endTime: nil,
 				minCapacity: 0, maxCapacity: 0)
         let initialUsers = [sourceUser.userID, destinationUser.userID]
@@ -186,13 +186,14 @@ struct ClientController: APIRouteCollection {
         print("saving fez")
         try await fez.save(on: req.db)
         print("attmpting post")
-        let post = try FezPost(fez: fez, authorID: sourceUser.userID, text: "blarg blarg", image: nil)
+        let post = try FezPost(fez: fez, authorID: sourceUser.userID, text: data.getSummaryContent(), image: nil)
         fez.postCount += 1
         print("saving post")
         try await post.save(on: req.db)
         // try await fez.save(on: req.db)
 
         // @TODO need to deconstruct this.
+        // @TODO not generating proper notifications for trunk
         fez.save(on: req.db).flatMap { _ in
 			return User.query(on: req.db).filter(\.$id ~~ initialUsers).all().flatMap { participants in
 				return fez.$participants.attach(participants, on: req.db, { $0.readCount = 0; $0.hiddenCount = 0 }).throwingFlatMap { (_) in

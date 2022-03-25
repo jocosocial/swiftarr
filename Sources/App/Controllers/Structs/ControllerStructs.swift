@@ -1740,7 +1740,7 @@ fileprivate func usernameValidations(username: String) -> [String] {
 	return errorStrings
 }
 
-/// Prometheus webhook alert object.
+/// Prometheus Alertmanager webhook alert object.
 /// Applied from https://prometheus.io/docs/alerting/latest/configuration/#webhook_config
 ///
 public struct AlertmanagerAlert: Content {
@@ -1755,7 +1755,7 @@ public struct AlertmanagerAlert: Content {
 	var fingerprint: String
 }
 
-/// Prometheus Amertmanager webhook payload.
+/// Prometheus Alertmanager webhook payload.
 /// Applied from https://prometheus.io/docs/alerting/latest/configuration/#webhook_config
 ///
 public struct AlertmanagerWebhookPayload: Content {
@@ -1772,4 +1772,12 @@ public struct AlertmanagerWebhookPayload: Content {
 	/// backlink to the Alertmanager.
 	var externalURL: String
 	var alerts: [AlertmanagerAlert]
+
+	func getSummarySubject() -> String {
+		return "Prometheus Alert: Alert"
+	}
+
+	func getSummaryContent() -> String {
+		return "Horkus Dorkus"
+	}
 }
