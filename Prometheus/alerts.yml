@@ -1,0 +1,10 @@
+groups:
+  - name: host
+    rules:
+      - alert: TestAlert
+        expr: 1
+        for: 1m
+        labels:
+          severity: page
+        annotations:
+          summary: This is a test alert.
