@@ -47,7 +47,9 @@ public func configure(_ app: Application) throws {
 	// Vapor is setup to load these files automatically,
 	//
 	// I don't really know if this works on MacOS or not given the weirdness around bundling between MacOS and Linux.
+	// This might also be different between Xcode and not-Xcode.
 	// https://developer.apple.com/documentation/foundation/bundle
+	// https://stackoverflow.com/questions/51955184/get-nil-when-looking-for-file-in-subdirectory-of-main-bundle
 	let runBundle = Bundle(url: Bundle.main.bundleURL.appendingPathComponent("swiftarr_Run.resources"))!
 
 	if let envFilePath = runBundle.path(forResource: "\(app.environment.name)", ofType: "env", inDirectory: "Private Swiftarr Config") {
@@ -56,7 +58,6 @@ public func configure(_ app: Application) throws {
 	} else {
 		Logger(label: "app.swiftarr.configuration") .warning("No config file detected for environment '\(app.environment.name)'. Defaulting to shell environment and code defaults.")
 	}
-	// print(Bundle.main.path(forResource: "\(app.environment.name)", ofType: "env", inDirectory: "Private Swiftarr Config"))
     
     // use iso8601ms for dates
     let jsonEncoder = JSONEncoder()
