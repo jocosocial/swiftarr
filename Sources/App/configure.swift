@@ -40,9 +40,18 @@ import gd
 /// here for easier organization. If order-of-initialization issues arise, rearrange as necessary.
 public func configure(_ app: Application) throws {
 
+	// This has to be done early otherwise the environment config won't load properly
+	try configureBundle(app)
+
 	// Load the variables in the .env file into our environment. This calls `setenv` on each key-value pair in the file.
 	// Vapor is setup to load these files automatically,
-	if let envFilePath = Bundle.main.path(forResource: "\(app.environment.name)", ofType: "env", inDirectory: "Private Swiftarr Config") {
+	//
+	// I don't really know if this works on MacOS or not given the weirdness around bundling between MacOS and Linux.
+	// https://developer.apple.com/documentation/foundation/bundle
+	let runBundle = Bundle(url: Bundle.main.bundleURL.appendingPathComponent("swiftarr_Run.resources"))!
+
+	if let envFilePath = runBundle.path(forResource: "\(app.environment.name)", ofType: "env", inDirectory: "Private Swiftarr Config") {
+		Logger(label: "app.swiftarr.configuration") .notice("Loading environment configuration from \(envFilePath)")
 		DotEnvFile.load(path: envFilePath, on: .shared(app.eventLoopGroup), fileio: app.fileio, logger: app.logger)
 	} else {
 		Logger(label: "app.swiftarr.configuration") .warning("No config file detected for environment '\(app.environment.name)'. Defaulting to shell environment and code defaults.")
@@ -88,6 +97,28 @@ public func configure(_ app: Application) throws {
 	// for use until its 'didBoot' lifecycle handler has run, and I don't like opaque ordering dependencies.
 	// As a lifecycle handler, our 'didBoot' callback got put in a list with Redis's, and we had to hope Vapor called them first.
 	try app.initializeUserCache(app)
+}
+
+// So, the way to get files copied into a built app with SPM is to declare them as Resources of some sort and 
+// the SPM build process will copy them into the app's directory tree in a Bundle. Xcode will also copy them
+// into the app's directory tree as a Bundle, except it'll be in a different place with a different name and
+// the bundle will have a different internal structure. Oh, and if you build with "vapor run" on the command line,
+// the bundle with all the resources files in it will be in yet another different place. I *think* this code
+// will handle all the cases, finding the bundle dir correctly. We also check that we can find our resource files
+// on launch.
+func configureBundle(_ app: Application) throws {
+	var resourcesPath: URL
+	if app.environment.name == "heroku" || operatingSystemPlatform() == "Linux" {
+		resourcesPath = Bundle.main.bundleURL.appendingPathComponent("swiftarr_App.resources")
+	}
+	else if Bundle(for: Settings.self).url(forResource: "swiftarr", withExtension: "css", subdirectory: "Resources/Assets/css") != nil {
+		resourcesPath = Bundle(for: Settings.self).resourceURL ?? Bundle(for: Settings.self).bundleURL
+	}
+	else {
+		resourcesPath = Bundle.main.bundleURL.appendingPathComponent("swiftarr_App.bundle")
+	}
+	Settings.shared.staticFilesRootPath = resourcesPath
+	Logger(label: "app.swiftarr.configuration") .notice("Set static files path to \(Settings.shared.staticFilesRootPath.path).")
 }
 
 func databaseConnectionConfiguration(_ app: Application) throws {
@@ -189,26 +220,6 @@ func configureBasicSettings(_ app: Application) throws {
 	// On my machine: heif, heix, avif not supported
 	// [".gif", ".bmp", ".tga", ".png", ".jpg", ".tif", ".webp"] inputs
 	// [".gif", ".bmp",         ".png", ".jpg", ".tif", ".webp"] outputs
-	
-	// So, the way to get files copied into a built app with SPM is to declare them as Resources of some sort and 
-	// the SPM build process will copy them into the app's directory tree in a Bundle. Xcode will also copy them
-	// into the app's directory tree as a Bundle, except it'll be in a different place with a different name and
-	// the bundle will have a different internal structure. Oh, and if you build with "vapor run" on the command line,
-	// the bundle with all the resources files in it will be in yet another different place. I *think* this code
-	// will handle all the cases, finding the bundle dir correctly. We also check that we can find our resource files
-	// on launch.
-	var resourcesPath: URL
-	if app.environment.name == "heroku" || operatingSystemPlatform() == "Linux" {
-		resourcesPath = Bundle.main.bundleURL.appendingPathComponent("swiftarr_App.resources")
-	}
-	else if Bundle(for: Settings.self).url(forResource: "swiftarr", withExtension: "css", subdirectory: "Resources/Assets/css") != nil {
-		resourcesPath = Bundle(for: Settings.self).resourceURL ?? Bundle(for: Settings.self).bundleURL
-	}
-	else {
-		resourcesPath = Bundle.main.bundleURL.appendingPathComponent("swiftarr_App.bundle")
-	}
-	Settings.shared.staticFilesRootPath = resourcesPath
-	Logger(label: "app.swiftarr.configuration") .notice("Set static files path to \(Settings.shared.staticFilesRootPath.path).")
 	
 	// Set the app's views dir, which is where all the Leaf template files are.
 	app.directory.viewsDirectory = Settings.shared.staticFilesRootPath.appendingPathComponent("Resources/Views").path
