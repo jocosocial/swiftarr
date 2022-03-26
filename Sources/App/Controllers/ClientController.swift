@@ -159,6 +159,7 @@ struct ClientController: APIRouteCollection {
     func prometheusAlertHandler(_ req: Request) async throws -> Response {
         // Figure out who we are sending to.
         let data = try ValidatingJSONDecoder().decode(AlertmanagerWebhookPayload.self, fromBodyOf: req)
+        print(data)
         guard data.receiver.components(separatedBy: "-").indices.contains(1) else {
             throw Abort(.badRequest, reason: "receiver (\(data.receiver)) must be in the format \"twitarr-${username}\".")
         }
@@ -174,19 +175,20 @@ struct ClientController: APIRouteCollection {
         }
 
         // Construct the seamail (fez) based on the data we got in the webhook call.
-        let fez = FriendlyFez(owner: sourceUser.userID, fezType: FezType.closed, title: data.getSummarySubject(), info: "",
-				location: nil, startTime: nil, endTime: nil,
-				minCapacity: 0, maxCapacity: 0)
-        let initialUsers = [sourceUser.userID, destinationUser.userID]
-        fez.participantArray = initialUsers
-        fez.postCount += 1
-        let actualUsers = try await User.query(on: req.db).filter(\.$id ~~ initialUsers).all()
-        try await fez.save(on: req.db)
-        try await fez.$participants.attach(actualUsers, on: req.db, { $0.readCount = 0; $0.hiddenCount = 0 })
-        let post = try FezPost(fez: fez, authorID: sourceUser.userID, text: data.getSummaryContent(), image: nil)
-        try await post.save(on: req.db)
-        let infoStr = "@\(sourceUser.username) wrote, \"\(post.text)\""
-        try addNotifications(users: initialUsers, type: fez.notificationType(), info: infoStr, on: req)
+        // let fez = FriendlyFez(owner: sourceUser.userID, fezType: FezType.closed, title: data.getSummarySubject(), info: "",
+		// 		location: nil, startTime: nil, endTime: nil,
+		// 		minCapacity: 0, maxCapacity: 0)
+        // let initialUsers = [sourceUser.userID, destinationUser.userID]
+        // fez.participantArray = initialUsers
+        // fez.postCount += 1
+        // let actualUsers = try await User.query(on: req.db).filter(\.$id ~~ initialUsers).all()
+        // try await fez.save(on: req.db)
+        // try await fez.$participants.attach(actualUsers, on: req.db, { $0.readCount = 0; $0.hiddenCount = 0 })
+        // let post = try FezPost(fez: fez, authorID: sourceUser.userID, text: data.getSummaryContent(), image: nil)
+        // try await post.save(on: req.db)
+        // let infoStr = "@\(sourceUser.username) wrote, \"\(post.text)\""
+        // try addNotifications(users: initialUsers, type: fez.notificationType(), info: infoStr, on: req)
+        _ = try await sendSimpleSeamail(req, fromUserID: sourceUser.userID, toUserIDs: [destinationUser.userID], subject: data.getSummarySubject(), initialMessage: data.getSummaryContent())
         
         // It's possible that Alertmanager could do something with the information
         // it gets back but that can be a project for a different day.

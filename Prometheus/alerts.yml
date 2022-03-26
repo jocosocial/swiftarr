@@ -7,4 +7,5 @@ groups:
         labels:
           severity: page
         annotations:
-          seamail.twitarr.com/participants: admin,twitarrteam
+          participants: admin,twitarrteam
+          summary: "This is a test alert summary from Prometheus."
