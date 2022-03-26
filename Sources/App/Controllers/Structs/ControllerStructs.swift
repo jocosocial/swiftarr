@@ -1744,15 +1744,37 @@ fileprivate func usernameValidations(username: String) -> [String] {
 /// Applied from https://prometheus.io/docs/alerting/latest/configuration/#webhook_config
 ///
 public struct AlertmanagerAlert: Content {
+	// Status could be considered a enum since they're well defined. Until we do something fancy with
+	// them I'm disinclined to overcomplicate it.
 	var status: String
+	// List of labels (key: value). Labels can be used for filtering in Prometheus/Alertmanager.
 	var labels: [String:String]
+	// List of annotations (key: value). Annotations are human metadata in Prometheus/Alertmanager.
 	var annotations: [String:String]
-	var startsAt: String
+	// Date at which the alert was generated.
+	var startsAt: Date
+	// @TODO This is rendering as something like "0001-01-01T00:00:00Z" which to me implies its a time
+	// delta but interpreted as a date. Gah.
 	var endsAt: String
 	// Identifies the entity that caused the alert.
 	var generatorURL: String
 	// Fingerprint to identify the alert.
 	var fingerprint: String
+
+	// Convenient accessor for the alert name. Annoyingly this is not not passed in as a
+	// specific attribute in the webook but rather converted to a label. Just in case the
+	// label isn't there we'll still return a string but it will be less helpful.
+	func getName() -> String {
+		return self.labels["alertname"] ?? "Unknown Alert"
+	}
+
+	// Convenient accessor for the alert summary. This is a custom annotation (not label!)
+	// applied in the Prometheus rules. It is not part of the webhook spec (being an annotation
+	// and all) so it's up to the administrator to configure it correctly.
+	// Just in case the annotation isn't there we'll still return a string but it will be less helpful.
+	func getSummary() -> String {
+		return self.annotations["summary"] ?? "Unknown details."
+	}
 }
 
 /// Prometheus Alertmanager webhook payload.
@@ -1764,20 +1786,18 @@ public struct AlertmanagerWebhookPayload: Content {
 	var groupKey: String
 	/// How many alerts have been truncated due to "max_alerts".
 	var truncatedAlerts: Int
+	// Well-known status string of the alert (firing, cleared, etc).
 	var status: String
+	// Name of the Alertmanager receiver object.
 	var receiver: String
+	// List of labels (key: value) for the alert group. Labels can be used for filtering in Prometheus/Alertmanager.
 	var groupLabels: [String:String]
+	// List of labels (key: value) common to all alerts in this group. Labels can be used for filtering in Prometheus/Alertmanager.
 	var commonLabels: [String:String]
+	// List of annotations (key: value) common to all alerts in this group. Annotations are human metadata in Prometheus/Alertmanager.
 	var commonAnnotations: [String:String]
 	/// backlink to the Alertmanager.
 	var externalURL: String
+	// List of AlertmanagerAlert objects that are within this group/update.
 	var alerts: [AlertmanagerAlert]
-
-	func getSummarySubject() -> String {
-		return "Prometheus Alert: Alert"
-	}
-
-	func getSummaryContent() -> String {
-		return "Horkus Dorkus"
-	}
 }
