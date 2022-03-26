@@ -7,4 +7,4 @@ groups:
         labels:
           severity: page
         annotations:
-          summary: This is a test alert.
+          seamail.twitarr.com/participants: admin,twitarrteam

@@ -156,13 +156,6 @@ struct ClientController: APIRouteCollection {
     /// 
     /// - Throws: 403 error if user is not a registered client.
     /// - Returns: 201 created.
-    /// 
-    // func getUserPivot(fez: FriendlyFez, userID: UUID, on db: Database) -> EventLoopFuture<FezParticipant?> {
-    //     return fez.$participants.$pivots.query(on: db)
-    //         .filter(\.$user.$id == userID)
-    //         .first()
-	// }
-
     func prometheusAlertHandler(_ req: Request) async throws -> Response {
         // Figure out who we are sending to.
         let data = try ValidatingJSONDecoder().decode(AlertmanagerWebhookPayload.self, fromBodyOf: req)
@@ -187,52 +180,13 @@ struct ClientController: APIRouteCollection {
         let initialUsers = [sourceUser.userID, destinationUser.userID]
         fez.participantArray = initialUsers
         fez.postCount += 1
-
-        // https://theswiftdev.com/beginners-guide-to-the-asyncawait-concurrency-api-in-vapor-fluent/
-        //
-        // @TODO figure out if we can reduce these.
-        print("saving fez")
         let actualUsers = try await User.query(on: req.db).filter(\.$id ~~ initialUsers).all()
-        // print(actualUsers)
         try await fez.save(on: req.db)
         try await fez.$participants.attach(actualUsers, on: req.db, { $0.readCount = 0; $0.hiddenCount = 0 })
-        // fez.save(on: req.db).flatMap { _ in
-		// 	return User.query(on: req.db).filter(\.$id ~~ initialUsers).all().flatMap { participants in
-		// 		return fez.$participants.attach(participants, on: req.db, { $0.readCount = 0; $0.hiddenCount = 0 })//.throwingFlatMap { (_) in
-		// 			// return fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == sourceUser.userID)
-		// 			// 		.first().flatMapThrowing() { creatorPivot -> Response in
-		// 			// 	let fezData = try buildFezData(from: fez, with: creatorPivot, posts: [], for: req.userCache.getUser(sourceUser.userID)!, on: req)
-		// 			// 	// with 201 status
-		// 			// 	let response = Response(status: .created)
-		// 			// 	try response.content.encode(fezData)
-		// 			// 	return response
-		// 			// }
-		// 		//}
-		// 	}
-		// }
-        print("attmpting post")
         let post = try FezPost(fez: fez, authorID: sourceUser.userID, text: data.getSummaryContent(), image: nil)
-        
-        print("saving post")
         try await post.save(on: req.db)
-        // try await fez.save(on: req.db)
-        var infoStr = "@\(sourceUser.username) wrote, \"\(post.text)\""
+        let infoStr = "@\(sourceUser.username) wrote, \"\(post.text)\""
         try addNotifications(users: initialUsers, type: fez.notificationType(), info: infoStr, on: req)
-
-        // await getUserPivot(fez: fez, userID: sourceUser.userID, on: req.db).flatMapThrowing { pivot -> FezPostData in
-        //     // A user posting is assumed to have read all prev posts. (even if this proves untrue, we should increment
-        //     // readCount as they've read the post they just wrote!)
-        //     if let pivot = pivot {
-        //         pivot.readCount = fez.postCount - pivot.hiddenCount
-        //         _ = pivot.save(on: req.db)
-        //     }
-        //     return try FezPostData(post: post, author: sourceUser)
-        // }
-        // try forwardPostToSockets(fez, post, on: req)
-        // try await fez.save(on: req.db)
-
-        // @TODO need to deconstruct this.
-        // @TODO not generating proper notifications for trunk
         
         // It's possible that Alertmanager could do something with the information
         // it gets back but that can be a project for a different day.
