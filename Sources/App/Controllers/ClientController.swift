@@ -183,7 +183,7 @@ struct ClientController: APIRouteCollection {
         // https://theswiftdev.com/beginners-guide-to-the-asyncawait-concurrency-api-in-vapor-fluent/
         //
         // @TODO figure out if we can reduce these.
-        print("saving fez")
+        // print("saving fez")
         try await fez.save(on: req.db)
         print("attmpting post")
         let post = try FezPost(fez: fez, authorID: sourceUser.userID, text: data.getSummaryContent(), image: nil)
