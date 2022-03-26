@@ -9,3 +9,11 @@ groups:
         annotations:
           participants: admin,twitarrteam
           summary: "This is a test alert summary from Prometheus."
+#      - alert: OtherAlert
+#        expr: 1
+#        for: 1m
+#        labels:
+#          severity: page
+#        annotations:
+#          participants: moderator,sam
+#          summary: "This is another alert from Prometheus."

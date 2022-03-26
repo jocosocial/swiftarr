@@ -182,8 +182,10 @@ struct ClientController: APIRouteCollection {
 			}
 			let alertSubject = "Prometheus Alert: \(alert.getName()) is now \(alert.status)."
 			req.logger.warning("\(alertSubject)")
-			_ = try await sendSimpleSeamail(req, fromUserID: sourceUserHeader.userID, toUserIDs: destinationUserHeaders.map {$0.userID}, 
-					subject: alertSubject, initialMessage: alert.getSummary())
+			// I speak Python, and "list comprehension" is not nearly as easy here. Fortunately the toUserIDs magic
+			// was adapted from https://stackoverflow.com/questions/24003584/list-comprehension-in-swift
+			try await sendSimpleSeamail(req, fromUserID: sourceUserHeader.userID, toUserIDs: destinationUserHeaders.map {$0.userID}, 
+				subject: alertSubject, initialMessage: alert.getSummary())
 		}
 
 		// It's possible that Alertmanager could do something with the information
