@@ -3,7 +3,7 @@ import Crypto
 import FluentSQL
 import Redis
 
-protocol APIRouteCollection: APIClient {
+protocol APIRouteCollection {
 	func registerRoutes(_ app: Application) throws
 }
 
