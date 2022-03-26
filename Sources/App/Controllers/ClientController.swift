@@ -194,22 +194,22 @@ struct ClientController: APIRouteCollection {
         print("saving fez")
         let actualUsers = try await User.query(on: req.db).filter(\.$id ~~ initialUsers).all()
         // print(actualUsers)
-        // try await fez.save(on: req.db)
-        // try await fez.$participants.attach(actualUsers, on: req.db)
-        fez.save(on: req.db).flatMap { _ in
-			return User.query(on: req.db).filter(\.$id ~~ initialUsers).all().flatMap { participants in
-				return fez.$participants.attach(participants, on: req.db, { $0.readCount = 0; $0.hiddenCount = 0 })//.throwingFlatMap { (_) in
-					// return fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == sourceUser.userID)
-					// 		.first().flatMapThrowing() { creatorPivot -> Response in
-					// 	let fezData = try buildFezData(from: fez, with: creatorPivot, posts: [], for: req.userCache.getUser(sourceUser.userID)!, on: req)
-					// 	// with 201 status
-					// 	let response = Response(status: .created)
-					// 	try response.content.encode(fezData)
-					// 	return response
-					// }
-				//}
-			}
-		}
+        try await fez.save(on: req.db)
+        try await fez.$participants.attach(actualUsers, on: req.db, { $0.readCount = 0; $0.hiddenCount = 0 })
+        // fez.save(on: req.db).flatMap { _ in
+		// 	return User.query(on: req.db).filter(\.$id ~~ initialUsers).all().flatMap { participants in
+		// 		return fez.$participants.attach(participants, on: req.db, { $0.readCount = 0; $0.hiddenCount = 0 })//.throwingFlatMap { (_) in
+		// 			// return fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == sourceUser.userID)
+		// 			// 		.first().flatMapThrowing() { creatorPivot -> Response in
+		// 			// 	let fezData = try buildFezData(from: fez, with: creatorPivot, posts: [], for: req.userCache.getUser(sourceUser.userID)!, on: req)
+		// 			// 	// with 201 status
+		// 			// 	let response = Response(status: .created)
+		// 			// 	try response.content.encode(fezData)
+		// 			// 	return response
+		// 			// }
+		// 		//}
+		// 	}
+		// }
         print("attmpting post")
         let post = try FezPost(fez: fez, authorID: sourceUser.userID, text: data.getSummaryContent(), image: nil)
         
