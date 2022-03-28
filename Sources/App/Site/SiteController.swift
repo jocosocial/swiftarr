@@ -515,12 +515,17 @@ extension SiteControllerUtils {
 	var boardgameIDParam: PathComponent { PathComponent(":boardgame_id") }
 	var songIDParam: PathComponent { PathComponent(":karaoke_song_id") }
 
-	/// Call the Swiftarr API. This method pulls a user's token from their session data and adds it to the API call. By default it also forwards URL query parameters
-	/// from the Site-level request to the API-level request. 
-	/// Previously, this method used the hostname and port from `application.http.server.configuration` to set the hostname and port to call.
-	/// However, if Swiftarr is launched with command line overrides for the host and port, the HTTPServer startup code uses those overrides instead of the 
-	/// values in the publicly accessible configuration, but does not update the values in the configuration. So, instead, we attempt to use the site-level Request's
-	/// `Host` header to get these values.
+	/// Call the Swiftarr API. This method pulls a user's token from their session data and adds it to the API call. 
+	/// By default it also forwards URL query parameters from the Site-level request to the API-level request.
+	///
+	/// We used to calculate the API URL from the request Host headers. But this proved untenable prior to boat 2022
+	/// due to NATing, DNS, and multi-layer networking. It was decided to explicitly make this a setting instead.
+	/// 
+	/// @TODO `endpoint` is occasionally given query parameters! Then is told not `passThroughQuery=false` so that
+	/// they get sent along and become the query parameters. This means without adjustment elsewhere in the code we
+	/// cannot decode the endpoint as-is without extracting the query first. Or rewriting some calls.
+	/// http://127.0.0.1:8081/api/v3/events?cruiseday=4 vs http://127.0.0.1:8081/api/v3/events%3Fcruiseday=4
+	///
 	func apiQuery(_ req: Request, endpoint: String, method: HTTPMethod = .GET, defaultHeaders: HTTPHeaders? = nil,
 			passThroughQuery: Bool = true,
 			beforeSend: (inout ClientRequest) throws -> () = { _ in }) -> EventLoopFuture<ClientResponse> {
@@ -528,19 +533,27 @@ extension SiteControllerUtils {
     	if let token = req.session.data["token"], !headers.contains(name: "Authorization") {
    			headers.add(name: "Authorization", value: "Bearer \(token)")
     	}
-		let hostname = req.application.http.server.configuration.hostname
-		let port = req.application.http.server.configuration.port
-		let host: String = req.headers.first(name: "Host") ?? "\(hostname):\(port)"
-    	var urlStr = "http://\(host)/api/v3" + endpoint
+		print("Endpoint: \(endpoint)")
+		print("Original: http://127.0.0.1:8081/api/v3" + endpoint)
+		print("Settings: \(Settings.shared.apiUrl.absoluteString)\(endpoint)")
+		// var urlStr = Settings.shared.apiUrl.appendingPathComponent(endpoint)
+		print(" Hotness: \(Settings.shared.apiUrl.appendingPathComponent(endpoint))")
+    	var urlStr = Settings.shared.apiUrl.absoluteString + endpoint
+		print(passThroughQuery)
+		print(req.url.query)
     	if passThroughQuery, let queryStr = req.url.query {
     		// FIXME: Chintzy. Should convert to URLComponents and back.
     		if urlStr.contains("?") {
+				print("URL contains a query string")
 	    		urlStr.append("&\(queryStr)")
     		}
     		else {
+				print("URL does NOT contain a query string")
 	    		urlStr.append("?\(queryStr)")
 			}
     	}
+		print("   Final: \(urlStr)")
+		print(URI(string: urlStr))
     	return req.client.send(method, headers: headers, to: URI(string: urlStr), beforeSend: beforeSend).flatMapThrowing { response in
 			guard response.status.code < 300 else {
 				if let errorResponse = try? response.content.decode(ErrorResponse.self) {
