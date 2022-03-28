@@ -45,21 +45,21 @@ public func configure(_ app: Application) throws {
 	if let envFilePath = Bundle.main.path(forResource: "\(app.environment.name)", ofType: "env", inDirectory: "Private Swiftarr Config") {
 		DotEnvFile.load(path: envFilePath, on: .shared(app.eventLoopGroup), fileio: app.fileio, logger: app.logger)
 	}
-    
-    // use iso8601ms for dates
-    let jsonEncoder = JSONEncoder()
-    let jsonDecoder = JSONDecoder()
-    if #available(OSX 10.13, *) {
-        jsonEncoder.dateEncodingStrategy = .iso8601ms
-        jsonDecoder.dateDecodingStrategy = .iso8601ms
-    } else {
-        // Fallback on earlier versions
-    }
+	
+	// use iso8601ms for dates
+	let jsonEncoder = JSONEncoder()
+	let jsonDecoder = JSONDecoder()
+	if #available(OSX 10.13, *) {
+		jsonEncoder.dateEncodingStrategy = .iso8601ms
+		jsonDecoder.dateDecodingStrategy = .iso8601ms
+	} else {
+		// Fallback on earlier versions
+	}
 	ContentConfiguration.global.use(encoder: jsonEncoder, for: .json)
-    ContentConfiguration.global.use(decoder: jsonDecoder, for: .json)
-    
-    // Set up all the settings that we don't need Redis to acquire. 
-    try configureBasicSettings(app)
+	ContentConfiguration.global.use(decoder: jsonDecoder, for: .json)
+	
+	// Set up all the settings that we don't need Redis to acquire. 
+	try configureBasicSettings(app)
 
 	// Remember: Stored Settings are not available during configuration--only 'basic' settings.
 	try databaseConnectionConfiguration(app)
@@ -68,7 +68,7 @@ public func configure(_ app: Application) throws {
 	try configureSessions(app)
 	try configureLeaf(app)
 	try configurePrometheus(app)
-    try routes(app)
+	try routes(app)
 	try configureMigrations(app)
 		
 	// Settings loads values from Redis during startup, and Redis isn't available until app.boot() completes.
@@ -89,8 +89,8 @@ public func configure(_ app: Application) throws {
 
 func databaseConnectionConfiguration(_ app: Application) throws {
 	// configure PostgreSQL connection
-    // note: environment variable nomenclature is vapor.cloud compatible
-    // support for Heroku environment
+	// note: environment variable nomenclature is vapor.cloud compatible
+	// support for Heroku environment
 
   // Specify a database connection timeout in case we find ourselves stuck on a slow laptop.
   let databaseTimeoutSeconds = Int64(Environment.get("DATABASE_TIMEOUT") ?? "10")
@@ -99,41 +99,41 @@ func databaseConnectionConfiguration(_ app: Application) throws {
 		postgresConfig.tlsConfiguration = .makeClientConfiguration()
 		postgresConfig.tlsConfiguration?.certificateVerification = .none
 		app.databases.use(.postgres(configuration: postgresConfig, connectionPoolTimeout: .seconds(databaseTimeoutSeconds!)), as: .psql)
-    } else 
-    {
-        // otherwise
-        let postgresHostname = Environment.get("DATABASE_HOSTNAME") ?? "localhost"
-        let postgresUser = Environment.get("DATABASE_USER") ?? "swiftarr"
-        let postgresPassword = Environment.get("DATABASE_PASSWORD") ?? "password"
-        let postgresDB: String
-        let postgresPort: Int
-        if app.environment == .testing {
-            postgresDB = "swiftarr-test"
-            postgresPort = Int(Environment.get("DATABASE_PORT") ?? "5433")!
-        } else {
-            postgresDB = Environment.get("DATABASE_DB") ?? "swiftarr"
-            postgresPort = 5432
-        }
+	} else 
+	{
+		// otherwise
+		let postgresHostname = Environment.get("DATABASE_HOSTNAME") ?? "localhost"
+		let postgresUser = Environment.get("DATABASE_USER") ?? "swiftarr"
+		let postgresPassword = Environment.get("DATABASE_PASSWORD") ?? "password"
+		let postgresDB: String
+		let postgresPort: Int
+		if app.environment == .testing {
+			postgresDB = "swiftarr-test"
+			postgresPort = Int(Environment.get("DATABASE_PORT") ?? "5433")!
+		} else {
+			postgresDB = Environment.get("DATABASE_DB") ?? "swiftarr"
+			postgresPort = 5432
+		}
 		app.databases.use(.postgres(hostname: postgresHostname, port: postgresPort, username: postgresUser, 
 				password: postgresPassword, database: postgresDB, connectionPoolTimeout: .seconds(databaseTimeoutSeconds!)), as: .psql)
-    }
-    
-    // configure Redis connection
-    // support for Heroku environment. Heroku also provides "REDIS_TLS_URL", but Vapor's Redis package 
-    // may not yet support TLS database connections.
+	}
+	
+	// configure Redis connection
+	// support for Heroku environment. Heroku also provides "REDIS_TLS_URL", but Vapor's Redis package 
+	// may not yet support TLS database connections.
 	if let redisString = Environment.get("REDIS_URL"), let redisURL = URL(string: redisString) {
 		app.redis.configuration = try RedisConfiguration(url: redisURL)
-    } else 
-    {
-        // otherwise
-        let redisHostname = Environment.get("REDIS_HOSTNAME") ?? "localhost"
-        let redisPort = (app.environment == .testing) ? Int(Environment.get("REDIS_PORT") ?? "6380")! : 6379
-        var redisPassword = Environment.get("REDIS_PASSWORD") ?? nil
-        if redisPassword == "" {
-        	redisPassword = nil
-        }
+	} else 
+	{
+		// otherwise
+		let redisHostname = Environment.get("REDIS_HOSTNAME") ?? "localhost"
+		let redisPort = (app.environment == .testing) ? Int(Environment.get("REDIS_PORT") ?? "6380")! : 6379
+		var redisPassword = Environment.get("REDIS_PASSWORD") ?? nil
+		if redisPassword == "" {
+			redisPassword = nil
+		}
 		app.redis.configuration = try RedisConfiguration(hostname: redisHostname, port: redisPort, password: redisPassword)
-    }
+	}
 }
 
 func configureBasicSettings(_ app: Application) throws {
@@ -185,7 +185,7 @@ func configureBasicSettings(_ app: Application) throws {
 	
 	// On my machine: heif, heix, avif not supported
 	// [".gif", ".bmp", ".tga", ".png", ".jpg", ".tif", ".webp"] inputs
-	// [".gif", ".bmp",         ".png", ".jpg", ".tif", ".webp"] outputs
+	// [".gif", ".bmp",		 ".png", ".jpg", ".tif", ".webp"] outputs
 	
 	// So, the way to get files copied into a built app with SPM is to declare them as Resources of some sort and 
 	// the SPM build process will copy them into the app's directory tree in a Bundle. Xcode will also copy them
@@ -232,6 +232,24 @@ func configureBasicSettings(_ app: Application) throws {
 		Settings.shared.userImagesRootPath = URL(fileURLWithPath: likelyExecutablePath).appendingPathComponent("images")
 	}
 	Logger(label: "app.swiftarr.configuration") .notice("Set userImages path to \(Settings.shared.userImagesRootPath.path).")
+
+	// API URL. We used to determine this in SiteController in apiQuery() based on the HTTP Host headers.
+	// Due to the way the boat network is architected the HTTP host headers had to be stripped away and reset
+	// to the container hostname/IP because of some NAT translations that we had no control over. Additionally,
+	// to facilitate the eventual breaking up of the UI and API it would be better if we could point the UI
+	// at any API endpoint and say "go". Unfortunately the Settings constructs are somewhat interlinked but
+	// hey maybe someday we will complete the split.
+	let apiScheme = Environment.get("API_SCHEME") ?? "http"
+	let apiHostname = Environment.get("API_HOSTNAME") ?? "127.0.0.1"
+	// Don't bother casting this to an int, we're just gonna process it as a string the whole way through.
+	let apiPort = Environment.get("API_PORT") ?? "8081"
+	let apiPrefix = Environment.get("API_PREFIX") ?? "/api/v3"
+	let apiUrl = URL(string: "\(apiScheme)://\(apiHostname):\(apiPort)\(apiPrefix)")
+	guard apiUrl != nil else {
+		throw "Unable to construct a valid API URL."
+	}
+	Settings.shared.apiUrl = apiUrl!
+	Logger(label: "app.swiftarr.configuration") .notice("API URL base is '\(Settings.shared.apiUrl)'.")
 }
 
 func configureStoredSettings(_ app: Application) throws {
@@ -240,7 +258,7 @@ func configureStoredSettings(_ app: Application) throws {
 
 func HTTPServerConfiguration(_ app: Application) throws {
 	// run API on port 8081 by default and set a 10MB hard limit on file size
-    let port = Int(Environment.get("PORT") ?? "8081")!
+	let port = Int(Environment.get("PORT") ?? "8081")!
 	app.http.server.configuration.port = port
 	app.routes.defaultMaxBodySize = "10mb"
 	
@@ -270,9 +288,9 @@ func configureMiddleware(_ app: Application) throws {
 
 	// Set up CORS to allow any client hosted anywhere to access the API
 	let corsConfiguration = CORSMiddleware.Configuration(
-	    allowedOrigin: .all,
-	    allowedMethods: [.GET, .POST, .PUT, .OPTIONS, .DELETE, .PATCH],
-	    allowedHeaders: [.accept, .authorization, .contentType, .origin, .xRequestedWith, .userAgent, .accessControlAllowOrigin]
+		allowedOrigin: .all,
+		allowedMethods: [.GET, .POST, .PUT, .OPTIONS, .DELETE, .PATCH],
+		allowedHeaders: [.accept, .authorization, .contentType, .origin, .xRequestedWith, .userAgent, .accessControlAllowOrigin]
 	)
 	let corsMiddleware = CORSMiddleware(configuration: corsConfiguration)
 	new.use(corsMiddleware, at: .beginning)
@@ -306,33 +324,33 @@ func configureSessions(_ app: Application) throws {
 }
 
 func configureLeaf(_ app: Application) throws {
-    
-    // Create a custom Leaf source that doesn't have the '.toVisibleFiles' limit and uses '.html' instead of '.leaf' as the 
-    // default extension. We need visible files turned off because of Heroku, which builds the app into a dir named ".swift-bin"
-    // and copies all the resources and views into there. And, settings the extension to .html gets Xcode syntax highlighting 
-    // to work without excessive futzing (you can manually set the type to HTML, per file, except Xcode keeps forgetting the setting).
+	
+	// Create a custom Leaf source that doesn't have the '.toVisibleFiles' limit and uses '.html' instead of '.leaf' as the 
+	// default extension. We need visible files turned off because of Heroku, which builds the app into a dir named ".swift-bin"
+	// and copies all the resources and views into there. And, settings the extension to .html gets Xcode syntax highlighting 
+	// to work without excessive futzing (you can manually set the type to HTML, per file, except Xcode keeps forgetting the setting).
 	let customLeafSource = NIOLeafFiles(fileio: app.fileio, limits: [.toSandbox, .requireExtensions], 
 			sandboxDirectory: app.directory.viewsDirectory, viewDirectory: app.directory.viewsDirectory, defaultExtension: "html")
 	let leafSources = LeafSources()
 	try leafSources.register(source: "swiftarrCustom", using: customLeafSource, searchable: true)
 	app.leaf.sources = leafSources
 	
-    app.views.use(.leaf)
+	app.views.use(.leaf)
 
-    // Custom Leaf tags
-    app.leaf.tags["addJocomoji"] = AddJocomojiTag()
+	// Custom Leaf tags
+	app.leaf.tags["addJocomoji"] = AddJocomojiTag()
 	app.leaf.tags["formatTwarrtText"] = try FormatPostTextTag(.twarrt, hostname: app.http.server.configuration.hostname)
-    app.leaf.tags["formatPostText"] = try FormatPostTextTag(.forumpost, hostname: app.http.server.configuration.hostname)
-    app.leaf.tags["formatFezText"] = try FormatPostTextTag(.fez, hostname: app.http.server.configuration.hostname)
-    app.leaf.tags["formatSeamailText"] = try FormatPostTextTag(.seamail, hostname: app.http.server.configuration.hostname)
-    app.leaf.tags["relativeTime"] = RelativeTimeTag()
-    app.leaf.tags["eventTime"] = EventTimeTag()
-    app.leaf.tags["staticTime"] = StaticTimeTag()
+	app.leaf.tags["formatPostText"] = try FormatPostTextTag(.forumpost, hostname: app.http.server.configuration.hostname)
+	app.leaf.tags["formatFezText"] = try FormatPostTextTag(.fez, hostname: app.http.server.configuration.hostname)
+	app.leaf.tags["formatSeamailText"] = try FormatPostTextTag(.seamail, hostname: app.http.server.configuration.hostname)
+	app.leaf.tags["relativeTime"] = RelativeTimeTag()
+	app.leaf.tags["eventTime"] = EventTimeTag()
+	app.leaf.tags["staticTime"] = StaticTimeTag()
 	app.leaf.tags["fezTime"] = FezTimeTag()
-    app.leaf.tags["avatar"] = AvatarTag()
-    app.leaf.tags["userByline"] = UserBylineTag()
-    app.leaf.tags["cruiseDayIndex"] = CruiseDayIndexTag()
-    app.leaf.tags["gameRating"] = GameRatingTag()
+	app.leaf.tags["avatar"] = AvatarTag()
+	app.leaf.tags["userByline"] = UserBylineTag()
+	app.leaf.tags["cruiseDayIndex"] = CruiseDayIndexTag()
+	app.leaf.tags["gameRating"] = GameRatingTag()
 	app.leaf.tags["localTime"] = LocalTimeTag()
 }
 
@@ -495,20 +513,20 @@ func verifyConfiguration(_ app: Application) throws {
 // Found this in a Github search. Seems to be good enough for our needs unless someone has better ideas.
 // https://github.com/contentstack/contentstack-swift/blob/master/Sources/ContentstackConfig.swift
 func operatingSystemPlatform() -> String? {
-    let osName: String? = {
-        #if os(iOS)
-        return "iOS"
-        #elseif os(OSX)
-        return "macOS"
-        #elseif os(tvOS)
-        return "tvOS"
-        #elseif os(watchOS)
-        return "watchOS"
-        #elseif os(Linux)
-        return "Linux"
-        #else
-        return nil
-        #endif
-    }()
-    return osName
+	let osName: String? = {
+		#if os(iOS)
+		return "iOS"
+		#elseif os(OSX)
+		return "macOS"
+		#elseif os(tvOS)
+		return "tvOS"
+		#elseif os(watchOS)
+		return "watchOS"
+		#elseif os(Linux)
+		return "Linux"
+		#else
+		return nil
+		#endif
+	}()
+	return osName
 }

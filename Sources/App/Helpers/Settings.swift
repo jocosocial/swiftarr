@@ -136,6 +136,9 @@ final class Settings : Encodable {
 
 	/// User uploaded images will be inside this dir. 
 	@SettingsValue var userImagesRootPath: URL = URL(fileURLWithPath: "~/swiftarrImages")
+
+	/// Endpoint to call for the API.
+	@SettingsValue var apiUrl: URL = URL(string: "http://localhost:8081/api/v3")!
 }
 
 /// Derivative directory paths. These are computed property getters that return a path based on a root path.
