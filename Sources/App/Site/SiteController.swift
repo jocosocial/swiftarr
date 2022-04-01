@@ -520,11 +520,6 @@ extension SiteControllerUtils {
 	///
 	/// We used to calculate the API URL from the request Host headers. But this proved untenable prior to boat 2022
 	/// due to NATing, DNS, and multi-layer networking. It was decided to explicitly make this a setting instead.
-	/// 
-	/// @TODO `endpoint` is occasionally given query parameters! Then is told not `passThroughQuery=false` so that
-	/// they get sent along and become the query parameters. This means without adjustment elsewhere in the code we
-	/// cannot decode the endpoint as-is without extracting the query first. Or rewriting some calls.
-	/// http://127.0.0.1:8081/api/v3/events?cruiseday=4 vs http://127.0.0.1:8081/api/v3/events%3Fcruiseday=4
 	///
 	func apiQuery(_ req: Request, endpoint: String, method: HTTPMethod = .GET, defaultHeaders: HTTPHeaders? = nil,
 			passThroughQuery: Bool = true,
@@ -533,28 +528,45 @@ extension SiteControllerUtils {
     	if let token = req.session.data["token"], !headers.contains(name: "Authorization") {
    			headers.add(name: "Authorization", value: "Bearer \(token)")
     	}
-		print("Endpoint: \(endpoint)")
-		print("Original: http://127.0.0.1:8081/api/v3" + endpoint)
-		print("Settings: \(Settings.shared.apiUrl.absoluteString)\(endpoint)")
-		// var urlStr = Settings.shared.apiUrl.appendingPathComponent(endpoint)
-		print(" Hotness: \(Settings.shared.apiUrl.appendingPathComponent(endpoint))")
-    	var urlStr = Settings.shared.apiUrl.absoluteString + endpoint
-		print(passThroughQuery)
-		print(req.url.query)
-    	if passThroughQuery, let queryStr = req.url.query {
-    		// FIXME: Chintzy. Should convert to URLComponents and back.
-    		if urlStr.contains("?") {
-				print("URL contains a query string")
-	    		urlStr.append("&\(queryStr)")
-    		}
-    		else {
-				print("URL does NOT contain a query string")
-	    		urlStr.append("?\(queryStr)")
+		// There are a couple places where we encode query parameters into `endpoint` (additionally setting 
+		// passThroughQuery to false) so doing a URL.appendingPathSomething encodes the query as a path which
+		// is not what we want. We could make apiQuery accept a separate parameter for query but in the interest
+		// of not-refactoring too much we're gonna cheat and append via string.
+		let urlStr = Settings.shared.apiUrl.absoluteString + endpoint
+
+		// We need to mark apiQuery as `throws ->` above, but then that would require every caller
+		// to `try` it. That is better but holy shit is that a lot of code to edit and we're already
+		// refactoring for async/await so for now this is just gonna force-unwrap it and hope we never
+		// screw up until we refactor and enable the guard.
+		// guard let urlComponents = URLComponents(string: urlStr) else {
+		// 	throw Abort(.internalServerError, reason: "Unable to decode API URL components.")
+		// }
+		var urlComponents = URLComponents(string: urlStr)!
+
+		// req.url is actually a Vapor URI() which doesn't support some of the good things of URL().
+		// So to get easy access to the URLQueryItem's we'll turn the URI into a String into a URLComponents
+		// so we can have an [URLQueryItem]. Subject to the same guard/throws/force nonsense above.
+		// This gives further credence to adding a queryItems parameter to apiQuery.
+		let reqComponents = URLComponents(string: req.url.string)!
+
+		// Certain endpoints such as `/events` intercept query parameters and encode them into the `endpoint`
+		// themselves, and set `passThroughQuery`` to false. When it is true, we look at the original request (req)
+		// and pull out the query parameters from there as a string. Depending on whether there is already a query
+		// parameter present in the endpoint (which could happen) we need to intelligently append the request
+		// query to the endpoint query.
+		if passThroughQuery, let reqQueryItems = reqComponents.queryItems {
+			if urlComponents.queryItems != nil {
+				urlComponents.queryItems = urlComponents.queryItems! + reqQueryItems
+			} else {
+				urlComponents.queryItems = reqComponents.queryItems
 			}
     	}
-		print("   Final: \(urlStr)")
-		print(URI(string: urlStr))
-    	return req.client.send(method, headers: headers, to: URI(string: urlStr), beforeSend: beforeSend).flatMapThrowing { response in
+	
+		// We can enable this if we convert apiQuery to throws. See above for details.
+		// guard urlComponents.string != nil else {
+		// 	throw Abort(.internalServerError, reason: "Unable to determine internal API URL.")
+		// }
+    	return req.client.send(method, headers: headers, to: URI(string: urlComponents.string!), beforeSend: beforeSend).flatMapThrowing { response in
 			guard response.status.code < 300 else {
 				if let errorResponse = try? response.content.decode(ErrorResponse.self) {
 					throw errorResponse
