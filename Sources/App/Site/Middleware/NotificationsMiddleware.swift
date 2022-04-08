@@ -12,46 +12,38 @@ import Vapor
 ///		* Use Redis pub/sub
 ///		* Really, the communication is one-way -- perhaps build a server endpoint in the UI code and the API layer acts as a client to call it?
 /// Via any method, Vapor Sessions aren't set up for finding sessions by user, or accessing any other Session at all, really. 
-struct NotificationsMiddleware: Middleware, SiteControllerUtils {
+struct NotificationsMiddleware: AsyncMiddleware, SiteControllerUtils {
 	func registerRoutes(_ app: Application) throws {}
 	
-	func respond(to req: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
-		guard req.method == .GET else {
-			return next.respond(to: req)
+	func respond(to req: Request, chainingTo next: AsyncResponder) async throws -> Response {
+		guard req.method == .GET, let user = req.auth.get(UserCacheData.self) else {
+			return try await next.respond(to: req)
 		}
-		if let user = req.auth.get(UserCacheData.self) {
-			return req.redis.srem(user.userID, from: "UsersWithNotificationStateChange").flatMap { hasChanges in
-				var isStale = false
-				if hasChanges == 0 {
-					if let lastCheckTimeStr = req.session.data["lastNotificationCheckTime"], 
-							let lastCheckInterval = Double(lastCheckTimeStr) {
-						let lastCheckDate =	Date(timeIntervalSince1970: lastCheckInterval)
-						if lastCheckDate.timeIntervalSinceNow > -60.0 {
-							return next.respond(to: req)
-						}
-					}
-					isStale = true
-				}
-				guard hasChanges > 0 || isStale else {
-					return next.respond(to: req)
-				}
-				req.session.data["lastNotificationCheckTime"] = String(Date().timeIntervalSince1970)
-				return apiQuery(req, endpoint: "/notification/user", passThroughQuery: false).throwingFlatMap { response in
-					if response.status == .ok {
-						// I dislike decoding the response JSON just to re-encode it into a string for session storage.
-						// response.body?.getString(at: 0, length: response.body!.capacity)
-						let alertCounts = try response.content.decode(UserNotificationData.self)
-						let alertCountsJSON = try JSONEncoder().encode(alertCounts)
-						let alertCountStr = String(data: alertCountsJSON, encoding: .utf8)
-						req.session.data["alertCounts"] = alertCountStr
-					}
-					return next.respond(to: req)
+		let hasChanges = try await req.redis.testAndClearStateChange(user.userID)
+		var isStale = false
+		if !hasChanges {
+			if let lastCheckTimeStr = req.session.data["lastNotificationCheckTime"], 
+					let lastCheckInterval = Double(lastCheckTimeStr) {
+				let lastCheckDate =	Date(timeIntervalSince1970: lastCheckInterval)
+				if lastCheckDate.timeIntervalSinceNow > -60.0 {
+					return try await next.respond(to: req)
 				}
 			}
+			isStale = true
 		}
-		else {
-			// TODO: get global alerts struct, add to session
-			return next.respond(to: req)
+		guard hasChanges || isStale else {
+			return try await next.respond(to: req)
 		}
+		req.session.data["lastNotificationCheckTime"] = String(Date().timeIntervalSince1970)
+		let response = try await apiQuery(req, endpoint: "/notification/user", passThroughQuery: false)
+		if response.status == .ok {
+			// I dislike decoding the response JSON just to re-encode it into a string for session storage.
+			// response.body?.getString(at: 0, length: response.body!.capacity)
+			let alertCounts = try response.content.decode(UserNotificationData.self)
+			let alertCountsJSON = try JSONEncoder().encode(alertCounts)
+			let alertCountStr = String(data: alertCountsJSON, encoding: .utf8)
+			req.session.data["alertCounts"] = alertCountStr
+		}
+		return try await next.respond(to: req)
 	}
 }

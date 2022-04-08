@@ -37,8 +37,8 @@ public struct DailyThemeUploadData: Content {
 ///
 /// See `EventController.eventsUpdateHandler(_:data:)`.
 public struct EventsUpdateData: Content {
-    /// The `.ics` event schedule file.
-    var schedule: String
+	/// The `.ics` event schedule file.
+	var schedule: String
 }
 
 /// Used to validate changes to the `Event` database. This public struct shows the differrences between the current schedule and the 

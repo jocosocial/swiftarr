@@ -2,16 +2,16 @@ import Vapor
 
 /// The type of model for which an `ImageHandler` is processing. This defines the size of the thumbnail produced.
 enum ImageUsage: String {
-    /// The image is for a `ForumPost`.
-    case forumPost
-    /// The image is for a `Twarrt`
-    case twarrt
-    /// The image is for a `FezPost`
-    case fezPost
-    /// The image is for a `User`'s profile.
-    case userProfile
-    /// The image is for a `DailyTheme`.
-    case dailyTheme
+	/// The image is for a `ForumPost`.
+	case forumPost
+	/// The image is for a `Twarrt`
+	case twarrt
+	/// The image is for a `FezPost`
+	case fezPost
+	/// The image is for a `User`'s profile.
+	case userProfile
+	/// The image is for a `DailyTheme`.
+	case dailyTheme
 }
 
 /// Internally, the Image Handler stores images at multiple sizes upon image upload. The exact sizes stored for each sizeGroup
@@ -64,16 +64,16 @@ extension APIRouteCollection {
 		return fileURL
 	}
 	
-    /// Takes an an array of `ImageUploadData` as input. Some of the input elements may be new image Data that needs procssing;
+	/// Takes an an array of `ImageUploadData` as input. Some of the input elements may be new image Data that needs procssing;
 	/// some of the input elements may refer to already-processed images in our image store. Once all the ImageUploadData elements are processed,
 	/// returns a `[String]` containing the filenames where al the images are stored. The use case here is for editing existing content with
 	/// image attachments in a way that prevents re-uploading of photos that are already on the server.
-    ///
-    /// - Parameters:
-    ///   - images: The  images in `ImageUploadData` format. 
-    ///   - usage: The type of model using the image content.
-    ///    - req: The incoming `Request`, on which this processing must run.
-    /// - Returns: The generated names of the stored files.
+	///
+	/// - Parameters:
+	///   - images: The  images in `ImageUploadData` format. 
+	///   - usage: The type of model using the image content.
+	///	- req: The incoming `Request`, on which this processing must run.
+	/// - Returns: The generated names of the stored files.
 	func processImages(_ images: [ImageUploadData], usage: ImageUsage, on req: Request) async throws -> [String] {
 		guard images.count <= 4 else {
 			throw Abort(.badRequest, reason: "Too many image attachments")
@@ -90,16 +90,16 @@ extension APIRouteCollection {
 		return savedImageNames.compactMap { $0 }
 	}
 
-    /// Takes an optional image in Data form as input, produces full and thumbnail JPEG vrsions,
-    /// places both the thumbnail and full image in their respective directories, and returns the
-    /// generated name of the file on success, an empty string otherwise.
-    ///
-    /// - Parameters:
-    ///   - data: The uploaded image in `Data` format.
-    ///   - usage: The type of model using the image content.
-    ///    - req: The incoming `Request`, on which this processing must run.
-    /// - Returns: The generated name of the stored file, or nil.
-    func processImage(data: Data?, usage: ImageUsage, on req: Request) async throws -> String? {
+	/// Takes an optional image in Data form as input, produces full and thumbnail JPEG vrsions,
+	/// places both the thumbnail and full image in their respective directories, and returns the
+	/// generated name of the file on success, an empty string otherwise.
+	///
+	/// - Parameters:
+	///   - data: The uploaded image in `Data` format.
+	///   - usage: The type of model using the image content.
+	///	- req: The incoming `Request`, on which this processing must run.
+	/// - Returns: The generated name of the stored file, or nil.
+	func processImage(data: Data?, usage: ImageUsage, on req: Request) async throws -> String? {
 		guard let data = data, !data.isEmpty else {
 			// Not an error, just nothing to do.
 			return nil
@@ -210,34 +210,33 @@ extension APIRouteCollection {
 			}
 			return fullPath.lastPathComponent
 		}.get()
-    }
-    
-    /// Archives an image that is no longer needed other than for accountability tracking, by
-    /// removing the full-sized image and moving the thumbnail into the `archive/` subdirectory
-    /// of the provided base image directory.
-    ///
-    /// This is a synchronous operation, until such time as we can use SwiftNIO 2's asynchronous
-    /// file I/O.
-    ///
-    /// - Parameters:
-    ///   - image: The filename of the image.
-    ///   - imageDir: The base image directory path for the image's context.
-    func archiveImage(_ image: String, on req: Request) -> Void {
-        do {
+	}
+	
+	/// Archives an image that is no longer needed other than for accountability tracking, by
+	/// removing the full-sized image and moving the thumbnail into the `archive/` subdirectory
+	/// of the provided base image directory.
+	///
+	/// This is a synchronous operation, until such time as we can use SwiftNIO 2's asynchronous
+	/// file I/O.
+	///
+	/// - Parameters:
+	///   - image: The filename of the image.
+	///   - imageDir: The base image directory path for the image's context.
+	func archiveImage(_ image: String, on req: Request) {
+		do {
 			// remove existing full image
 			let fullURL = try self.getImagePath(for: image, usage: .twarrt , size: .full, on: req)
 			try FileManager().removeItem(at: fullURL)
 
-            // move thumbnail
+			// move thumbnail
 			let thumbnailURL = try self.getImagePath(for: image, usage: .twarrt , size: .thumbnail, on: req)
 			let archiveURL = try self.getImagePath(for: image, usage: .twarrt , size: .archive, on: req)
-            try FileManager().moveItem(at: thumbnailURL, to: archiveURL)
+			try FileManager().moveItem(at: thumbnailURL, to: archiveURL)
 
-        } catch let error {
-            // FIXME: should do something useful here
-            print("could not archive image: \(error)")
-        }
-    }
+		} catch let error {
+			req.logger.debug("could not archive image: \(error)")
+		}
+	}
 }
 
 extension ExportableFormat {

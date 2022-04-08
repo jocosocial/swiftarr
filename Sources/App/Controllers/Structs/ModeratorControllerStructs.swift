@@ -9,20 +9,20 @@ import Vapor
 /// * `GET /api/v3/mod/fez/ID`
 public struct FezEditLogData: Content {
 	/// The ID of the fez.
-    var fezID: UUID
+	var fezID: UUID
 	/// The ID of the edit.
-    var editID: UUID
-    /// The timestamp of the edit.
-    var createdAt: Date
-    /// Who initiated the edit. Usually the fez creator, but could be a moderator. Note that the saved edit shows the state BEFORE the edit,
-    /// therefore the 'author' here changed the contents to those of the NEXT edit (or to the current state).
-    var author: UserHeader
-    /// The title of the fez just before `author` edited it.
-    var title: String
-    /// The info field just before `author` edited it.
-    var info: String
-    /// The location field just before `author` edited it.
-    var location: String
+	var editID: UUID
+	/// The timestamp of the edit.
+	var createdAt: Date
+	/// Who initiated the edit. Usually the fez creator, but could be a moderator. Note that the saved edit shows the state BEFORE the edit,
+	/// therefore the 'author' here changed the contents to those of the NEXT edit (or to the current state).
+	var author: UserHeader
+	/// The title of the fez just before `author` edited it.
+	var title: String
+	/// The info field just before `author` edited it.
+	var info: String
+	/// The location field just before `author` edited it.
+	var location: String
 }
 
 extension FezEditLogData {
@@ -76,18 +76,18 @@ public struct FezPostModerationData: Content {
 /// * `GET /api/v3/mod/forum/id`
 public struct ForumEditLogData: Content {
 	/// The ID of the forum.
-    var forumID: UUID
+	var forumID: UUID
 	/// The ID of the edit.
-    var editID: UUID
-    /// The timestamp of the edit.
-    var createdAt: Date
-    /// Who initiated the edit. Usually the forum author, but could be a moderator. Note that the saved edit shows the state BEFORE the edit,
-    /// therefore the 'author' here changed the contents to those of the NEXT edit (or to the current state).
-    var author: UserHeader
-    /// The title of the forum just BEFORE `author` edited it.
-    var title: String
-    /// The category the forum was in just BEFORE `author` edited it.
-    var categoryID: UUID?
+	var editID: UUID
+	/// The timestamp of the edit.
+	var createdAt: Date
+	/// Who initiated the edit. Usually the forum author, but could be a moderator. Note that the saved edit shows the state BEFORE the edit,
+	/// therefore the 'author' here changed the contents to those of the NEXT edit (or to the current state).
+	var author: UserHeader
+	/// The title of the forum just BEFORE `author` edited it.
+	var title: String
+	/// The category the forum was in just BEFORE `author` edited it.
+	var categoryID: UUID?
 }
 
 extension ForumEditLogData {
@@ -108,19 +108,19 @@ extension ForumEditLogData {
 ///
 /// See `ModerationController.forumModerationHandler(_:)`
 public struct ForumModerationData: Content {
-    /// The forum's ID.
-    var forumID: UUID
-    /// the forum's category.
+	/// The forum's ID.
+	var forumID: UUID
+	/// the forum's category.
 	var categoryID: UUID
-    /// The forum's creator.
+	/// The forum's creator.
 	var creator: UserHeader
-    /// The forum's title.
-    var title: String
-    /// Time forum was created.
-    var createdAt: Date
-    /// Whether the forum is in read-only state, or is quarantined.
-    var moderationStatus: ContentModerationStatus
-    /// TRUE if the forum has been soft-deleted
+	/// The forum's title.
+	var title: String
+	/// Time forum was created.
+	var createdAt: Date
+	/// Whether the forum is in read-only state, or is quarantined.
+	var moderationStatus: ContentModerationStatus
+	/// TRUE if the forum has been soft-deleted
 	var isDeleted: Bool
 	/// Previous edits to the forum title
 	var edits: [ForumEditLogData]
@@ -205,38 +205,38 @@ extension ModeratorActionLogData {
 /// * `GET /api/v3/mod/twarrt/id`
 public struct PostEditLogData: Content {
 	/// The ID of the post. Depending on context, could be a twarrtID or a forumPostID.
-    var postID: Int
+	var postID: Int
 	/// The ID of the edit.
-    var editID: UUID
-    /// The timestamp of the post.
-    var createdAt: Date
-    /// Who initiated the edit. Usually the post author, but could be a moderator. Note that the saved edit shows the state BEFORE the edit,
-    /// therefore the 'author' here changed the contents to those of the NEXT edit (or to the current state).
-    var author: UserHeader
-    /// The text of the forum post.
-    var text: String
-    /// The filenames of the twarrt's optional images.
-    var images: [String]?
+	var editID: UUID
+	/// The timestamp of the post.
+	var createdAt: Date
+	/// Who initiated the edit. Usually the post author, but could be a moderator. Note that the saved edit shows the state BEFORE the edit,
+	/// therefore the 'author' here changed the contents to those of the NEXT edit (or to the current state).
+	var author: UserHeader
+	/// The text of the forum post.
+	var text: String
+	/// The filenames of the twarrt's optional images.
+	var images: [String]?
 }
 
 extension PostEditLogData {
-    init(edit: TwarrtEdit, editor: UserHeader) throws {
-    	postID = edit.$twarrt.id
-    	editID = try edit.requireID()
-    	createdAt = edit.createdAt ?? Date()
-    	author = editor
-    	text = edit.text
-    	images = edit.images    	
-    }
-    
-    init(edit: ForumPostEdit, editor: UserHeader) throws {
-    	postID = edit.$post.id
-    	editID = try edit.requireID()
-    	createdAt = edit.createdAt ?? Date()
-    	author = editor
-    	text = edit.postText
-    	images = edit.images    	
-    }
+	init(edit: TwarrtEdit, editor: UserHeader) throws {
+		postID = edit.$twarrt.id
+		editID = try edit.requireID()
+		createdAt = edit.createdAt ?? Date()
+		author = editor
+		text = edit.text
+		images = edit.images		
+	}
+	
+	init(edit: ForumPostEdit, editor: UserHeader) throws {
+		postID = edit.$post.id
+		editID = try edit.requireID()
+		createdAt = edit.createdAt ?? Date()
+		author = editor
+		text = edit.postText
+		images = edit.images		
+	}
 }
 
 /// Used to return data moderators need to view previous edits a user made to their profile. 

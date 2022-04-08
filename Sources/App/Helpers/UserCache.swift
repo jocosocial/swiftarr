@@ -28,15 +28,14 @@ public struct UserCacheData: Authenticatable, SessionAuthenticatable {
 	let displayName: String?
 	let profileUpdateTime: Date
 	let userImage: String?
-	let blocks: Set<UUID>?
+	let blocks: Set<UUID>?				// This is the 'computed' blocks; includes blocks initiated by both this user and by others.
 	let mutes: Set<UUID>?
 	let mutewords: [String]?
-	let alertwords: [String]?
 	let token: String?
 	let accessLevel: UserAccessLevel
 	let tempQuarantineUntil: Date?
 	
-	init(userID: UUID, user: User, blocks: [UUID]?, mutes: [UUID]?, mutewords: [String]?, alertwords: [String]?) {
+	init(userID: UUID, user: User, blocks: [UUID]?, mutewords: [String]?) {
 		self.userID = userID
 		username = user.username
 		displayName = user.displayName
@@ -44,9 +43,8 @@ public struct UserCacheData: Authenticatable, SessionAuthenticatable {
 		userImage = user.userImage
 		// I actually hate using map in this way--the maps apply to the optionals, not the underlying arrays.
 		self.blocks = blocks.map { Set($0) }
-		self.mutes = mutes.map { Set($0) }
+		self.mutes = Set(user.mutedUserIDs) // mutes.map { Set($0) }
 		self.mutewords = mutewords
-		self.alertwords = alertwords
 		self.token = user.$token.value??.token ?? nil
 		self.accessLevel = user.accessLevel
 		self.tempQuarantineUntil = user.tempQuarantineUntil
@@ -67,6 +65,13 @@ public struct UserCacheData: Authenticatable, SessionAuthenticatable {
 	
 	func makeHeader() -> UserHeader {
 		return UserHeader(userID: userID, username: username, displayName: displayName, userImage: userImage)
+	}
+	
+	func getUser(on db: Database) async throws -> User {
+		guard let result = try await User.find(userID, on: db) else {
+			throw Abort(.internalServerError, reason: "Could not find User in database, but it was in the cache")
+		}
+		return result
 	}
 	
 	/// Ensures that either the receiver can edit/delete other users' content (that is, they're a moderator), or that 
@@ -111,20 +116,14 @@ extension UserCacheData {
 	// This auth code uses the async version of verify. Async verify appears to perform better under Locust;
 	// I'm guessing that with sync verify we'd end up with all threads busy running Bcrypt when lots of logins came in
 	// at once, leading to incoming requests failing.
-	struct BasicAuth: BasicAuthenticator {
-		func authenticate(basic: BasicAuthorization, for request: Request) -> EventLoopFuture<Void> {
-			guard let cacheUser = request.userCache.getUser(username: basic.username) else {
-				return request.eventLoop.future()
+	struct BasicAuth: AsyncBasicAuthenticator {
+		func authenticate(basic: BasicAuthorization, for request: Request) async throws {
+			guard let cacheUser = request.userCache.getUser(username: basic.username), cacheUser.accessLevel != .banned,
+					let user = try await User.query(on: request.db).filter(\.$id == cacheUser.userID).first() else {
+				return
 			}
-			return User.query(on: request.db).filter(\.$id == cacheUser.userID).first().flatMap { user in
-				guard let user = user else {
-					return request.eventLoop.future()
-				}
-				return request.password.async.verify(basic.password, created: user.password).map { isValid in
-					if isValid {
-						request.auth.login(cacheUser)
-					}
-				}
+			if try await request.password.async.verify(basic.password, created: user.password) {
+				request.auth.login(cacheUser)
 			}
 		}
 	}
@@ -138,28 +137,26 @@ extension UserCacheData {
 	//
 	// However, route handlers that need the User object to do their job might as well auth with Token.authenticator,
 	// since the database query is 'free'.
-	struct TokenAuthenticator: BearerAuthenticator {
+	struct TokenAuthenticator: AsyncBearerAuthenticator {
 		typealias User = App.UserCacheData
 
-		func authenticate(bearer: BearerAuthorization, for request: Request) -> EventLoopFuture<Void> {
+		func authenticate(bearer: BearerAuthorization, for request: Request) async throws {
 			if let foundUser = request.userCache.getUser(token: bearer.token), foundUser.accessLevel != .banned {
 				request.auth.login(foundUser)
 			}
-			return request.eventLoop.makeSucceededFuture(())
 		}
 	}
 
 	// UserCacheData.SessionAuthenticator lets routes auth a UserCacheData object from a session ID. 
 	// Don't use this in API routes, as API routes should use token based auth (or basic auth for login).
-	struct SessionAuth: SessionAuthenticator {
+	struct SessionAuth: AsyncSessionAuthenticator {
 		typealias User = App.UserCacheData
 		
-		func authenticate(sessionID: String, for request: Request) -> EventLoopFuture<Void> {
+		func authenticate(sessionID: String, for request: Request) async throws {
 			if let userID = UUID(sessionID), let foundUser = request.userCache.getUser(userID),
 					let sessionToken = request.session.data["token"], sessionToken == foundUser.token {
 				request.auth.login(foundUser)
 			}
-			return request.eventLoop.makeSucceededFuture(())
 		}
 	}
 }
@@ -217,54 +214,19 @@ extension Application {
 			return
 		}
 	
-		var initialStorage = UserCacheStorage()
-		var allUsers: [User]
-		// As it happens, we can diagnose several startup-time malfunctions here, as this is usually the first query each launch.
-		do {
-			allUsers = try User.query(on: app.db).with(\.$token).all().wait()
-		}
-		catch let error as NIO.IOError where error.errnoCode == 61 {
-			app.logger.critical("Initial connection to Postgres failed. Is the db up and running?")
-			throw error
-		}
-		catch let error as PostgresNIO.PostgresError {
-			app.logger.critical("Initial attempt to access Swiftarr DB tables failed. Is the DB set up (all migrations run)?")
-			throw error
-		}
-		try allUsers.forEach { user in
-			let userID = try user.requireID()
-			let barrelFuture = Barrel.query(on: app.db)
-				.filter(\.$ownerID == userID)
-				.filter(\.$barrelType ~~ [.userMute, .keywordMute, .keywordAlert])
-				.all()
-				
-			// Redis stores blocks as users you've blocked AND users who have blocked you,
-			// for all subaccounts of both you and the other user.
-			let redisKey: RedisKey = "rblocks:\(userID.uuidString)"
-			let blockFuture = app.redis.smembers(of: redisKey, as: UUID.self)
-		
-			let futures = barrelFuture.and(blockFuture).map { (barrels, blocks) in 
-				var mutes: [UUID]?
-				var muteWords: [String]?
-				var alertWords: [String]?
-				for barrel in barrels {
-					switch barrel.barrelType {
-						case .userMute: mutes = barrel.modelUUIDs
-						case .keywordMute: muteWords = barrel.userInfo["muteWords"]
-						case .keywordAlert: alertWords = barrel.userInfo["alertWords"]
-						default: continue
-					}
-				}
-				let compactBlocks = blocks.compactMap { $0 }
-				let cacheData = UserCacheData(userID: userID, user: user, blocks: compactBlocks,
-						mutes: mutes, mutewords: muteWords, alertwords: alertWords)
+//		let _ = Task {
+			var initialStorage = UserCacheStorage()
+			let results = try User.query(on: app.db).with(\.$token).with(\.$muteWords).all().wait()
+			for user in results {
+				let userID = try user.requireID()
+				let blocks = try app.redis.getBlocks(for: userID)
+				let mutewords = user.muteWords.map { $0.word }
+				let cacheData = UserCacheData(userID: userID, user: user, blocks: blocks, mutewords: mutewords)
 				initialStorage.cacheUser(cacheData)
 			}
-			try futures.wait()
-		}
-		app.userCacheStorage = initialStorage
-	}
-
+			app.userCacheStorage = initialStorage
+//		}
+	}	
 }
 
 extension Request {
@@ -272,6 +234,7 @@ extension Request {
 		.init(request: self)
 	}
 	
+	// UserCache isn't actually the cache. It's a bunch of cache-access methods that extends a Request.
 	public struct UserCache {
 		let request: Request
 		
@@ -385,67 +348,46 @@ extension Request {
 		
 // MARK: updating		
 		@discardableResult
-		public func updateUser(_ userUUID: UUID) -> EventLoopFuture<UserCacheData> {
-			return getUpdatedUserCacheData(userUUID).map { cacheData in	
-				let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
-				// It's possible another thread could add this cache entry while this thread is
-				// building it. That's okay.
-				cacheLock.withLock {
-					request.application.userCacheStorage.cacheUser(cacheData)
+		public func updateUser(_ userUUID: UUID) async throws -> UserCacheData {
+			let cacheData = try await getUpdatedUserCacheData(userUUID)
+			let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
+			// It's possible another thread could add this cache entry while this thread is
+			// building it. That's okay.
+			cacheLock.withLock {
+				request.application.userCacheStorage.cacheUser(cacheData)
+			}
+			return cacheData
+		}
+		
+		public func updateUsers(_ uuids: [UUID]) async throws {
+			let cacheData = try await withThrowingTaskGroup(of: UserCacheData.self, returning: [UserCacheData].self) { group in
+				for userID in uuids {
+					group.addTask { try await getUpdatedUserCacheData(userID) } 
 				}
-				return cacheData
+				var results = [UserCacheData]()
+				for try await ucd in group {
+					results.append(ucd)
+				}
+				return results
+			}
+		
+			let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
+			cacheLock.withLock {
+				cacheData.forEach { userCacheData in
+					request.application.userCacheStorage.cacheUser(userCacheData)
+				}
 			}
 		}
 		
-		public func updateUsers(_ uuids: [UUID]) -> EventLoopFuture<Void> {
-			let futures: [EventLoopFuture<UserCacheData>] = uuids.map { userUUID in
-				return getUpdatedUserCacheData(userUUID)
+		private func getUpdatedUserCacheData(_ userID: UUID) async throws -> UserCacheData {
+			async let user = User.query(on: request.db).filter(\.$id == userID).with(\.$token).with(\.$muteWords).first()
+			async let blocks = try request.redis.getBlocks(for: userID)
+			guard let user = try await user else {
+				throw Abort(.internalServerError, reason: "user not found")
 			}
-			return futures.flatten(on: request.eventLoop).map { cacheData in
-				let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
-				cacheLock.withLock {
-					cacheData.forEach { userCacheData in
-						request.application.userCacheStorage.cacheUser(userCacheData)
-					}
-				}
-			}
-		}
-		
-		private func getUpdatedUserCacheData(_ userUUID: UUID) -> EventLoopFuture<UserCacheData> {
-			let barrelFuture = Barrel.query(on: request.db)
-					.filter(\.$ownerID == userUUID)
-					.filter(\.$barrelType ~~ [.userMute, .keywordMute, .keywordAlert])
-					.all()
-		   		
-			// Redis stores blocks as users you've blocked AND users who have blocked you,
-			// for all subaccounts of both you and the other user.
-			let redisKey: RedisKey = "rblocks:\(userUUID.uuidString)"
-			let blockFuture = request.redis.smembers(of: redisKey, as: UUID.self)
-			
-			// Build an entry for this user
-			return User.query(on: request.db).filter(\.$id == userUUID).with(\.$token).first()
-					.unwrap(or: Abort(.internalServerError, reason: "user not found"))
-					.and(barrelFuture)
-					.and(blockFuture)
-					.map { (arg0, blocks) in 
-				let (user, barrels) = arg0
-				var mutes: [UUID]?
-				var muteWords: [String]?
-				var alertWords: [String]?
-				for barrel in barrels {
-					switch barrel.barrelType {
-						case .userMute: mutes = barrel.modelUUIDs
-						case .keywordMute: muteWords = barrel.userInfo["muteWords"]
-						case .keywordAlert: alertWords = barrel.userInfo["alertWords"]
-						default: continue
-					}
-				}
-			
-				let compactBlocks = blocks.compactMap { $0 }
-				let cacheData = UserCacheData(userID: userUUID, user: user, blocks: compactBlocks,
-						mutes: mutes, mutewords: muteWords, alertwords: alertWords)
-				return cacheData
-			}
+			let mutewords = user.muteWords.map { $0.word }
+			let cacheData = try await UserCacheData(userID: userID, user: user, blocks: blocks, mutewords: mutewords)
+			return cacheData
 		}
 	}
 }

@@ -36,10 +36,8 @@ struct FezController: APIRouteCollection {
 		tokenCacheAuthGroup.post(fezIDParam, "update", use: updateHandler)
 		tokenCacheAuthGroup.post(fezIDParam, "delete", use: fezDeleteHandler)
 		tokenCacheAuthGroup.delete(fezIDParam, use: fezDeleteHandler)
-
-		let tokenAuthGroup = addTokenAuthGroup(to: fezRoutes)
-		tokenAuthGroup.post(fezIDParam, "report", use: reportFezHandler)
-		tokenAuthGroup.post("post", fezPostIDParam, "report", use: reportFezPostHandler)
+		tokenCacheAuthGroup.post(fezIDParam, "report", use: reportFezHandler)
+		tokenCacheAuthGroup.post("post", fezPostIDParam, "report", use: reportFezPostHandler)
  
    }
 		
@@ -71,11 +69,11 @@ struct FezController: APIRouteCollection {
 	///
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: An array of <doc:FezData> containing current fezzes with open slots.
-	func openHandler(_ req: Request) throws -> EventLoopFuture<FezListData> {
+	func openHandler(_ req: Request) async throws -> FezListData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let start = (req.query[Int.self, at: "start"] ?? 0)
 		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
-		let futureFezzes = FriendlyFez.query(on: req.db)
+		let fezQuery = FriendlyFez.query(on: req.db)
 				.filter(\.$fezType != .closed)
 				.filter(\.$owner.$id !~ cacheUser.getBlocks())
 				.filter(\.$cancelled == false)
@@ -84,30 +82,27 @@ struct FezController: APIRouteCollection {
 			guard let typeFilter = FezType.fromAPIString(typeFilterStr) else {
 				throw Abort(.badRequest, reason: "Could not map 'type' query parameter to FezType.")
 			}
-			futureFezzes.filter(\.$fezType == typeFilter)
+			fezQuery.filter(\.$fezType == typeFilter)
 		}
 		if let dayFilter = req.query[Int.self, at: "cruiseday"] {
 			let dayStart = Settings.shared.getDisplayCalendar().date(byAdding: .day, value: dayFilter, to: Settings.shared.cruiseStartDate) ??
 					Settings.shared.cruiseStartDate
 			let dayEnd = Settings.shared.getDisplayCalendar().date(byAdding: .day, value: dayFilter, to: dayStart) ??
 					Date()
-			futureFezzes.filter(\.$startTime > dayStart).filter(\.$startTime < dayEnd)
+			fezQuery.filter(\.$startTime > dayStart).filter(\.$startTime < dayEnd)
 		}
-		return futureFezzes.count().flatMap { fezCount in
-			return futureFezzes.sort(\.$startTime, .ascending).sort(\.$title, .ascending).range(start..<(start + limit))
-					.all().flatMapThrowing { fezzes in
-				let fezDataArray = try fezzes.compactMap { fez -> FezData? in
-					// Fezzes are only 'open' if their waitlist is < 1/2 the size of their capacity. A fez with a max of 10 people
-					// could have a waitlist of 5, then it stops showing up in 'open' searches.
-					if (fez.maxCapacity == 0 || fez.participantArray.count < Int(Double(fez.maxCapacity) * 1.5)) &&
-							!fez.participantArray.contains(cacheUser.userID) {
-						return try buildFezData(from: fez, with: nil, for: cacheUser, on: req)
-					}
-					return nil
-				}
-				return FezListData(paginator: Paginator(total: fezCount, start: start, limit: limit), fezzes: fezDataArray)
+		let fezCount = try await fezQuery.count()
+		let fezzes = try await fezQuery.sort(\.$startTime, .ascending).sort(\.$title, .ascending).range(start..<(start + limit)).all()
+		let fezDataArray = try fezzes.compactMap { fez -> FezData? in
+			// Fezzes are only 'open' if their waitlist is < 1/2 the size of their capacity. A fez with a max of 10 people
+			// could have a waitlist of 5, then it stops showing up in 'open' searches.
+			if (fez.maxCapacity == 0 || fez.participantArray.count < Int(Double(fez.maxCapacity) * 1.5)) &&
+					!fez.participantArray.contains(cacheUser.userID) {
+				return try buildFezData(from: fez, with: nil, for: cacheUser, on: req)
 			}
+			return nil
 		}
+		return FezListData(paginator: Paginator(total: fezCount, start: start, limit: limit), fezzes: fezDataArray)
 	}
 
 	/// `GET /api/v3/fez/joined`
@@ -128,7 +123,7 @@ struct FezController: APIRouteCollection {
 	///
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: An array of <doc:FezData> containing all the fezzes joined by the user.
-	func joinedHandler(_ req: Request) throws -> EventLoopFuture<FezListData> {
+	func joinedHandler(_ req: Request) async throws -> FezListData {
 		struct QueryStruct: Content {
 			var type: String?
 			var excludetype: String?
@@ -150,15 +145,13 @@ struct FezController: APIRouteCollection {
 			// excludetype is really only here to exclude .closed fezzes.
 			query.filter(FriendlyFez.self, \.$fezType != fezType)
 		}
-		return query.count().flatMap { fezCount in
-			return query.sort(FriendlyFez.self, \.$updatedAt, .descending).range(start..<(start + limit)).all().flatMapThrowing { pivots in
-				let fezDataArray = try pivots.map { pivot -> FezData in
-					let fez = try pivot.joined(FriendlyFez.self)
-					return try buildFezData(from: fez, with: pivot, for: effectiveUser, on: req)
-				}
-				return FezListData(paginator: Paginator(total: fezCount, start: start, limit: limit), fezzes: fezDataArray)
-			}
+		async let fezCount = try query.count()
+		async let pivots = query.sort(FriendlyFez.self, \.$updatedAt, .descending).range(start..<(start + limit)).all()
+		let fezDataArray = try await pivots.map { pivot -> FezData in
+			let fez = try pivot.joined(FriendlyFez.self)
+			return try buildFezData(from: fez, with: pivot, for: effectiveUser, on: req)
 		}
+		return try await FezListData(paginator: Paginator(total: fezCount, start: start, limit: limit), fezzes: fezDataArray)
 	}
 	
 	/// `GET /api/v3/fez/owner`
@@ -178,7 +171,7 @@ struct FezController: APIRouteCollection {
 	///
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: An array of <doc:FezData> containing all the fezzes created by the user.
-	func ownerHandler(_ req: Request) throws -> EventLoopFuture<FezListData> {
+	func ownerHandler(_ req: Request) async throws -> FezListData {
 		let user = try req.auth.require(UserCacheData.self)
 		let start = (req.query[Int.self, at: "start"] ?? 0)
 		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
@@ -193,16 +186,14 @@ struct FezController: APIRouteCollection {
 			query.filter(\.$fezType != fezType)
 		}
 		// get owned fezzes
-		return query.count().flatMap { fezCount in
-			return query.range(start..<(start + limit)).sort(\.$createdAt, .descending).all().flatMapThrowing { fezzes in
-				// convert to FezData
-				let fezDataArray = try fezzes.map { (fez) -> FezData in
-					let userParticipant = try fez.joined(FezParticipant.self)
-					return try buildFezData(from: fez, with: userParticipant, for: user, on: req)
-				}
-				return FezListData(paginator: Paginator(total: fezCount, start: start, limit: limit), fezzes: fezDataArray)
-			}
+		async let fezCount = query.count()
+		async let fezzes = query.range(start..<(start + limit)).sort(\.$createdAt, .descending).all()
+		// convert to FezData
+		let fezDataArray = try await fezzes.map { (fez) -> FezData in
+			let userParticipant = try fez.joined(FezParticipant.self)
+			return try buildFezData(from: fez, with: userParticipant, for: user, on: req)
 		}
+		return try await FezListData(paginator: Paginator(total: fezCount, start: start, limit: limit), fezzes: fezDataArray)
 	}
 	
 	/// `GET /api/v3/fez/ID`
@@ -235,34 +226,22 @@ struct FezController: APIRouteCollection {
 	/// - Throws: 404 error if a block between the user and fez owner applies. A 5xx response
 	///   should be reported as a likely bug, please and thank you.
 	/// - Returns: <doc:FezData> with fez info and all discussion posts.
-	func fezHandler(_ req: Request) throws -> EventLoopFuture<FezData> {
+	func fezHandler(_ req: Request) async throws -> FezData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let effectiveUser = try getEffectiveUser(user: cacheUser, req: req)
 		// get fez
-		return FriendlyFez.findFromParameter(fezIDParam, on: req).throwingFlatMap { fez in
-			guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
-				throw Abort(.notFound, reason: "this fez is not available")
-			}
-			return fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == effectiveUser.userID).first()
-					.throwingFlatMap { pivot in
-				var fezData = try buildFezData(from: fez, with: pivot, for: cacheUser, on: req)
-				if pivot != nil || (cacheUser.accessLevel.hasAccess(.moderator) && fez.fezType != .closed) {
-					return try buildPostsForFez(fez, pivot: pivot, on: req, user: cacheUser).throwingFlatMap { (posts, paginator) in
-						fezData.members?.paginator = paginator
-						fezData.members?.posts = posts
-						if let pivot = pivot {
-							return pivot.save(on: req.db).transform(to: fezData)
-						}
-						else {
-							return req.eventLoop.future(fezData)
-						}
-					}
-				}
-				else {
-					return req.eventLoop.future(fezData)
-				}
-			}
+		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
+			throw Abort(.notFound, reason: "this fez is not available")
 		}
+		let pivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == effectiveUser.userID).first()
+		var fezData = try buildFezData(from: fez, with: pivot, for: cacheUser, on: req)
+		if let _ = fezData.members {
+			let (posts, paginator) = try await buildPostsForFez(fez, pivot: pivot, on: req, user: cacheUser)
+			fezData.members?.paginator = paginator
+			fezData.members?.posts = posts
+		}
+		return fezData
 	}
 	
 	// MARK: Membership
@@ -282,35 +261,30 @@ struct FezController: APIRouteCollection {
 	///   404 error if a block between the user and fez owner applies. A 5xx response should be
 	///   reported as a likely bug, please and thank you.
 	/// - Returns: <doc:FezData> containing the updated fez data.
-	func joinHandler(_ req: Request) throws -> EventLoopFuture<Response> {
+	func joinHandler(_ req: Request) async throws -> Response {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		return FriendlyFez.findFromParameter(fezIDParam, on: req).throwingFlatMap { (fez) in
-			guard !fez.participantArray.contains(cacheUser.userID) else {
-				throw Abort(.notFound, reason: "user is already a member of this LFG")
-			}
-			// respect blocks
-			guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
-				throw Abort(.notFound, reason: "LFG is not available")
-			}
-			// add user to both the participantArray and attach a pivot for them.
-			fez.participantArray.append(cacheUser.userID)
-			let blocksAndMutes = cacheUser.getBlocks().union(cacheUser.getMutes())
-			return fez.save(on: req.db).flatMap {
-				return fez.$fezPosts.query(on: req.db).filter(\.$author.$id ~~ blocksAndMutes).count().throwingFlatMap { hiddenPostCount in
-					let newParticipant = try FezParticipant(cacheUser.userID, fez)
-					newParticipant.readCount = 0; 
-					newParticipant.hiddenCount = hiddenPostCount 
-					return newParticipant.save(on: req.db).flatMapThrowing {
-						try forwardMembershipChangeToSockets(fez, participantID: cacheUser.userID, joined: true, on: req)
-						let fezData = try buildFezData(from: fez, with: newParticipant, for: cacheUser, on: req)
-						// return with 201 status
-						let response = Response(status: .created)
-						try response.content.encode(fezData)
-						return response
-					}
-				}
-			}
+		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		guard !fez.participantArray.contains(cacheUser.userID) else {
+			throw Abort(.notFound, reason: "user is already a member of this LFG")
 		}
+		// respect blocks
+		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
+			throw Abort(.notFound, reason: "LFG is not available")
+		}
+		// add user to both the participantArray and attach a pivot for them.
+		fez.participantArray.append(cacheUser.userID)
+		try await fez.save(on: req.db)
+		let newParticipant = try FezParticipant(cacheUser.userID, fez)
+		newParticipant.readCount = 0; 
+		let blocksAndMutes = cacheUser.getBlocks().union(cacheUser.getMutes())
+		newParticipant.hiddenCount = try await fez.$fezPosts.query(on: req.db).filter(\.$author.$id ~~ blocksAndMutes).count() 
+		try await newParticipant.save(on: req.db)
+		try forwardMembershipChangeToSockets(fez, participantID: cacheUser.userID, joined: true, on: req)
+		let fezData = try buildFezData(from: fez, with: newParticipant, for: cacheUser, on: req)
+		// return with 201 status
+		let response = Response(status: .created)
+		try response.content.encode(fezData)
+		return response
 	}
 	
 	/// `POST /api/v3/fez/ID/unjoin`
@@ -323,21 +297,18 @@ struct FezController: APIRouteCollection {
 	/// - Throws: 400 error if the supplied ID is not a fez barrel. A 5xx response should be
 	///   reported as a likely bug, please and thank you.
 	/// - Returns: <doc:FezData> containing the updated fez data.
-	func unjoinHandler(_ req: Request) throws -> EventLoopFuture<FezData> {
+	func unjoinHandler(_ req: Request) async throws -> FezData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		// get fez
-		return FriendlyFez.findFromParameter(fezIDParam, on: req).flatMap { fez in
-			// remove user from participantArray and also remove the pivot.
-			if let index = fez.participantArray.firstIndex(of: cacheUser.userID) {
-				fez.participantArray.remove(at: index)
-			}
-			return fez.save(on: req.db).and(fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == cacheUser.userID).delete())
-					.flatMapThrowing { (_) in
-				try deleteFezNotifications(userIDs: [cacheUser.userID], fez: fez, on: req)
-				try forwardMembershipChangeToSockets(fez, participantID: cacheUser.userID, joined: false, on: req)
-				return try buildFezData(from: fez, with: nil, for: cacheUser, on: req)
-			}
+		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		// remove user from participantArray and also remove the pivot.
+		if let index = fez.participantArray.firstIndex(of: cacheUser.userID) {
+			fez.participantArray.remove(at: index)
 		}
+		try await fez.save(on: req.db)
+		try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == cacheUser.userID).delete()
+		try await deleteFezNotifications(userIDs: [cacheUser.userID], fez: fez, on: req)
+		try forwardMembershipChangeToSockets(fez, participantID: cacheUser.userID, joined: false, on: req)
+		return try buildFezData(from: fez, with: nil, for: cacheUser, on: req)
 	}
 	
 	// MARK: Posts
@@ -353,7 +324,7 @@ struct FezController: APIRouteCollection {
 	/// - Throws: 404 error if the fez is not available. A 5xx response should be reported
 	///   as a likely bug, please and thank you.
 	/// - Returns: <doc:FezPostData> containing the user's new post.
-	func postAddHandler(_ req: Request) throws -> EventLoopFuture<FezPostData> {
+	func postAddHandler(_ req: Request) async throws -> FezPostData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		try cacheUser.guardCanCreateContent()
 		// see PostContentData.validations()
@@ -361,70 +332,61 @@ struct FezController: APIRouteCollection {
  		guard data.images.count <= 1 else {
  			throw Abort(.badRequest, reason: "Fez posts may only have one image")
  		}
-		// get fez
-		return FriendlyFez.findFromParameter(fezIDParam, on: req).throwingFlatMap { fez in
-			guard fez.participantArray.contains(cacheUser.userID) || cacheUser.accessLevel.hasAccess(.moderator) else {
-				throw Abort(.forbidden, reason: "user is not member of LFG; cannot post")
+		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		guard fez.participantArray.contains(cacheUser.userID) || cacheUser.accessLevel.hasAccess(.moderator) else {
+			throw Abort(.forbidden, reason: "user is not member of LFG; cannot post")
+		}
+		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
+			throw Abort(.notFound, reason: "LFG is not available")
+		}
+		guard fez.fezType != .closed || data.images.count == 0 else {
+			throw Abort(.badRequest, reason: "Private conversations can't contain photos.")
+		}
+		guard fez.moderationStatus != .locked else {
+			// Note: Users should still be able to post in a quarantined LFG so they can figure out what (else) to do.
+			throw Abort(.badRequest, reason: "LFG is locked; cannot post.")
+		}
+		// process image
+		let filenames = try await processImages(data.images, usage: .fezPost, on: req)
+		// create and save the new post, update fezzes' cached post count
+		let effectiveAuthor = data.effectiveAuthor(actualAuthor: cacheUser, on: req)
+		let filename = filenames.count > 0 ? filenames[0] : nil
+		let post = try FezPost(fez: fez, authorID: effectiveAuthor.userID, text: data.text, image: filename)
+		fez.postCount += 1
+		try await post.save(on: req.db)
+		try await fez.save(on: req.db)
+		// If any participants block or mute this user, increase their hidden post count as they won't see this post.
+		// The nice thing about doing it this way is most of the time there will be no blocks and nothing to do.
+		var participantNotifyList: [UUID] = []
+		for participantUserID in fez.participantArray {
+			guard let participantCacheUser = req.userCache.getUser(participantUserID) else {
+				continue
 			}
-			guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
-				throw Abort(.notFound, reason: "LFG is not available")
-			}
-			guard fez.fezType != .closed || data.images.count == 0 else {
-				throw Abort(.badRequest, reason: "Private conversations can't contain photos.")
-			}
-			guard fez.moderationStatus != .locked else {
-				// Note: Users should still be able to post in a quarantined LFG so they can figure out what (else) to do.
-				throw Abort(.badRequest, reason: "LFG is locked; cannot post.")
-			}
-			// process image
-			return self.processImages(data.images , usage: .fezPost, on: req).throwingFlatMap { (filenames) in
-				// create and save the new post, update fezzes' cached post count
-				let effectiveAuthor = data.effectiveAuthor(actualAuthor: cacheUser, on: req)
-				let filename = filenames.count > 0 ? filenames[0] : nil
-				let post = try FezPost(fez: fez, authorID: effectiveAuthor.userID, text: data.text, image: filename)
-				fez.postCount += 1
-				var saveFutures = [ post.save(on: req.db), fez.save(on: req.db) ]
-				// If any participants block or mute this user, increase their hidden post count as they won't see this post.
-				// The nice thing about doing it this way is most of the time there will be no blocks and nothing to do.
-				var participantNotifyList: [UUID] = []
-				for participantUserID in fez.participantArray {
-					guard let participantCacheUser = req.userCache.getUser(participantUserID) else {
-						continue
-					}
-					if participantCacheUser.getBlocks().contains(effectiveAuthor.userID) || 
-							participantCacheUser.getMutes().contains(effectiveAuthor.userID) {
-						let incrementHiddenFuture = getUserPivot(fez: fez, userID: participantUserID, on: req.db)
-								.flatMap { pivot -> EventLoopFuture<Void> in
-							pivot?.hiddenCount += 1
-							// Don't fail the add if we can't find the pivot
-							return pivot?.save(on: req.db) ?? req.eventLoop.makeSucceededFuture(())
-						}
-						saveFutures.append(incrementHiddenFuture)		
-					}
-					else if participantUserID != cacheUser.userID {
-						participantNotifyList.append(participantUserID)
-					}
+			if participantCacheUser.getBlocks().contains(effectiveAuthor.userID) || 
+					participantCacheUser.getMutes().contains(effectiveAuthor.userID) {
+				if let pivot = try await getUserPivot(fez: fez, userID: participantUserID, on: req.db) {
+					pivot.hiddenCount += 1
+					try await pivot.save(on: req.db)
 				}
-				return saveFutures.flatten(on: req.eventLoop).throwingFlatMap {
-      		      	post.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
-					var infoStr = "@\(effectiveAuthor.username) wrote, \"\(post.text)\""
-					if fez.fezType != .closed {
-						infoStr.append(" in LFG \"\(fez.title)\".")
-					}
-					try addNotifications(users: participantNotifyList, type: fez.notificationType(), info: infoStr, on: req)
-					try forwardPostToSockets(fez, post, on: req)
-					return getUserPivot(fez: fez, userID: cacheUser.userID, on: req.db).flatMapThrowing { pivot in
-						// A user posting is assumed to have read all prev posts. (even if this proves untrue, we should increment
-						// readCount as they've read the post they just wrote!)
-						if let pivot = pivot {
-							pivot.readCount = fez.postCount - pivot.hiddenCount
-							_ = pivot.save(on: req.db)
-						}
-						return try FezPostData(post: post, author: effectiveAuthor.makeHeader())
-					}
-				}
+			}
+			else if participantUserID != cacheUser.userID {
+				participantNotifyList.append(participantUserID)
 			}
 		}
+		try await post.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
+		var infoStr = "@\(effectiveAuthor.username) wrote, \"\(post.text)\""
+		if fez.fezType != .closed {
+			infoStr.append(" in LFG \"\(fez.title)\".")
+		}
+		try await addNotifications(users: participantNotifyList, type: fez.notificationType(), info: infoStr, on: req)
+		try forwardPostToSockets(fez, post, on: req)
+		// A user posting is assumed to have read all prev posts. (even if this proves untrue, we should increment
+		// readCount as they've read the post they just wrote!)
+		if let pivot = try await getUserPivot(fez: fez, userID: cacheUser.userID, on: req.db) {
+			pivot.readCount = fez.postCount - pivot.hiddenCount
+			try await pivot.save(on: req.db)
+		}
+		return try FezPostData(post: post, author: effectiveAuthor.makeHeader())
 	}
 							
 	/// `POST /api/v3/fez/post/ID/delete`
@@ -436,50 +398,47 @@ struct FezController: APIRouteCollection {
 	/// - Throws: 403 error if user is not the post author. 404 error if the fez is not
 	///   available. A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: HTTP 204 No Content
-	func postDeleteHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+	func postDeleteHandler(_ req: Request) async throws -> HTTPStatus {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		// get post
-		return FezPost.findFromParameter(fezPostIDParam, on: req).throwingFlatMap { post in
-			try cacheUser.guardCanModifyContent(post)
-			// get fez and all its participant pivots. Also get count of posts before the one we're deleting.
-			return post.$fez.query(on: req.db).with(\.$participants.$pivots).first()
-					.unwrap(or: Abort(.internalServerError, reason: "LFG not found"))
-					.throwingFlatMap { fez in
-				guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
-					throw Abort(.notFound, reason: "LFG is not available")
-				}
-				return try fez.$fezPosts.query(on: req.db).filter(\.$id < post.requireID()).count().throwingFlatMap { postIndex in
-					// delete post, reduce post count cached in fez
-					fez.postCount -= 1
-					var saveFutures = [ fez.save(on: req.db), post.delete(on: req.db) ]
-					var adjustNotificationCountForUsers: [UUID] = []
-					for participantPivot in fez.$participants.pivots {
-						// If this user was hiding this post, reduce their hidden count as the post is gone.
-						var pivotNeedsSave = false
-						if let participantCacheUser = req.userCache.getUser(participantPivot.$user.id),
-								participantCacheUser.getBlocks().contains(cacheUser.userID) || 
-								participantCacheUser.getMutes().contains(cacheUser.userID) {
-							participantPivot.hiddenCount = max(participantPivot.hiddenCount - 1, 0)
-							pivotNeedsSave = true
-						}
-						// If the user has read the post being deleted, reduce their read count by 1.
-						if participantPivot.readCount > postIndex {
-							participantPivot.readCount -= 1
-							pivotNeedsSave = true
-						}
-						if pivotNeedsSave {
-							saveFutures.append(participantPivot.save(on: req.db))
-						}
-						else if participantPivot.$user.id != cacheUser.userID {
-							adjustNotificationCountForUsers.append(participantPivot.$user.id)
-						}
-					}
-					_ = try subtractNotifications(users: adjustNotificationCountForUsers, type: fez.notificationType(), on: req)
-					post.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: req)
-					return saveFutures.flatten(on: req.eventLoop).transform(to: .noContent)
-				}
+		let post = try await FezPost.findFromParameter(fezPostIDParam, on: req)
+		try cacheUser.guardCanModifyContent(post)
+		// get fez and all its participant pivots. Also get count of posts before the one we're deleting.
+		guard let fez = try await post.$fez.query(on: req.db).with(\.$participants.$pivots).first() else {
+			throw Abort(.internalServerError, reason: "LFG not found")
+		}
+		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
+			throw Abort(.notFound, reason: "LFG is not available")
+		}
+		let postIndex = try await fez.$fezPosts.query(on: req.db).filter(\.$id < post.requireID()).count()
+		// delete post, reduce post count cached in fez
+		fez.postCount -= 1
+		try await fez.save(on: req.db)
+		try await post.delete(on: req.db)
+		var adjustNotificationCountForUsers: [UUID] = []
+		for participantPivot in fez.$participants.pivots {
+			// If this user was hiding this post, reduce their hidden count as the post is gone.
+			var pivotNeedsSave = false
+			if let participantCacheUser = req.userCache.getUser(participantPivot.$user.id),
+					participantCacheUser.getBlocks().contains(cacheUser.userID) || 
+					participantCacheUser.getMutes().contains(cacheUser.userID) {
+				participantPivot.hiddenCount = max(participantPivot.hiddenCount - 1, 0)
+				pivotNeedsSave = true
+			}
+			// If the user has read the post being deleted, reduce their read count by 1.
+			if participantPivot.readCount > postIndex {
+				participantPivot.readCount -= 1
+				pivotNeedsSave = true
+			}
+			if pivotNeedsSave {
+				try await participantPivot.save(on: req.db)
+			}
+			else if participantPivot.$user.id != cacheUser.userID {
+				adjustNotificationCountForUsers.append(participantPivot.$user.id)
 			}
 		}
+		_ = try await subtractNotifications(users: adjustNotificationCountForUsers, type: fez.notificationType(), on: req)
+		try await post.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: req)
+		return .noContent
 	}
 	
 	/// `POST /api/v3/fez/post/ID/report`
@@ -495,18 +454,17 @@ struct FezController: APIRouteCollection {
 	/// - Throws: 400 error if the post is private.
 	/// - Throws: 404 error if the parent fez of the post could not be found.
 	/// - Returns: 201 Created on success.
-	func reportFezPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-		let submitter = try req.auth.require(User.self)
+	func reportFezPostHandler(_ req: Request) async throws -> HTTPStatus {
+		let submitter = try req.auth.require(UserCacheData.self)
 		let data = try req.content.decode(ReportData.self)		
-		return FezPost.findFromParameter(fezPostIDParam, on: req).throwingFlatMap { reportedPost in
-			return FriendlyFez.find(reportedPost.$fez.id, on: req.db)
-					.unwrap(or: Abort(.notFound, reason: "could not find parent fez")).throwingFlatMap { reportedFriendlyFez in
-				guard reportedFriendlyFez.fezType != FezType.closed else {
-					throw Abort(.badRequest, reason: "cannot report private (closed) fez posts")
-				}
-				return try reportedPost.fileReport(submitter: submitter, submitterMessage: data.message, on: req)
-			}
+		let reportedPost = try await FezPost.findFromParameter(fezPostIDParam, on: req)
+		guard let reportedFriendlyFez = try await FriendlyFez.find(reportedPost.$fez.id, on: req.db) else {
+			throw Abort(.notFound, reason: "could not find parent fez")
 		}
+		guard reportedFriendlyFez.fezType != FezType.closed else {
+			throw Abort(.badRequest, reason: "cannot report private (closed) fez posts")
+		}
+		return try await reportedPost.fileReport(submitter: submitter, submitterMessage: data.message, on: req)
 	}
 
 	// MARK: Fez Management
@@ -529,8 +487,8 @@ struct FezController: APIRouteCollection {
 	///
 	/// - Parameter requestBody: <doc:FezContentData> payload in the HTTP body.
 	/// - Throws: 400 error if the supplied data does not validate.
-	/// - Returns: <doc:FezData> containing the newly created fez.
-	func createHandler(_ req: Request) throws -> EventLoopFuture<Response> {
+	/// - Returns: 201 Created; <doc:FezData> containing the newly created fez.
+	func createHandler(_ req: Request) async throws -> Response {
 		let user = try req.auth.require(UserCacheData.self)
 		try user.guardCanCreateContent(customErrorString: "User cannot create LFG.")
 		// see `FezContentData.validations()`
@@ -542,20 +500,15 @@ struct FezController: APIRouteCollection {
 		var creatorBlocks = user.getBlocks()
 		let initialUsers = ([user.userID] + data.initialUsers).filter { creatorBlocks.insert($0).inserted }
 		fez.participantArray = initialUsers
-		return fez.save(on: req.db).flatMap { _ in
-			return User.query(on: req.db).filter(\.$id ~~ initialUsers).all().flatMap { participants in
-				return fez.$participants.attach(participants, on: req.db, { $0.readCount = 0; $0.hiddenCount = 0 }).throwingFlatMap { (_) in
-					return fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == user.userID)
-							.first().flatMapThrowing() { creatorPivot in
-						let fezData = try buildFezData(from: fez, with: creatorPivot, posts: [], for: user, on: req)
-						// with 201 status
-						let response = Response(status: .created)
-						try response.content.encode(fezData)
-						return response
-					}
-				}
-			}
-		}
+		try await fez.save(on: req.db)
+		let participants = try await User.query(on: req.db).filter(\.$id ~~ initialUsers).all()
+		try await fez.$participants.attach(participants, on: req.db, { $0.readCount = 0; $0.hiddenCount = 0 })
+		let creatorPivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == user.userID).first()
+		let fezData = try buildFezData(from: fez, with: creatorPivot, posts: [], for: user, on: req)
+		// with 201 status
+		let response = Response(status: .created)
+		try response.content.encode(fezData)
+		return response
 	}
 		
 	/// `POST /api/v3/fez/ID/cancel`
@@ -569,21 +522,17 @@ struct FezController: APIRouteCollection {
 	/// - Throws: 403 error if user is not the fez owner. A 5xx response should be
 	///   reported as a likely bug, please and thank you.
 	/// - Returns: <doc:FezData> with the updated fez info.
-	func cancelHandler(_ req: Request) throws -> EventLoopFuture<FezData> {
+	func cancelHandler(_ req: Request) async throws -> FezData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		return FriendlyFez.findFromParameter(fezIDParam, on: req).throwingFlatMap { (fez) in
-			guard fez.$owner.id == cacheUser.userID else {
-				throw Abort(.forbidden, reason: "user does not own fez")
-			}
-			// FIXME: this should send out notifications
-			fez.cancelled = true
-			return fez.save(on: req.db).throwingFlatMap {
-				return fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == cacheUser.userID).first()
-					.flatMapThrowing { pivot in
-						return try buildFezData(from: fez, with: pivot, for: cacheUser, on: req)
-				}
-			}
+		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		guard fez.$owner.id == cacheUser.userID else {
+			throw Abort(.forbidden, reason: "user does not own this LFG")
 		}
+		// FIXME: this should send out notifications
+		fez.cancelled = true
+		try await fez.save(on: req.db)
+		let pivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == cacheUser.userID).first()
+		return try buildFezData(from: fez, with: pivot, for: cacheUser, on: req)
 	}
 		
 	/// `POST /api/v3/fez/ID/delete`
@@ -597,19 +546,18 @@ struct FezController: APIRouteCollection {
 	/// - Parameter fezID: in URL path.
 	/// - Throws: 403 error if the user is not permitted to delete.
 	/// - Returns: 204 No Content on success.
-	func fezDeleteHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+	func fezDeleteHandler(_ req: Request) async throws -> HTTPStatus {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		guard cacheUser.accessLevel.canEditOthersContent() else {
 			throw Abort(.forbidden, reason: "User does not have access to delete an LFG.")
 		}
-		return FriendlyFez.findFromParameter(fezIDParam, on: req).throwingFlatMap { fez in
-			try cacheUser.guardCanModifyContent(fez)
-	   		try deleteFezNotifications(userIDs: fez.participantArray, fez: fez, on: req)
-			fez.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: req)
-			return fez.$participants.detachAll(on: req.db).flatMap { _ in
-				return fez.delete(on: req.db).transform(to: .noContent)
-			}
-		}
+		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		try cacheUser.guardCanModifyContent(fez)
+		try await deleteFezNotifications(userIDs: fez.participantArray, fez: fez, on: req)
+		try await fez.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: req)
+		try await fez.$participants.detachAll(on: req.db).get()
+		try await fez.delete(on: req.db)
+		return .noContent
 	}
 	
 	/// `POST /api/v3/fez/ID/update`
@@ -625,33 +573,30 @@ struct FezController: APIRouteCollection {
 	/// - Throws: 400 error if the data is not valid. 403 error if user is not fez owner.
 	///   A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: <doc:FezData> containing the updated fez info.
-	func updateHandler(_ req: Request) throws -> EventLoopFuture<FezData> {
+	func updateHandler(_ req: Request) async throws -> FezData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		// see FezContentData.validations()
 		let data = try ValidatingJSONDecoder().decode(FezContentData.self, fromBodyOf: req)
 		// get fez
-		return FriendlyFez.findFromParameter(fezIDParam, on: req).throwingFlatMap { fez in
-			try cacheUser.guardCanModifyContent(fez, customErrorString: "User cannot modify LFG")
-			if data.title != fez.title || data.location != fez.location || data.info != fez.info {
-				let fezEdit = try FriendlyFezEdit(fez: fez, editorID: cacheUser.userID)
-				fez.logIfModeratorAction(.edit, moderatorID: cacheUser.userID, on: req)
-				let _ = fezEdit.save(on: req.db)
-			}
-			fez.fezType = data.fezType
-			fez.title = data.title
-			fez.info = data.info
-			fez.startTime = data.startTime
-			fez.endTime = data.endTime
-			fez.location = data.location
-			fez.minCapacity = data.minCapacity
-			fez.maxCapacity = data.maxCapacity
-			fez.cancelled = false
-			return fez.save(on: req.db).throwingFlatMap { (_) in
-				return getUserPivot(fez: fez, userID: cacheUser.userID, on: req.db).flatMapThrowing { pivot in
-					return try buildFezData(from: fez, with: pivot, for: cacheUser, on: req)
-				}
-			}
+		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		try cacheUser.guardCanModifyContent(fez, customErrorString: "User cannot modify LFG")
+		if data.title != fez.title || data.location != fez.location || data.info != fez.info {
+			let fezEdit = try FriendlyFezEdit(fez: fez, editorID: cacheUser.userID)
+			try await fez.logIfModeratorAction(.edit, moderatorID: cacheUser.userID, on: req)
+			try await fezEdit.save(on: req.db)
 		}
+		fez.fezType = data.fezType
+		fez.title = data.title
+		fez.info = data.info
+		fez.startTime = data.startTime
+		fez.endTime = data.endTime
+		fez.location = data.location
+		fez.minCapacity = data.minCapacity
+		fez.maxCapacity = data.maxCapacity
+		fez.cancelled = false
+		try await fez.save(on: req.db)
+		let pivot = try await getUserPivot(fez: fez, userID: cacheUser.userID, on: req.db)
+		return try buildFezData(from: fez, with: pivot, for: cacheUser, on: req)
 	}
 		
 	/// `POST /api/v3/fez/ID/user/ID/add`
@@ -663,37 +608,32 @@ struct FezController: APIRouteCollection {
 	/// - Throws: 400 error if user is already in barrel. 403 error if requester is not fez
 	///   owner. A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: <doc:FezData> containing the updated fez info.
-	func userAddHandler(_ req: Request) throws -> EventLoopFuture<FezData> {
+	func userAddHandler(_ req: Request) async throws -> FezData {
 		let requester = try req.auth.require(UserCacheData.self)
 		// get fez and user to add
-		return FriendlyFez.findFromParameter(fezIDParam, on: req)
-				.and(User.findFromParameter(userIDParam, on: req).addModelID())
-				.throwingFlatMap { (fez, arg1) in
-			let (user, userID) = arg1
-			guard fez.$owner.id == requester.userID else {
-				throw Abort(.forbidden, reason: "requester does not own LFG")
-			}
-			guard !fez.participantArray.contains(userID) else {
-				throw Abort(.badRequest, reason: "user is already in LFG")
-			}
-			guard !requester.getBlocks().contains(userID) else {
-				throw Abort(.badRequest, reason: "user is not available")
-			}
-			fez.participantArray.append(userID)
-			let cacheUser = try req.userCache.getUser(user)
-			let blocksAndMutes = cacheUser.getBlocks().union(cacheUser.getMutes())
-			return fez.$fezPosts.query(on: req.db).filter(\.$author.$id ~~ blocksAndMutes).count().flatMap { hiddenPostCount in
-				return fez.save(on: req.db).throwingFlatMap { 
-					let newParticipant = try FezParticipant(userID, fez)
-					newParticipant.readCount = 0; 
-					newParticipant.hiddenCount = hiddenPostCount 
-					return newParticipant.save(on: req.db).flatMapThrowing {
-						try forwardMembershipChangeToSockets(fez, participantID: userID, joined: true, on: req)
-						return try buildFezData(from: fez, with: newParticipant, for: requester, on: req)
-					}
-				}
-			}
+		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		guard let userID = req.parameters.get(userIDParam.paramString, as: UUID.self), let cacheUser = req.userCache.getUser(userID) else {
+			throw Abort(.forbidden, reason: "invalid user ID in request parameter")
 		}
+		guard fez.$owner.id == requester.userID else {
+			throw Abort(.forbidden, reason: "requester does not own LFG")
+		}
+		guard !fez.participantArray.contains(userID) else {
+			throw Abort(.badRequest, reason: "user is already in LFG")
+		}
+		guard !requester.getBlocks().contains(userID) else {
+			throw Abort(.badRequest, reason: "user is not available")
+		}
+		fez.participantArray.append(userID)
+		let blocksAndMutes = cacheUser.getBlocks().union(cacheUser.getMutes())
+		let hiddenPostCount = try await fez.$fezPosts.query(on: req.db).filter(\.$author.$id ~~ blocksAndMutes).count()
+		try await fez.save(on: req.db)
+		let newParticipant = try FezParticipant(userID, fez)
+		newParticipant.readCount = 0; 
+		newParticipant.hiddenCount = hiddenPostCount 
+		try await newParticipant.save(on: req.db)
+		try forwardMembershipChangeToSockets(fez, participantID: userID, joined: true, on: req)
+		return try buildFezData(from: fez, with: newParticipant, for: requester, on: req)
 	}
 	
 	/// `POST /api/v3/fez/ID/user/:userID/remove`
@@ -705,27 +645,25 @@ struct FezController: APIRouteCollection {
 	/// - Throws: 400 error if user is not in the barrel. 403 error if requester is not fez
 	///   owner. A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: <doc:FezData> containing the updated fez info.
-	func userRemoveHandler(_ req: Request) throws -> EventLoopFuture<FezData> {
+	func userRemoveHandler(_ req: Request) async throws -> FezData {
 		let requester = try req.auth.require(UserCacheData.self)
 		// get fez and user to remove
-		return FriendlyFez.findFromParameter(fezIDParam, on: req)
-				.and(User.findFromParameter(userIDParam, on: req).addModelID())
-				.throwingFlatMap { (fez, arg1) in
-			let (user, userID) = arg1
-			guard fez.$owner.id == requester.userID else {
-				throw Abort(.forbidden, reason: "requester does not own fez")
-			}
-			// remove user
-			guard let index = fez.participantArray.firstIndex(of: userID) else {
-				throw Abort(.badRequest, reason: "user is not in fez")
-			}
-			fez.participantArray.remove(at: index)
-			return fez.save(on: req.db).and(fez.$participants.detach(user, on: req.db)).flatMapThrowing { (_) in
-				try deleteFezNotifications(userIDs: [userID], fez: fez, on: req)
-				try forwardMembershipChangeToSockets(fez, participantID: userID, joined: false, on: req)
-				return try buildFezData(from: fez, with: nil, for: requester, on: req)
-			}
+		let removeUser = try await User.findFromParameter(userIDParam, on: req)
+		let removeUserID = try removeUser.requireID()
+		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		guard fez.$owner.id == requester.userID else {
+			throw Abort(.forbidden, reason: "requester does not own LFG")
 		}
+		// remove user
+		guard let index = fez.participantArray.firstIndex(of: removeUserID) else {
+			throw Abort(.badRequest, reason: "user is not a member of this LFG")
+		}
+		fez.participantArray.remove(at: index)
+		try await fez.save(on: req.db)
+		try await fez.$participants.detach(removeUser, on: req.db)
+		try await deleteFezNotifications(userIDs: [removeUserID], fez: fez, on: req)
+		try forwardMembershipChangeToSockets(fez, participantID: removeUserID, joined: false, on: req)
+		return try buildFezData(from: fez, with: nil, for: requester, on: req)
 	}
 
 	/// `POST /api/v3/fez/ID/report`
@@ -740,12 +678,11 @@ struct FezController: APIRouteCollection {
 	/// - Parameter fezID: in URL path, the Fez ID to report.
 	/// - Parameter requestBody: <doc:ReportData>
 	/// - Returns: 201 Created on success.
-	func reportFezHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-		let submitter = try req.auth.require(User.self)
+	func reportFezHandler(_ req: Request) async throws -> HTTPStatus {
+		let submitter = try req.auth.require(UserCacheData.self)
 		let data = try req.content.decode(ReportData.self)		
-		return FriendlyFez.findFromParameter(fezIDParam, on: req).throwingFlatMap { reportedFez in
-			return try reportedFez.fileReport(submitter: submitter, submitterMessage: data.message, on: req)
-		}
+		let reportedFez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		return try await reportedFez.fileReport(submitter: submitter, submitterMessage: data.message, on: req)
 	}
 
 // MARK: - Socket Functions
@@ -764,22 +701,22 @@ struct FezController: APIRouteCollection {
 	/// The server validates membership before sending out each socket message, but be sure to close the socket if the user leaves the fez.
 	/// This method is designed to provide updates only while a user is viewing the fez in your app--don't open one of these sockets for each
 	/// fez a user joins and keep them open continually. Use `WS /api/v3/notification/socket` for long-term status updates.
-	func createFezSocket(_ req: Request, _ ws: WebSocket) {
-		guard let user = try? req.auth.require(UserCacheData.self) else {
-			_ = ws.close()
-			return
-		}
-		_ = FriendlyFez.findFromParameter(fezIDParam, on: req).map { fez in
+	func createFezSocket(_ req: Request, _ ws: WebSocket) async {
+		do {
+			let user = try req.auth.require(UserCacheData.self)
+			let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
 			guard userCanViewMemberData(user: user, fez: fez), let fezID = try? fez.requireID() else {
-				_ = ws.close()
-				return
+				throw Abort(.badRequest, reason: "User can't vew messages in this LFG")
 			}
 			let userSocket = UserSocket(userID: user.userID, socket: ws, fezID: fezID, htmlOutput: false)
-			try? req.webSocketStore.storeFezSocket(userSocket)
+			try req.webSocketStore.storeFezSocket(userSocket)
 
 			ws.onClose.whenComplete { result in
 				try? req.webSocketStore.removeFezSocket(userSocket)
 			}
+		}
+		catch {
+			try? await ws.close()
 		}
 	}
 
@@ -885,43 +822,39 @@ extension FezController {
 	}
 	
 	// Remember that there can be posts by authors who are not currently participants.
-	func buildPostsForFez(_ fez: FriendlyFez, pivot: FezParticipant?, on req: Request, user: UserCacheData) throws
-			-> EventLoopFuture<([FezPostData], Paginator)> {
+	func buildPostsForFez(_ fez: FriendlyFez, pivot: FezParticipant?, on req: Request, user: UserCacheData) async throws
+			-> ([FezPostData], Paginator) {
 		let readCount = pivot?.readCount ?? 0
 		let hiddenCount = pivot?.hiddenCount ?? 0
 		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
 		let start = (req.query[Int.self, at: "start"] ?? ((readCount - 1) / limit) * limit)
 				.clamped(to: 0...fez.postCount)
 		// get posts
-		return try FezPost.query(on: req.db)
+		let posts = try await FezPost.query(on: req.db)
 				.filter(\.$fez.$id == fez.requireID())
 				.filter(\.$author.$id !~ user.getBlocks())
 				.filter(\.$author.$id !~ user.getMutes())
 				.sort(\.$createdAt, .ascending)
 				.range(start..<(start + limit))
 				.all()
-				.flatMapThrowing { (posts) in
-			let posts = try posts.map { try FezPostData(post: $0, author: req.userCache.getHeader($0.$author.id)) }
-			let paginator = Paginator(total: fez.postCount - hiddenCount, start: start, limit: limit)
+		let postDatas = try posts.map { try FezPostData(post: $0, author: req.userCache.getHeader($0.$author.id)) }
+		let paginator = Paginator(total: fez.postCount - hiddenCount, start: start, limit: limit)
 			
-			// If this batch of posts is farther into the thread than the user has previously read, increase
-			// the user's read count.
-			if let pivot = pivot, start + limit > pivot.readCount {
-				pivot.readCount = min(start + limit, fez.postCount - pivot.hiddenCount)
-				_ = pivot.save(on: req.db)
-				// If the user has now read all the posts (except those hidden from them) mark this notification as viewed.
-				if pivot.readCount + pivot.hiddenCount >= fez.postCount {
-					try markNotificationViewed(user: user, type: fez.notificationType(), on: req)
-				}
+		// If this batch of posts is farther into the thread than the user has previously read, increase
+		// the user's read count.
+		if let pivot = pivot, start + limit > pivot.readCount {
+			pivot.readCount = min(start + limit, fez.postCount - pivot.hiddenCount)
+			try await pivot.save(on: req.db)
+			// If the user has now read all the posts (except those hidden from them) mark this notification as viewed.
+			if pivot.readCount + pivot.hiddenCount >= fez.postCount {
+				try await markNotificationViewed(user: user, type: fez.notificationType(), on: req)
 			}
-			return (posts, paginator)
 		}
+		return (postDatas, paginator)
 	}
 	
-	func getUserPivot(fez: FriendlyFez, userID: UUID, on db: Database) -> EventLoopFuture<FezParticipant?> {
-		return fez.$participants.$pivots.query(on: db)
-				.filter(\.$user.$id == userID)
-				.first()
+	func getUserPivot(fez: FriendlyFez, userID: UUID, on db: Database) async throws -> FezParticipant? {
+		return try await fez.$participants.$pivots.query(on: db) .filter(\.$user.$id == userID).first()
 	}
 
 	func userCanViewMemberData(user: UserCacheData, fez: FriendlyFez) -> Bool {

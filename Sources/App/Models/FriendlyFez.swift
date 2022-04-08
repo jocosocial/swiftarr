@@ -146,3 +146,32 @@ final class FriendlyFez: Model {
 	}
 }
 
+struct CreateFriendlyFezSchema: AsyncMigration {
+	func prepare(on database: Database) async throws {
+		let modStatusEnum = try await database.enum("moderation_status").read()
+		try await database.schema("friendlyfez")
+				.id()
+				.field("fezType", .string, .required)
+				.field("title", .string, .required)
+				.field("info", .string, .required)
+				.field("location", .string)
+				.field("mod_status", modStatusEnum, .required)
+				.field("start_time", .datetime)
+				.field("end_time", .datetime)
+				.field("min_capacity", .int, .required)
+				.field("max_capacity", .int, .required)
+				.field("post_count", .int, .required)
+				.field("cancelled", .bool, .required)
+				.field("participant_array", .array(of: .uuid), .required)
+				.field("owner", .uuid, .required, .references("user", "id", onDelete: .cascade))
+				.field("created_at", .datetime)
+				.field("updated_at", .datetime)
+				.field("deleted_at", .datetime)
+				.create()
+	}
+ 
+	func revert(on database: Database) async throws {
+		try await database.schema("friendlyfez").delete()
+	}
+}
+

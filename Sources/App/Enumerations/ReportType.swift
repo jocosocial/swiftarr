@@ -3,18 +3,18 @@ import Vapor
 /// The type of entity being reported in a `Report`.
 
 public enum ReportType: String, Codable {
-    /// An entire `Forum`.
-    case forum
-    /// An individual `ForumPost`.
-    case forumPost
-    /// An individual `Twarrt`.
-    case twarrt
-    /// A `User`, although it specifically refers to the user's profile fields.
-    case userProfile
-    /// a `FriendlyFez`
-    case fez
-    /// a `FezPost`
-    case fezPost
+	/// An entire `Forum`.
+	case forum
+	/// An individual `ForumPost`.
+	case forumPost
+	/// An individual `Twarrt`.
+	case twarrt
+	/// A `User`, although it specifically refers to the user's profile fields.
+	case userProfile
+	/// a `FriendlyFez`
+	case fez
+	/// a `FezPost`
+	case fezPost
 }
 
 /// Moderation status of a piece of reportable content. 

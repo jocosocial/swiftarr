@@ -7,13 +7,13 @@ struct SiteEventsController: SiteControllerUtils {
 	func registerRoutes(_ app: Application) throws {
 		// Routes that the user does not need to be logged in to access.
 		let openRoutes = getOpenRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .schedule))
-        openRoutes.get("events", use: eventsPageHandler)
-        openRoutes.get("events", eventIDParam, "calendarevent.ics", use: eventsDownloadICSHandler)
+		openRoutes.get("events", use: eventsPageHandler)
+		openRoutes.get("events", eventIDParam, "calendarevent.ics", use: eventsDownloadICSHandler)
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let privateRoutes = getPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .schedule))
-        privateRoutes.post("events", eventIDParam, "favorite", use: eventsAddRemoveFavoriteHandler)
-        privateRoutes.delete("events", eventIDParam, "favorite", use: eventsAddRemoveFavoriteHandler)
+		privateRoutes.post("events", eventIDParam, "favorite", use: eventsAddRemoveFavoriteHandler)
+		privateRoutes.delete("events", eventIDParam, "favorite", use: eventsAddRemoveFavoriteHandler)
 	}
 	
 // MARK: - Events
@@ -30,21 +30,21 @@ struct SiteEventsController: SiteControllerUtils {
 	/// - day=STRING			One of: "sun" ... "sat". Can also use "1sat" for first Saturday (embarkation day), or "2sat" for the next Saturday.
 	/// - cruiseday=INT		Generally 1...8, where 1 is embarkation day.
 	/// - search=STRING		Filter only events that match the given string.
-    func eventsPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+	func eventsPageHandler(_ req: Request) async throws -> View {
 		var components = URLComponents()
 		components.queryItems = []
-    	var dayOfCruise: Int = -1
-    	var filterString = "Events"
-    	var useAllDays: Bool = false
-    	
+		var dayOfCruise: Int = -1
+		var filterString = "Events"
+		var useAllDays: Bool = false
+		
 		if let searchParam = req.query[String.self, at: "search"] {
 			components.queryItems?.append(URLQueryItem(name: "search", value: searchParam))
 			filterString = "Events matching \"\(searchParam)\""
 			useAllDays = true
 		}
-    	if let weekdayParam = req.query[String.self, at: "day"] {
-    		components.queryItems?.append(URLQueryItem(name: "day", value: weekdayParam))
-    		var dayOfWeek: Int
+		if let weekdayParam = req.query[String.self, at: "day"] {
+			components.queryItems?.append(URLQueryItem(name: "day", value: weekdayParam))
+			var dayOfWeek: Int
 			switch weekdayParam {
 			case "sun": dayOfWeek = 1
 			case "mon": dayOfWeek = 2
@@ -57,90 +57,87 @@ struct SiteEventsController: SiteControllerUtils {
 			}
 			dayOfCruise = (7 + dayOfWeek - Settings.shared.cruiseStartDayOfWeek) % 7 + 1
 		}
-    	else if let cruisedayParam = req.query[Int.self, at: "cruiseday"] {
-    		components.queryItems?.append(URLQueryItem(name: "cruiseday", value: String(cruisedayParam)))
-    		dayOfCruise = cruisedayParam
+		else if let cruisedayParam = req.query[Int.self, at: "cruiseday"] {
+			components.queryItems?.append(URLQueryItem(name: "cruiseday", value: String(cruisedayParam)))
+			dayOfCruise = cruisedayParam
 		}		
 		else if components.queryItems!.isEmpty {
 			let thisWeekday = Settings.shared.getDisplayCalendar().component(.weekday, from: Date())
 			dayOfCruise = (7 + thisWeekday - Settings.shared.cruiseStartDayOfWeek) % 7 + 1
-    		components.queryItems?.append(URLQueryItem(name: "cruiseday", value: String(dayOfCruise)))
-    		filterString = "Today's " + filterString
+			components.queryItems?.append(URLQueryItem(name: "cruiseday", value: String(dayOfCruise)))
+			filterString = "Today's " + filterString
 		}
 		let queryString: String = components.percentEncodedQuery ?? ""
-		return apiQuery(req, endpoint: "/events?\(queryString)", passThroughQuery: false).throwingFlatMap { response in
- 			let events = try response.content.decode([EventData].self)
-     		struct EventPageContext : Encodable {
-     			struct CruiseDay : Encodable {
-     				var name: String
-     				var index: Int
-     				var activeDay: Bool
-     			}
-				var trunk: TrunkContext
-    			var events: [EventData]
-    			var days: [CruiseDay]
-    			var isBeforeCruise: Bool
-    			var isAfterCruise: Bool
-    			var upcomingEvent: EventData?
-    			var filterString: String
-    			var useAllDays: Bool
+		let response = try await apiQuery(req, endpoint: "/events?\(queryString)", passThroughQuery: false)
+		let events = try response.content.decode([EventData].self)
+		struct EventPageContext : Encodable {
+			struct CruiseDay : Encodable {
+				var name: String
+				var index: Int
+				var activeDay: Bool
+			}
+			var trunk: TrunkContext
+			var events: [EventData]
+			var days: [CruiseDay]
+			var isBeforeCruise: Bool
+			var isAfterCruise: Bool
+			var upcomingEvent: EventData?
+			var filterString: String
+			var useAllDays: Bool
 
-				init(_ req: Request, events: [EventData], dayOfCruise: Int, filterString: String, allDays: Bool) {
-    				self.events = events
-    				trunk = .init(req, title: "Events", tab: .events, search: "Search Events")
-    				isBeforeCruise = Date() < Settings.shared.cruiseStartDate
-    				isAfterCruise = Date() > Settings.shared.getDisplayCalendar().date(byAdding: .day, value: Settings.shared.cruiseLengthInDays, 
-    						to: Settings.shared.cruiseStartDate) ?? Date()
+			init(_ req: Request, events: [EventData], dayOfCruise: Int, filterString: String, allDays: Bool) {
+				self.events = events
+				trunk = .init(req, title: "Events", tab: .events, search: "Search Events")
+				isBeforeCruise = Date() < Settings.shared.cruiseStartDate
+				isAfterCruise = Date() > Settings.shared.getDisplayCalendar().date(byAdding: .day, value: Settings.shared.cruiseLengthInDays, 
+						to: Settings.shared.cruiseStartDate) ?? Date()
 
-    				// Set up the day buttons, one for each day of the cruise.		
-					let daynames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-    				days = Array<CruiseDay>()
-    				for dayIndex in 1...Settings.shared.cruiseLengthInDays {
-    					let weekday = (Settings.shared.cruiseStartDayOfWeek + dayIndex - 2) % 7
-    					days.append(CruiseDay(name: daynames[weekday], index: dayIndex - 1, activeDay: dayIndex == dayOfCruise))
-    				}
+				// Set up the day buttons, one for each day of the cruise.		
+				let daynames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+				days = Array<CruiseDay>()
+				for dayIndex in 1...Settings.shared.cruiseLengthInDays {
+					let weekday = (Settings.shared.cruiseStartDayOfWeek + dayIndex - 2) % 7
+					days.append(CruiseDay(name: daynames[weekday], index: dayIndex - 1, activeDay: dayIndex == dayOfCruise))
+				}
 
-    				if let _ = trunk.alertCounts.nextFollowedEventTime {
-    					let secondsPerWeek = 60 * 60 * 24 * 7
-    					let partialWeek = Int(Date().timeIntervalSince(Settings.shared.cruiseStartDate)) % secondsPerWeek
-    					let dateInCruiseWeek = Settings.shared.cruiseStartDate + TimeInterval(partialWeek)
-						upcomingEvent = events.first {
-							return $0.isFavorite && ((-5 * 60)...(15 * 60)).contains(dateInCruiseWeek.timeIntervalSince($0.startTime))
-						}
+				if let _ = trunk.alertCounts.nextFollowedEventTime {
+					let secondsPerWeek = 60 * 60 * 24 * 7
+					let partialWeek = Int(Date().timeIntervalSince(Settings.shared.cruiseStartDate)) % secondsPerWeek
+					let dateInCruiseWeek = Settings.shared.cruiseStartDate + TimeInterval(partialWeek)
+					upcomingEvent = events.first {
+						return $0.isFavorite && ((-5 * 60)...(15 * 60)).contains(dateInCruiseWeek.timeIntervalSince($0.startTime))
 					}
-					self.filterString = filterString
-					self.useAllDays = allDays
-    			}
-    		}
-    		let eventContext = EventPageContext(req, events: events, dayOfCruise: dayOfCruise, 
-					filterString: filterString, allDays: useAllDays)
-			return req.view.render("events", eventContext)
-    	}
-    }
-    
-    func eventsDownloadICSHandler(_ req: Request) throws -> EventLoopFuture<Response> {
-    	guard let eventID = req.parameters.get(eventIDParam.paramString)?.percentEncodeFilePathEntry() else {
-            throw Abort(.badRequest, reason: "Missing event ID parameter.")
-    	}
-		return apiQuery(req, endpoint: "/events/\(eventID)").throwingFlatMap { response in
- 			let event = try response.content.decode(EventData.self)
-			let icsString = buildEventICS(event: event)
-			let cleanEventTitle = event.title.replacingOccurrences(of: "\"", with: "")
-			let headers = HTTPHeaders([("Content-Disposition", "attachment; filename=\"\(cleanEventTitle).ics\"")])
-			return icsString.encodeResponse(status: .ok, headers: headers, for: req)
+				}
+				self.filterString = filterString
+				self.useAllDays = allDays
+			}
 		}
-    }
+		let eventContext = EventPageContext(req, events: events, dayOfCruise: dayOfCruise, 
+				filterString: filterString, allDays: useAllDays)
+		return try await req.view.render("events", eventContext)
+	}
+	
+	func eventsDownloadICSHandler(_ req: Request) async throws -> Response {
+		guard let eventID = req.parameters.get(eventIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing event ID parameter.")
+		}
+		let response = try await apiQuery(req, endpoint: "/events/\(eventID)")
+		let event = try response.content.decode(EventData.self)
+		let icsString = buildEventICS(event: event)
+		let cleanEventTitle = event.title.replacingOccurrences(of: "\"", with: "")
+		let headers = HTTPHeaders([("Content-Disposition", "attachment; filename=\"\(cleanEventTitle).ics\"")])
+		return try await icsString.encodeResponse(status: .ok, headers: headers, for: req)
+	}
 
 	// Glue code that calls the API to favorite/unfavorite an event. Returns 201/204 on success.
-    func eventsAddRemoveFavoriteHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-    	guard let eventID = req.parameters.get(eventIDParam.paramString)?.percentEncodeFilePathEntry() else {
-            throw Abort(.badRequest, reason: "Missing event ID parameter.")
-    	}
-    	return apiQuery(req, endpoint: "/events/\(eventID)/favorite", method: req.method).map { response in
-    		return response.status
-    	}
-    }
-    
+	func eventsAddRemoveFavoriteHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let eventID = req.parameters.get(eventIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing event ID parameter.")
+		}
+		let response = try await apiQuery(req, endpoint: "/events/\(eventID)/favorite", method: req.method)
+		return response.status
+	}
+	
 // MARK: - Utility fns
 
 	/// Creates a iCalendar data file describing the given event. iCalendar is also known as VCALENDAR or an .ics file.

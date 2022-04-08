@@ -1,8 +1,8 @@
 import Vapor
 
-struct RequireVerifiedMiddleware: Middleware {
+struct RequireVerifiedMiddleware: AsyncMiddleware {
 
-	func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+	func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
 		var isAuthed = false
 		if let user = request.auth.get(User.self), user.accessLevel.hasAccess(.verified) {
 			isAuthed = true
@@ -11,15 +11,15 @@ struct RequireVerifiedMiddleware: Middleware {
 			isAuthed = true
 		}
 		guard isAuthed else {
-			return request.eventLoop.future(error: Abort(.unauthorized))
+			throw Abort(.unauthorized)
 		}
-		return next.respond(to: request)
+		return try await next.respond(to: request)
 	}
 }
 
-struct RequireModeratorMiddleware: Middleware {
+struct RequireModeratorMiddleware: AsyncMiddleware {
 
-	func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+	func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
 		var isAuthed = false
 		if let user = request.auth.get(User.self), user.accessLevel.hasAccess(.moderator) {
 			isAuthed = true
@@ -28,15 +28,15 @@ struct RequireModeratorMiddleware: Middleware {
 			isAuthed = true
 		}
 		guard isAuthed else {
-			return request.eventLoop.future(error: Abort(.unauthorized))
+			throw Abort(.unauthorized)
 		}
-		return next.respond(to: request)
+		return try await next.respond(to: request)
 	}
 }
 
-struct RequireTwitarrTeamMiddleware: Middleware {
+struct RequireTwitarrTeamMiddleware: AsyncMiddleware {
 
-	func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+	func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
 		var isAuthed = false
 		if let user = request.auth.get(User.self), user.accessLevel.hasAccess(.twitarrteam) {
 			isAuthed = true
@@ -45,15 +45,15 @@ struct RequireTwitarrTeamMiddleware: Middleware {
 			isAuthed = true
 		}
 		guard isAuthed else {
-			return request.eventLoop.future(error: Abort(.unauthorized))
+			throw Abort(.unauthorized)
 		}
-		return next.respond(to: request)
+		return try await next.respond(to: request)
 	}
 }
 
-struct RequireTHOMiddleware: Middleware {
+struct RequireTHOMiddleware: AsyncMiddleware {
 
-	func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+	func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
 		var isAuthed = false
 		if let user = request.auth.get(User.self), user.accessLevel.hasAccess(.tho) {
 			isAuthed = true
@@ -62,15 +62,15 @@ struct RequireTHOMiddleware: Middleware {
 			isAuthed = true
 		}
 		guard isAuthed else {
-			return request.eventLoop.future(error: Abort(.unauthorized))
+			throw Abort(.unauthorized)
 		}
-		return next.respond(to: request)
+		return try await next.respond(to: request)
 	}
 }
 
-struct RequireAdminMiddleware: Middleware {
+struct RequireAdminMiddleware: AsyncMiddleware {
 
-	func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+	func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
 		var isAuthed = false
 		if let user = request.auth.get(User.self), user.accessLevel.hasAccess(.admin) {
 			isAuthed = true
@@ -79,8 +79,8 @@ struct RequireAdminMiddleware: Middleware {
 			isAuthed = true
 		}
 		guard isAuthed else {
-			return request.eventLoop.future(error: Abort(.unauthorized))
+			throw Abort(.unauthorized)
 		}
-		return next.respond(to: request)
+		return try await next.respond(to: request)
 	}
 }

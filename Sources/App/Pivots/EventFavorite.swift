@@ -1,9 +1,9 @@
 import Foundation
 import Fluent
 
-/// A `Pivot` holding a sibling relation between `User` and `Boardgame`.
-final class BoardgameFavorite: Model {
-	static let schema = "boardgame+favorite"
+/// A `Pivot` holding a sibling relation between `User` and `Event`.
+final class EventFavorite: Model {
+	static let schema = "event+favorite"
 
 	// MARK: Properties
 	
@@ -16,7 +16,7 @@ final class BoardgameFavorite: Model {
 	@Parent(key: "user") var user: User
 
 	/// The associated `Boardgame` that was favorited.
-	@Parent(key: "boardgame") var boardgame: Boardgame
+	@Parent(key: "event") var event: Event
 
 	// MARK: Initialization
 	
@@ -28,31 +28,30 @@ final class BoardgameFavorite: Model {
 	/// - Parameters:
 	///   - user: The left hand `User` model.
 	///   - game: The right hand `Boardgame` model.
-	init(_ user: User, _ game: Boardgame) throws {
+	init(_ user: User, _ event: Event) throws {
 		self.$user.id = try user.requireID()
 		self.$user.value = user
-		self.$boardgame.id = try game.requireID()
-		self.$boardgame.value = game
+		self.$event.id = try event.requireID()
+		self.$event.value = event
 	}
 	
-	init(_ userID: UUID, _ game: Boardgame) throws {
+	init(_ userID: UUID, _ event: Event) throws {
 		self.$user.id = userID
-		self.$boardgame.id = try game.requireID()
+		self.$event.id = try event.requireID()
 	}
 }
 
-struct CreateBoardgameFavoriteSchema: AsyncMigration {
+struct CreateEventFavoriteSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {
-		try await database.schema("boardgame+favorite")
+		try await database.schema("event+favorite")
 				.id()
-				.unique(on: "user", "boardgame")
+				.unique(on: "user", "event")
  				.field("user", .uuid, .required, .references("user", "id", onDelete: .cascade))
- 				.field("boardgame", .uuid, .required, .references("boardgame", "id", onDelete: .cascade))
+ 				.field("event", .uuid, .required, .references("event", "id", onDelete: .cascade))
 				.create()
 	}
 	
 	func revert(on database: Database) async throws {
-		try await database.schema("boardgame+favorite").delete()
+		try await database.schema("event+favorite").delete()
 	}
 }
-

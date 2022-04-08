@@ -11,46 +11,61 @@ import Fluent
 /// their own viewer-specific `UserNote` text.
 
 final class UserNote: Model {
-	static let schema = "usernotes"
+	static let schema = "usernote"
 
-    // MARK: Properties
-    
-    /// The note's ID, provisioned automatically.
-    @ID(key: .id) var id: UUID?
-    
-    /// The text of the note.
-    @Field(key: "note") var note: String
-    
-    /// Timestamp of the model's creation, set automatically.
+	// MARK: Properties
+	
+	/// The note's ID, provisioned automatically.
+	@ID(key: .id) var id: UUID?
+	
+	/// The text of the note.
+	@Field(key: "note") var note: String
+	
+	/// Timestamp of the model's creation, set automatically.
 	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
-    
-    /// Timestamp of the model's last update, set automatically.
-    @Timestamp(key: "updated_at", on: .update) var updatedAt: Date?
-    
+	
+	/// Timestamp of the model's last update, set automatically.
+	@Timestamp(key: "updated_at", on: .update) var updatedAt: Date?
+	
 	// MARK: Relations
 
-    /// The `User` owning the note.
-    @Parent(key: "author") var author: User
-    
-    /// The `User`being written about. Don't confure these two fields! Users do not get access to what others have written about them.
-    @Parent(key: "note_subject") var noteSubject: User
-    
-    // MARK: Initialization
-    
-    // Used by Fluent
+	/// The `User` owning the note.
+	@Parent(key: "author") var author: User
+	
+	/// The `User`being written about. Don't confure these two fields! Users do not get access to what others have written about them.
+	@Parent(key: "note_subject") var noteSubject: User
+	
+	// MARK: Initialization
+	
+	// Used by Fluent
  	init() { }
  	
-    /// Creates a new UserNote.
-    ///
-    /// - Parameters:
-    ///   - author: The note's author.
-    ///   - profile: The associated `UserProfile`.
-    ///   - note: The text of the note.
-    init(author: User, subject: User, note: String = "") throws {
-        self.$author.id = try author.requireID()
-        self.$author.value = author
-        self.$noteSubject.id = try subject.requireID()
-        self.$noteSubject.value = subject
-        self.note = note
-    }
+	/// Creates a new UserNote.
+	///
+	/// - Parameters:
+	///   - author: The note's author.
+	///   - profile: The associated `UserProfile`.
+	///   - note: The text of the note.
+	init(authorID: UUID, subjectID: UUID, note: String = "") {
+		self.$author.id = authorID
+		self.$noteSubject.id = subjectID
+		self.note = note
+	}
+}
+
+struct CreateUserNoteSchema: AsyncMigration {
+	func prepare(on database: Database) async throws {
+		try await database.schema("usernote")
+				.id()
+				.field("note", .string, .required)
+				.field("created_at", .datetime)
+				.field("updated_at", .datetime)
+ 				.field("author", .uuid, .required, .references("user", "id"))
+ 				.field("note_subject", .uuid, .references("user", "id"))
+				.create()
+	}
+	
+	func revert(on database: Database) async throws {
+		try await database.schema("usernote").delete()
+	}
 }

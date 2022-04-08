@@ -23,66 +23,88 @@ import Fluent
 	- See Also: [CreateTwarrtSchema](CreateTwarrtSchema) the Migration for creating the Twarrts table in the database.
 */
 final class Twarrt: Model {
-	static let schema = "twarrts"
+	static let schema = "twarrt"
 	
 	// MARK: Properties
-    
-    /// The twarrt's ID.
-    @ID(custom: "id") var id: Int?
-    
-    /// The text content of the twarrt.
-    @Field(key: "text") var text: String
-    
-    /// The filenames of any images for the post.
-    @OptionalField(key: "images") var images: [String]?
-    
-    /// Moderators can set several statuses on twarrts that modify editability and visibility.
-    @Enum(key: "mod_status") var moderationStatus: ContentModerationStatus
-        
-    /// Timestamp of the model's creation, set automatically.
+	
+	/// The twarrt's ID.
+	@ID(custom: "id") var id: Int?
+	
+	/// The text content of the twarrt.
+	@Field(key: "text") var text: String
+	
+	/// The filenames of any images for the post.
+	@OptionalField(key: "images") var images: [String]?
+	
+	/// Moderators can set several statuses on twarrts that modify editability and visibility.
+	@Enum(key: "mod_status") var moderationStatus: ContentModerationStatus
+		
+	/// Timestamp of the model's creation, set automatically.
 	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
-    
-    /// Timestamp of the model's last update, set automatically.
-    @Timestamp(key: "updated_at", on: .update) var updatedAt: Date?
-    
-    /// Timestamp of the model's soft-deletion, set automatically.
-    @Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
-    
+	
+	/// Timestamp of the model's last update, set automatically.
+	@Timestamp(key: "updated_at", on: .update) var updatedAt: Date?
+	
+	/// Timestamp of the model's soft-deletion, set automatically.
+	@Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
+	
 	// MARK: Relations
 	
-    /// The twarrt's author.
-    @Parent(key: "author") var author: User
+	/// The twarrt's author.
+	@Parent(key: "author") var author: User
 
-    /// When a twarrt is created as a reply to another twarrt, both twarrts get their `replyGroup` set to the ID of the replied-to twarrt.
-    /// When a reply is created and the replied-to twarrt is already in a reply group, the new reply joins the existing reply group.
-    @OptionalParent(key: "reply_group") var replyGroup: Twarrt?
-    
-    /// The child `TwarrtEdit` accountability records of the twarrt.
+	/// When a twarrt is created as a reply to another twarrt, both twarrts get their `replyGroup` set to the ID of the replied-to twarrt.
+	/// When a reply is created and the replied-to twarrt is already in a reply group, the new reply joins the existing reply group.
+	@OptionalParent(key: "reply_group") var replyGroup: Twarrt?
+	
+	/// The child `TwarrtEdit` accountability records of the twarrt.
 	@Children(for: \.$twarrt) var edits: [TwarrtEdit]
 	
-    /// The sibling `User`s who have "liked" the twarrt.
+	/// The sibling `User`s who have "liked" the twarrt.
 	@Siblings(through: TwarrtLikes.self, from: \.$twarrt, to: \.$user) var likes: [User]
 	
 	// MARK: Initialization
-    
-    // Used by Fluent
+	
+	// Used by Fluent
  	init() { }
  	
-    /// Initializes a new Twarrt.
-    ///
-    /// - Parameters:
-    ///   - author: The author of the twarrt.
-    ///   - text: The text content of the twarrt.
-    ///   - image: The filename of any image content of the twarrt.
-    ///   - replyTo: The twarrt being replied to, if any.
-    init(authorID: UUID, text: String, images: [String]? = nil, replyTo: Twarrt? = nil) throws {
-        self.$author.id = authorID
-        // We don't do much text manipulation on input, but let's normalize line endings.
-        self.text = text.replacingOccurrences(of: "\r\n", with: "\r")
-        self.images = images
-        if let replyTarget = replyTo {
-	        self.$replyGroup.id = replyTarget.$replyGroup.id ?? replyTarget.id
+	/// Initializes a new Twarrt.
+	///
+	/// - Parameters:
+	///   - author: The author of the twarrt.
+	///   - text: The text content of the twarrt.
+	///   - image: The filename of any image content of the twarrt.
+	///   - replyTo: The twarrt being replied to, if any.
+	init(authorID: UUID, text: String, images: [String]? = nil, replyTo: Twarrt? = nil) throws {
+		self.$author.id = authorID
+		// We don't do much text manipulation on input, but let's normalize line endings.
+		self.text = text.replacingOccurrences(of: "\r\n", with: "\r")
+		self.images = images
+		if let replyTarget = replyTo {
+			self.$replyGroup.id = replyTarget.$replyGroup.id ?? replyTarget.id
 		}
-        self.moderationStatus = .normal
-    }
+		self.moderationStatus = .normal
+	}
 }
+
+struct CreateTwarrtSchema: AsyncMigration {
+	func prepare(on database: Database) async throws {
+		let modStatusEnum = try await database.enum("moderation_status").read()
+		try await database.schema("twarrt")
+				.field("id", .int, .identifier(auto: true))
+				.field("text", .string, .required)
+				.field("images", .array(of: .string))
+				.field("mod_status", modStatusEnum, .required)
+				.field("created_at", .datetime)
+				.field("updated_at", .datetime)
+				.field("deleted_at", .datetime)
+				.field("author", .uuid, .required, .references("user", "id"))
+				.field("reply_group", .int, .references("twarrt", "id"))
+				.create()
+	}
+	
+	func revert(on database: Database) async throws {
+		try await database.schema("twarrt").delete()
+	}
+}
+

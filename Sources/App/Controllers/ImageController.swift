@@ -6,9 +6,9 @@ import gd
 
 struct ImageController: APIRouteCollection {
 
-    /// Required. Registers routes to the incoming router.
-    func registerRoutes(_ app: Application) throws {
-        
+	/// Required. Registers routes to the incoming router.
+	func registerRoutes(_ app: Application) throws {
+		
 		// convenience route group for all /api/v3/image endpoints
 		let imageRoutes = app.grouped("api", "v3", "image")
 		let userImageRoutes = imageRoutes.grouped(DisabledAPISectionMiddleware(feature: .images))
@@ -22,13 +22,13 @@ struct ImageController: APIRouteCollection {
 
 		// Moderator-only endpoints
 		let requireModMiddleware = RequireModeratorMiddleware()
-		let tokenAuthGroup = addTokenAuthGroup(to: imageRoutes).grouped(requireModMiddleware)
+		let tokenAuthGroup = addTokenCacheAuthGroup(to: imageRoutes).grouped(requireModMiddleware)
 		tokenAuthGroup.get("archive", ":image_filename", use: getImage_ArchivedHandler)
 	}
 	
-    /// `GET /api/v3/image/full/STRING`
-    ///
-    /// Returns a user-created image previously uploaded to the server. This includes images in Twitarr posts, ForumPosts, FezPosts, User Avatars, and Daily Theme images.
+	/// `GET /api/v3/image/full/STRING`
+	///
+	/// Returns a user-created image previously uploaded to the server. This includes images in Twitarr posts, ForumPosts, FezPosts, User Avatars, and Daily Theme images.
 	/// Even though the path for this API call says 'full', images may be downsized when uploaded (currently, images get downsized to a max edge length of 2048).
 	/// 
 	/// Image filenames should have a form of: `UUIDString.typeExtension` where the UUIDString matches the output of `UUID().string` and `typeExtension`
@@ -38,16 +38,16 @@ struct ImageController: APIRouteCollection {
 	/// User Avatar Images: UserHeader.image will be nil for a user that has not set an avatar image; clients should display a default avatar image instead. Or, clients may
 	/// call the `/api/v3/image/user/` endpoints instead--these endpoints return identicon images for users that have not set custom images for themselves.
 	/// 
-    /// - Parameter STRING: A reference to the image, returned from another API call.
-    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: Image data
+	/// - Parameter STRING: A reference to the image, returned from another API call.
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: Image data
 	func getImage_FullHandler(_ req: Request) throws -> Response {
 		return try getUserUploadedImage(req, sizeGroup: .full)
 	}
 	
-    /// `GET /api/v3/image/thumb/STRING`
-    ///
-    /// Returns a user-created image thumbnail previously uploaded to the server. This includes images in Twitarr posts, ForumPosts, 
+	/// `GET /api/v3/image/thumb/STRING`
+	///
+	/// Returns a user-created image thumbnail previously uploaded to the server. This includes images in Twitarr posts, ForumPosts, 
 	/// FezPosts, User Avatars, and Daily Theme images. The exact size of the thumbnail may vary based on the usage given at upload time.
 	/// 
 	/// Image filenames should have a form of: `UUIDString.typeExtension` where the UUIDString matches the output of `UUID().string` and `typeExtension`
@@ -57,32 +57,32 @@ struct ImageController: APIRouteCollection {
 	/// User Avatar Images: UserHeader.image will be nil for a user that has not set an avatar image; clients should display a default avatar image instead. Or, clients may
 	/// call the `/api/v3/image/user/` endpoints instead--these endpoints return identicon images for users that have not set custom images for themselves.
 	/// 
-    /// - Parameter STRING: A reference to the image, returned from another API call.
-    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: Image data
+	/// - Parameter STRING: A reference to the image, returned from another API call.
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: Image data
 	func getImage_ThumbnailHandler(_ req: Request) throws -> Response {
 		return try getUserUploadedImage(req, sizeGroup: .thumbnail)
 	}
 	
-    /// `GET /api/v3/image/archive/STRING`
-    ///
-    /// Returns an archived user-created image previously uploaded to the server, and then previously deleted/replaced. This includes images in Twitarr posts,
+	/// `GET /api/v3/image/archive/STRING`
+	///
+	/// Returns an archived user-created image previously uploaded to the server, and then previously deleted/replaced. This includes images in Twitarr posts,
 	/// ForumPosts, FezPosts, User Avatars, and Daily Theme images. Archived images are only accessible by Moderators and above.
 	/// 
 	/// Image filenames should have a form of: `UUIDString.typeExtension` where the UUIDString matches the output of `UUID().string` and `typeExtension`
 	/// matches one of : "bmp", "gif", "jpg", "png", "tiff", "wbmp", "webp". Example: `F818D809-AAB9-4C92-8AAD-6AE483C8AB82.jpg`. The `thumb` and `full`
 	/// versions of this call return differently-sized versions of the same image when called with the same filename.
 	/// 
-    /// - Parameter STRING: A reference to the image, returned from another API call.
-    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: Image data
+	/// - Parameter STRING: A reference to the image, returned from another API call.
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: Image data
 	func getImage_ArchivedHandler(_ req: Request) throws -> Response {
 		return try getUserUploadedImage(req, sizeGroup: .archive)
 	}
 	
-    /// `GET /api/v3/image/user/full/:userID`
-    /// `GET /api/v3/image/user/thumb/:userID`
-    ///
+	/// `GET /api/v3/image/user/full/:userID`
+	/// `GET /api/v3/image/user/thumb/:userID`
+	///
 	///  Gets the avatar image for the given user. 
 	///  If the user has a custom avatar, result is the same as if you called `/api/v3/image/<thumb|full>/<user.userImage>`
 	///  If the user has no custom avatar, returns a 40x40 Identicon image specific to the given userID. 
@@ -99,14 +99,14 @@ struct ImageController: APIRouteCollection {
 	///  This method is optional. If you don't want the server-generated identicons for your client, you can create your own and know when to use them instead of 
 	///  user-created avatars, as the user's userImage will be nil if they have no custom avatar.
 	///  
-    /// - Parameter ID: A userID value, in the URL path.
-    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: Image data, or `304 notModified` if client's ETag matches.
+	/// - Parameter ID: A userID value, in the URL path.
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: Image data, or `304 notModified` if client's ETag matches.
 	func getUserAvatarHandler(_ req: Request) throws -> Response {
-        guard let userID = req.parameters.get(userIDParam.paramString, as: UUID.self) else {
-            throw Abort(.badRequest, reason: "Missing user ID parameter.")
-        }
-        let sizeGroup: ImageSizeGroup = req.url.path.hasPrefix("/api/v3/image/user/thumb") ? .thumbnail : .full
+		guard let userID = req.parameters.get(userIDParam.paramString, as: UUID.self) else {
+			throw Abort(.badRequest, reason: "Missing user ID parameter.")
+		}
+		let sizeGroup: ImageSizeGroup = req.url.path.hasPrefix("/api/v3/image/user/thumb") ? .thumbnail : .full
 		guard let targetUser = req.userCache.getUser(userID) else {
 			throw Abort(.badRequest, reason: "User not found")
 		}
@@ -127,20 +127,20 @@ struct ImageController: APIRouteCollection {
 		return Response(status: .ok, headers: headers, body: body)
 	}
 	
-    /// `GET /api/v3/image/user/identicon/ID`
-    ///
+	/// `GET /api/v3/image/user/identicon/ID`
+	///
 	/// Returns a user's identicon avatar image, even if that user has a custom avatar set. Meant for use in User Profile edit flows, to show a user what
 	/// their default identicon will look like even when a custom avatar is set.
 	/// 
 	/// Please don't use this method to show identicons for all users everywhere. Users like their custom avatars.
 	/// 
-    /// - Parameter ID: A userID value, in the URL path.
-    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: Image data, or `304 notModified` if client's ETag matches.
+	/// - Parameter ID: A userID value, in the URL path.
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: Image data, or `304 notModified` if client's ETag matches.
 	func getUserIdenticonHandler(_ req: Request) throws -> Response {
-        guard let userID = req.parameters.get(userIDParam.paramString, as: UUID.self) else {
-            throw Abort(.badRequest, reason: "Missing user ID parameter.")
-        }
+		guard let userID = req.parameters.get(userIDParam.paramString, as: UUID.self) else {
+			throw Abort(.badRequest, reason: "Missing user ID parameter.")
+		}
 		guard let targetUser = req.userCache.getUser(userID) else {
 			throw Abort(.badRequest, reason: "User not found")
 		}
@@ -186,9 +186,9 @@ struct ImageController: APIRouteCollection {
 		// this will give us 128 subdirs.
 		let subDirName = String(fileParam.prefix(2))
 			
-        let fileURL = Settings.shared.userImagesRootPath.appendingPathComponent(sizeGroup.rawValue)
-        		.appendingPathComponent(subDirName)
-        		.appendingPathComponent(fileUUID.uuidString + "." + fileExtension)
+		let fileURL = Settings.shared.userImagesRootPath.appendingPathComponent(sizeGroup.rawValue)
+				.appendingPathComponent(subDirName)
+				.appendingPathComponent(fileUUID.uuidString + "." + fileExtension)
 		let response = req.fileio.streamFile(at: fileURL.path)
 		// If streamFile is returning the image file, add a cache-control header to the repsonse
 		if response.status == .ok {

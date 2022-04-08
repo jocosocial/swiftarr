@@ -10,23 +10,11 @@ extension Twarrt: ContentFilterable {
 	}
 }
 
-// twarrts can be bookmarked
-extension Twarrt: UserBookmarkable {
-    /// The barrel type for `Twarrt` bookmarking.
-	var bookmarkBarrelType: BarrelType {
-        return .bookmarkedTwarrt
-    }
-    
-    func bookmarkIDString() throws -> String {
-    	return try String(self.requireID())
-    }
-}
-
 // twarrts can be reported
 extension Twarrt: Reportable {
-    /// The type for `Twarrt` reports.
+	/// The type for `Twarrt` reports.
 	var reportType: ReportType { .twarrt }
-    
+	
 	var authorUUID: UUID { $author.id }
 	
 	var autoQuarantineThreshold: Int { Settings.shared.postAutoQuarantineThreshold }
