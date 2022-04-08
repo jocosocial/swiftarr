@@ -1,7 +1,11 @@
 function startLiveMessageStream() {
 	let endDiv = document.getElementById("fez-list-end")
 	let socketURL = endDiv.dataset.url
-	ws = new WebSocket("ws://" + window.location.host + socketURL)
+	let wsProtocol = "ws://"
+	if (window.location.href.startsWith("https")) {
+		wsProtocol = "wss://"
+	}
+	ws = new WebSocket(wsProtocol + window.location.host + socketURL)
  
 	ws.onopen = () => {
 		// Maybe show something here to indicate we're live updating?
