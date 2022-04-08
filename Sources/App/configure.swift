@@ -232,9 +232,6 @@ func configureBasicSettings(_ app: Application) throws {
 		Settings.shared.userImagesRootPath = URL(fileURLWithPath: likelyExecutablePath).appendingPathComponent("images")
 	}
 	Logger(label: "app.swiftarr.configuration") .notice("Set userImages path to \(Settings.shared.userImagesRootPath.path).")
-
-  // Set ship settings
-  Settings.shared.shipWifiSSID = "NieuwAmsterdam-Guest"
 }
 
 func configureStoredSettings(_ app: Application) throws {
