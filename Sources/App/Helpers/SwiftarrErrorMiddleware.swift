@@ -1,7 +1,7 @@
 import Vapor
 
 /// Captures all errors and transforms them into an internal server error HTTP response.
-public final class SwiftarrErrorMiddleware: Middleware {
+public final class SwiftarrErrorMiddleware: AsyncMiddleware {
 	var isReleaseMode: Bool
 
 	func handleError(req: Request, error: Error) -> Response {
@@ -64,13 +64,16 @@ public final class SwiftarrErrorMiddleware: Middleware {
 	}
 
 	/// See `Middleware`.
-	public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
-		request.logger.log(level: .info, "START \(request.method) \(request.url.path.removingPercentEncoding ?? request.url.path)")
-		return next.respond(to: request).map { response in
-			request.logger.log(level: .info, "END   \(request.method) \(request.url.path.removingPercentEncoding ?? request.url.path) -> \(response.status)")
-			return response
-		}.flatMapErrorThrowing { error in
-			return self.handleError(req: request, error: error)
+	public func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
+		var response: Response
+		do {
+	//		request.logger.log(level: .info, "START \(request.method) \(request.url.path.removingPercentEncoding ?? request.url.path)")
+			response = try await next.respond(to: request)
 		}
+		catch {
+			response = self.handleError(req: request, error: error)
+		}
+		request.logger.log(level: .info, "\(request.method) \(request.url.path.removingPercentEncoding ?? request.url.path) -> \(response.status)")
+		return response
 	}
 }

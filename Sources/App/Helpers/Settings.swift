@@ -4,8 +4,8 @@ import Redis
 /// A (hopefully) thread-safe singleton that provides modifiable global settings.
 
 final class Settings : Encodable {
-    
-    /// Wraps settings properties, making them thread-safe. All access to the internalValue 
+	
+	/// Wraps settings properties, making them thread-safe. All access to the internalValue 
 	@propertyWrapper class SettingsValue<T>: Encodable where T: Encodable {
 		fileprivate var internalValue: T
 		var wrappedValue: T {
@@ -23,8 +23,8 @@ final class Settings : Encodable {
 		}
 	}
 
-    /// Wraps settings properties, making them thread-safe. Contains methods for loading/storing values from a Redis hash.
-    /// Use this for settings that should be database-backed.
+	/// Wraps settings properties, making them thread-safe. Contains methods for loading/storing values from a Redis hash.
+	/// Use this for settings that should be database-backed.
 	@propertyWrapper class StoredSettingsValue<T>: SettingsValue<T>, StoredSetting where T : Encodable & RESPValueConvertible {
 		var projectedValue: StoredSettingsValue<T> { self }
 		var redisField: String
@@ -38,30 +38,29 @@ final class Settings : Encodable {
 			super.init(wrappedValue: defaultValue)
 		}
 				
-		func readFromRedis(redis: RedisClient) -> EventLoopFuture<Void> {
-			return redis.hget(redisField, from: "Settings").map { result in
-				if let value = T(fromRESP: result) { 
-					self.wrappedValue = value
-				} 
-			}
+		func readFromRedis(redis: RedisClient) async throws {
+			let result = try await redis.readSetting(redisField)
+			if let value = T(fromRESP: result) { 
+				self.wrappedValue = value
+			} 
 		}
 		
 		// Call after setting value
-		func writeToRedis(redis: RedisClient) -> EventLoopFuture<Bool> {
-			return redis.hset(redisField, to: wrappedValue, in: "Settings")
+		func writeToRedis(redis: RedisClient) async throws -> Bool {
+			return try await redis.hset(redisField, to: wrappedValue, in: "Settings").get()
 		}
 	}
 	
 	/// The shared instance for this singleton.
 	static let shared = Settings()
-        
-    /// DispatchQueue to use for thread-safety synchronization.
-    fileprivate static let settingsQueue = DispatchQueue(label: "settingsQueue")
-    
-    /// The ID of the blocked user placeholder.
-    @SettingsValue var blockedUserID: UUID = UUID()
+		
+	/// DispatchQueue to use for thread-safety synchronization.
+	fileprivate static let settingsQueue = DispatchQueue(label: "settingsQueue")
+	
+	/// The ID of the blocked user placeholder.
+	@SettingsValue var blockedUserID: UUID = UUID()
 
-    /// The ID of the FriendlyFez user placeholder.
+	/// The ID of the FriendlyFez user placeholder.
 	@SettingsValue var friendlyFezID: UUID = UUID()
 	
 // MARK: Sections / Features / Apps
@@ -73,31 +72,31 @@ final class Settings : Encodable {
 	@StoredSettingsValue("shipWifiSSID", defaultValue: "NieuwAmsterdam-Guest") var shipWifiSSID: String
 	    
 // MARK: Limits
-    /// The maximum number of alt accounts per primary user account.
-    @StoredSettingsValue("maxAlternateAccounts", defaultValue: 6) var maxAlternateAccounts: Int
-    
-    /// The maximum number of twartts allowed per request.
-    @StoredSettingsValue("maximumTwarrts", defaultValue: 200) var maximumTwarrts: Int
+	/// The maximum number of alt accounts per primary user account.
+	@StoredSettingsValue("maxAlternateAccounts", defaultValue: 6) var maxAlternateAccounts: Int
+	
+	/// The maximum number of twartts allowed per request.
+	@StoredSettingsValue("maximumTwarrts", defaultValue: 200) var maximumTwarrts: Int
 
-    /// The maximum number of twartts allowed per request.
-    @StoredSettingsValue("maximumForums", defaultValue: 200) var maximumForums: Int
+	/// The maximum number of twartts allowed per request.
+	@StoredSettingsValue("maximumForums", defaultValue: 200) var maximumForums: Int
 
-    /// The maximum number of twartts allowed per request.
-    @StoredSettingsValue("maximumForumPosts", defaultValue: 200) var maximumForumPosts: Int
+	/// The maximum number of twartts allowed per request.
+	@StoredSettingsValue("maximumForumPosts", defaultValue: 200) var maximumForumPosts: Int
 
 	/// Largest image we allow to be uploaded, in bytes.
-    @StoredSettingsValue("maxImageSize", defaultValue: 20 * 1024 * 1024) var maxImageSize: Int
+	@StoredSettingsValue("maxImageSize", defaultValue: 20 * 1024 * 1024) var maxImageSize: Int
 
 // MARK: Quarantine
-    /// The number of reports to trigger forum auto-quarantine.
-    @StoredSettingsValue("forumAutoQuarantineThreshold", defaultValue: 3) var forumAutoQuarantineThreshold: Int
-    
-    /// The number of reports to trigger post/twarrt auto-quarantine.
+	/// The number of reports to trigger forum auto-quarantine.
+	@StoredSettingsValue("forumAutoQuarantineThreshold", defaultValue: 3) var forumAutoQuarantineThreshold: Int
+	
+	/// The number of reports to trigger post/twarrt auto-quarantine.
 	@StoredSettingsValue("postAutoQuarantineThreshold", defaultValue: 3) var postAutoQuarantineThreshold: Int
-    
-    /// The number of reports to trigger user auto-quarantine.
-    @StoredSettingsValue("userAutoQuarantineThreshold", defaultValue: 5) var userAutoQuarantineThreshold: Int
-    
+	
+	/// The number of reports to trigger user auto-quarantine.
+	@StoredSettingsValue("userAutoQuarantineThreshold", defaultValue: 5) var userAutoQuarantineThreshold: Int
+	
 // MARK: Dates
 	/// A Date set to midnight on the day the cruise ship leaves port, in the timezone the ship leaves from. Used by the Events Controller for date arithimetic.
 	/// The default here should usually get overwritten in configure.swift.
@@ -172,31 +171,28 @@ extension Settings {
 }
 
 protocol StoredSetting {
-	func readFromRedis(redis: RedisClient) -> EventLoopFuture<Void>
-	func writeToRedis(redis: RedisClient) -> EventLoopFuture<Bool>
+	func readFromRedis(redis: RedisClient) async throws
+	func writeToRedis(redis: RedisClient) async throws -> Bool
 }
 
 extension Settings {
 	// Reads settings from Redis
-	func readStoredSettings(app: Application) throws {
-		let futures = Mirror(reflecting: self).children.compactMap { child -> EventLoopFuture<Void>? in
+	func readStoredSettings(app: Application) async throws {
+		for child in Mirror(reflecting: self).children {
 			guard let storedSetting = child.value as? StoredSetting else {
-				return nil
+				continue
 			}
-			return storedSetting.readFromRedis(redis: app.redis)
+			try await storedSetting.readFromRedis(redis: app.redis)
 		}
-		let _ = futures.flatten(on: app.eventLoopGroup.next())
 	}
 	
 	// Stores all settings to Redis
-	func storeSettings(on req: Request) throws -> EventLoopFuture<[Bool]> {
-		let futures = Mirror(reflecting: self).children.compactMap { child -> EventLoopFuture<Bool>? in
-			guard let storedSetting = child.value as? StoredSetting else {
-				return nil
+	func storeSettings(on req: Request) async throws {
+		for child in Mirror(reflecting: self).children {
+			if let storedSetting = child.value as? StoredSetting {
+				_ = try await storedSetting.writeToRedis(redis: req.redis)
 			}
-			return storedSetting.writeToRedis(redis: req.redis)
 		}
-		return futures.flatten(on: req.eventLoop)
 	}
 }
 

@@ -31,16 +31,16 @@ import Foundation
 //			}
 //		}
 //		
-//        return string
+//		return string
 //	}
 //
-//    func render(_ ctx: LeafContext) throws -> LeafData {
-//        try ctx.requireParameterCount(1)
+//	func render(_ ctx: LeafContext) throws -> LeafData {
+//		try ctx.requireParameterCount(1)
 //		guard let string = ctx.parameters[0].string else {
 //			return LeafData.string("")
 //		}
 //		return LeafData.string(ElementSanitizerTag.sanitize(string))
-//    }
+//	}
 //}
 
 /// Runs the element sanitizer on the given string, and then converts Jocomoji (specific string tags with the form :tag:)
@@ -59,8 +59,8 @@ struct AddJocomojiTag: UnsafeUnescapedLeafTag {
 		return string
 	}
 
-    func render(_ ctx: LeafContext) throws -> LeafData {
-        try ctx.requireParameterCount(1)
+	func render(_ ctx: LeafContext) throws -> LeafData {
+		try ctx.requireParameterCount(1)
 		guard var string = ctx.parameters[0].string else {
 			return LeafData.string("")
 		}
@@ -89,7 +89,7 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		return x
 	}
 
-    func render(_ ctx: LeafContext) throws -> LeafData {
+	func render(_ ctx: LeafContext) throws -> LeafData {
 		try ctx.requireParameterCount(1)
 		guard var string = ctx.parameters[0].string else {
 			return LeafData.string("")
@@ -179,22 +179,22 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		string = string.replacingOccurrences(of: "\n", with: "<br>")
 		
 		return LeafData.string(string)
-    }
-    
-    enum Usage {
-    	case twarrt
-    	case forumpost
-    	case fez
-    	case seamail
-    }
-    let usage: Usage
-    let urlRegex: NSRegularExpression
-    init(_ forUsage: Usage, hostname: String) throws {
-    	usage = forUsage
-    	let regexHostname = hostname.replacingOccurrences(of: ".", with: "\\.")
-    	let regexStr = "(?:https?://)?\(regexHostname)(?::[0-9]+)?([-A-Z0-9+&@#/%?=~_|!:,.;]*[A-Z0-9+&@#/%=~_|])"
-    	urlRegex = try NSRegularExpression(pattern: regexStr, options: .caseInsensitive)
-    }
+	}
+	
+	enum Usage {
+		case twarrt
+		case forumpost
+		case fez
+		case seamail
+	}
+	let usage: Usage
+	let urlRegex: NSRegularExpression
+	init(_ forUsage: Usage, hostname: String) throws {
+		usage = forUsage
+		let regexHostname = hostname.replacingOccurrences(of: ".", with: "\\.")
+		let regexStr = "(?:https?://)?\(regexHostname)(?::[0-9]+)?([-A-Z0-9+&@#/%?=~_|!:,.;]*[A-Z0-9+&@#/%=~_|])"
+		urlRegex = try NSRegularExpression(pattern: regexStr, options: .caseInsensitive)
+	}
 }
 
 /// Turns a Date string into a relative date string. Argument is a ISO8601 formatted Date, or what JSON encoding 
@@ -204,8 +204,8 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 ///
 /// Usage in Leaf templates: #relativeTime(dateValue) -> String
 struct RelativeTimeTag: LeafTag {
-    func render(_ ctx: LeafContext) throws -> LeafData {
-        try ctx.requireParameterCount(1)
+	func render(_ ctx: LeafContext) throws -> LeafData {
+		try ctx.requireParameterCount(1)
 		guard let dateStr = ctx.parameters[0].string, let ti = TimeInterval(dateStr) else {
 			return LeafData.string("")
 		}
@@ -259,9 +259,9 @@ struct RelativeTimeTag: LeafTag {
 /// Usage in Leaf templates:: #eventTime(startTime, endTime) -> String
 struct EventTimeTag: LeafTag {
 	func render(_ ctx: LeafContext) throws -> LeafData {
-        try ctx.requireParameterCount(2)
+		try ctx.requireParameterCount(2)
 		guard let startTimeDouble = ctx.parameters[0].double, let endTimeDouble = ctx.parameters[1].double else {
-            throw "Leaf: Unable to convert parameter to double for date"
+			throw "Leaf: Unable to convert parameter to double for date"
 		}
 
 		let dateFormatter = DateFormatter()
@@ -282,9 +282,9 @@ struct EventTimeTag: LeafTag {
 /// Usage in Leaf templates:: #eventTime(startTime, endTime) -> String
 struct FezTimeTag: LeafTag {
 	func render(_ ctx: LeafContext) throws -> LeafData {
-        try ctx.requireParameterCount(2)
+		try ctx.requireParameterCount(2)
 		guard let startTimeDouble = ctx.parameters[0].double, let endTimeDouble = ctx.parameters[1].double else {
-            throw "Leaf: Unable to convert parameter to double for date"
+			throw "Leaf: Unable to convert parameter to double for date"
 		}
 
 		let dateFormatter = DateFormatter()
@@ -305,20 +305,20 @@ struct FezTimeTag: LeafTag {
 ///
 /// Usage in Leaf templates:: #staticTime(startTime) -> String
 struct StaticTimeTag: LeafTag {
-    func render(_ ctx: LeafContext) throws -> LeafData {
-        try ctx.requireParameterCount(1)
-        guard let inputTimeDouble = ctx.parameters[0].double else {
-            throw "Leaf: Unable to convert parameter to double for date"
-        }
+	func render(_ ctx: LeafContext) throws -> LeafData {
+		try ctx.requireParameterCount(1)
+		guard let inputTimeDouble = ctx.parameters[0].double else {
+			throw "Leaf: Unable to convert parameter to double for date"
+		}
 
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateStyle = .short
-        dateFormatter.timeStyle = .short
-        dateFormatter.locale = Locale(identifier: "en_US")
-        dateFormatter.timeZone = Settings.shared.getDisplayTimeZone()
-        let timeString = "\(dateFormatter.string(from: Date(timeIntervalSince1970: inputTimeDouble))) \(dateFormatter.timeZone.abbreviation()!)"
-        return LeafData.string(timeString)
-    }
+		let dateFormatter = DateFormatter()
+		dateFormatter.dateStyle = .short
+		dateFormatter.timeStyle = .short
+		dateFormatter.locale = Locale(identifier: "en_US")
+		dateFormatter.timeZone = Settings.shared.getDisplayTimeZone()
+		let timeString = "\(dateFormatter.string(from: Date(timeIntervalSince1970: inputTimeDouble))) \(dateFormatter.timeZone.abbreviation()!)"
+		return LeafData.string(timeString)
+	}
 }
 
 /// Return an ISO8601-ish time string for use with the datetime-local input type.
@@ -331,8 +331,8 @@ struct LocalTimeTag: LeafTag {
 	func render(_ ctx: LeafContext) throws -> LeafData {
 		try ctx.requireParameterCount(1)
 		guard let inputTimeDouble = ctx.parameters[0].double else {
-            throw "Leaf: Unable to convert parameter to double for date"
-        }
+			throw "Leaf: Unable to convert parameter to double for date"
+		}
 
 		// https://www.objc.io/blog/2018/12/04/unexpected-results-from-a-date-formatter/
 		let dateFormatter = DateFormatter()
@@ -348,9 +348,9 @@ struct LocalTimeTag: LeafTag {
 /// Usage: #cruiseDayIndex(date)  returns 0...8
 struct CruiseDayIndexTag: LeafTag {
 	func render(_ ctx: LeafContext) throws -> LeafData {
-        try ctx.requireParameterCount(1)
+		try ctx.requireParameterCount(1)
 		guard let startTimeDouble = ctx.parameters[0].double else {
-            throw "Leaf: Unable to convert parameter to double for date"
+			throw "Leaf: Unable to convert parameter to double for date"
 		}
 		let difference = Date(timeIntervalSince1970: startTimeDouble).timeIntervalSince(Settings.shared.cruiseStartDate) - 3600 * 3
 		let dayIndex = String(Int(floor(difference / (3600.0 * 24.0))))
@@ -366,7 +366,7 @@ struct CruiseDayIndexTag: LeafTag {
 ///
 /// Usage: #avatar(userHeader), #avatar(userHeader, 800)
 struct AvatarTag: UnsafeUnescapedLeafTag {
-    func render(_ ctx: LeafContext) throws -> LeafData {
+	func render(_ ctx: LeafContext) throws -> LeafData {
 		var imgSize = 40
 		if ctx.parameters.count > 1, let tempSize = ctx.parameters[1].int {
 			imgSize = tempSize
@@ -392,7 +392,7 @@ struct AvatarTag: UnsafeUnescapedLeafTag {
 /// Or: #userByline(userHeader, "short") to display a shorter link (only the username, no displayname). 
 /// Or: #userByline(userHeader, "nolink") to display the username and displayname, without a link
 struct UserBylineTag: UnsafeUnescapedLeafTag {
-    func render(_ ctx: LeafContext) throws -> LeafData {
+	func render(_ ctx: LeafContext) throws -> LeafData {
 		guard ctx.parameters.count >= 1, let userHeader = ctx.parameters[0].dictionary,
 			  let userID = userHeader["userID"]?.string,
 			  let username = userHeader["username"]?.string?.htmlEscaped() else {
@@ -418,7 +418,7 @@ struct UserBylineTag: UnsafeUnescapedLeafTag {
 ///
 /// Usage: #gameRating(float)
 struct GameRatingTag: LeafTag {
-    func render(_ ctx: LeafContext) throws -> LeafData {
+	func render(_ ctx: LeafContext) throws -> LeafData {
 		guard ctx.parameters.count == 1, let value = ctx.parameters[0].double else {
 			throw "Leaf: gameRating tag unable to get float value."
 		}

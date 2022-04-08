@@ -19,7 +19,7 @@ struct AlertController: APIRouteCollection {
 
 	/// Required. Registers routes to the incoming router.
 	func registerRoutes(_ app: Application) throws {
-        
+		
 		// convenience route group for all /api/v3/notification endpoints
 		let alertRoutes = app.grouped("api", "v3", "notification")
 		alertRoutes.get("hashtags", searchStringParam, use: getHashtagsHandler)
@@ -47,107 +47,89 @@ struct AlertController: APIRouteCollection {
 	
 	// MARK: - Hashtags
 	
-	func getHashtagsHandler(_ req: Request) throws -> EventLoopFuture<[String]> {
+	/// `GET /api/v3/notification/hashtags`
+	///
+	/// Retrieve info on hashtags that have been used.
+	/// 
+	/// - Parameter searchString: Partial Hashtag string. Must have at least 1 character.
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: 
+	func getHashtagsHandler(_ req: Request) async throws -> [String] {
 		guard var paramVal = req.parameters.get(searchStringParam.paramString), paramVal.count >= 1 else {
-            throw Abort(.badRequest, reason: "Request parameter \(searchStringParam.paramString) is missing.")
-        }
-        if paramVal.hasPrefix("#") {
-        	paramVal = String(paramVal.dropFirst())
-        }
+			throw Abort(.badRequest, reason: "Request parameter \(searchStringParam.paramString) is missing.")
+		}
+		if paramVal.hasPrefix("#") {
+			paramVal = String(paramVal.dropFirst())
+		}
 		guard paramVal.count >= 1, paramVal.count < 50, paramVal.allSatisfy({ $0.isLetter || $0.isNumber }) else {
-            throw Abort(.badRequest, reason: "Request parameter \(searchStringParam.paramString) is malformed.")
+			throw Abort(.badRequest, reason: "Request parameter \(searchStringParam.paramString) is malformed.")
 		}
-		return req.redis.zrangebylex(from: "hashtags", withValuesBetween: (min: .inclusive(paramVal), max: .inclusive("\(paramVal)\u{FF}")), 
-				limitBy: (offset: 0, count: 10)).map { respvalues in
-			let strings = respvalues.map { $0.description }
-			return strings
-		}
+		let strings = try await req.redis.getHashtags(matching: paramVal)
+		return strings
 	}
-
-
 
 	// MARK: - Notifications
 		
-    /// `GET /api/v3/notification/global`
-    /// `GET /api/v3/notification/user`
-    ///
-    /// Retrieve info on the number of each type of notification supported by Swiftarr. 
+	/// `GET /api/v3/notification/global`
+	/// `GET /api/v3/notification/user`
+	///
+	/// Retrieve info on the number of each type of notification supported by Swiftarr. 
 	/// 
-    /// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-    /// - Returns: <doc:UserNotificationData>
-	func globalNotificationHandler(_ req: Request) throws -> EventLoopFuture<UserNotificationData> {
-        guard let user = req.auth.get(UserCacheData.self) else {
-        	return getActiveAnnouncementIDs(on: req).map { activeAnnouncementIDs in
-				var result = UserNotificationData()
-				result.activeAnnouncementIDs = activeAnnouncementIDs
-				result.disabledFeatures = Settings.shared.disabledFeatures.buildDisabledFeatureArray()
-				return result
-			}
-        }
-		// Get the number of fezzes with unread messages
-		return req.redis.hvals(in: NotificationType.fezUnreadMsg(user.userID).redisKeyName(userID: user.userID), as: Int.self)
-				.and(req.redis.hvals(in: NotificationType.seamailUnreadMsg(user.userID).redisKeyName(userID: user.userID), 
-				as: Int.self)).flatMap { (fezHash, seamailHash) in
-			let unreadFezCount = fezHash.reduce(0) { $1 ?? 0 > 0 ? $0 + 1 : $0 }
-			let unreadSeamailCount = seamailHash.reduce(0) { $1 ?? 0 > 0 ? $0 + 1 : $0 }
-			return getActiveAnnouncementIDs(on: req).flatMap { actives in 
-				return req.redis.hgetall(from: NotificationType.redisHashKeyForUser(user.userID)).flatMap { hash in
-					let userHighestReadAnnouncement = hash["announcement_viewed"]?.int ?? 0
-					let newAnnouncements = actives.reduce(0) { $1 > userHighestReadAnnouncement ? $0 + 1 : $0 }
-					var nextEventFuture: EventLoopFuture<Date?> = req.eventLoop.future(nil)
-					if let nextEventStr = hash[NotificationType.nextFollowedEventTime(nil, nil).redisFieldName()]?.string, 
-							let doubleDate = Double(nextEventStr) {
-						let eventDate = Date(timeIntervalSince1970: doubleDate)
-						if Date() > eventDate {
-							nextEventFuture = storeNextEventTime(userID: user.userID, eventBarrel: nil, on: req)
-						}
-						else {
-							nextEventFuture = req.eventLoop.future(eventDate)
-						}
-					}
-					return nextEventFuture.flatMap { nextEventDate in
-						var result = UserNotificationData(newFezCount: unreadFezCount, newSeamailCount: unreadSeamailCount,
-								activeAnnouncementIDs: actives, newAnnouncementCount: newAnnouncements, nextEvent: nextEventDate)
-						result.twarrtMentionCount = hash["twarrtMention"]?.int ?? 0
-						result.newTwarrtMentionCount = max(result.twarrtMentionCount - (hash["twarrtMention_viewed"]?.int ?? 0), 0)
-						result.forumMentionCount = hash["forumMention"]?.int ?? 0
-						result.newForumMentionCount = max(result.forumMentionCount - (hash["forumMention_viewed"]?.int ?? 0), 0)
-						result.alertWords = getNewAlertWordCounts(hash: hash)
-						
-						// FIXME: workaround for Kraken bug with decoding nextFollowedEventTime
-						result.nextFollowedEventTime = nil
-						
-						return getModeratorNotifications(for: user, on: req).map { modNotificationData in
-							result.moderatorData = modNotificationData
-							return result
-						}
-					}
-				}
-			}
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: <doc:UserNotificationData>
+	func globalNotificationHandler(_ req: Request) async throws -> UserNotificationData {
+		guard let user = req.auth.get(UserCacheData.self) else {
+			let activeAnnouncementIDs = try await getActiveAnnouncementIDs(on: req)
+			var result = UserNotificationData()
+			result.activeAnnouncementIDs = activeAnnouncementIDs
+			result.disabledFeatures = Settings.shared.disabledFeatures.buildDisabledFeatureArray()
+			return result
 		}
+		// Get the number of fezzes with unread messages
+		async let userHash = try req.redis.getUserHash(userID: user.userID)
+		async let unreadSeamailCount = try req.redis.getSeamailUnreadCounts(userID: user.userID, inbox: .seamail)
+		async let unreadLFGCount = try req.redis.getSeamailUnreadCounts(userID: user.userID, inbox: .lfgMessages)
+		async let actives = try getActiveAnnouncementIDs(on: req)
+		async let modData = try getModeratorNotifications(for: user, on: req)
+				
+		let userHighestReadAnnouncement = try await req.redis.getIntFromUserHash(userHash, field: .announcement(0))
+		let newAnnouncements = try await actives.reduce(0) { $1 > userHighestReadAnnouncement ? $0 + 1 : $0 }
+		// Get the next event this user's following, if any
+		var nextEvent = try await req.redis.getNextEventFromUserHash(userHash)
+		if let validDate = nextEvent?.0, Date() > validDate {
+			// The previously cached event already happend; figure out what's next
+			nextEvent = try await storeNextFollowedEvent(userID: user.userID, on: req)
+		}
+		var result = try await UserNotificationData(newFezCount: unreadLFGCount, newSeamailCount: unreadSeamailCount,
+				activeAnnouncementIDs: actives, newAnnouncementCount: newAnnouncements, nextEventTime: nextEvent?.0, nextEvent: nextEvent?.1)
+		result.twarrtMentionCount = try await req.redis.getIntFromUserHash(userHash, field: .twarrtMention(0))
+		result.newTwarrtMentionCount = try await max(result.twarrtMentionCount - 
+				req.redis.getIntFromUserHash(userHash, field: .twarrtMention(0), viewed: true), 0)
+		result.forumMentionCount = try await req.redis.getIntFromUserHash(userHash, field: .forumMention(0))
+		result.newForumMentionCount = try await max(result.forumMentionCount - 
+				req.redis.getIntFromUserHash(userHash, field: .forumMention(0), viewed: true), 0)
+		result.alertWords = try await getNewAlertWordCounts(hash: userHash)
+		result.moderatorData = try await modData
+		return result
 	}
 	
 	// Pulls an array of active announcement IDs from Redis, from a key that expires every minute. If the key is expired,
 	// rebuilds it by querying Announcements. Could be optimized a bit by setting expire time to the first expiring announcement,
 	// and making sure we delete the key when announcements are added/edited/deleted. 
-	func getActiveAnnouncementIDs(on req: Request) -> EventLoopFuture<[Int]> {
-		return req.redis.get("ActiveAnnouncementIDs", as: String.self).flatMap { alertIDStr in
-			if let idStr = alertIDStr {
-				return req.eventLoop.future(idStr.split(separator: " ").compactMap { Int($0) })
-			}
-			else {
-				return Announcement.query(on: req.db).filter(\.$displayUntil > Date()).all().flatMapThrowing() { activeAnnouncements in
-					let ids = try activeAnnouncements.map { try $0.requireID() }
-					let idStr = ids.map { String($0) }.joined(separator: " ")
-					_ = req.redis.set("ActiveAnnouncementIDs", to: idStr, onCondition: .none, expiration: .seconds(60))
-					return ids 
-				}
-			}
+	func getActiveAnnouncementIDs(on req: Request) async throws -> [Int] {
+		if let alertIDs = try await req.redis.getActiveAnnouncementIDs() {
+			return alertIDs
+		}
+		else {
+			let activeAnnouncements = try await Announcement.query(on: req.db).filter(\.$displayUntil > Date()).all()
+			let ids = try activeAnnouncements.map { try $0.requireID() }
+			try await req.redis.setActiveAnnouncementIDs(ids)
+			return ids 
 		}
 	}
 	
 	func getNewAlertWordCounts(hash: [String : RESPValue]) -> [UserNotificationAlertwordData] {
-	//	return req.redis.hgetall(from: NotificationType.redisHashKeyForUser(userID), as: Int.self).map { hash in
+	//	let hash = try await req.redis.hgetall(from: NotificationType.redisHashKeyForUser(userID), as: Int.self)
 		var resultDict: [String : UserNotificationAlertwordData] = [:]
 		hash.forEach { (key, value) in
 			if key.hasSuffix("_viewed") {
@@ -182,25 +164,20 @@ struct AlertController: APIRouteCollection {
 	
 	/// Returns a ModeratorNotificationData structure containing counts for open reports, seamails to @moderator with unread messages, and (if user is in TwitarrTeam) 
 	/// seamails to @TwitarrTeam with unread messages. If the user is not a moderator, returns nil.
-	func getModeratorNotifications(for user: UserCacheData, on req: Request) -> EventLoopFuture<UserNotificationData.ModeratorNotificationData?> {
+	func getModeratorNotifications(for user: UserCacheData, on req: Request) async throws -> UserNotificationData.ModeratorNotificationData? {
 		guard user.accessLevel.hasAccess(.moderator) else {
-			return req.eventLoop.future(nil)
+			return nil
 		}
-		return Report.query(on: req.db).filter(\.$isClosed == false).filter(\.$actionGroup == nil).count().flatMap { reportCount in
-			return req.redis.hvals(in: "UnreadModSeamails-\(user.userID)", as: Int.self).flatMap { seamailHash in
-				let moderatorUnreadCount = seamailHash.reduce(0) { $1 ?? 0 > 0 ? $0 + 1 : $0 }
-				var twittarTeamFuture: EventLoopFuture<Int?> = req.eventLoop.future(nil)
-				if user.accessLevel.hasAccess(.twitarrteam) {
-					twittarTeamFuture = req.redis.hvals(in: "UnreadTTSeamails-\(user.userID)", as: Int.self).map { ttSeamailHash in
-						return ttSeamailHash.reduce(0) { $1 ?? 0 > 0 ? $0 + 1 : $0 }
-					}
-				}
-				return twittarTeamFuture.map { ttUnreadCount in
-					return UserNotificationData.ModeratorNotificationData(openReportCount: reportCount, 
-							newModeratorSeamailMessageCount: moderatorUnreadCount, newTTSeamailMessageCount: ttUnreadCount)
-				}
-			}
+		let reportCount = try await Report.query(on: req.db).filter(\.$isClosed == false).filter(\.$actionGroup == nil).count()
+		let seamailHash = try await req.redis.hvals(in: "UnreadModSeamails-\(user.userID)", as: Int.self).get()
+		let moderatorUnreadCount = seamailHash.reduce(0) { $1 ?? 0 > 0 ? $0 + 1 : $0 }
+		var ttUnreadCount = 0
+		if user.accessLevel.hasAccess(.twitarrteam) {
+			let ttSeamailHash = try await req.redis.hvals(in: "UnreadTTSeamails-\(user.userID)", as: Int.self).get()
+			ttUnreadCount = ttSeamailHash.reduce(0) { $1 ?? 0 > 0 ? $0 + 1 : $0 }
 		}
+		return UserNotificationData.ModeratorNotificationData(openReportCount: reportCount, 
+				newModeratorSeamailMessageCount: moderatorUnreadCount, newTTSeamailMessageCount: ttUnreadCount)
 	}
 	
 	/// `WS /api/v3/notification/socket`
@@ -224,33 +201,30 @@ struct AlertController: APIRouteCollection {
 	
 	// MARK: - Announcements
 
-    /// `POST /api/v3/announcement/create`
-    ///
-    /// Create a new announcement. Requires THO access and above. When a new announcement is created the notification endpoints will start 
+	/// `POST /api/v3/announcement/create`
+	///
+	/// Create a new announcement. Requires THO access and above. When a new announcement is created the notification endpoints will start 
 	/// indicating the new announcement to all users.
 	/// 
-    /// - Parameter requestBody: <doc:AnnouncementCreateData>
-    /// - Returns: `HTTPStatus` 201 on success.
-	func createAnnouncement(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+	/// - Parameter requestBody: <doc:AnnouncementCreateData>
+	/// - Returns: `HTTPStatus` 201 on success.
+	func createAnnouncement(_ req: Request) async throws -> HTTPStatus {
 		let user = try req.auth.require(UserCacheData.self)
 		guard user.accessLevel.hasAccess(.tho) else {
 			throw Abort(.forbidden, reason: "THO only")
 		}
 		let announcementData = try ValidatingJSONDecoder().decode(AnnouncementCreateData.self, fromBodyOf: req)
 		let announcement = Announcement(authorID: user.userID, text: announcementData.text, displayUntil: announcementData.displayUntil)
-			
-		return announcement.save(on: req.db).throwingFlatMap {
-			return User.query(on: req.db).field(\.$id).all().throwingFlatMap { allUsers in
-				let userIDs = try allUsers.map { try $0.requireID() }
-				return try addNotifications(users: userIDs, type: .announcement(announcement.requireID()),
-						info: announcement.text, on: req).transform(to: .created)
-			}
-		}
+		try await announcement.save(on: req.db)
+		let allUsers = try await User.query(on: req.db).field(\.$id).all()
+		let userIDs = try allUsers.map { try $0.requireID() }
+		try await addNotifications(users: userIDs, type: .announcement(announcement.requireID()), info: announcement.text, on: req)
+		return .created
 	}
 	
-    /// `GET /api/v3/notification/announcements`
-    ///
-    /// Returns all active announcements, sorted by creation time, by default. 
+	/// `GET /api/v3/notification/announcements`
+	///
+	/// Returns all active announcements, sorted by creation time, by default. 
 	/// 
 	/// **URL Query Parameters**
 	/// 
@@ -258,10 +232,10 @@ struct AlertController: APIRouteCollection {
 	/// 		
 	/// The purpose if the inactives flag is to allow for finding an expired announcement and re-activating it by changing its expire time. Remember that doing so
 	/// doesn't re-alert users who have already read it.
-    ///
-    /// - Throws: 403 error if the user is not permitted to delete.
-    /// - Returns: Array of <doc:AnnouncementData>
-	func getAnnouncements(_ req: Request) throws -> EventLoopFuture<[AnnouncementData]> {
+	///
+	/// - Throws: 403 error if the user is not permitted to delete.
+	/// - Returns: Array of <doc:AnnouncementData>
+	func getAnnouncements(_ req: Request) async throws -> [AnnouncementData] {
 		let user = req.auth.get(UserCacheData.self)
 		let includeInactives: Bool = req.query[String.self, at: "inactives"] == "true"
 		guard !includeInactives || (user?.accessLevel.hasAccess(.tho) ?? false) else {
@@ -274,55 +248,56 @@ struct AlertController: APIRouteCollection {
 		else {
 			query.filter(\.$displayUntil > Date())
 		}
-		return query.all().flatMapThrowing { announcements in
-			var maxID = 0
-			let result: [AnnouncementData] = try announcements.map { 
-				let authorHeader = try req.userCache.getHeader($0.$author.id)
-				if let annID = $0.id, annID > maxID { maxID = annID }
-				return try AnnouncementData(from: $0, authorHeader: authorHeader) 
-			}
-			if let user = user, includeInactives == false {
-				_ = markNotificationViewed(user: user, type: .announcement(maxID), on: req)
-			}
-			return result
+		let announcements = try await query.all()
+		var maxID = 0
+		let result: [AnnouncementData] = try announcements.map { 
+			let authorHeader = try req.userCache.getHeader($0.$author.id)
+			if let annID = $0.id, annID > maxID { maxID = annID }
+			return try AnnouncementData(from: $0, authorHeader: authorHeader) 
 		}
+		if let user = user, includeInactives == false {
+			try await markNotificationViewed(user: user, type: .announcement(maxID), on: req)
+		}
+		return result
 	}
 	
-    /// `GET /api/v3/notification/announcement/ID`
-    ///
-    /// Returns a single announcement, identified by its ID. THO and admins only. Others should just use `/api/v3/notification/announcements`.
+	/// `GET /api/v3/notification/announcement/ID`
+	///
+	/// Returns a single announcement, identified by its ID. THO and admins only. Others should just use `/api/v3/notification/announcements`.
+	/// Will return AnnouncementData for deleted announcements.
 	/// 
 	/// Announcements shouldn't be large, and there shouldn't be many of them active at once (Less than 1KB each, if there's more than 5 active 
 	/// at once people likely won't read them). This endpoint really exists to support admins editing announcements.
 	/// 
-    /// - Parameter announcementID: The announcement to find
-    /// - Throws: 403 error if the user doesn't have THO-level access. 404 if no announcement with the given ID is found.
-    /// - Returns: <doc:AnnouncementData>
-	func getSingleAnnouncement(_ req: Request) throws -> EventLoopFuture<AnnouncementData> {
+	/// - Parameter announcementID: The announcement to find
+	/// - Throws: 403 error if the user doesn't have THO-level access. 404 if no announcement with the given ID is found.
+	/// - Returns: <doc:AnnouncementData>
+	func getSingleAnnouncement(_ req: Request) async throws -> AnnouncementData {
 		let user = try req.auth.require(UserCacheData.self)
 		guard user.accessLevel.hasAccess(.tho) else {
 			throw Abort(.forbidden, reason: "THO only")
 		}
   		guard let paramVal = req.parameters.get(announcementIDParam.paramString), let announcementID = Int(paramVal) else {
-            throw Abort(.badRequest, reason: "Request parameter \(announcementIDParam.paramString) is missing.")
-        }
-		return Announcement.query(on: req.db).filter(\.$id == announcementID).withDeleted().first()
-				.unwrap(or: Abort(.notFound, reason: "Announcement not found")).flatMapThrowing { announcement in
-			let authorHeader = try req.userCache.getHeader(announcement.$author.id)
-			return try AnnouncementData(from: announcement, authorHeader: authorHeader) 
+			throw Abort(.badRequest, reason: "Request parameter \(announcementIDParam.paramString) is missing.")
 		}
+		let announcement = try await Announcement.query(on: req.db).filter(\.$id == announcementID).withDeleted().first()
+		guard let announcement = announcement else {
+			throw Abort(.notFound, reason: "Announcement not found")
+		}
+		let authorHeader = try req.userCache.getHeader(announcement.$author.id)
+		return try AnnouncementData(from: announcement, authorHeader: authorHeader) 
 	}
 	
-    /// `POST /api/v3/notification/announcement/ID/edit`
-    ///
-    /// Edits an existing announcement. Editing a deleted announcement will un-delete it. Editing an announcement does not change any user's notification status for that
+	/// `POST /api/v3/notification/announcement/ID/edit`
+	///
+	/// Edits an existing announcement. Editing a deleted announcement will un-delete it. Editing an announcement does not change any user's notification status for that
 	/// announcement: if a user has seen the announcement already, editing it will not cause the user to be notified that they should read it again.
-    ///
-    /// - Parameter announcementID: The announcement to edit. Must exist.
-    /// - Parameter requestBody: <doc:AnnouncementCreateData>
-    /// - Throws: 403 error if the user is not permitted to delete.
-    /// - Returns: The updated <doc:AnnouncementCreateData>
-	func editAnnouncement(_ req: Request) throws -> EventLoopFuture<AnnouncementData> {
+	///
+	/// - Parameter announcementID: The announcement to edit. Must exist.
+	/// - Parameter requestBody: <doc:AnnouncementCreateData>
+	/// - Throws: 403 error if the user is not permitted to delete.
+	/// - Returns: The updated <doc:AnnouncementCreateData>
+	func editAnnouncement(_ req: Request) async throws -> AnnouncementData {
 		let user = try req.auth.require(UserCacheData.self)
 		guard user.accessLevel.hasAccess(.tho) else {
 			throw Abort(.forbidden, reason: "THO only")
@@ -331,57 +306,51 @@ struct AlertController: APIRouteCollection {
 		guard let announcementIDStr = req.parameters.get(announcementIDParam.paramString), let announcementID = Int(announcementIDStr) else {
 			throw Abort(.badRequest, reason: "Announcement ID is missing.")
 		}
-		return Announcement.query(on: req.db).filter(\.$id == announcementID).withDeleted().first()
-				.unwrap(or: Abort(.notFound, reason: "Announcement not found.")).throwingFlatMap { announcement in
-			if let deleteTime = announcement.deletedAt, deleteTime < Date() {
-				return announcement.restore(on: req.db).transform(to: announcement)
-			}
-			return req.eventLoop.future(announcement)
-		}.flatMap { (announcement: Announcement) in
-			announcement.text = announcementData.text
-			announcement.displayUntil = announcementData.displayUntil
-			return announcement.save(on: req.db).flatMapThrowing {
-				let authorHeader = try req.userCache.getHeader(announcement.$author.id)
-				return try AnnouncementData(from: announcement, authorHeader: authorHeader)
-			}
+		let announcement = try await Announcement.query(on: req.db).filter(\.$id == announcementID).withDeleted().first()
+		guard let announcement = announcement else {
+			throw Abort(.notFound, reason: "Announcement not found")
 		}
+		if let deleteTime = announcement.deletedAt, deleteTime < Date() {
+			try await announcement.restore(on: req.db)
+		}
+		announcement.text = announcementData.text
+		announcement.displayUntil = announcementData.displayUntil
+		try await announcement.save(on: req.db)
+		let authorHeader = try req.userCache.getHeader(announcement.$author.id)
+		return try AnnouncementData(from: announcement, authorHeader: authorHeader)
 	}
 	
-    /// `POST /api/v3/notification/announcement/ID/delete`
-    /// `DELETE /api/v3/notification/announcement/ID`
-    ///
-    /// Deletes an existing announcement. Editing a deleted announcement will un-delete it.
-    ///
-    /// - Parameter announcementIDParam: The announcement to delete. 
-    /// - Throws: 403 error if the user is not permitted to delete.
-    /// - Returns: 204 NoContent on success.
-	func deleteAnnouncement(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+	/// `POST /api/v3/notification/announcement/ID/delete`
+	/// `DELETE /api/v3/notification/announcement/ID`
+	///
+	/// Deletes an existing announcement. Editing a deleted announcement will un-delete it.
+	///
+	/// - Parameter announcementIDParam: The announcement to delete. 
+	/// - Throws: 403 error if the user is not permitted to delete.
+	/// - Returns: 204 NoContent on success.
+	func deleteAnnouncement(_ req: Request) async throws -> HTTPStatus {
 		let user = try req.auth.require(UserCacheData.self)
 		guard user.accessLevel.hasAccess(.tho) else {
 			throw Abort(.forbidden, reason: "THO only")
 		}
-		return Announcement.findFromParameter(announcementIDParam, on: req).throwingFlatMap { announcement in
-			return announcement.delete(on: req.db).flatMap {
-				return User.query(on: req.db).field(\.$id).all().throwingFlatMap { allUsers in
-					let userIDs = try allUsers.map { try $0.requireID() }
-					return try subtractNotifications(users: userIDs, type: .announcement(announcement.requireID()), on: req)
-							.transform(to: .noContent)
-				}
-			}
-		}
+		let announcement = try await Announcement.findFromParameter(announcementIDParam, on: req)
+		try await announcement.delete(on: req.db)
+		let allUsers = try await User.query(on: req.db).field(\.$id).all()
+		let userIDs = try allUsers.map { try $0.requireID() }
+		try await subtractNotifications(users: userIDs, type: .announcement(announcement.requireID()), on: req)
+		return .noContent
 	}
 	
 	// MARK: - Daily Themes
 
-    /// `GET /api/v3/notification/dailythemes`
+	/// `GET /api/v3/notification/dailythemes`
 	/// 
 	///  Returns information about all the daily themes currently registered.
-    ///
-    /// - Throws: 403 error if the user is not permitted to delete.
-    /// - Returns: An array of <doc:DailyThemeData> on success.
-	func getDailyThemes(_ req: Request) throws -> EventLoopFuture<[DailyThemeData]> {
-		return DailyTheme.query(on: req.db).sort(\.$cruiseDay, .ascending).all().flatMapThrowing { themes in
-			return try themes.map { try DailyThemeData($0) }
-		}
+	///
+	/// - Throws: 403 error if the user is not permitted to delete.
+	/// - Returns: An array of <doc:DailyThemeData> on success.
+	func getDailyThemes(_ req: Request) async throws -> [DailyThemeData] {
+		let themes = try await DailyTheme.query(on: req.db).sort(\.$cruiseDay, .ascending).all()
+		return try themes.map { try DailyThemeData($0) }
 	}
 }

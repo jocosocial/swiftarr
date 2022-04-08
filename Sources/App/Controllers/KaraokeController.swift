@@ -38,8 +38,8 @@ struct KaraokeController: APIRouteCollection {
 	///	* `?start=INT` - Offset from start of results set
 	/// * `?limit=INT` - the maximum number of songs to retrieve: 1-200, default is 50. 
 	/// 
-    /// - Returns: <doc:KaraokeSongResponseData>
-	func getKaraokeSongs(_ req: Request) throws -> EventLoopFuture<KaraokeSongResponseData> {
+	/// - Returns: <doc:KaraokeSongResponseData>
+	func getKaraokeSongs(_ req: Request) async throws -> KaraokeSongResponseData {
 		struct SongQueryOptions: Decodable {
 			var search: String?
 			var favorite: String?
@@ -47,9 +47,8 @@ struct KaraokeController: APIRouteCollection {
 			var limit: Int?
 		}
  		let filters = try req.query.decode(SongQueryOptions.self)
-        let start = filters.start ?? 0
-        let limit = (filters.limit ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
-        var futureFavorites: EventLoopFuture<[KaraokeFavorite]> = req.eventLoop.future([])
+		let start = filters.start ?? 0
+		let limit = (filters.limit ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
 		let songQuery = KaraokeSong.query(on: req.db).sort(\.$artist, .ascending).sort(\.$title, .ascending)
 		if let search = filters.search {
 			songQuery.group(.or) { group in 
@@ -58,11 +57,18 @@ struct KaraokeController: APIRouteCollection {
 		}
 		var filteringFavorites = false
 		if let user = req.auth.get(UserCacheData.self) {
-			futureFavorites = KaraokeFavorite.query(on: req.db).filter(\.$user.$id == user.userID).all()
 			if let fav = filters.favorite, fav.lowercased() == "true" {
-				filteringFavorites = true
 				songQuery.join(KaraokeFavorite.self, on: \KaraokeSong.$id == \KaraokeFavorite.$song.$id)
 						.filter(KaraokeFavorite.self, \.$user.$id == user.userID)
+				filteringFavorites = true
+			} else {
+				// The custom SQL here implements a left join similar to the following commented-out code, except
+				// it also filters the KaraokeFavorite results to only favorites by the current user.
+//				songQuery.join(KaraokeFavorite.self, on: \KaraokeFavorite.$song.$id == \KaraokeSong.$id, method: .left)
+				songQuery.join(KaraokeSong.self, KaraokeFavorite.self, on: .custom("""
+						LEFT JOIN "karaoke+favorite" ON "karaoke_song"."id" = "karaoke+favorite"."song" AND 
+						"karaoke+favorite"."user" = '\(user.userID)'
+						"""))
 			}
 		}
 		else {
@@ -74,30 +80,32 @@ struct KaraokeController: APIRouteCollection {
 		guard filteringFavorites || hasSearchString else {
 			throw Abort(.badRequest, reason: "Search string must have at least 3 characters.")
 		}
-		return songQuery.count().and(futureFavorites).flatMap { (totalFoundSongs, songFavorites) in
-			return songQuery.range(start..<(start + limit)).with(\.$sungBy).all().flatMapThrowing { songs in
-				let favoriteSet = Set(songFavorites.map { $0.$song.id })
-				let songData = try songs.map { return try KaraokeSongData(with: $0, isFavorite: favoriteSet.contains($0.requireID())) }
-				return KaraokeSongResponseData(totalSongs: totalFoundSongs, start: start, limit: limit, songs: songData)
-			}
+		
+		let totalFoundSongs = try await songQuery.count()
+		let songs = try await songQuery.range(start..<(start + limit)).with(\.$sungBy).all()
+		let songData = try songs.map { song -> KaraokeSongData in
+			// Fluent doesn't seem to have an optional joined() variant; if we do a left join to join KaraokeFavorite,
+			// there can be songs that aren't favorited in the results. But joined() always returns a model, or throws if it can't.
+			// Plus, the error is that it couldn't decode the first non-optional field it encounters--the same thing we'd get if we 
+			// had a schema mismatch.
+			let isFavorite = filteringFavorites ? true : (try? song.joined(KaraokeFavorite.self)) != nil
+			return try KaraokeSongData(with: song, isFavorite: isFavorite) 
 		}
+		return KaraokeSongResponseData(totalSongs: totalFoundSongs, start: start, limit: limit, songs: songData)
 	}
 	
 	/// `GET /api/v3/karaoke/:song_id`
 	/// 
 	/// Returns a single karaoke song. Can be called while not logged in; if logged in favorite information is returned.
 	/// 
-    /// - Returns: <doc:KaraokeSongData>
-	func getKaraokeSong(_ req: Request) throws -> EventLoopFuture<KaraokeSongData> {
-		return KaraokeSong.findFromParameter(songIDParam, on: req).throwingFlatMap { song in
-     		var favoriteFuture: EventLoopFuture<KaraokeFavorite?> = req.eventLoop.future(nil)
-     		if let user = req.auth.get(UserCacheData.self) {
-				favoriteFuture = song.$favorites.$pivots.query(on: req.db).filter(\.$user.$id == user.userID).first()
-			}
-			return favoriteFuture.flatMapThrowing { favorite in
-				return try KaraokeSongData(with: song, isFavorite: favorite != nil)
-			}
-		}		
+	/// - Returns: <doc:KaraokeSongData>
+	func getKaraokeSong(_ req: Request) async throws -> KaraokeSongData {
+		let song = try await KaraokeSong.findFromParameter(songIDParam, on: req)
+		var favorite: KaraokeFavorite?
+		if let user = req.auth.get(UserCacheData.self) {
+			favorite = try await song.$favorites.$pivots.query(on: req.db).filter(\.$user.$id == user.userID).first()
+		}
+		return try KaraokeSongData(with: song, isFavorite: favorite != nil)
 	}
 	
 	/// `GET /api/v3/karaoke/performance`
@@ -108,90 +116,85 @@ struct KaraokeController: APIRouteCollection {
 	/// Intent of this call is to let people see what's been happening recently in the karaoke lounge without making a complete index of 
 	/// `who sang what song when` available.
 	/// 
-    /// - Returns: An array of up to 10 <doc:KaraokePerformedSongsData>
-	func getLatestPerformedSongs(_ req: Request) throws -> EventLoopFuture<[KaraokePerformedSongsData]> {
-		return KaraokePlayedSong.query(on: req.db).sort(\.$createdAt, .descending).range(0..<10).with(\.$song).all().map { recentSongs in
-			return recentSongs.map { 
-				KaraokePerformedSongsData(artist: $0.song.artist, songName: $0.song.title,
-						performers: $0.performers, time: $0.createdAt ?? Date())
-			}
+	/// - Returns: An array of up to 10 <doc:KaraokePerformedSongsData>
+	func getLatestPerformedSongs(_ req: Request) async throws -> [KaraokePerformedSongsData] {
+		let recentSongs = try await KaraokePlayedSong.query(on: req.db).sort(\.$createdAt, .descending).range(0..<10).with(\.$song).all()
+		return recentSongs.map { 
+			KaraokePerformedSongsData(artist: $0.song.artist, songName: $0.song.title, performers: $0.performers, time: $0.createdAt ?? Date())
 		}
 	}
 
-    /// `POST /api/v3/karaoke/:songID/favorite`
-    ///
-    /// Add the specified `Boardgame` to the user's favorite boardgame list. Must be logged in
-    ///
-    /// - Parameter boardgameID: in URL path
-    /// - Returns: 201 Created on success.
-    func addFavorite(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        let user = try req.auth.require(UserCacheData.self)
-        return KaraokeSong.findFromParameter(songIDParam, on: req).throwingFlatMap { song in
-        	let newFav = try KaraokeFavorite(user.userID, song)
-        	return newFav.save(on: req.db).transform(to: .created).flatMapErrorThrowing { err in
-				if let sqlError = err as? PostgresError, sqlError.code == .uniqueViolation {
-					return .ok
-				}
-				throw err
+	/// `POST /api/v3/karaoke/:songID/favorite`
+	///
+	/// Add the specified `KaraokeSong` to the user's list of favorite songs. Must be logged in
+	///
+	/// - Parameter songID: in URL path
+	/// - Returns: 201 Created on success.
+	func addFavorite(_ req: Request) async throws -> HTTPStatus {
+		let user = try req.auth.require(UserCacheData.self)
+		let song = try await KaraokeSong.findFromParameter(songIDParam, on: req)
+		do {
+			try await KaraokeFavorite(user.userID, song).create(on: req.db)
+		}
+		catch let error {
+			if let sqlError = error as? PostgresError, sqlError.code == .uniqueViolation {
+				return .ok
 			}
+			throw error
 		}
-    }
-    
-    /// `POST /api/v3/karaoke/:songID/favorite/remove`
-    /// `DELETE /api/v3/karaoke/:songID/favorite`
-    ///
-    /// Remove the specified `Boardgame` from the user's boardgame favorite list.
-    ///
-    /// - Parameter boardgameID: in URL path
-    /// - Returns: 204 No Content on success.
-    func removeFavorite(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        let user = try req.auth.require(UserCacheData.self)
-        guard let songID = req.parameters.get(songIDParam.paramString, as: UUID.self) else {
-        	throw Abort(.badRequest, reason: "Could not make UUID out of song parameter")
-        }
-        return KaraokeFavorite.query(on: req.db).filter(\.$user.$id == user.userID)
-        		.filter(\.$song.$id == songID).first().throwingFlatMap { pivot in
-        	guard let pivot = pivot else {
-        		return req.eventLoop.future(.ok)
-        	}
-        	return pivot.delete(on: req.db).transform(to: .noContent)
-        }
-    }
-    
-    /// `GET /api/v3/karaoke/userismanager`
-    ///
-    /// Returns TRUE in isAuthorized if the user is a Karaoke Manager, meaning they can create entries in  the Karaoke Song Log.
-    ///
-    /// - Returns: 200 OK
-    func userCanLogKaraokeSongPerformances(_ req: Request) throws -> EventLoopFuture<UserAuthorizedToCreateKaraokeLogs> {
-    	let user = try req.auth.require(UserCacheData.self)
-    	return req.redis.sismember(user.userID, of: "KaraokeSongManagers").map { isMember in
-    		return UserAuthorizedToCreateKaraokeLogs(isAuthorized: isMember)
+		return .created
+	}
+	
+	/// `POST /api/v3/karaoke/:songID/favorite/remove`
+	/// `DELETE /api/v3/karaoke/:songID/favorite`
+	///
+	/// Remove the specified `KaraokeSong` from the user's favorite list.
+	///
+	/// - Parameter songID: in URL path
+	/// - Returns: 204 No Content on success. 200 OK if song was already not favorited.
+	func removeFavorite(_ req: Request) async throws -> HTTPStatus {
+		let user = try req.auth.require(UserCacheData.self)
+		guard let songID = req.parameters.get(songIDParam.paramString, as: UUID.self) else {
+			throw Abort(.badRequest, reason: "Could not make UUID out of song parameter")
 		}
-    }
-    
-    /// `POST /api/v3/karaoke/:songID/logperformance`
-    ///
-    /// Allows authorized users to created log entries for karaoke performances. Each log entry is timestamped, references a song in the Karaoke song
+		let pivot = try await KaraokeFavorite.query(on: req.db).filter(\.$user.$id == user.userID).filter(\.$song.$id == songID).first()
+		guard let pivot = pivot else {
+			return .ok
+		}
+		try await pivot.delete(on: req.db)
+		return .noContent
+	}
+	
+	/// `GET /api/v3/karaoke/userismanager`
+	///
+	/// Returns TRUE in isAuthorized if the user is a Karaoke Manager, meaning they can create entries in  the Karaoke Song Log.
+	///
+	/// - Returns: 200 OK
+	func userCanLogKaraokeSongPerformances(_ req: Request) async throws -> UserAuthorizedToCreateKaraokeLogs {
+		let user = try req.auth.require(UserCacheData.self)
+		return try await UserAuthorizedToCreateKaraokeLogs(isAuthorized: req.redis.isKaraokeManager(user.userID))
+	}
+	
+	/// `POST /api/v3/karaoke/:songID/logperformance`
+	///
+	/// Allows authorized users to create log entries for karaoke performances. Each log entry is timestamped, references a song in the Karaoke song
 	/// catalog, and has a freeform text field for entering the song performer(s). Song performers don't need to be Twit-arr users and may not have accounts,
 	/// but @mentions in the note field should be processed. 
-    ///
-    /// - Parameter songID: in URL path
-    /// - Parameter note: <doc:NoteCreateData> in request body
-    /// - Returns: 201 Created on success.
-    func logSongPerformance(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-    	let user = try req.auth.require(UserCacheData.self)
-    	return req.redis.sismember(user.userID, of: "KaraokeSongManagers")
-    			.and(KaraokeSong.findFromParameter(songIDParam, on: req)).throwingFlatMap { (isMember, song) in
-    		guard isMember else {
-        		throw Abort(.forbidden, reason: "User is not authorized to log Karaoke song performances.")
-    		}
-			let data = try ValidatingJSONDecoder().decode(NoteCreateData.self, fromBodyOf: req)
-    		let newSongLogEntry = try KaraokePlayedSong(singer: data.note, song: song, managerID: user.userID)
-			return newSongLogEntry.save(on: req.db).transform(to: .created)
-    	}
-    }
-    
+	///
+	/// - Parameter songID: in URL path
+	/// - Parameter note: <doc:NoteCreateData> in request body
+	/// - Returns: 201 Created on success.
+	func logSongPerformance(_ req: Request) async throws -> HTTPStatus {
+		let user = try req.auth.require(UserCacheData.self)
+		guard try await req.redis.isKaraokeManager(user.userID) else {
+			throw Abort(.forbidden, reason: "User is not authorized to log Karaoke song performances.")
+		}
+		let song = try await KaraokeSong.findFromParameter(songIDParam, on: req)
+		let data = try ValidatingJSONDecoder().decode(NoteCreateData.self, fromBodyOf: req)
+		try await KaraokePlayedSong(singer: data.note, song: song, managerID: user.userID).create(on: req.db)
+		return .created
+	}
+	
 // MARK: - Utilities
 
 }

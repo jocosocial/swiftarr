@@ -52,14 +52,14 @@ struct SiteBoardgameController: SiteControllerUtils {
 	func registerRoutes(_ app: Application) throws {
 		// Routes that the user does not need to be logged in to access.
 		let openRoutes = getOpenRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .gameslist))
-        openRoutes.get("boardgames", use: gamesPageHandler)
-        openRoutes.get("boardgames", boardgameIDParam, "expansions", use: expansionPageHandler)
-        openRoutes.get("boardgames", boardgameIDParam, "createfez", use: createFezForGame)
-        
-        // Routes that the user needs to be logged in to access.
-        let privateRoutes = getPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .gameslist))
-        privateRoutes.post("boardgames", boardgameIDParam, "favorite", use: addFavoriteGame)
-        privateRoutes.delete("boardgames", boardgameIDParam, "favorite", use: removeFavoriteGame)
+		openRoutes.get("boardgames", use: gamesPageHandler)
+		openRoutes.get("boardgames", boardgameIDParam, "expansions", use: expansionPageHandler)
+		openRoutes.get("boardgames", boardgameIDParam, "createfez", use: createFezForGame)
+		
+		// Routes that the user needs to be logged in to access.
+		let privateRoutes = getPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .gameslist))
+		privateRoutes.post("boardgames", boardgameIDParam, "favorite", use: addFavoriteGame)
+		privateRoutes.delete("boardgames", boardgameIDParam, "favorite", use: removeFavoriteGame)
 	}
 	
 	/// `GET /boardgames`
@@ -71,72 +71,66 @@ struct SiteBoardgameController: SiteControllerUtils {
 	/// - favorite=TRUE		Filter only favorites
 	/// - start=INT
 	/// - limit=INT
-    func gamesPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-    	return apiQuery(req, endpoint: "/boardgames").throwingFlatMap { response in 
- 			let games = try response.content.decode(BoardgameResponseData.self)
-    		let gameListContext = try GameListContext(req, games: games)
-			return req.view.render("GamesAndSongs/boardgameList", gameListContext)
-		}
-    }
-    
+	func gamesPageHandler(_ req: Request) async throws -> View {
+		let response = try await apiQuery(req, endpoint: "/boardgames")
+		let games = try response.content.decode(BoardgameResponseData.self)
+		let gameListContext = try GameListContext(req, games: games)
+		return try await req.view.render("GamesAndSongs/boardgameList", gameListContext)
+	}
+	
 	/// `GET /boardgames/:boardgameID/expansions`
 	/// 
 	///
-    func expansionPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-    	guard let gameID = req.parameters.get(boardgameIDParam.paramString)?.percentEncodeFilePathEntry() else {
-            throw Abort(.badRequest, reason: "Missing game ID parameter.")
-    	}
-    	return apiQuery(req, endpoint: "/boardgames/expansions/\(gameID)").throwingFlatMap { response in 
- 			let games = try response.content.decode([BoardgameData].self)
-    		let ctx = try GameExpansionsContext(req, games: games)
-			return req.view.render("GamesAndSongs/boardgameExpansions", ctx)
+	func expansionPageHandler(_ req: Request) async throws -> View {
+		guard let gameID = req.parameters.get(boardgameIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing game ID parameter.")
 		}
-    }
-    
+		let response = try await apiQuery(req, endpoint: "/boardgames/expansions/\(gameID)")
+		let games = try response.content.decode([BoardgameData].self)
+		let ctx = try GameExpansionsContext(req, games: games)
+		return try await req.view.render("GamesAndSongs/boardgameExpansions", ctx)
+	}
+	
 	/// `GET /boardgames/:boardgameID/createfez`
 	/// 
 	/// Opens the Create Fez page, prefilled with info aboutt he given board game.
-    func createFezForGame(_ req: Request) throws -> EventLoopFuture<View> {
-    	guard let gameID = req.parameters.get(boardgameIDParam.paramString)?.percentEncodeFilePathEntry() else {
-            throw Abort(.badRequest, reason: "Missing game ID parameter.")
-    	}
-    	return apiQuery(req, endpoint: "/boardgames/\(gameID)").throwingFlatMap { response in 
- 			let game = try response.content.decode(BoardgameData.self)
- 			if game.isExpansion {
- 				return apiQuery(req, endpoint: "/boardgames/expansions/\(gameID)").throwingFlatMap { expansionsResponse in
- 					let expansions = try expansionsResponse.content.decode([BoardgameData].self)
-					let basegame = expansions.first(where: { !$0.isExpansion })
-					let ctx = FezCreateUpdatePageContext(req, forGame: game, baseGame: basegame)
-					return req.view.render("Fez/fezCreate", ctx)
-				}
- 			}
- 			else {
-				let ctx = FezCreateUpdatePageContext(req, forGame: game)
-				return req.view.render("Fez/fezCreate", ctx)
-			}
-    	}
-    }
-    
-    /// `GET /boardgame/:boardgameID/favorite`
-	/// 
-    func addFavoriteGame(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-    	guard let gameID = req.parameters.get(boardgameIDParam.paramString)?.percentEncodeFilePathEntry() else {
-            throw Abort(.badRequest, reason: "Missing game ID parameter.")
-    	}
-    	return apiQuery(req, endpoint: "/boardgames/\(gameID)/favorite", method: .POST).map { response in
-    		return response.status
+	func createFezForGame(_ req: Request) async throws -> View {
+		guard let gameID = req.parameters.get(boardgameIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing game ID parameter.")
 		}
-    }
+		let response = try await apiQuery(req, endpoint: "/boardgames/\(gameID)")
+		let game = try response.content.decode(BoardgameData.self)
+		if game.isExpansion {
+			let expansionsResponse = try await apiQuery(req, endpoint: "/boardgames/expansions/\(gameID)")
+			let expansions = try expansionsResponse.content.decode([BoardgameData].self)
+			let basegame = expansions.first(where: { !$0.isExpansion })
+			let ctx = FezCreateUpdatePageContext(req, forGame: game, baseGame: basegame)
+			return try await req.view.render("Fez/fezCreate", ctx)
+		}
+		else {
+			let ctx = FezCreateUpdatePageContext(req, forGame: game)
+			return try await req.view.render("Fez/fezCreate", ctx)
+		}
+	}
+	
+	/// `GET /boardgame/:boardgameID/favorite`
+	/// 
+	func addFavoriteGame(_ req: Request) async throws -> HTTPStatus {
+		guard let gameID = req.parameters.get(boardgameIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing game ID parameter.")
+		}
+		let response = try await apiQuery(req, endpoint: "/boardgames/\(gameID)/favorite", method: .POST)
+		return response.status
+	}
 
-    /// `DELETE /boardgame/:boardgameID/favorite`
+	/// `DELETE /boardgame/:boardgameID/favorite`
 	/// 
-    func removeFavoriteGame(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-    	guard let gameID = req.parameters.get(boardgameIDParam.paramString)?.percentEncodeFilePathEntry() else {
-            throw Abort(.badRequest, reason: "Missing game ID parameter.")
-    	}
-    	return apiQuery(req, endpoint: "/boardgames/\(gameID)/favorite", method: .DELETE).map { response in
-    		return response.status
+	func removeFavoriteGame(_ req: Request) async throws -> HTTPStatus {
+		guard let gameID = req.parameters.get(boardgameIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing game ID parameter.")
 		}
-    }
+		let response = try await apiQuery(req, endpoint: "/boardgames/\(gameID)/favorite", method: .DELETE)
+		return response.status
+	}
 
 }

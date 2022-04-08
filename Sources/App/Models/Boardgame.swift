@@ -5,12 +5,12 @@ import Fluent
 final class Boardgame: Model {
 	static let schema = "boardgame"
 	
-    // MARK: Properties
-    
-    /// The game's ID.
-    @ID(key: .id) var id: UUID?
-    
-    /// The game's title.
+	// MARK: Properties
+	
+	/// The game's ID.
+	@ID(key: .id) var id: UUID?
+	
+	/// The game's title.
 	@Field(key: "gameName") var gameName: String
 	/// How many copies the Games Library has of this game.
 	@Field(key: "numCopies") var numCopies: Int
@@ -46,30 +46,30 @@ final class Boardgame: Model {
 	/// Roughly, how complex the rules are for this game. Scale is 1...5. 1 is "tic-tac-toe", 5 is "Roll 3d100 on Table 38/b to find out which sub-table to roll on"
 	@OptionalField(key: "complexity") var complexity: Float?
 	
-    /// Timestamp of the model's creation, set automatically.
+	/// Timestamp of the model's creation, set automatically.
 	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
-     
+	 
 	// MARK: Relations
-        
-    /// If this is an expansion set, the base game that it expands
-    @OptionalParent(key: "expands") var expands: Boardgame?
+		
+	/// If this is an expansion set, the base game that it expands
+	@OptionalParent(key: "expands") var expands: Boardgame?
 
-    /// For games that have expansions, the set of expansions for this base game.
-    @Children(for: \.$expands) var expansions: [Boardgame]
-        
+	/// For games that have expansions, the set of expansions for this base game.
+	@Children(for: \.$expands) var expansions: [Boardgame]
+		
 	/// The users that have favorited this game.
 	@Siblings(through: BoardgameFavorite.self, from: \.$boardgame, to: \.$user) var favorites: [User]
 
-    // MARK: Initialization
-    
-    /// Used by Fluent
+	// MARK: Initialization
+	
+	/// Used by Fluent
  	init() { }
  	
-    /// Initializes a new Boardgame from the JSON games file data.
-    ///
-    /// - Parameters:
-    ///   - jsonGame: Game value decoded from the BoardGamesList JSON file..
-    init(jsonGame: JsonGamesListGame) {
+	/// Initializes a new Boardgame from the JSON games file data.
+	///
+	/// - Parameters:
+	///   - jsonGame: Game value decoded from the BoardGamesList JSON file..
+	init(jsonGame: JsonGamesListGame) {
 		self.gameName = jsonGame.gameName
 		self.bggGameName = jsonGame.bggGameName
 		self.yearPublished = jsonGame.yearPublished
@@ -91,5 +91,43 @@ final class Boardgame: Model {
 		self.donatedBy = jsonGame.donatedBy
 		self.notes = jsonGame.notes
 		self.numCopies = jsonGame.numCopies
-    }
+	}
 }
+
+struct CreateBoardgameSchema: AsyncMigration {
+	func prepare(on database: Database) async throws {
+		try await database.schema("boardgame")
+				.id()
+				.field("gameName", .string, .required)
+				.field("bggGameName", .string)
+				.field("yearPublished", .string)
+				.field("gameDescription", .string)
+
+				.field("minPlayers", .int)
+				.field("maxPlayers", .int)
+				.field("suggestedPlayers", .int)
+
+				.field("minPlayingTime", .int)
+				.field("maxPlayingTime", .int)
+				.field("avgPlayingTime", .int)
+
+				.field("minAge", .int)
+				.field("numRatings", .int)
+				.field("avgRating", .float)
+				.field("complexity", .float)
+
+				.field("donatedBy", .string)
+				.field("notes", .string)
+				.field("numCopies", .int, .required)
+				
+				.field("expands", .uuid, .references("boardgame", "id"))
+
+				.field("created_at", .datetime)
+				.create()
+	}
+	
+	func revert(on database: Database) async throws {
+		try await database.schema("boardgame").delete()
+	}
+}
+
