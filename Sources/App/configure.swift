@@ -232,6 +232,24 @@ func configureBasicSettings(_ app: Application) throws {
 		Settings.shared.userImagesRootPath = URL(fileURLWithPath: likelyExecutablePath).appendingPathComponent("images")
 	}
 	Logger(label: "app.swiftarr.configuration") .notice("Set userImages path to \(Settings.shared.userImagesRootPath.path).")
+
+	// API URL. We used to determine this in SiteController in apiQuery() based on the HTTP Host headers.
+	// Due to the way the boat network is architected the HTTP host headers had to be stripped away and reset
+	// to the container hostname/IP because of some NAT translations that we had no control over. Additionally,
+	// to facilitate the eventual breaking up of the UI and API it would be better if we could point the UI
+	// at any API endpoint and say "go". Unfortunately the Settings constructs are somewhat interlinked but
+	// hey maybe someday we will complete the split.
+	let apiScheme = Environment.get("API_SCHEME") ?? "http"
+	let apiHostname = Environment.get("API_HOSTNAME") ?? "127.0.0.1"
+	// Don't bother casting this to an int, we're just gonna process it as a string the whole way through.
+	let apiPort = Environment.get("API_PORT") ?? "8081"
+	let apiPrefix = Environment.get("API_PREFIX") ?? "/api/v3"
+	let apiUrl = URL(string: "\(apiScheme)://\(apiHostname):\(apiPort)\(apiPrefix)")
+	guard apiUrl != nil else {
+		throw "Unable to construct a valid API URL."
+	}
+	Settings.shared.apiUrl = apiUrl!
+	Logger(label: "app.swiftarr.configuration") .notice("API URL base is '\(Settings.shared.apiUrl)'.")
 }
 
 func configureStoredSettings(_ app: Application) throws {
