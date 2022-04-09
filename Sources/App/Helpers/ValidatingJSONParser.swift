@@ -21,23 +21,23 @@ struct ValidationFailure {
 }
 
 struct ValidationError: Error {
-    var status: HTTPResponseStatus = .badRequest
-    var headers: HTTPHeaders = [:]
+	var status: HTTPResponseStatus = .badRequest
+	var headers: HTTPHeaders = [:]
 	var validationFailures: [ValidationFailure]
-    
-    func collectReasonString() -> String {
-    	let reasons = validationFailures.map { $0.errorString }
-    	let reasonString = reasons.joined(separator: "; ")
-    	return reasonString
-    }
-    
-    // Errors tagged with a field are put in the dictionary with the full path to the error.
-    // Untagged errors (where field is nil) are all lumped into a "general" key.
-    func collectFieldErrors() -> [String : String]? {
-    	var fieldErrors: [(String, String)] = validationFailures.map {
-    		var fullPath = "general"
-    		if let field = $0.field { 
-    			fullPath = $0.path.count > 0 ? "\($0.path).\(field)" : field
+	
+	func collectReasonString() -> String {
+		let reasons = validationFailures.map { $0.errorString }
+		let reasonString = reasons.joined(separator: "; ")
+		return reasonString
+	}
+	
+	// Errors tagged with a field are put in the dictionary with the full path to the error.
+	// Untagged errors (where field is nil) are all lumped into a "general" key.
+	func collectFieldErrors() -> [String : String]? {
+		var fieldErrors: [(String, String)] = validationFailures.map {
+			var fullPath = "general"
+			if let field = $0.field { 
+				fullPath = $0.path.count > 0 ? "\($0.path).\(field)" : field
 			}
 			return (fullPath, $0.errorString)
 		}
@@ -48,7 +48,7 @@ struct ValidationError: Error {
 		
 		// Concatenates multiple error strings that have the same key.
 		return fieldErrors.count == 0 ? nil : Dictionary(fieldErrors, uniquingKeysWith: { "\($0) and \($1)" })
-    }
+	}
 }
 
 
@@ -173,8 +173,8 @@ struct ValidatingKeyedContainer<Key: CodingKey>: KeyedDecodingContainerProtocol 
 }
 
 final public class ValidatingDecoder: Decoder {
-    let wrappedDecoder: Decoder
-    var validationFailures: [ValidationFailure] = []
+	let wrappedDecoder: Decoder
+	var validationFailures: [ValidationFailure] = []
 
 	public var codingPath: [CodingKey] {
 		return wrappedDecoder.codingPath
@@ -183,9 +183,9 @@ final public class ValidatingDecoder: Decoder {
 		return wrappedDecoder.userInfo
 	}
 	
-    public init(with decoder: Decoder) throws {
-        wrappedDecoder = decoder
-    }
+	public init(with decoder: Decoder) throws {
+		wrappedDecoder = decoder
+	}
 	
 	func validator<Key>(keyedBy type: Key.Type) throws -> ValidatingKeyedContainer<Key> where Key : CodingKey {
 		let container = try wrappedDecoder.container(keyedBy: type)
@@ -209,40 +209,40 @@ final public class ValidatingDecoder: Decoder {
 	}
 
 		
-    private struct ValidatingUnkeyedContainer: UnkeyedDecodingContainer {
+	private struct ValidatingUnkeyedContainer: UnkeyedDecodingContainer {
 		var wrappedContainer: UnkeyedDecodingContainer
 
 		var codingPath: [CodingKey] { wrappedContainer.codingPath }
 		var count: Int? { wrappedContainer.count }
-        var currentIndex: Int { wrappedContainer.currentIndex }
-        var isAtEnd: Bool { wrappedContainer.isAtEnd }
+		var currentIndex: Int { wrappedContainer.currentIndex }
+		var isAtEnd: Bool { wrappedContainer.isAtEnd }
 
  		init(wrapping: UnkeyedDecodingContainer) {
 			wrappedContainer = wrapping
 		}
 
-      	mutating func decode<T>(_ type: T.Type) throws -> T where T : Decodable {
+	  	mutating func decode<T>(_ type: T.Type) throws -> T where T : Decodable {
 			return try wrappedContainer.decode(type) 
-        }
+		}
 
-        func decodeNil() -> Bool {
-            return true
-        }
+		func decodeNil() -> Bool {
+			return true
+		}
 
-        mutating func nestedContainer<NestedKey>(keyedBy type: NestedKey.Type) throws -> KeyedDecodingContainer<NestedKey> where NestedKey : CodingKey {
+		mutating func nestedContainer<NestedKey>(keyedBy type: NestedKey.Type) throws -> KeyedDecodingContainer<NestedKey> where NestedKey : CodingKey {
 			return try wrappedContainer.nestedContainer(keyedBy: type) 
-        }
+		}
 
-        mutating func nestedUnkeyedContainer() throws -> UnkeyedDecodingContainer {
+		mutating func nestedUnkeyedContainer() throws -> UnkeyedDecodingContainer {
 			return try wrappedContainer.nestedUnkeyedContainer() 
-        }
+		}
 
-        mutating func superDecoder() throws -> Decoder {
+		mutating func superDecoder() throws -> Decoder {
 			return try wrappedContainer.superDecoder() 
-        }
-    }
-    
-    private struct ValidatingSingleValueContainer: SingleValueDecodingContainer {
+		}
+	}
+	
+	private struct ValidatingSingleValueContainer: SingleValueDecodingContainer {
 		var wrappedContainer: SingleValueDecodingContainer
 
 		var codingPath: [CodingKey] { wrappedContainer.codingPath }
@@ -251,14 +251,14 @@ final public class ValidatingDecoder: Decoder {
 			wrappedContainer = wrapping
 		}
 
-      	func decode<T>(_ type: T.Type) throws -> T where T : Decodable {
+	  	func decode<T>(_ type: T.Type) throws -> T where T : Decodable {
 			return try wrappedContainer.decode(type) 
-        }
+		}
 
-        func decodeNil() -> Bool {
-            return true
-        }
-    }
+		func decodeNil() -> Bool {
+			return true
+		}
+	}
 }
 
 
@@ -266,14 +266,14 @@ final public class DecoderProxy<OutputType>: Decodable where OutputType: Decodab
 	public var result: OutputType
 	var validationFailures: [ValidationFailure]
 
-    public init(from decoder: Decoder) throws {
-        let wrappingDecoder = try ValidatingDecoder(with: decoder)
-        result = try OutputType(from: wrappingDecoder)
-        if let v = result as? RCFValidatable {
-        	try v.runValidations(using: wrappingDecoder)
-        }
-        self.validationFailures = wrappingDecoder.validationFailures
-    }
+	public init(from decoder: Decoder) throws {
+		let wrappingDecoder = try ValidatingDecoder(with: decoder)
+		result = try OutputType(from: wrappingDecoder)
+		if let v = result as? RCFValidatable {
+			try v.runValidations(using: wrappingDecoder)
+		}
+		self.validationFailures = wrappingDecoder.validationFailures
+	}
 }
 
 

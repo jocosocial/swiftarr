@@ -193,121 +193,110 @@ struct SiteTwitarrController: SiteControllerUtils {
 	/// `GET /tweets`
 	///
 	/// Returns a page of twarrts. Passes URL options through, including "?search=" option.
-	func tweetsPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-		return apiQuery(req, endpoint: "/twitarr").throwingFlatMap { response in
- 			let tweets = try response.content.decode([TwarrtData].self)
-			let ctx = try TweetPageContext(req, tweets: tweets)
-			return req.view.render("Tweets/tweets", ctx)
-		}
+	func tweetsPageHandler(_ req: Request) async throws -> View {
+		let response = try await apiQuery(req, endpoint: "/twitarr")
+		let tweets = try response.content.decode([TwarrtData].self)
+		let ctx = try TweetPageContext(req, tweets: tweets)
+		return try await req.view.render("Tweets/tweets", ctx)
 	}
 	
 	/// `GET /tweets/:twarrt_ID`
 	///
 	/// Shorthand for `/tweets?replyGroup=<:twarrt_ID>`. A short, canonical way to indicate a single twarrt, similar to how Twitter works.
 	/// That is, when you send someone a link to a specific tweet with Twitter, you're really sending a link to the reply thread that start with that tweet.
-	func tweetReplyPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+	func tweetReplyPageHandler(_ req: Request) async throws -> View {
 		guard let twarrtIDString = req.parameters.get(twarrtIDParam.paramString), let twarrtID = Int(twarrtIDString) else {
 			throw Abort(.badRequest, reason: "Missing twarrt_id parameter.")
 		}
-		return apiQuery(req, endpoint: "/twitarr?replyGroup=\(twarrtID)").throwingFlatMap { response in
- 			let tweets = try response.content.decode([TwarrtData].self)
-			let ctx = try TweetPageContext(req, tweets: tweets, replyGroup: twarrtID)
-			return req.view.render("Tweets/tweets", ctx)
-		}
+		let response = try await apiQuery(req, endpoint: "/twitarr?replyGroup=\(twarrtID)")
+		let tweets = try response.content.decode([TwarrtData].self)
+		let ctx = try TweetPageContext(req, tweets: tweets, replyGroup: twarrtID)
+		return try await req.view.render("Tweets/tweets", ctx)
 	}
 	   
 	// GET /tweets/ID
 	// This is a passthrough for /api/v3/twitarr/ID, returning a TwarrtDetailData
-	func tweetGetDetailHandler(_ req: Request) throws -> EventLoopFuture<TwarrtDetailData> {
+	func tweetGetDetailHandler(_ req: Request) async throws -> TwarrtDetailData {
 		guard let twarrtID = req.parameters.get(twarrtIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing twarrt_id parameter.")
 		}
-		return apiQuery(req, endpoint: "/twitarr/\(twarrtID)").flatMapThrowing { response in
- 			let tweetDetail = try response.content.decode(TwarrtDetailData.self)
-			return tweetDetail
-		}
+		let response = try await apiQuery(req, endpoint: "/twitarr/\(twarrtID)")
+		let tweetDetail = try response.content.decode(TwarrtDetailData.self)
+		return tweetDetail
 	}
 
 	// POST /tweets/ID/like and friends
-	func tweetLikeActionHandler(_ req: Request) throws -> EventLoopFuture<TwarrtData> {
-		return try tweetPostReactionHandler(req, reactionType: "like")
+	func tweetLikeActionHandler(_ req: Request) async throws -> TwarrtData {
+		return try await tweetPostReactionHandler(req, reactionType: "like")
 	}
-	func tweetLaughActionHandler(_ req: Request) throws -> EventLoopFuture<TwarrtData> {
-		return try tweetPostReactionHandler(req, reactionType: "laugh")
+	func tweetLaughActionHandler(_ req: Request) async throws -> TwarrtData {
+		return try await tweetPostReactionHandler(req, reactionType: "laugh")
 	}
-	func tweetLoveActionHandler(_ req: Request) throws -> EventLoopFuture<TwarrtData> {
-		return try tweetPostReactionHandler(req, reactionType: "love")
+	func tweetLoveActionHandler(_ req: Request) async throws -> TwarrtData {
+		return try await tweetPostReactionHandler(req, reactionType: "love")
 	}
-	func tweetUnreactActionHandler(_ req: Request) throws -> EventLoopFuture<TwarrtData> {
-		return try tweetPostReactionHandler(req, reactionType: "unreact")
+	func tweetUnreactActionHandler(_ req: Request) async throws -> TwarrtData {
+		return try await tweetPostReactionHandler(req, reactionType: "unreact")
 	}
 	
-	func tweetPostReactionHandler(_ req: Request, reactionType: String) throws -> EventLoopFuture<TwarrtData> {
+	func tweetPostReactionHandler(_ req: Request, reactionType: String) async throws -> TwarrtData {
 		guard let twarrtID = req.parameters.get(twarrtIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
-		return apiQuery(req, endpoint: "/twitarr/\(twarrtID)/\(reactionType)", method: .POST).flatMapThrowing { response in
- 			let tweet = try response.content.decode(TwarrtData.self)
-			return tweet
-		}
+		let response = try await apiQuery(req, endpoint: "/twitarr/\(twarrtID)/\(reactionType)", method: .POST)
+		return try response.content.decode(TwarrtData.self)
 	}
 	
 	// POST /tweets/ID/bookmark
 	//
 	// Bookmarks a tweet.
-	func tweetBookmarkActionHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+	func tweetBookmarkActionHandler(_ req: Request) async throws -> HTTPStatus {
 		guard let twarrtID = req.parameters.get(twarrtIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
-		return apiQuery(req, endpoint: "/twitarr/\(twarrtID)/bookmark", method: .POST).flatMapThrowing { response in
- 			return response.status
-		}
+		let response = try await apiQuery(req, endpoint: "/twitarr/\(twarrtID)/bookmark", method: .POST)
+		return response.status
 	}
 	
 	// DELETE /tweets/ID/bookmark
 	//
 	// Un-bookmarks a tweet.
-	func tweetUnBookmarkActionHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+	func tweetUnBookmarkActionHandler(_ req: Request) async throws -> HTTPStatus {
 		guard let twarrtID = req.parameters.get(twarrtIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
-		return apiQuery(req, endpoint: "/twitarr/\(twarrtID)/bookmark/remove", method: .POST).flatMapThrowing { response in
- 			return response.status
-		}
+		let response = try await apiQuery(req, endpoint: "/twitarr/\(twarrtID)/bookmark/remove", method: .POST)
+		return response.status
 	}
 	
 	// POST /tweets/ID/delete
 	// Although this looks like it just redirects the call, middleware plays an important part here. 
 	// Javascript POSTs the delete request, middleware for this route validates via the session cookia.
 	// We then call the Swiftarr API, using the token (pulled out of our session data) to validate.
-	func tweetPostDeleteHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+	func tweetPostDeleteHandler(_ req: Request) async throws -> HTTPStatus {
 		guard let twarrtID = req.parameters.get(twarrtIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
-		return apiQuery(req, endpoint: "/twitarr/\(twarrtID)", method: .DELETE).map { response in
-			return response.status
-		}
+		let response = try await apiQuery(req, endpoint: "/twitarr/\(twarrtID)", method: .DELETE)
+		return response.status
 	}
 	
 	// POST /tweets/create
-	func tweetCreatePostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+	func tweetCreatePostHandler(_ req: Request) async throws -> HTTPStatus {
 		let postStruct = try req.content.decode(MessagePostFormContent.self)
 		let postContent = postStruct.buildPostContentData()
-		return apiQuery(req, endpoint: "/twitarr/create", method: .POST, beforeSend: { req throws in
-			try req.content.encode(postContent)
-		}).flatMapThrowing { response in
-//			let tweet = try response.content.decode(TwarrtData.self)
-			return .created
-		}
+		try await apiQuery(req, endpoint: "/twitarr/create", method: .POST, encodeContent: postContent)
+//		let tweet = try response.content.decode(TwarrtData.self)
+		return .created
 	}
 		
-    // POST /tweets/reply/ID
-    //
-    // When posting a twarrt reply, the ID should usually be the twarrt you're replying to. 
-    func tweetReplyPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-    	guard let twarrtID = req.parameters.get(twarrtIDParam.paramString) else {
-            throw Abort(.badRequest, reason: "Missing twarrt_id parameter.")
-    	}
+	// POST /tweets/reply/ID
+	//
+	// When posting a twarrt reply, the ID should usually be the twarrt you're replying to. 
+	func tweetReplyPostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let twarrtID = req.parameters.get(twarrtIDParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing twarrt_id parameter.")
+		}
 		let postStruct = try req.content.decode(MessagePostFormContent.self)
 		let images: [ImageUploadData] = [ImageUploadData(postStruct.serverPhoto1, postStruct.localPhoto1),
 				ImageUploadData(postStruct.serverPhoto2, postStruct.localPhoto2),
@@ -315,39 +304,35 @@ struct SiteTwitarrController: SiteControllerUtils {
 				ImageUploadData(postStruct.serverPhoto4, postStruct.localPhoto4)].compactMap { $0 }
 		let postContent = PostContentData(text: postStruct.postText ?? "", images: images, 
 				postAsModerator: postStruct.postAsModerator != nil)
- 		return apiQuery(req, endpoint: "/twitarr/\(twarrtID)/reply", method: .POST, beforeSend: { req throws in
-			try req.content.encode(postContent)
-		}).map { response in
-			return .created
-		}
-    }
-    
+ 		try await apiQuery(req, endpoint: "/twitarr/\(twarrtID)/reply", method: .POST, encodeContent: postContent)
+		return .created
+	}
+	
 	// GET /tweets/edit/ID
-	func tweetEditPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+	func tweetEditPageHandler(_ req: Request) async throws -> View {
 		guard let twarrtID = req.parameters.get(twarrtIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing twarrt_id parameter.")
 		}
-		return apiQuery(req, endpoint: "/twitarr/\(twarrtID)").throwingFlatMap { response in
- 			let tweet = try response.content.decode(TwarrtDetailData.self)
-	 		struct TweetEditPageContext : Encodable {
-				var trunk: TrunkContext
-				var post: MessagePostContext
-				
-				init(_ req: Request, tweet: TwarrtDetailData) throws {
-					trunk = .init(req, title: "Edit Twarrt", tab: .twarrts)
-					self.post = .init(forType: .tweetEdit(tweet))
-				}
+		let response = try await apiQuery(req, endpoint: "/twitarr/\(twarrtID)")
+		let tweet = try response.content.decode(TwarrtDetailData.self)
+		struct TweetEditPageContext : Encodable {
+			var trunk: TrunkContext
+			var post: MessagePostContext
+			
+			init(_ req: Request, tweet: TwarrtDetailData) throws {
+				trunk = .init(req, title: "Edit Twarrt", tab: .twarrts)
+				self.post = .init(forType: .tweetEdit(tweet))
 			}
-			var ctx = try TweetEditPageContext(req, tweet: tweet)
-			if ctx.trunk.userID != tweet.author.userID {
-				ctx.post.authorName = ctx.trunk.username
-			}
-			return req.view.render("Tweets/tweetEdit", ctx)
 		}
+		var ctx = try TweetEditPageContext(req, tweet: tweet)
+		if ctx.trunk.userID != tweet.author.userID {
+			ctx.post.authorName = ctx.trunk.username
+		}
+		return try await req.view.render("Tweets/tweetEdit", ctx)
 	}
 	
 	// POST /tweets/edit/ID
-	func tweetEditPostHandler(_ req: Request) throws -> EventLoopFuture<Response> {
+	func tweetEditPostHandler(_ req: Request) async throws -> HTTPStatus {
 		guard let twarrtID = req.parameters.get(twarrtIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing twarrt_id parameter.")
 		}
@@ -358,37 +343,31 @@ struct SiteTwitarrController: SiteControllerUtils {
 				ImageUploadData(postStruct.serverPhoto4, postStruct.localPhoto4)].compactMap { $0 }
 		let postContent = PostContentData(text: postStruct.postText ?? "", images: images, 
 				postAsModerator: postStruct.postAsModerator != nil)
- 		return apiQuery(req, endpoint: "/twitarr/\(twarrtID)/update", method: .POST, beforeSend: { req throws in
-			try req.content.encode(postContent)
-		}).flatMapThrowing { response in
-			return Response(status: .created)
-		}
+ 		try await apiQuery(req, endpoint: "/twitarr/\(twarrtID)/update", method: .POST, encodeContent: postContent)
+		return .created
 	}
 	
 	// GET /tweets/report
 	//
 	// Shows the report page.
-	func tweetReportPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+	func tweetReportPageHandler(_ req: Request) async throws -> View {
 		guard let twarrtID = req.parameters.get(twarrtIDParam.paramString) else {
 			throw Abort(.badRequest, reason: "Missing twarrt_id parameter.")
 		}
 		let ctx = try ReportPageContext(req, twarrtID: twarrtID)
-		return req.view.render("reportCreate", ctx)
+		return try await req.view.render("reportCreate", ctx)
 	}
 	
 	// POST /tweets/report
 	//
 	// Submits a completed report.
-	func tweetReportPostHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+	func tweetReportPostHandler(_ req: Request) async throws -> HTTPStatus {
 		guard let twarrtID = req.parameters.get(twarrtIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing twarrt_id parameter.")
 		}
 		let postStruct = try req.content.decode(ReportData.self)
- 		return apiQuery(req, endpoint: "/twitarr/\(twarrtID)/report", method: .POST, beforeSend: { req throws in
-			try req.content.encode(postStruct)
-		}).flatMapThrowing { response in
-			return .created
-		}
+ 		try await apiQuery(req, endpoint: "/twitarr/\(twarrtID)/report", method: .POST, encodeContent: postStruct)
+		return .created
 	}
 }
 

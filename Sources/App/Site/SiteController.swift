@@ -370,7 +370,6 @@ struct ReportPageContext : Encodable {
 		reportFormAction = "/profile/report/\(userID)"
 		reportSuccessURL = req.headers.first(name: "Referer") ?? "/user/\(userID)"
 	}
-	
 }
 
 /// Route gorup that only manages one route: the root route "/".
@@ -379,61 +378,60 @@ struct SiteController: SiteControllerUtils {
 	func registerRoutes(_ app: Application) throws {
 		// Routes that the user does not need to be logged in to access.
 		let openRoutes = getOpenRoutes(app)
-        openRoutes.get(use: rootPageHandler)
-        openRoutes.get("about", use: aboutTwitarrViewHandler)
+		openRoutes.get(use: rootPageHandler)
+		openRoutes.get("about", use: aboutTwitarrViewHandler)
 		openRoutes.get("time", use: timePageHandler)
 	}
 	
 	/// GET /
 	///
 	/// Root page. This has a surprising number of queries.
-    func rootPageHandler(_ req: Request) throws -> EventLoopFuture<View> {
-		return apiQuery(req, endpoint: "/notification/announcements").throwingFlatMap { response in
- 			let announcements = try response.content.decode([AnnouncementData].self)
-			return apiQuery(req, endpoint: "/notification/dailythemes").throwingFlatMap { themeResponse in
- 				let themes = try themeResponse.content.decode([DailyThemeData].self)
- 				let cal = Settings.shared.getDisplayCalendar()
-				let components = cal.dateComponents([.day], from: cal.startOfDay(for: Settings.shared.cruiseStartDate), 
-						to: cal.startOfDay(for: Date()))
-				let cruiseDay = Int32(components.day ?? 0)
-				var backupTheme: DailyThemeData
-				if cruiseDay < 0 {
-					backupTheme = DailyThemeData(themeID: UUID(), title: "\(0 - cruiseDay) Days before Boat", info: "Soon™", 
-							image: nil, cruiseDay: cruiseDay)
-				}
-				else if cruiseDay < Settings.shared.cruiseLengthInDays {
-					backupTheme = DailyThemeData(themeID: UUID(), title: "Cruise Day \(cruiseDay + 1): No Theme Day", info: 
-							"A wise man once said, \"A day without a theme is like a guitar ever-so-slightly out of tune. " +
-							"You can play it however you want, and it will be great, but someone out there will know " +
-							"that if only there was a theme, everything would be in tune.\"", 
-							image: nil, cruiseDay: cruiseDay)
-				} else {
-					backupTheme = DailyThemeData(themeID: UUID(), title: "\(cruiseDay + 1 - Int32(Settings.shared.cruiseLengthInDays)) Days after Boat", 
-							info: "JoCo Cruise has ended. Hope you're enjoying being back in the real world.", image: nil, cruiseDay: cruiseDay)
-				}
-				let dailyTheme: DailyThemeData = themes.first { $0.cruiseDay == cruiseDay } ?? backupTheme
-				struct HomePageContext : Encodable {
-					var trunk: TrunkContext
-					var announcements: [AnnouncementData]
-					var dailyTheme: DailyThemeData?
-					
-					init(_ req: Request, announcements: [AnnouncementData], theme: DailyThemeData) throws {
-						trunk = .init(req, title: "Twitarr", tab: .home)
-						self.announcements = announcements
-						self.dailyTheme = theme
-					}
-				}
-				let ctx = try HomePageContext(req, announcements: announcements, theme: dailyTheme)
-				return req.view.render("home", ctx)
+	func rootPageHandler(_ req: Request) async throws -> View {
+		async let announcementResponse = try apiQuery(req, endpoint: "/notification/announcements")
+		async let themeResponse = try apiQuery(req, endpoint: "/notification/dailythemes")
+		let announcements = try await announcementResponse.content.decode([AnnouncementData].self)
+		let themes = try await themeResponse.content.decode([DailyThemeData].self)
+
+		let cal = Settings.shared.getDisplayCalendar()
+		let components = cal.dateComponents([.day], from: cal.startOfDay(for: Settings.shared.cruiseStartDate), 
+				to: cal.startOfDay(for: Date()))
+		let cruiseDay = Int32(components.day ?? 0)
+		var backupTheme: DailyThemeData
+		if cruiseDay < 0 {
+			backupTheme = DailyThemeData(themeID: UUID(), title: "\(0 - cruiseDay) Days before Boat", info: "Soon™", 
+					image: nil, cruiseDay: cruiseDay)
+		}
+		else if cruiseDay < Settings.shared.cruiseLengthInDays {
+			backupTheme = DailyThemeData(themeID: UUID(), title: "Cruise Day \(cruiseDay + 1): No Theme Day", info: 
+					"A wise man once said, \"A day without a theme is like a guitar ever-so-slightly out of tune. " +
+					"You can play it however you want, and it will be great, but someone out there will know " +
+					"that if only there was a theme, everything would be in tune.\"", 
+					image: nil, cruiseDay: cruiseDay)
+		} else {
+			backupTheme = DailyThemeData(themeID: UUID(), title: "\(cruiseDay + 1 - Int32(Settings.shared.cruiseLengthInDays)) Days after Boat", 
+					info: "JoCo Cruise has ended. Hope you're enjoying being back in the real world.", image: nil, cruiseDay: cruiseDay)
+		}
+		let dailyTheme: DailyThemeData = themes.first { $0.cruiseDay == cruiseDay } ?? backupTheme
+		struct HomePageContext : Encodable {
+			var trunk: TrunkContext
+			var announcements: [AnnouncementData]
+			var dailyTheme: DailyThemeData?
+			
+			init(_ req: Request, announcements: [AnnouncementData], theme: DailyThemeData) throws {
+				trunk = .init(req, title: "Twitarr", tab: .home)
+				self.announcements = announcements
+				self.dailyTheme = theme
 			}
 		}
-    }
-    
-    /// GET /about
+		let ctx = try HomePageContext(req, announcements: announcements, theme: dailyTheme)
+		return try await req.view.render("home", ctx)
+	}
+	
+	/// GET /about
 	///
 	///
-    func aboutTwitarrViewHandler(_ req: Request) throws -> EventLoopFuture<View> {
-    	struct AboutPageContext : Encodable {
+	func aboutTwitarrViewHandler(_ req: Request) async throws -> View {
+		struct AboutPageContext : Encodable {
 			var trunk: TrunkContext
 			
 			init(_ req: Request) throws {
@@ -441,13 +439,13 @@ struct SiteController: SiteControllerUtils {
 			}
 		}
 		let ctx = try AboutPageContext(req)
-		return req.view.render("aboutTwitarr", ctx)
-    }
+		return try await req.view.render("aboutTwitarr", ctx)
+	}
 
 	/// GET /time
 	///
 	/// Timezone information page.
-	func timePageHandler(_ req: Request) throws -> EventLoopFuture<View> {
+	func timePageHandler(_ req: Request) async throws -> View {
 		struct TimePageContext : Encodable {
 			var trunk: TrunkContext
 			var serverTime: String
@@ -483,37 +481,47 @@ struct SiteController: SiteControllerUtils {
 		}
 
 		let ctx = try TimePageContext(req)
-		return req.view.render("time", ctx)
+		return try await req.view.render("time", ctx)
 	}
-    
 }
-    
+	
 // MARK: - Utilities
 
 protocol SiteControllerUtils {
 	func registerRoutes(_ app: Application) throws
-	func apiQuery(_ req: Request, endpoint: String, method: HTTPMethod, defaultHeaders: HTTPHeaders?, passThroughQuery: Bool,
-			beforeSend: (inout ClientRequest) throws -> ()) -> EventLoopFuture<ClientResponse>
 }
+
+struct zzz : Encodable { }
 
 extension SiteControllerUtils {
 
-    var categoryIDParam: PathComponent { PathComponent(":category_id") }
-    var twarrtIDParam: PathComponent { PathComponent(":twarrt_id") }
-    var forumIDParam: PathComponent { PathComponent(":forum_id") }
-    var postIDParam: PathComponent { PathComponent(":post_id") }
-    var fezIDParam: PathComponent { PathComponent(":fez_id") }
-    var userIDParam: PathComponent { PathComponent(":user_id") }
-    var eventIDParam: PathComponent { PathComponent(":event_id") }
-    var reportIDParam: PathComponent { PathComponent(":report_id") }
-    var modStateParam: PathComponent { PathComponent(":mod_state") }
-    var announcementIDParam: PathComponent { PathComponent(":announcement_id") }
-    var imageIDParam: PathComponent { PathComponent(":image_id") }
-    var accessLevelParam: PathComponent { PathComponent(":access_level") }
-    var alertWordParam: PathComponent { PathComponent(":alert_word") }
-    var muteWordParam: PathComponent { PathComponent(":mute_word") }
+	var categoryIDParam: PathComponent { PathComponent(":category_id") }
+	var twarrtIDParam: PathComponent { PathComponent(":twarrt_id") }
+	var forumIDParam: PathComponent { PathComponent(":forum_id") }
+	var postIDParam: PathComponent { PathComponent(":post_id") }
+	var fezIDParam: PathComponent { PathComponent(":fez_id") }
+	var userIDParam: PathComponent { PathComponent(":user_id") }
+	var eventIDParam: PathComponent { PathComponent(":event_id") }
+	var reportIDParam: PathComponent { PathComponent(":report_id") }
+	var modStateParam: PathComponent { PathComponent(":mod_state") }
+	var announcementIDParam: PathComponent { PathComponent(":announcement_id") }
+	var imageIDParam: PathComponent { PathComponent(":image_id") }
+	var accessLevelParam: PathComponent { PathComponent(":access_level") }
+	var alertWordParam: PathComponent { PathComponent(":alert_word") }
+	var muteWordParam: PathComponent { PathComponent(":mute_word") }
 	var boardgameIDParam: PathComponent { PathComponent(":boardgame_id") }
 	var songIDParam: PathComponent { PathComponent(":karaoke_song_id") }
+	
+	@discardableResult func apiQuery<EncodableContent: Encodable>(_ req: Request, endpoint: String, query: [URLQueryItem]? = nil, 
+			method: HTTPMethod = .GET, defaultHeaders: HTTPHeaders? = nil, passThroughQuery: Bool = true, encodeContent: EncodableContent, 
+			beforeSend: (inout ClientRequest) throws -> () = { _ in }) async throws -> ClientResponse {
+		let encodeBeforeSend: (inout ClientRequest) throws -> () = { req in
+			try req.content.encode(encodeContent, as: .json)
+			try beforeSend(&req)
+		}
+		return try await apiQuery(req, endpoint: endpoint, query: query, method: method, defaultHeaders: defaultHeaders, 
+				passThroughQuery: passThroughQuery, beforeSend: encodeBeforeSend)
+	}
 
 	/// Call the Swiftarr API. This method pulls a user's token from their session data and adds it to the API call. 
 	/// By default it also forwards URL query parameters from the Site-level request to the API-level request.
@@ -521,60 +529,43 @@ extension SiteControllerUtils {
 	/// We used to calculate the API URL from the request Host headers. But this proved untenable prior to boat 2022
 	/// due to NATing, DNS, and multi-layer networking. It was decided to explicitly make this a setting instead.
 	///
-	func apiQuery(_ req: Request, endpoint: String, method: HTTPMethod = .GET, defaultHeaders: HTTPHeaders? = nil,
-			passThroughQuery: Bool = true,
-			beforeSend: (inout ClientRequest) throws -> () = { _ in }) -> EventLoopFuture<ClientResponse> {
-    	var headers = defaultHeaders ?? HTTPHeaders()
-    	if let token = req.session.data["token"], !headers.contains(name: "Authorization") {
+	@discardableResult func apiQuery(_ req: Request, endpoint: String, query: [URLQueryItem]? = nil, 
+			method: HTTPMethod = .GET, defaultHeaders: HTTPHeaders? = nil, passThroughQuery: Bool = true, 
+			beforeSend: (inout ClientRequest) throws -> () = { _ in }) async throws -> ClientResponse {
+		// Step 1: Make sure we add the Token Auth header to the API request. The user's auth token is saved in their
+		// session data.
+		var headers = defaultHeaders ?? HTTPHeaders()
+		if let token = req.session.data["token"], !headers.contains(name: "Authorization") {
    			headers.add(name: "Authorization", value: "Bearer \(token)")
     	}
-		// There are a couple places where we encode query parameters into `endpoint` (additionally setting 
-		// passThroughQuery to false) so doing a URL.appendingPathSomething encodes the query as a path which
-		// is not what we want. We could make apiQuery accept a separate parameter for query but in the interest
-		// of not-refactoring too much we're gonna cheat and append via string.
-		let urlStr = Settings.shared.apiUrl.absoluteString + endpoint
+    	
+    	// Step 2: Generate URLComponents, extract a 'clean' path, append the 'clean' path for the endpoint.
+		guard var urlComponents = URLComponents(url: Settings.shared.apiUrl, resolvingAgainstBaseURL: true),
+				let apiPathURL = URL(string: urlComponents.path),
+				let endpointComponents = URLComponents(string: endpoint) else {
+		 	throw Abort(.internalServerError, reason: "Unable to decode API URL components.")
+		}
+		urlComponents.path = apiPathURL.appendingPathComponent(endpointComponents.path).absoluteString
 
-		// We need to mark apiQuery as `throws ->` above, but then that would require every caller
-		// to `try` it. That is better but holy shit is that a lot of code to edit and we're already
-		// refactoring for async/await so for now this is just gonna force-unwrap it and hope we never
-		// screw up until we refactor and enable the guard.
-		// guard let urlComponents = URLComponents(string: urlStr) else {
-		// 	throw Abort(.internalServerError, reason: "Unable to decode API URL components.")
-		// }
-		var urlComponents = URLComponents(string: urlStr)!
-
-		// req.url is actually a Vapor URI() which doesn't support some of the good things of URL().
-		// So to get easy access to the URLQueryItem's we'll turn the URI into a String into a URLComponents
-		// so we can have an [URLQueryItem]. Subject to the same guard/throws/force nonsense above.
-		// This gives further credence to adding a queryItems parameter to apiQuery.
-		let reqComponents = URLComponents(string: req.url.string)!
-
-		// Certain endpoints such as `/events` intercept query parameters and encode them into the `endpoint`
-		// themselves, and set `passThroughQuery`` to false. When it is true, we look at the original request (req)
-		// and pull out the query parameters from there as a string. Depending on whether there is already a query
-		// parameter present in the endpoint (which could happen) we need to intelligently append the request
-		// query to the endpoint query.
-		if passThroughQuery, let reqQueryItems = reqComponents.queryItems {
-			if urlComponents.queryItems != nil {
-				urlComponents.queryItems = urlComponents.queryItems! + reqQueryItems
-			} else {
-				urlComponents.queryItems = reqComponents.queryItems
-			}
+		// Step 3: Combine all sources of query items, producing an array of URLQueryItem
+		var combinedQueryItems = (urlComponents.queryItems ?? []) + (endpointComponents.queryItems ?? []) + (query ?? [])
+		if passThroughQuery, let requestQueryItems = URLComponents(string: req.url.string)?.queryItems {
+			combinedQueryItems.append(contentsOf: requestQueryItems)
+		}
+		urlComponents.queryItems = combinedQueryItems.count > 0 ? combinedQueryItems : nil
+    	
+    	// Step 4: Build an URL string from the components, call the API with it.
+    	guard let apiURLString = urlComponents.string else {
+		 	throw Abort(.internalServerError, reason: "Unable to build URL to API endpoint.")
     	}
-	
-		// We can enable this if we convert apiQuery to throws. See above for details.
-		// guard urlComponents.string != nil else {
-		// 	throw Abort(.internalServerError, reason: "Unable to determine internal API URL.")
-		// }
-    	return req.client.send(method, headers: headers, to: URI(string: urlComponents.string!), beforeSend: beforeSend).flatMapThrowing { response in
-			guard response.status.code < 300 else {
-				if let errorResponse = try? response.content.decode(ErrorResponse.self) {
-					throw errorResponse
-				}
-				throw Abort(response.status)
+		let response = try await req.client.send(method, headers: headers, to: URI(string: apiURLString), beforeSend: beforeSend)
+		guard response.status.code < 300 else {
+			if let errorResponse = try? response.content.decode(ErrorResponse.self) {
+				throw errorResponse
 			}
-			return response
-    	}
+			throw Abort(response.status)
+		}
+		return response
 	}
 	
 	// Routes that the user does not need to be logged in to access.
@@ -678,7 +669,5 @@ extension String {
 		allowedChars.remove(charactersIn: "/=?&")
 		return self.addingPercentEncoding(withAllowedCharacters: allowedChars)
 	}
-	
-	
 }
 

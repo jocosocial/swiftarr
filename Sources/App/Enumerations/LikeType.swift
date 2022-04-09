@@ -3,10 +3,10 @@
 /// Only positive reactions are provided in `swiftarr`.
 
 public enum LikeType: String, Codable {
-    /// A 😆.
-    case laugh
-    /// A 👍.
-    case like
-    /// A ❤️.
-    case love
+	/// A 😆.
+	case laugh
+	/// A 👍.
+	case like
+	/// A ❤️.
+	case love
 }

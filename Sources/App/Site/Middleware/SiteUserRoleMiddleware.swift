@@ -1,51 +1,51 @@
 import Vapor
 
-struct SiteRequireVerifiedMiddleware: Middleware {
+struct SiteRequireVerifiedMiddleware: AsyncMiddleware {
 
-	func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
-		guard let user = request.auth.get(User.self), user.accessLevel.hasAccess(.verified) else {
-			return request.eventLoop.future(error: Abort(.unauthorized))
+	func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
+		guard let user = request.auth.get(UserCacheData.self), user.accessLevel.hasAccess(.verified) else {
+			throw Abort(.unauthorized)
 		}
-		return next.respond(to: request)
+		return try await next.respond(to: request)
 	}
 }
 
-struct SiteRequireModeratorMiddleware: Middleware {
+struct SiteRequireModeratorMiddleware: AsyncMiddleware {
 
-	func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+	func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
 		guard let user = request.auth.get(UserCacheData.self), user.accessLevel.hasAccess(.moderator) else {
-			return request.eventLoop.future(error: Abort(.unauthorized))
+			throw Abort(.unauthorized)
 		}
-		return next.respond(to: request)
+		return try await next.respond(to: request)
 	}
 }
 
-struct SiteRequireTwitarrTeamMiddleware: Middleware {
+struct SiteRequireTwitarrTeamMiddleware: AsyncMiddleware {
 
-	func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+	func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
 		guard let user = request.auth.get(UserCacheData.self), user.accessLevel.hasAccess(.twitarrteam) else {
-			return request.eventLoop.future(error: Abort(.unauthorized))
+			throw Abort(.unauthorized)
 		}
-		return next.respond(to: request)
+		return try await next.respond(to: request)
 	}
 }
 
-struct SiteRequireTHOMiddleware: Middleware {
+struct SiteRequireTHOMiddleware: AsyncMiddleware {
 
-	func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+	func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
 		guard let user = request.auth.get(UserCacheData.self), user.accessLevel.hasAccess(.tho) else {
-			return request.eventLoop.future(error: Abort(.unauthorized))
+			throw Abort(.unauthorized)
 		}
-		return next.respond(to: request)
+		return try await next.respond(to: request)
 	}
 }
 
-struct SiteRequireAdminMiddleware: Middleware {
+struct SiteRequireAdminMiddleware: AsyncMiddleware {
 
-	func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+	func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
 		guard let user = request.auth.get(UserCacheData.self), user.accessLevel.hasAccess(.admin) else {
-			return request.eventLoop.future(error: Abort(.unauthorized))
+			throw Abort(.unauthorized)
 		}
-		return next.respond(to: request)
+		return try await next.respond(to: request)
 	}
 }

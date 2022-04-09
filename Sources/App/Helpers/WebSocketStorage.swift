@@ -20,16 +20,16 @@ public struct UserSocket {
 
 extension Application {
  	/// This is where UserCache stores its in-memory cache.
-    var websocketStorage: WebSocketStorage {
-        get {
-            guard let result = self.storage[WebSocketStorageKey.self] else {
+	var websocketStorage: WebSocketStorage {
+		get {
+			guard let result = self.storage[WebSocketStorageKey.self] else {
 				return WebSocketStorage()
-            }
-            return result
-        }
+			}
+			return result
+		}
  		set {
-            self.storage[WebSocketStorageKey.self] = newValue
-        }   
+			self.storage[WebSocketStorageKey.self] = newValue
+		}   
 	}
 
 	/// This is the datatype that gets stored in UserCacheStorage. Vapor's Services API uses this.

@@ -8,32 +8,32 @@ import Fluent
 
 struct EventController: APIRouteCollection {
 
-    /// Required. Registers routes to the incoming router.
-    func registerRoutes(_ app: Application) throws {
-        
-        // convenience route group for all /api/v3/users endpoints
-        let eventRoutes = app.grouped(DisabledAPISectionMiddleware(feature: .schedule)).grouped("api", "v3", "events")
-        
-        // Flexible access endpoints that behave differently for logged-in users
-        let optionalAuthGroup = addFlexCacheAuthGroup(to: eventRoutes)
-        optionalAuthGroup.get(use: eventsHandler)
-        optionalAuthGroup.get(eventIDParam, use: singleEventHandler)
-        
-        // endpoints available only when logged in
-        let tokenAuthGroup = addTokenCacheAuthGroup(to: eventRoutes)
-        tokenAuthGroup.post(eventIDParam, "favorite", use: favoriteAddHandler)
-        tokenAuthGroup.post(eventIDParam, "favorite", "remove", use: favoriteRemoveHandler)
-        tokenAuthGroup.delete(eventIDParam, "favorite", use: favoriteRemoveHandler)
-        tokenAuthGroup.get("favorites", use: favoritesHandler)
+	/// Required. Registers routes to the incoming router.
+	func registerRoutes(_ app: Application) throws {
+		
+		// convenience route group for all /api/v3/users endpoints
+		let eventRoutes = app.grouped(DisabledAPISectionMiddleware(feature: .schedule)).grouped("api", "v3", "events")
+		
+		// Flexible access endpoints that behave differently for logged-in users
+		let optionalAuthGroup = addFlexCacheAuthGroup(to: eventRoutes)
+		optionalAuthGroup.get(use: eventsHandler)
+		optionalAuthGroup.get(eventIDParam, use: singleEventHandler)
+		
+		// endpoints available only when logged in
+		let tokenAuthGroup = addTokenCacheAuthGroup(to: eventRoutes)
+		tokenAuthGroup.post(eventIDParam, "favorite", use: favoriteAddHandler)
+		tokenAuthGroup.post(eventIDParam, "favorite", "remove", use: favoriteRemoveHandler)
+		tokenAuthGroup.delete(eventIDParam, "favorite", use: favoriteRemoveHandler)
+		tokenAuthGroup.get("favorites", use: favoritesHandler)
 	}
-    
-    // MARK: - Open Access Handlers
-    // The handlers in this route group do not require Authorization, but can take advantage
-    // of Authorization headers if they are present.
+	
+	// MARK: - Open Access Handlers
+	// The handlers in this route group do not require Authorization, but can take advantage
+	// of Authorization headers if they are present.
 
-    /// `GET /api/v3/events`
-    ///
-    /// Retrieve a list of scheduled events. By default, this retrieves the entire event schedule.
+	/// `GET /api/v3/events`
+	///
+	/// Retrieve a list of scheduled events. By default, this retrieves the entire event schedule.
 	/// 
 	/// **URL Query Parameters:**
 	/// - cruiseday=INT		Embarkation day is day 1, value should be  less than or equal to `Settings.shared.cruiseLengthInDays`, which will be 8 for the 2022 cruise.
@@ -49,27 +49,27 @@ struct EventController: APIRouteCollection {
 	/// looking at daily schedules.
 	/// 
 	/// All the above parameters filter the set of <doc:EventData> objects that get returned. Onlly one of [cruiseday, day, date, time] may be used.  
-    ///
-    /// - Returns: An array of  <doc:EventData> containing filtered events.
-    func eventsHandler(_ req: Request) throws -> EventLoopFuture<[EventData]> {
-    	struct QueryOptions: Content {
+	///
+	/// - Returns: An array of  <doc:EventData> containing filtered events.
+	func eventsHandler(_ req: Request) async throws -> [EventData] {
+		struct QueryOptions: Content {
 			var cruiseday: Int?
 			var day: String?
 			var date: Date?
 			var time: Date?
 			var type: String?
 			var search: String?
-    	}
-    	let options = try req.query.decode(QueryOptions.self)
-    	let query = Event.query(on: req.db).sort(\.$startTime, .ascending)
-        if var search = options.search {
+		}
+		let options = try req.query.decode(QueryOptions.self)
+		let query = Event.query(on: req.db).sort(\.$startTime, .ascending)
+		if var search = options.search {
 			// postgres "_" and "%" are wildcards, so escape for literals
 			search = search.replacingOccurrences(of: "_", with: "\\_")
 			search = search.replacingOccurrences(of: "%", with: "\\%")
 			search = search.trimmingCharacters(in: .whitespacesAndNewlines)
 			query.group(.or) { (or) in
-                or.filter(\.$title, .custom("ILIKE"), "%\(search)%")
-                or.filter(\.$info, .custom("ILIKE"), "%\(search)%")
+				or.filter(\.$title, .custom("ILIKE"), "%\(search)%")
+				or.filter(\.$info, .custom("ILIKE"), "%\(search)%")
 			}
 		}
 		if let eventType = options.type {
@@ -118,129 +118,91 @@ struct EventController: APIRouteCollection {
 		if let start = searchStartTime, let end = searchEndTime {
 			query.filter(\.$startTime >= start).filter(\.$startTime < end)
 		}
-		return query.all().throwingFlatMap { events in
-			var barrelFuture: EventLoopFuture<Barrel?> = req.eventLoop.future(nil)
-			if let user = req.auth.get(UserCacheData.self) {
-				barrelFuture = Barrel.query(on: req.db).filter(\.$ownerID == user.userID).filter(\.$barrelType == .taggedEvent).first()
-			}
-			return barrelFuture.flatMapThrowing { eventsBarrel in
-				let result = try events.map { try EventData($0, isFavorite: eventsBarrel?.modelUUIDs.contains($0.requireID()) ?? false) }
-				return result
-			}
+		let events = try await query.all()
+		var favoriteEventIDs = [UUID]()
+		if let user = req.auth.get(UserCacheData.self) {
+			let eventIDs = try events.map { try $0.requireID() }
+			favoriteEventIDs = try await EventFavorite.query(on: req.db).filter(\.$user.$id == user.userID)
+					.filter(\.$event.$id ~~ eventIDs).all().map { try $0.requireID() }
 		}
-    }
-    
-    /// `GET /api/v3/events/ID`
-    ///
-    /// Retrieve a single event from its ID.
+		let result = try events.map { try EventData($0, isFavorite: favoriteEventIDs.contains($0.requireID())) }
+		return result
+	}
+	
+	/// `GET /api/v3/events/ID`
+	///
+	/// Retrieve a single event from its ID.
 	/// 
-    /// - Parameter eventID: in URL path
-    /// - Returns: <doc:EventData> containing  event info.
-    func singleEventHandler(_ req: Request) throws -> EventLoopFuture<EventData> {
-    	return Event.findFromParameter(eventIDParam, on: req).flatMap { event in
-			var barrelFuture: EventLoopFuture<Barrel?> = req.eventLoop.future(nil)
-			if let user = req.auth.get(UserCacheData.self) {
-				barrelFuture = Barrel.query(on: req.db).filter(\.$ownerID == user.userID).filter(\.$barrelType == .taggedEvent).first()
-			}
-			return barrelFuture.flatMapThrowing { eventsBarrel in
-	    		return try EventData(event, isFavorite: eventsBarrel?.modelUUIDs.contains(event.requireID()) ?? false)
-			}
-    	}
-    }
+	/// - Parameter eventID: in URL path
+	/// - Returns: <doc:EventData> containing  event info.
+	func singleEventHandler(_ req: Request) async throws -> EventData {
+		let event = try await Event.findFromParameter(eventIDParam, on: req)
+		var isFavorite = false
+		if let user = req.auth.get(UserCacheData.self) {
+			isFavorite = try await EventFavorite.query(on: req.db).filter(\.$user.$id == user.userID)
+					.filter(\.$event.$id == event.requireID()).first() != nil
+		}
+		return try EventData(event, isFavorite: isFavorite)
+	}
 
-    // MARK: - tokenAuthGroup Handlers (logged in)
-    // All handlers in this route group require a valid HTTP Bearer Authentication
-    // header in the request.
-        
-    /// `POST /api/v3/events/ID/favorite`
-    ///
-    /// Add the specified `Event` to the user's tagged events list.
-    ///
-    /// - Parameter eventID: in URL path
-    /// - Returns: 201 Created on success; 200 OK if already favorited.
-    func favoriteAddHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        let user = try req.auth.require(UserCacheData.self)
-        // get event
-        return Event.findFromParameter("event_id", on: req).flatMap { (event) in
-            guard let eventID = event.id else { return req.eventLoop.makeFailedFuture(FluentError.idRequired) } 
-            // get user's taggedEvent barrel
-            return Barrel.query(on: req.db)
-					.filter(\.$ownerID == user.userID)
-					.filter(\.$barrelType == .taggedEvent)
-					.first()
-					.unwrap(orReplace: Barrel(ownerID: user.userID, barrelType: .taggedEvent))
-					.flatMap { barrel in
-				// add event and return 201
-				if !barrel.modelUUIDs.contains(eventID) {
-					barrel.modelUUIDs.append(eventID)
-					_ = storeNextEventTime(userID: user.userID, eventBarrel: barrel, on: req)
-				}
-				else {
-					return req.eventLoop.future(.ok)
-				}
-				return barrel.save(on: req.db).transform(to: .created)
-			}
-        }
-    }
-    
-    /// `POST /api/v3/events/ID/favorite/remove`
-    /// `DELETE /api/v3/events/ID/favorite`
-    ///
-    /// Remove the specified `Event` from the user's tagged events list.
-    ///
-    /// - Parameter eventID: in URL path
-    /// - Throws: 400 error if the event was not favorited.
-    /// - Returns: 204 No Content on success; 200 OK if event is already not favorited.
-    func favoriteRemoveHandler(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        let user = try req.auth.require(UserCacheData.self)
-        // get event
-        return Event.findFromParameter("event_id", on: req).flatMap { (event) in
-            guard let eventID = event.id else { return req.eventLoop.makeFailedFuture(FluentError.idRequired) } 
-            // get user's taggedEvent barrel
-            return Barrel.query(on: req.db)
-					.filter(\.$ownerID == user.userID)
-					.filter(\.$barrelType == .taggedEvent)
-					.first()
-					.flatMap { eventBarrel in
-				guard let barrel = eventBarrel else {
-					return req.eventLoop.future(.ok)
-				}
-				// remove event
-				guard let index = barrel.modelUUIDs.firstIndex(of: eventID) else {
-					return req.eventLoop.future(.ok)
-				}
-				barrel.modelUUIDs.remove(at: index)
-				_ = storeNextEventTime(userID: user.userID, eventBarrel: barrel, on: req)
-				return barrel.save(on: req.db).transform(to: .noContent)
-			}
-        }
-    }
-    
-    /// `GET /api/v3/events/favorites`
-    ///
-    /// Retrieve the `Event`s in the user's taggedEvent barrel, sorted by `.startTime`.
-    ///
-    /// - Returns: An array of  <doc:EventData> containing the user's favorite events.
-    func favoritesHandler(_ req: Request) throws -> EventLoopFuture<[EventData]> {
-        let user = try req.auth.require(UserCacheData.self)
-        // get user's taggedEvent barrel
-		return Barrel.query(on: req.db).filter(\.$ownerID == user.userID).filter(\.$barrelType == .taggedEvent)
-				.first().flatMap { barrel in
-            guard let barrel = barrel else {
-                // return empty array
-                return req.eventLoop.future([EventData]())
-            }
-            // get events
-            return Event.query(on: req.db)
-					.filter(\.$id ~~ barrel.modelUUIDs)
-					.sort(\.$startTime, .ascending)
-					.all()
-					.flatMapThrowing { (events) in
-				return try events.map { try EventData($0, isFavorite: true) }
-            }
-        }
-    }
-    
+	// MARK: - tokenAuthGroup Handlers (logged in)
+	// All handlers in this route group require a valid HTTP Bearer Authentication
+	// header in the request.
+		
+	/// `POST /api/v3/events/ID/favorite`
+	///
+	/// Add the specified `Event` to the user's tagged events list.
+	///
+	/// - Parameter eventID: in URL path
+	/// - Returns: 201 Created on success; 200 OK if already favorited.
+	func favoriteAddHandler(_ req: Request) async throws -> HTTPStatus {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		guard let user = try await User.find(cacheUser.userID, on: req.db) else {
+			throw Abort(.internalServerError, reason: "User in cache but not found in User table")
+		}	
+		let event = try await Event.findFromParameter(eventIDParam, on: req)
+		if try await event.$favorites.isAttached(to: user, on: req.db) {
+			return .ok
+		}
+		try await event.$favorites.attach(user, on: req.db)
+		_ = try await storeNextFollowedEvent(userID: cacheUser.userID, on: req)
+		return .created
+	}
+	
+	/// `POST /api/v3/events/ID/favorite/remove`
+	/// `DELETE /api/v3/events/ID/favorite`
+	///
+	/// Remove the specified `Event` from the user's tagged events list.
+	///
+	/// - Parameter eventID: in URL path
+	/// - Throws: 400 error if the event was not favorited.
+	/// - Returns: 204 No Content on success; 200 OK if event is already not favorited.
+	func favoriteRemoveHandler(_ req: Request) async throws -> HTTPStatus {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		guard let eventID = req.parameters.get(eventIDParam.paramString, as: UUID.self) else {
+			throw Abort(.badRequest, reason: "Invalid event ID parameter")
+		}
+		if let favoriteEvent = try await EventFavorite.query(on: req.db).filter(\.$user.$id == cacheUser.userID)
+				.filter(\.$event.$id == eventID).first() {
+			try await favoriteEvent.delete(on: req.db)
+			_ = try await storeNextFollowedEvent(userID: cacheUser.userID, on: req)
+			return .noContent
+		}
+		return .ok
+	}
+	
+	/// `GET /api/v3/events/favorites`
+	///
+	/// Retrieve the `Event`s the user has favorited, sorted by `.startTime`.
+	///
+	/// - Returns: An array of  <doc:EventData> containing the user's favorite events.
+	func favoritesHandler(_ req: Request) async throws -> [EventData] {
+		let user = try req.auth.require(UserCacheData.self)
+		let events = try await Event.query(on: req.db).join(EventFavorite.self, on: \Event.$id == \EventFavorite.$event.$id)
+				.filter(EventFavorite.self, \.$user.$id == user.userID).sort(\.$startTime, .ascending).all()
+		return try events.map { try EventData($0, isFavorite: true) }
+	}
+	
 // MARK: Utilities
 
 }

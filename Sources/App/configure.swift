@@ -253,7 +253,11 @@ func configureBasicSettings(_ app: Application) throws {
 }
 
 func configureStoredSettings(_ app: Application) throws {
-	try Settings.shared.readStoredSettings(app: app)
+	let promise = app.eventLoopGroup.next().makePromise(of: Void.self)
+	promise.completeWithTask {
+		try await Settings.shared.readStoredSettings(app: app)
+	}
+	let _ : EventLoopFuture<Void> = promise.futureResult
 }
 
 func HTTPServerConfiguration(_ app: Application) throws {
@@ -373,9 +377,11 @@ func configureMigrations(_ app: Application) throws {
 	app.migrations.add(CreateRegistrationCodeSchema(), to: .psql)
 	app.migrations.add(CreateProfileEditSchema(), to: .psql)
 	app.migrations.add(CreateUserNoteSchema(), to: .psql)
+	app.migrations.add(CreateMuteWordSchema(), to: .psql)
+	app.migrations.add(CreateAlertWordSchema(), to: .psql)
+	app.migrations.add(CreateAlertWordPivotSchema(), to: .psql)
 	app.migrations.add(CreateModeratorActionSchema(), to: .psql)
 	app.migrations.add(CreateAnnouncementSchema(), to: .psql)
-	app.migrations.add(CreateBarrelSchema(), to: .psql)
 	app.migrations.add(CreateReportSchema(), to: .psql)
 	app.migrations.add(CreateCategorySchema(), to: .psql)
 	app.migrations.add(CreateForumSchema(), to: .psql)
@@ -385,6 +391,7 @@ func configureMigrations(_ app: Application) throws {
 	app.migrations.add(CreateForumReadersSchema(), to: .psql)
 	app.migrations.add(CreatePostLikesSchema(), to: .psql)
 	app.migrations.add(CreateEventSchema(), to: .psql)
+	app.migrations.add(CreateEventFavoriteSchema(), to: .psql)
 	app.migrations.add(CreateTwarrtSchema(), to: .psql)
 	app.migrations.add(CreateTwarrtEditSchema(), to: .psql)
 	app.migrations.add(CreateTwarrtLikesSchema(), to: .psql)
