@@ -10,39 +10,36 @@ import Crypto
 /// used in production. If not set to proper values in `docker-compose.yml` (or whatever
 /// other environment of your choice), reminders are printed to console during startup.
 
-struct CreateAdminUsers: Migration {
+struct CreateAdminUsers: AsyncMigration {	
 	/// Required by `Migration` protocol. Creates the admin user after a bit of sanity
 	/// check caution.
 	///
 	/// - Parameter database: A connection to the database, provided automatically.
 	/// - Returns: Void.
-	func prepare(on database: Database) -> EventLoopFuture<Void> {
-		let futures = [
-				createAdminUser(on: database),
-                createPrometheusUser(on: database),
-				createTHOUser(on: database), 
-				createModeratorUser(on: database),
-				createTwitarrTeamUser(on: database)]
-		return futures.flatten(on: database.eventLoop)
+	func prepare(on database: Database) async throws {
+		try await createAdminUser(on: database)
+		try await createPrometheusUser(on: database)
+		try await createTHOUser(on: database)
+		try await createModeratorUser(on: database)
+		try await createTwitarrTeamUser(on: database)
 	}
-
-	/// Required by `Migration` protocol, but this isn't a model update, so just return a
-	/// pre-completed `Future`.
+	
+	/// Required by `Migration` protocol. Deletes all admin users.
 	///
 	/// - Parameter conn: The database connection.
 	/// - Returns: Void.
-	func revert(on database: Database) -> EventLoopFuture<Void> {
-		database.schema("users").delete()
+	func revert(on database: Database) async throws {
+		try await User.query(on: database).filter(\.$username ~~ ["admin", "THO", "moderator", "TwitarrTeam"]).delete()
 	}
-
+	
 	/// Admin user gets their password and recovery key from the `ADMIN_PASSWORD` and `ADMIN_RECOVERY_KEY`
 	/// environment variables. These are usually set in the appropriate .env file in "Private Swiftarr Config" directory.
 	/// For the production environment, this file will be "production.env".
-	func createAdminUser(on database: Database) -> EventLoopFuture<Void> {
+	func createAdminUser(on database: Database) async throws {
 		// retrieve password and recovery key from environment, else use defaults
 		let password = Environment.get("ADMIN_PASSWORD") ?? "password"
 		let recoveryKey = Environment.get("ADMIN_RECOVERY_KEY") ?? "recovery key"
-	
+		
 		// default values should never be used in production
 		do {
 			if (try Environment.detect().isRelease) {
@@ -56,14 +53,14 @@ struct CreateAdminUsers: Migration {
 		} catch let error {
 			fatalError("Environment.detect() failed! error: \(error)")
 		}
-	
+		
 		// abort if no sane values or encryption fails
 		guard !password.isEmpty, !recoveryKey.isEmpty,
 			let passwordHash = try? Bcrypt.hash(password),
 			let recoveryHash = try? Bcrypt.hash(recoveryKey) else {
 				fatalError("admin user creation failure: invalid password or recoveryKey")
 		}
-	
+		
 		// create admin user directly
 		let user = User(
 			username: "admin",
@@ -74,14 +71,14 @@ struct CreateAdminUsers: Migration {
 			accessLevel: .admin
 		)
 		// save user
-		return user.save(on: database)
+		try await user.save(on: database)
 	}
 
-    /// Prometheus user gets their password from the `PROMETHEUS_PASSWORD`. Recovery key is randomly generated and thrown away.
+	/// Prometheus user gets their password from the `PROMETHEUS_PASSWORD`. Recovery key is randomly generated and thrown away.
     /// environment variables. These are usually set in the appropriate .env file in "Private Swiftarr Config" directory.
 	/// For the production environment, this file will be "production.env".
-    func createPrometheusUser(on database: Database) -> EventLoopFuture<Void> {
-        let password = Environment.get("PROMETHEUS_PASSWORD") ?? "password"
+	func createPrometheusUser(on database: Database) async throws {
+		let password = Environment.get("PROMETHEUS_PASSWORD") ?? "password"
 		var recoveryKey = ""
 		for _ in 0...50 {
 			recoveryKey.append(String(Unicode.Scalar(Int.random(in: 33...126))!))
@@ -115,16 +112,16 @@ struct CreateAdminUsers: Migration {
 			accessLevel: .client
 		)
 		// save user
-		return user.save(on: database)
-    }
-
+		try await user.save(on: database)
+	}
+	
 	/// THO is a special acct for JoCo home office. There's several specific things this account can do, such as settings announcements and daily themes.
 	/// This account's password and recovery key are set up in the same way as the admin acct.
-	func createTHOUser(on database: Database) -> EventLoopFuture<Void> {
+	func createTHOUser(on database: Database) async throws {
 		// retrieve password and recovery key from environment, else use defaults
 		let password = Environment.get("THO_PASSWORD") ?? "password"
 		let recoveryKey = Environment.get("THO_RECOVERY_KEY") ?? "recovery key"
-	
+		
 		// default values should never be used in production
 		do {
 			if (try Environment.detect().isRelease) {
@@ -146,15 +143,15 @@ struct CreateAdminUsers: Migration {
 		// create THO user directly
 		let user = User(username: "THO", password: passwordHash, recoveryKey: recoveryHash, verification: "generated user",
 				parent: nil, accessLevel: .tho)
-		return user.save(on: database)
+		try await user.save(on: database)
 	}
-
+	
 	/// By design, nobody can log in as Moderator--the password is set to a randomly-generated value that is immediately forgotten.
 	/// However, anyone with moderotor access may post content *as* moderator, in which case the moderator account becomes
 	/// the author of the content instead of the current user.
 	/// 
 	/// ''Content' in this sense means tweets, forum posts, fez messages.
-	func createModeratorUser(on database: Database) -> EventLoopFuture<Void> {
+	func createModeratorUser(on database: Database) async throws {
 		var password = ""
 		var recoveryKey = ""
 		for _ in 0...50 {
@@ -168,15 +165,15 @@ struct CreateAdminUsers: Migration {
 		// create user directly
 		let user = User(username: "moderator", password: passwordHash, recoveryKey: recoveryHash, verification: "generated user",
 				parent: nil, accessLevel: .moderator)
-		return user.save(on: database)
+		try await user.save(on: database)
 	}
-
+	
 	/// By design, nobody can log in as TwitarrTeam--the password is set to a randomly-generated value that is immediately forgotten.
-	/// However, anyone with moderotor access may post content *as* TwitarrTeam, in which case the TwitarrTeam account becomes
+	/// However, anyone with TwitarrTeam access may post content *as* TwitarrTeam, in which case the TwitarrTeam account becomes
 	/// the author of the content instead of the current user.
 	/// 
 	/// ''Content' in this sense means tweets, forum posts, fez messages.
-	func createTwitarrTeamUser(on database: Database) -> EventLoopFuture<Void> {
+	func createTwitarrTeamUser(on database: Database) async throws {
 		var password = ""
 		var recoveryKey = ""
 		for _ in 0...50 {
@@ -190,6 +187,6 @@ struct CreateAdminUsers: Migration {
 		// create user directly
 		let user = User(username: "TwitarrTeam", password: passwordHash, recoveryKey: recoveryHash, verification: "generated user",
 				parent: nil, accessLevel: .twitarrteam)
-		return user.save(on: database)
+		try await user.save(on: database)
 	}
 }

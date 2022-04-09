@@ -19,7 +19,7 @@ struct ClientController: APIRouteCollection {
 		let clientRoutes = app.grouped("api", "v3", "client")
 
 		// endpoints available only when logged in
-		let tokenAuthGroup = addTokenAuthGroup(to: clientRoutes)
+		let tokenAuthGroup = addTokenCacheAuthGroup(to: clientRoutes)
 		tokenAuthGroup.get("user", "updates", "since", ":date", use: userUpdatesHandler)
 		tokenAuthGroup.get("usersearch", use: userSearchHandler)
 		
@@ -45,8 +45,8 @@ struct ClientController: APIRouteCollection {
 	///   is missing or invalid. 403 error if user is not a registered client.
 	/// - Returns: An array of  <doc:UserSearch> containing the ID and `.userSearch` string values
 	///   of all users, sorted by username.
-	func userSearchHandler(_ req: Request) throws -> EventLoopFuture<[UserSearch]> {
-		let client = try req.auth.require(User.self)
+	func userSearchHandler(_ req: Request) async throws -> [UserSearch] {
+		let client = try req.auth.require(UserCacheData.self)
 		// must be registered client
 		guard client.accessLevel == .client else {
 			throw Abort(.forbidden, reason: "registered clients only")
@@ -57,20 +57,18 @@ struct ClientController: APIRouteCollection {
 				throw Abort(.unauthorized, reason: "no valid 'x-swiftarr-user' header found")
 		}
 		// find user
-		return User.find(userID, on: req.db)
-				.unwrap(or: Abort(.unauthorized, reason: "'x-swiftarr-user' user not found"))
-				.throwingFlatMap { (user) in
-			// must be actual user
-			guard user.accessLevel != .client else {
-				throw Abort(.unauthorized, reason: "'x-swiftarr-user' user cannot be client")
-			}
-			// remove blocked users
-			let blocked = req.userCache.getBlocks(userID)
-			return User.query(on: req.db).filter(\.$id !~ blocked).sort(\.$username, .ascending).all().flatMapThrowing { users in
-				// return as [UserSearch]
-				return try users.map { try UserSearch(userID: $0.requireID(), userSearch: $0.userSearch) }
-			}
+		guard let user = try await User.find(userID, on: req.db) else {
+			throw Abort(.unauthorized, reason: "'x-swiftarr-user' user not found")
 		}
+		// must be actual user
+		guard user.accessLevel != .client else {
+			throw Abort(.unauthorized, reason: "'x-swiftarr-user' user cannot be client")
+		}
+		// remove blocked users
+		let blocked = req.userCache.getBlocks(userID)
+		let users = try await User.query(on: req.db).filter(\.$id !~ blocked).sort(\.$username, .ascending).all()
+		// return as [UserSearch]
+		return try users.map { try UserSearch(userID: $0.requireID(), userSearch: $0.userSearch) }
 	}
 	
 	/// `GET /api/v3/client/user/updates/since/DATE`
@@ -90,8 +88,8 @@ struct ClientController: APIRouteCollection {
 	/// - Throws: 400 error if no valid date string provided. 401 error if the required header
 	///   is missing or invalid. 403 error if user is not a registered client.
 	/// - Returns: An array of <doc:UserHeader> containing all updated users.
-	func userUpdatesHandler(_ req: Request) throws -> EventLoopFuture<[UserHeader]> {
-		let client = try req.auth.require(User.self)
+	func userUpdatesHandler(_ req: Request) async throws -> [UserHeader] {
+		let client = try req.auth.require(UserCacheData.self)
 		// must be registered client
 		guard client.accessLevel == .client else {
 			throw Abort(.forbidden, reason: "registered clients only")
@@ -108,14 +106,13 @@ struct ClientController: APIRouteCollection {
 		}
 
 		// find user
-		return User.find(userID, on: req.db)
-			.unwrap(or: Abort(.unauthorized, reason: "'x-swiftarr-user' user not found"))
-			.flatMapThrowing { (user) in
-				guard user.accessLevel != .client else {
-					throw Abort(.unauthorized, reason: "'x-swiftarr-user' user cannot be client")
-				}
-				return try req.userCache.getHeaders(fromDate: date, forUser: user)
+		guard let user = try await User.find(userID, on: req.db) else {
+			throw Abort(.unauthorized, reason: "'x-swiftarr-user' user not found")
 		}
+		guard user.accessLevel != .client else {
+			throw Abort(.unauthorized, reason: "'x-swiftarr-user' user cannot be client")
+		}
+		return try req.userCache.getHeaders(fromDate: date, forUser: user)
 	}
 	
 	/// `GET /api/v3/client/metrics`

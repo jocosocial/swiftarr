@@ -10,47 +10,47 @@ protocol ContentFilterable {
 
 extension ContentFilterable {
 
-    /// Checks if a `ContentFilterable` contains any of the provided array of muting strings, returning true if it does
-    ///
-    /// - Parameters:
-    ///   - mutewords: The list of strings on which to filter the post.
-    /// - Returns: TRUE if the post contains a muting string.
-    func containsMutewords(using mutewords: [String]) -> Bool {
-    	let contentStrings = self.contentTextStrings()
-        for word in mutewords {
-        	for string in contentStrings {
-        		if string.range(of: word, options: .caseInsensitive) != nil {
-        			return true
-        		}
-        	}
-        }
-        return false
-    }
-    
-    /// Checks if a `ContentFilterable` contains any of the provided array of strings, returning
-    /// `nil` if it does, else returning `self`. Returns `self` if the array of search strings is empty or `nil`.
-    ///
-    /// - Parameters:
-    ///   - words: The list of strings on which to filter the post.
-    /// - Returns: The provided object, or `nil` if the object's text fields contain a string.
-    func filterOutStrings(using words: [String]?) -> Self? {
-    	let contentStrings = self.contentTextStrings()
-        if let mutewords = words {
-			for word in mutewords {
-        		for string in contentStrings {
-        			if string.range(of: word, options: .caseInsensitive) != nil {
-						return nil
-        			}
+	/// Checks if a `ContentFilterable` contains any of the provided array of muting strings, returning true if it does
+	///
+	/// - Parameters:
+	///   - mutewords: The list of strings on which to filter the post.
+	/// - Returns: TRUE if the post contains a muting string.
+	func containsMutewords(using mutewords: [String]) -> Bool {
+		let contentStrings = self.contentTextStrings()
+		for word in mutewords {
+			for string in contentStrings {
+				if string.range(of: word, options: .caseInsensitive) != nil {
+					return true
 				}
 			}
 		}
-        return self
-    }
-    
-    /// Returns (removes, adds) which are (importantly!) disjoint sets of usernames @mentioned in the 
-    /// reciever or in the editedString. Used to update mention counts for mentioned users.
-    /// A user @mentioned multiple times in the same ContentFilterable only counts once.
-    func getMentionsDiffs(editedString: String?, isCreate: Bool) -> (Set<String>, Set<String>) {
+		return false
+	}
+	
+	/// Checks if a `ContentFilterable` contains any of the provided array of strings, returning
+	/// `nil` if it does, else returning `self`. Returns `self` if the array of search strings is empty or `nil`.
+	///
+	/// - Parameters:
+	///   - words: The list of strings on which to filter the post.
+	/// - Returns: The provided object, or `nil` if the object's text fields contain a string.
+	func filterOutStrings(using words: [String]?) -> Self? {
+		let contentStrings = self.contentTextStrings()
+		if let mutewords = words {
+			for word in mutewords {
+				for string in contentStrings {
+					if string.range(of: word, options: .caseInsensitive) != nil {
+						return nil
+					}
+				}
+			}
+		}
+		return self
+	}
+	
+	/// Returns (removes, adds) which are (importantly!) disjoint sets of usernames @mentioned in the 
+	/// reciever or in the editedString. Used to update mention counts for mentioned users.
+	/// A user @mentioned multiple times in the same ContentFilterable only counts once.
+	func getMentionsDiffs(editedString: String?, isCreate: Bool) -> (Set<String>, Set<String>) {
 		var oldMentions = Set<String>()
 		var newMentions = Set<String>()
 		self.contentTextStrings().forEach {
@@ -67,9 +67,9 @@ extension ContentFilterable {
 		else {
 			return (subtracts, adds)
 		}
-    }
-    
-    func getAlertwordDiffs(editedString: String?, isCreate: Bool) -> (Set<String>, Set<String>) {
+	}
+	
+	func getAlertwordDiffs(editedString: String?, isCreate: Bool) -> (Set<String>, Set<String>) {
 		var oldAlertWords = Set<String>()
 		var newAlertWords = Set<String>()
 		self.contentTextStrings().forEach {
@@ -86,11 +86,11 @@ extension ContentFilterable {
 		else {
 			return (subtracts, adds)
 		}
-    }
-    
-    /// Retuns all discovered hashtags in all text strings of the content.
-    func getHashtags() -> Set<String> {
-    	var hashtags: Set<String> = Set()
+	}
+	
+	/// Retuns all discovered hashtags in all text strings of the content.
+	func getHashtags() -> Set<String> {
+		var hashtags: Set<String> = Set()
 		self.contentTextStrings().forEach { string in
 			let words = string.split(separator: " ", omittingEmptySubsequences: true)
 			for word in words {
@@ -113,20 +113,20 @@ extension ContentFilterable {
 		}
 		return hashtags
 	}
-    
+	
 	static func buildCleanWordsArray(_ str: String) -> Set<String> {
 		let words = Set(str.lowercased().filter { $0.isLetter || $0.isWhitespace }.split(separator: " ").map { String($0) })
 		return words
 	}
 
-    /// Returns a set of possible usernames found as @mentions in the given string. Does not check whether the @mentions are valid users.
-    /// The algorithm could probably reduced to a somewhat complicated regex, but here's what it looks for:
+	/// Returns a set of possible usernames found as @mentions in the given string. Does not check whether the @mentions are valid users.
+	/// The algorithm could probably reduced to a somewhat complicated regex, but here's what it looks for:
 	///	- Start-of-string or whitespace,
 	/// - '@'
 	/// - 2...50 characters that are in the set of valid Username chars
 	/// 	- The last char in the above string cannot be in the set of username separator chars
 	/// - A non-Username char or end-of-string.
-    static func getMentionsSet(for string: String) -> Set<String> {
+	static func getMentionsSet(for string: String) -> Set<String> {
 		let words = string.split(separator: " ", omittingEmptySubsequences: true)
 		let userMentions: [String] = words.compactMap {
 			if $0.hasPrefix("@") && $0.count <= 50 && $0.count >= 3 {
@@ -153,13 +153,13 @@ extension ContentFilterable {
 		}
 		let mentionSet = Set(userMentions)
 		return mentionSet
-    }
-    
-    /// Fluent queries can filter for strings in text fields, but @mentions require more specific filtering.
-    /// This fn tests that the given username is @mentioned in the receiver's content. It's specifically looking for cases where one name is a substring of another.
+	}
+	
+	/// Fluent queries can filter for strings in text fields, but @mentions require more specific filtering.
+	/// This fn tests that the given username is @mentioned in the receiver's content. It's specifically looking for cases where one name is a substring of another.
 	/// Example: both @John and @John.Doe are users. Simple string search returns @John.Doe results in a search for @John.
 	/// Also, if a user is @mentioned at the end of a sentence, the period is a valid username char, but is not valid at the end of a username (must have a following alphanumeric).
-    func filterForMention(of username: String) -> Self? {
+	func filterForMention(of username: String) -> Self? {
 		for contentString in contentTextStrings() {
 			var searchRange: Range<String.Index> = contentString.startIndex..<contentString.endIndex
 			while !searchRange.isEmpty, let foundRange = contentString.range(of: username, options: [.caseInsensitive], range: searchRange) { 
@@ -181,5 +181,5 @@ extension ContentFilterable {
 		}
 		
 		return nil
-    }
+	}
 }

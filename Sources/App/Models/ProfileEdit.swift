@@ -11,46 +11,64 @@ import Fluent
 	- See Also: [CreateProfileEditSchema](CreateProfileEditSchema) the Migration for creating the ProfileEdit table in the database.
 */
 final class ProfileEdit: Model {
-	static let schema = "profileedits"
+	static let schema = "profileedit"
 	
-    // MARK: Properties
-    
-    /// The edit's ID.
-    @ID(key: .id) var id: UUID?
-        
-    /// The `UserProfileData` contents of the user's profile, just before the edit.
-    @OptionalField(key: "profileData") var profileData: UserProfileUploadData?
+	// MARK: Properties
+	
+	/// The edit's ID.
+	@ID(key: .id) var id: UUID?
+		
+	/// The `UserProfileData` contents of the user's profile, just before the edit.
+	@OptionalField(key: "profileData") var profileData: UserProfileUploadData?
 
-    /// The user's userImage filename, just before the edit.
-    @OptionalField(key: "profileImage") var profileImage: String?
-    
-    /// Timestamp of the model's creation, set automatically.
+	/// The user's userImage filename, just before the edit.
+	@OptionalField(key: "profileImage") var profileImage: String?
+	
+	/// Timestamp of the model's creation, set automatically.
 	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
-    
+	
 	// MARK: Relations
 
-    /// The `User` whose profile got edited.
-    @Parent(key: "user") var user: User
+	/// The `User` whose profile got edited.
+	@Parent(key: "user") var user: User
 
-    /// The `User` that performed the edit. Equal to `user` if someone's editing their own profile.
-    @Parent(key: "editor") var editor: User
-        
-    // MARK: Initialization
-    
-    // Used by Fluent
+	/// The `User` that performed the edit. Equal to `user` if someone's editing their own profile.
+	@Parent(key: "editor") var editor: User
+		
+	// MARK: Initialization
+	
+	// Used by Fluent
  	init() { }
  	
-    /// Initializes a new ProfileEdit.
-    ///
-    /// - Parameters:
-    ///   - target: The `User` whose profile data was changed.
-    ///   - editor: The `User` who performed the edit.
-    init(target: User, editor: User) throws {
-    	self.$user.id = try target.requireID()
-    	self.$user.value = target
-    	self.$editor.id = try editor.requireID()
-    	self.$editor.value = editor
-    	self.profileData = try UserProfileUploadData(user: target)
-        self.profileImage = target.userImage
-    }
+	/// Initializes a new ProfileEdit.
+	///
+	/// - Parameters:
+	///   - target: The `User` whose profile data was changed.
+	///   - editor: The `User` who performed the edit.
+	init(target: User, editor: User) throws {
+		self.$user.id = try target.requireID()
+		self.$user.value = target
+		self.$editor.id = try editor.requireID()
+		self.$editor.value = editor
+		self.profileData = try UserProfileUploadData(user: target)
+		self.profileImage = target.userImage
+	}
 }
+
+struct CreateProfileEditSchema: AsyncMigration {
+	func prepare(on database: Database) async throws {
+		try await database.schema("profileedit")
+				.id()
+				.field("profileData", .dictionary)
+				.field("profileImage", .string)
+				.field("created_at", .datetime)
+ 				.field("user", .uuid, .required, .references("user", "id"))
+ 				.field("editor", .uuid, .required, .references("user", "id"))
+				.create()
+	}
+	
+	func revert(on database: Database) async throws {
+		try await database.schema("profileedit").delete()
+	}
+}
+

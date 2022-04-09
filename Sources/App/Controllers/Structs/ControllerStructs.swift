@@ -12,22 +12,6 @@ public struct AddedUserData: Content {
 	let username: String
 }
 
-/// Used to obtain the user's current list of alert keywords.
-///
-/// Returned by:
-/// * `GET /api/v3/user/alertwords`
-/// * `POST /api/v3/user/alertwords/add/STRING`
-/// * `POST /api/v3/user/alertwords/remove/STRING`
-///
-/// See `UserController.alertwordsHandler(_:)`, `UserController.alertwordsAddHandler(_:)`,
-/// `UserController.alertwordsRemoveHandler(_:)`.
-public struct AlertKeywordData: Content {
-	/// The name of the barrel.
-	let name: String
-	/// The muted keywords.
-	var keywords: [String]
-}
-
 /// An announcement to display to all users. 
 /// 
 /// - Note: Admins can modify Announcements, but should only do so to correct typos or change the displayUntil time. Therefore if a user has seen an announcement,
@@ -66,89 +50,6 @@ extension AnnouncementData {
 			isDeleted = true
 		}
 	}
-}
-
-/// Used to create a new user-owned `.seamonkey` or `.userWords` `Barrel`.
-///
-/// Required by: `POST /api/v3/user/barrel`
-///
-/// See `UserController.createBarrelHandler(_:data:)`.
-public struct BarrelCreateData: Content {
-	/// The name of the barrel.
-	var name: String
-	/// An optional list of model UUIDs.
-	var uuidList: [UUID]?
-	/// An optional list of strings.
-	var stringList: [String]?
-}
-
-extension BarrelCreateData: RCFValidatable {
-	func runValidations(using decoder: ValidatingDecoder) throws {
-		let tester = try decoder.validator(keyedBy: CodingKeys.self)
-		tester.validate(name.count > 0, forKey: .name, or: "Barrel name cannot be empty.")
-		tester.validate(name.count <= 100, forKey: .name, or: "Barrel name length is limited to 100 characters.")
-		if uuidList != nil && stringList != nil {
-			tester.addValidationError(forKey: nil, errorString: "'uuidList' and 'stringList' cannot both contain values")
-		}
-	}
-}
-
-/// Used to return the contents of a user-owned `.seamonkey` or `.userWords` `Barrel`.
-///
-/// Returned by:
-/// * `POST /api/v3/user/barrel`
-/// * `GET /api/v3/user/barrels/ID`
-/// * `POST /api/v3/user/barrels/ID/add/STRING`
-/// * `POST /api/v3/user/barrels/ID/remove/STRING`
-/// * `POST /api/v3/user/barrels/ID/rename/STRING`
-///
-/// See `UserController.createBarrelHandler(_:data:)`, `UserController.barrelHandler(_:)`,
-/// `UserController.barrelAddHandler(_:)`, `UserController.barrelRemoveHandler(_:)`,
-/// `UserController.renameBarrelHandler(_:)`.
-public struct BarrelData: Content {
-	/// The barrel's ID.
-	let barrelID: UUID
-	/// The name of the barrel.
-	let name: String
-	/// The barrel's `UserHeader` contents.
-	var seamonkeys: [UserHeader]
-	/// An optional list of strings.
-	var stringList: [String]?
-}
-
-extension BarrelData {
-	init(barrel: Barrel, users: [User]? = nil) throws {
-		barrelID = try barrel.requireID()
-		name = barrel.name
-		seamonkeys = try users?.map { try UserHeader(user: $0) } ?? []
-		stringList = barrel.userInfo["userWords"]
-	}
-}
-
-/// Used to obtain a list of user-owned `Barrel` names and IDs.
-///
-/// Returned by:
-/// * `GET /api/v3/user/barrels`
-/// * `GET /api/v3/user/barrels/seamonkey`
-///
-/// See `UserController.barrelsHandler(_:)`, `UserController.seamonkeyBarrelsHandler(_:)`.
-public struct BarrelListData: Content {
-	/// The barrel's ID.
-	let barrelID: UUID
-	/// The name of the barrel.
-	let name: String
-}
-
-/// Used to obtain the user's list of blocked users.
-///
-/// Returned by: `GET /api/v3/user/blocks`
-///
-/// See `UserController.blocksHandler(_:)`.
-public struct BlockedUserData: Content {
-	/// The name of the barrel.
-	let name: String
-	/// The blocked `User`s.
-	var blockedUsers: [UserHeader]
 }
 
 /// Wraps an array of `BoardgameData` with info needed to paginate the result set.
@@ -682,7 +583,6 @@ extension ForumData {
 /// * `GET /api/v3/forum/categories/ID`
 /// * `GET /api/v3/forum/owner`
 /// * `GET /api/v3/user/forums`
-/// * `GET /api/v3/forum/match/STRING`
 /// * `GET /api/v3/forum/favorites`
 ///
 /// See `ForumController.categoryForumsHandler(_:)`, `ForumController.ownerHandler(_:)`,
@@ -733,7 +633,6 @@ extension ForumListData {
 /// forums need not be from the same category. Instead, this returns forums that match a common attribute acoss all categores.
 ///
 /// Returned by:
-/// * `GET /api/v3/forum/match/STRING`
 /// * `GET /api/v3/forum/favorites`
 /// * `GET /api/v3/forum/owner`
 ///
@@ -849,32 +748,21 @@ public struct KaraokePerformedSongsData: Content {
 	var time: Date
 }
 
-/// Used to obtain the user's current list of keywords for muting public content.
+/// Used to obtain the user's current list of alert or mute keywords.
 ///
 /// Returned by:
+/// * `GET /api/v3/user/alertwords`
+/// * `POST /api/v3/user/alertwords/add/STRING`
+/// * `POST /api/v3/user/alertwords/remove/STRING`
 /// * `GET /api/v3/user/mutewords`
 /// * `POST /api/v3/user/mutewords/add/STRING`
 /// * `POST /api/v3/user/mutewords/remove/STRING`
 ///
-/// See `UserController.mutewordsHandler(_:)`, `UserController.mutewordsAddHandler(_:)`,
-/// `UserController.mutewordsRemoveHandler(_:)`.
-public struct MuteKeywordData: Content {
-	/// The name of the barrel.
-	let name: String
-	/// The muted keywords.
+/// See `UserController.alertwordsHandler(_:)`, `UserController.alertwordsAddHandler(_:)`,
+/// `UserController.alertwordsRemoveHandler(_:)`.
+public struct KeywordData: Content {
+	/// The keywords.
 	var keywords: [String]
-}
-
-/// Used to obtain the user's list of muted users.
-///
-/// Returned by: `GET /api/v3/user/mutes`
-///
-/// See `UserController.mutesHandler(_:)`.
-public struct MutedUserData: Content {
-	/// The name of the barrel.
-	let name: String
-	/// The muted `User`s.
-	var mutedUsers: [UserHeader]
 }
 
 /// Used to create a `UserNote` when viewing a user's profile. Also used to create a Karaoke song log entry.
@@ -1498,8 +1386,12 @@ public struct UserNotificationData: Content {
 	/// Count of # of Fezzes with new messages. 0 if not logged in.
 	var newFezMessageCount: Int
 	
-	/// The start time of the earliest event that the user has followed with a start time > now. nil if not logged in.
+	/// The start time of the earliest event that the user has followed with a start time > now. nil if not logged in or no matching event.
 	var nextFollowedEventTime: Date?
+	
+	/// The event ID of the the next future event the user has followed. This event's start time should always be == nextFollowedEventTime.
+	/// If the user has favorited multiple events that start at the same time, this will be random among them.
+	var nextFollowedEventID: UUID?
 	
 	/// For each alertword the user has, this returns data on hit counts for that word.
 	var alertWords: [UserNotificationAlertwordData]
@@ -1525,7 +1417,7 @@ public struct UserNotificationData: Content {
 
 extension UserNotificationData	{
 	init(newFezCount: Int, newSeamailCount: Int, activeAnnouncementIDs: [Int], newAnnouncementCount: Int, 
-			nextEvent: Date?) {
+			nextEventTime: Date?, nextEvent: UUID?) {
 		serverTime = ISO8601DateFormatter().string(from: Date())
 		serverTimeOffset = Settings.shared.getDisplayTimeZone().secondsFromGMT()
 		serverTimeZone = Settings.shared.displayTimeZoneAbbr
@@ -1539,7 +1431,8 @@ extension UserNotificationData	{
 		self.newForumMentionCount = 0
 		self.newSeamailMessageCount = newSeamailCount
 		self.newFezMessageCount = newFezCount
-		self.nextFollowedEventTime = nextEvent
+		self.nextFollowedEventTime = nextEventTime
+		self.nextFollowedEventID = nextEvent
 		self.alertWords = []
 	}
 	

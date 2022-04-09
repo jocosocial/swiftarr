@@ -164,10 +164,6 @@ class ForumAPIUser(FastHttpUser):
 		self.client.post("/api/v3/forum/post/" + randPost + "/bookmark/remove", headers = self.samAuth, name="/api/v3/forum/post/:post_id/bookmark/remove")
 
 	@task
-	def searchForums(self):
-		self.client.get("/api/v3/forum/match/hello", headers = self.samAuth, name="/api/v3/forum/match/:string")
-
-	@task
 	def searchPosts(self):
 		self.client.get("/api/v3/forum/post/search?search=hello", headers = self.samAuth, name="/api/v3/forum/post/search")
 

@@ -1,30 +1,30 @@
 import Foundation
 import Vapor
 
-struct DisabledAPISectionMiddleware: Middleware {
+struct DisabledAPISectionMiddleware: AsyncMiddleware {
 	let featureToCheck: SwiftarrFeature
 
 	init(feature: SwiftarrFeature) {
 		featureToCheck = feature
 	}
 
-	func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+	func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
 		let features = Settings.shared.disabledFeatures.value
 		if features[.all]?.contains(featureToCheck) ?? false {
-			return request.eventLoop.future(error: Abort(.serviceUnavailable))
+			throw Abort(.serviceUnavailable)
 		}
-		return next.respond(to: request)
+		return try await next.respond(to: request)
 	}
 }
 
-struct DisabledSiteSectionMiddleware: Middleware {
+struct DisabledSiteSectionMiddleware: AsyncMiddleware {
 	let featureToCheck: SwiftarrFeature
 
 	init(feature: SwiftarrFeature) {
 		featureToCheck = feature
 	}
 
-	func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+	func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
 		let features = Settings.shared.disabledFeatures.value
 		if features[.all]?.contains(featureToCheck) ?? false || features[.swiftarr]?.contains(featureToCheck) ?? false {
 			struct DisabledSectionContext : Encodable {
@@ -34,8 +34,8 @@ struct DisabledSiteSectionMiddleware: Middleware {
 				}
 			}
 			let ctx = DisabledSectionContext(request)
-			return request.view.render("featureDisabled.leaf", ctx).encodeResponse(for: request)
+			return try await request.view.render("featureDisabled.leaf", ctx).encodeResponse(for: request)
 		}
-		return next.respond(to: request)
+		return try await next.respond(to: request)
 	}
 }

@@ -20,45 +20,64 @@ import Fluent
 final class Announcement: Model {
 	static let schema = "announcements"
 	
-    // MARK: Properties
-    
-    /// The announcement's ID.
-    @ID(custom: "id") var id: Int?
-    
-    /// The text content of the announcement.
-    @Field(key: "text") var text: String
-    
-    /// The announcement is considered 'active' until this time. Most API endpoints only return info on active announcements. 
-    @Field(key: "display_until") var displayUntil: Date
-                
-    /// Timestamp of the model's creation, set automatically.
+	// MARK: Properties
+	
+	/// The announcement's ID.
+	@ID(custom: "id") var id: Int?
+	
+	/// The text content of the announcement.
+	@Field(key: "text") var text: String
+	
+	/// The announcement is considered 'active' until this time. Most API endpoints only return info on active announcements. 
+	@Field(key: "display_until") var displayUntil: Date
+				
+	/// Timestamp of the model's creation, set automatically.
 	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
-    
-    /// Timestamp of the model's last update, set automatically.
-    @Timestamp(key: "updated_at", on: .update) var updatedAt: Date?
-    
-    /// Timestamp of the model's soft-deletion, set automatically.
-    @Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
+	
+	/// Timestamp of the model's last update, set automatically.
+	@Timestamp(key: "updated_at", on: .update) var updatedAt: Date?
+	
+	/// Timestamp of the model's soft-deletion, set automatically.
+	@Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
  
 	// MARK: Relations
-    
-    /// The parent `User`  who authored the announcement.
-    @Parent(key: "author") var author: User
-        
-    // MARK: Initialization
-    
-    /// Used by Fluent
+	
+	/// The parent `User`  who authored the announcement.
+	@Parent(key: "author") var author: User
+		
+	// MARK: Initialization
+	
+	/// Used by Fluent
  	init() { }
  	
-    /// Initializes a new Announcement.
-    ///
-    /// - Parameters:
-    ///   - author: The author of the Announcement.
-    ///   - text: The text content of the Announcement.
-    init(authorID: UUID, text: String, displayUntil: Date) {
-        self.$author.id = authorID
-        // We don't do much text manipulation on input, but let's normalize line endings.
-        self.text = text.replacingOccurrences(of: "\r\n", with: "\r")
-        self.displayUntil = displayUntil
-    }
+	/// Initializes a new Announcement.
+	///
+	/// - Parameters:
+	///   - author: The author of the Announcement.
+	///   - text: The text content of the Announcement.
+	init(authorID: UUID, text: String, displayUntil: Date) {
+		self.$author.id = authorID
+		// We don't do much text manipulation on input, but let's normalize line endings.
+		self.text = text.replacingOccurrences(of: "\r\n", with: "\r")
+		self.displayUntil = displayUntil
+	}
 }
+
+struct CreateAnnouncementSchema: AsyncMigration {
+	func prepare(on database: Database) async throws {
+		try await database.schema("announcements")
+				.field("id", .int, .identifier(auto: true))
+				.field("text", .string, .required)
+				.field("display_until", .datetime, .required)
+				.field("created_at", .datetime)
+				.field("updated_at", .datetime)
+				.field("deleted_at", .datetime)
+				.field("author", .uuid, .required, .references("user", "id"))
+				.create()
+	}
+	
+	func revert(on database: Database) async throws {
+		try await database.schema("announcements").delete()
+	}
+}
+

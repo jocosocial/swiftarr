@@ -1,13 +1,13 @@
 import Vapor
 
 /// Captures all errors and transforms them into an internal server error HTTP response.
-public final class SiteErrorMiddleware: Middleware {
+public final class SiteErrorMiddleware: AsyncMiddleware {
 	var isReleaseMode: Bool
 
-	func handleError(req: Request, error: Error) throws -> EventLoopFuture<Response> {
+	func handleError(req: Request, error: Error) async throws -> Response {
 		if let route = req.route {
 			// If we matched a route, and that route *doesn't* return an HTML page, don't return an error HTML page.
-			if route.responseType != EventLoopFuture<View>.self {
+			if route.responseType != View.self {
 				throw error
 			}
 		}
@@ -73,7 +73,7 @@ public final class SiteErrorMiddleware: Middleware {
 			}
 		}
 		let ctx = ErrorPageContext(req, status: status, errorStr: errorStr)
-		return req.view.render("error", ctx).encodeResponse(status: status, for: req)
+		return try await req.view.render("error", ctx).encodeResponse(status: status, for: req)
 	}
 	
 	init(environment: Environment) {
@@ -81,14 +81,16 @@ public final class SiteErrorMiddleware: Middleware {
 	}
 
 	/// See `Middleware`.
-	public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
-		return next.respond(to: request).flatMapError { error in
-			do {
-				return try self.handleError(req: request, error: error)
-			}
-			catch {
-				return request.eventLoop.makeFailedFuture(error)
-			}
+	public func respond(to request: Request, chainingTo next:  AsyncResponder) async throws -> Response {
+		do {
+			let response = try await next.respond(to: request)
+			return response
+		}
+		catch {
+			// handleError inspects the route and only returns the 'error' HTML page if the route would have 
+			// returned HTML. This middleware could be optimized to only be attached to routes that return HTML,
+			// but there's no easy way to that.
+			return try await handleError(req: request, error: error)
 		}
 	}
 }
