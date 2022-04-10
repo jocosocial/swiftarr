@@ -26,6 +26,7 @@ struct ClientController: APIRouteCollection {
 		// Endpoints available with HTTP Basic auth. I'd prefer token auth for this, but setting that up looks difficult.
 		let basicAuthGroup = addBasicAuthGroup(to: clientRoutes)
 		basicAuthGroup.get("metrics", use: prometheusMetricsSource)
+		basicAuthGroup.post("alert", use: prometheusAlertHandler)
 	}
 
 	// MARK: - tokenAuthGroup Handlers (logged in)
@@ -120,9 +121,7 @@ struct ClientController: APIRouteCollection {
 	/// is connected, it will poll this endpoint for metrics updates. You can then view Swiftarr metrics data with charts and graphs in a web page served
 	/// by Prometheus.
 	///
-	/// - Requires: `x-swiftarr-user` header in the request.
-	/// - Throws: 400 error if no valid date string provided. 401 error if the required header
-	///   is missing or invalid. 403 error if user is not a registered client.
+	/// - Throws: 403 error if user is not a registered client.
 	/// - Returns: Data about what requests are being called, how long they take to complete, how the databases are doing, what the server's CPU utilization is,
 	/// plus a bunch of other metrics data. All the data is in some opaquish Prometheus format.
 	func prometheusMetricsSource(_ req: Request) -> EventLoopFuture<String> {
@@ -137,5 +136,62 @@ struct ClientController: APIRouteCollection {
 		return promise.futureResult
 	}
 
-	// MARK: - Helper Functions
+	/// `POST /api/v3/client/alert`
+	///
+	/// For use with the [Prometheus Alertmanager](https://prometheus.io/docs/alerting/latest/alertmanager/). A webhook can
+	/// be configured to POST a payload containing information about actively firing/cleared alerts. A situation arose on JoCo 2022
+	/// in which the server ran out of disk space. We have Prometheus metrics for this but no way to tell us about it without
+	/// checking the dashboards manually. This endpoint translates that payload into a Seamail that can be sent to an arbitrary
+	/// user (usually TwitarrTeam).
+	///
+	/// It is expected that the Prometheus alerts are configured with two custom annotations:
+	///   * participants: A comma-seperated list of usernames to send the seamail to.
+	///   * summary: A string containing a message body to send in the seamail.
+	///
+	/// This should be used very judiciously and only for actionable alerts! On-call sucks in the real world and I don't want
+	/// people to get spammed with messages while on vacation.
+	/// 
+	/// - Throws: 403 error if user is not a registered client.
+	/// - Returns: 201 created.
+	func prometheusAlertHandler(_ req: Request) async throws -> Response {
+		let data = try ValidatingJSONDecoder().decode(AlertmanagerWebhookPayload.self, fromBodyOf: req)
+
+		// Locate the source user, which is a prometheus service account we create on database initialization.
+		guard let sourceUserHeader = req.userCache.getHeader("prometheus") else {
+			throw Abort(.internalServerError, reason: "User prometheus not found.")
+		}
+
+		// In my testing I couldn't get the AlertmanagerWebhookPayload.alerts array to be larger than one.
+		// In the event I missed some weird case I'm going to put this in a loop that best case just runs once anyway.
+		for alert in data.alerts {
+			guard alert.annotations["participants"] != nil else {
+				throw Abort(.badRequest, reason: "Could not decode participants. Requires annotation.")
+			}
+			guard let destinationUsernames = alert.annotations["participants"]?.components(separatedBy: ",") else {
+				throw Abort(.badRequest, reason: "Could not decode participants. Requires comma-separated list of usernames.")
+			}
+			var destinationUserHeaders: [UserHeader] = []
+			for destinationUsername in destinationUsernames {
+				guard req.userCache.getHeader(destinationUsername) != nil else {
+					throw Abort(.badRequest, reason: "Unknown participant username: '\(destinationUsername)'")
+				}
+				destinationUserHeaders.append(req.userCache.getHeader(destinationUsername)!)
+			}
+			let alertSubject = "Prometheus Alert: \(alert.getName()) is now \(alert.status)."
+			req.logger.warning("\(alertSubject)")
+			// I speak Python, and "list comprehension" is not nearly as easy here. Fortunately the toUserIDs magic
+			// was adapted from https://stackoverflow.com/questions/24003584/list-comprehension-in-swift
+			try await sendSimpleSeamail(req, fromUserID: sourceUserHeader.userID, toUserIDs: destinationUserHeaders.map {$0.userID}, 
+				subject: alertSubject, initialMessage: alert.getSummary())
+		}
+
+		// It's possible that Alertmanager could do something with the information
+		// it gets back but that can be a project for a different day.
+		return Response(status: .ok)
+	}
+}
+
+extension ClientController: FezProtocol {
+	/// This page intentionally left blank. In case we have extra things to add later on
+	/// I'm keeping it seperate even though this could be done above.
 }

@@ -18,6 +18,7 @@ struct CreateAdminUsers: AsyncMigration {
 	/// - Returns: Void.
 	func prepare(on database: Database) async throws {
 		try await createAdminUser(on: database)
+		try await createPrometheusUser(on: database)
 		try await createTHOUser(on: database)
 		try await createModeratorUser(on: database)
 		try await createTwitarrTeamUser(on: database)
@@ -68,6 +69,47 @@ struct CreateAdminUsers: AsyncMigration {
 			verification: "generated user",
 			parent: nil,
 			accessLevel: .admin
+		)
+		// save user
+		try await user.save(on: database)
+	}
+
+	/// Prometheus user gets their password from the `PROMETHEUS_PASSWORD`. Recovery key is randomly generated and thrown away.
+    /// environment variables. These are usually set in the appropriate .env file in "Private Swiftarr Config" directory.
+	/// For the production environment, this file will be "production.env".
+	func createPrometheusUser(on database: Database) async throws {
+		let password = Environment.get("PROMETHEUS_PASSWORD") ?? "password"
+		var recoveryKey = ""
+		for _ in 0...50 {
+			recoveryKey.append(String(Unicode.Scalar(Int.random(in: 33...126))!))
+		}
+
+        // default values should never be used in production
+		do {
+			if (try Environment.detect().isRelease) {
+				if password == "password" {
+					database.logger.log(level: .critical, "Please set a proper PROMETHEUS_PASSWORD environment variable.")
+				}
+			}
+		} catch let error {
+			fatalError("Environment.detect() failed! error: \(error)")
+		}
+
+        // abort if no sane values or encryption fails
+		guard !password.isEmpty, !recoveryKey.isEmpty,
+			let passwordHash = try? Bcrypt.hash(password),
+			let recoveryHash = try? Bcrypt.hash(recoveryKey) else {
+				fatalError("prometheus user creation failure: invalid password or recoveryKey")
+		}
+
+        // create prometheus user directly
+		let user = User(
+			username: "prometheus",
+			password: passwordHash,
+			recoveryKey: recoveryHash,
+			verification: "generated user",
+			parent: nil,
+			accessLevel: .client
 		)
 		// save user
 		try await user.save(on: database)

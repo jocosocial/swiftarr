@@ -1,3 +1,2 @@
 client:password:recovery key
 kraken:password:release the hounds
-prometheus:password:stealing fire

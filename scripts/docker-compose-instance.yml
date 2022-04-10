@@ -16,3 +16,21 @@ services:
       - 6379:6379
     environment:
       ALLOW_EMPTY_PASSWORD: "yes"
+
+  prometheus:
+    image: docker.io/bitnami/prometheus:2.32.1
+    ports:
+      - 9090:9090
+    volumes:
+      - ../Prometheus/swiftarr.yml:/opt/bitnami/prometheus/conf/swiftarr.yml:ro
+      - ../Prometheus/alerts.yml:/opt/bitnami/prometheus/conf/alerts.yml:ro
+    command:
+      - '--web.enable-admin-api'
+      - '--config.file=/opt/bitnami/prometheus/conf/swiftarr.yml'
+
+  alertmanager:
+    image: docker.io/bitnami/alertmanager:0.23.0
+    ports:
+      - 9093:9093
+    volumes:
+      - ../Prometheus/alertmanager.yml:/opt/bitnami/alertmanager/conf/config.yml:ro
