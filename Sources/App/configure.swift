@@ -98,6 +98,9 @@ public func configure(_ app: Application) throws {
 	// for use until its 'didBoot' lifecycle handler has run, and I don't like opaque ordering dependencies.
 	// As a lifecycle handler, our 'didBoot' callback got put in a list with Redis's, and we had to hope Vapor called them first.
 	try app.initializeUserCache(app)
+
+	// Add custom commands
+	configureCommands(app)
 }
 
 // So, the way to get files copied into a built app with SPM is to declare them as Resources of some sort and 
@@ -551,4 +554,10 @@ func operatingSystemPlatform() -> String? {
 		#endif
 	}()
 	return osName
+}
+
+// Wrapper function to add any custom CLI commands. Might be overkill but at least it's scalable.
+// These should be stored in Sources/App/Commands.
+func configureCommands(_ app: Application) {
+	app.commands.use(ScheduleMungerCommand(), as: "munge")
 }
