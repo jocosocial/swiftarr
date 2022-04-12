@@ -10,8 +10,11 @@ import Vapor
 ///	Then take the munged.ics file and either replace /Sources/App/seeds/schedule.ics with it, or use the Admin UI to apply munged.ics as a schedule update.
 struct ScheduleMungerCommand: Command {
 	struct Signature: CommandSignature {
-		@Argument(name: "path")
-		var path: String
+		@Argument(name: "inputFilePath")
+		var inputFilePath: String
+
+		@Argument(name: "outputFilePath")
+		var outputFilePath: String
 	}
 
 	var help: String {
@@ -27,20 +30,22 @@ struct ScheduleMungerCommand: Command {
 			return dateFormatter
 		}()
 
-		guard let data = FileManager.default.contents(atPath: signature.path),
+		var outputFile = URL(fileURLWithPath: signature.outputFilePath)
+
+		guard let data = FileManager.default.contents(atPath: signature.inputFilePath),
 			let fileString = String(bytes: data, encoding: .utf8)
 		else {
 			fatalError("Could not read schedule file.")
 		}
 
-		let astStartDate = Calendar.current.date(
+		let astStartDate = Settings.shared.getDisplayCalendar().date(
 			from: DateComponents(
-				calendar: Calendar.current,
-				timeZone: TimeZone(abbreviation: "EST")!, year: 2022, month: 3, day: 8, hour: 2))!
-		let astEndDate = Calendar.current.date(
+				calendar: Settings.shared.getDisplayCalendar(),
+				timeZone: Settings.shared.portTimeZone, year: 2022, month: 3, day: 8, hour: 2))!
+		let astEndDate = Settings.shared.getDisplayCalendar().date(
 			from: DateComponents(
-				calendar: Calendar.current,
-				timeZone: TimeZone(abbreviation: "EST")!, year: 2022, month: 3, day: 9, hour: 2))!
+				calendar: Settings.shared.getDisplayCalendar(),
+				timeZone: Settings.shared.portTimeZone, year: 2022, month: 3, day: 9, hour: 2))!
 
 		let icsArray = fileString.components(separatedBy: .newlines)
 		for element in icsArray where !element.isEmpty {
@@ -51,13 +56,22 @@ struct ScheduleMungerCommand: Command {
 			case "DTSTART", "DTEND":
 				if var date = dateFormatter.date(from: value), astStartDate < date, date <= astEndDate {
 					date -= 3600
-					print("\(key):\(dateFormatter.string(from: date))", terminator: "\r\n")
+					writeOutputLine("\(key):\(dateFormatter.string(from: date))", fileUrl: outputFile)
 				} else {
-					print(element, terminator: "\r\n")
+					writeOutputLine("\(element)", fileUrl: outputFile)
 				}
 			default:
-				print(element, terminator: "\r\n")
+				writeOutputLine("\(element)", fileUrl: outputFile)
 			}
+		}
+	}
+
+	func writeOutputLine(_ line: String, fileUrl: URL) {
+		do {
+			try "\(line)\r\n".write(to: fileUrl, atomically: false, encoding: String.Encoding.utf8)
+		} catch {
+			print("Error writing file.")
+			exit(1)
 		}
 	}
 }
