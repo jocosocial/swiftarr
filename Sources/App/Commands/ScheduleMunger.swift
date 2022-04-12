@@ -30,7 +30,7 @@ struct ScheduleMungerCommand: Command {
 			return dateFormatter
 		}()
 
-		var outputFile = URL(fileURLWithPath: signature.outputFilePath)
+		let outputFile = URL(fileURLWithPath: signature.outputFilePath)
 
 		guard let data = FileManager.default.contents(atPath: signature.inputFilePath),
 			let fileString = String(bytes: data, encoding: .utf8)
@@ -46,6 +46,10 @@ struct ScheduleMungerCommand: Command {
 			from: DateComponents(
 				calendar: Settings.shared.getDisplayCalendar(),
 				timeZone: Settings.shared.portTimeZone, year: 2022, month: 3, day: 9, hour: 2))!
+
+		if FileManager.default.fileExists(atPath: outputFile.path) {
+			try FileManager.default.removeItem(at: outputFile)
+		}
 
 		let icsArray = fileString.components(separatedBy: .newlines)
 		for element in icsArray where !element.isEmpty {
@@ -66,12 +70,20 @@ struct ScheduleMungerCommand: Command {
 		}
 	}
 
+	// StackOverflow the real MVP of all this.
+	// https://stackoverflow.com/questions/54384781/how-to-create-a-file-in-the-documents-folder-if-one-doesnt-exist
 	func writeOutputLine(_ line: String, fileUrl: URL) {
-		do {
-			try "\(line)\r\n".write(to: fileUrl, atomically: false, encoding: String.Encoding.utf8)
-		} catch {
-			print("Error writing file.")
-			exit(1)
+		let formatedLine = "\(line)\r\n"
+		if let handle = try? FileHandle(forWritingTo: fileUrl) {
+			handle.seekToEndOfFile()
+			handle.write(formatedLine.data(using: .utf8)!)
+			handle.closeFile()
+		} else {
+			do {
+				try formatedLine.write(to: fileUrl, atomically: false, encoding: .utf8)
+			} catch {
+				fatalError("Unable to write to new file: \(error)")
+			}
 		}
 	}
 }
