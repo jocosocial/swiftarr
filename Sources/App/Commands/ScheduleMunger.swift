@@ -5,7 +5,7 @@ import Vapor
 /// that are correct in the EST timezone, because Sched doesn't support having a venue move between timezones during an event.
 ///
 /// To use:
-//		./munger schedule.ics > munged.ics
+//		vapor run munge schedule.ics munged.ics
 ///
 ///	Then take the munged.ics file and either replace /Sources/App/seeds/schedule.ics with it, or use the Admin UI to apply munged.ics as a schedule update.
 struct ScheduleMungerCommand: Command {
