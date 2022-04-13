@@ -15,8 +15,7 @@ DerivedData/
 __pycache__/
 
 # Swiftarr project ignores
-/Sources/Run/Private Swiftarr Config/*
-!/Sources/Run/Private Swiftarr Config/Template.env
-!/Sources/Run/Private Swiftarr Config/Docker-Template.env
+/Sources/App/seeds/Private Swiftarr Config/*
+!/Sources/App/seeds/Private Swiftarr Config/Template.env
+!/Sources/App/seeds/Private Swiftarr Config/Docker-Template.env
 /[Ii]mages/
-

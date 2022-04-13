@@ -63,6 +63,14 @@ public struct EventUpdateDifferenceData: Content {
 	var minorChangeEvents: [EventData] = []
 }
 
+/// Returns the registration code associated with a user. Not all users have registration codes; e.g. asking for the reg code for 'admin' will return an error.
+public struct RegistrationCodeUserData: Content {
+	// User accounts associated with the reg code. First item in the array is the primary account. 
+	var users: [UserHeader]
+	/// The registration code associated with this account. If this account doesn't have an associated regcode, will be the empty string.
+	var regCode: String
+}
+
 /// Returns general info about registration codes.
 /// 
 /// Each passenger gets sent an email with a unique registration code; the reg code allows them to create verified accounts.

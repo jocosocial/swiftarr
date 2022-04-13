@@ -45,6 +45,7 @@
 /* Begin PBXBuildFile section */
 		EA20207A27FA59FE00F82C28 /* seeds in CopyFiles */ = {isa = PBXBuildFile; fileRef = EA20207927FA59FB00F82C28 /* seeds */; };
 		EA20207B27FA5A0100F82C28 /* Resources in CopyFiles */ = {isa = PBXBuildFile; fileRef = EA20206927FA592C00F82C28 /* Resources */; };
+		EA20207D2803DE7300F82C28 /* FezProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA20207C2803DE7200F82C28 /* FezProtocol.swift */; };
 		OBJ_2826 /* AdminController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_10 /* AdminController.swift */; };
 		OBJ_2827 /* AlertController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* AlertController.swift */; };
 		OBJ_2828 /* AuthController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* AuthController.swift */; };
@@ -8236,6 +8237,7 @@
 /* Begin PBXFileReference section */
 		EA20206927FA592C00F82C28 /* Resources */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Resources; path = Sources/App/Resources; sourceTree = "<group>"; };
 		EA20207927FA59FB00F82C28 /* seeds */ = {isa = PBXFileReference; lastKnownFileType = folder; name = seeds; path = Sources/App/seeds; sourceTree = "<group>"; };
+		EA20207C2803DE7200F82C28 /* FezProtocol.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FezProtocol.swift; sourceTree = "<group>"; };
 		OBJ_10 /* AdminController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminController.swift; sourceTree = "<group>"; };
 		OBJ_100 /* MuteWord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MuteWord.swift; sourceTree = "<group>"; };
 		OBJ_1000 /* Backtrace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Backtrace.swift; sourceTree = "<group>"; };
@@ -12382,6 +12384,7 @@
 			children = (
 				OBJ_119 /* APIRouteCollection.swift */,
 				OBJ_120 /* ContentFilterable.swift */,
+				EA20207C2803DE7200F82C28 /* FezProtocol.swift */,
 				OBJ_121 /* ImageHandler.swift */,
 				OBJ_122 /* Reportable.swift */,
 			);
@@ -16279,7 +16282,7 @@
 			path = Middleware;
 			sourceTree = "<group>";
 		};
-		OBJ_5 /*  */ = {
+		OBJ_5 = {
 			isa = PBXGroup;
 			children = (
 				OBJ_6 /* Package.swift */,
@@ -16303,7 +16306,6 @@
 				EA20207927FA59FB00F82C28 /* seeds */,
 				EA20206927FA592C00F82C28 /* Resources */,
 			);
-			name = "";
 			sourceTree = "<group>";
 		};
 		OBJ_500 /* Migration */ = {
@@ -19806,7 +19808,7 @@
 			knownRegions = (
 				en,
 			);
-			mainGroup = OBJ_5 /*  */;
+			mainGroup = OBJ_5;
 			productRefGroup = OBJ_2744 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -19942,6 +19944,7 @@
 				OBJ_2853 /* UserAccessLevel.swift in Sources */,
 				OBJ_2854 /* Event+Extensions.swift in Sources */,
 				OBJ_2855 /* Fez+Extensions.swift in Sources */,
+				EA20207D2803DE7300F82C28 /* FezProtocol.swift in Sources */,
 				OBJ_2856 /* FezPost+Extensions.swift in Sources */,
 				OBJ_2857 /* Forum+Extensions.swift in Sources */,
 				OBJ_2858 /* ForumPost+Extensions.swift in Sources */,

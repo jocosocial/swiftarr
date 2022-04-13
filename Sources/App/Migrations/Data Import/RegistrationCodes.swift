@@ -47,7 +47,7 @@ struct ImportRegistrationCodes: AsyncMigration {
 			for startIndex in stride(from: 0, through: codesArray.count, by: 100) {
 				let endIndex = min(startIndex + 100, codesArray.count)
 				var regCodes: [RegistrationCode] = []
-				for codeIndex in startIndex..<endIndex {
+				for codeIndex in startIndex..<endIndex where codesArray[codeIndex].count == 6 {
 					let registrationCode = RegistrationCode(code: codesArray[codeIndex])
 					regCodes.append(registrationCode)
 				}

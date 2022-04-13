@@ -446,17 +446,23 @@ userSearch?.addEventListener('input', function(event) {
 				for (user of userHeaders) {
 					let listItem = document.getElementById('potentialMemberTemplate').content.firstElementChild.cloneNode(true);
 					listItem.dataset.userid = user.userID;
-					listItem.querySelector('.username-here').innerText = "@" + user.username;
-					let checkbox = listItem.querySelector('.btn-check');
-					checkbox.dataset.actionpath = checkbox.dataset.actionpath + user.userID;
-					checkbox.dataset.errordiv = "waitlisterror_" + user.userID;
-					listItem.querySelector('.error-display').id = "waitlisterror_" + user.userID;
+					listItem.querySelector('.username-here').innerHTML = ["@", user.username, " <b>", user.displayName,"</b>"].join('');
 					suggestionDiv.append(listItem);
-					if (userSearch.dataset.nameusage == "seamail") {
-						checkbox.addEventListener('click', addToNamedParticipants);
+					let checkbox = listItem.querySelector('.btn-check');
+					if (checkbox != null) {
+						checkbox.dataset.actionpath = checkbox.dataset.actionpath + user.userID;
+						checkbox.dataset.errordiv = "waitlisterror_" + user.userID;
+						listItem.querySelector('.error-display').id = "waitlisterror_" + user.userID;
+						if (userSearch.dataset.nameusage == "seamail") {
+							checkbox.addEventListener('click', addToNamedParticipants);
+						}
+						else {
+							checkbox.addEventListener('click', spinnerButtonAction);
+						}
 					}
-					else {
-						checkbox.addEventListener('click', spinnerButtonAction);
+					let anchorButton = listItem.querySelector('.append-userid-to-href')
+					if (anchorButton != null) {
+						anchorButton.href = anchorButton.href + user.userID;
 					}
 				}
 			})

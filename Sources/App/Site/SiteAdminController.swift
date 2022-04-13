@@ -37,6 +37,7 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTTRoutes.get("scheduleupload", "complete", use: scheduleUpdateCompleteViewtHandler)
 
 		privateTTRoutes.get("regcodes", use: getRegCodeHandler)
+		privateTTRoutes.get("regcodes", "showuser", userIDParam, use: getRegCodeForUserHandler)
 		
 		privateTTRoutes.get("karaoke", "managers", use: getKaraokeManagersHandler)
 		privateTTRoutes.post("user", userIDParam, "karaoke", "manager", "promote", use: promoteKaraokeManager)
@@ -496,14 +497,15 @@ struct SiteAdminController: SiteControllerUtils {
 	// Shows stats on reg code use. Lets admins search on a regcode and get the user it's associated with, if any.
 	func getRegCodeHandler(_ req: Request) async throws -> View {
 		var regCodeSearchResults = ""
+		var searchResultHeaders = [UserHeader]()
 		if let regCode = req.query[String.self, at: "search"]?.removingPercentEncoding?.lowercased().filter({ $0 != " " }) {
 			regCodeSearchResults = "Invalid registration code"
 			if regCode.count == 6, regCode.allSatisfy({ $0.isLetter || $0.isNumber }) {
 				do {
 					let response = try await apiQuery(req, endpoint: "/admin/regcodes/find/\(regCode)")
-					let headers = try response.content.decode([UserHeader].self)
-					if headers.count > 0 {
-						regCodeSearchResults = "User \"\(headers[0].username)\" is associated with registration code \"\(regCode)\""
+					searchResultHeaders = try response.content.decode([UserHeader].self)
+					if searchResultHeaders.count > 0 {
+						regCodeSearchResults = "User \"\(searchResultHeaders[0].username)\" is associated with registration code \"\(regCode)\""
 					}
 					else {
 						regCodeSearchResults = "\(regCode) is a valid code, not associated with a user."
@@ -523,16 +525,47 @@ struct SiteAdminController: SiteControllerUtils {
 			var trunk: TrunkContext
 			var stats: RegistrationCodeStatsData
 			var searchResults: String
+			var searchResultUsers: [UserHeader]
 			
-			init(_ req: Request, stats: RegistrationCodeStatsData, searchResults: String) throws {
+			init(_ req: Request, stats: RegistrationCodeStatsData, searchResults: String, searchResultUsers: [UserHeader]) throws {
 				trunk = .init(req, title: "Registration Codes", tab: .admin)
 				self.stats = stats
 				self.searchResults = searchResults
+				self.searchResultUsers = searchResultUsers
 			}
 		}
-		let ctx = try RegCodeStatsContext(req, stats: regCodeData, searchResults: regCodeSearchResults)
+		let ctx = try RegCodeStatsContext(req, stats: regCodeData, searchResults: regCodeSearchResults, searchResultUsers: searchResultHeaders)
 		return try await req.view.render("admin/regcodes", ctx)
 	}
+	
+	// GET /admin/regcodes/showuser/:user_id
+	//
+	// Shows stats on reg code use. Lets admins search on a regcode and get the user it's associated with, if any.
+	func getRegCodeForUserHandler(_ req: Request) async throws -> View {
+		guard let targetUserID = req.parameters.get(userIDParam.paramString, as: UUID.self) else {
+			throw Abort(.badRequest, reason: "Missing user_id parameter")
+		}
+		let response = try await apiQuery(req, endpoint: "/admin/regcodes/findbyuser/\(targetUserID)")
+		let regCodeData = try response.content.decode(RegistrationCodeUserData.self)
+		guard !regCodeData.users.isEmpty else {
+			throw Abort(.internalServerError, reason: "No user found")
+		}
+		struct RegCodeUserContext : Encodable {
+			var trunk: TrunkContext
+			var primaryUser: UserHeader
+			var altUsers: [UserHeader]
+			var regCode: String
+			
+			init(_ req: Request, data: RegistrationCodeUserData) throws {
+				trunk = .init(req, title: "Registration Code for User", tab: .admin)
+				self.primaryUser = data.users[0]
+				self.altUsers = Array(data.users.dropFirst(1))
+				self.regCode = data.regCode.isEmpty ? "No registration code found for this user" : data.regCode
+			}
+		}
+		let ctx = try RegCodeUserContext(req, data: regCodeData)
+		return try await req.view.render("admin/regCodeForUser", ctx)
+	}	
 	
 	// GET /admin/mods
 	//

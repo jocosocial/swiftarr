@@ -40,38 +40,16 @@ import gd
 /// here for easier organization. If order-of-initialization issues arise, rearrange as necessary.
 public func configure(_ app: Application) throws {
 
-	// This has to be done early otherwise the environment config won't load properly
-	try configureBundle(app)
-
-	// Load the variables in the .env file into our environment. This calls `setenv` on each key-value pair in the file.
-	// Vapor is setup to load these files automatically,
-	//
-	// I don't really know if this works on MacOS or not given the weirdness around bundling between MacOS and Linux.
-	// This might also be different between Xcode and not-Xcode.
-	// https://developer.apple.com/documentation/foundation/bundle
-	// https://stackoverflow.com/questions/51955184/get-nil-when-looking-for-file-in-subdirectory-of-main-bundle
-	let runBundle = Bundle(url: Bundle.main.bundleURL.appendingPathComponent("swiftarr_Run.resources"))!
-
-	if let envFilePath = runBundle.path(forResource: "\(app.environment.name)", ofType: "env", inDirectory: "Private Swiftarr Config") {
-		Logger(label: "app.swiftarr.configuration") .notice("Loading environment configuration from \(envFilePath)")
-		DotEnvFile.load(path: envFilePath, on: .shared(app.eventLoopGroup), fileio: app.fileio, logger: app.logger)
-	} else {
-		Logger(label: "app.swiftarr.configuration") .warning("No config file detected for environment '\(app.environment.name)'. Defaulting to shell environment and code defaults.")
-	}
-	
 	// use iso8601ms for dates
 	let jsonEncoder = JSONEncoder()
 	let jsonDecoder = JSONDecoder()
-	if #available(OSX 10.13, *) {
-		jsonEncoder.dateEncodingStrategy = .iso8601ms
-		jsonDecoder.dateDecodingStrategy = .iso8601ms
-	} else {
-		// Fallback on earlier versions
-	}
+	jsonEncoder.dateEncodingStrategy = .iso8601ms
+	jsonDecoder.dateDecodingStrategy = .iso8601ms
 	ContentConfiguration.global.use(encoder: jsonEncoder, for: .json)
 	ContentConfiguration.global.use(decoder: jsonDecoder, for: .json)
 	
 	// Set up all the settings that we don't need Redis to acquire. 
+	try configureBundle(app)
 	try configureBasicSettings(app)
 
 	// Remember: Stored Settings are not available during configuration--only 'basic' settings.
@@ -120,54 +98,22 @@ func configureBundle(_ app: Application) throws {
 	}
 	Settings.shared.staticFilesRootPath = resourcesPath
 	Logger(label: "app.swiftarr.configuration") .notice("Set static files path to \(Settings.shared.staticFilesRootPath.path).")
-}
 
-func databaseConnectionConfiguration(_ app: Application) throws {
-	// configure PostgreSQL connection
-	// note: environment variable nomenclature is vapor.cloud compatible
-	// support for Heroku environment
-
-  // Specify a database connection timeout in case we find ourselves stuck on a slow laptop.
-  let databaseTimeoutSeconds = Int64(Environment.get("DATABASE_TIMEOUT") ?? "10")
-
-	if let databaseURL = Environment.get("DATABASE_URL"), var postgresConfig = PostgresConfiguration(url: databaseURL) {
-		postgresConfig.tlsConfiguration = .makeClientConfiguration()
-		postgresConfig.tlsConfiguration?.certificateVerification = .none
-		app.databases.use(.postgres(configuration: postgresConfig, connectionPoolTimeout: .seconds(databaseTimeoutSeconds!)), as: .psql)
-	} else 
-	{
-		// otherwise
-		let postgresHostname = Environment.get("DATABASE_HOSTNAME") ?? "localhost"
-		let postgresUser = Environment.get("DATABASE_USER") ?? "swiftarr"
-		let postgresPassword = Environment.get("DATABASE_PASSWORD") ?? "password"
-		let postgresDB: String
-		let postgresPort: Int
-		if app.environment == .testing {
-			postgresDB = "swiftarr-test"
-			postgresPort = Int(Environment.get("DATABASE_PORT") ?? "5433")!
-		} else {
-			postgresDB = Environment.get("DATABASE_DB") ?? "swiftarr"
-			postgresPort = 5432
-		}
-		app.databases.use(.postgres(hostname: postgresHostname, port: postgresPort, username: postgresUser, 
-				password: postgresPassword, database: postgresDB, connectionPoolTimeout: .seconds(databaseTimeoutSeconds!)), as: .psql)
-	}
-	
-	// configure Redis connection
-	// support for Heroku environment. Heroku also provides "REDIS_TLS_URL", but Vapor's Redis package 
-	// may not yet support TLS database connections.
-	if let redisString = Environment.get("REDIS_URL"), let redisURL = URL(string: redisString) {
-		app.redis.configuration = try RedisConfiguration(url: redisURL)
-	} else 
-	{
-		// otherwise
-		let redisHostname = Environment.get("REDIS_HOSTNAME") ?? "localhost"
-		let redisPort = (app.environment == .testing) ? Int(Environment.get("REDIS_PORT") ?? "6380")! : 6379
-		var redisPassword = Environment.get("REDIS_PASSWORD") ?? nil
-		if redisPassword == "" {
-			redisPassword = nil
-		}
-		app.redis.configuration = try RedisConfiguration(hostname: redisHostname, port: redisPort, password: redisPassword)
+	// Load the variables in the .env file into our environment. This calls `setenv` on each key-value pair in the file.
+	// Vapor is setup to load these files automatically,
+	//
+	// I don't really know if this works on MacOS or not given the weirdness around bundling between MacOS and Linux.
+	// This might also be different between Xcode and not-Xcode.
+	// https://developer.apple.com/documentation/foundation/bundle
+	// https://stackoverflow.com/questions/51955184/get-nil-when-looking-for-file-in-subdirectory-of-main-bundle
+	let configDirectory = Settings.shared.seedsDirectoryPath.appendingPathComponent("Private Swiftarr Config")	
+	let envFilePath = configDirectory.appendingPathComponent("\(app.environment.name).env")
+	if FileManager.default.fileExists(atPath: envFilePath.path) {
+		Logger(label: "app.swiftarr.configuration").notice("Loading environment configuration from \(envFilePath.path)")
+		DotEnvFile.load(path: envFilePath.path, on: .shared(app.eventLoopGroup), fileio: app.fileio, logger: app.logger)
+	} else {
+		Logger(label: "app.swiftarr.configuration")
+				.warning("No config file detected for environment '\(app.environment.name)'. Defaulting to shell environment and code defaults.")
 	}
 }
 
@@ -266,6 +212,55 @@ func configureBasicSettings(_ app: Application) throws {
 	Settings.shared.apiUrl = apiUrl!
 	Logger(label: "app.swiftarr.configuration") .notice("API URL base is '\(Settings.shared.apiUrl)'.")
 }
+func databaseConnectionConfiguration(_ app: Application) throws {
+	// configure PostgreSQL connection
+	// note: environment variable nomenclature is vapor.cloud compatible
+	// support for Heroku environment
+
+  // Specify a database connection timeout in case we find ourselves stuck on a slow laptop.
+  let databaseTimeoutSeconds = Int64(Environment.get("DATABASE_TIMEOUT") ?? "10")
+
+	if let databaseURL = Environment.get("DATABASE_URL"), var postgresConfig = PostgresConfiguration(url: databaseURL) {
+		postgresConfig.tlsConfiguration = .makeClientConfiguration()
+		postgresConfig.tlsConfiguration?.certificateVerification = .none
+		app.databases.use(.postgres(configuration: postgresConfig, connectionPoolTimeout: .seconds(databaseTimeoutSeconds!)), as: .psql)
+	} else 
+	{
+		// otherwise
+		let postgresHostname = Environment.get("DATABASE_HOSTNAME") ?? "localhost"
+		let postgresUser = Environment.get("DATABASE_USER") ?? "swiftarr"
+		let postgresPassword = Environment.get("DATABASE_PASSWORD") ?? "password"
+		let postgresDB: String
+		let postgresPort: Int
+		if app.environment == .testing {
+			postgresDB = "swiftarr-test"
+			postgresPort = Int(Environment.get("DATABASE_PORT") ?? "5433")!
+		} else {
+			postgresDB = Environment.get("DATABASE_DB") ?? "swiftarr"
+			postgresPort = 5432
+		}
+		app.databases.use(.postgres(hostname: postgresHostname, port: postgresPort, username: postgresUser, 
+				password: postgresPassword, database: postgresDB, connectionPoolTimeout: .seconds(databaseTimeoutSeconds!)), as: .psql)
+	}
+	
+	// configure Redis connection
+	// support for Heroku environment. Heroku also provides "REDIS_TLS_URL", but Vapor's Redis package 
+	// may not yet support TLS database connections.
+	if let redisString = Environment.get("REDIS_URL"), let redisURL = URL(string: redisString) {
+		app.redis.configuration = try RedisConfiguration(url: redisURL)
+	} else 
+	{
+		// otherwise
+		let redisHostname = Environment.get("REDIS_HOSTNAME") ?? "localhost"
+		let redisPort = (app.environment == .testing) ? Int(Environment.get("REDIS_PORT") ?? "6380")! : 6379
+		var redisPassword = Environment.get("REDIS_PASSWORD") ?? nil
+		if redisPassword == "" {
+			redisPassword = nil
+		}
+		app.redis.configuration = try RedisConfiguration(hostname: redisHostname, port: redisPort, password: redisPassword)
+	}
+}
+
 
 func configureStoredSettings(_ app: Application) throws {
 	let promise = app.eventLoopGroup.next().makePromise(of: Void.self)

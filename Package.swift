@@ -34,7 +34,7 @@ let package = Package(
 								resources: [.copy("Resources"),
 											.copy("seeds")
 								]),
-		.executableTarget(name: "Run", dependencies: ["App"], resources: [.copy("Private Swiftarr Config")]),
+		.executableTarget(name: "Run", dependencies: ["App"]),
 		.testTarget(name: "AppTests", dependencies: ["App"])
 	],
 	cLanguageStandard: .c11

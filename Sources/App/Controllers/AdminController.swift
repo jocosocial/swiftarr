@@ -23,6 +23,7 @@ struct AdminController: APIRouteCollection {
 		
 		ttAuthGroup.get("regcodes", "stats", use: regCodeStatsHandler)
 		ttAuthGroup.get("regcodes", "find", searchStringParam, use: userForRegCodeHandler)
+		ttAuthGroup.get("regcodes", "findbyuser", userIDParam, use: regCodeForUserHandler)
 								 
 		// endpoints available for THO and Admin only
 		let thoAuthGroup = addTokenCacheAuthGroup(to: adminRoutes).grouped([RequireTHOMiddleware()])
@@ -457,7 +458,8 @@ struct AdminController: APIRouteCollection {
 	///  Throws when the reg code is not found primarily to help differentiate between "No reg code found" "No User Found" and "User Found" cases.
 	///  
 	/// - Throws: 400 Bad Request if the reg code isn't found in the db or if it's malformed. We don't check too thoroughly whether it's well-formed.
-	/// - Returns: [] if no user has created an account using this reg code yet. If they have, returns a one-item array containing the UserHeader of that user.
+	/// - Returns: [] if no user has created an account using this reg code yet. If they have, returns an array containing the UserHeaders of all users associated with
+	/// the registration code. The first item in the array will be the primary account.
 	func userForRegCodeHandler(_ req: Request) async throws -> [UserHeader] {
 		guard let regCode = req.parameters.get(searchStringParam.paramString, as: String.self)?.lowercased() else {
 			throw Abort(.badRequest, reason: "Missing search parameter")
@@ -465,14 +467,32 @@ struct AdminController: APIRouteCollection {
 		guard regCode.count == 6, regCode.allSatisfy( { $0.isLetter || $0.isNumber }) else {
 			throw Abort(.badRequest, reason: "Registration code search parameter is malformed.")
 		}
-		guard let foundRecord = try await  RegistrationCode.query(on: req.db).filter(\.$code == regCode).first() else {
+		guard let foundRecord = try await RegistrationCode.query(on: req.db).filter(\.$code == regCode).first() else {
 			throw Abort(.badRequest, reason: "\(regCode) is not found in the registration code table.")
 		}
-		if let userID = foundRecord.$user.id {
-			let userHeader = try req.userCache.getHeader(userID)
-			return [userHeader]
+		guard let parentUserID = foundRecord.$user.id else {
+			// This is the case where the reg code is valid, exists in the table, but hasn't been used to create a user account.
+			return []
 		}
-		return []
+		let subAccountIDs = try await User.query(on: req.db).filter(\.$parent.$id == parentUserID).all().map { try $0.requireID() }
+		return req.userCache.getHeaders([parentUserID] + subAccountIDs)
+	}
+	
+	/// `GET /api/v3/admin/regcodes/findbyuser/:userID`
+	/// 
+	///  Returns the primary user, all alt users, and registration code for the given user. The input userID can be for the primary user or any of their alts.
+	///  If called with a userID that has no associated regcode (e.g. 'admin' or 'moderator'), regCode will be "".
+	///  
+	/// - Throws: 400 Bad Request if the userID isn't found in the db or if it's malformed.
+	/// - Returns: [] if no user has created an account using this reg code yet. If they have, returns a one-item array containing the UserHeader of that user.
+	func regCodeForUserHandler(_ req: Request) async throws -> RegistrationCodeUserData {
+		let user = try await User.findFromParameter(userIDParam, on: req)
+		let allAccounts = try await user.allAccounts(on: req.db)
+		let userIDs = try allAccounts.map { try $0.requireID() }
+		let regCodeResult = try await RegistrationCode.query(on: req.db).filter(\.$user.$id ~~ userIDs).first()
+		let regCode = regCodeResult?.code ?? ""
+		let resultUsers = req.userCache.getHeaders(userIDs)
+		return RegistrationCodeUserData(users: resultUsers, regCode: regCode)
 	}
 	
 // MARK: - Promote/Demote
