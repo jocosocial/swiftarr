@@ -10,7 +10,7 @@ struct ImportKaraokeSongs: AsyncMigration {
 	/// `seeds/` subdirectory, converts the lines into elements of an array, hands that off to
 	/// a parser and populates the `Event` database with the `[Event]` array returned.
 	///
-	/// - Requires: `2020JoCoKaraokeSongCatalog.txt` file in seeds subdirectory.
+	/// - Requires: `JoCoKaraokeSongCatalog.txt` file in seeds subdirectory.
 	/// - Parameter database: A connection to the database, provided automatically.
 	/// - Returns: Void.
 	func prepare(on database: Database) async throws{
@@ -20,7 +20,7 @@ struct ImportKaraokeSongs: AsyncMigration {
 		let songsFilename: String
 		do {
 			if try Environment.detect().name != "heroku" {
-				songsFilename = "2022JoCoKaraokeSongCatalog.txt"
+				songsFilename = "JoCoKaraokeSongCatalog.txt"
 			} else {
 				songsFilename = "JoCoKaraokeSongCatalog-heroku.txt"
 			}
