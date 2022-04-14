@@ -271,7 +271,7 @@ struct SiteTwitarrController: SiteControllerUtils {
 	
 	// POST /tweets/ID/delete
 	// Although this looks like it just redirects the call, middleware plays an important part here. 
-	// Javascript POSTs the delete request, middleware for this route validates via the session cookia.
+	// Javascript POSTs the delete request, middleware for this route validates via the session cookie.
 	// We then call the Swiftarr API, using the token (pulled out of our session data) to validate.
 	func tweetPostDeleteHandler(_ req: Request) async throws -> HTTPStatus {
 		guard let twarrtID = req.parameters.get(twarrtIDParam.paramString)?.percentEncodeFilePathEntry() else {

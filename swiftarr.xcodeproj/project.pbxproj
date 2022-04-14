@@ -46,6 +46,7 @@
 		EA20207A27FA59FE00F82C28 /* seeds in CopyFiles */ = {isa = PBXBuildFile; fileRef = EA20207927FA59FB00F82C28 /* seeds */; };
 		EA20207B27FA5A0100F82C28 /* Resources in CopyFiles */ = {isa = PBXBuildFile; fileRef = EA20206927FA592C00F82C28 /* Resources */; };
 		EA20207D2803DE7300F82C28 /* FezProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA20207C2803DE7200F82C28 /* FezProtocol.swift */; };
+		EA2020822807F8E300F82C28 /* SiteRedisWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2020812807F8E300F82C28 /* SiteRedisWrapper.swift */; };
 		OBJ_2826 /* AdminController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_10 /* AdminController.swift */; };
 		OBJ_2827 /* AlertController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* AlertController.swift */; };
 		OBJ_2828 /* AuthController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* AuthController.swift */; };
@@ -8238,6 +8239,7 @@
 		EA20206927FA592C00F82C28 /* Resources */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Resources; path = Sources/App/Resources; sourceTree = "<group>"; };
 		EA20207927FA59FB00F82C28 /* seeds */ = {isa = PBXFileReference; lastKnownFileType = folder; name = seeds; path = Sources/App/seeds; sourceTree = "<group>"; };
 		EA20207C2803DE7200F82C28 /* FezProtocol.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FezProtocol.swift; sourceTree = "<group>"; };
+		EA2020812807F8E300F82C28 /* SiteRedisWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteRedisWrapper.swift; sourceTree = "<group>"; };
 		OBJ_10 /* AdminController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminController.swift; sourceTree = "<group>"; };
 		OBJ_100 /* MuteWord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MuteWord.swift; sourceTree = "<group>"; };
 		OBJ_1000 /* Backtrace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Backtrace.swift; sourceTree = "<group>"; };
@@ -12478,8 +12480,7 @@
 		OBJ_124 /* Site */ = {
 			isa = PBXGroup;
 			children = (
-				OBJ_125 /* CustomLeafTags.swift */,
-				OBJ_126 /* Middleware */,
+				OBJ_126 /* Utilities */,
 				OBJ_130 /* SiteAdminController.swift */,
 				OBJ_131 /* SiteBoardgameController.swift */,
 				OBJ_132 /* SiteController.swift */,
@@ -12513,14 +12514,16 @@
 			path = ecdsa;
 			sourceTree = "<group>";
 		};
-		OBJ_126 /* Middleware */ = {
+		OBJ_126 /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
+				OBJ_125 /* CustomLeafTags.swift */,
 				OBJ_127 /* NotificationsMiddleware.swift */,
 				OBJ_128 /* SiteErrorMiddleware.swift */,
 				OBJ_129 /* SiteUserRoleMiddleware.swift */,
+				EA2020812807F8E300F82C28 /* SiteRedisWrapper.swift */,
 			);
-			path = Middleware;
+			path = Utilities;
 			sourceTree = "<group>";
 		};
 		OBJ_1267 /* hmac */ = {
@@ -19937,6 +19940,7 @@
 				OBJ_2845 /* AppFeatures.swift in Sources */,
 				OBJ_2847 /* EventType.swift in Sources */,
 				OBJ_2848 /* FezType.swift in Sources */,
+				EA2020822807F8E300F82C28 /* SiteRedisWrapper.swift in Sources */,
 				OBJ_2849 /* LikeType.swift in Sources */,
 				OBJ_2850 /* ModeratorActionType.swift in Sources */,
 				OBJ_2851 /* NotificationType.swift in Sources */,

@@ -15,11 +15,31 @@
 				<div class="row">
 					<h6>Click the button below to log out. You are currently logged in as user "#(trunk.username)".</h6>
 				</div>
-				<div class="row">
-					<form action="/logout" method="POST">
-						<button class="btn btn-primary" type="submit">Logout</button>
-					</form>
-				</div>
+				<form action="/logout" method="POST">
+					#if(count(sessions) > 1):
+						<div class="row">
+							<div class="col">
+								You're currently logged in on #count(sessions) devices:
+							</div>
+						</div>
+						<ul class="list-group">
+							#for(session in sessions):
+								<li class="list-group-item">#(session)</li>
+							#endfor
+						</ul>
+						<div class="row mt-2">
+							<div class="col">
+								<input type="checkbox" class="form-check-input" value="true" id="allaccounts" name="allaccounts">
+								<label class="form-check-label" for="allaccounts">Logout all of these devices</label>
+							</div>
+						</div>
+					#endif
+					<div class="row mt-2">
+						<div class="col">
+							<button class="btn btn-primary" type="submit">Logout</button>
+						</div>
+					</div>
+				</form>
 			</div>
 		#else:			
 			<div class="container-fluid mt-3">

@@ -2,6 +2,13 @@ import Foundation
 import Vapor
 import Redis
 
+/// This extends Request.Redis with a bunch of function wrappers that (mostly) make a single Redis call. The function names describe what
+/// the functions do in Swiftarr API terms, keeping the Redis keys and specific commands used internal to this file. When looking at the Redis
+/// database you can refer to this file to see what various keys are used for, and having all the Redis code here makes it much easier to reason
+/// about changes to how we structure data in Redis.
+/// 
+/// Unlike Postgres with Fluent, Redis doesn't provide us with a centralized data model for how the db is structured. Having code all over the app
+/// call hset directly makes it difficult to answer questions like, "What fields should exist in this hash set?" So, all that is centralized here.
 extension Request.Redis {
 // MARK: Notification State Change
 	func addUsersWithStateChange(_ userIDs: [UUID]) async throws {

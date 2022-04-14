@@ -32,11 +32,25 @@ struct SiteLoginController: SiteControllerUtils {
 		var error: ErrorResponse?
 		var operationSuccess: Bool
 		var operationName: String
+		var sessions: [String]
 		
-		init(_ req: Request, error: Error? = nil) {
+		init(_ req: Request, error: Error? = nil) async throws {
 			trunk = .init(req, title: "Login", tab: .none)
 			operationSuccess = false
 			operationName = "Login"
+			var sessionInfo = [String]()
+			if let user = req.auth.get(UserCacheData.self) {
+				let sessionData = try await req.redis.getUserSessions(user.userID)
+				for (sessionID, deviceInfo) in sessionData {
+					if sessionID == req.session.id?.string {
+						sessionInfo.append("\(deviceInfo) (this device)")
+					}
+					else {
+						sessionInfo.append(deviceInfo)
+					}
+				}
+			}
+			sessions = sessionInfo
 			switch error {
 				case nil:
 					break
@@ -86,8 +100,8 @@ struct SiteLoginController: SiteControllerUtils {
 			let headers = HTTPHeaders([("Authorization", "Basic \(credentials)")])
 			let response = try await apiQuery(req, endpoint: "/auth/login", method: .POST, defaultHeaders: headers)
 			let tokenResponse = try response.content.decode(TokenStringData.self)
-			try loginUser(with: tokenResponse, on: req)
-			var loginContext = LoginPageContext(req)
+			try await loginUser(with: tokenResponse, on: req)
+			var loginContext = try await LoginPageContext(req)
 			loginContext.trunk.metaRedirectURL = req.session.data["returnAfterLogin"] ?? "/tweets"
 			loginContext.operationSuccess = true
 			return try await req.view.render("Login/login", loginContext)
@@ -98,15 +112,30 @@ struct SiteLoginController: SiteControllerUtils {
 	}
 		
 	/// `POST /logout`
+	/// 
+	/// ** Form Submission Parameters**
+	/// * `allaccounts=true` - Logs the user out of all sessions by removing the user's auth token.
 	///
 	/// There's a single URL for login/logout; it shows you the right page depending on your current login status.
 	/// The logout form shows the user who they're logged in as, and has a single 'Logout' button.
 	func loginPageLogoutHandler(_ req: Request) async throws -> View {
-		try await apiQuery(req, endpoint: "/auth/logout", method: .POST)
+		struct PostStruct : Codable {
+			var allaccounts: String?
+		}
+		let postStruct = try? req.content.decode(PostStruct.self)
+		if postStruct?.allaccounts?.lowercased() == "true" {
+			try await apiQuery(req, endpoint: "/auth/logout", method: .POST)
+			if let user = req.auth.get(UserCacheData.self) {
+				try await req.redis.clearAllSessionMarkers(forUserID: user.userID) 
+			}
+		}
+		else if let user = req.auth.get(UserCacheData.self) {
+			try await req.redis.clearSessionMarker(req.session.id, forUserID: user.userID) 
+		}
 		req.session.destroy()
 		req.auth.logout(UserCacheData.self)
 		req.auth.logout(Token.self)
-		var loginContext = LoginPageContext(req)
+		var loginContext = try await LoginPageContext(req)
 		loginContext.trunk.metaRedirectURL = "/login"
 		loginContext.operationSuccess = true
 		loginContext.operationName = "Logout"
@@ -146,7 +175,7 @@ struct SiteLoginController: SiteControllerUtils {
 				let headers = HTTPHeaders([("Authorization", "Basic \(credentials)")])
 				let loginResponse = try await apiQuery(req, endpoint: "/auth/login", method: .POST, defaultHeaders: headers)
 				let token = try loginResponse.content.decode(TokenStringData.self)
-				try loginUser(with: token, on: req)
+				try await loginUser(with: token, on: req)
 				if let displayname = postStruct.displayname {
 					// Set displayname; ignore result. We *could* direct errors here to show an alert in the 
 					// accountCreated webpage, but don't allow failures at this point to prevent showing the page.
@@ -198,7 +227,7 @@ struct SiteLoginController: SiteControllerUtils {
 			}
 			let userPwData = UserPasswordData(currentPassword: postStruct.currentPassword, newPassword: postStruct.password)
 			try await apiQuery(req, endpoint: "/user/password", method: .POST, encodeContent: userPwData)
-			var context = LoginPageContext(req)
+			var context = try await LoginPageContext(req)
 			context.operationName = "Change Password"
 			context.operationSuccess = true
 			context.trunk.metaRedirectURL = "/"
@@ -226,8 +255,8 @@ struct SiteLoginController: SiteControllerUtils {
 			let recoveryData = UserRecoveryData(username: postStruct.username, recoveryKey: postStruct.regCode, newPassword: postStruct.password)
 			let apiResponse = try await apiQuery(req, endpoint: "/auth/recovery", method: .POST, encodeContent: recoveryData)
 			let tokenResponse = try apiResponse.content.decode(TokenStringData.self)
-			try loginUser(with: tokenResponse, on: req)
-			var loginContext = LoginPageContext(req)
+			try await loginUser(with: tokenResponse, on: req)
+			var loginContext = try await LoginPageContext(req)
 			loginContext.trunk.metaRedirectURL = req.session.data["returnAfterLogin"] ?? "/tweets"
 			loginContext.operationSuccess = true
 			loginContext.operationName = "Password Change"
@@ -267,7 +296,7 @@ struct SiteLoginController: SiteControllerUtils {
 		let createData = UserCreateData(username: postStruct.username, password: postStruct.password)
 		try await apiQuery(req, endpoint: "/user/add", method: .POST, encodeContent: createData)
 //		let createUserResponse = try apiResponse.content.decode(AddedUserData.self)
-		var loginContext = LoginPageContext(req)
+		var loginContext = try await LoginPageContext(req)
 		loginContext.trunk.metaRedirectURL = "/"
 		loginContext.operationSuccess = true
 		loginContext.operationName = "Alt account creation"
@@ -282,12 +311,22 @@ struct SiteLoginController: SiteControllerUtils {
 	// make a new Authenticatable type (WebUser?) that isn't database-backed and is stored in the Session, and
 	// then the web client can Auth on that type instead of User. But, I want to be sure we *really* don't need 
 	// User before embarking on this.
-	func loginUser(with tokenResponse: TokenStringData, on req: Request) throws {
+	func loginUser(with tokenResponse: TokenStringData, on req: Request) async throws {
 		guard let user = req.userCache.getUser(tokenResponse.userID) else {
 			throw Abort(.unauthorized, reason: "User not found")
 		}
+		// auth.login just logs the user in for the duration of this request. 
 		req.auth.login(user)
 		req.session.data["token"] = tokenResponse.token
-		req.session.data["accessLevel"] = tokenResponse.accessLevel.rawValue			
+		req.session.data["accessLevel"] = tokenResponse.accessLevel.rawValue
+		
+		var deviceType = "unknown device"
+		if let userAgent = req.headers.first(name: "User-Agent") {
+			if let openParen = userAgent.firstIndex(of: "("), let semicolon = userAgent.firstIndex(of: ";"), semicolon > openParen {
+				let afterParen = userAgent.index(after: openParen)
+				deviceType = String(userAgent[afterParen..<semicolon])
+			}
+		}
+		try await req.redis.storeSessionMarker(req.session.id, marker: deviceType, forUserID: user.userID)
 	}
 }
