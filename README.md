@@ -105,7 +105,7 @@ considered ephemeral and only ever be used to *attempt* to obtain an ID  (`api/v
 There are five requirements for either running an instance of `swiftarr` or development itself.
 
 * the [`libgd`](http://libgd.github.io) library
-* a recent [Swift](https://swift.org) toolchain (recommend 5.5 or later)
+* a recent [Swift](https://swift.org) toolchain (recommend 5.6 or later)
 * the [Vapor](http://vapor.codes) framework
 * an instance of [PostgreSQL](https://www.postgresql.org)
 * an instance of [Redis](https://redis.io)

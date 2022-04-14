@@ -3,14 +3,14 @@ services:
   postgres:
     image: docker.io/bitnami/postgresql:14
     env_file:
-      - "../Sources/Run/Private Swiftarr Config/${ENVIRONMENT}.env"
+      - "../Sources/App/seeds/Private Swiftarr Config/${ENVIRONMENT}.env"
     volumes:
       - pgdata:/bitnami/postgresql
 
   redis:
     image: docker.io/bitnami/redis:6.2
     env_file:
-      - "../Sources/Run/Private Swiftarr Config/${ENVIRONMENT}.env"
+      - "../Sources/App/seeds/Private Swiftarr Config/${ENVIRONMENT}.env"
     volumes:
       - redisdata:/bitnami/redis/data
 
@@ -22,12 +22,12 @@ services:
         # We always build the image in production mode.
         env: production
     ports:
-      - ${PORT}:${PORT}
+      - ${SWIFTARR_PORT}:${SWIFTARR_PORT}
     depends_on:
       - postgres
       - redis
     env_file:
-      - "../Sources/Run/Private Swiftarr Config/${ENVIRONMENT}.env"
+      - "../Sources/App/seeds/Private Swiftarr Config/${ENVIRONMENT}.env"
     volumes:
       - "../Sources/App/seeds:/app/swiftarr_App.resources/seeds:ro"
       - images:/app/images
