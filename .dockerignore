@@ -12,7 +12,6 @@ scripts
 !scripts/init-prereqs.sh
 # Making these end with a * silences a warning about missing resources
 # during the build
-Sources/Run/Private\ Swiftarr\ Config/*
 Sources/App/seeds/*
 # These areas of the .build directory are needed to prevent fetching
 # deps from the internet during the build.
