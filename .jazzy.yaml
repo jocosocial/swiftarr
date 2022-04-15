@@ -17,6 +17,11 @@ hide_documentation_coverage: no
 min_acl: private
 
 custom_categories:
+  - name: Poop
+    children:
+      - INSTALL
+      - FezController
+
   - name: Controllers
     children:
     - AdminController

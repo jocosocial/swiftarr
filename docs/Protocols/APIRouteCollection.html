@@ -1,0 +1,2729 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>APIRouteCollection Protocol Reference</title>
+    <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
+    <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
+    <meta charset="utf-8">
+    <script src="../js/jquery.min.js" defer></script>
+    <script src="../js/jazzy.js" defer></script>
+    
+    <script src="../js/lunr.min.js" defer></script>
+    <script src="../js/typeahead.jquery.js" defer></script>
+    <script src="../js/jazzy.search.js" defer></script>
+  </head>
+  <body>
+
+    <a name="//apple_ref/swift/Protocol/APIRouteCollection" class="dashAnchor"></a>
+
+    <a title="APIRouteCollection Protocol Reference"></a>
+
+    <header class="header">
+      <p class="header-col header-col--primary">
+        <a class="header-link" href="../index.html">
+          swiftarr 0.1.0
+        </a>
+         (49% documented)
+      </p>
+    
+      <div class="header-col--secondary">
+        <form role="search" action="../search.json">
+          <input type="text" placeholder="Search documentation" data-typeahead>
+        </form>
+      </div>
+    
+        <p class="header-col header-col--secondary">
+          <a class="header-link" href="https://github.com/grundoon/swiftarr">
+            <img class="header-icon" src="../img/gh.png" alt="GitHub"/>
+            View on GitHub
+          </a>
+        </p>
+    
+    </header>
+
+    <p class="breadcrumbs">
+      <a class="breadcrumb" href="../index.html">App Reference</a>
+      <img class="carat" src="../img/carat.png" alt=""/>
+      APIRouteCollection Protocol Reference
+    </p>
+
+    <div class="content-wrapper">
+      <nav class="navigation">
+        <ul class="nav-groups">
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Poop.html">Poop</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../install.html">INSTALL</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/FezController.html">FezController</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Controllers.html">Controllers</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/AdminController.html">AdminController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/AuthController.html">AuthController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ClientController.html">ClientController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/EventController.html">EventController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ForumController.html">ForumController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TestController.html">TestController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TwitarrController.html">TwitarrController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserController.html">UserController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UsersController.html">UsersController</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Models.html">Models</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/Category.html">Category</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/Event.html">Event</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/FezPost.html">FezPost</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/Forum.html">Forum</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/ForumPost.html">ForumPost</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/RegistrationCode.html">RegistrationCode</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/Report.html">Report</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/Token.html">Token</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/Twarrt.html">Twarrt</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/User.html">User</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/UserNote.html">UserNote</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Enumerations.html">Enumerations</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Enums/EventType.html">EventType</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Enums/FezType.html">FezType</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Enums/LikeType.html">LikeType</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Enums/ReportType.html">ReportType</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Enums/UserAccessLevel.html">UserAccessLevel</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Request%20Structs.html">Request Structs</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/EventsUpdateData.html">EventsUpdateData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/FezContentData.html">FezContentData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ForumCreateData.html">ForumCreateData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ImageUploadData.html">ImageUploadData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/NoteCreateData.html">NoteCreateData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/PostContentData.html">PostContentData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ReportData.html">ReportData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserCreateData.html">UserCreateData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserPasswordData.html">UserPasswordData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserRecoveryData.html">UserRecoveryData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserUsernameData.html">UserUsernameData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserVerifyData.html">UserVerifyData</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Return%20Structs.html">Return Structs</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/AddedUserData.html">AddedUserData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CategoryData.html">CategoryData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreatedUserData.html">CreatedUserData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CurrentUserData.html">CurrentUserData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/EventData.html">EventData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/FezData.html">FezData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/FezData/MembersOnlyData.html">– MembersOnlyData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/FezPostData.html">FezPostData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ForumData.html">ForumData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ForumListData.html">ForumListData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/NoteData.html">NoteData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/PostData.html">PostData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/PostDetailData.html">PostDetailData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ProfilePublicData.html">ProfilePublicData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TokenStringData.html">TokenStringData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TwarrtData.html">TwarrtData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TwarrtDetailData.html">TwarrtDetailData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserHeader.html">UserHeader</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserSearch.html">UserSearch</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Extensions.html">Extensions</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/CharacterSet.html">CharacterSet</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Date.html">Date</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Formatter.html">Formatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions.html#/s:3App9Formatter33_2E4405C112A566F0233F43EEAF77E5B8LLa">Formatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/ISO8601DateFormatter.html">ISO8601DateFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/JSONDecoder.html">JSONDecoder</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/JSONDecoder/DateDecodingStrategy.html">– DateDecodingStrategy</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/JSONEncoder.html">JSONEncoder</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/JSONEncoder/DateEncodingStrategy.html">– DateEncodingStrategy</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/String.html">String</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Pivots.html">Pivots</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/PostLikes.html">PostLikes</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/TwarrtLikes.html">TwarrtLikes</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Protocols.html">Protocols</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Protocols/ContentFilterable.html">ContentFilterable</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Internal%20Structs%2FClasses.html">Internal Structs/Classes</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/EventParser.html">EventParser</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/ForumEdit.html">ForumEdit</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/ProfileEdit.html">ProfileEdit</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/Settings.html">Settings</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/Settings/SettingsValue.html">– SettingsValue</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/Settings/StoredSettingsValue.html">– StoredSettingsValue</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/TwarrtEdit.html">TwarrtEdit</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Other%20Guides.html">Other Guides</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../api.html">api</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../canonical-links.html">canonical-links</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../configuration.html">configuration</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../contributing.html">contributing</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../installation.html">installation</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../overview.html">overview</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../roadmap.html">roadmap</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../special-files.html">special-files</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Other%20Classes.html">Other Classes</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/AlertWord.html">AlertWord</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/AlertWordPivot.html">AlertWordPivot</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/Announcement.html">Announcement</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/Boardgame.html">Boardgame</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/BoardgameFavorite.html">BoardgameFavorite</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/DailyTheme.html">DailyTheme</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/DecoderProxy.html">DecoderProxy</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/EventFavorite.html">EventFavorite</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/FezParticipant.html">FezParticipant</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/ForumPostEdit.html">ForumPostEdit</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/ForumReaders.html">ForumReaders</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/FriendlyFez.html">FriendlyFez</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/FriendlyFezEdit.html">FriendlyFezEdit</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/GDImage.html">GDImage</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/GDImage/FlipMode.html">– FlipMode</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/GDImage/ImageType.html">– ImageType</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/KaraokeFavorite.html">KaraokeFavorite</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/KaraokePlayedSong.html">KaraokePlayedSong</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/KaraokeSong.html">KaraokeSong</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/ModeratorAction.html">ModeratorAction</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/MuteWord.html">MuteWord</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/SiteErrorMiddleware.html">SiteErrorMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/SwiftarrErrorMiddleware.html">SwiftarrErrorMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/ValidatingDecoder.html">ValidatingDecoder</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/ValidatingDecoder/ValidatingUnkeyedContainer.html">– ValidatingUnkeyedContainer</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/ValidatingDecoder/ValidatingSingleValueContainer.html">– ValidatingSingleValueContainer</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/ValidatingJSONDecoder.html">ValidatingJSONDecoder</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Other%20Global%20Variables.html">Other Global Variables</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Global%20Variables.html#/s:3App23usernameSeparatorStringSSvp">usernameSeparatorString</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Other%20Enums.html">Other Enumerations</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Enums/ContentModerationStatus.html">ContentModerationStatus</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Enums/EventModification.html">EventModification</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Enums/ExportableFormat.html">ExportableFormat</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Enums/GDError.html">GDError</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Enums/ImageSizeGroup.html">ImageSizeGroup</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Enums/ImageUsage.html">ImageUsage</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Enums/ImportableFormat.html">ImportableFormat</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Enums/ModeratorActionType.html">ModeratorActionType</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Enums/NotificationType.html">NotificationType</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Enums/SwiftarrClientApp.html">SwiftarrClientApp</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Enums/SwiftarrFeature.html">SwiftarrFeature</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Other%20Extensions.html">Other Extensions</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Application.html">Application</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Application/Redis.html">– Redis</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Application/UserCacheStorage.html">– UserCacheStorage</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Application/UserCacheStorageKey.html">– UserCacheStorageKey</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Application.html#/s:5Vapor11ApplicationC3AppE16UserCacheLockKeyV">– UserCacheLockKey</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Application/WebSocketStorage.html">– WebSocketStorage</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Application/WebSocketStorageKey.html">– WebSocketStorageKey</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Application.html#/s:5Vapor11ApplicationC3AppE23WebSocketStorageLockKeyV">– WebSocketStorageLockKey</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Array.html">Array</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Bool.html">Bool</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Collection.html">Collection</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Comparable.html">Comparable</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Data.html">Data</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Foundation.html">Foundation</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Foundation/Bundle.html">– Bundle</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Model.html">Model</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/PathComponent.html">PathComponent</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/RedisClient.html">RedisClient</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Request.html">Request</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Request/Redis.html">– Redis</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Request/UserCache.html">– UserCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Request/WebSocketStorage.html">– WebSocketStorage</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/SiblingsProperty.html">SiblingsProperty</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/UUID.html">UUID</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Other%20Functions.html">Other Functions</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App23HTTPServerConfigurationyy5Vapor11ApplicationCKF">HTTPServerConfiguration(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App9configureyy5Vapor11ApplicationCKF">configure(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App22configureBasicSettingsyy5Vapor11ApplicationCKF">configureBasicSettings(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App15configureBundleyy5Vapor11ApplicationCKF">configureBundle(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App17configureCommandsyy5Vapor11ApplicationCF">configureCommands(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App13configureLeafyy5Vapor11ApplicationCKF">configureLeaf(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App19configureMiddlewareyy5Vapor11ApplicationCKF">configureMiddleware(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App19configureMigrationsyy5Vapor11ApplicationCKF">configureMigrations(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App19configurePrometheusyy5Vapor11ApplicationCKF">configurePrometheus(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App17configureSessionsyy5Vapor11ApplicationCKF">configureSessions(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App23configureStoredSettingsyy5Vapor11ApplicationCKF">configureStoredSettings(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App31databaseConnectionConfigurationyy5Vapor11ApplicationCKF">databaseConnectionConfiguration(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App21generateContentGroups4fromSayAA06ReportC5GroupVGSayAA0F14ModerationDataVG_tF">generateContentGroups(from:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App23operatingSystemPlatformSSSgyF">operatingSystemPlatform()</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App6routesyy5Vapor11ApplicationCKF">routes(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App11titleAndTab33_94832BE10C5E3B640E9445FB32A24984LL3forSS_AA12TrunkContextV0D0Ot5Vapor7RequestC_tF">titleAndTab(for:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App19usernameValidations33_73DBEC6ED8C61CC2B437AD3D0947A196LL0B0SaySSGSS_tF">usernameValidations(username:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App19verifyConfigurationyy5Vapor11ApplicationCKF">verifyConfiguration(_:)</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Other%20Protocols.html">Other Protocols</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Protocols/APIRouteCollection.html">APIRouteCollection</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Protocols/ExportableFormatter.html">ExportableFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Protocols/FezProtocol.html">FezProtocol</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Protocols/ImportableFormatter.html">ImportableFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Protocols/LibGdExportableFormatter.html">LibGdExportableFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Protocols/LibGdImportableFormatter.html">LibGdImportableFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Protocols/LibGdParametrizableExportFormatter.html">LibGdParametrizableExportFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Protocols/RCFValidatable.html">RCFValidatable</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Protocols/Reportable.html">Reportable</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Protocols/SiteControllerUtils.html">SiteControllerUtils</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Protocols/StoredSetting.html">StoredSetting</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Other%20Structs.html">Other Structures</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/AddJocomojiTag.html">AddJocomojiTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/AddWordFormStruct.html">AddWordFormStruct</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/AlertController.html">AlertController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/AlertmanagerAlert.html">AlertmanagerAlert</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/AlertmanagerWebhookPayload.html">AlertmanagerWebhookPayload</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/Angle.html">Angle</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/AnnouncementCreateData.html">AnnouncementCreateData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/AnnouncementData.html">AnnouncementData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/AvatarTag.html">AvatarTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/BMPFormatter.html">BMPFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/BoardgameController.html">BoardgameController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/BoardgameData.html">BoardgameData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/BoardgameResponseData.html">BoardgameResponseData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/Color.html">Color</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateAdminUsers.html">CreateAdminUsers</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateAlertWordPivotSchema.html">CreateAlertWordPivotSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateAlertWordSchema.html">CreateAlertWordSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateAnnouncementSchema.html">CreateAnnouncementSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateBoardgameFavoriteSchema.html">CreateBoardgameFavoriteSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateBoardgameSchema.html">CreateBoardgameSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateCategories.html">CreateCategories</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateCategories/CategoryCreateInfo.html">– CategoryCreateInfo</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateCategorySchema.html">CreateCategorySchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateClientUsers.html">CreateClientUsers</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateClientUsers/ClientUserData.html">– ClientUserData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateCustomEnums.html">CreateCustomEnums</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateDailyThemeSchema.html">CreateDailyThemeSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateEventFavoriteSchema.html">CreateEventFavoriteSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateEventSchema.html">CreateEventSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateFezParticipantSchema.html">CreateFezParticipantSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateFezPostFormContent.html">CreateFezPostFormContent</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateFezPostSchema.html">CreateFezPostSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateForumEditSchema.html">CreateForumEditSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateForumPostEditSchema.html">CreateForumPostEditSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateForumPostSchema.html">CreateForumPostSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateForumReadersSchema.html">CreateForumReadersSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateForumSchema.html">CreateForumSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateForums.html">CreateForums</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateFriendlyFezEditSchema.html">CreateFriendlyFezEditSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateFriendlyFezSchema.html">CreateFriendlyFezSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateKaraokeFavoriteSchema.html">CreateKaraokeFavoriteSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateKaraokePlayedSongSchema.html">CreateKaraokePlayedSongSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateKaraokeSongSchema.html">CreateKaraokeSongSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateModeratorActionSchema.html">CreateModeratorActionSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateMuteWordSchema.html">CreateMuteWordSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreatePostLikesSchema.html">CreatePostLikesSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateProfileEditSchema.html">CreateProfileEditSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateRegistrationCodeSchema.html">CreateRegistrationCodeSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateReportSchema.html">CreateReportSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateTestData.html">CreateTestData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateTestUsers.html">CreateTestUsers</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateTokenSchema.html">CreateTokenSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateTwarrtEditSchema.html">CreateTwarrtEditSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateTwarrtLikesSchema.html">CreateTwarrtLikesSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateTwarrtSchema.html">CreateTwarrtSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateUserNoteSchema.html">CreateUserNoteSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateUserSchema.html">CreateUserSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CruiseDayIndexTag.html">CruiseDayIndexTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/DailyThemeData.html">DailyThemeData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/DailyThemeUploadData.html">DailyThemeUploadData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/DisabledAPISectionMiddleware.html">DisabledAPISectionMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/DisabledFeature.html">DisabledFeature</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/DisabledFeaturesGroup.html">DisabledFeaturesGroup</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/DisabledSiteSectionMiddleware.html">DisabledSiteSectionMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ErrorResponse.html">ErrorResponse</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/EventTimeTag.html">EventTimeTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/EventUpdateDifferenceData.html">EventUpdateDifferenceData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/FezCreateUpdatePageContext.html">FezCreateUpdatePageContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/FezEditLogData.html">FezEditLogData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/FezListData.html">FezListData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/FezModerationData.html">FezModerationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/FezPostModerationData.html">FezPostModerationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/FezTimeTag.html">FezTimeTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/FormatPostTextTag.html">FormatPostTextTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/FormatPostTextTag/Usage.html">– Usage</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ForumEditLogData.html">ForumEditLogData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ForumModerationData.html">ForumModerationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ForumPageContext.html">ForumPageContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ForumPostModerationData.html">ForumPostModerationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ForumPostSearchQueryOptions.html">ForumPostSearchQueryOptions</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ForumSearchData.html">ForumSearchData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ForumsSearchPageContext.html">ForumsSearchPageContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ForumsSearchPageContext/SearchType.html">– SearchType</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/GIFFormatter.html">GIFFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/GameExpansionsContext.html">GameExpansionsContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/GameListContext.html">GameListContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/GameRatingTag.html">GameRatingTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ImageController.html">ImageController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ImportBoardgames.html">ImportBoardgames</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ImportEvents.html">ImportEvents</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ImportKaraokeSongs.html">ImportKaraokeSongs</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ImportRegistrationCodes.html">ImportRegistrationCodes</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/JPGFormatter.html">JPGFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/JsonGamesListGame.html">JsonGamesListGame</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/KaraokeController.html">KaraokeController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/KaraokePerformedSongsData.html">KaraokePerformedSongsData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/KaraokeSongData.html">KaraokeSongData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/KaraokeSongResponseData.html">KaraokeSongResponseData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/KeywordData.html">KeywordData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/LocalTimeTag.html">LocalTimeTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/MessagePostContext.html">MessagePostContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/MessagePostContext/InitType.html">– InitType</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/MessagePostFormContent.html">MessagePostFormContent</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ModerationController.html">ModerationController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ModeratorActionLogData.html">ModeratorActionLogData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/NotificationsMiddleware.html">NotificationsMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/PNGFormatter.html">PNGFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/Paginator.html">Paginator</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/PaginatorContext.html">PaginatorContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/PaginatorContext/PageInfo.html">– PageInfo</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/Point.html">Point</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/PostEditLogData.html">PostEditLogData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/PostSearchData.html">PostSearchData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/PostSearchPageContext.html">PostSearchPageContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/PostSearchPageContext/SearchType.html">– SearchType</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ProfileEditLogData.html">ProfileEditLogData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ProfileFormContent.html">ProfileFormContent</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ProfileModerationData.html">ProfileModerationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/PublicProfileContext.html">PublicProfileContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/Rectangle.html">Rectangle</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/RegistrationCodeStatsData.html">RegistrationCodeStatsData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/RegistrationCodeUserData.html">RegistrationCodeUserData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/RelativeTimeTag.html">RelativeTimeTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ReportContentGroup.html">ReportContentGroup</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ReportModerationData.html">ReportModerationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ReportPageContext.html">ReportPageContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/RequireAdminMiddleware.html">RequireAdminMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/RequireModeratorMiddleware.html">RequireModeratorMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/RequireTHOMiddleware.html">RequireTHOMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/RequireTwitarrTeamMiddleware.html">RequireTwitarrTeamMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/RequireVerifiedMiddleware.html">RequireVerifiedMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ScheduleMungerCommand.html">ScheduleMungerCommand</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ScheduleMungerCommand/Signature.html">– Signature</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SetInitialCategoryForumCounts.html">SetInitialCategoryForumCounts</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SetInitialEventForums.html">SetInitialEventForums</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SettingsAdminData.html">SettingsAdminData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SettingsAppFeaturePair.html">SettingsAppFeaturePair</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SettingsUpdateData.html">SettingsUpdateData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteAdminController.html">SiteAdminController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteAdminController/AnnouncementViewData.html">– AnnouncementViewData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteAdminController/ManageUserLevelViewContext.html">– ManageUserLevelViewContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteBoardgameController.html">SiteBoardgameController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteController.html">SiteController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteEventsController.html">SiteEventsController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteFileController.html">SiteFileController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteForumController.html">SiteForumController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteFriendlyFezController.html">SiteFriendlyFezController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteFriendlyFezController/FezTab.html">– FezTab</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteKaraokeController.html">SiteKaraokeController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteLoginController.html">SiteLoginController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteLoginController/LoginPageContext.html">– LoginPageContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteLoginController/UserCreatedContext.html">– UserCreatedContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteModController.html">SiteModController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteRequireAdminMiddleware.html">SiteRequireAdminMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteRequireModeratorMiddleware.html">SiteRequireModeratorMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteRequireTHOMiddleware.html">SiteRequireTHOMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteRequireTwitarrTeamMiddleware.html">SiteRequireTwitarrTeamMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteRequireVerifiedMiddleware.html">SiteRequireVerifiedMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteSeamailController.html">SiteSeamailController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteTwitarrController.html">SiteTwitarrController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteUserController.html">SiteUserController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/Size.html">Size</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SocketFezMemberChangeData.html">SocketFezMemberChangeData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SocketFezPostData.html">SocketFezPostData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SocketNotificationData.html">SocketNotificationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SocketNotificationData/NotificationTypeData.html">– NotificationTypeData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/StaticTimeTag.html">StaticTimeTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TGAFormatter.html">TGAFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TIFFFormatter.html">TIFFFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TrunkContext.html">TrunkContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TrunkContext/Tab.html">– Tab</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TwarrtModerationData.html">TwarrtModerationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TwarrtQueryOptions.html">TwarrtQueryOptions</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TweetEditPageContext.html">TweetEditPageContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TweetPageContext.html">TweetPageContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TweetPageContext/FilterType.html">– FilterType</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserAuthorizedToCreateKaraokeLogs.html">UserAuthorizedToCreateKaraokeLogs</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserBylineTag.html">UserBylineTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserCacheData.html">UserCacheData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserCacheData/BasicAuth.html">– BasicAuth</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserCacheData/TokenAuthenticator.html">– TokenAuthenticator</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserCacheData/SessionAuth.html">– SessionAuth</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserModerationData.html">UserModerationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserNotificationAlertwordData.html">UserNotificationAlertwordData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserNotificationData.html">UserNotificationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserNotificationData/ModeratorNotificationData.html">– ModeratorNotificationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserProfileUploadData.html">UserProfileUploadData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserSocket.html">UserSocket</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ValidatingKeyedContainer.html">ValidatingKeyedContainer</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ValidationError.html">ValidationError</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ValidationFailure.html">ValidationFailure</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/WBMPFormatter.html">WBMPFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/WEBPFormatter.html">WEBPFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/Xoshiro.html">Xoshiro</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Structs.html#/s:3App3zzzV">zzz</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Other%20Typealiases.html">Other Type Aliases</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Typealiases.html#/s:3App14LibGdFormatter33_2E4405C112A566F0233F43EEAF77E5B8LLa">LibGdFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Typealiases.html#/s:3App28LibGdParametrizableFormatter33_2E4405C112A566F0233F43EEAF77E5B8LLa">LibGdParametrizableFormatter</a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+      <article class="main-content">
+
+        <section class="section">
+          <div class="section-content top-matter">
+            <h1>APIRouteCollection</h1>
+              <div class="declaration">
+                <div class="language">
+                  
+                  <pre class="highlight swift"><code><span class="kd">protocol</span> <span class="kt">APIRouteCollection</span></code></pre>
+
+                </div>
+              </div>
+            <p>Undocumented</p>
+
+              <div class="slightly-smaller">
+                <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L6-L8">Show on GitHub</a>
+              </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-content">
+            <div class="task-group">
+              <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionP14registerRoutesyy5Vapor11ApplicationCKF"></a>
+                    <a name="//apple_ref/swift/Method/registerRoutes(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionP14registerRoutesyy5Vapor11ApplicationCKF">registerRoutes(_:<wbr>)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">registerRoutes</span><span class="p">(</span><span class="n">_</span> <span class="nv">app</span><span class="p">:</span> <span class="kt">Application</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L7">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE15categoryIDParam10RoutingKit13PathComponentOvp"></a>
+                    <a name="//apple_ref/swift/Property/categoryIDParam" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE15categoryIDParam10RoutingKit13PathComponentOvp">categoryIDParam</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">categoryIDParam</span><span class="p">:</span> <span class="kt">PathComponent</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L12">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE13twarrtIDParam10RoutingKit13PathComponentOvp"></a>
+                    <a name="//apple_ref/swift/Property/twarrtIDParam" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE13twarrtIDParam10RoutingKit13PathComponentOvp">twarrtIDParam</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">twarrtIDParam</span><span class="p">:</span> <span class="kt">PathComponent</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L13">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE12forumIDParam10RoutingKit13PathComponentOvp"></a>
+                    <a name="//apple_ref/swift/Property/forumIDParam" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE12forumIDParam10RoutingKit13PathComponentOvp">forumIDParam</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">forumIDParam</span><span class="p">:</span> <span class="kt">PathComponent</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L14">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE11postIDParam10RoutingKit13PathComponentOvp"></a>
+                    <a name="//apple_ref/swift/Property/postIDParam" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE11postIDParam10RoutingKit13PathComponentOvp">postIDParam</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">postIDParam</span><span class="p">:</span> <span class="kt">PathComponent</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L15">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE10fezIDParam10RoutingKit13PathComponentOvp"></a>
+                    <a name="//apple_ref/swift/Property/fezIDParam" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE10fezIDParam10RoutingKit13PathComponentOvp">fezIDParam</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">fezIDParam</span><span class="p">:</span> <span class="kt">PathComponent</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L16">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE14fezPostIDParam10RoutingKit13PathComponentOvp"></a>
+                    <a name="//apple_ref/swift/Property/fezPostIDParam" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE14fezPostIDParam10RoutingKit13PathComponentOvp">fezPostIDParam</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">fezPostIDParam</span><span class="p">:</span> <span class="kt">PathComponent</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L17">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE11userIDParam10RoutingKit13PathComponentOvp"></a>
+                    <a name="//apple_ref/swift/Property/userIDParam" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE11userIDParam10RoutingKit13PathComponentOvp">userIDParam</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">userIDParam</span><span class="p">:</span> <span class="kt">PathComponent</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L18">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE12eventIDParam10RoutingKit13PathComponentOvp"></a>
+                    <a name="//apple_ref/swift/Property/eventIDParam" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE12eventIDParam10RoutingKit13PathComponentOvp">eventIDParam</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">eventIDParam</span><span class="p">:</span> <span class="kt">PathComponent</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L19">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE13reportIDParam10RoutingKit13PathComponentOvp"></a>
+                    <a name="//apple_ref/swift/Property/reportIDParam" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE13reportIDParam10RoutingKit13PathComponentOvp">reportIDParam</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">reportIDParam</span><span class="p">:</span> <span class="kt">PathComponent</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L20">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE13modStateParam10RoutingKit13PathComponentOvp"></a>
+                    <a name="//apple_ref/swift/Property/modStateParam" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE13modStateParam10RoutingKit13PathComponentOvp">modStateParam</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">modStateParam</span><span class="p">:</span> <span class="kt">PathComponent</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L21">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE19announcementIDParam10RoutingKit13PathComponentOvp"></a>
+                    <a name="//apple_ref/swift/Property/announcementIDParam" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE19announcementIDParam10RoutingKit13PathComponentOvp">announcementIDParam</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">announcementIDParam</span><span class="p">:</span> <span class="kt">PathComponent</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L22">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE13barrelIDParam10RoutingKit13PathComponentOvp"></a>
+                    <a name="//apple_ref/swift/Property/barrelIDParam" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE13barrelIDParam10RoutingKit13PathComponentOvp">barrelIDParam</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">barrelIDParam</span><span class="p">:</span> <span class="kt">PathComponent</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L23">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE14alertwordParam10RoutingKit13PathComponentOvp"></a>
+                    <a name="//apple_ref/swift/Property/alertwordParam" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE14alertwordParam10RoutingKit13PathComponentOvp">alertwordParam</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">alertwordParam</span><span class="p">:</span> <span class="kt">PathComponent</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L24">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE13mutewordParam10RoutingKit13PathComponentOvp"></a>
+                    <a name="//apple_ref/swift/Property/mutewordParam" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE13mutewordParam10RoutingKit13PathComponentOvp">mutewordParam</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">mutewordParam</span><span class="p">:</span> <span class="kt">PathComponent</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L25">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE17searchStringParam10RoutingKit13PathComponentOvp"></a>
+                    <a name="//apple_ref/swift/Property/searchStringParam" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE17searchStringParam10RoutingKit13PathComponentOvp">searchStringParam</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">searchStringParam</span><span class="p">:</span> <span class="kt">PathComponent</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L26">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE17dailyThemeIDParam10RoutingKit13PathComponentOvp"></a>
+                    <a name="//apple_ref/swift/Property/dailyThemeIDParam" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE17dailyThemeIDParam10RoutingKit13PathComponentOvp">dailyThemeIDParam</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">dailyThemeIDParam</span><span class="p">:</span> <span class="kt">PathComponent</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L27">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE16accessLevelParam10RoutingKit13PathComponentOvp"></a>
+                    <a name="//apple_ref/swift/Property/accessLevelParam" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE16accessLevelParam10RoutingKit13PathComponentOvp">accessLevelParam</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">accessLevelParam</span><span class="p">:</span> <span class="kt">PathComponent</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L28">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE16boardgameIDParam10RoutingKit13PathComponentOvp"></a>
+                    <a name="//apple_ref/swift/Property/boardgameIDParam" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE16boardgameIDParam10RoutingKit13PathComponentOvp">boardgameIDParam</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">boardgameIDParam</span><span class="p">:</span> <span class="kt">PathComponent</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L29">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE11songIDParam10RoutingKit13PathComponentOvp"></a>
+                    <a name="//apple_ref/swift/Property/songIDParam" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE11songIDParam10RoutingKit13PathComponentOvp">songIDParam</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">songIDParam</span><span class="p">:</span> <span class="kt">PathComponent</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L30">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE17dateFromParameter6string10Foundation4DateVSgSS_tFZ"></a>
+                    <a name="//apple_ref/swift/Method/dateFromParameter(string:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE17dateFromParameter6string10Foundation4DateVSgSS_tFZ">dateFromParameter(string:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Transforms a string that might represent a date (either a <code>Double</code> or an ISO 8601
+representation) into a <code>Date</code>, if possible.</p>
+<div class="aside aside-note">
+    <p class="aside-title">Note</p>
+    <p>The representation is expected to be either a string literal <code>Double</code>, or a
+string in UTC <code>yyyy-MM-dd&#39;T&#39;HH:mm:ssZ</code> format.</p>
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">dateFromParameter</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Date</span><span class="p">?</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>string</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The string to be transformed.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>A <code>Date</code> if the conversion was successful, otherwise <code>nil</code>.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L41-L63">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/Auth%20Groups"></a>
+                <a name="//apple_ref/swift/Section/Auth Groups" class="dashAnchor"></a>
+                <div class="section-name-container">
+                  <a class="section-name-link" href="#/Auth%20Groups"></a>
+                  <h3 class="section-name"><span>Auth Groups</span>
+</h3>
+                </div>
+              </div>
+              <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE16addFlexAuthGroup2to5Vapor13RoutesBuilder_pAfG_p_tF"></a>
+                    <a name="//apple_ref/swift/Method/addFlexAuthGroup(to:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE16addFlexAuthGroup2to5Vapor13RoutesBuilder_pAfG_p_tF">addFlexAuthGroup(to:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Adds Flexible Auth to a route. This route can be accessed without a token (while not logged in), but <code>req.auth.get(User.self)</code> will still
+return a user if one is logged in. Route handlers for these routes should not call <code>req.auth.require(User.self)</code>. A route with no auth 
+middleware will not auth any user and <code>.get(User.self)</code> will always return nil. The Basic and Token auth groups will throw an error if 
+no user gets authenticated (specifically:<code>User.guardMiddleware</code> throws).</p>
+
+<p>So, use this auth group for routes that can be accessed while not logged in, but which provide more (or different) data when a logged-in user
+accesses the route.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">addFlexAuthGroup</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="kt">RoutesBuilder</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">RoutesBuilder</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L73-L75">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE21addFlexCacheAuthGroup2to5Vapor13RoutesBuilder_pAfG_p_tF"></a>
+                    <a name="//apple_ref/swift/Method/addFlexCacheAuthGroup(to:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE21addFlexCacheAuthGroup2to5Vapor13RoutesBuilder_pAfG_p_tF">addFlexCacheAuthGroup(to:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>I&rsquo;m moving auth over to UserCache, so that you&rsquo;ll auth a UserCacheData struct instead of a User model. Functionally, this means a <code><a href="../Structs/UserCacheData.html">UserCacheData</a></code>
+gets added to <code>req.auth</code> instead of a <code><a href="../Classes/User.html">User</a></code>. And, we avoid a SQL call per API call.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">addFlexCacheAuthGroup</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="kt">RoutesBuilder</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">RoutesBuilder</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L79-L81">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE17addBasicAuthGroup2to5Vapor13RoutesBuilder_pAfG_p_tF"></a>
+                    <a name="//apple_ref/swift/Method/addBasicAuthGroup(to:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE17addBasicAuthGroup2to5Vapor13RoutesBuilder_pAfG_p_tF">addBasicAuthGroup(to:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>For routes that require HTTP Basic Auth. Tokens won&rsquo;t work. Generally, this is only for the login route.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">addBasicAuthGroup</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="kt">RoutesBuilder</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">RoutesBuilder</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L84-L86">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE22addTokenCacheAuthGroup2to5Vapor13RoutesBuilder_pAfG_p_tF"></a>
+                    <a name="//apple_ref/swift/Method/addTokenCacheAuthGroup(to:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE22addTokenCacheAuthGroup2to5Vapor13RoutesBuilder_pAfG_p_tF">addTokenCacheAuthGroup(to:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>For routes that require a logged-in user. Applying this auth group to a route will make requests that don&rsquo;t have a valid token fail with a HTTP 401 error.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">addTokenCacheAuthGroup</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="kt">RoutesBuilder</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">RoutesBuilder</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L89-L91">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/Guards"></a>
+                <a name="//apple_ref/swift/Section/Guards" class="dashAnchor"></a>
+                <div class="section-name-container">
+                  <a class="section-name-link" href="#/Guards"></a>
+                  <h3 class="section-name"><span>Guards</span>
+</h3>
+                </div>
+              </div>
+              <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE22guardNotSpecialAccountyyAA4UserCKF"></a>
+                    <a name="//apple_ref/swift/Method/guardNotSpecialAccount(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE22guardNotSpecialAccountyyAA4UserCKF">guardNotSpecialAccount(_:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">guardNotSpecialAccount</span><span class="p">(</span><span class="n">_</span> <span class="nv">targetUser</span><span class="p">:</span> <span class="kt"><a href="../Classes/User.html">User</a></span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L95-L112">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/Notification%20Management"></a>
+                <a name="//apple_ref/swift/Section/Notification Management" class="dashAnchor"></a>
+                <div class="section-name-container">
+                  <a class="section-name-link" href="#/Notification%20Management"></a>
+                  <h3 class="section-name"><span>Notification Management</span>
+</h3>
+                </div>
+              </div>
+              <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE25addAlertwordNotifications4type9minAccess4info2onyAA16NotificationTypeO_AA04UserI5LevelOSS5Vapor7RequestCtYaKF"></a>
+                    <a name="//apple_ref/swift/Method/addAlertwordNotifications(type:minAccess:info:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE25addAlertwordNotifications4type9minAccess4info2onyAA16NotificationTypeO_AA04UserI5LevelOSS5Vapor7RequestCtYaKF">addAlertwordNotifications(type:<wbr>minAccess:<wbr>info:<wbr>on:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method, asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">addAlertwordNotifications</span><span class="p">(</span><span class="nv">type</span><span class="p">:</span> <span class="kt"><a href="../Enums/NotificationType.html">NotificationType</a></span><span class="p">,</span> <span class="nv">minAccess</span><span class="p">:</span> <span class="kt"><a href="../Enums/UserAccessLevel.html">UserAccessLevel</a></span> <span class="o">=</span> <span class="o">.</span><span class="n">quarantined</span><span class="p">,</span>
+		<span class="nv">info</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L119-L131">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE16addNotifications5users4type4info2onySay10Foundation4UUIDVG_AA16NotificationTypeOSS5Vapor7RequestCtYaKF"></a>
+                    <a name="//apple_ref/swift/Method/addNotifications(users:type:info:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE16addNotifications5users4type4info2onySay10Foundation4UUIDVG_AA16NotificationTypeOSS5Vapor7RequestCtYaKF">addNotifications(users:<wbr>type:<wbr>info:<wbr>on:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method, asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">addNotifications</span><span class="p">(</span><span class="nv">users</span><span class="p">:</span> <span class="p">[</span><span class="kt">UUID</span><span class="p">],</span> <span class="nv">type</span><span class="p">:</span> <span class="kt"><a href="../Enums/NotificationType.html">NotificationType</a></span><span class="p">,</span> <span class="nv">info</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L140-L219">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE30subtractAlertwordNotifications4type9minAccess2onyAA16NotificationTypeO_AA04UserI5LevelO5Vapor7RequestCtYaKF"></a>
+                    <a name="//apple_ref/swift/Method/subtractAlertwordNotifications(type:minAccess:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE30subtractAlertwordNotifications4type9minAccess2onyAA16NotificationTypeO_AA04UserI5LevelO5Vapor7RequestCtYaKF">subtractAlertwordNotifications(type:<wbr>minAccess:<wbr>on:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method, asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">subtractAlertwordNotifications</span><span class="p">(</span><span class="nv">type</span><span class="p">:</span> <span class="kt"><a href="../Enums/NotificationType.html">NotificationType</a></span><span class="p">,</span> <span class="nv">minAccess</span><span class="p">:</span> <span class="kt"><a href="../Enums/UserAccessLevel.html">UserAccessLevel</a></span> <span class="o">=</span> <span class="o">.</span><span class="n">quarantined</span><span class="p">,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L224-L236">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE21subtractNotifications5users4type0D5Count2onySay10Foundation4UUIDVG_AA16NotificationTypeOSi5Vapor7RequestCtYaKF"></a>
+                    <a name="//apple_ref/swift/Method/subtractNotifications(users:type:subtractCount:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE21subtractNotifications5users4type0D5Count2onySay10Foundation4UUIDVG_AA16NotificationTypeOSi5Vapor7RequestCtYaKF">subtractNotifications(users:<wbr>type:<wbr>subtractCount:<wbr>on:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method, asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">subtractNotifications</span><span class="p">(</span><span class="nv">users</span><span class="p">:</span> <span class="p">[</span><span class="kt">UUID</span><span class="p">],</span> <span class="nv">type</span><span class="p">:</span> <span class="kt"><a href="../Enums/NotificationType.html">NotificationType</a></span><span class="p">,</span> <span class="nv">subtractCount</span><span class="p">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L240-L300">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE22deleteFezNotifications7userIDs3fez2onySay10Foundation4UUIDVG_AA08FriendlyE0C5Vapor7RequestCtYaKF"></a>
+                    <a name="//apple_ref/swift/Method/deleteFezNotifications(userIDs:fez:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE22deleteFezNotifications7userIDs3fez2onySay10Foundation4UUIDVG_AA08FriendlyE0C5Vapor7RequestCtYaKF">deleteFezNotifications(userIDs:<wbr>fez:<wbr>on:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method, asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">deleteFezNotifications</span><span class="p">(</span><span class="nv">userIDs</span><span class="p">:</span> <span class="p">[</span><span class="kt">UUID</span><span class="p">],</span> <span class="nv">fez</span><span class="p">:</span> <span class="kt"><a href="../Classes/FriendlyFez.html">FriendlyFez</a></span><span class="p">,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L303-L307">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE22markNotificationViewed4user4type2onyAA13UserCacheDataV_AA0E4TypeO5Vapor7RequestCtYaKF"></a>
+                    <a name="//apple_ref/swift/Method/markNotificationViewed(user:type:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE22markNotificationViewed4user4type2onyAA13UserCacheDataV_AA0E4TypeO5Vapor7RequestCtYaKF">markNotificationViewed(user:<wbr>type:<wbr>on:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method, asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">markNotificationViewed</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserCacheData.html">UserCacheData</a></span><span class="p">,</span> <span class="nv">type</span><span class="p">:</span> <span class="kt"><a href="../Enums/NotificationType.html">NotificationType</a></span><span class="p">,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L312-L337">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE22storeNextFollowedEvent6userID2on10Foundation4DateV_AG4UUIDVtSgAK_5Vapor7RequestCtYaKF"></a>
+                    <a name="//apple_ref/swift/Method/storeNextFollowedEvent(userID:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE22storeNextFollowedEvent6userID2on10Foundation4DateV_AG4UUIDVtSgAK_5Vapor7RequestCtYaKF">storeNextFollowedEvent(userID:<wbr>on:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method, asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Undocumented</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">storeNextFollowedEvent</span><span class="p">(</span><span class="nv">userID</span><span class="p">:</span> <span class="kt">UUID</span><span class="p">,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="kt">Date</span><span class="p">,</span> <span class="kt">UUID</span><span class="p">)?</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L340-L373">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE12getImagePath3for6format5usage4size2on10Foundation3URLVSS_SSSgAA0E5UsageOAA0E9SizeGroupO5Vapor7RequestCtKF"></a>
+                    <a name="//apple_ref/swift/Method/getImagePath(for:format:usage:size:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE12getImagePath3for6format5usage4size2on10Foundation3URLVSS_SSSgAA0E5UsageOAA0E9SizeGroupO5Vapor7RequestCtKF">getImagePath(for:<wbr>format:<wbr>usage:<wbr>size:<wbr>on:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Returns the file system path for the given image filename. Makes sure all image directories in the path exist.</p>
+
+<p>Currently, this fn returns paths in the form:
+    <WorkingDir>/images/<full/thumb>/<xx>/<filename>.jpg
+where &ldquo;xx&rdquo; is the first 2 characters of the filename.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">getImagePath</span><span class="p">(</span><span class="k">for</span> <span class="nv">image</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">format</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">usage</span><span class="p">:</span> <span class="kt"><a href="../Enums/ImageUsage.html">ImageUsage</a></span><span class="p">,</span> <span class="nv">size</span><span class="p">:</span> <span class="kt"><a href="../Enums/ImageSizeGroup.html">ImageSizeGroup</a></span><span class="p">,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">URL</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/ImageHandler.swift#L34-L65">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE13processImages_5usage2onSaySSGSayAA15ImageUploadDataVG_AA0H5UsageO5Vapor7RequestCtYaKF"></a>
+                    <a name="//apple_ref/swift/Method/processImages(_:usage:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE13processImages_5usage2onSaySSGSayAA15ImageUploadDataVG_AA0H5UsageO5Vapor7RequestCtYaKF">processImages(_:<wbr>usage:<wbr>on:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method, asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Takes an an array of <code><a href="../Structs/ImageUploadData.html">ImageUploadData</a></code> as input. Some of the input elements may be new image Data that needs procssing;
+some of the input elements may refer to already-processed images in our image store. Once all the ImageUploadData elements are processed,
+returns a <code>[String]</code> containing the filenames where al the images are stored. The use case here is for editing existing content with
+image attachments in a way that prevents re-uploading of photos that are already on the server.</p>
+
+<ul>
+<li>req: The incoming <code>Request</code>, on which this processing must run.</li>
+</ul>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">processImages</span><span class="p">(</span><span class="n">_</span> <span class="nv">images</span><span class="p">:</span> <span class="p">[</span><span class="kt"><a href="../Structs/ImageUploadData.html">ImageUploadData</a></span><span class="p">],</span> <span class="nv">usage</span><span class="p">:</span> <span class="kt"><a href="../Enums/ImageUsage.html">ImageUsage</a></span><span class="p">,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>images</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The  images in <code><a href="../Structs/ImageUploadData.html">ImageUploadData</a></code> format.</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>usage</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The type of model using the image content.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>The generated names of the stored files.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/ImageHandler.swift#L77-L91">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE12processImage4data5usage2onSSSg10Foundation4DataVSg_AA0E5UsageO5Vapor7RequestCtYaKF"></a>
+                    <a name="//apple_ref/swift/Method/processImage(data:usage:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE12processImage4data5usage2onSSSg10Foundation4DataVSg_AA0E5UsageO5Vapor7RequestCtYaKF">processImage(data:<wbr>usage:<wbr>on:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method, asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Takes an optional image in Data form as input, produces full and thumbnail JPEG vrsions,
+places both the thumbnail and full image in their respective directories, and returns the
+generated name of the file on success, an empty string otherwise.</p>
+
+<ul>
+<li>req: The incoming <code>Request</code>, on which this processing must run.</li>
+</ul>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">processImage</span><span class="p">(</span><span class="nv">data</span><span class="p">:</span> <span class="kt">Data</span><span class="p">?,</span> <span class="nv">usage</span><span class="p">:</span> <span class="kt"><a href="../Enums/ImageUsage.html">ImageUsage</a></span><span class="p">,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">String</span><span class="p">?</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>data</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The uploaded image in <code>Data</code> format.</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>usage</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The type of model using the image content.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>The generated name of the stored file, or nil.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/ImageHandler.swift#L102-L213">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18APIRouteCollectionPAAE12archiveImage_2onySS_5Vapor7RequestCtF"></a>
+                    <a name="//apple_ref/swift/Method/archiveImage(_:on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18APIRouteCollectionPAAE12archiveImage_2onySS_5Vapor7RequestCtF">archiveImage(_:<wbr>on:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Extension method
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Archives an image that is no longer needed other than for accountability tracking, by
+removing the full-sized image and moving the thumbnail into the <code>archive/</code> subdirectory
+of the provided base image directory.</p>
+
+<p>This is a synchronous operation, until such time as we can use SwiftNIO 2&rsquo;s asynchronous
+file I/O.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">archiveImage</span><span class="p">(</span><span class="n">_</span> <span class="nv">image</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Parameters</h4>
+                        <table class="graybox">
+                          <tbody>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>image</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The filename of the image.</p>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <code>
+                                <em>imageDir</em>
+                                </code>
+                              </td>
+                              <td>
+                                <div>
+                                  <p>The base image directory path for the image&rsquo;s context.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Protocols/ImageHandler.swift#L225-L239">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+      </article>
+    </div>
+    <section class="footer">
+      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">grundoon</a>. All rights reserved. (Last updated: 2022-04-15)</p>
+      <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.2</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
+    </section>
+  </body>
+</html>
