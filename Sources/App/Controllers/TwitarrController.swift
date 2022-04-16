@@ -68,28 +68,56 @@ public struct TwarrtQueryOptions: Content {
 		return limit ?? 50
 	}
 	
-	func buildQuery(baseURL: String, startOffset: Int) -> String? {
+	func buildQuery(baseURL: String, anchor: Int, startOffset: Int) -> String? {
 		
 		guard var components = URLComponents(string: baseURL) else {
 			return nil
 		}
+		
+		let hasAnchor = after != nil || before != nil || afterDate != nil || beforeDate != nil
 	
 		var elements = [URLQueryItem]()
+		var beforeValue = before
+		var afterValue = after
 		if let search = search { elements.append(URLQueryItem(name: "search", value: search)) }
 		if let hashtag = hashtag { elements.append(URLQueryItem(name: "hashtag", value: hashtag)) }
 		if let mentions = mentions { elements.append(URLQueryItem(name: "mentions", value: mentions)) }
 		if let byUser = byUser { elements.append(URLQueryItem(name: "byUser", value: byUser.uuidString)) }
 		if let inBarrel = inBarrel { elements.append(URLQueryItem(name: "inBarrel", value: inBarrel.uuidString)) }
-		if let after = after { elements.append(URLQueryItem(name: "after", value: String(after))) }
-		if let before = before { elements.append(URLQueryItem(name: "before", value: String(before))) }
-		if let afterDate = afterDate { elements.append(URLQueryItem(name: "afterDate", value: afterDate)) }
-		if let beforeDate = beforeDate { elements.append(URLQueryItem(name: "beforeDate", value: beforeDate)) }
 		if let from = from { elements.append(URLQueryItem(name: "from", value: from)) }
 		if let limit = limit { elements.append(URLQueryItem(name: "limit", value: String(limit))) }
-		if (start ?? 0) + startOffset > 0 {
-			let newOffset = max((start ?? 0) + startOffset, 0)
+		let newOffset = (start ?? 0) + startOffset 
+		if newOffset > 0 {
 			elements.append(URLQueryItem(name: "start", value: String(newOffset)))
+			if !hasAnchor {
+				if directionIsNewer() {
+					afterValue = anchor - 1
+				}
+				else {
+					beforeValue = anchor + 1
+				}
+			}
 		}
+		else {
+			if let val = beforeValue {
+				beforeValue = val - newOffset
+			}
+			else if let val = afterValue {
+				afterValue = val + newOffset
+			}
+			else if beforeDate != nil {
+				beforeValue = anchor - newOffset
+			}
+			else if afterDate != nil {
+				afterValue = anchor + newOffset
+			}
+		}
+		if let before = beforeValue { elements.append(URLQueryItem(name: "before", value: String(before))) }
+		else if let after = afterValue { elements.append(URLQueryItem(name: "after", value: String(after))) }
+		else if let afterDate = afterDate { elements.append(URLQueryItem(name: "afterDate", value: afterDate)) }
+		else if let beforeDate = beforeDate { elements.append(URLQueryItem(name: "beforeDate", value: beforeDate)) }
+		else if let from = from { elements.append(URLQueryItem(name: "from", value: from)) }
+
 		if let replyGroup = replyGroup { elements.append(URLQueryItem(name: "replyGroup", value: String(replyGroup))) }
 
 		components.queryItems = elements

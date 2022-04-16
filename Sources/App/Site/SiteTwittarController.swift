@@ -93,7 +93,7 @@ struct TweetPageContext: Encodable {
 		}
 		filterDesc.append(filters.joined(separator: ","))
 		
-		if tweets.count > 0 {
+		if tweets.count > 0, let anchorID = tweets.first?.twarrtID {
 			if queryStruct.directionIsNewer() {
 				// Down the page => newer tweets. 
 				var showTopButton = true
@@ -109,10 +109,10 @@ struct TweetPageContext: Encodable {
 					}
 				}
 				if showTopButton {
-					topMorePostsURL = queryStruct.buildQuery(baseURL: "/tweets", startOffset: 0 - queryStruct.computedLimit())
+					topMorePostsURL = queryStruct.buildQuery(baseURL: "/tweets", anchor: anchorID, startOffset: 0 - queryStruct.computedLimit())
 					topMorePostsLabel = "Older"
 				}
-				bottomMorePostsURL = queryStruct.buildQuery(baseURL: "/tweets", startOffset: queryStruct.computedLimit())
+				bottomMorePostsURL = queryStruct.buildQuery(baseURL: "/tweets", anchor: anchorID, startOffset: queryStruct.computedLimit())
 				bottomMorePostsLabel = "Newer"
 			}
 			else {
@@ -125,11 +125,11 @@ struct TweetPageContext: Encodable {
 					}
 				}
 				if showTopButton {
-					topMorePostsURL = queryStruct.buildQuery(baseURL: "/tweets", startOffset: 0 - queryStruct.computedLimit())
+					topMorePostsURL = queryStruct.buildQuery(baseURL: "/tweets", anchor: anchorID, startOffset: 0 - queryStruct.computedLimit())
 					topMorePostsLabel = "Newer"
 				}
 				if let last = tweets.last, last.twarrtID != 1 {
-					bottomMorePostsURL = queryStruct.buildQuery(baseURL: "/tweets", startOffset: queryStruct.computedLimit())
+					bottomMorePostsURL = queryStruct.buildQuery(baseURL: "/tweets", anchor: anchorID, startOffset: queryStruct.computedLimit())
 					bottomMorePostsLabel = "Older"
 				}
 			}
