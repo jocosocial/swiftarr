@@ -14,8 +14,8 @@ skip_undocumented: no
 hide_documentation_coverage: no
 # head:
 
-documentation: Docs/Swiftarr/*.md
-abstract: Docs/Swiftarr/Sections/*.md
+documentation: docs/Swiftarr/*.md
+abstract: docs/Swiftarr/Sections/*.md
 
 min_acl: private
 
