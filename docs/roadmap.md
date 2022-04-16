@@ -1,7 +1,0 @@
-Roadmap
-=======
-
-Major Initiatives
------------------
-
-SoonTM

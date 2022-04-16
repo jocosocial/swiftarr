@@ -14,13 +14,21 @@ skip_undocumented: no
 hide_documentation_coverage: no
 # head:
 
+documentation: Docs/Swiftarr/*.md
+abstract: Docs/Swiftarr/Sections/*.md
+
 min_acl: private
 
 custom_categories:
-  - name: Poop
+  - name: Overview
     children:
-      - INSTALL
-      - FezController
+      - Installation
+      - Configuration
+      - Roadmap
+      - Contributing
+      - api
+      - special-files
+      - canonical-links
 
   - name: Controllers
     children:
