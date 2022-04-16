@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>canonical-links  Reference</title>
+    <title>Canonical Links  Reference</title>
     <link rel="stylesheet" type="text/css" href="css/jazzy.css" />
     <link rel="stylesheet" type="text/css" href="css/highlight.css" />
     <meta charset="utf-8">
@@ -15,7 +15,7 @@
   <body>
 
 
-    <a title="canonical-links  Reference"></a>
+    <a title="Canonical Links  Reference"></a>
 
     <header class="header">
       <p class="header-col header-col--primary">
@@ -43,20 +43,46 @@
     <p class="breadcrumbs">
       <a class="breadcrumb" href="index.html">Swiftarr Reference</a>
       <img class="carat" src="img/carat.png" alt=""/>
-      canonical-links  Reference
+      Canonical Links  Reference
     </p>
 
     <div class="content-wrapper">
       <nav class="navigation">
         <ul class="nav-groups">
           <li class="nav-group-name">
-            <a class="nav-group-name-link" href="Poop.html">Poop</a>
+            <a class="nav-group-name-link" href="Overview.html">Overview</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="install.html">INSTALL</a>
+                <a class="nav-group-task-link" href="contributing.html">Contributing</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/FezController.html">FezController</a>
+                <a class="nav-group-task-link" href="installation.html">Installation</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="configuration.html">Configuration</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="development.html">Development</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="roadmap.html">Roadmap</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="special-files.html">Special Files</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="documentation.html">Documentation</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="Twitarr%20API.html">Twitarr API</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="api-changelist.html">API Changelist</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="canonical-links.html">Canonical Links</a>
               </li>
             </ul>
           </li>
@@ -74,6 +100,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/EventController.html">EventController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/FezController.html">FezController</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/ForumController.html">ForumController</a>
@@ -330,35 +359,6 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Classes/TwarrtEdit.html">TwarrtEdit</a>
-              </li>
-            </ul>
-          </li>
-          <li class="nav-group-name">
-            <a class="nav-group-name-link" href="Other%20Guides.html">Other Guides</a>
-            <ul class="nav-group-tasks">
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="api.html">api</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="canonical-links.html">canonical-links</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="configuration.html">configuration</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="contributing.html">contributing</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="installation.html">installation</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="overview.html">overview</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="roadmap.html">roadmap</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="special-files.html">special-files</a>
               </li>
             </ul>
           </li>
@@ -1278,169 +1278,7 @@
             
             <h1 id='canonical-links' class='heading'>Canonical Links</h1>
 
-<p>Canonical links are links that should always work, even if we rip out the V3 frontend and replace it with something else. This allows client developers to confidently open web views inside their app, or intercept web links and show an app view instead.</p>
-
-<p>All the canonical routes are GET method routes that return HTML pages. Clients should not, for example, open a web view and directly POST to /logout. Use /api/v3/logout instead.</p>
-
-<p>Also, the current frontend is not designed to operate in a boxed context, where the nav bar is removed and the user is &lsquo;boxed&rsquo; into either a single page or a set sequence of pages, and can&rsquo;t just navigate through the entire site. Be sure to explain to the user that they should come back to the app when they&rsquo;re done, otherwise they may stay inside the web view and think the web view <em>is</em> the app.</p>
-
-<p>Finally, the frontend currently doesn&rsquo;t provide an easy way to signal that an operation is completed and the app can close the web view.</p>
-<h2 id='open-access-routes' class='heading'>Open Access Routes</h2>
-
-<p>These routes do not require any authorization header to access. </p>
-
-<table><thead>
-<tr>
-<th>Method</th>
-<th>Route</th>
-<th>Notes</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>GET</td>
-<td>/login</td>
-<td>You probably don&rsquo;t want to open a web view for users to log in, as you won&rsquo;t get the token (the web pages use session auth) and you can&rsquo;t use session auth for API calls. Intercepting the login URL and fulfilling the request in-app makes sense, however.</td>
-</tr>
-<tr>
-<td>GET</td>
-<td>/createAccount</td>
-<td>If you don&rsquo;t want to build native UI for this, you could open a web view, let the user make their account, and then show them a native login screen.</td>
-</tr>
-<tr>
-<td>GET</td>
-<td>/resetPassword</td>
-<td>Another seldom-used but important page that could work well as a in-app web view.</td>
-</tr>
-<tr>
-<td>GET</td>
-<td>/codeOfConduct</td>
-<td>An easy way to put this info in your app if you don&rsquo;t want a custom view.</td>
-</tr>
-</tbody></table>
-<h2 id='token-access-routes' class='heading'>Token Access Routes</h2>
-
-<p>These routes may be used with Bearer Authentication, where you provide a Token to auth to the server. See <code>/api/v3/login</code>. However, these routes will respond with a session cookie, and (most browser clients) use the cookie to perform Session auth for future requests.</p>
-
-<p>Routes not listed on this table MAY NOT work with token auth! If you have a token, you cannot use the token to (for example) auth a POST to a page on the website as if a form had been filled out. You should instead find the API call that does the same function and use that.</p>
-
-<table><thead>
-<tr>
-<th>Method</th>
-<th>Route</th>
-<th>Notes</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>GET</td>
-<td>/logout</td>
-<td>This GETs a page that has a logout button. Probably not a great user experience to open a web view just so the user can click the button and logout.</td>
-</tr>
-<tr>
-<td>GET</td>
-<td>/createAltAccount</td>
-<td>Lets the current user create an alternate account.</td>
-</tr>
-<tr>
-<td>GET</td>
-<td>/tweets</td>
-<td>Shows tweets from the tweet stream. Supports a bunch of query options.</td>
-</tr>
-<tr>
-<td>GET</td>
-<td>/tweets/:twarrt_id</td>
-<td>Shows a thread in the tweet stream. Supports a bunch of query options.</td>
-</tr>
-<tr>
-<td>GET</td>
-<td>/forums</td>
-<td>Shows forum categories.</td>
-</tr>
-<tr>
-<td>GET</td>
-<td>/forums/:category_id</td>
-<td>Shows forum threads in a category</td>
-</tr>
-<tr>
-<td>GET</td>
-<td>/forum/:forum_id</td>
-<td>Shows an individual forum thread.</td>
-</tr>
-<tr>
-<td>GET</td>
-<td>/forum/containingpost/:post_id</td>
-<td>Shows the forum containing a specific post.</td>
-</tr>
-<tr>
-<td>GET</td>
-<td>/seamail</td>
-<td>Shows the root seamail page, with a list of all the user&rsquo;s seamail chats.</td>
-</tr>
-<tr>
-<td>GET</td>
-<td>/fez/</td>
-<td>Root LFG page.</td>
-</tr>
-<tr>
-<td>GET</td>
-<td>/fez/joined</td>
-<td>Shows LFGs you&rsquo;ve joined.</td>
-</tr>
-<tr>
-<td>GET</td>
-<td>/fez/owned</td>
-<td>Shows LFGs you&rsquo;ve created.</td>
-</tr>
-<tr>
-<td>GET</td>
-<td>/fez/:fez_id</td>
-<td>Shows a specific LFG.</td>
-</tr>
-<tr>
-<td>GET</td>
-<td>/fez/faq</td>
-<td>Shows a guide to using LFGs responsibly.</td>
-</tr>
-<tr>
-<td>GET</td>
-<td>/events</td>
-<td>Shows the Events page. Several query options.</td>
-</tr>
-<tr>
-<td>GET</td>
-<td>/avatar/full/:user_id</td>
-<td>Returns an image (not HTML wrapping an image)</td>
-</tr>
-<tr>
-<td>GET</td>
-<td>/avatar/thumb/:user_id</td>
-<td>Returns an image</td>
-</tr>
-<tr>
-<td>GET</td>
-<td>/user/:user_id</td>
-<td>Shows the user profile page for the indicated user.</td>
-</tr>
-<tr>
-<td>GET</td>
-<td>/profile/:username</td>
-<td>Shows the user profile page for the user with the given username.</td>
-</tr>
-<tr>
-<td>GET</td>
-<td>/boardgames</td>
-<td>Shows the boardgames list</td>
-</tr>
-<tr>
-<td>GET</td>
-<td>/boardgames/:boardgame_id/expansions</td>
-<td>Shows expansions for the given board game</td>
-</tr>
-<tr>
-<td>GET</td>
-<td>/karaoke/</td>
-<td>Show the root Karaoke page, with recently sung songs and the library search bar.</td>
-</tr>
-</tbody></table>
+<p>Pass</p>
 
           </div>
         </section>
@@ -1449,7 +1287,7 @@
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-04-15)</p>
+      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-04-16)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.2</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
     </section>
   </body>

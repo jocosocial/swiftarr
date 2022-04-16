@@ -22,13 +22,18 @@ min_acl: private
 custom_categories:
   - name: Overview
     children:
+      - Contributing
       - Installation
       - Configuration
+      - Development
       - Roadmap
-      - Contributing
-      - api
-      - special-files
-      - canonical-links
+      - Special Files
+      - Documentation
+
+  - name: Twitarr API
+    children:
+      - API Changelist
+      - Canonical Links
 
   - name: Controllers
     children:

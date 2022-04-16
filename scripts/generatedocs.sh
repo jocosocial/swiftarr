@@ -6,5 +6,5 @@
 #perl -C -i -p -e 's/\x{200B}//g; s/<doc:([^<]*)>/[[$1]]/g' swiftDocs/*.md
 #mv swiftDocs/Home.md swiftDocs/Types.md
 
-sourcekitten doc --spm > doc.json
-jazzy --sourcekitten-sourcefile doc.json --documentation "./docs/*.md"
+sourcekitten doc --spm > /tmp/doc.json
+jazzy --sourcekitten-sourcefile /tmp/doc.json
