@@ -1280,8 +1280,13 @@
 
 <p>This documentation is built using <a href="https://github.com/realm/jazzy/">Jazzy</a>.</p>
 <h2 id='swift-code-docs' class='heading'>Swift Code Docs</h2>
+<h3 id='update-the-code-docs' class='heading'>Update the Code Docs</h3>
+<pre class="highlight plaintext"><code>scripts/generatedocs.sh
+</code></pre>
 
-<p>SoonTM</p>
+<p>Note: for Linux hosts I got strange errors reading files part way through the generation
+process. I needed to increase the limit of open files using <code>ulimit -n 4000</code>. 4000 was a
+random number I picked, but it was much higher than the 1024 default the system had.</p>
 <h2 id='human-docs' class='heading'>Human Docs</h2>
 
 <p>SoonTM</p>

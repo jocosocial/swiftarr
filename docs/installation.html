@@ -1282,10 +1282,248 @@
 <p>NSEverything</p>
 <h2 id='linux' class='heading'>Linux</h2>
 
-<p>apt-get install poop</p>
+<p>This guide was written based on Fedora 34 (Red Hat). Some adjustments 
+will need to be made for other distros (such as Ubuntu/Debian/etc).</p>
+<h3 id='prerequisites' class='heading'>Prerequisites</h3>
+
+<ol>
+<li><p>You will need an instance of PostgreSQL (postgres) and Redis. It is HIGHLY
+recommended to use the Dockerized instances provided by <code>scripts/docker-compose-instance.yml</code>
+and its wrapper (<code>scripts/instance.sh</code>). If you want natively-installed
+instances of these applications you are on your own.</p></li>
+<li><p>Several packages and libraries are required. Install these with your 
+package manager.</p>
+<pre class="highlight plaintext"><code>sudo dnf install -y gd-devel libjpeg-turbo-devel swift-lang
+</code></pre></li>
+<li><p>This project uses the <a href="https://docs.vapor.codes/">Vapor</a> web framework for Swift.
+While Linux is a supported platform there are no packages available for the Toolbox
+so it must be built. Follow the instructions at <a href="https://docs.vapor.codes/4.0/install/linux/">https://docs.vapor.codes/4.0/install/linux/</a>
+To summarize:</p>
+<pre class="highlight plaintext"><code>git clone https://github.com/vapor/toolbox
+cd toolbox
+git checkout 18.3.3 # This was the latest at the time of writing.
+sudo make install
+</code></pre></li>
+</ol>
+<h3 id='build' class='heading'>Build</h3>
+
+<ol>
+<li>From the root of this repo:
+<code>
+vapor build
+# or
+swift build
+</code></li>
+</ol>
+<h3 id='run' class='heading'>Run</h3>
+
+<ol>
+<li><p>Ensure that the prereqs from above are running.</p>
+<pre class="highlight plaintext"><code>~ # scripts/instance.sh up -d            
+Creating network "swiftarr_default" with the default driver
+Creating swiftarr_postgres_1 ... done
+Creating swiftarr_redis_1    ... done
+</code></pre></li>
+<li><p>If you are populating a fresh database then you&rsquo;ll need to run a migration.
+to get some data. See the <a href="https://docs.vapor.codes/4.0/fluent/overview/#migrate">Vapor docs</a> for details.</p>
+<pre class="highlight plaintext"><code># Note there is no `swift` eqivalent here. You need the vapor CLI.
+vapor run migrate --yes
+</code></pre>
+
+<p>Example output:</p>
+<pre class="highlight plaintext"><code>[0/0] Build complete!
+[ NOTICE ] Starting up in Development mode.
+...
+The following migration(s) will be prepared:
+...
++ App.SetInitialCategoryForumCounts on psql
+Would you like to continue?
+y/n&gt;
+
+[ INFO ] Starting registration code import [database-id: psql]
+[ INFO ] Starting boardgame import [database-id: psql]
+...
+[ INFO ] Imported 25000 karaoke songs. [database-id: psql]
+Migration successful
+</code></pre></li>
+<li><p>Run the server!</p>
+<pre class="highlight plaintext"><code>vapor run
+# or
+swift run
+</code></pre>
+
+<p>You should see a line akin to <code>Server starting on http://127.0.0.1:8081</code>
+which tells you where to point your web browser.</p></li>
+</ol>
 <h2 id='docker' class='heading'>Docker</h2>
 
-<p>Angry whale shitting containers</p>
+<p>This assumes you already have Docker or an equivalent OCI-compatible runtime
+available to you. And <code>docker-compose</code> (or equivalent).</p>
+<h3 id='prerequisites' class='heading'>Prerequisites</h3>
+
+<ol>
+<li><p>You need to decide on your runtime configuration:</p>
+
+<table><thead>
+<tr>
+<th>Configuration</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>Development</td>
+<td>Service dependencies and secondary instances of each for testing.</td>
+</tr>
+<tr>
+<td>Instance</td>
+<td>Service dependencies only.</td>
+</tr>
+<tr>
+<td>Linux-Testing</td>
+<td>Service dependencies and web server image that will run test suite.</td>
+</tr>
+<tr>
+<td>Stack</td>
+<td>Service dependencies and production-ready web server image.</td>
+</tr>
+</tbody></table>
+
+<p>Each configuration has a corresponding shell script located in <code>/scripts</code> that is a 
+wrapper around <code>docker-compose</code> which will aid in getting up and running. All scripts
+should be run from the root of the repo (not from within the scripts directory).</p>
+
+<p>If you are considering doing a Stack deployment you need to decide what environment you
+wish to run. Generally this is <code>development</code> or <code>production</code>. There isn&rsquo;t a ton of
+difference between the two other than initial database seeding and logging. Regardless,
+you&rsquo;ll need to create config files in <code>/Sources/App/seeds/Private Swiftarr Config</code> based on
+the <code>Docker-Template.env</code>. See <a href="https://github.com/challfry/swiftarr/wiki/Installation-Notes#more-info-on-environment-files">Installation Notes</a>
+for more details on what this does.</p></li>
+<li><p>Docker-Compose &lt; 1.26.0 has a bug that causes <code>env_file</code> processing to not escape values correctly. 
+If you see strange behavior like timeouts or bad database configuration check your version. 1.25.6 
+is broken and 1.28.6 works.</p></li>
+<li><p>I assume that your user is a part of the <code>docker</code> group and can run <code>docker</code> commands without issue. 
+If this is a problem see the Docker instructions for adding that group to the system and getting 
+yourself to be a part of it. While everything could probably work under <code>sudo</code> it has not been tested.</p></li>
+</ol>
+<h3 id='build' class='heading'>Build</h3>
+
+<p>This only applies to the Linux-Testing or Stack configurations.</p>
+
+<ol>
+<li><p><code>docker-compose</code> will handle the building of the image.</p>
+<pre class="highlight plaintext"><code>scripts/stack.sh -e production build [--no-cache]
+</code></pre></li>
+</ol>
+<h3 id='run' class='heading'>Run</h3>
+
+<ol>
+<li><p><code>docker-compose</code> will similarly handle creating the whole stack.\</p>
+<pre class="highlight plaintext"><code>scripts/stack.sh -e production up [-d]
+</code></pre>
+
+<p>The database is initially populated based on the environment that you specified. By default, this will
+expose the application at <a href="http://localhost:8081">http://localhost:8081</a> assuming all went well.</p></li>
+<li><p>When you are done you can terminate and optionally delete everything using the same tooling.</p>
+<pre class="highlight plaintext"><code>scripts/stack.sh -e production down [-v]
+</code></pre></li>
+</ol>
+<h3 id='manual-database-migration' class='heading'>Manual Database Migration</h3>
+
+<ol>
+<li><p>If you set <code>AUTO_MIGRATE</code> to <code>false</code> in your config and wish to perform a manual migration,
+you can do this by calling:</p>
+<pre class="highlight plaintext"><code>scripts/stack.sh -e development run web /app/Run migrate --yes
+</code></pre></li>
+<li><p>Then you can restart the initial container that was created and died because
+there was no DB for it at the time.</p>
+<pre class="highlight plaintext"><code>scripts/stack.sh -e development restart web
+</code></pre></li>
+</ol>
+<h3 id='offline-incremental-builds' class='heading'>Offline Incremental Builds</h3>
+
+<p>You will have had to go through an online build at least once in order for this to work.</p>
+
+<p>Docker will cache:</p>
+
+<ul>
+<li>The bage images (<code>swift</code>, <code>ubuntu</code>, <code>postgres</code>, etc).</li>
+<li>The layers in which we install packages from Apt repos.</li>
+</ul>
+
+<p>But this leaves local Swift package caching. There are a couple files that get seeded 
+into <code>./.build</code> when you do a local build (<code>swift build</code> or <code>vapor build</code> from a dev machine)
+that we can put in place to ensure an offline Docker-based build will also work. Specifically
+they are:</p>
+
+<ul>
+<li><code>./build/workspace-state.json</code></li>
+<li><code>./build/checkouts</code></li>
+</ul>
+
+<p>The <code>Dockerfile.stack</code> will automatically attempt to copy them into the image build
+context if they exist. As long as they don&rsquo;t change that image layer will cache and
+and there will be a performance benefit in doing incremental Docker builds. Otherwise
+it&rsquo;ll just have to copy them into a new builder image (not the end of the world).</p>
+
+<p>To seed your <code>./build</code> directory you can do one of two things:</p>
+
+<ol>
+<li>Perform a local build.</li>
+<li>Extract the <code>/app/.build</code> contents from a previous Docker build.</li>
+</ol>
+
+<p>To achieve the second option above:</p>
+
+<ol>
+<li><p>Do an online Docker build.</p>
+<pre class="highlight plaintext"><code>scripts/stack.sh -e production build
+</code></pre></li>
+<li><p>Look in the log for the image ID of the builder that it used. In this example it is <code>74f20d50b6a6</code>.</p>
+<pre class="highlight plaintext"><code>[950/951] Compiling Redis Application+Redis.swift
+remark: Incremental compilation has been disabled: it is not compatible with whole module optimization[952/953] Compiling App AdminController.swift
+remark: Incremental compilation has been disabled: it is not compatible with whole module optimization[954/955] Compiling Run main.swift
+[956/956] Linking Run
+[956/956] Build complete!
+Removing intermediate container f9ead447694a
+---&gt; 74f20d50b6a6 ### HEY THIS IS THE IMAGE ID YOU SEEK ###
+Step 13/29 : FROM ubuntu:18.04 as base
+---&gt; 886eca19e611
+</code></pre></li>
+<li><p>Create a temporary container based on that image to copy the files from. It helps to give it a human name but that is optional.</p>
+<pre class="highlight plaintext"><code>docker run --name buildertemp 74f20d50b6a6
+</code></pre>
+
+<p>This will detatch and exist in the background. We will delete it later but if you get distracted you&rsquo;re on your own for cleanup.</p></li>
+<li><p>Extract the package and workspace state. Note the trailing slash on the destination.</p>
+<pre class="highlight plaintext"><code>mkdir ./.build
+docker cp buildertemp:/app/.build/workspace-state.json ./.build/
+docker cp buildertemp:/app/.build/checkouts ./.build/
+</code></pre>
+
+<ol>
+<li>Verify that you now have a <code>./.build</code> that looks like this:
+<code>
+ls -l .build
+total 16K
+drwxr-xr-x. 29 grant grant 4.0K Jan 27 14:13 checkouts
+-rw-r--r--.  1 grant grant 8.9K Jan 27 14:13 workspace-state.json
+</code></li>
+</ol></li>
+<li><p>Stop and remove the temporary container since we don&rsquo;t need it anymore.</p>
+<pre class="highlight plaintext"><code>docker rm buildertemp
+</code></pre></li>
+</ol>
+
+<p>Once this is complete if you were to re-run the <code>scripts/stack.sh -e production build</code> it would trigger a new build since the builder will
+detect that you&rsquo;ve changed the source of the Swift dependencies (from internet pulls to local files). It will want to rebuild but you&rsquo;ll be able to do so without downloading anything from the internet. This can be observed by initiating the build and doing a packet capture against it. For example:</p>
+<pre class="highlight plaintext"><code># In terminal #1
+scripts/stack.sh -e production build
+
+# In terminal #1
+docker ps
+docker inspect ${name_or_id_of_the_running_builder_container} | grep IPAddress
+sudo tcpdump -nn -i any host 172.17.0.2 # or whatever the IP is
+</code></pre>
 
           </div>
         </section>
