@@ -96,10 +96,16 @@
             <a class="nav-group-name-link" href="Twitarr%20API.html">Twitarr API</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="api-changelist.html">API Changelist</a>
+                <a class="nav-group-task-link" href="pitch.html">Pitch</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="api-overview.html">API Overview</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="canonical-links.html">Canonical Links</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="api-changelist.html">API Changelist</a>
               </li>
             </ul>
           </li>
@@ -1295,7 +1301,100 @@
             
             <h1 id='macos-installation' class='heading'>MacOS Installation</h1>
 
-<p>NSInstall</p>
+<p>Installing Swiftarr on Your Computer*
+* If your computer is a Macintosh</p>
+<h2 id='basics' class='heading'>Basics</h2>
+
+<p>Swiftarr uses both Postgres and Redis as database stores. You&rsquo;ll need both of these databases up and running.</p>
+
+<p>Swiftarr uses GD for image manipulation, and also links with jpeglib directly because of cases where GD is bad at its job. GD uses jpeglib, but chooses to ignore orientation directives in jpeg files, which necessitates a workaround.</p>
+
+<p>Swiftarr is Swift code, so you&rsquo;ll need the swift compiler toolchain installed. If you&rsquo;re on a Mac, just install Xcode.</p>
+
+<p>Not absolutely necessary, but I&rsquo;ve been using <a href="https://brew.sh">Homebrew</a> to install packages. Homebrew is a MacOS package manager, similar to apt or yum. During installation we&rsquo;ll also use Swift Package Manager (SPM), although SPM is really for source code packages, whereas Homebrew is mostly for compiled products that could be installed with an installation app.</p>
+
+<p>You can also use Docker to install and run the database services. Docker is kinda-sorta a VM. It&rsquo;s a container solution for running server services, popular because there&rsquo;s lots of services that are Dockerized and you just grab the container and launch them. You&rsquo;ll still need to get the compiled libraries with Homebrew or similar.</p>
+<h2 id='part-1-getting-all-the-parts-together' class='heading'>Part 1: Getting all the Parts Together</h2>
+
+<p>These install steps assume you have git and Xcode already, and are installing with the intent of doing at least some work on the server. </p>
+
+<ol>
+<li>Clone the Swiftarr repo with Git. <a href="https://github.com/challfry/swiftarr/">Get it here.</a></li>
+<li>You’ll need to either run <code>swift package update</code> or “Update to latest package versions” within Xcode.</li>
+</ol>
+<h3 id='using-homebrew' class='heading'>Using Homebrew</h3>
+
+<ol>
+<li>Install Postgres. <code>brew install postgres</code></li>
+<li>Install Redis: <code>brew install redis</code>.</li>
+<li>Install GD: I used <code>brew install gd</code>.</li>
+<li><code>brew services run</code> or <code>brew services start</code> to launch the databases</li>
+</ol>
+<h3 id='using-docker' class='heading'>Using Docker</h3>
+
+<ol>
+<li>Install Docker <a href="https://www.docker.com/">Link</a>.</li>
+<li>Run ./scripts/instance.sh up from the swiftarr directory to create and launch postgres and redis Docker containers.</li>
+<li>Be sure to get libgd and libjpeg installed.</li>
+</ol>
+<h2 id='part-2-configure-build-and-run' class='heading'>Part 2: Configure, Build and Run</h2>
+
+<p>If this is a publicly accessible install, you should make a copy of the <code>Template.env</code> Environment setup file in <code>Sources/App/Run/Private Swiftarr Config</code> folder, name it with the name of your environment and fill in passwords and such with private values.</p>
+<h3 id='building-with-xcode' class='heading'>Building with Xcode</h3>
+
+<ol>
+<li>Build and run the Migrate scheme in Xcode. Hit y in the Debug area when it asks you if you want to do a bunch of migrations.</li>
+<li>Once migrate completes successfully, switch to the &lsquo;Run&rsquo; scheme and run it. If it works, it&rsquo;ll tell you &ldquo;Server starting on <a href="http://192.168.0.1:8081">http://192.168.0.1:8081</a>&rdquo;</li>
+</ol>
+<h3 id='building-from-the-command-line' class='heading'>Building from the Command Line</h3>
+
+<p>If you have a particular environment, add <code>--env &lt;your-environment-name&gt;</code>.</p>
+
+<ol>
+<li><code>vapor run migrate</code>, you should see a list of migrations that&rsquo;ll be run&ndash;hit <code>y</code>.</li>
+<li><code>vapor run serve</code> If you don&rsquo;t have an environment file that defines the hostname to serve from, add the <code>--hostname</code> parameter.</li>
+</ol>
+<h2 id='more-info-on-postgres' class='heading'>More Info on Postgres</h2>
+
+<p>During Postgres install you&rsquo;ll need to make a Postgres user. You&rsquo;ll then need to set up Swiftarr to auth with that user and password. You can look at the fn <code>databaseConnectionConfiguration()</code> in <code>configure.swift</code> to see the relevant environment variables.</p>
+
+<p>You&rsquo;ll also need to create the <code>swiftarr</code> database. <code>CREATE DATABASE swiftarr</code> from the psql command line should suffice.</p>
+<h2 id='more-info-on-redis' class='heading'>More info On Redis</h2>
+
+<p>If you install redis locally you&rsquo;ll need to run <code>redis-server</code> from the command line to get it up and running.</p>
+<h2 id='more-info-on-environment-files' class='heading'>More info on Environment files</h2>
+
+<p>When launching Swiftarr from the command line, use:</p>
+
+<p><code>vapor run --env production</code></p>
+
+<p>with the environment you want to use. <code>development</code> is the default; if you&rsquo;re only doing development builds you probably don&rsquo;t need to make a development.env file. If this is a publicly accessible install, you should make a copy of the <code>Template.env</code> Environment setup file in <code>Sources/App/Run/Private Swiftarr Config</code> folder, name it with the name of your environment and fill in passwords and such with private values.</p>
+
+<p>The git repo is configured to ignore all files in the <code>Sources/App/Run/Private Swiftarr Config</code> directory other than the Template.env file. This is on purpose; don&rsquo;t check in your custom .env files.</p>
+
+<p>There are several predefined environments:</p>
+
+<ul>
+<li><code>development</code> is the default</li>
+<li><code>production</code> and <code>testing</code> also predefined by Vapor</li>
+<li><code>heroku</code> is a custom (to Vapor) environment defined by Swiftarr</li>
+<li>You can also create and name custom environments.</li>
+</ul>
+
+<p>In the environment file, the values that you should be sure to set include:</p>
+
+<ul>
+<li>DATABASE_PASSWORD</li>
+<li>REDIS_PASSWORD</li>
+<li>ADMIN_PASSWORD</li>
+<li>ADMIN_RECOVERY_KEY</li>
+<li>THO_PASSWORD</li>
+<li>THO_RECOVERY_KEY</li>
+<li>SWIFTARR_USER_IMAGES</li>
+</ul>
+<h2 id='apple-silicon' class='heading'>Apple Silicon</h2>
+
+<p>If you&rsquo;re running on Apple Silicon, you need ARM versions of the libraries you link against. Mostly this means GD and jpeglib. Homebrew will install these, but it puts them in /opt/homebrew/Cellar instead of in /usr/local/Cellar. I had to massage the include and linker paths when building on an ARM mac. I&rsquo;ll eventually fix this up by including both paths in the project. This also means that you may run into problems doing Release builds as it&rsquo;ll try to build both ARM and X86/64 and make a fat binary. Soon™.</p>
 
           </div>
         </section>

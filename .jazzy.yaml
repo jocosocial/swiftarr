@@ -39,8 +39,10 @@ custom_categories:
 
   - name: Twitarr API
     children:
-      - API Changelist
+      - Pitch
+      - API Overview
       - Canonical Links
+      - API Changelist
 
   - name: Controllers
     children:

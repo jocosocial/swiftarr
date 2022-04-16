@@ -96,10 +96,16 @@
             <a class="nav-group-name-link" href="Twitarr%20API.html">Twitarr API</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="api-changelist.html">API Changelist</a>
+                <a class="nav-group-task-link" href="pitch.html">Pitch</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="api-overview.html">API Overview</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="canonical-links.html">Canonical Links</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="api-changelist.html">API Changelist</a>
               </li>
             </ul>
           </li>
@@ -1294,6 +1300,62 @@
           <div class="section-content top-matter">
             
             <h1 id='special-files' class='heading'>Special Files</h1>
+
+<p>Like most server projects, Swiftarr is a bunch of small packages that do specific things, and they all get glued together into an app. I mean this in the sense that iOS and Mac app projects tend to be a big clump of code that interacts with Apple system libs, plus maybe a couple of small packages on the side to do things like analytics and user tracking. With Swiftarr, if you pull all the small add-on packages away, there&rsquo;s hardly anything left.</p>
+
+<p>Anyway, a bunch of those packages have their own <em>special file</em> in the Swiftarr repo, and if you can <em>find</em> the add-on that it&rsquo;s for, you can read the docs for that add-on and learn what the file does. But &ndash; ha ha &ndash; all too often you can&rsquo;t find the right place to look for the docs.</p>
+
+<p>So I made this.</p>
+<h2 id='in-the-root-dir' class='heading'>In the Root dir</h2>
+
+<ul>
+<li><code>.DS_Store</code>: MacOS litters every directory with these. They should be gitignored, but someone probably checked one in.</li>
+<li><code>.build</code>: Swift Package Manager has a build system that&rsquo;ll build your app, and when you use it, this is where all the build products go. Can be thrown away when not running the app to save space, or <code>swift package clean</code> should work. Note that when running using the <code>swift</code> command line toolchain, the built app will be (deep) inside this directory.</li>
+<li><code>__pycache__</code>: This one&rsquo;s easy. Python bytecode files, probably here because of Locust. See <code>locustfile.py</code></li>
+<li><code>.dockerignore</code>: Swiftarr can run as a Docker image; if you&rsquo;re doing this you&rsquo;re probably also running Postgres and Redis as Docker images. This file just tells Docker to not Dockerize stuff it doesn&rsquo;t need.</li>
+<li><code>.git</code>, <code>.gitignore</code>: Okay, you know these.</li>
+<li><code>.jazzy.yaml</code>: Jazzy is a doc generator. This file tells Jazzy how we want our docs to look.</li>
+<li><code>.swift-version</code>: Heroku uses this file to install a specific version of the Swift compiler toolchain on your Heroku node.</li>
+<li><code>.swiftpm</code>: It&rsquo;s nice to see the SPM build system coming along so nicely. It&rsquo;d be disappointing if all they did was take a bunch of Xcode project files in hidden subdirectories where nobody knows what they do, and replace them with a bunch of different hidden subdirectories full of files where nobody knows what they do.</li>
+<li><code>DerivedData</code>: When building with Xcode, including <code>xcodebuild</code>, all the .o files, debug files, and built products will be placed in here. Like <code>.build</code>, the entire directory may be deleted when the app is not running.</li>
+<li><code>Images</code>: User-uploaded images <em>may</em> be stored inside this folder. The actual location is configuration-dependent (see the <code>.env</code> files) but this is a good place for them as it&rsquo;s already gitignored. This folder can be thrown away when you do a database reset; just remember that the Postgres db contains filenames of files it expects to find here.</li>
+<li><code>locustfile.py</code>: Locust is a load testing package for servers, written in Python. You&rsquo;ll need to install <a href="http://locust.io">Locust</a> to use it. This particular file is set up to repeatedly make requests to ~100 of the most commonly used Swiftarr endpoints. The file does not validate the results; it&rsquo;s purpose is to load up the server with calls until all the CPUs are pegged.</li>
+<li><code>Package.resolved</code>: This is where the Swift Package Manager keeps its list of all the dependent Swift packages (mostly parts of Vapor), and the versions it&rsquo;s currently building with.</li>
+<li><code>Package.swift</code>: This is SPM&rsquo;s package manifest file. All the top-level dependencies Swiftarr needs to compile are listed, along with other parts that need to go into the app. <a href="http://www.swift.org">Swift.org</a> has more about this. Importantly, SPM has a full toolchain on Mac, Linux and Windows.</li>
+<li><code>Procfile</code>: <a href="http://heroku.com">Heroku</a> uses this file to figure out how to launch your app. For us, it&rsquo;s just a Run command, making sure to set the environment to <code>heroku</code>. Nobody else uses this.</li>
+<li><code>Prometheus</code>: <a href="https://prometheus.io">Prometheus</a> is a server metrics platform. You can run the <code>prometheus</code> command line tool and then view metrics data in a browser. This can be used to monitor server health, track down bugs (e.g. bugs that only come from a specific client), and find routes whose response times are slow.</li>
+<li><code>swiftarr.xcodeproj</code>: For the last 50 years, software engineers have been attempting to design a replacement for Makefiles that was less terrible. Xcode project files have succeeded in this regard, but it&rsquo;s a low bar. Their big failing (IMHO) is that it&rsquo;s almost impossible to do a manual git-merge with them. Sometimes auto-merge works and everything&rsquo;s fine, sometimes your project won&rsquo;t open anymore. But, if you have to look at the merge conflicts and try to resolve them &ndash; it&rsquo;s best to reset your changes, take updates, and reapply the changes in Xcode.</li>
+</ul>
+<h2 id='inside-code-scripts-code' class='heading'>Inside <code>/scripts</code></h2>
+
+<ul>
+<li><code>development.sh</code>: Bash script to start/stop the database containers, and also reset them. Wraps docker-compose calls.</li>
+<li><code>docker-compose-development.yml</code>:</li>
+<li><code>docker-compose-instance.yml</code>:</li>
+<li><code>docker-compose-linux-testing.yml</code>:</li>
+<li><code>docker-compose-stack.yml</code>:</li>
+<li><code>Dockerfile.linux-testing</code>:</li>
+<li><code>Dockerfile.stack</code>:</li>
+<li><code>generatedocs.sh</code>: Shell script that uses swift doc to generate documentation files for the API from inline header comments.</li>
+<li><code>instance.sh</code>: Shell script for staring/stopping/resetting the databases in on a Mac.</li>
+</ul>
+<h2 id='inside-code-sources-run-private-swiftarr-config-code' class='heading'>Inside <code>/Sources/Run/Private Swiftarr Config</code></h2>
+
+<ul>
+<li><code>Template.env</code>: This is the template for setting up environment files for Swiftarr, when running Swiftarr as a local process. Environment files contain server and DB passwords, and shouldn&rsquo;t be checked into Git. Set up an environment by copying this file and filling in the various fields as appropriate.</li>
+<li><code>Docker-Template.env</code>: Same idea as <code>Template.env</code>, but for running Swiftarr inside a Docker container.</li>
+</ul>
+<h2 id='inside-code-sources-app-controllers-structs-code' class='heading'>Inside <code>/Sources/App/Controllers/Structs</code></h2>
+
+<p>Almost all the data types used by the API are in these files. Most of the data types are Swift structs that get serialized to/from JSON, and the struct member names map exactly to what&rsquo;s in the JSON. Values with an ending <code>?</code> are optional, and won&rsquo;t be emitted in JSON if their value is NULL (that is, they won&rsquo;t be { &ldquo;value&rdquo;: null }). A struct member with an Enum value type have its enum value converted to a string that matches the name of the enum value.</p>
+
+<p>Swift allows for several sorts of data transformations with JSON serialization, and also allows for enums to be parsed as integers or renamed when converted to JSON. We&rsquo;re not doing those things with the API structs, for improved clarity.</p>
+<h2 id='inside-code-sources-app-resources-code' class='heading'>Inside <code>/Sources/App/Resources</code></h2>
+
+<p>Resource files that Swiftarr needs. Located here instead of at the root because of how the Swift Package Manager&rsquo;s build system works. Files in the <code>/Views</code> subdirectory are Leaf template files for the front end HTML.</p>
+<h2 id='inside-code-sources-app-gdoverrides-code' class='heading'>Inside <code>Sources/App/gdOverrides</code></h2>
+
+<p>We&rsquo;ve customized some parts of how GD works; mostly pertaining to JPEG file handling.</p>
 
           </div>
         </section>

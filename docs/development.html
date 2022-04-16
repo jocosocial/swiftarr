@@ -96,10 +96,16 @@
             <a class="nav-group-name-link" href="Twitarr%20API.html">Twitarr API</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="api-changelist.html">API Changelist</a>
+                <a class="nav-group-task-link" href="pitch.html">Pitch</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="api-overview.html">API Overview</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="canonical-links.html">Canonical Links</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="api-changelist.html">API Changelist</a>
               </li>
             </ul>
           </li>
@@ -1297,11 +1303,88 @@
 
 <p>These are the tools you&rsquo;ll need to get started building Swiftarr for yourself.</p>
 <h2 id='macos' class='heading'>MacOS</h2>
+<h3 id='requirements' class='heading'>Requirements</h3>
 
-<p>SoonTM</p>
+<p>There are five requirements for either running an instance of <code>swiftarr</code> or development itself.</p>
+
+<ul>
+<li>the <a href="http://libgd.github.io"><code>libgd</code></a> library</li>
+<li>a recent <a href="https://swift.org">Swift</a> toolchain (recommend 5.6 or later)</li>
+<li>the <a href="http://vapor.codes">Vapor</a> framework</li>
+<li>an instance of <a href="https://www.postgresql.org">PostgreSQL</a></li>
+<li>an instance of <a href="https://redis.io">Redis</a></li>
+</ul>
+
+<p>A recent version of <a href="https://apps.apple.com/us/app/xcode/id497799835?mt=12">Xcode</a> is also required for
+development. (This is not strictly necessary, but if you walk your own Swift development path, add
+&ldquo;self-sufficiency&rdquo; to the list.)</p>
+
+<p>Swiftarr also uses libjpeg directly, but libjpeg should get installed when installing libgd.</p>
+<h3 id='quickstart-macos' class='heading'>Quickstart - macOS</h3>
+
+<p>If running on macOS with Xcode installed, the easiest way to get an instance up and running is via
+<a href="https://www.docker.com/products/docker-desktop">Docker</a>.</p>
+
+<ol>
+<li>Install Docker.</li>
+<li>Install <code>libgd</code>. With <a href="https://brew.sh">Homebrew</a> installed, simply <code>brew install gd</code>.</li>
+<li>Install the <a href="http://docs.vapor.codes/">Vapor</a> toolbox. (I don&rsquo;t actually know if this is necessary
+for just running an instance, and have no way to easily test that at the moment, but it <em>might</em> be needed to get the
+correct SSL library and shimming for SwiftNIO.)</li>
+<li>Download or clone the <code>switarr</code> <a href="https://github.com/jocosocial/swiftarr">repository</a>.</li>
+<li>Run <code>./scripts/instance.sh up</code> from the <code>swiftarr</code> directory to create and launch postgres and redis
+Docker containers.</li>
+<li>Open the swiftarr.xcodeproj file.</li>
+<li>Run the &ldquo;Migrate&rdquo; scheme to configure the databses, or</li>
+</ol>
+<pre class="highlight shell"><code>xcodebuild <span class="nt">-project</span> <span class="s2">"swiftarr.xcodeproj"</span> <span class="nt">-scheme</span> <span class="s2">"Migrate"</span>
+./DerivedData/swiftarr/Build/Products/Debug/Run migrate
+</code></pre>
+
+<p>You&rsquo;ll be asked to approve a bunch of migrations; these mostly create database tables. </p>
+
+<ol>
+<li>Set the scheme to &ldquo;Run/My Mac&rdquo; in Xcode, hit Run, and <code>swiftarr</code> should shortly be available at <a href="http://localhost:8081">http://localhost:8081</a>.
+To shut down the Docker containers, <code>./scripts/instance.sh stop</code>.</li>
+</ol>
+
+<p>Yes, that&rsquo;s a bunch the first time through and it does take some time. From here on out though, it&rsquo;s just a matter of
+pulling the latest updates from the repository and regenerating the .xcodeproj file.</p>
+<h4 id='generating-a-new-xcode-project' class='heading'>Generating a new Xcode Project</h4>
+
+<p>Swiftarr uses a Package.swift dependency management file; like a million other package-managers it loads in other source code
+and manages dependencies. Xcode can also direclty open and build Package.swift files in a way similar to project files; 
+except you can&rsquo;t set up build scripts or do a bunch of other project-y things. To regen the project:</p>
+<pre class="highlight shell"><code><span class="nb">cd</span> &lt;swiftarr-directory&gt;
+swift package generate-xcodeproj
+open ./swiftarr.xcodeproj
+</code></pre>
+
+<p>Then, in Target Settings for the App Target, select the Build Phases tab. Add a Copy Files phase copying &ldquo;Resources&rdquo; and 
+&ldquo;Seeds&rdquo; directories to the &ldquo;Products Directory&rdquo; destination.</p>
+
+<p>One of the many Xcode quirks that confuses developers not used to it is that Xcode puts the built app and all the buildfiles
+in the /DerivedData folder. The Copy Files script copies all the Leaf templates, javascript, css, images, into /DerivedData
+on each build and the running app uses the copies, NOT the files in /Resources and /Seeds. But, the copy happens every build,
+even if no sources changed. So, while running the server, you can edit a Leaf template or some JS, hit command-B to build, 
+reload the page, and see the changes. </p>
 <h2 id='linux' class='heading'>Linux</h2>
 
-<p>SoonTM</p>
+<p>You will need to install the Swift compiler and runtime. This is probably available as a package
+via your system packager (<code>swift-lang</code>) or via <a href="https://www.swift.org/download/">https://www.swift.org/download/</a></p>
+
+<p>After that you will need the following tools:</p>
+
+<ul>
+<li><a href="https://github.com/vapor/toolbox">https://github.com/vapor/toolbox</a></li>
+<li><a href="https://github.com/apple/swift-format">https://github.com/apple/swift-format</a></li>
+<li><a href="https://github.com/jpsim/SourceKitten">https://github.com/jpsim/SourceKitten</a></li>
+<li><a href="https://github.com/realm/jazzy/">https://github.com/realm/jazzy/</a></li>
+</ul>
+
+<p>Consult their READMEs for installation.</p>
+
+<p>More SoonTM</p>
 
           </div>
         </section>
