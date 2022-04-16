@@ -23,12 +23,19 @@ custom_categories:
   - name: Overview
     children:
       - Contributing
-      - Installation
-      - Configuration
       - Development
       - Roadmap
       - Special Files
       - Documentation
+
+  - name: Operations
+    children:
+      - Configuration
+      - MacOS Installation
+      - Linux Installation
+      - Docker Installation
+      - Database Migration
+      - Deployment
 
   - name: Twitarr API
     children:
