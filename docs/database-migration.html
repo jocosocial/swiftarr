@@ -1289,7 +1289,50 @@
         <section class="section">
           <div class="section-content top-matter">
             
-            
+            <h1 id='database-migration' class='heading'>Database Migration</h1>
+<h3 id='manual-migration-via-cli' class='heading'>Manual Migration via CLI</h3>
+
+<ol>
+<li><p>If you are populating a fresh database then you&rsquo;ll need to run a migration.
+to get some data.
+See the <a href="https://docs.vapor.codes/4.0/fluent/overview/#migrate">Vapor docs</a> for details.
+This will be interactive so enter <code>y</code> at the prompt.</p>
+<pre class="highlight plaintext"><code># Note there is no `swift` eqivalent here. You need the vapor CLI.
+vapor run migrate
+</code></pre>
+
+<p>Example output:</p>
+<pre class="highlight plaintext"><code>[0/0] Build complete!
+[ NOTICE ] Starting up in Development mode.
+...
+The following migration(s) will be prepared:
+...
++ App.SetInitialCategoryForumCounts on psql
+Would you like to continue?
+y/n&gt;
+
+[ INFO ] Starting registration code import [database-id: psql]
+[ INFO ] Starting boardgame import [database-id: psql]
+...
+[ INFO ] Imported 25000 karaoke songs. [database-id: psql]
+Migration successful
+</code></pre></li>
+</ol>
+<h3 id='manual-migration-via-docker' class='heading'>Manual Migration via Docker</h3>
+
+<ol>
+<li>If you set <code>AUTO_MIGRATE</code> to <code>false</code> in your config and wish to perform a manual migration,
+you can do this by calling:
+<code>
+scripts/stack.sh -e development run web /app/Run migrate --yes
+</code></li>
+<li>Then you can restart the initial container that was created and died because
+there was no DB for it at the time.
+<code>
+scripts/stack.sh -e development restart web
+</code></li>
+</ol>
+
           </div>
         </section>
 

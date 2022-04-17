@@ -6,5 +6,8 @@
 #perl -C -i -p -e 's/\x{200B}//g; s/<doc:([^<]*)>/[[$1]]/g' swiftDocs/*.md
 #mv swiftDocs/Home.md swiftDocs/Types.md
 
+# Can't use jazzy --clean because it blows away the entire directory including
+# the docs that we wrote.
+find ./docs -name "*.html" -delete
 sourcekitten doc --spm > /tmp/doc.json
 jazzy --sourcekitten-sourcefile /tmp/doc.json
