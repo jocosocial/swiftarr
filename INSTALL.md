@@ -105,7 +105,7 @@ available to you. And `docker-compose` (or equivalent).
    If you are considering doing a Stack deployment you need to decide what environment you
    wish to run. Generally this is `development` or `production`. There isn't a ton of
    difference between the two other than initial database seeding and logging. Regardless,
-   you'll need to create config files in `/Sources/Run/Private Swiftarr Config` based on
+   you'll need to create config files in `/Sources/App/seeds/Private Swiftarr Config` based on
    the `Docker-Template.env`. See [Installation Notes](https://github.com/challfry/swiftarr/wiki/Installation-Notes#more-info-on-environment-files)
    for more details on what this does.
    

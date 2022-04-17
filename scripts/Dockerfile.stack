@@ -1,7 +1,7 @@
 # Builder image
 # 
 # This sets up the environment used to build swiftarr.
-FROM swift:5.5.2-bionic as builder
+FROM swift:5.6-bionic as builder
 
 ARG env
 

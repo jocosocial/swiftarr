@@ -13,8 +13,6 @@ services:
       REDIS_HOSTNAME: redis
       REDIS_PORT: 6379
     volumes:
-      # This is needed since "Private Swiftarr Config" is listed in the .dockerignore file.
-      - ../Sources/Run/Private Swiftarr Config:/swiftarr/Sources/Run/Private Swiftarr Config:ro
       - ../Sources/App/seeds:/swiftarr/Sources/App/seeds:ro
 
   postgres:

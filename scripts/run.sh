@@ -25,4 +25,4 @@ else
   echo "Automatic database migration was disabled."
 fi
 
-/app/Run serve --env "${ENVIRONMENT}" --hostname ${hostname} --port ${PORT}
+/app/Run serve --env "${ENVIRONMENT}" --hostname ${SWIFTARR_IP} --port ${SWIFTARR_PORT}
