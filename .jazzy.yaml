@@ -47,11 +47,16 @@ custom_categories:
   - name: Controllers
     children:
     - AdminController
+    - AlertController
     - AuthController
+    - BoardgameController
     - ClientController
     - EventController
     - FezController
     - ForumController
+    - ImageController
+    - KaraokeController
+    - ModerationController
     - TestController
     - TwitarrController
     - UserController
@@ -59,19 +64,31 @@ custom_categories:
 
   - name: Models
     children:
-    - Barrel
+    - AlertWord
+    - Announcement
+    - Boardgame
     - Category
+    - DailyTheme
     - Event
     - FezPost
-    - Forum
+    - ForumEdit
+    - ForumPostEdit
     - ForumPost
+    - Forum
+    - FriendlyFezEdit
+    - FriendlyFez
+    - KaraokePlayedSong
+    - KaraokeSong
+    - ModeratorAction
+    - MuteWord
+    - ProfileEdit
     - RegistrationCode
     - Report
     - Token
+    - TwarrtEdit
     - Twarrt
-    - User
     - UserNote
-    - UserProfile
+    - User
     
   - name: Enumerations
     children:
