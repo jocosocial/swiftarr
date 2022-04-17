@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>Enumerations  Reference</title>
+    <title>Migrations  Reference</title>
     <link rel="stylesheet" type="text/css" href="css/jazzy.css" />
     <link rel="stylesheet" type="text/css" href="css/highlight.css" />
     <meta charset="utf-8">
@@ -14,9 +14,9 @@
   </head>
   <body>
 
-    <a name="//apple_ref/swift/Section/Enumerations" class="dashAnchor"></a>
+    <a name="//apple_ref/swift/Section/Migrations" class="dashAnchor"></a>
 
-    <a title="Enumerations  Reference"></a>
+    <a title="Migrations  Reference"></a>
 
     <header class="header">
       <p class="header-col header-col--primary">
@@ -44,7 +44,7 @@
     <p class="breadcrumbs">
       <a class="breadcrumb" href="index.html">Swiftarr Reference</a>
       <img class="carat" src="img/carat.png" alt=""/>
-      Enumerations  Reference
+      Migrations  Reference
     </p>
 
     <div class="content-wrapper">
@@ -1289,7 +1289,7 @@
 
         <section class="section">
           <div class="section-content top-matter">
-            <h1>Enumerations</h1>
+            <h1>Migrations</h1>
             
           </div>
         </section>
@@ -1301,9 +1301,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App23ContentModerationStatusO"></a>
-                    <a name="//apple_ref/swift/Enum/ContentModerationStatus" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App23ContentModerationStatusO">ContentModerationStatus</a>
+                    <a name="/s:3App16CreateAdminUsersV"></a>
+                    <a name="//apple_ref/swift/Struct/CreateAdminUsers" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App16CreateAdminUsersV">CreateAdminUsers</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -1311,21 +1311,26 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Moderation status of a piece of reportable content. 
-This enum is used both in Models and in data transfer objects in the API. Be very careful about renaming enum cases or customizing case strings.</p>
+                        <p>A <code>Migration</code> that creates the admin user upon startup. The password and recovery key are
+read from environment variables <code>ADMIN_PASSWORD</code> and <code>RECOVERY_KEY</code> if present, otherwise
+defaults are used.</p>
 
-                        <a href="Enums/ContentModerationStatus.html" class="slightly-smaller">See more</a>
+<p>The defaults are intended and fine for development and testing, but should <strong>never</strong> be
+used in production. If not set to proper values in <code>docker-compose.yml</code> (or whatever
+other environment of your choice), reminders are printed to console during startup.</p>
+
+                        <a href="Structs/CreateAdminUsers.html" class="slightly-smaller">See more</a>
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">enum</span> <span class="kt">ContentModerationStatus</span> <span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="kt">Codable</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">CreateAdminUsers</span> <span class="p">:</span> <span class="kt">AsyncMigration</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Enumerations/ReportType.swift#L22-L55">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Migrations/AdminUsers.swift#L13-L192">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1333,9 +1338,307 @@ This enum is used both in Models and in data transfer objects in the API. Be ver
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App17EventModification33_1E34CDF212017B5130A35EED834FB087LLO"></a>
-                    <a name="//apple_ref/swift/Enum/EventModification" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App17EventModification33_1E34CDF212017B5130A35EED834FB087LLO">EventModification</a>
+                    <a name="/s:3App16CreateCategoriesV"></a>
+                    <a name="//apple_ref/swift/Struct/CreateCategories" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App16CreateCategoriesV">CreateCategories</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>A <code>Migration</code> that creates an initial set of categories for <code><a href="Classes/Forum.html">Forum</a></code>s.</p>
+
+                        <a href="Structs/CreateCategories.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">CreateCategories</span> <span class="p">:</span> <span class="kt">AsyncMigration</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Migrations/Categories.swift#L6-L48">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App29SetInitialCategoryForumCountsV"></a>
+                    <a name="//apple_ref/swift/Struct/SetInitialCategoryForumCounts" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App29SetInitialCategoryForumCountsV">SetInitialCategoryForumCounts</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>A <code>Migration</code> that initializes the ForumCount field in each category. This migration should run after
+all the migrations that generate forum threads.</p>
+
+                        <a href="Structs/SetInitialCategoryForumCounts.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">SetInitialCategoryForumCounts</span> <span class="p">:</span> <span class="kt">AsyncMigration</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Migrations/Categories.swift#L52-L68">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App17CreateClientUsersV"></a>
+                    <a name="//apple_ref/swift/Struct/CreateClientUsers" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App17CreateClientUsersV">CreateClientUsers</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>A <code>Migration</code> that creates a set of registered client users during startup, from a
+<code>registered-clients.txt</code> file located in the <code>seeds/</code> subdirectory of the project. The file
+must be of the format:</p>
+
+<p>clientUsername1:password1:recoveryKey1
+ clientUsername2:password2:recoveryKey2
+ &hellip;</p>
+<div class="aside aside-note">
+    <p class="aside-title">Note</p>
+    Each API client that wishes to make use of <code><a href="Structs/ClientController.html">ClientController</a></code> endpoints <strong>must</strong>
+provide a client <code>username:password:recovery key</code> triplet prior to production startup.
+
+</div>
+
+                        <a href="Structs/CreateClientUsers.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">CreateClientUsers</span> <span class="p">:</span> <span class="kt">AsyncMigration</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Migrations/ClientUsers.swift#L16-L100">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App16ImportBoardgamesV"></a>
+                    <a name="//apple_ref/swift/Struct/ImportBoardgames" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App16ImportBoardgamesV">ImportBoardgames</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>A <code>Migration</code> that imports the Games Catalog JSON file.</p>
+
+<p>This file is  located in the <code>seeds/</code> subdirectory of the project.</p>
+
+                        <a href="Structs/ImportBoardgames.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">ImportBoardgames</span> <span class="p">:</span> <span class="kt">AsyncMigration</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Migrations/Data Import/Boardgames.swift#L8-L61">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App21SetInitialEventForumsV"></a>
+                    <a name="//apple_ref/swift/Struct/SetInitialEventForums" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App21SetInitialEventForumsV">SetInitialEventForums</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>A <code>Migration</code> that creates <code><a href="Classes/Forum.html">Forum</a></code>s for each <code><a href="Classes/Event.html">Event</a></code> in the schedule.</p>
+
+                        <a href="Structs/SetInitialEventForums.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">SetInitialEventForums</span> <span class="p">:</span> <span class="kt">AsyncMigration</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Migrations/Data Import/EventForums.swift#L7-L112">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App23ImportRegistrationCodesV"></a>
+                    <a name="//apple_ref/swift/Struct/ImportRegistrationCodes" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App23ImportRegistrationCodesV">ImportRegistrationCodes</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>A <code>Migration</code> that populates the <code><a href="Classes/RegistrationCode.html">RegistrationCode</a></code> database from a <code>registration-codes.txt</code>
+file located in the <code>seeds/</code> subdirectory of the project.</p>
+
+                        <a href="Structs/ImportRegistrationCodes.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">ImportRegistrationCodes</span> <span class="p">:</span> <span class="kt">AsyncMigration</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Migrations/Data Import/RegistrationCodes.swift#L13-L70">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App12ImportEventsV"></a>
+                    <a name="//apple_ref/swift/Struct/ImportEvents" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App12ImportEventsV">ImportEvents</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>A <code>Migration</code> that imports the event schedule from a <code>schedule.ics</code> file
+located in the <code>seeds/</code> subdirectory of the project.</p>
+
+                        <a href="Structs/ImportEvents.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">ImportEvents</span> <span class="p">:</span> <span class="kt">AsyncMigration</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Migrations/Data Import/Events.swift#L7-L45">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18ImportKaraokeSongsV"></a>
+                    <a name="//apple_ref/swift/Struct/ImportKaraokeSongs" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18ImportKaraokeSongsV">ImportKaraokeSongs</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>A <code>Migration</code> that imports the Karaoke Song Catalog file.</p>
+
+<p>This file is  located in the <code>seeds/</code> subdirectory of the project.</p>
+
+                        <a href="Structs/ImportKaraokeSongs.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">ImportKaraokeSongs</span> <span class="p">:</span> <span class="kt">AsyncMigration</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Migrations/Data Import/KaraokeSongs.swift#L8-L61">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App12CreateForumsV"></a>
+                    <a name="//apple_ref/swift/Struct/CreateForums" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App12CreateForumsV">CreateForums</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>A <code>Migration</code> that creates an initial set of Twit-arr official <code><a href="Classes/Forum.html">Forum</a></code>s.</p>
+
+                        <a href="Structs/CreateForums.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">CreateForums</span> <span class="p">:</span> <span class="kt">AsyncMigration</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Migrations/Forums.swift#L7-L56">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App17CreateCustomEnumsV"></a>
+                    <a name="//apple_ref/swift/Struct/CreateCustomEnums" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App17CreateCustomEnumsV">CreateCustomEnums</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -1344,18 +1647,18 @@ This enum is used both in Models and in data transfer objects in the API. Be ver
                       <div class="pointer"></div>
                       <div class="abstract">
                         
-                        <a href="Enums/EventModification.html" class="slightly-smaller">See more</a>
+                        <a href="Structs/CreateCustomEnums.html" class="slightly-smaller">See more</a>
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">fileprivate</span> <span class="kd">enum</span> <span class="kt">EventModification</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">CreateCustomEnums</span> <span class="p">:</span> <span class="kt">AsyncMigration</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/AdminController.swift#L703-L709">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Migrations/Schema Creation/SchemaCreation.swift#L9-L36">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1363,9 +1666,9 @@ This enum is used both in Models and in data transfer objects in the API. Be ver
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App9EventTypeO"></a>
-                    <a name="//apple_ref/swift/Enum/EventType" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App9EventTypeO">EventType</a>
+                    <a name="/s:3App15CreateTestUsersV"></a>
+                    <a name="//apple_ref/swift/Struct/CreateTestUsers" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App15CreateTestUsersV">CreateTestUsers</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -1373,75 +1676,21 @@ This enum is used both in Models and in data transfer objects in the API. Be ver
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>The type of <code><a href="Classes/Event.html">Event</a></code>.</p>
+                        <p>A <code>Migration</code> that creates a set of test users during startup, so that there exists one
+at each <code>.accessLevel</code>. This migration should only be run in non-production environments.</p>
 
-                        <a href="Enums/EventType.html" class="slightly-smaller">See more</a>
+                        <a href="Structs/CreateTestUsers.html" class="slightly-smaller">See more</a>
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">enum</span> <span class="kt">EventType</span> <span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="kt">Codable</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">CreateTestUsers</span> <span class="p">:</span> <span class="kt">AsyncMigration</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Enumerations/EventType.swift#L3-L43">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-              </ul>
-            </div>
-            <div class="task-group">
-              <div class="task-name-container">
-                <a name="/Convenience%20LibGd%20Format"></a>
-                <a name="//apple_ref/swift/Section/Convenience LibGd Format" class="dashAnchor"></a>
-                <div class="section-name-container">
-                  <a class="section-name-link" href="#/Convenience%20LibGd%20Format"></a>
-                  <h3 class="section-name"><span>Convenience LibGd Format</span>
-</h3>
-                </div>
-              </div>
-              <ul class="item-container">
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App16ExportableFormatO"></a>
-                    <a name="//apple_ref/swift/Enum/ExportableFormat" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App16ExportableFormatO">ExportableFormat</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Enum definition of built-in exportable image raster formats</p>
-
-<ul>
-<li>bmp: <a href="https://en.wikipedia.org/wiki/BMP_file_format">https://en.wikipedia.org/wiki/BMP_file_format</a></li>
-<li>gif: <a href="https://en.wikipedia.org/wiki/gif">https://en.wikipedia.org/wiki/gif</a></li>
-<li>jpg: <a href="https://en.wikipedia.org/wiki/jpeg">https://en.wikipedia.org/wiki/jpeg</a></li>
-<li>png: <a href="https://en.wikipedia.org/wiki/Portable_Network_Graphics">https://en.wikipedia.org/wiki/Portable_Network_Graphics</a></li>
-<li>tiff: <a href="https://en.wikipedia.org/wiki/tiff">https://en.wikipedia.org/wiki/tiff</a></li>
-<li>wbmp: <a href="https://en.wikipedia.org/wiki/wbmp">https://en.wikipedia.org/wiki/wbmp</a></li>
-<li>webp: <a href="https://en.wikipedia.org/wiki/webp">https://en.wikipedia.org/wiki/webp</a></li>
-<li>any: Evaluates all of the above mentioned formats on export</li>
-</ul>
-
-                        <a href="Enums/ExportableFormat.html" class="slightly-smaller">See more</a>
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">enum</span> <span class="kt">ExportableFormat</span> <span class="p">:</span> <span class="kt"><a href="Protocols/ExportableFormatter.html">ExportableFormatter</a></span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Image/Format.swift#L286-L315">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Migrations/Test Data/TestUsers.swift#L8-L41">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1449,9 +1698,9 @@ This enum is used both in Models and in data transfer objects in the API. Be ver
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App7FezTypeO"></a>
-                    <a name="//apple_ref/swift/Enum/FezType" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App7FezTypeO">FezType</a>
+                    <a name="/s:3App14CreateTestDataV"></a>
+                    <a name="//apple_ref/swift/Struct/CreateTestData" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App14CreateTestDataV">CreateTestData</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -1459,425 +1708,20 @@ This enum is used both in Models and in data transfer objects in the API. Be ver
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>The type of <code><a href="Classes/FriendlyFez.html">FriendlyFez</a></code>.</p>
+                        <p>A <code>Migration</code> that seeds the db with test data. Once we have clients that can post data, we can get rid of this file.</p>
 
-                        <a href="Enums/FezType.html" class="slightly-smaller">See more</a>
+                        <a href="Structs/CreateTestData.html" class="slightly-smaller">See more</a>
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">enum</span> <span class="kt">FezType</span> <span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="kt">CaseIterable</span><span class="p">,</span> <span class="kt">Codable</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">CreateTestData</span> <span class="p">:</span> <span class="kt">AsyncMigration</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Enumerations/FezType.swift#L4-L49">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App7GDErrorO"></a>
-                    <a name="//apple_ref/swift/Enum/GDError" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App7GDErrorO">GDError</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Represents errors that can be thrown within the SwiftGD module.</p>
-
-<ul>
-<li>invalidFormat: Image raster format mismatch on import/export</li>
-<li>invalidImage: Contains the reason this error was thrown.</li>
-<li>invalidColor: Contains the reason this error was thrown.</li>
-<li>invalidMaxColors: Asserts sane values for creating indexed Images</li>
-</ul>
-
-                        <a href="Enums/GDError.html" class="slightly-smaller">See more</a>
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">enum</span> <span class="kt">GDError</span> <span class="p">:</span> <span class="kt">Swift</span><span class="o">.</span><span class="kt">Error</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Image/Geometry.swift#L8-L13">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App14ImageSizeGroupO"></a>
-                    <a name="//apple_ref/swift/Enum/ImageSizeGroup" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App14ImageSizeGroupO">ImageSizeGroup</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Internally, the Image Handler stores images at multiple sizes upon image upload. The exact sizes stored for each sizeGroup
-may vary based on <code><a href="Enums/ImageUsage.html">ImageUsage</a></code>. Request images at roughly the size you need.</p>
-
-                        <a href="Enums/ImageSizeGroup.html" class="slightly-smaller">See more</a>
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">enum</span> <span class="kt">ImageSizeGroup</span> <span class="p">:</span> <span class="kt">String</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Protocols/ImageHandler.swift#L19-L25">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App10ImageUsageO"></a>
-                    <a name="//apple_ref/swift/Enum/ImageUsage" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App10ImageUsageO">ImageUsage</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>The type of model for which an <code>ImageHandler</code> is processing. This defines the size of the thumbnail produced.</p>
-
-                        <a href="Enums/ImageUsage.html" class="slightly-smaller">See more</a>
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">enum</span> <span class="kt">ImageUsage</span> <span class="p">:</span> <span class="kt">String</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Protocols/ImageHandler.swift#L4-L15">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App16ImportableFormatO"></a>
-                    <a name="//apple_ref/swift/Enum/ImportableFormat" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App16ImportableFormatO">ImportableFormat</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Enum definition of built-in importable image raster formats</p>
-
-<ul>
-<li>bmp: <a href="https://en.wikipedia.org/wiki/BMP_file_format">https://en.wikipedia.org/wiki/BMP_file_format</a></li>
-<li>gif: <a href="https://en.wikipedia.org/wiki/gif">https://en.wikipedia.org/wiki/gif</a></li>
-<li>jpg: <a href="https://en.wikipedia.org/wiki/jpeg">https://en.wikipedia.org/wiki/jpeg</a></li>
-<li>png: <a href="https://en.wikipedia.org/wiki/Portable_Network_Graphics">https://en.wikipedia.org/wiki/Portable_Network_Graphics</a></li>
-<li>tiff: <a href="https://en.wikipedia.org/wiki/tiff">https://en.wikipedia.org/wiki/tiff</a></li>
-<li>tga: <a href="https://en.wikipedia.org/wiki/Truevision_TGA">https://en.wikipedia.org/wiki/Truevision_TGA</a></li>
-<li>wbmp: <a href="https://en.wikipedia.org/wiki/wbmp">https://en.wikipedia.org/wiki/wbmp</a></li>
-<li>webp: <a href="https://en.wikipedia.org/wiki/webp">https://en.wikipedia.org/wiki/webp</a></li>
-<li>any: Evaluates all of the above mentioned formats on import</li>
-</ul>
-
-                        <a href="Enums/ImportableFormat.html" class="slightly-smaller">See more</a>
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">enum</span> <span class="kt">ImportableFormat</span> <span class="p">:</span> <span class="kt"><a href="Protocols/ImportableFormatter.html">ImportableFormatter</a></span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Image/Format.swift#L242-L274">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App8LikeTypeO"></a>
-                    <a name="//apple_ref/swift/Enum/LikeType" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App8LikeTypeO">LikeType</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>The type of &ldquo;like&rdquo; reaction that a user can apply to a <code><a href="Classes/ForumPost.html">ForumPost</a></code> or <code><a href="Classes/Twarrt.html">Twarrt</a></code>.
-Only positive reactions are provided in <code>swiftarr</code>.</p>
-
-                        <a href="Enums/LikeType.html" class="slightly-smaller">See more</a>
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">enum</span> <span class="kt">LikeType</span> <span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="kt">Codable</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Enumerations/LikeType.swift#L5-L12">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App19ModeratorActionTypeO"></a>
-                    <a name="//apple_ref/swift/Enum/ModeratorActionType" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App19ModeratorActionTypeO">ModeratorActionType</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Describes the type of action a moderator took. This enum is used both in the ModeratorAction Model, and in several Moderation DTOs.
-Be careful when modifying this. Not all ModeratorActionTypes are applicable to all ReportTypes.</p>
-
-                        <a href="Enums/ModeratorActionType.html" class="slightly-smaller">See more</a>
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">enum</span> <span class="kt">ModeratorActionType</span> <span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="kt">Codable</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Enumerations/ModeratorActionType.swift#L4-L60">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App16NotificationTypeO"></a>
-                    <a name="//apple_ref/swift/Enum/NotificationType" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App16NotificationTypeO">NotificationType</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>A type of event that can change the value of the global notification handler&rsquo;s <a href="doc:UserNotificationData">doc:UserNotificationData</a> result.</p>
-
-<p>When certain database-mutating events occur, the notification bookkeeping methods need to be called to keep our 
-cached notification counts up to date. The notification counts themselves are database-denormalizing, but they&rsquo;re a cache
-intended to improve the performance of the global notification method.</p>
-
-<p>How notifications are stored in Redis:</p>
-
-<ul>
-<li>Announcements: <code>ActiveAnnouncementIDs</code> holds announcement IDs for all active announcements, Its updated frequently
-to catch expiring announcements.</li>
-<li>Mentions: Fields <code>twarrtMention</code> and <code>forumMention</code> in hash-valued key <code>NotificationHash-\(userID)</code> hold the total
-number of @mentions for each user&ndash;this should be equal to the # of results a text search for <code>@&lt;username&gt;</code> will return. Counts are
-updated on each post, post edit, and post deletion.</li>
-<li>Alertwords: All alertwords by all users are kept in a sorted set keyed by <code>alertwords</code>. The value for each entry in the set is the number of users
-watching on that alertword. When someone posts, we get all fields in <code>alertwords</code> with values &gt; 0. We then intersect the words in the post
-with the words from alertwords. For any words in the intersection, we get the set-valued key <code>alertwordusers-\(word)</code> to get the set of
-users watching on that particular word. We then increment the count of the field <code>alertwordTweet-\(word)</code> in key <code>NotificationHash-\(userID)</code>.</li>
-<li>Fez Posts/Seamails: When a post is created, we increment a field named with the fezzes&rsquo; ID in the <code>UnreadFezzes-\(userID)</code> or <code>UnreadSeamails-\(userID)</code> key.
-When a post is deleted, we decrement the same field, only for users that haven&rsquo;t seen the post (their unseen count is less than how far back the deleted post is).</li>
-<li>Next Event Time: Every time an event is followed/unfollowed, we calculate the time of the next event in the followed list, storing that in the <code>nextFollowedEventTime</code> field
-in <code>NotificationHash-\(userID)</code>.</li>
-</ul>
-
-<p>How notifications are marked &lsquo;viewed&rsquo; in Redis:</p>
-
-<ul>
-<li>Announcements:  Each user stores the # of their highest-read announcement in the <code>announcement</code> field of the hash-valued key <code>NotificationHash-\(userID)</code>.
-The number of announcements with IDs &gt; the highest-read announceemnt are &lsquo;new&rsquo; to that user. This means an announceement could appear and then expire unseen 
-by a user, and their unseen count would continue to be correct.</li>
-<li>Mentions: The # of mentions the user has viewed are stored in <code>twarrtMention_viewed</code> in the <code>NotificationHash-\(userID)</code> key, and set equal 
-to the relevant @mention count when a user&rsquo;s own mentions are viewed (that is, twarrts/posts are requested with a query of <code>mentionSelf</code> or similar).</li>
-<li>Alertwords: Similar to Mentions; the # of alertword hits that have been viewed is stored in <code>alertwordTweet-\(word)_viewed</code>. The difference between this
-field and <code>alertwordTweet-\(word)</code> equals the number of new, unseen alertword hits. The <code>_viewed</code> field is set equal to the count field upon viewing hits.</li>
-<li>Fez Posts: When the fez is viewed (more corectly, the getSingleFez api call is made), we set the # of unseen posts for the fez to 0.</li>
-<li>Next Event Time: Never gets deleted, but can get expired when the current time is &gt; the event time.</li>
-</ul>
-
-                        <a href="Enums/NotificationType.html" class="slightly-smaller">See more</a>
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">enum</span> <span class="kt">NotificationType</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Enumerations/NotificationType.swift#L36-L112">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App10ReportTypeO"></a>
-                    <a name="//apple_ref/swift/Enum/ReportType" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App10ReportTypeO">ReportType</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>The type of entity being reported in a <code><a href="Classes/Report.html">Report</a></code>.</p>
-
-                        <a href="Enums/ReportType.html" class="slightly-smaller">See more</a>
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">enum</span> <span class="kt">ReportType</span> <span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="kt">Codable</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Enumerations/ReportType.swift#L5-L18">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App014SwiftarrClientA0O"></a>
-                    <a name="//apple_ref/swift/Enum/SwiftarrClientApp" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App014SwiftarrClientA0O">SwiftarrClientApp</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Names of clients that consume the Swiftarr client API. Used in the <code><a href="Structs/SettingsAppFeaturePair.html">SettingsAppFeaturePair</a></code> struct.
-Clients: Be sure to anticipate server values not listed here.</p>
-
-                        <a href="Enums/SwiftarrClientApp.html" class="slightly-smaller">See more</a>
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">enum</span> <span class="kt">SwiftarrClientApp</span> <span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="kt">Content</span><span class="p">,</span> <span class="kt">CaseIterable</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Enumerations/AppFeatures.swift#L6-L30">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App15SwiftarrFeatureO"></a>
-                    <a name="//apple_ref/swift/Enum/SwiftarrFeature" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App15SwiftarrFeatureO">SwiftarrFeature</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Functional areas of the Swiftarr API. Used in the <code><a href="Structs/SettingsAppFeaturePair.html">SettingsAppFeaturePair</a></code> struct.
-Clients: Be sure to anticipate server values not listed here.</p>
-
-                        <a href="Enums/SwiftarrFeature.html" class="slightly-smaller">See more</a>
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">enum</span> <span class="kt">SwiftarrFeature</span> <span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="kt">Content</span><span class="p">,</span> <span class="kt">CaseIterable</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Enumerations/AppFeatures.swift#L34-L57">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App15UserAccessLevelO"></a>
-                    <a name="//apple_ref/swift/Enum/UserAccessLevel" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App15UserAccessLevelO">UserAccessLevel</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>All API endpoints are protected by a minimum user access level.
-This <code>enum</code> structure MUST match the values in <code><a href="Structs/CreateCustomEnums.html">CreateCustomEnums</a></code> in SchemaCreation.swift
-as this enum is part of the database schema. This enum is also sent out in several Data Transfer Object types.
-Think very carefully about modifying these values.</p>
-
-                        <a href="Enums/UserAccessLevel.html" class="slightly-smaller">See more</a>
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">enum</span> <span class="kt">UserAccessLevel</span> <span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="kt">Codable</span></code></pre>
-<pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">UserAccessLevel</span><span class="p">:</span> <span class="kt">Comparable</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Enumerations/UserAccessLevel.swift#L8-L28">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Migrations/Test Data/TestData.swift#L6-L124">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

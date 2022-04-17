@@ -10,7 +10,7 @@ While it *is* the preferred location, a (free) GitHub account is required to par
 developers collectively participate in (or at least monitor to some extent) related Discord channels (#twitarr), various
 Facebook groups, and the feedback forums within Twit-arr itself when it is active.
 
-### Contributing Code
+### Developers
 
 Contributions to Swiftarr are absolutely welcome! Some general guidelines:
 
@@ -21,3 +21,9 @@ Contributions to Swiftarr are absolutely welcome! Some general guidelines:
     now that we have a common style guide (`.swift-format` config at root of repo).
 04. Your changes should have at least passed some live sanity checking. We will ask you about it.
 05. Ask in Discord or on an issue here if you need anything!
+
+### Test Environment
+
+A demo/test instance is usually available at https://swiftarr.herokuapp.com. Contact the Twitarr Team via Discord
+for access (or try various default credentials). Due to Heroku limitations any image uploads are removed after 24
+hours though the references to the image will remain.
