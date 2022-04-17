@@ -15,6 +15,7 @@ public struct TwarrtQueryOptions: Content {
 	var bookmarked: Bool?
 	var inBarrel: UUID?
 	var replyGroup: Int?
+	var hideReplies: Bool?
 	var likeType: String?
 	var after: Int?
 	var before: Int?
@@ -32,6 +33,7 @@ public struct TwarrtQueryOptions: Content {
 	private var byusername: String?
 	private var inbarrel: UUID?
 	private var replygroup: Int?
+	private var hidereplies: Bool?
 	private var liketype: String?
 	private var afterdate: String?
 	private var beforedate: String?
@@ -43,6 +45,7 @@ public struct TwarrtQueryOptions: Content {
 		byUser = byUser ?? byuser
 		byUsername = byUsername ?? byusername
 		replyGroup = replyGroup ?? replygroup
+		hideReplies = hideReplies ?? hidereplies
 		likeType = likeType ?? liketype
 		inBarrel = inBarrel ?? inbarrel
 
@@ -119,6 +122,7 @@ public struct TwarrtQueryOptions: Content {
 		else if let from = from { elements.append(URLQueryItem(name: "from", value: from)) }
 
 		if let replyGroup = replyGroup { elements.append(URLQueryItem(name: "replyGroup", value: String(replyGroup))) }
+		if let _ = hideReplies { elements.append(URLQueryItem(name: "hideReplies", value: "true")) }
 
 		components.queryItems = elements
 		return components.string
@@ -232,6 +236,7 @@ struct TwitarrController: APIRouteCollection {
 	* `?bookmarked=true` - Only return twarrts the user has bookmarked.
 	* `?replyGroup=ID` - Only return twarrts in the given replyGroup. The twarrt whose twarrtID == ID is always considered to be in the reply group,
 	even if there are no replies to it.
+	* `?hideReplies=true` - Filter out twarrts that are replies to other twarrts. Will still return the twarrt that starts a replyGroup. Ignored if `replyGroup` option is used.
 	* `?likeType=[like, laugh, love, all]` - Only return twarrts the user has reacted to.
 
 	Parameters that set the anchor. The anchor can be a specific `Twarrt`, a `Date`, or the first or last twarrt in the stream.
@@ -356,6 +361,11 @@ struct TwitarrController: APIRouteCollection {
 				group.filter(\.$replyGroup.$id == replyGroup).filter(\.$id == replyGroup)
 			}
 			sortDescending = false
+		}
+		else if let hide = filters.hideReplies, hide == true {
+			twarrtQuery.group(.or) { group in
+				group.filter(\.$replyGroup.$id == nil).filter(\.$replyGroup.$id == \.$id)
+			}
 		}
 		if filters.likeType != nil || filters.bookmarked == true {
 			applyMutes = false

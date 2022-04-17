@@ -17,7 +17,10 @@
 							Filter
 						</button>
 						<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="eventFilterMenu">
-							<li><a class="dropdown-item #if(filterType == "all"):active#endif" href="/tweets">Show All</a></li>
+							<li><a class="dropdown-item #if(filterType == "all"):active#endif" href="/tweets?hideReplies=false">Show All</a></li>
+							#if(!isReplyGroup):
+								<li><a class="dropdown-item #if(filterType == "hideReplies"):active#endif" href="/tweets?hideReplies=true">Hide Replies</a></li>
+ 							#endif
  							<li><hr class="dropdown-divider"></li>
 							<li><h6 class="dropdown-header">Only show:</h6></li>
  							<li><a class="dropdown-item #if(filterType == "byUser"):active#endif" href="/tweets?byUser=#(trunk.userID)">Your Tweets</a></li>

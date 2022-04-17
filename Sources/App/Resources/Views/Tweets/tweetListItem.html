@@ -11,6 +11,15 @@
 					<div class="col">
 						#userByline(tweet.author)
 					</div>
+					#if(tweet.replyGroupID != nil):
+					<div class="col-auto px-0">
+						#if(tweet.replyGroupID == tweet.twarrtID):
+							🧵
+						#else:
+							🪡
+						#endif
+					</div>
+					#endif
 					<div class="col-auto">
 						<span class="text-muted">#relativeTime(tweet.createdAt)</span>
 					</div>
