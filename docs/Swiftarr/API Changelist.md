@@ -48,3 +48,7 @@ it was possible to have a new announcement where clients couldn't detect it.
 * Added "suggestedPlayers" to BoardgameData. This value comes from BoardGameGeek's XML API, and is the value from the "bestNumPlayers"
 poll that has the highest number of "best" votes. Roughly, this value should be the community's idea of the 'ideal' number of players
 for this game.
+
+## Apr 17, 2022
+
+* Added "hideReplies" to the list of query options for "/api/v3/twitarr" 

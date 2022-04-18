@@ -15,6 +15,7 @@ public struct TwarrtQueryOptions: Content {
 	var bookmarked: Bool?
 	var inBarrel: UUID?
 	var replyGroup: Int?
+	var hideReplies: Bool?
 	var likeType: String?
 	var after: Int?
 	var before: Int?
@@ -32,6 +33,7 @@ public struct TwarrtQueryOptions: Content {
 	private var byusername: String?
 	private var inbarrel: UUID?
 	private var replygroup: Int?
+	private var hidereplies: Bool?
 	private var liketype: String?
 	private var afterdate: String?
 	private var beforedate: String?
@@ -43,6 +45,7 @@ public struct TwarrtQueryOptions: Content {
 		byUser = byUser ?? byuser
 		byUsername = byUsername ?? byusername
 		replyGroup = replyGroup ?? replygroup
+		hideReplies = hideReplies ?? hidereplies
 		likeType = likeType ?? liketype
 		inBarrel = inBarrel ?? inbarrel
 
@@ -68,29 +71,58 @@ public struct TwarrtQueryOptions: Content {
 		return limit ?? 50
 	}
 	
-	func buildQuery(baseURL: String, startOffset: Int) -> String? {
+	func buildQuery(baseURL: String, anchor: Int, startOffset: Int) -> String? {
 		
 		guard var components = URLComponents(string: baseURL) else {
 			return nil
 		}
+		
+		let hasAnchor = after != nil || before != nil || afterDate != nil || beforeDate != nil
 	
 		var elements = [URLQueryItem]()
+		var beforeValue = before
+		var afterValue = after
 		if let search = search { elements.append(URLQueryItem(name: "search", value: search)) }
 		if let hashtag = hashtag { elements.append(URLQueryItem(name: "hashtag", value: hashtag)) }
 		if let mentions = mentions { elements.append(URLQueryItem(name: "mentions", value: mentions)) }
 		if let byUser = byUser { elements.append(URLQueryItem(name: "byUser", value: byUser.uuidString)) }
 		if let inBarrel = inBarrel { elements.append(URLQueryItem(name: "inBarrel", value: inBarrel.uuidString)) }
-		if let after = after { elements.append(URLQueryItem(name: "after", value: String(after))) }
-		if let before = before { elements.append(URLQueryItem(name: "before", value: String(before))) }
-		if let afterDate = afterDate { elements.append(URLQueryItem(name: "afterDate", value: afterDate)) }
-		if let beforeDate = beforeDate { elements.append(URLQueryItem(name: "beforeDate", value: beforeDate)) }
 		if let from = from { elements.append(URLQueryItem(name: "from", value: from)) }
 		if let limit = limit { elements.append(URLQueryItem(name: "limit", value: String(limit))) }
-		if (start ?? 0) + startOffset > 0 {
-			let newOffset = max((start ?? 0) + startOffset, 0)
+		let newOffset = (start ?? 0) + startOffset 
+		if newOffset > 0 {
 			elements.append(URLQueryItem(name: "start", value: String(newOffset)))
+			if !hasAnchor {
+				if directionIsNewer() {
+					afterValue = anchor - 1
+				}
+				else {
+					beforeValue = anchor + 1
+				}
+			}
 		}
+		else {
+			if let val = beforeValue {
+				beforeValue = val - newOffset
+			}
+			else if let val = afterValue {
+				afterValue = val + newOffset
+			}
+			else if beforeDate != nil {
+				beforeValue = anchor - newOffset
+			}
+			else if afterDate != nil {
+				afterValue = anchor + newOffset
+			}
+		}
+		if let before = beforeValue { elements.append(URLQueryItem(name: "before", value: String(before))) }
+		else if let after = afterValue { elements.append(URLQueryItem(name: "after", value: String(after))) }
+		else if let afterDate = afterDate { elements.append(URLQueryItem(name: "afterDate", value: afterDate)) }
+		else if let beforeDate = beforeDate { elements.append(URLQueryItem(name: "beforeDate", value: beforeDate)) }
+		else if let from = from { elements.append(URLQueryItem(name: "from", value: from)) }
+
 		if let replyGroup = replyGroup { elements.append(URLQueryItem(name: "replyGroup", value: String(replyGroup))) }
+		if let _ = hideReplies { elements.append(URLQueryItem(name: "hideReplies", value: "true")) }
 
 		components.queryItems = elements
 		return components.string
@@ -204,6 +236,7 @@ struct TwitarrController: APIRouteCollection {
 	* `?bookmarked=true` - Only return twarrts the user has bookmarked.
 	* `?replyGroup=ID` - Only return twarrts in the given replyGroup. The twarrt whose twarrtID == ID is always considered to be in the reply group,
 	even if there are no replies to it.
+	* `?hideReplies=true` - Filter out twarrts that are replies to other twarrts. Will still return the twarrt that starts a replyGroup. Ignored if `replyGroup` option is used.
 	* `?likeType=[like, laugh, love, all]` - Only return twarrts the user has reacted to.
 
 	Parameters that set the anchor. The anchor can be a specific `Twarrt`, a `Date`, or the first or last twarrt in the stream.
@@ -328,6 +361,11 @@ struct TwitarrController: APIRouteCollection {
 				group.filter(\.$replyGroup.$id == replyGroup).filter(\.$id == replyGroup)
 			}
 			sortDescending = false
+		}
+		else if let hide = filters.hideReplies, hide == true {
+			twarrtQuery.group(.or) { group in
+				group.filter(\.$replyGroup.$id == nil).filter(\.$replyGroup.$id == \.$id)
+			}
 		}
 		if filters.likeType != nil || filters.bookmarked == true {
 			applyMutes = false

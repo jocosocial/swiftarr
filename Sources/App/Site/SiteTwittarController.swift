@@ -5,6 +5,7 @@ import FluentSQL
 struct TweetPageContext: Encodable {
 	enum FilterType: String, Encodable {
 		case all
+		case hideReplies
 		case byUser
 		case mentions
 		case favorites
@@ -26,6 +27,9 @@ struct TweetPageContext: Encodable {
 		trunk = .init(req, title: "Tweets", tab: .twarrts, search: "Search Tweets")
 		self.tweets = tweets
 		let queryStruct = try req.query.decode(TwarrtQueryOptions.self)
+		var filters: [String] = []
+		filterType = .all
+
 		if let rg = queryStruct.replyGroup ?? replyGroup {
 			filterDesc = "Reply Thread"
 			if tweets.count == 1, tweets[0].replyGroupID == nil {
@@ -36,10 +40,9 @@ struct TweetPageContext: Encodable {
 		} else {
 			post = .init(forType: .tweet)
 			filterDesc = "Twarrts"
+			filterType = queryStruct.hideReplies ?? (req.session.data["hideTwarrtReplies"] == "true") ? .hideReplies : .all
 		}
 		
-		var filters: [String] = []
-		filterType = .all
 		if let mention = queryStruct.mentions {
 			filters.append(mention == trunk.username ? " mentioning you" : " that mention '\(mention)'")
 			filterType = .mentions
@@ -93,7 +96,7 @@ struct TweetPageContext: Encodable {
 		}
 		filterDesc.append(filters.joined(separator: ","))
 		
-		if tweets.count > 0 {
+		if tweets.count > 0, let anchorID = tweets.first?.twarrtID {
 			if queryStruct.directionIsNewer() {
 				// Down the page => newer tweets. 
 				var showTopButton = true
@@ -109,10 +112,10 @@ struct TweetPageContext: Encodable {
 					}
 				}
 				if showTopButton {
-					topMorePostsURL = queryStruct.buildQuery(baseURL: "/tweets", startOffset: 0 - queryStruct.computedLimit())
+					topMorePostsURL = queryStruct.buildQuery(baseURL: "/tweets", anchor: anchorID, startOffset: 0 - queryStruct.computedLimit())
 					topMorePostsLabel = "Older"
 				}
-				bottomMorePostsURL = queryStruct.buildQuery(baseURL: "/tweets", startOffset: queryStruct.computedLimit())
+				bottomMorePostsURL = queryStruct.buildQuery(baseURL: "/tweets", anchor: anchorID, startOffset: queryStruct.computedLimit())
 				bottomMorePostsLabel = "Newer"
 			}
 			else {
@@ -125,11 +128,11 @@ struct TweetPageContext: Encodable {
 					}
 				}
 				if showTopButton {
-					topMorePostsURL = queryStruct.buildQuery(baseURL: "/tweets", startOffset: 0 - queryStruct.computedLimit())
+					topMorePostsURL = queryStruct.buildQuery(baseURL: "/tweets", anchor: anchorID, startOffset: 0 - queryStruct.computedLimit())
 					topMorePostsLabel = "Newer"
 				}
 				if let last = tweets.last, last.twarrtID != 1 {
-					bottomMorePostsURL = queryStruct.buildQuery(baseURL: "/tweets", startOffset: queryStruct.computedLimit())
+					bottomMorePostsURL = queryStruct.buildQuery(baseURL: "/tweets", anchor: anchorID, startOffset: queryStruct.computedLimit())
 					bottomMorePostsLabel = "Older"
 				}
 			}
@@ -194,7 +197,14 @@ struct SiteTwitarrController: SiteControllerUtils {
 	///
 	/// Returns a page of twarrts. Passes URL options through, including "?search=" option.
 	func tweetsPageHandler(_ req: Request) async throws -> View {
-		let response = try await apiQuery(req, endpoint: "/twitarr")
+		var queryItems = URLComponents(string: req.url.string)?.queryItems ?? []
+		if let hideReplies = req.query[String.self, at: "hideReplies"] {
+			req.session.data["hideTwarrtReplies"] = hideReplies == "true" ? "true" : "false"
+		}
+		else if req.session.data["hideTwarrtReplies"] == "true" {
+			queryItems.append(URLQueryItem(name: "hideReplies", value: "true"))
+		}
+		let response = try await apiQuery(req, endpoint: "/twitarr", query: queryItems, passThroughQuery: false)
 		let tweets = try response.content.decode([TwarrtData].self)
 		let ctx = try TweetPageContext(req, tweets: tweets)
 		return try await req.view.render("Tweets/tweets", ctx)
@@ -203,7 +213,7 @@ struct SiteTwitarrController: SiteControllerUtils {
 	/// `GET /tweets/:twarrt_ID`
 	///
 	/// Shorthand for `/tweets?replyGroup=<:twarrt_ID>`. A short, canonical way to indicate a single twarrt, similar to how Twitter works.
-	/// That is, when you send someone a link to a specific tweet with Twitter, you're really sending a link to the reply thread that start with that tweet.
+	/// That is, when you send someone a link to a specific tweet with Twitter, you're really sending a link to the reply thread that starts with that tweet.
 	func tweetReplyPageHandler(_ req: Request) async throws -> View {
 		guard let twarrtIDString = req.parameters.get(twarrtIDParam.paramString), let twarrtID = Int(twarrtIDString) else {
 			throw Abort(.badRequest, reason: "Missing twarrt_id parameter.")
