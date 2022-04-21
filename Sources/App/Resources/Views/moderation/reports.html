@@ -32,20 +32,24 @@
 							<div class="col">
 								#if(count(report.reports) == 1):
 									#if(report.handledBy):
-										#if(report.isClosed):
+										#if(report.openCount == 0):
 											Closed by #userByline(report.handledBy, "nolink")
 										#else:
 											Being Handled by #userByline(report.handledBy, "nolink")
 										#endif
 									#else:
-										#if(report.isClosed):
+										#if(report.openCount == 0):
 											1 Closed Report
 										#else:
 											1 Open Report by #for(user in report.reports):@#(user.author.username)#endfor
 										#endif
 									#endif
 								#else:
-									#count(report.reports) reports, #(report.openCount) open
+									#if(report.openCount == 0):
+										#count(report.reports) closed reports
+									#else:
+										#count(report.reports) reports, #(report.openCount) open
+									#endif
 								#endif
 							</div>
 						</div>

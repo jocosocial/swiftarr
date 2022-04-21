@@ -13,7 +13,18 @@ struct ReportContentGroup: Codable {
 	var contentURL: String
 	var reports: [ReportModerationData]
 }
+
+// For the Open Reports and Closed Reports views
+struct ReportsContext : Encodable {
+	var trunk: TrunkContext
+	var reports: [ReportContentGroup]
 	
+	init(_ req: Request, reports: [ReportContentGroup], isClosed: Bool = false) throws {
+		trunk = .init(req, title: isClosed ? "Closed Reports" : "Reports", tab: .moderator)
+		self.reports = reports
+	}
+}
+
 /// SiteModController handles a bunch of pages that exist to moderate user content. There's a `.moderator` value in `UserAccessLevel`,
 /// but that doesn't mean that everything in this controller is accessible by moderators. 
 ///
@@ -101,16 +112,6 @@ struct SiteModController: SiteControllerUtils {
 		let reports = try response.content.decode([ReportModerationData].self)
 		let reportedContentArray = generateContentGroups(from: reports)
 		let openReportContent = reportedContentArray.compactMap { $0.openCount > 0 ? $0 : nil }
-			
-		struct ReportsContext : Encodable {
-			var trunk: TrunkContext
-			var reports: [ReportContentGroup]
-			
-			init(_ req: Request, reports: [ReportContentGroup]) throws {
-				trunk = .init(req, title: "Reports", tab: .moderator)
-				self.reports = reports
-			}
-		}
 		let ctx = try ReportsContext(req, reports: openReportContent)
 		return try await req.view.render("moderation/reports", ctx)			
 	}
@@ -122,18 +123,8 @@ struct SiteModController: SiteControllerUtils {
 		let response = try await apiQuery(req, endpoint: "/mod/reports")
 		let reports = try response.content.decode([ReportModerationData].self)
 		let reportedContentArray = generateContentGroups(from: reports)
-		let openReportContent = reportedContentArray.compactMap { $0.openCount > 0 ? nil : $0 }
-		
-		struct ReportsContext : Encodable {
-			var trunk: TrunkContext
-			var reports: [ReportContentGroup]
-			
-			init(_ req: Request, reports: [ReportContentGroup]) throws {
-				trunk = .init(req, title: "Reports", tab: .moderator)
-				self.reports = reports
-			}
-		}
-		let ctx = try ReportsContext(req, reports: openReportContent)
+		let closedReportContent = reportedContentArray.compactMap { $0.openCount > 0 ? nil : $0 }
+		let ctx = try ReportsContext(req, reports: closedReportContent, isClosed: true)
 		return try await req.view.render("moderation/reports", ctx)			
 	}
 	
