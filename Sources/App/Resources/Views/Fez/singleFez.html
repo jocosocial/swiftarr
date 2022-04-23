@@ -147,7 +147,7 @@
 				#extend("paginator")
 				#if(paginator.nextPageURL == nil):
 					<ul class="container-md mt-2 mx-0 px-0 list-group">
-						<li class="list-group-item bg-transparent mb-3">				
+						<li class="list-group-item bg-transparent">				
 							<form class="ajax" action="#(post.formAction)" enctype="multipart/form-data" method="POST" data-successurl="reset">
 								<div class="container-fluid">
 									<div class="row mb-2"> 
@@ -202,6 +202,9 @@
 							</form>
 						</li>
 					</ul>
+					<div class="row">
+						<div class="col text-muted fst-italic" id="socket-status"></div>
+					</div>
 				#endif
 			#endif
 		</div>

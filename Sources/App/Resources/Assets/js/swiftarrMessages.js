@@ -8,7 +8,8 @@ function startLiveMessageStream() {
 	ws = new WebSocket(wsProtocol + window.location.host + socketURL)
  
 	ws.onopen = () => {
-		// Maybe show something here to indicate we're live updating?
+		let statusDiv = document.getElementById("socket-status")
+		statusDiv.innerText = "live messaging: active"
 	}
 
 	ws.onmessage = (event) => {
@@ -25,6 +26,8 @@ function startLiveMessageStream() {
 	};
 
 	ws.onclose = () => {
+		let statusDiv = document.getElementById("socket-status")
+		statusDiv.innerText = "live messaging: off"
 	};
 }
 startLiveMessageStream();

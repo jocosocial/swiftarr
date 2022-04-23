@@ -196,10 +196,10 @@ struct FezController: APIRouteCollection {
 		return try await FezListData(paginator: Paginator(total: fezCount, start: start, limit: limit), fezzes: fezDataArray)
 	}
 	
-	/// `GET /api/v3/fez/ID`
+	/// `GET /api/v3/fez/:fez_ID`
 	///
 	/// Retrieve information about the specified FriendlyFez. For users that aren't members of the fez, this info will be the same as 
-	/// the info returned for `openHandler`. For users that have joined the fez the `FezData.MembersOnlyData` will be populated, as will
+	/// the info returned for `GET /api/v3/fez/open`. For users that have joined the fez the `FezData.MembersOnlyData` will be populated, as will
 	/// the `FezPost`s. 
 	/// 
 	/// **Query Parameters:**
@@ -228,9 +228,8 @@ struct FezController: APIRouteCollection {
 	/// - Returns: <doc:FezData> with fez info and all discussion posts.
 	func fezHandler(_ req: Request) async throws -> FezData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		let effectiveUser = try getEffectiveUser(user: cacheUser, req: req)
-		// get fez
 		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		let effectiveUser = getEffectiveUser(user: cacheUser, req: req, fez: fez)
 		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
 			throw Abort(.notFound, reason: "this fez is not available")
 		}
@@ -493,17 +492,45 @@ struct FezController: APIRouteCollection {
 		try user.guardCanCreateContent(customErrorString: "User cannot create LFG.")
 		// see `FezContentData.validations()`
 		let data = try ValidatingJSONDecoder().decode(FezContentData.self, fromBodyOf: req)
-		let fez = FriendlyFez(owner: user.userID, fezType: data.fezType, title: data.title, info: data.info,
+		var creator = user
+		if data.createdByTwitarrTeam == true {
+			guard user.accessLevel >= .twitarrteam else {
+				throw Abort(.badRequest, reason: "Must have TwitarrTeam access to post as @TwitarrTeam")
+			}
+			guard let ttUser = req.userCache.getUser(username: "TwitarrTeam") else {
+				throw Abort(.internalServerError, reason: "Cannot find @TwitarrTeam user")
+			}
+			creator = ttUser
+		} 
+		else if data.createdByModerator == true {
+			guard user.accessLevel >= .moderator else {
+				throw Abort(.badRequest, reason: "Must have moderator access to post as @moderator")
+			}
+			guard let modUser = req.userCache.getUser(username: "moderator") else {
+				throw Abort(.internalServerError, reason: "Cannot find @moderator user")
+			}
+			creator = modUser
+		}
+		let fez = FriendlyFez(owner: creator.userID, fezType: data.fezType, title: data.title, info: data.info,
 				location: data.location, startTime: data.startTime, endTime: data.endTime,
 				minCapacity: data.minCapacity, maxCapacity: data.maxCapacity)
 		// This filters out anyone on the creator's blocklist and any duplicate IDs.
-		var creatorBlocks = user.getBlocks()
-		let initialUsers = ([user.userID] + data.initialUsers).filter { creatorBlocks.insert($0).inserted }
+		var creatorBlocks = creator.getBlocks()
+		var initialUsers = ([creator.userID] + data.initialUsers).filter { creatorBlocks.insert($0).inserted }
+		if creator.userID != user.userID {
+			initialUsers = initialUsers.filter { $0 != user.userID }
+		}
+		guard data.fezType != .closed || initialUsers.count >= 2 else {
+			throw Abort(.badRequest, reason: "Fewer than 2 users in seamail after applying user filters")
+		}
+		guard initialUsers.count >= 1 else {
+			throw Abort(.badRequest, reason: "Cannot create LFG with 0 participants")
+		}
 		fez.participantArray = initialUsers
 		try await fez.save(on: req.db)
 		let participants = try await User.query(on: req.db).filter(\.$id ~~ initialUsers).all()
 		try await fez.$participants.attach(participants, on: req.db, { $0.readCount = 0; $0.hiddenCount = 0 })
-		let creatorPivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == user.userID).first()
+		let creatorPivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == creator.userID).first()
 		let fezData = try buildFezData(from: fez, with: creatorPivot, posts: [], for: user, on: req)
 		// with 201 status
 		let response = Response(status: .created)
@@ -882,5 +909,26 @@ extension FezController {
 			effectiveUser = ttUser	
 		}
 		return effectiveUser
+	}
+	
+	// This version of getEffectiveUser checks the user against the fez's membership, and also checks whether
+	// user 'moderator' or user 'TwitarrTeam' is a member of the fez and the user has the appropriate access level.
+	// 
+	func getEffectiveUser(user: UserCacheData, req: Request, fez: FriendlyFez) -> UserCacheData {
+		if fez.participantArray.contains(user.userID) {
+			return user
+		}
+		// If either of these 'special' users are fez members and the user has high enough access, we can see the 
+		// members-only values of the fez as the 'special' user.
+		if user.accessLevel >= .twitarrteam, let ttUser = req.userCache.getUser(username: "TwitarrTeam"), 
+				fez.participantArray.contains(ttUser.userID) {
+			return ttUser
+		}
+		if user.accessLevel >= .moderator, let modUser = req.userCache.getUser(username: "moderator"), 
+				fez.participantArray.contains(modUser.userID) {
+			return modUser
+		}
+		// User isn't a member of the fez, but they're still the effective user in this case.
+		return user
 	}
 }

@@ -356,6 +356,10 @@ public struct FezContentData: Content {
 	var maxCapacity: Int
 	/// Users to add to the fez upon creation. The creator is always added as the first user.
 	var initialUsers: [UUID]
+	/// If TRUE, the Fez will be created by user @moderator instead of the current user. Current user must be a mod.
+	var createdByModerator: Bool?
+	/// If TRUE, the Fez will be created by user @moderator instead of the current user. Current user must be a mod.
+	var createdByTwitarrTeam: Bool?
 }
 
 extension FezContentData: RCFValidatable {

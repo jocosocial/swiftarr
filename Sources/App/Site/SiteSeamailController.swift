@@ -18,7 +18,7 @@ struct SiteSeamailController: SiteControllerUtils {
 		privateRoutes.post("seamail", "create", use: seamailCreatePostHandler)
 		privateRoutes.get("seamail", fezIDParam, use: seamailViewPageHandler)
 		privateRoutes.post("seamail", fezIDParam, "post", use: seamailThreadPostHandler)
-		privateRoutes.webSocket("seamail", fezIDParam, "socket", shouldUpgrade: shouldCreateFezSocket, onUpgrade: createFezSocket) 
+		privateRoutes.webSocket("seamail", fezIDParam, "socket", shouldUpgrade: shouldCreateMsgSocket, onUpgrade: createMsgSocket) 
 	}
 	
 // MARK: - Seamail
@@ -67,7 +67,7 @@ struct SiteSeamailController: SiteControllerUtils {
 	// GET /seamail/create
 	//
 	// Query Parameters:
-	// * `?withuser=UUID` - auto-adds the given user to the conversation.
+	// * `?withuser=UUID` - auto-adds the given user to the conversation. Currently can only be applied once.
 	//
 	// Shows the Create New Seamail page
 	func seamailCreatePageHandler(_ req: Request) async throws -> View {
@@ -111,7 +111,9 @@ struct SiteSeamailController: SiteControllerUtils {
 		struct SeamailCreateFormContent : Content {
 			var subject: String
 			var postText: String
-			var participants: String			// ??
+			var participants: String			// Comma separated list of participant usernames
+			var postAsModerator: String?
+			var postAsTwitarrTeam: String?
 		}
 		let formContent = try req.content.decode(SeamailCreateFormContent.self)
 		guard formContent.subject.count > 0 else {
@@ -126,16 +128,19 @@ struct SiteSeamailController: SiteControllerUtils {
 		guard allUsers.count >= 2 else {
 			throw Abort(.badRequest, reason: "Seamail conversations require at least 2 users.")
 		}
+		
 		let fezContent = FezContentData(fezType: .closed, title: formContent.subject, info: "", startTime: nil, endTime: nil,
-				location: nil, minCapacity: 0, maxCapacity: 0, initialUsers: participants)
+				location: nil, minCapacity: 0, maxCapacity: 0, initialUsers: participants, createdByModerator: formContent.postAsModerator != nil, 
+				createdByTwitarrTeam: formContent.postAsTwitarrTeam != nil)
 		let createResponse = try await apiQuery(req, endpoint: "/fez/create", method: .POST, encodeContent: fezContent)
 		let fezData = try createResponse.content.decode(FezData.self)
-		let postContentData = PostContentData(text: formContent.postText, images: [])
+		let postContentData = PostContentData(text: formContent.postText, images: [], postAsModerator: formContent.postAsModerator != nil, 
+				postAsTwitarrTeam: formContent.postAsTwitarrTeam != nil)
 		let response = try await apiQuery(req, endpoint: "/fez/\(fezData.fezID)/post", method: .POST, encodeContent: postContentData)
 		return try await response.encodeResponse(for: req)
 	}
 	
-	// GET /seamail/:fez_ID
+	// GET /seamail/:seamail_ID
 	//
 	// Paginated.
 	// 
@@ -153,6 +158,8 @@ struct SiteSeamailController: SiteControllerUtils {
 			var showDivider: Bool
 			var newPosts: [SocketFezPostData]
 			var post: MessagePostContext
+			var socketURL: String
+			var breadcrumbURL: String
 			var paginator: PaginatorContext
 						
 			init(_ req: Request, fez: FezData) throws {
@@ -163,11 +170,15 @@ struct SiteSeamailController: SiteControllerUtils {
 				newPosts = []
 				showDivider = false
 				post = .init(forType: .seamailPost(fez))
+				socketURL = "/fez/\(fez.fezID)/socket"
+				breadcrumbURL = "/seamail"
 				if let foruser = req.query[String.self, at: "foruser"], var comp = URLComponents(string: post.postSuccessURL) {
 					comp.query = "foruser=\(foruser)"
 					if let newstr = comp.string {
 						post.postSuccessURL = newstr
 					}
+					socketURL.append("?foruser=\(foruser)")
+					breadcrumbURL.append("?foruser=\(foruser)")
 				}
 				paginator = PaginatorContext(start: 0, total: 40, limit: 50, urlForPage: { pageIndex in
 					"/seamail/\(fez.fezID)?start=\(pageIndex * 50)&limit=50"
@@ -194,29 +205,30 @@ struct SiteSeamailController: SiteControllerUtils {
 		return try await req.view.render("Fez/seamailThread", ctx)
 	}
 	
-	// GET /seamail/:lfg_ID/socket
-	func shouldCreateFezSocket(_ req: Request) async throws -> HTTPHeaders? {
-		let user = try req.auth.require(UserCacheData.self)
-  		guard let paramVal = req.parameters.get(fezIDParam.paramString), let lfgID = UUID(uuidString: paramVal) else {
+	// GET /seamail/:seamail_ID/socket
+	func shouldCreateMsgSocket(_ req: Request) async throws -> HTTPHeaders? {
+  		guard let paramVal = req.parameters.get(fezIDParam.paramString), let seamailID = UUID(uuidString: paramVal) else {
 			throw Abort(.badRequest, reason: "Request parameter lfg_ID is missing.")
 		}
-		let response = try await apiQuery(req, endpoint: "/fez/\(lfgID)")
-		let lfg = try response.content.decode(FezData.self)
+		let response = try await apiQuery(req, endpoint: "/fez/\(seamailID)")
+		let seamail = try response.content.decode(FezData.self)
 		// Although moderators can see into any LFG chat, they can't get make a websocket for chats they aren't in.
-		guard let members = lfg.members, members.participants.contains(where: { $0.userID == user.userID }) || 
-				members.waitingList.contains(where: { $0.userID == user.userID }) else {
+		guard let _ = seamail.members else {
 			return nil
 		}
 		return HTTPHeaders()
 	}
 	
-	// WS /seamail/:lfg_ID/socket
+	// WS /seamail/:seamail_ID/socket
+	//
+	// Takes the `foruser` parameter which is forwarded to `/api/v3/fez/:fez_ID`
+	// - `?foruser=NAME` - Access the "moderator" or "twitarrteam" seamail accounts.
 	//
 	// Opens a WebSocket that receives updates on the given Seamail. This websocket is intended for use by the
 	// web client and updates are in the form of HTML fragments.
 	// There are no messages intended to be sent from the client of this socket. Although this socket sends HTML for
 	// new posts to the client, new posts *created* by the client should use the regular POST method.
-	func createFezSocket(_ req: Request, _ ws: WebSocket) async {
+	func createMsgSocket(_ req: Request, _ ws: WebSocket) async {
 		guard let user = try? req.auth.require(UserCacheData.self), let lfgID = req.parameters.get(fezIDParam.paramString, as: UUID.self) else {
 			try? await ws.close()
 			return 
@@ -229,7 +241,7 @@ struct SiteSeamailController: SiteControllerUtils {
 		}
 	}
 
-	// POST /seamail/:fez_ID/post
+	// POST /seamail/:seamail_ID/post
 	//
 	// Creates a new message in a seamail thread.
 	func seamailThreadPostHandler(_ req: Request) async throws -> HTTPStatus {
