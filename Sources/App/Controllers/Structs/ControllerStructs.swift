@@ -1269,8 +1269,8 @@ public struct UserCreateData: Content {
 	var username: String
 	/// The user's password.
 	var password: String
-	/// Optional verification code. If set, must be a valid code. On success, user will be created with .verified access level, consuming this code.
-	/// See `/api/v3/user/verify`
+	/// Verification code, emailed to all cruisegoers by THO before embarkation. On success, user will be created with .verified access level, consuming this code.
+	/// Required for creating 'parent' accounts; must be nil when used to create a sub-account with `POST /api/v3/user/add`.
 	var verification: String?
 }
 

@@ -33,6 +33,9 @@ struct SiteLoginController: SiteControllerUtils {
 		var operationSuccess: Bool
 		var operationName: String
 		var sessions: [String]
+		var prevRegcode: String?
+		var prevUsername: String?
+		var prevDisplayName: String?
 		
 		init(_ req: Request, error: Error? = nil) async throws {
 			trunk = .init(req, title: "Login", tab: .none)
@@ -106,8 +109,12 @@ struct SiteLoginController: SiteControllerUtils {
 			loginContext.operationSuccess = true
 			return try await req.view.render("Login/login", loginContext)
 		} catch
-		{ 
-			return try await req.view.render("Login/login", LoginPageContext(req, error: error))
+		{
+			var ctx = try await LoginPageContext(req, error: error)
+			if let postStruct = try? req.content.decode(PostStruct.self) {
+				ctx.prevUsername = postStruct.username
+			}
+			return try await req.view.render("Login/login", ctx)
 		}
 	}
 		
@@ -154,18 +161,33 @@ struct SiteLoginController: SiteControllerUtils {
 	/// Called when the Create Account form is POSTed.
 	func createAccountPostHandler(_ req: Request) async throws -> View {
 		struct PostStruct : Codable {
-			var regcode: String?
+			var regcode: String
 			var username: String
 			var displayname: String?
 			var password: String
 			var passwordConfirm: String
 		}
 		do {
+			// Try to capture all the input validation errors into one big error with field markers for each invalid field.
+			// This way we can present all the form input errors at once.
 			let postStruct = try req.content.decode(PostStruct.self)
-			guard postStruct.password == postStruct.passwordConfirm else {
-				return try await req.view.render("Login/createAccount", LoginPageContext(req, error: "Password fields do not match"))
+			var validationError = ValidationError()
+			if postStruct.password != postStruct.passwordConfirm {
+				validationError.validationFailures.append(ValidationFailure(path: "", field: "password", errorString: "Password fields do not match"))
+			}
+			if let displayName = postStruct.displayname, !displayName.isEmpty {
+				if displayName.count < 2 || displayName.count > 50 {
+					validationError.validationFailures.append(ValidationFailure(path: "", field: "displayname", 
+							errorString: "Display Name must be between 2 and 50 characters"))
+				}
 			}
 			let createData = UserCreateData(username: postStruct.username, password: postStruct.password, verification: postStruct.regcode)
+			if let decoderErrors = try ValidatingJSONDecoder().validate(UserCreateData.self, from: JSONEncoder().encode(createData)) {
+				validationError.validationFailures.append(contentsOf: decoderErrors.validationFailures)
+			}
+			if !validationError.validationFailures.isEmpty {
+				throw ErrorResponse(error: true, status: 403, reason: validationError.collectReasonString(), fieldErrors: validationError.collectFieldErrors())
+			}
 			let createResponse = try await apiQuery(req, endpoint: "/user/create", method: .POST, encodeContent: createData)
 			let createUserResponse = try createResponse.content.decode(CreatedUserData.self)
 			do {
@@ -199,7 +221,13 @@ struct SiteLoginController: SiteControllerUtils {
 		}
 		catch {
 			// If we get here we couldn't verify that the user created an account. Show the Create Acct page again, with the error.
-			return try await req.view.render("Login/createAccount", LoginPageContext(req, error: error))
+			var ctx = try await LoginPageContext(req, error: error)
+			if let postStruct = try? req.content.decode(PostStruct.self) {
+				ctx.prevUsername = postStruct.username
+				ctx.prevRegcode = postStruct.regcode
+				ctx.prevDisplayName = postStruct.displayname
+			}
+			return try await req.view.render("Login/createAccount", ctx)
 		} 
 	}
 	
@@ -223,7 +251,8 @@ struct SiteLoginController: SiteControllerUtils {
 		do {
 			let postStruct = try req.content.decode(PostStruct.self)
 			guard postStruct.password == postStruct.confirmPassword else {
-				return try await req.view.render("Login/resetPassword", LoginPageContext(req, error: "Password fields do not match"))
+				throw ErrorResponse(error: true, status: 500, reason: "Password fields do not match", 
+						fieldErrors: ["password" : "Password fields do not match"])
 			}
 			let userPwData = UserPasswordData(currentPassword: postStruct.currentPassword, newPassword: postStruct.password)
 			try await apiQuery(req, endpoint: "/user/password", method: .POST, encodeContent: userPwData)
@@ -240,17 +269,19 @@ struct SiteLoginController: SiteControllerUtils {
 	
 	/// `POST /recoverPassword`
 	///
+	/// Change password for logged-out user, using regcode, current password, or recovery code.
 	func recoverPasswordPostHandler(_ req: Request) async throws -> View {
 		struct PostStruct : Codable {
 			var username: String
 			var regCode: String
 			var password: String
-			var confirmPassword: String
+			var passwordConfirm: String
 		}
 		do {
 			let postStruct = try req.content.decode(PostStruct.self)
-			guard postStruct.password == postStruct.confirmPassword else {
-				return try await req.view.render("Login/resetPassword", LoginPageContext(req, error: "Password fields do not match"))
+			guard postStruct.password == postStruct.passwordConfirm else {
+				throw ErrorResponse(error: true, status: 500, reason: "Password fields do not match", 
+						fieldErrors: ["password" : "Password fields do not match"])
 			}
 			let recoveryData = UserRecoveryData(username: postStruct.username, recoveryKey: postStruct.regCode, newPassword: postStruct.password)
 			let apiResponse = try await apiQuery(req, endpoint: "/auth/recovery", method: .POST, encodeContent: recoveryData)
@@ -263,7 +294,12 @@ struct SiteLoginController: SiteControllerUtils {
 			return try await req.view.render("Login/login", loginContext)
 		}
 		catch {
-			return try await req.view.render("Login/resetPassword", LoginPageContext(req, error: error))
+			var ctx = try await LoginPageContext(req, error: error)
+			if let postStruct = try? req.content.decode(PostStruct.self) {
+				ctx.prevUsername = postStruct.username
+				ctx.prevRegcode = postStruct.regCode
+			}
+			return try await req.view.render("Login/resetPassword", ctx)
 		}
 	}
 	
@@ -287,20 +323,30 @@ struct SiteLoginController: SiteControllerUtils {
 		struct PostStruct : Codable {
 			var username: String
 			var password: String
-			var confirmPassword: String
+			var passwordConfirm: String
 		}
-		let postStruct = try req.content.decode(PostStruct.self)
-		guard postStruct.password == postStruct.confirmPassword else {
-			return try await req.view.render("Login/createAltAccount", LoginPageContext(req, error: "Password fields do not match"))
+		do {
+			let postStruct = try req.content.decode(PostStruct.self)
+			guard postStruct.password == postStruct.passwordConfirm else {
+				throw ErrorResponse(error: true, status: 500, reason: "Password fields do not match", 
+						fieldErrors: ["password" : "Password fields do not match"])
+			}
+			let createData = UserCreateData(username: postStruct.username, password: postStruct.password, verification: "")
+			try await apiQuery(req, endpoint: "/user/add", method: .POST, encodeContent: createData)
+	//		let createUserResponse = try apiResponse.content.decode(AddedUserData.self)
+			var loginContext = try await LoginPageContext(req)
+			loginContext.trunk.metaRedirectURL = "/"
+			loginContext.operationSuccess = true
+			loginContext.operationName = "Alt account creation"
+			return try await req.view.render("Login/createAltAccount", loginContext)
 		}
-		let createData = UserCreateData(username: postStruct.username, password: postStruct.password)
-		try await apiQuery(req, endpoint: "/user/add", method: .POST, encodeContent: createData)
-//		let createUserResponse = try apiResponse.content.decode(AddedUserData.self)
-		var loginContext = try await LoginPageContext(req)
-		loginContext.trunk.metaRedirectURL = "/"
-		loginContext.operationSuccess = true
-		loginContext.operationName = "Alt account creation"
-		return try await req.view.render("Login/createAltAccount", loginContext)
+		catch {
+			var ctx = try await LoginPageContext(req, error: error)
+			if let postStruct = try? req.content.decode(PostStruct.self) {
+				ctx.prevUsername = postStruct.username
+			}
+			return try await req.view.render("Login/createAltAccount", ctx)
+		}
 	}
 	
 

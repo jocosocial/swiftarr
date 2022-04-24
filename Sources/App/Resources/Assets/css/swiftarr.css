@@ -120,3 +120,7 @@ duration-select:focus {
 .bg-light-50 {
 	background-color: #f8f9fa80 !important;
 }
+
+.swiftarr-textfield {
+	max-width: 300px;
+}

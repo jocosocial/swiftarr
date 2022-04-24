@@ -19,20 +19,38 @@
 						<p>Remember that all your accounts are subject to the Code of Conduct, and are all jointly subject to the rulings of the moderators.</p>
 					</div>
 					<form action="/createAltAccount" method="POST">
-						<div class="row mb-3 ms-2 col-6">
-							<label for="username" class="form-label">Username</label>
-							<input type="text" class="form-control" id="username" name="username" spellcheck="false" autocapitalize="none" autocomplete="off">
+						<div class="row mb-3 mx-2">
+							<div class="col">
+								<label for="username" class="form-label" id="username-label">Username</label>
+								<input type="text" class="form-control swiftarr-textfield #if(error.fieldErrors.username):is-invalid#endif" id="username" 
+										name="username" value="#(prevUsername)" spellcheck="false" autocapitalize="none" autocomplete="off"
+										aria-describedby="username-feedback username-label">
+								<div class="invalid-feedback" id="username-feedback">
+									#(error.fieldErrors.username)
+								</div>
+							</div>
 						</div>
 						<div class="row">
 							<p>Due to technical restrictions, the security available on the ship is akin to <b>writing your password on a post-it and placing the post-it on your forehead.</b> At least, it is to anyone skilled and motivated to do such things.</p>
 							<p><b>DO NOT USE the same password that you have used for ANYTHING ELSE.</b></p>
 							<p>Really not kidding here. Please don't do it. If you do, you are risking the security of any account that uses the same password.</p>
 						</div>
-						<div class="row ms-2 mb-3 col-6">
-							<label for="password" class="form-label">Password</label>
-							<input type="password" class="form-control" id="password" name="password" autocomplete="new-password">
-							<label for="confirmPassword" class="form-label">Confirm Password</label>
-							<input type="password" class="form-control" id="confirmPassword" name="confirmPassword" autocomplete="new-password">
+						<div class="row mb-3 mx-2">
+							<div class="col">
+								<label for="password" class="form-label" id="password-label">Password</label>
+								<input type="password" class="form-control swiftarr-textfield #if(error.fieldErrors.password):is-invalid#endif" id="password" 
+										name="password" autocomplete="new-password" aria-describedby="password-feedback password-label">
+								<div class="invalid-feedback" id="password-feedback">
+									#(error.fieldErrors.password)
+								</div>
+							</div>
+						</div>
+						<div class="row mb-3 mx-2">
+							<div class="col">
+								<label for="passwordConfirm" class="form-label" id="confirm-password-label">Confirm Password</label>
+								<input type="password" class="form-control swiftarr-textfield" id="passwordConfirm" name="passwordConfirm" 
+										autocomplete="new-password" aria-describedby="confirm-password-label">
+							</div>
 						</div>
 						#if(error):
 							<div class="alert alert-danger mt-3" role="alert">

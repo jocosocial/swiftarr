@@ -44,18 +44,25 @@
 		#else:			
 			<div class="container-fluid mt-3">
 				<div class="row">
-					<h5>Welcome to Twit-arr! Please log in.</h5>
+					<div class="col">
+						<h5>Welcome to Twit-arr! Please log in.</h5>
+					</div>
 				</div>
 				<form action="/login" method="POST">
-				  <div class="mb-3 col-7">
-					<label for="username" class="form-label">Username</label>
-					<input type="text" class="form-control" id="username" name="username" spellcheck="off" autocapitalize="none" autocomplete="username">
-				  </div>
-				  <div class="mb-3 col-7">
-					<label for="password" class="form-label">Password</label>
-					<input type="password" class="form-control" id="password" name="password" autocomplete="current-password">
-				  </div>
-				  <button type="submit" class="btn btn-primary">Login</button>
+					<div class="row mb-2">
+						<div class="col">
+							<label for="username" class="form-label">Username</label>
+							<input type="text" class="form-control swiftarr-textfield" id="username" name="username" value="#(prevUsername)" 
+									spellcheck="off" autocapitalize="none" autocomplete="username">
+						</div>
+					</div>
+					<div class="row mb-2">
+						<div class="col">
+							<label for="password" class="form-label">Password</label>
+							<input type="password" class="form-control swiftarr-textfield" id="password" name="password" autocomplete="current-password">
+						</div>
+					</div>
+					<button type="submit" class="btn btn-primary">Login</button>
 				</form>
 			</div>
 			
