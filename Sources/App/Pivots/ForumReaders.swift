@@ -16,6 +16,14 @@ final class ForumReaders: Model {
 	/// TRUE if this forum is favorited by this user.
 	@Field(key: "favorite") var isFavorite: Bool
 		
+// Timestamps
+	
+	/// Timestamp of the model's creation, set automatically.
+	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
+	
+	/// Timestamp of the model's last update, set automatically.
+	@Timestamp(key: "updated_at", on: .update) var updatedAt: Date?
+	
 // MARK: Relationships
 	/// The associated `User` who has read the forum..
 	@Parent(key: "user") var user: User
@@ -48,6 +56,8 @@ struct CreateForumReadersSchema: AsyncMigration {
 				.unique(on: "user", "forum")
 				.field("read_count", .int, .required)
 				.field("favorite", .bool, .required)
+				.field("created_at", .datetime)
+				.field("updated_at", .datetime)
  				.field("user", .uuid, .required, .references("user", "id", onDelete: .cascade))
   				.field("forum", .uuid, .required, .references("forum", "id", onDelete: .cascade))
 				.create()

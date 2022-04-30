@@ -10,6 +10,24 @@
 						</ol>
 					</nav>
 				</div>
+
+    			<div class="col col-auto">
+					<div class="dropdown">
+						<button class="btn #if(trunk.alertCounts.newTwarrtMentionCount > 0 || trunk.newTweetAlertwords):btn-outline-danger#else:btn-outline-primary#endif dropdown-toggle btn-sm" type="button" id="eventFilterMenu" data-bs-toggle="dropdown" data-selected="all" aria-expanded="false">
+							Sort
+						</button>
+						<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="eventFilterMenu">
+							<li><a class="dropdown-item #if(activeSort == "update"):active#endif" href="#(sortMostRecent)">Most Recent Post</a></li>
+							<li><a class="dropdown-item #if(activeSort == "create"):active#endif" href="#(sortCreationTime)">Creation Time</a></li>
+							<li><a class="dropdown-item #if(activeSort == "title"):active#endif" href="#(sortTitle)">Title</a></li>
+ 							<li><hr class="dropdown-divider"></li>
+							<li><h6 class="dropdown-header">Only show:</h6></li>
+ 							<li><a class="dropdown-item" href="/forum/favorites?cat=#(forums.categoryID)">Favorites</a></li>
+ 							<li><a class="dropdown-item" href="/forum/owned">Forums You Created</a></li>
+						</ul>
+					</div>
+				</div>
+
 				#if(!forums.isRestricted):
 					<div class="col col-auto">
 						<a class="btn btn-primary btn-sm" href="/forums/#(forums.categoryID)/createForum">New Thread</a>

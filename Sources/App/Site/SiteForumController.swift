@@ -27,7 +27,7 @@ struct ForumPageContext : Encodable {
 	}
 }
 
-// Used for Forum Search, Favorite Forums, and Forums You Created pages.
+// Used for Forum Search, Favorite Forums, Recent Forums and Forums You Created pages.
 struct ForumsSearchPageContext : Encodable {
 	var trunk: TrunkContext
 	var forums: ForumSearchData
@@ -36,9 +36,10 @@ struct ForumsSearchPageContext : Encodable {
 	var searchType: SearchType
 	
 	enum SearchType: String, Codable {
-		case owned
-		case favorite
-		case textSearch
+		case owned							// Created by this user
+		case favorite						// Favorited by this user
+		case recent							// Recently viewed by this user
+		case textSearch						// Searches title for string
 	}
 	
 	init(_ req: Request, forums: ForumSearchData, searchType: SearchType, filterDesc: String) throws {
@@ -46,13 +47,22 @@ struct ForumsSearchPageContext : Encodable {
 		switch searchType {
 			case .owned: title = "Forums You Created"
 			case .favorite: title = "Favorite Forums"
+			case .recent: title = "Recently Viewed"
 			case .textSearch: title = "Forum Search"
 		}
 		trunk = .init(req, title: title, tab: .forums, search: "Search")
 		self.forums = forums
 		self.searchType = searchType
+		guard var paginatorBase = URLComponents(string: req.url.string) else {
+			throw Abort(.internalServerError, reason: "Paginator couldn't parse URL")
+		}
 		paginator = .init(forums.paginator) { pageIndex in
-			"/forum/favorites?start=\(pageIndex * forums.paginator.limit)&limit=\(forums.paginator.limit)"
+			var queryItems = paginatorBase.queryItems ?? []
+			queryItems.removeAll { $0.name == "start" || $0.name == "limit" }
+			queryItems.append(URLQueryItem(name: "start", value: "\(pageIndex * forums.paginator.limit)"))
+			queryItems.append(URLQueryItem(name: "limit", value: "\(forums.paginator.limit)"))
+			paginatorBase.queryItems = queryItems
+			return paginatorBase.string ?? ""
 		}
 		filterDescription = filterDesc
 	}
@@ -207,6 +217,7 @@ struct SiteForumController: SiteControllerUtils {
 		privateRoutes.post("forum", "favorite", forumIDParam, use: forumAddFavoritePostHandler)
 		privateRoutes.delete("forum", "favorite", forumIDParam, use: forumRemoveFavoritePostHandler)
 		privateRoutes.get("forum", "owned", use: forumsByUserPageHandler)
+		privateRoutes.get("forum", "recent", use: forumRecentsPageHandler)
 
 		privateRoutes.get("forumpost", "edit", postIDParam, use: forumPostEditPageHandler)
 		privateRoutes.post("forumpost", "edit", postIDParam, use: forumPostEditPostHandler)
@@ -262,12 +273,33 @@ struct SiteForumController: SiteControllerUtils {
 			var forums: CategoryData
 			var paginator: PaginatorContext
 			
+			var sortMostRecent: String
+			var sortCreationTime: String
+			var sortTitle: String
+			var activeSort: String
+			
 			init(_ req: Request, forums: CategoryData, start: Int, limit: Int) throws {
 				trunk = .init(req, title: "Forum Threads", tab: .forums, search: "Search")
 				self.forums = forums
 				paginator = .init(start: start, total: Int(forums.numThreads), limit: limit) { pageIndex in
 					"/forums/\(forums.categoryID)?start=\(pageIndex * limit)&limit=\(limit)"
+				}				
+				sortMostRecent = Self.makeSortPath(urlStr: req.url.string, name: "sort", value: "update")
+				sortCreationTime = Self.makeSortPath(urlStr: req.url.string, name: "sort", value: "create")
+				sortTitle = Self.makeSortPath(urlStr: req.url.string, name: "sort", value: "title")
+				if let components = URLComponents(string: req.url.string), let sort = components.queryItems?.first(where: { $0.name == "sort" }) {
+					activeSort = sort.value ?? "update"
 				}
+				else {
+					activeSort = "update"
+				}
+			}
+			
+			static func makeSortPath(urlStr: String, name: String, value: String) -> String {
+				var components = URLComponents(string: urlStr) ?? URLComponents()
+				components.queryItems = (components.queryItems ?? []).filter { $0.name != "sort" }
+				components.queryItems?.append(URLQueryItem(name: name, value: value))
+				return components.string ?? ""
 			}
 		}
 		let ctx = try ForumsPageContext(req, forums: forums, start: start, limit: limit)
@@ -446,17 +478,6 @@ struct SiteForumController: SiteControllerUtils {
 		return .created
 	}
 	
-	// GET /forum/favorites
-	//
-	// Displays a list of the user's favorited forums.
-	// URL QueryParameters start, limit are passed through.
-	func forumFavoritesPageHandler(_ req: Request) async throws -> View {
-		let response = try await apiQuery(req, endpoint: "/forum/favorites")
-		let forums = try response.content.decode(ForumSearchData.self)		
-		let ctx = try ForumsSearchPageContext(req, forums: forums, searchType: .favorite, filterDesc: "\(forums.paginator.total) Favorites")
-		return try await req.view.render("Forums/forumsList", ctx)
-	}
-	
 	// POST /forum/favorite/:forum_ID
 	//
 	// Adds a forum to the user's favorites list.
@@ -479,16 +500,6 @@ struct SiteForumController: SiteControllerUtils {
 		return .noContent
 	}
 	
-	// GET /forum/owned
-	//
-	// Shows the forums the current user has created.
-	func forumsByUserPageHandler(_ req: Request) async throws -> View {
-		let response = try await apiQuery(req, endpoint: "/forum/owner")
-		let forums = try response.content.decode(ForumSearchData.self)		
-		let ctx = try ForumsSearchPageContext(req, forums: forums, searchType: .owned, filterDesc: "Your \(forums.paginator.total) Forums")
-		return try await req.view.render("Forums/forumsList", ctx)
-	}
-
 // MARK: - Posts
 
 	// POST /forumpost/:forumpost_ID/like and friends
@@ -700,6 +711,37 @@ struct SiteForumController: SiteControllerUtils {
 		}
 	}
 	
+	// GET /forum/owned
+	//
+	// Shows the forums the current user has created.
+	func forumsByUserPageHandler(_ req: Request) async throws -> View {
+		let response = try await apiQuery(req, endpoint: "/forum/owner")
+		let forums = try response.content.decode(ForumSearchData.self)		
+		let ctx = try ForumsSearchPageContext(req, forums: forums, searchType: .owned, filterDesc: "Your \(forums.paginator.total) Forums")
+		return try await req.view.render("Forums/forumsList", ctx)
+	}
+
+	// GET /forum/recent
+	// 
+	// Shows the forums the user has viewed recently
+	func forumRecentsPageHandler(_ req: Request) async throws -> View {
+		let response = try await apiQuery(req, endpoint: "/forum/recent")
+		let forums = try response.content.decode(ForumSearchData.self)		
+		let ctx = try ForumsSearchPageContext(req, forums: forums, searchType: .recent, filterDesc: "Recent Forums")
+		return try await req.view.render("Forums/forumsList", ctx)
+	}
+	
+	// GET /forum/favorites
+	//
+	// Displays a list of the user's favorited forums.
+	// URL QueryParameters start, limit are passed through.
+	func forumFavoritesPageHandler(_ req: Request) async throws -> View {
+		let response = try await apiQuery(req, endpoint: "/forum/favorites")
+		let forums = try response.content.decode(ForumSearchData.self)		
+		let ctx = try ForumsSearchPageContext(req, forums: forums, searchType: .favorite, filterDesc: "\(forums.paginator.total) Favorites")
+		return try await req.view.render("Forums/forumsList", ctx)
+	}
+	
 	// GET /forumpost/search
 	//
 	// Shows results of searches for forum posts. Passes query parameters through to /api/v3/forum/post/search.
@@ -710,5 +752,3 @@ struct SiteForumController: SiteControllerUtils {
 		return try await req.view.render("Forums/forumPostsList", ctx)
 	}
 }
-
-

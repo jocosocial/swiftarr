@@ -26,9 +26,9 @@ struct ForumController: APIRouteCollection {
 
 			// Forums - CRUD first, then actions on forums
 		tokenCacheAuthGroup.post("categories", categoryIDParam, "create", use: forumCreateHandler)
-		tokenCacheAuthGroup.get(forumIDParam, use: forumHandler)							// Returns a forum thread by ID
-		tokenCacheAuthGroup.get("post", postIDParam, "forum", use: postForumHandler)		// Returns the forum a post is in.
-		tokenCacheAuthGroup.get("forevent", ":event_id", use: eventForumHandler)			// Returns the forum for an event
+		tokenCacheAuthGroup.get(forumIDParam, use: forumThreadHandler)							// Returns a forum thread by ID
+		tokenCacheAuthGroup.get("post", postIDParam, "forum", use: postForumThreadHandler)		// Returns the forum a post is in.
+		tokenCacheAuthGroup.get("forevent", ":event_id", use: eventForumThreadHandler)			// Returns the forum for an event
 		tokenCacheAuthGroup.post(forumIDParam, "rename", ":new_name", use: forumRenameHandler)
 		tokenCacheAuthGroup.post(forumIDParam, "delete", use: forumDeleteHandler)
 		tokenCacheAuthGroup.delete(forumIDParam, use: forumDeleteHandler)
@@ -43,6 +43,7 @@ struct ForumController: APIRouteCollection {
 
 		tokenCacheAuthGroup.get("search", use: forumSearchHandler)
 		tokenCacheAuthGroup.get("owner", use: ownerHandler)
+		tokenCacheAuthGroup.get("recent", use: recentsHandler)
 
 			// Posts - CRUD first, then actions on posts
 		tokenCacheAuthGroup.post(forumIDParam, "create", use: postCreateHandler)
@@ -109,7 +110,8 @@ struct ForumController: APIRouteCollection {
 	// MARK: - tokenAuthGroup Handlers (logged in)
 	// All handlers in this route group require a valid HTTP Bearer Authentication
 	// header in the request.
-		
+	
+	// MARK: Returns Forum Lists	
 	/// `GET /api/v3/forum/catgories/ID`
 	///
 	/// Retrieve a list of forums in the specifiec `Category`. Will not return forums created by blocked users.
@@ -140,8 +142,6 @@ struct ForumController: APIRouteCollection {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let start = (req.query[Int.self, at: "start"] ?? 0)
 		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
-		// get user's taggedForum barrel, and category
- //	   return Barrel.query(on: req.db).filter(\.$ownerID == cacheUser.userID).filter(\.$barrelType == .taggedForum).first()
 		let category = try await Category.findFromParameter(categoryIDParam, on: req)
 		guard cacheUser.accessLevel.hasAccess(category.accessLevelToView) else {
 			throw Abort(.forbidden, reason: "User cannot view this forum category.")
@@ -155,9 +155,9 @@ struct ForumController: APIRouteCollection {
 				.range(start..<(start + limit))
 		var dateFilterUsesUpdate = false
 		switch req.query[String.self, at: "sort"] {
-			case "update": _ = query.sort(\.$updatedAt, .descending); dateFilterUsesUpdate = true
-			case "title": _ = query.sort(\.$title, .ascending)
-			default: _ = query.sort(\.$createdAt, .descending)
+			case "create": _ = query.sort(\.$createdAt, .descending)
+			case "title": _ = query.sort(.custom("lower(title)"))
+			default: _ = query.sort(\.$updatedAt, .descending); dateFilterUsesUpdate = true
 		}
 		if let beforeDate = req.query[Date.self, at: "beforedate"] {
 			query.filter((dateFilterUsesUpdate ? \.$updatedAt : \.$createdAt) < beforeDate)
@@ -169,40 +169,6 @@ struct ForumController: APIRouteCollection {
 		let forumList = try await buildForumListData(forums, on: req, user: cacheUser)
 		return try CategoryData(category, restricted: category.accessLevelToCreate > cacheUser.accessLevel, forumThreads: forumList)
 	}
-	
-	/// `GET /api/v3/forum/ID`
-	///
-	/// Retrieve a `Forum` with all its `ForumPost`s. Content from blocked or muted users,
-	/// or containing user's muteWords, is not returned. Posts are always sorted by creation time.
-	///
-	/// **URL Query Parameters:**
-	/// * `?start=INT` - The index into the array of posts to start returning results. 0 for first post. Not compatible with `startPost`.
-	/// * `?startPost=INT` - PostID of a post in the thread.  Acts as if `start` had been used with the index of this post within the thread.
-	/// * `?limit=INT` - The max # of entries to return. Defaults to 50. Clamped to a max value set in Settings.
-	/// 
-	/// The first post in the result `posts` array (assuming it isn't blocked/muted) will be, in priority order:
-	/// 1. The `start`-th post in the thread (first post has index 0).
-	/// 2. The post with id of `startPost`
-	/// 3. The page of thread posts (with `limit` as pagesize) that contains the last post read by the user.
-	/// 4. The first post in the thread.
-	/// 
-	/// Start and Limit do not take blocks and mutes into account, matching the behavior of the totalPosts values. Instead, when asking for e.g. the first 50 posts in a thread,
-	/// you may only receive 46 posts, as 4 posts in that batch were blocked/muted. To continue reading the thread, ask to start with post 50 (not post 47)--you'll receive however
-	/// many posts are viewable by the user in the range 50...99 . Doing it this way makes Forum read counts invariant to blocks--if a user reads a forum, then blocks a user, then
-	/// comes back to the forum, they should come back to the same place they were in previously.
-	///
-	/// - Parameter forumID: in URL path
-	/// - Throws: 404 error if the forum is not available.
-	/// - Returns: <doc:ForumData> containing the forum's metadata and posts.
-	func forumHandler(_ req: Request) async throws -> ForumData {
-		let user = try req.auth.require(UserCacheData.self)
-		let forum = try await Forum.findFromParameter(forumIDParam, on: req)
-		guard user.accessLevel.hasAccess(forum.accessLevelToView) else {
-			throw Abort(.forbidden, reason: "User cannot view this forum category.")
-		}
-		return try await buildForumData(forum, on: req)
-	}
-	
 	
 	/// `GET /api/v3/forum/search`
 	///
@@ -218,7 +184,7 @@ struct ForumController: APIRouteCollection {
 	/// * `?creatorid=STRING` - Matches forums created by the given userID.
 	///
 	/// - Parameter searchString: In the URL path.
-	/// - Returns: An array of <doc:ForumListData> containing all matching forums.
+	/// - Returns: A <doc:ForumSearchData> containing all matching forums.
 	func forumSearchHandler(_ req: Request) async throws -> ForumSearchData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let start = (req.query[Int.self, at: "start"] ?? 0)
@@ -246,6 +212,124 @@ struct ForumController: APIRouteCollection {
 		return try await ForumSearchData(paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
 	}
 		
+	/// `GET /api/v3/forum/owner`
+	///
+	/// Retrieve a list of all `Forum`s created by the user, sorted by title.
+	///
+	/// **URL Query Parameters**:
+	/// * `?cat=CATEGORY_ID` - Limit returned list to forums in the given category (that were also created by the current user).
+	/// * `?start=INT` - The index into the array of forums to start returning results. 0 for first forum.
+	/// * `?limit=INT` - The max # of entries to return. Defaults to 50. Clamped to a max value set in Settings.
+	///
+	/// - Returns: A <doc:ForumSearchData> containing all forums created by the user.
+	func ownerHandler(_ req: Request) async throws-> ForumSearchData {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let start = (req.query[Int.self, at: "start"] ?? 0)
+		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
+		let countQuery = Forum.query(on: req.db).filter(\.$creator.$id == cacheUser.userID)
+					.filter(\.$accessLevelToView <= cacheUser.accessLevel)
+		if let cat = req.query[UUID.self, at: "cat"] {
+			countQuery.filter(\.$category.$id == cat)
+		}
+		async let forumCount = try countQuery.count()
+		async let forums = try countQuery.copy().sort(\.$title, .ascending).range(start..<(start + limit)).all()
+		let forumList = try await buildForumListData(forums, on: req, user: cacheUser)
+		return try await ForumSearchData(paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
+	}
+	
+	/// `GET /api/v3/forum/favorites`
+	///
+	/// Retrieve the `Forum`s the user has favorited.
+	/// 
+	/// **URL Query Parameters**:
+	/// * `?cat=CATEGORY_ID` - Only show favorites in the given category
+	/// * `?sort=STRING` - Sort forums by `create`, `update`, or `title`. Create and update return newest forums first. `title` is the default.
+	/// * `?start=INT` - The index into the sorted list of forums to start returning results. 0 for first item, which is the default.
+	/// * `?limit=INT` - The max # of entries to return. Defaults to 50
+	///
+	/// - Returns: A <doc:ForumSearchData> containing the user's favorited forums.
+	func favoritesHandler(_ req: Request) async throws -> ForumSearchData {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let start = (req.query[Int.self, at: "start"] ?? 0)
+		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
+		let countQuery = Forum.query(on: req.db).filter(\.$creator.$id !~ cacheUser.getBlocks())
+				.filter(\.$accessLevelToView <= cacheUser.accessLevel)
+				.join(ForumReaders.self, on: \Forum.$id == \ForumReaders.$forum.$id)
+				.filter(ForumReaders.self, \.$user.$id == cacheUser.userID)
+				.filter(ForumReaders.self, \.$isFavorite == true)
+		if let cat = req.query[UUID.self, at: "cat"] {
+			countQuery.filter(\.$category.$id == cat)
+		}
+		async let forumCount = try countQuery.count()
+		let rangeQuery = countQuery.copy().range(start..<(start + limit))
+		switch req.query[String.self, at: "sort"] {
+			case "update": _ = rangeQuery.sort(\.$updatedAt, .descending);
+			case "title": _ = rangeQuery.sort(\.$title, .ascending)
+			default: _ = rangeQuery.sort(\.$createdAt, .descending)
+		}
+		async let forums = try rangeQuery.all()
+		let forumList = try await buildForumListData(forums, on: req, user: cacheUser, forceIsFavorite: true)
+		return try await ForumSearchData(paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
+	}
+	
+	/// `GET /api/v3/forum/recent`
+	///
+	/// Retrieve the `Forum`s the user has recently visited..
+	/// 
+	/// **URL Query Parameters**:
+	/// * `?start=INT` - The index into the sorted list of forums to start returning results. 0 for first item, which is the default.
+	/// * `?limit=INT` - The max # of entries to return. Defaults to 50
+	///
+	/// - Returns: A <doc:ForumSearchData> containing the user's favorited forums.
+	func recentsHandler(_ req: Request) async throws -> ForumSearchData {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let start = (req.query[Int.self, at: "start"] ?? 0)
+		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
+		let countQuery = Forum.query(on: req.db).filter(\.$creator.$id !~ cacheUser.getBlocks())
+				.filter(\.$accessLevelToView <= cacheUser.accessLevel)
+				.join(ForumReaders.self, on: \Forum.$id == \ForumReaders.$forum.$id)
+				.filter(ForumReaders.self, \.$user.$id == cacheUser.userID)
+		async let forumCount = try countQuery.count()
+		let rangeQuery = countQuery.copy().range(start..<(start + limit)).sort(ForumReaders.self, \.$updatedAt, .descending)
+		async let forums = try rangeQuery.all()
+		let forumList = try await buildForumListData(forums, on: req, user: cacheUser, forceIsFavorite: false)
+		return try await ForumSearchData(paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
+	}
+	
+	// MARK: Returns Posts
+	/// `GET /api/v3/forum/ID`
+	///
+	/// Retrieve a `Forum` with all its `ForumPost`s. Content from blocked or muted users,
+	/// or containing user's muteWords, is not returned. Posts are always sorted by creation time.
+	///
+	/// **URL Query Parameters:**
+	/// * `?start=INT` - The index into the array of posts to start returning results. 0 for first post. Not compatible with `startPost`.
+	/// * `?startPost=INT` - PostID of a post in the thread.  Acts as if `start` had been used with the index of this post within the thread.
+	/// * `?limit=INT` - The max # of entries to return. Defaults to 50. Clamped to a max value set in Settings.
+	/// 
+	/// The first post in the result `posts` array (assuming it isn't blocked/muted) will be, in priority order:
+	/// 1. The `start`-th post in the thread (first post has index 0).
+	/// 2. The post with id of `startPost`
+	/// 3. The page of thread posts (with `limit` as pagesize) that contains the last post read by the user.
+	/// 4. The first post in the thread.
+	/// 
+	/// Start and Limit do not take blocks and mutes into account, matching the behavior of the totalPosts values. Instead, when asking for e.g. the first 50 posts in a thread,
+	/// you may only receive 46 posts, as 4 posts in that batch were blocked/muted. To continue reading the thread, ask to start with post 50 (not post 47)--you'll receive however
+	/// many posts are viewable by the user in the range 50...99 . Doing it this way makes Forum read counts invariant to blocks--if a user reads a forum, then blocks a user, then
+	/// comes back to the forum, they should come back to the same place they were in previously.
+	///
+	/// - Parameter forumID: in URL path
+	/// - Throws: 404 error if the forum is not available.
+	/// - Returns: <doc:ForumData> containing the forum's metadata and posts.
+	func forumThreadHandler(_ req: Request) async throws -> ForumData {
+		let user = try req.auth.require(UserCacheData.self)
+		let forum = try await Forum.findFromParameter(forumIDParam, on: req)
+		guard user.accessLevel.hasAccess(forum.accessLevelToView) else {
+			throw Abort(.forbidden, reason: "User cannot view this forum category.")
+		}
+		return try await buildForumData(forum, on: req)
+	}
+	
 	/// `GET /api/v3/forum/post/ID/forum`
 	///
 	/// Retrieve the `ForumData` of the specified `ForumPost`'s parent `Forum`.
@@ -266,7 +350,7 @@ struct ForumController: APIRouteCollection {
 	/// - Parameter postID: In the URL path.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: <doc:ForumData> containing the post's parent forum.
-	func postForumHandler(_ req: Request) async throws -> ForumData {
+	func postForumThreadHandler(_ req: Request) async throws -> ForumData {
 		let user = try req.auth.require(UserCacheData.self)
 		let post = try await ForumPost.findFromParameter(postIDParam, on: req) { query in
 			query.with(\.$forum)
@@ -292,7 +376,7 @@ struct ForumController: APIRouteCollection {
 	/// - Parameter eventID: In the URL path.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: <doc:ForumData> containing the forum's metadata and all posts.
-	func eventForumHandler(_ req: Request) async throws -> ForumData {
+	func eventForumThreadHandler(_ req: Request) async throws -> ForumData {
 		let user = try req.auth.require(UserCacheData.self)
 		let event = try await Event.findFromParameter("event_id", on: req) { query in
 			query.with(\.$forum)
@@ -305,7 +389,6 @@ struct ForumController: APIRouteCollection {
 		}
 		return try await buildForumData(forum, on: req)
 	}
-
 
 	/// `GET /api/v3/forum/post/ID`
 	///
@@ -559,37 +642,6 @@ struct ForumController: APIRouteCollection {
 		return .noContent
 	}
 	
-	/// `GET /api/v3/forum/favorites`
-	///
-	/// Retrieve the `Forum`s the user has favorited.
-	/// 
-	/// **URL Query Parameters**:
-	/// * `?sort=STRING` - Sort forums by `create`, `update`, or `title`. Create and update return newest forums first. `title` is the default.
-	/// * `?start=INT` - The index into the sorted list of forums to start returning results. 0 for first item, which is the default.
-	/// * `?limit=INT` - The max # of entries to return. Defaults to 50
-	///
-	/// - Returns: An array of  <doc:ForumListData> containing the user's favorited forums.
-	func favoritesHandler(_ req: Request) async throws -> ForumSearchData {
-		let cacheUser = try req.auth.require(UserCacheData.self)
-		let start = (req.query[Int.self, at: "start"] ?? 0)
-		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
-		let countQuery = Forum.query(on: req.db).filter(\.$creator.$id !~ cacheUser.getBlocks())
-				.filter(\.$accessLevelToView <= cacheUser.accessLevel)
-				.join(ForumReaders.self, on: \Forum.$id == \ForumReaders.$forum.$id)
-				.filter(ForumReaders.self, \.$user.$id == cacheUser.userID)
-				.filter(ForumReaders.self, \.$isFavorite == true)
-		async let forumCount = try countQuery.count()
-		let rangeQuery = countQuery.copy().range(start..<(start + limit))
-		switch req.query[String.self, at: "sort"] {
-			case "update": _ = rangeQuery.sort(\.$updatedAt, .descending);
-			case "title": _ = rangeQuery.sort(\.$title, .ascending)
-			default: _ = rangeQuery.sort(\.$createdAt, .descending)
-		}
-		async let forums = try rangeQuery.all()
-		let forumList = try await buildForumListData(forums, on: req, user: cacheUser, forceIsFavorite: true)
-		return try await ForumSearchData(paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
-	}
-	
 	/// `POST /api/v3/forum/categories/ID/create`
 	///
 	/// Creates a new `Forum` in the specified `Category`, and the first `ForumPost` within
@@ -616,18 +668,15 @@ struct ForumController: APIRouteCollection {
 		// create forum
 		let effectiveAuthor = data.firstPost.effectiveAuthor(actualAuthor: cacheUser, on: req)
 		let forum = try Forum(title: data.title, category: category, creatorID: effectiveAuthor.userID, isLocked: false)
-		async let forumSave: () = try forum.save(on: req.db)
+		try await forum.save(on: req.db)
 		try await forum.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
 		// create first post
 		let forumPost = try await ForumPost(forum: forum, authorID: effectiveAuthor.userID, text: data.firstPost.text, images: imageFilenames)
-		async let postSave: () = try await forumPost.save(on: req.db)
+		try await forumPost.save(on: req.db)
 		try await forumPost.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
 		// Update the Category's cached count of forums
-		async let forumCount = category.$forums.query(on: req.db).count()
-		category.forumCount = try await Int32(forumCount)
-		async let categorySave: () = category.save(on: req.db)
-		// At this point we've saved everything. Wait for saves to complete.
-		_ = try await [forumSave, postSave, categorySave]
+		category.forumCount = try await Int32(category.$forums.query(on: req.db).count())
+		try await category.save(on: req.db)
 		// If the post @mentions anyone, update their mention counts
 		try await processForumMentions(forum: forum, post: forumPost, editedText: nil, isCreate: true, on: req)
 		let creatorHeader = effectiveAuthor.makeHeader()
@@ -715,30 +764,12 @@ struct ForumController: APIRouteCollection {
 		return .noContent
 	}
 	
-	/// `GET /api/v3/forum/owner`
-	///
-	/// Retrieve a list of all `Forum`s created by the user, sorted by title.
-	///
-	/// **URL Query Parameters**:
-	/// * `?start=INT` - The index into the array of forums to start returning results. 0 for first forum.
-	/// * `?limit=INT` - The max # of entries to return. Defaults to 50. Clamped to a max value set in Settings.
-	///
-	/// - Returns: An array of <doc:ForumListData> containing all forums created by the user.
-	func ownerHandler(_ req: Request) async throws-> ForumSearchData {
-		let cacheUser = try req.auth.require(UserCacheData.self)
-		let start = (req.query[Int.self, at: "start"] ?? 0)
-		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
-		let countQuery = Forum.query(on: req.db).filter(\.$creator.$id == cacheUser.userID)
-					.filter(\.$accessLevelToView <= cacheUser.accessLevel)
-		async let forumCount = try countQuery.count()
-		async let forums = try countQuery.copy().sort(\.$title, .ascending).range(start..<(start + limit)).all()
-		let forumList = try await buildForumListData(forums, on: req, user: cacheUser)
-		return try await ForumSearchData(paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
-	}
-	
 	/// `POST /api/v3/forum/ID/create`
 	///
-	/// Create a new `ForumPost` in the specified `Forum`.
+	/// Create a new `ForumPost` in the specified `Forum`. 
+	/// 
+	/// Creating a new post in a forum updates that forum's `updatedAt` timestamp. Editing, deleting, or reacting to posts does not change the timestamp. 
+	/// This behavior sets the sort order for forums in a category when using the `update` sort order.
 	///
 	/// - Parameter forumID: in URL path
 	/// - Parameter requestBody: <doc:PostContentData>
@@ -761,6 +792,7 @@ struct ForumController: APIRouteCollection {
 		let effectiveAuthor = newPostData.effectiveAuthor(actualAuthor: cacheUser, on: req)
 		let forumPost = try ForumPost(forum: forum, authorID: effectiveAuthor.userID, text: newPostData.text, images: filenames)
 		try await forumPost.save(on: req.db)
+		try await forum.save(on: req.db)
 		try await forumPost.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
 		// If the post @mentions anyone, update their mention counts
 		try await processForumMentions(forum: forum, post: forumPost, editedText: nil, isCreate: true, on: req)
