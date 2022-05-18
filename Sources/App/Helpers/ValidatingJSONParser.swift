@@ -23,7 +23,7 @@ struct ValidationFailure {
 struct ValidationError: Error {
 	var status: HTTPResponseStatus = .badRequest
 	var headers: HTTPHeaders = [:]
-	var validationFailures: [ValidationFailure]
+	var validationFailures: [ValidationFailure] = []
 	
 	func collectReasonString() -> String {
 		let reasons = validationFailures.map { $0.errorString }
@@ -309,15 +309,26 @@ public class ValidatingJSONDecoder {
 	}
 	
 	// This isn't just decode() without a result. Validate-only could do less by not decoding some values.
-	func validate<Output: Decodable>(_ type: Output.Type, fromBodyOf req: Request) throws {
+	func validate<Output: Decodable>(_ type: Output.Type, from: Data) throws -> ValidationError? {
+		let wrapper = try jsonDecoder.decode(DecoderProxy<Output>.self, from: from)
+		if wrapper.validationFailures.count > 0 {
+			return ValidationError(validationFailures: wrapper.validationFailures)
+		}
+		return nil
+	}
+
+	// While this method can throw, it doesn't throw on validation errors discovered while decoding.
+	// Instead, it returns a non-nil `ValidationError` if there were any issues found.
+	func validate<Output: Decodable>(_ type: Output.Type, fromBodyOf req: Request) throws -> ValidationError? {
 		guard let body = req.body.data else {
 			req.logger.debug("Decoding streaming bodies not supported")
 			throw Abort(.unprocessableEntity)
 		}
 		let wrapper = try jsonDecoder.decode(DecoderProxy<Output>.self, from: body)
 		if wrapper.validationFailures.count > 0 {
-			throw ValidationError(validationFailures: wrapper.validationFailures)
+			return ValidationError(validationFailures: wrapper.validationFailures)
 		}
+		return nil
 	}
 }
 

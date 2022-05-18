@@ -354,10 +354,10 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 	// We do this by inferring from the result from /api/v3/fez/:fez_id -- if the result includes members-only data,
 	// we assume the user should be able to get updates to the members-only data.
 	func shouldCreateFezSocket(_ req: Request) async throws -> HTTPHeaders? {
-		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
-			throw Abort(.unauthorized, reason: "Invalid Fez ID")
+		guard let lfgIDStr = req.parameters.get(fezIDParam.paramString), let lfgID = UUID(uuidString: lfgIDStr) else {
+			throw Abort(.unauthorized, reason: "Request parameter lfg_ID is missing")
 		}
-		let response = try await apiQuery(req, endpoint: "/fez/\(fezID)")
+		let response = try await apiQuery(req, endpoint: "/fez/\(lfgID)")
 		let fez = try response.content.decode(FezData.self)
 		guard fez.members != nil else {
 			throw Abort(.unauthorized, reason: "Not authorized")

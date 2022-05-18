@@ -344,8 +344,9 @@ struct UserController: APIRouteCollection {
 	///   `.client`. 409 error if the username is not available.
 	/// - Returns: 201 Created on success.
 	func usernameHandler(_ req: Request) async throws -> HTTPStatus {
-		let user = try await req.auth.require(UserCacheData.self).getUser(on: req.db)
-		var targetUserID = try user.requireID()
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let user = try await cacheUser.getUser(on: req.db)
+		var targetUserID = cacheUser.userID
 		if let targetUserIDString = req.parameters.get(userIDParam.paramString) {
 			guard let targetID = UUID(uuidString: targetUserIDString) else {
 				throw Abort(.badRequest, reason: "Could not make user ID parameter into a UUID")
@@ -358,6 +359,7 @@ struct UserController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "Could not find user with userID \(targetUserID.uuidString)")
 		}
 		try user.guardCanEditProfile(ofUser: targetUser)
+		try guardNotSpecialAccount(targetUser)
 		// clients are hard-coded
 		guard targetUser.accessLevel != .client else {
 			throw Abort(.forbidden, reason: "username change would break a client")
@@ -368,6 +370,17 @@ struct UserController: APIRouteCollection {
 		guard try await User.query(on: req.db).filter(\.$username, .custom("ilike"), data.username).first() == nil else {
 			throw Abort(.conflict, reason: "username '\(data.username)' is not available")
 		}
+		// Check for recent name change; throw if the user has a profileEdit in the last 20 hours where the username doesn't match.
+		if targetUser.id == user.id {
+			let twentyHoursAgo = Date() - 3600.0 * 20.0
+			let profileEdits = try await ProfileEdit.query(on: req.db).filter(\.$user.$id == targetUser.requireID())
+					.filter(\.$createdAt > twentyHoursAgo).all()
+			for edit in profileEdits {
+				if edit.profileData?.header?.username != targetUser.username {
+					throw Abort(.forbidden, reason: "Only one name change allowed per day.")
+				}
+			}
+		}
 		// record update for accountability
 		let oldProfileEdit = try ProfileEdit(target: targetUser, editor: user)
 		try await oldProfileEdit.save(on: req.db)
@@ -375,6 +388,7 @@ struct UserController: APIRouteCollection {
 		targetUser.buildUserSearchString()
 		try await targetUser.save(on: req.db)
 		try await req.userCache.updateUser(targetUser.requireID())
+		await targetUser.logIfModeratorAction(.edit, user: cacheUser, on: req)
 		return .created
 	}
 	

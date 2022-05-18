@@ -71,6 +71,7 @@
 				<div class="col btn-group btn-group-sm col-auto mx-1" role="group" aria-label="Profile actions">
 					#if(trunk.userID == profile.header.userID):
 						<a class="btn btn-sm btn-outline-primary" href="/profile/edit">Edit Profile</a>
+						<a class="btn btn-sm btn-outline-primary" href="/profile/username/edit">Edit Username</a>
 					#else:
 						<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="\#blockModal">Block</button>
 						<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="\#muteModal">Mute</button>

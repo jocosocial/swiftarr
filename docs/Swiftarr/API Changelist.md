@@ -52,3 +52,8 @@ for this game.
 ## Apr 17, 2022
 
 * Added "hideReplies" to the list of query options for "/api/v3/twitarr" 
+
+## Apr 22, 2022
+
+* FezContentData now has createdByModerator and createdByTwitarrTeam fields, allowing mods to create Seamails that appear to be
+from the @moderator user and not themselves.

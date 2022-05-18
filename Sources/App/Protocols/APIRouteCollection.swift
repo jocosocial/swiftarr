@@ -91,23 +91,23 @@ extension APIRouteCollection {
 	}
 	
 // MARK: - Guards
-	// Throws an error if the given user is a 'special' account that cannot have its userAccessLevel changed.
+	// Throws an error if the given user is a 'special' account that cannot have its username or userAccessLevel changed.
 	func guardNotSpecialAccount(_ targetUser: User) throws {
 		guard targetUser.username != "moderator" else {
-			throw Abort(.badRequest, reason: "Cannot change access level of @moderator account.")
+			throw Abort(.badRequest, reason: "Cannot change name or access level of @moderator account.")
 		}
 		guard targetUser.username != "TwitarrTeam" else {
-			throw Abort(.badRequest, reason: "Cannot change access level of @twitarrteam account.")
+			throw Abort(.badRequest, reason: "Cannot change name or  access level of @TwitarrTeam account.")
 		}
 		guard targetUser.username != "THO" else {
-			throw Abort(.badRequest, reason: "Cannot change access level of @THO account.")
+			throw Abort(.badRequest, reason: "Cannot change name or  access level of @THO account.")
 		}
 		guard targetUser.username != "admin" else {
-			throw Abort(.badRequest, reason: "Cannot change access level of @admin account.")
+			throw Abort(.badRequest, reason: "Cannot change name or  access level of @admin account.")
 		}
 		// Can't change access level of Clients
 		guard targetUser.accessLevel != .client else {
-			throw Abort(.badRequest, reason: "Cannot change access level of Client accounts.")
+			throw Abort(.badRequest, reason: "Cannot change name or  access level of Client accounts.")
 		}
 	}
 

@@ -47,6 +47,7 @@
 		EA20207B27FA5A0100F82C28 /* Resources in CopyFiles */ = {isa = PBXBuildFile; fileRef = EA20206927FA592C00F82C28 /* Resources */; };
 		EA20207D2803DE7300F82C28 /* FezProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA20207C2803DE7200F82C28 /* FezProtocol.swift */; };
 		EA2020822807F8E300F82C28 /* SiteRedisWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2020812807F8E300F82C28 /* SiteRedisWrapper.swift */; };
+		EA2020862811C95600F82C28 /* ScheduleMunger.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2020852811C95600F82C28 /* ScheduleMunger.swift */; };
 		OBJ_2826 /* AdminController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_10 /* AdminController.swift */; };
 		OBJ_2827 /* AlertController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* AlertController.swift */; };
 		OBJ_2828 /* AuthController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* AuthController.swift */; };
@@ -8240,6 +8241,7 @@
 		EA20207927FA59FB00F82C28 /* seeds */ = {isa = PBXFileReference; lastKnownFileType = folder; name = seeds; path = Sources/App/seeds; sourceTree = "<group>"; };
 		EA20207C2803DE7200F82C28 /* FezProtocol.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FezProtocol.swift; sourceTree = "<group>"; };
 		EA2020812807F8E300F82C28 /* SiteRedisWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteRedisWrapper.swift; sourceTree = "<group>"; };
+		EA2020852811C95600F82C28 /* ScheduleMunger.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ScheduleMunger.swift; sourceTree = "<group>"; };
 		OBJ_10 /* AdminController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminController.swift; sourceTree = "<group>"; };
 		OBJ_100 /* MuteWord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MuteWord.swift; sourceTree = "<group>"; };
 		OBJ_1000 /* Backtrace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Backtrace.swift; sourceTree = "<group>"; };
@@ -9906,7 +9908,6 @@
 		OBJ_28 /* UserController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserController.swift; sourceTree = "<group>"; };
 		OBJ_280 /* RedisLogging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RedisLogging.swift; sourceTree = "<group>"; };
 		OBJ_2807 /* Images */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Images; sourceTree = SOURCE_ROOT; };
-		OBJ_2808 /* Schedule Munger */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "Schedule Munger"; sourceTree = SOURCE_ROOT; };
 		OBJ_281 /* RedisMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RedisMetrics.swift; sourceTree = "<group>"; };
 		OBJ_2810 /* docs */ = {isa = PBXFileReference; lastKnownFileType = folder; path = docs; sourceTree = SOURCE_ROOT; };
 		OBJ_2811 /* scripts */ = {isa = PBXFileReference; lastKnownFileType = folder; path = scripts; sourceTree = SOURCE_ROOT; };
@@ -9915,7 +9916,6 @@
 		OBJ_2814 /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
 		OBJ_2815 /* INSTALL.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = INSTALL.md; sourceTree = "<group>"; };
 		OBJ_2816 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
-		OBJ_2817 /* locust-forum.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = "locust-forum.py"; sourceTree = "<group>"; };
 		OBJ_2818 /* API Changelist.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "API Changelist.md"; sourceTree = "<group>"; };
 		OBJ_2819 /* CONTRIBUTING.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CONTRIBUTING.md; sourceTree = "<group>"; };
 		OBJ_282 /* _Deprecations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = _Deprecations.swift; sourceTree = "<group>"; };
@@ -11833,6 +11833,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		EA2020842811C95600F82C28 /* Commands */ = {
+			isa = PBXGroup;
+			children = (
+				EA2020852811C95600F82C28 /* ScheduleMunger.swift */,
+			);
+			path = Commands;
+			sourceTree = "<group>";
+		};
 		OBJ_1002 /* CBacktrace */ = {
 			isa = PBXGroup;
 			children = (
@@ -16294,7 +16302,6 @@
 				OBJ_172 /* Dependencies */,
 				OBJ_2744 /* Products */,
 				OBJ_2807 /* Images */,
-				OBJ_2808 /* Schedule Munger */,
 				OBJ_2810 /* docs */,
 				OBJ_2811 /* scripts */,
 				OBJ_2812 /* Prometheus */,
@@ -16302,7 +16309,6 @@
 				OBJ_2814 /* LICENSE */,
 				OBJ_2815 /* INSTALL.md */,
 				OBJ_2816 /* README.md */,
-				OBJ_2817 /* locust-forum.py */,
 				OBJ_2818 /* API Changelist.md */,
 				OBJ_2819 /* CONTRIBUTING.md */,
 				OBJ_2820 /* Procfile */,
@@ -16997,6 +17003,7 @@
 		OBJ_8 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				EA2020842811C95600F82C28 /* Commands */,
 				OBJ_9 /* Controllers */,
 				OBJ_30 /* Enumerations */,
 				OBJ_40 /* Extensions */,
@@ -19979,6 +19986,7 @@
 				OBJ_2883 /* KaraokeSongs.swift in Sources */,
 				OBJ_2884 /* RegistrationCodes.swift in Sources */,
 				OBJ_2885 /* Forums.swift in Sources */,
+				EA2020862811C95600F82C28 /* ScheduleMunger.swift in Sources */,
 				OBJ_2886 /* SchemaCreation.swift in Sources */,
 				OBJ_2887 /* TestData.swift in Sources */,
 				OBJ_2888 /* TestUsers.swift in Sources */,

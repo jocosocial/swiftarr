@@ -31,7 +31,37 @@ struct AddWordFormStruct: Decodable {
 	var newKeyword: String?
 }
 
+struct UserProfileEditContext : Encodable {
+	var trunk: TrunkContext
+	var profile: ProfilePublicData
+	var formAction: String
+	var postSuccessURL: String
+	var isModEdit: Bool
 	
+	init(_ req: Request, profile: ProfilePublicData, isModEdit: Bool = false, editingUsername: Bool = false) throws {
+		self.profile = profile
+		self.isModEdit = isModEdit
+		switch (isModEdit, editingUsername) {
+		case (false, false):
+			trunk = .init(req, title: "Edit Profile", tab: .none)
+			formAction = "/profile/edit"
+			postSuccessURL = "/profile"
+		case (true, false):
+			trunk = .init(req, title: "Edit @\(profile.header.username)'s Profile", tab: .none)
+			formAction = "/profile/edit/\(profile.header.userID)"
+			postSuccessURL = "/user/\(profile.header.userID)"
+		case (false, true):
+			trunk = .init(req, title: "Edit Username", tab: .none)
+			formAction = "/profile/username/edit"
+			postSuccessURL = "/profile"
+		case (true, true):
+			trunk = .init(req, title: "Edit @\(profile.header.username)'s Username", tab: .none)
+			formAction = "/profile/username/edit/\(profile.header.userID)"
+			postSuccessURL = "/profile"
+		}
+	}
+}
+
 struct SiteUserController: SiteControllerUtils {
 
 	func registerRoutes(_ app: Application) throws {
@@ -57,12 +87,18 @@ struct SiteUserController: SiteControllerUtils {
 		privateRoutes.post("profile", "edit", use: userProfileEditPostHandler)
 		privateRoutes.post("profile", "edit", userIDParam, use: userProfileEditPostHandler)
 		privateRoutes.post("profile", "note", userIDParam, use: userNotePostHandler)
+		privateRoutes.get("profile", "username", "edit", use: selfUsernameEditPageHandler)
+		privateRoutes.get("profile", "username", "edit", userIDParam, use: modUsernameEditPageHandler)
+		privateRoutes.post("profile", "username", "edit", use: usernameEditPostHandler)
+		privateRoutes.post("profile", "username", "edit", userIDParam, use: usernameEditPostHandler)
 		privateRoutes.get("profile", "report", userIDParam, use: profileReportPageHandler)
 		privateRoutes.post("profile", "report", userIDParam, use: profileReportPostHandler)
+
 		privateRoutes.post("user", userIDParam, "block", use: blockUserPostHandler)
 		privateRoutes.post("user", userIDParam, "unblock", use: unblockUserPostHandler)
 		privateRoutes.post("user", userIDParam, "mute", use: muteUserPostHandler)
 		privateRoutes.post("user", userIDParam, "unmute", use: unmuteUserPostHandler)
+
 		privateRoutes.get("blocks", use: blocksPageHandler)
 		privateRoutes.get("alertwords", use: alertMuteWordsPageHandler)
 		privateRoutes.get("mutewords", use: alertMuteWordsPageHandler)
@@ -152,7 +188,6 @@ struct SiteUserController: SiteControllerUtils {
 		let ctx = try PublicProfileContext(req, profile: profile)
 		return try await req.view.render("User/userProfile", ctx)			
 	}
-	
 	
 	// GET /blocks
 	//
@@ -304,19 +339,6 @@ struct SiteUserController: SiteControllerUtils {
 	func selfProfileEditPageHandler(_ req: Request) async throws -> View {
 		let response = try await apiQuery(req, endpoint: "/user/profile")
 		let profile = try response.content.decode(ProfilePublicData.self)
-		struct UserProfileEditContext : Encodable {
-			var trunk: TrunkContext
-			var profile: ProfilePublicData
-			var formAction: String
-			var postSuccessURL: String
-			
-			init(_ req: Request, profile: ProfilePublicData) throws {
-				trunk = .init(req, title: "Edit Profile", tab: .none)
-				self.profile = profile
-				formAction = "/profile/edit"
-				postSuccessURL = "/profile"
-			}
-		}
 		let ctx = try UserProfileEditContext(req, profile: profile)
 		return try await req.view.render("User/userProfileEdit", ctx)			
 	}
@@ -336,20 +358,7 @@ struct SiteUserController: SiteControllerUtils {
 		}
 		let response = try await apiQuery(req, endpoint: "/users/\(targetUserID)/profile")
 		let profile = try response.content.decode(ProfilePublicData.self)
-		struct PublicProfileEditContext : Encodable {
-			var trunk: TrunkContext
-			var profile: ProfilePublicData
-			var formAction: String
-			var postSuccessURL: String
-			
-			init(_ req: Request, profile: ProfilePublicData, targetUserID: UUID) throws {
-				trunk = .init(req, title: "Edit @\(profile.header.username)'s Profile", tab: .none)
-				self.profile = profile
-				formAction = "/profile/edit/\(targetUserID)"
-				postSuccessURL = "/user/\(targetUserID)"
-			}
-		}
-		let ctx = try PublicProfileEditContext(req, profile: profile, targetUserID: targetUserID)
+		let ctx = try UserProfileEditContext(req, profile: profile, isModEdit: true)
 		return try await req.view.render("User/userProfileEdit", ctx)			
 	}
 	
@@ -386,6 +395,54 @@ struct SiteUserController: SiteControllerUtils {
 		return .ok
 	}
 	
+	// GET /user/profile/username/edit
+	//
+	// Shows a page with a form allowing a user to change their username. Separate from the Profile edit page because we'll
+	// probably have different rules regarding username changes, such as limiting users to one change per day, or one change total.
+	func selfUsernameEditPageHandler(_ req: Request) async throws -> View {
+		let response = try await apiQuery(req, endpoint: "/user/profile")
+		let profile = try response.content.decode(ProfilePublicData.self)
+		let ctx = try UserProfileEditContext(req, profile: profile, editingUsername: true)
+		return try await req.view.render("User/userUsernameEdit", ctx)			
+	}
+	
+	// GET /profile/username/edit/ID
+	//
+	// Shows mods a page that lets them edit others usernames. Note: Non-mods cannot use this endpoint
+	// to edit their own username, even if they pass in their own userID.
+	func modUsernameEditPageHandler(_ req: Request) async throws -> View {
+		guard let targetUserID = req.parameters.get(userIDParam.paramString, as: UUID.self),
+				let userAccessLevelStr = req.session.data["accessLevel"],
+				let userAccessLevel = UserAccessLevel(rawValue: userAccessLevelStr),
+				userAccessLevel.hasAccess(.moderator) else {
+			// Actually trying to post changes to someone else's profile will fail at the API level, but we want
+			// to catch it before showing the page.
+			throw Abort(.forbidden, reason: "User isn't authorized to edit other users' usernames.")
+		}
+		let response = try await apiQuery(req, endpoint: "/users/\(targetUserID)/profile")
+		let profile = try response.content.decode(ProfilePublicData.self)
+		let ctx = try UserProfileEditContext(req, profile: profile, isModEdit: true, editingUsername: true)
+		return try await req.view.render("User/userUsernameEdit", ctx)			
+	}
+	
+	// POST /profile/username/edit
+	// POST /profile/username/edit/:user_id
+	//
+	// Posts an edit to the user's own username, or lets mods post edits to other user's usernames.
+	func usernameEditPostHandler(_ req: Request) async throws -> HTTPStatus {
+		struct UsernameFormContent: Content {
+			var username: String
+		}
+		let formStruct = try req.content.decode(UsernameFormContent.self)
+		var path = "/user/username"
+		if let targetUserIDVal = req.parameters.get(userIDParam.paramString, as: UUID.self) {
+			path = "/user/\(targetUserIDVal)/username"
+		}
+		let postContent = UserUsernameData(username: formStruct.username)
+		try await apiQuery(req, endpoint: path, method: .POST, encodeContent: postContent)
+		return .ok
+	}
+
 	// POST /profile/note/ID
 	//
 	func userNotePostHandler(_ req: Request) async throws -> HTTPStatus {
