@@ -22,8 +22,8 @@ services:
     ports:
       - 9090:9090
     volumes:
-      - ../Prometheus/swiftarr.yml:/opt/bitnami/prometheus/conf/swiftarr.yml:ro
-      - ../Prometheus/alerts.yml:/opt/bitnami/prometheus/conf/alerts.yml:ro
+      - ./Prometheus/swiftarr.yml:/opt/bitnami/prometheus/conf/swiftarr.yml:ro
+      - ./Prometheus/alerts.yml:/opt/bitnami/prometheus/conf/alerts.yml:ro
     command:
       - '--web.enable-admin-api'
       - '--config.file=/opt/bitnami/prometheus/conf/swiftarr.yml'

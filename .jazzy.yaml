@@ -1,30 +1,62 @@
-module: App
+module: Swiftarr
 module_version: 0.1
-title: swiftarr 0.1.0
-author: grundoon
+title: Swiftarr - The v3 Twitarr server
+author: The Twitarr Team
 # author_url:
-github_url: https://github.com/grundoon/swiftarr
-github_file_prefix: https://github.com/grundoon/swiftarr/tree/master
+github_url: https://github.com/jocosocial/swiftarr
+github_file_prefix: https://github.com/jocosocial/swiftarr/tree/master
 # copyright:
 
-swift_version: 5.1.2
+swift_version: 5.6
 
 theme: fullwidth
 skip_undocumented: no
 hide_documentation_coverage: no
 # head:
 
+documentation: docs/Swiftarr/*.md
+abstract: docs/Swiftarr/Sections/*.md
+
 min_acl: private
 
 custom_categories:
+  - name: Overview
+    children:
+      - Contributing
+      - Development
+      - Roadmap
+      - Special Files
+      - Documentation
+
+  - name: Operations
+    children:
+      - Configuration
+      - MacOS Installation
+      - Linux Installation
+      - Docker Installation
+      - Database Migration
+      - Deployment
+
+  - name: Twitarr API
+    children:
+      - Pitch
+      - API Overview
+      - Canonical Links
+      - API Changelist
+
   - name: Controllers
     children:
     - AdminController
+    - AlertController
     - AuthController
+    - BoardgameController
     - ClientController
     - EventController
     - FezController
     - ForumController
+    - ImageController
+    - KaraokeController
+    - ModerationController
     - TestController
     - TwitarrController
     - UserController
@@ -32,42 +64,60 @@ custom_categories:
 
   - name: Models
     children:
-    - Barrel
+    - AlertWord
+    - Announcement
+    - Boardgame
     - Category
+    - DailyTheme
     - Event
     - FezPost
-    - Forum
+    - ForumEdit
+    - ForumPostEdit
     - ForumPost
+    - Forum
+    - FriendlyFezEdit
+    - FriendlyFez
+    - KaraokePlayedSong
+    - KaraokeSong
+    - ModeratorAction
+    - MuteWord
+    - ProfileEdit
     - RegistrationCode
     - Report
     - Token
+    - TwarrtEdit
     - Twarrt
-    - User
     - UserNote
-    - UserProfile
+    - User
     
   - name: Enumerations
     children:
-    - BarrelType
+    - ContentModerationStatus
+    - EventModification
     - EventType
+    - ExportableFormat
     - FezType
-    - ImageHandlerType
+    - GDError
+    - ImageSizeGroup
+    - ImageUsage
+    - ImportableFormat
     - LikeType
+    - ModeratorActionType
+    - NotificationType
     - ReportType
+    - SwiftarrClientApp
+    - SwiftarrFeature
     - UserAccessLevel
 
   - name: Request Structs
     children:
-    - BarrelCreateData
+    - AnnouncementCreateData
     - EventsUpdateData
     - FezContentData
     - ForumCreateData
     - ImageUploadData
     - NoteCreateData
-    - NoteUpdateData
     - PostContentData
-    - PostCreateData
-    - ProfileEditData
     - ReportData
     - UserCreateData
     - UserPasswordData
@@ -78,59 +128,65 @@ custom_categories:
   - name: Return Structs
     children:
     - AddedUserData
-    - AlertKeywordData
-    - BarrelData
-    - BarrelListData
-    - BlockedUserData
+    - AnnouncementData
+    - BoardgameData
+    - BoardgameResponseData
     - CategoryData
-    - CreatedNoteData
     - CreatedUserData
     - CurrentUserData
     - EventData
     - FezData
-    - FezDetailData
     - FezPostData
     - ForumData
     - ForumListData
-    - MuteKeywordData
-    - MutedUserData
     - NoteData
-    - NoteEditData
     - PostData
     - PostDetailData
     - ProfilePublicData
-    - SeaMonkey
     - TokenStringData
     - TwarrtData
     - TwarrtDetailData
-    - UploadedImageData
     - UserHeader
-    - UserInfo
-    - UserProfileData
     - UserSearch
     
   - name: Extensions
     children:
+    - Application
+    - Array
+    - Bool
     - CharacterSet
+    - Collection
+    - Comparable
+    - Data
     - Date
     - Formatter
-    - Future
+    - Foundation
     - ISO8601DateFormatter
     - JSONDecoder
     - JSONEncoder
-    - RouteCollection
+    - Model
+    - PathComponent
+    - RedisClient
+    - Request
+    - SiblingsProperty
     - String
+    - UUID
     
   - name: Migrations
     children:
-    - AdminUser
-    - Categories
-    - ClientUsers
-    - EventForums
-    - Events
-    - Forums
-    - RegistrationCodes
-    - TestUsers
+      - CreateAdminUsers
+      - CreateCategories
+      - SetInitialCategoryForumCounts
+      - CreateClientUsers
+      - ImportBoardgames
+      - SetInitialEventForums
+      - ImportRegistrationCodes
+      - ImportEvents
+      - ImportKaraokeSongs
+      - CreateForums
+      - CreateCustomEnums
+      - CreateTestUsers
+      - CreateTestData
 
   - name: Pivots
     children:
@@ -139,16 +195,21 @@ custom_categories:
     
   - name: Protocols
     children:
+    - APIRouteCollection
     - ContentFilterable
-    - ImageHandler
-    - UserBookmarkable
-    - UserTaggable
+    - ExportableFormatter
+    - FezProtocol
+    - ImportableFormatter
+    - LibGdExportableFormatter
+    - LibGdImportableFormatter
+    - LibGdParametrizableExportFormatter
+    - RCFValidatable
+    - Reportable
+    - SiteControllerUtils
+    - StoredSetting
     
   - name: Internal Structs/Classes
     children:
     - EventParser
-    - ForumEdit
-    - ProfileEdit
     - Settings
-    - TwarrtEdit
     

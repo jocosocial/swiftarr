@@ -21,20 +21,20 @@
     <header class="header">
       <p class="header-col header-col--primary">
         <a class="header-link" href="../index.html">
-          swiftarr 0.1.0
+          Swiftarr - The v3 Twitarr server
         </a>
          (100% documented)
       </p>
     
-      <p class="header-col--secondary">
+      <div class="header-col--secondary">
         <form role="search" action="../search.json">
           <input type="text" placeholder="Search documentation" data-typeahead>
         </form>
-      </p>
+      </div>
     
         <p class="header-col header-col--secondary">
-          <a class="header-link" href="https://github.com/grundoon/swiftarr">
-            <img class="header-icon" src="../img/gh.png"/>
+          <a class="header-link" href="https://github.com/jocosocial/swiftarr">
+            <img class="header-icon" src="../img/gh.png" alt="GitHub"/>
             View on GitHub
           </a>
         </p>
@@ -42,8 +42,8 @@
     </header>
 
     <p class="breadcrumbs">
-      <a class="breadcrumb" href="../index.html">App Reference</a>
-      <img class="carat" src="../img/carat.png" />
+      <a class="breadcrumb" href="../index.html">Swiftarr Reference</a>
+      <img class="carat" src="../img/carat.png" alt=""/>
       ClientController Structure Reference
     </p>
 
@@ -51,13 +51,79 @@
       <nav class="navigation">
         <ul class="nav-groups">
           <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Overview.html">Overview</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../contributing.html">Contributing</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../development.html">Development</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../roadmap.html">Roadmap</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../special-files.html">Special Files</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../documentation.html">Documentation</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Operations.html">Operations</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../configuration.html">Configuration</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../macos-installation.html">MacOS Installation</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../linux-installation.html">Linux Installation</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../docker-installation.html">Docker Installation</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../database-migration.html">Database Migration</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../deployment.html">Deployment</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Twitarr%20API.html">Twitarr API</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../pitch.html">Pitch</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../api-overview.html">API Overview</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../canonical-links.html">Canonical Links</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../api-changelist.html">API Changelist</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
             <a class="nav-group-name-link" href="../Controllers.html">Controllers</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/AdminController.html">AdminController</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/AlertController.html">AlertController</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/AuthController.html">AuthController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/BoardgameController.html">BoardgameController</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/ClientController.html">ClientController</a>
@@ -70,6 +136,15 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/ForumController.html">ForumController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ImageController.html">ImageController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/KaraokeController.html">KaraokeController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ModerationController.html">ModerationController</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/TestController.html">TestController</a>
@@ -89,10 +164,19 @@
             <a class="nav-group-name-link" href="../Models.html">Models</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/Barrel.html">Barrel</a>
+                <a class="nav-group-task-link" href="../Classes/AlertWord.html">AlertWord</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/Announcement.html">Announcement</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/Boardgame.html">Boardgame</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/Category.html">Category</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/DailyTheme.html">DailyTheme</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/Event.html">Event</a>
@@ -101,31 +185,58 @@
                 <a class="nav-group-task-link" href="../Classes/FezPost.html">FezPost</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/Forum.html">Forum</a>
+                <a class="nav-group-task-link" href="../Classes/ForumEdit.html">ForumEdit</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/ForumPostEdit.html">ForumPostEdit</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/ForumPost.html">ForumPost</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/Forum.html">Forum</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/FriendlyFezEdit.html">FriendlyFezEdit</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/FriendlyFez.html">FriendlyFez</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/KaraokePlayedSong.html">KaraokePlayedSong</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/KaraokeSong.html">KaraokeSong</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/ModeratorAction.html">ModeratorAction</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/MuteWord.html">MuteWord</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/ProfileEdit.html">ProfileEdit</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/RegistrationCode.html">RegistrationCode</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/Report.html">Report</a>
+                <a class="nav-group-task-link" href="../Classes/Report.html">Report</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/Token.html">Token</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/Twarrt.html">Twarrt</a>
+                <a class="nav-group-task-link" href="../Classes/TwarrtEdit.html">TwarrtEdit</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/User.html">User</a>
+                <a class="nav-group-task-link" href="../Classes/Twarrt.html">Twarrt</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/UserNote.html">UserNote</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Classes/UserProfile.html">UserProfile</a>
+                <a class="nav-group-task-link" href="../Classes/User.html">User</a>
               </li>
             </ul>
           </li>
@@ -133,22 +244,49 @@
             <a class="nav-group-name-link" href="../Enumerations.html">Enumerations</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Enums/BarrelType.html">BarrelType</a>
+                <a class="nav-group-task-link" href="../Enums/ContentModerationStatus.html">ContentModerationStatus</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Enums/EventModification.html">EventModification</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Enums/EventType.html">EventType</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Enums/ExportableFormat.html">ExportableFormat</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Enums/FezType.html">FezType</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Enums/ImageHandlerType.html">ImageHandlerType</a>
+                <a class="nav-group-task-link" href="../Enums/GDError.html">GDError</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Enums/ImageSizeGroup.html">ImageSizeGroup</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Enums/ImageUsage.html">ImageUsage</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Enums/ImportableFormat.html">ImportableFormat</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Enums/LikeType.html">LikeType</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Enums/ModeratorActionType.html">ModeratorActionType</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Enums/NotificationType.html">NotificationType</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Enums/ReportType.html">ReportType</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Enums/SwiftarrClientApp.html">SwiftarrClientApp</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Enums/SwiftarrFeature.html">SwiftarrFeature</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Enums/UserAccessLevel.html">UserAccessLevel</a>
@@ -159,7 +297,7 @@
             <a class="nav-group-name-link" href="../Request%20Structs.html">Request Structs</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/BarrelCreateData.html">BarrelCreateData</a>
+                <a class="nav-group-task-link" href="../Structs/AnnouncementCreateData.html">AnnouncementCreateData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/EventsUpdateData.html">EventsUpdateData</a>
@@ -177,16 +315,7 @@
                 <a class="nav-group-task-link" href="../Structs/NoteCreateData.html">NoteCreateData</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/NoteUpdateData.html">NoteUpdateData</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/PostContentData.html">PostContentData</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/PostCreateData.html">PostCreateData</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/ProfileEditData.html">ProfileEditData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/ReportData.html">ReportData</a>
@@ -215,22 +344,16 @@
                 <a class="nav-group-task-link" href="../Structs/AddedUserData.html">AddedUserData</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/AlertKeywordData.html">AlertKeywordData</a>
+                <a class="nav-group-task-link" href="../Structs/AnnouncementData.html">AnnouncementData</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/BarrelData.html">BarrelData</a>
+                <a class="nav-group-task-link" href="../Structs/BoardgameData.html">BoardgameData</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/BarrelListData.html">BarrelListData</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/BlockedUserData.html">BlockedUserData</a>
+                <a class="nav-group-task-link" href="../Structs/BoardgameResponseData.html">BoardgameResponseData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/CategoryData.html">CategoryData</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/CreatedNoteData.html">CreatedNoteData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/CreatedUserData.html">CreatedUserData</a>
@@ -245,7 +368,7 @@
                 <a class="nav-group-task-link" href="../Structs/FezData.html">FezData</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/FezDetailData.html">FezDetailData</a>
+                <a class="nav-group-task-link" href="../Structs/FezData/MembersOnlyData.html">– MembersOnlyData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/FezPostData.html">FezPostData</a>
@@ -257,16 +380,7 @@
                 <a class="nav-group-task-link" href="../Structs/ForumListData.html">ForumListData</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/MuteKeywordData.html">MuteKeywordData</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/MutedUserData.html">MutedUserData</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/NoteData.html">NoteData</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/NoteEditData.html">NoteEditData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/PostData.html">PostData</a>
@@ -278,9 +392,6 @@
                 <a class="nav-group-task-link" href="../Structs/ProfilePublicData.html">ProfilePublicData</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/SeaMonkey.html">SeaMonkey</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/TokenStringData.html">TokenStringData</a>
               </li>
               <li class="nav-group-task">
@@ -290,16 +401,7 @@
                 <a class="nav-group-task-link" href="../Structs/TwarrtDetailData.html">TwarrtDetailData</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/UploadedImageData.html">UploadedImageData</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserHeader.html">UserHeader</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/UserInfo.html">UserInfo</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/UserProfileData.html">UserProfileData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserSearch.html">UserSearch</a>
@@ -310,7 +412,46 @@
             <a class="nav-group-name-link" href="../Extensions.html">Extensions</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Application.html">Application</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Application/Redis.html">– Redis</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Application/UserCacheStorage.html">– UserCacheStorage</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Application/UserCacheStorageKey.html">– UserCacheStorageKey</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Application.html#/s:5Vapor11ApplicationC3AppE16UserCacheLockKeyV">– UserCacheLockKey</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Application/WebSocketStorage.html">– WebSocketStorage</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Application/WebSocketStorageKey.html">– WebSocketStorageKey</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Application.html#/s:5Vapor11ApplicationC3AppE23WebSocketStorageLockKeyV">– WebSocketStorageLockKey</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Array.html">Array</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Bool.html">Bool</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Extensions/CharacterSet.html">CharacterSet</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Collection.html">Collection</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Comparable.html">Comparable</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Data.html">Data</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Extensions/Date.html">Date</a>
@@ -319,7 +460,13 @@
                 <a class="nav-group-task-link" href="../Extensions/Formatter.html">Formatter</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Extensions/Future.html">Future</a>
+                <a class="nav-group-task-link" href="../Extensions.html#/s:3App9Formatter33_2E4405C112A566F0233F43EEAF77E5B8LLa">Formatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Foundation.html">Foundation</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Foundation/Bundle.html">– Bundle</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Extensions/ISO8601DateFormatter.html">ISO8601DateFormatter</a>
@@ -337,10 +484,34 @@
                 <a class="nav-group-task-link" href="../Extensions/JSONEncoder/DateEncodingStrategy.html">– DateEncodingStrategy</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Extensions/RouteCollection.html">RouteCollection</a>
+                <a class="nav-group-task-link" href="../Extensions/Model.html">Model</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/PathComponent.html">PathComponent</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/RedisClient.html">RedisClient</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Request.html">Request</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Request/Redis.html">– Redis</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Request/UserCache.html">– UserCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Request/WebSocketStorage.html">– WebSocketStorage</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/SiblingsProperty.html">SiblingsProperty</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Extensions/String.html">String</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/UUID.html">UUID</a>
               </li>
             </ul>
           </li>
@@ -348,28 +519,49 @@
             <a class="nav-group-name-link" href="../Migrations.html">Migrations</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/AdminUser.html">AdminUser</a>
+                <a class="nav-group-task-link" href="../Structs/CreateAdminUsers.html">CreateAdminUsers</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/Categories.html">Categories</a>
+                <a class="nav-group-task-link" href="../Structs/CreateCategories.html">CreateCategories</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/ClientUsers.html">ClientUsers</a>
+                <a class="nav-group-task-link" href="../Structs/CreateCategories/CategoryCreateInfo.html">– CategoryCreateInfo</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/EventForums.html">EventForums</a>
+                <a class="nav-group-task-link" href="../Structs/SetInitialCategoryForumCounts.html">SetInitialCategoryForumCounts</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/Events.html">Events</a>
+                <a class="nav-group-task-link" href="../Structs/CreateClientUsers.html">CreateClientUsers</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/Forums.html">Forums</a>
+                <a class="nav-group-task-link" href="../Structs/CreateClientUsers/ClientUserData.html">– ClientUserData</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/RegistrationCodes.html">RegistrationCodes</a>
+                <a class="nav-group-task-link" href="../Structs/ImportBoardgames.html">ImportBoardgames</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/TestUsers.html">TestUsers</a>
+                <a class="nav-group-task-link" href="../Structs/SetInitialEventForums.html">SetInitialEventForums</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ImportRegistrationCodes.html">ImportRegistrationCodes</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ImportEvents.html">ImportEvents</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ImportKaraokeSongs.html">ImportKaraokeSongs</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateForums.html">CreateForums</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateCustomEnums.html">CreateCustomEnums</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateTestUsers.html">CreateTestUsers</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateTestData.html">CreateTestData</a>
               </li>
             </ul>
           </li>
@@ -388,16 +580,40 @@
             <a class="nav-group-name-link" href="../Protocols.html">Protocols</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Protocols/APIRouteCollection.html">APIRouteCollection</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Protocols/ContentFilterable.html">ContentFilterable</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Protocols/ImageHandler.html">ImageHandler</a>
+                <a class="nav-group-task-link" href="../Protocols/ExportableFormatter.html">ExportableFormatter</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Protocols/UserBookmarkable.html">UserBookmarkable</a>
+                <a class="nav-group-task-link" href="../Protocols/FezProtocol.html">FezProtocol</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Protocols/UserTaggable.html">UserTaggable</a>
+                <a class="nav-group-task-link" href="../Protocols/ImportableFormatter.html">ImportableFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Protocols/LibGdExportableFormatter.html">LibGdExportableFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Protocols/LibGdImportableFormatter.html">LibGdImportableFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Protocols/LibGdParametrizableExportFormatter.html">LibGdParametrizableExportFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Protocols/RCFValidatable.html">RCFValidatable</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Protocols/Reportable.html">Reportable</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Protocols/SiteControllerUtils.html">SiteControllerUtils</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Protocols/StoredSetting.html">StoredSetting</a>
               </li>
             </ul>
           </li>
@@ -408,16 +624,74 @@
                 <a class="nav-group-task-link" href="../Classes/EventParser.html">EventParser</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/ForumEdit.html">ForumEdit</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/ProfileEdit.html">ProfileEdit</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/Settings.html">Settings</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/TwarrtEdit.html">TwarrtEdit</a>
+                <a class="nav-group-task-link" href="../Classes/Settings/SettingsValue.html">– SettingsValue</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/Settings/StoredSettingsValue.html">– StoredSettingsValue</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Other%20Classes.html">Other Classes</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/AlertWordPivot.html">AlertWordPivot</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/BoardgameFavorite.html">BoardgameFavorite</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/DecoderProxy.html">DecoderProxy</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/EventFavorite.html">EventFavorite</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/FezParticipant.html">FezParticipant</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/ForumReaders.html">ForumReaders</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/GDImage.html">GDImage</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/GDImage/FlipMode.html">– FlipMode</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/GDImage/ImageType.html">– ImageType</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/KaraokeFavorite.html">KaraokeFavorite</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/SiteErrorMiddleware.html">SiteErrorMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/SwiftarrErrorMiddleware.html">SwiftarrErrorMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/ValidatingDecoder.html">ValidatingDecoder</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/ValidatingDecoder/ValidatingUnkeyedContainer.html">– ValidatingUnkeyedContainer</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/ValidatingDecoder/ValidatingSingleValueContainer.html">– ValidatingSingleValueContainer</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/ValidatingJSONDecoder.html">ValidatingJSONDecoder</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Other%20Global%20Variables.html">Other Global Variables</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Global%20Variables.html#/s:3App23usernameSeparatorStringSSvp">usernameSeparatorString</a>
               </li>
             </ul>
           </li>
@@ -425,16 +699,587 @@
             <a class="nav-group-name-link" href="../Other%20Functions.html">Other Functions</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App3appy5Vapor11ApplicationC7Service11EnvironmentVKF">app(_:)</a>
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App23HTTPServerConfigurationyy5Vapor11ApplicationCKF">HTTPServerConfiguration(_:)</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App4bootyy5Vapor11ApplicationCKF">boot(_:)</a>
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App9configureyy5Vapor11ApplicationCKF">configure(_:)</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App9configureyy7Service6ConfigVz_AC11EnvironmentVzAC8ServicesVztKF">configure(_:_:_:)</a>
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App22configureBasicSettingsyy5Vapor11ApplicationCKF">configureBasicSettings(_:)</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App6routesyy5Vapor6Router_pKF">routes(_:)</a>
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App15configureBundleyy5Vapor11ApplicationCKF">configureBundle(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App17configureCommandsyy5Vapor11ApplicationCF">configureCommands(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App13configureLeafyy5Vapor11ApplicationCKF">configureLeaf(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App19configureMiddlewareyy5Vapor11ApplicationCKF">configureMiddleware(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App19configureMigrationsyy5Vapor11ApplicationCKF">configureMigrations(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App19configurePrometheusyy5Vapor11ApplicationCKF">configurePrometheus(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App17configureSessionsyy5Vapor11ApplicationCKF">configureSessions(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App23configureStoredSettingsyy5Vapor11ApplicationCKF">configureStoredSettings(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App31databaseConnectionConfigurationyy5Vapor11ApplicationCKF">databaseConnectionConfiguration(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App21generateContentGroups4fromSayAA06ReportC5GroupVGSayAA0F14ModerationDataVG_tF">generateContentGroups(from:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App23operatingSystemPlatformSSSgyF">operatingSystemPlatform()</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App6routesyy5Vapor11ApplicationCKF">routes(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App11titleAndTab33_94832BE10C5E3B640E9445FB32A24984LL3forSS_AA12TrunkContextV0D0Ot5Vapor7RequestC_tF">titleAndTab(for:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App19usernameValidations33_73DBEC6ED8C61CC2B437AD3D0947A196LL0B0SaySSGSS_tF">usernameValidations(username:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Functions.html#/s:3App19verifyConfigurationyy5Vapor11ApplicationCKF">verifyConfiguration(_:)</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Other%20Structs.html">Other Structures</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/AddJocomojiTag.html">AddJocomojiTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/AddWordFormStruct.html">AddWordFormStruct</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/AlertmanagerAlert.html">AlertmanagerAlert</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/AlertmanagerWebhookPayload.html">AlertmanagerWebhookPayload</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/Angle.html">Angle</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/AvatarTag.html">AvatarTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/BMPFormatter.html">BMPFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/Color.html">Color</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateAlertWordPivotSchema.html">CreateAlertWordPivotSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateAlertWordSchema.html">CreateAlertWordSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateAnnouncementSchema.html">CreateAnnouncementSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateBoardgameFavoriteSchema.html">CreateBoardgameFavoriteSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateBoardgameSchema.html">CreateBoardgameSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateCategorySchema.html">CreateCategorySchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateDailyThemeSchema.html">CreateDailyThemeSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateEventFavoriteSchema.html">CreateEventFavoriteSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateEventSchema.html">CreateEventSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateFezParticipantSchema.html">CreateFezParticipantSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateFezPostFormContent.html">CreateFezPostFormContent</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateFezPostSchema.html">CreateFezPostSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateForumEditSchema.html">CreateForumEditSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateForumPostEditSchema.html">CreateForumPostEditSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateForumPostSchema.html">CreateForumPostSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateForumReadersSchema.html">CreateForumReadersSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateForumSchema.html">CreateForumSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateFriendlyFezEditSchema.html">CreateFriendlyFezEditSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateFriendlyFezSchema.html">CreateFriendlyFezSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateKaraokeFavoriteSchema.html">CreateKaraokeFavoriteSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateKaraokePlayedSongSchema.html">CreateKaraokePlayedSongSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateKaraokeSongSchema.html">CreateKaraokeSongSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateModeratorActionSchema.html">CreateModeratorActionSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateMuteWordSchema.html">CreateMuteWordSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreatePostLikesSchema.html">CreatePostLikesSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateProfileEditSchema.html">CreateProfileEditSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateRegistrationCodeSchema.html">CreateRegistrationCodeSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateReportSchema.html">CreateReportSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateTokenSchema.html">CreateTokenSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateTwarrtEditSchema.html">CreateTwarrtEditSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateTwarrtLikesSchema.html">CreateTwarrtLikesSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateTwarrtSchema.html">CreateTwarrtSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateUserNoteSchema.html">CreateUserNoteSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateUserSchema.html">CreateUserSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CruiseDayIndexTag.html">CruiseDayIndexTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/DailyThemeData.html">DailyThemeData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/DailyThemeUploadData.html">DailyThemeUploadData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/DisabledAPISectionMiddleware.html">DisabledAPISectionMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/DisabledFeature.html">DisabledFeature</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/DisabledFeaturesGroup.html">DisabledFeaturesGroup</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/DisabledSiteSectionMiddleware.html">DisabledSiteSectionMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ErrorResponse.html">ErrorResponse</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/EventTimeTag.html">EventTimeTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/EventUpdateDifferenceData.html">EventUpdateDifferenceData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/FezCreateUpdatePageContext.html">FezCreateUpdatePageContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/FezEditLogData.html">FezEditLogData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/FezListData.html">FezListData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/FezModerationData.html">FezModerationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/FezPostModerationData.html">FezPostModerationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/FezTimeTag.html">FezTimeTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/FormatPostTextTag.html">FormatPostTextTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/FormatPostTextTag/Usage.html">– Usage</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ForumEditLogData.html">ForumEditLogData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ForumModerationData.html">ForumModerationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ForumPageContext.html">ForumPageContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ForumPostModerationData.html">ForumPostModerationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ForumPostSearchQueryOptions.html">ForumPostSearchQueryOptions</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ForumSearchData.html">ForumSearchData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ForumsSearchPageContext.html">ForumsSearchPageContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ForumsSearchPageContext/SearchType.html">– SearchType</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/GIFFormatter.html">GIFFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/GameExpansionsContext.html">GameExpansionsContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/GameListContext.html">GameListContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/GameRatingTag.html">GameRatingTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/JPGFormatter.html">JPGFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/JsonGamesListGame.html">JsonGamesListGame</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/KaraokePerformedSongsData.html">KaraokePerformedSongsData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/KaraokeSongData.html">KaraokeSongData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/KaraokeSongResponseData.html">KaraokeSongResponseData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/KeywordData.html">KeywordData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/LocalTimeTag.html">LocalTimeTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/MessagePostContext.html">MessagePostContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/MessagePostContext/InitType.html">– InitType</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/MessagePostFormContent.html">MessagePostFormContent</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ModeratorActionLogData.html">ModeratorActionLogData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/NotificationsMiddleware.html">NotificationsMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/PNGFormatter.html">PNGFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/Paginator.html">Paginator</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/PaginatorContext.html">PaginatorContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/PaginatorContext/PageInfo.html">– PageInfo</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/Point.html">Point</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/PostEditLogData.html">PostEditLogData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/PostSearchData.html">PostSearchData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/PostSearchPageContext.html">PostSearchPageContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/PostSearchPageContext/SearchType.html">– SearchType</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ProfileEditLogData.html">ProfileEditLogData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ProfileFormContent.html">ProfileFormContent</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ProfileModerationData.html">ProfileModerationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/PublicProfileContext.html">PublicProfileContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/Rectangle.html">Rectangle</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/RegistrationCodeStatsData.html">RegistrationCodeStatsData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/RegistrationCodeUserData.html">RegistrationCodeUserData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/RelativeTimeTag.html">RelativeTimeTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ReportContentGroup.html">ReportContentGroup</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ReportModerationData.html">ReportModerationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ReportPageContext.html">ReportPageContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/RequireAdminMiddleware.html">RequireAdminMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/RequireModeratorMiddleware.html">RequireModeratorMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/RequireTHOMiddleware.html">RequireTHOMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/RequireTwitarrTeamMiddleware.html">RequireTwitarrTeamMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/RequireVerifiedMiddleware.html">RequireVerifiedMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ScheduleMungerCommand.html">ScheduleMungerCommand</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ScheduleMungerCommand/Signature.html">– Signature</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SettingsAdminData.html">SettingsAdminData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SettingsAppFeaturePair.html">SettingsAppFeaturePair</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SettingsUpdateData.html">SettingsUpdateData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteAdminController.html">SiteAdminController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteAdminController/AnnouncementViewData.html">– AnnouncementViewData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteAdminController/ManageUserLevelViewContext.html">– ManageUserLevelViewContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteBoardgameController.html">SiteBoardgameController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteController.html">SiteController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteEventsController.html">SiteEventsController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteFileController.html">SiteFileController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteForumController.html">SiteForumController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteFriendlyFezController.html">SiteFriendlyFezController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteFriendlyFezController/FezTab.html">– FezTab</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteKaraokeController.html">SiteKaraokeController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteLoginController.html">SiteLoginController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteLoginController/LoginPageContext.html">– LoginPageContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteLoginController/UserCreatedContext.html">– UserCreatedContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteModController.html">SiteModController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteRequireAdminMiddleware.html">SiteRequireAdminMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteRequireModeratorMiddleware.html">SiteRequireModeratorMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteRequireTHOMiddleware.html">SiteRequireTHOMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteRequireTwitarrTeamMiddleware.html">SiteRequireTwitarrTeamMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteRequireVerifiedMiddleware.html">SiteRequireVerifiedMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteSeamailController.html">SiteSeamailController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteTwitarrController.html">SiteTwitarrController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SiteUserController.html">SiteUserController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/Size.html">Size</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SocketFezMemberChangeData.html">SocketFezMemberChangeData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SocketFezPostData.html">SocketFezPostData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SocketNotificationData.html">SocketNotificationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/SocketNotificationData/NotificationTypeData.html">– NotificationTypeData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/StaticTimeTag.html">StaticTimeTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TGAFormatter.html">TGAFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TIFFFormatter.html">TIFFFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TrunkContext.html">TrunkContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TrunkContext/Tab.html">– Tab</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TwarrtModerationData.html">TwarrtModerationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TwarrtQueryOptions.html">TwarrtQueryOptions</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TweetEditPageContext.html">TweetEditPageContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TweetPageContext.html">TweetPageContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TweetPageContext/FilterType.html">– FilterType</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserAuthorizedToCreateKaraokeLogs.html">UserAuthorizedToCreateKaraokeLogs</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserBylineTag.html">UserBylineTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserCacheData.html">UserCacheData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserCacheData/BasicAuth.html">– BasicAuth</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserCacheData/TokenAuthenticator.html">– TokenAuthenticator</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserCacheData/SessionAuth.html">– SessionAuth</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserModerationData.html">UserModerationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserNotificationAlertwordData.html">UserNotificationAlertwordData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserNotificationData.html">UserNotificationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserNotificationData/ModeratorNotificationData.html">– ModeratorNotificationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserProfileUploadData.html">UserProfileUploadData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserSocket.html">UserSocket</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ValidatingKeyedContainer.html">ValidatingKeyedContainer</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ValidationError.html">ValidationError</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ValidationFailure.html">ValidationFailure</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/WBMPFormatter.html">WBMPFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/WEBPFormatter.html">WEBPFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/Xoshiro.html">Xoshiro</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Structs.html#/s:3App3zzzV">zzz</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Other%20Typealiases.html">Other Type Aliases</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Typealiases.html#/s:3App14LibGdFormatter33_2E4405C112A566F0233F43EEAF77E5B8LLa">LibGdFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Other%20Typealiases.html#/s:3App28LibGdParametrizableFormatter33_2E4405C112A566F0233F43EEAF77E5B8LLa">LibGdParametrizableFormatter</a>
               </li>
             </ul>
           </li>
@@ -447,13 +1292,18 @@
             <h1>ClientController</h1>
               <div class="declaration">
                 <div class="language">
-                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">ClientController</span> <span class="p">:</span> <span class="kt">RouteCollection</span></code></pre>
+                  
+                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">ClientController</span> <span class="p">:</span> <span class="kt"><a href="../Protocols/APIRouteCollection.html">APIRouteCollection</a></span></code></pre>
+<pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">ClientController</span><span class="p">:</span> <span class="kt"><a href="../Protocols/FezProtocol.html">FezProtocol</a></span></code></pre>
 
                 </div>
               </div>
             <p>The collection of <code>/api/v3/client/*</code> route endpoints and handler functions that provide
 bulk retrieval services for registered API clients.</p>
 
+              <div class="slightly-smaller">
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L11-L192">Show on GitHub</a>
+              </div>
           </div>
         </section>
 
@@ -465,7 +1315,7 @@ bulk retrieval services for registered API clients.</p>
                 <a name="//apple_ref/swift/Section/RouteCollection Conformance" class="dashAnchor"></a>
                 <div class="section-name-container">
                   <a class="section-name-link" href="#/RouteCollection%20Conformance"></a>
-                  <h3 class="section-name"><p>RouteCollection Conformance</p>
+                  <h3 class="section-name"><span>RouteCollection Conformance</span>
 </h3>
                 </div>
               </div>
@@ -473,9 +1323,9 @@ bulk retrieval services for registered API clients.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App16ClientControllerV4boot6routery5Vapor6Router_p_tKF"></a>
-                    <a name="//apple_ref/swift/Method/boot(router:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App16ClientControllerV4boot6routery5Vapor6Router_p_tKF">boot(router:)</a>
+                    <a name="/s:3App16ClientControllerV14registerRoutesyy5Vapor11ApplicationCKF"></a>
+                    <a name="//apple_ref/swift/Method/registerRoutes(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App16ClientControllerV14registerRoutesyy5Vapor11ApplicationCKF">registerRoutes(_:<wbr>)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -490,12 +1340,12 @@ bulk retrieval services for registered API clients.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">boot</span><span class="p">(</span><span class="nv">router</span><span class="p">:</span> <span class="kt">Router</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">registerRoutes</span><span class="p">(</span><span class="n">_</span> <span class="nv">app</span><span class="p">:</span> <span class="kt">Application</span><span class="p">)</span> <span class="k">throws</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L14-L36">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L16-L30">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -504,11 +1354,11 @@ bulk retrieval services for registered API clients.</p>
             </div>
             <div class="task-group">
               <div class="task-name-container">
-                <a name="/tokenAuthGroup%20Handlers%20(logged%20in)"></a>
+                <a name="/tokenAuthGroup%20Handlers%20%28logged%20in%29"></a>
                 <a name="//apple_ref/swift/Section/tokenAuthGroup Handlers (logged in)" class="dashAnchor"></a>
                 <div class="section-name-container">
-                  <a class="section-name-link" href="#/tokenAuthGroup%20Handlers%20(logged%20in)"></a>
-                  <h3 class="section-name"><p>tokenAuthGroup Handlers (logged in)</p>
+                  <a class="section-name-link" href="#/tokenAuthGroup%20Handlers%20%28logged%20in%29"></a>
+                  <h3 class="section-name"><span>tokenAuthGroup Handlers (logged in)</span>
 </h3>
                 </div>
               </div>
@@ -516,85 +1366,13 @@ bulk retrieval services for registered API clients.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App16ClientControllerV18userHeadersHandlery3NIO15EventLoopFutureCySayAA10UserHeaderVGG5Vapor7RequestCKF"></a>
-                    <a name="//apple_ref/swift/Method/userHeadersHandler(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App16ClientControllerV18userHeadersHandlery3NIO15EventLoopFutureCySayAA10UserHeaderVGG5Vapor7RequestCKF">userHeadersHandler(_:)</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p><code>GET /api/v3/client/user/headers/since/DATE</code></p>
-
-<p>Retrieves the <code><a href="../Structs/UserHeader.html">UserHeader</a></code> of all users with a <code>.profileUpdatedAt</code> timestamp
-later than the specified date. The <code>DATE</code> parameter is a string, and may be provided
-in either of two formats:</p>
-
-<ul>
-<li>a string literal <code>Double</code> (e.g. &ldquo;1574364935&rdquo; or &ldquo;1574364935.88991&rdquo;)</li>
-<li>an ISO 8601 <code>yyyy-MM-dd&#39;T&#39;HH:mm:ssZ</code> string (e.g. &ldquo;2019-11-21T05:31:28Z&rdquo;)</li>
-</ul>
-
-<p>The second format is precisely what is returned in <code>swiftarr</code> JSON responses, while
-the numeric form makes for a prettier URL.</p>
-<div class="aside aside-requires">
-    <p class="aside-title">Requires</p>
-    <code>x-swiftarr-user</code> header in the request.
-
-</div><div class="aside aside-throws">
-    <p class="aside-title">Throws</p>
-    400 error if no valid date string provided. 401 error if the required header
-is missing or invalid. 403 error if user is not a registered client.
-
-</div>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">userHeadersHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="p">[</span><span class="kt"><a href="../Structs/UserHeader.html">UserHeader</a></span><span class="p">]</span><span class="o">&gt;</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div>
-                        <h4>Parameters</h4>
-                        <table class="graybox">
-                          <tbody>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>req</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The incoming <code>Request</code>, provided automatically.</p>
-                                </div>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                      <div>
-                        <h4>Return Value</h4>
-                        <p><code>[UserHeader]</code> array of all updated users.</p>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L69-L112">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App16ClientControllerV17userSearchHandlery3NIO15EventLoopFutureCySayAA04UserE0VGG5Vapor7RequestCKF"></a>
+                    <a name="/s:3App16ClientControllerV17userSearchHandlerySayAA04UserE0VG5Vapor7RequestCYaKF"></a>
                     <a name="//apple_ref/swift/Method/userSearchHandler(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App16ClientControllerV17userSearchHandlery3NIO15EventLoopFutureCySayAA04UserE0VGG5Vapor7RequestCKF">userSearchHandler(_:)</a>
+                    <a class="token" href="#/s:3App16ClientControllerV17userSearchHandlerySayAA04UserE0VG5Vapor7RequestCYaKF">userSearchHandler(_:<wbr>)</a>
                     </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
                   </div>
                   <div class="height-container">
                     <div class="pointer-container"></div>
@@ -603,7 +1381,7 @@ is missing or invalid. 403 error if user is not a registered client.
                       <div class="abstract">
                         <p><code>GET /api/v3/client/usersearch</code></p>
 
-<p>Retrieves all <code><a href="../Classes/UserProfile.html#/s:3App11UserProfileC10userSearchSSvp">UserProfile.userSearch</a></code> values, returning an array of precomposed
+<p>Retrieves all <code>UserProfile.userSearch</code> values, returning an array of precomposed
 <code>.userSearch</code> strings in <code><a href="../Structs/UserSearch.html">UserSearch</a></code> format. The intended use for this data
 is to efficiently isolate a particular user in an auto-complete type scenario, using
 <strong>all</strong> of the <code>.displayName</code>, <code>.username</code> and <code>.realName</code> profile fields.</p>
@@ -623,36 +1401,17 @@ is missing or invalid. 403 error if user is not a registered client.
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">userSearchHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="p">[</span><span class="kt"><a href="../Structs/UserSearch.html">UserSearch</a></span><span class="p">]</span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">userSearchHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt"><a href="../Structs/UserSearch.html">UserSearch</a></span><span class="p">]</span></code></pre>
 
                         </div>
                       </div>
                       <div>
-                        <h4>Parameters</h4>
-                        <table class="graybox">
-                          <tbody>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>req</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The incoming <code>Request</code>, provided automatically.</p>
-                                </div>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                      <div>
                         <h4>Return Value</h4>
-                        <p><code>[UserSearch]</code> containing the ID and <code>.userSearch</code> string values
+                        <p>An array of  <a href="doc:UserSearch">doc:UserSearch</a> containing the ID and <code>.userSearch</code> string values
 of all users, sorted by username.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L127-L165">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L48-L72">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -660,10 +1419,13 @@ of all users, sorted by username.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App16ClientControllerV18userUpdatesHandlery3NIO15EventLoopFutureCySayAA8UserInfoVGG5Vapor7RequestCKF"></a>
+                    <a name="/s:3App16ClientControllerV18userUpdatesHandlerySayAA10UserHeaderVG5Vapor7RequestCYaKF"></a>
                     <a name="//apple_ref/swift/Method/userUpdatesHandler(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App16ClientControllerV18userUpdatesHandlery3NIO15EventLoopFutureCySayAA8UserInfoVGG5Vapor7RequestCKF">userUpdatesHandler(_:)</a>
+                    <a class="token" href="#/s:3App16ClientControllerV18userUpdatesHandlerySayAA10UserHeaderVG5Vapor7RequestCYaKF">userUpdatesHandler(_:<wbr>)</a>
                     </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
                   </div>
                   <div class="height-container">
                     <div class="pointer-container"></div>
@@ -672,7 +1434,7 @@ of all users, sorted by username.</p>
                       <div class="abstract">
                         <p><code>GET /api/v3/client/user/updates/since/DATE</code></p>
 
-<p>Retrieves the <code><a href="../Structs/UserInfo.html">UserInfo</a></code> of all users with a <code>.profileUpdatedAt</code> timestamp later
+<p>Retrieves the <code><a href="../Structs/UserHeader.html">UserHeader</a></code> of all users with a <code>.profileUpdatedAt</code> timestamp later
 than the specified date. The <code>DATE</code> parameter is a string, and may be provided in
 either of two formats:</p>
 
@@ -699,7 +1461,7 @@ is missing or invalid. 403 error if user is not a registered client.
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">userUpdatesHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Future</span><span class="o">&lt;</span><span class="p">[</span><span class="kt"><a href="../Structs/UserInfo.html">UserInfo</a></span><span class="p">]</span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">userUpdatesHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt"><a href="../Structs/UserHeader.html">UserHeader</a></span><span class="p">]</span></code></pre>
 
                         </div>
                       </div>
@@ -710,12 +1472,12 @@ is missing or invalid. 403 error if user is not a registered client.
                             <tr>
                               <td>
                                 <code>
-                                <em>req</em>
+                                <em>Date</em>
                                 </code>
                               </td>
                               <td>
                                 <div>
-                                  <p>The incoming <code>Request</code>, provided automatically.</p>
+                                  <p>in URL path. See above for formats.</p>
                                 </div>
                               </td>
                             </tr>
@@ -724,10 +1486,112 @@ is missing or invalid. 403 error if user is not a registered client.
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><code>[UserInfo]</code> containing all updated users.</p>
+                        <p>An array of <a href="doc:UserHeader">doc:UserHeader</a> containing all updated users.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L184-L226">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L91-L116">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App16ClientControllerV23prometheusMetricsSourcey7NIOCore15EventLoopFutureCySSG5Vapor7RequestCF"></a>
+                    <a name="//apple_ref/swift/Method/prometheusMetricsSource(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App16ClientControllerV23prometheusMetricsSourcey7NIOCore15EventLoopFutureCySSG5Vapor7RequestCF">prometheusMetricsSource(_:<wbr>)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>GET /api/v3/client/metrics</code></p>
+
+<p>For use with <a href="https://prometheus.io">Prometheus</a>, a server metrics package. When a Prometheus server process
+is connected, it will poll this endpoint for metrics updates. You can then view Swiftarr metrics data with charts and graphs in a web page served
+by Prometheus.</p>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    403 error if user is not a registered client.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">prometheusMetricsSource</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">EventLoopFuture</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>Data about what requests are being called, how long they take to complete, how the databases are doing, what the server&rsquo;s CPU utilization is,
+plus a bunch of other metrics data. All the data is in some opaquish Prometheus format.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L127-L137">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App16ClientControllerV22prometheusAlertHandlery5Vapor8ResponseCAE7RequestCYaKF"></a>
+                    <a name="//apple_ref/swift/Method/prometheusAlertHandler(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App16ClientControllerV22prometheusAlertHandlery5Vapor8ResponseCAE7RequestCYaKF">prometheusAlertHandler(_:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>POST /api/v3/client/alert</code></p>
+
+<p>For use with the <a href="https://prometheus.io/docs/alerting/latest/alertmanager/">Prometheus Alertmanager</a>. A webhook can
+be configured to POST a payload containing information about actively firing/cleared alerts. A situation arose on JoCo 2022
+in which the server ran out of disk space. We have Prometheus metrics for this but no way to tell us about it without
+checking the dashboards manually. This endpoint translates that payload into a Seamail that can be sent to an arbitrary
+user (usually TwitarrTeam).</p>
+
+<p>It is expected that the Prometheus alerts are configured with two custom annotations:</p>
+
+<ul>
+<li>participants: A comma-seperated list of usernames to send the seamail to.</li>
+<li>summary: A string containing a message body to send in the seamail.</li>
+</ul>
+
+<p>This should be used very judiciously and only for actionable alerts! On-call sucks in the real world and I don&rsquo;t want
+people to get spammed with messages while on vacation.</p>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    403 error if user is not a registered client.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">prometheusAlertHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Response</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>201 created.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L156-L191">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -740,9 +1604,8 @@ is missing or invalid. 403 error if user is not a registered client.
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-12-24)</p>
-      <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.13.0</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
+      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-04-17)</p>
+      <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.2</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
     </section>
   </body>
-</div>
 </html>
