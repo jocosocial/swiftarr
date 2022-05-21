@@ -1,5 +1,6 @@
 name: PublishDocumentation
 on:
+  workflow_dispatch:
   push:
 jobs:
   publish:
