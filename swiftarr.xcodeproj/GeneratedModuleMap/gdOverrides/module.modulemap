@@ -1,4 +1,0 @@
-module gdOverrides {
-	umbrella "/Users/cfry/Code/swiftarr/Sources/gdOverrides"
-	export *
-}
