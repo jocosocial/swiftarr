@@ -463,12 +463,6 @@
                 <a class="nav-group-task-link" href="../Extensions.html#/s:3App9Formatter33_2E4405C112A566F0233F43EEAF77E5B8LLa">Formatter</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Extensions/Foundation.html">Foundation</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Extensions/Foundation/Bundle.html">– Bundle</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Extensions/ISO8601DateFormatter.html">ISO8601DateFormatter</a>
               </li>
               <li class="nav-group-task">
@@ -692,6 +686,14 @@
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Other%20Global%20Variables.html#/s:3App23usernameSeparatorStringSSvp">usernameSeparatorString</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Other%20Extensions.html">Other Extensions</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Foundation.Bundle.html">Foundation.Bundle</a>
               </li>
             </ul>
           </li>
@@ -1070,6 +1072,9 @@
                 <a class="nav-group-task-link" href="../Structs/ReportPageContext.html">ReportPageContext</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ReportsContext.html">ReportsContext</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/RequireAdminMiddleware.html">RequireAdminMiddleware</a>
               </li>
               <li class="nav-group-task">
@@ -1244,6 +1249,9 @@
                 <a class="nav-group-task-link" href="../Structs/UserNotificationData/ModeratorNotificationData.html">– ModeratorNotificationData</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserProfileEditContext.html">UserProfileEditContext</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserProfileUploadData.html">UserProfileUploadData</a>
               </li>
               <li class="nav-group-task">
@@ -1301,7 +1309,7 @@
 to FriendlyFez/LFG barrels.</p>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L9-L778">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L9-L805">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1427,7 +1435,7 @@ to FriendlyFez/LFG barrels.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">openHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/FezListData.html">FezListData</a></span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">openHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/FezListData.html">FezListData</a></span></code></pre>
 
                         </div>
                       </div>
@@ -1489,7 +1497,7 @@ to FriendlyFez/LFG barrels.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">joinedHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/FezListData.html">FezListData</a></span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">joinedHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/FezListData.html">FezListData</a></span></code></pre>
 
                         </div>
                       </div>
@@ -1549,7 +1557,7 @@ longer visible to the non-owning party.
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">ownerHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/FezListData.html">FezListData</a></span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">ownerHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/FezListData.html">FezListData</a></span></code></pre>
 
                         </div>
                       </div>
@@ -1579,10 +1587,10 @@ longer visible to the non-owning party.
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p><code>GET /api/v3/fez/ID</code></p>
+                        <p><code>GET /api/v3/fez/:fez_ID</code></p>
 
 <p>Retrieve information about the specified FriendlyFez. For users that aren&rsquo;t members of the fez, this info will be the same as 
-the info returned for <code>openHandler</code>. For users that have joined the fez the <code><a href="../Structs/FezData/MembersOnlyData.html">FezData.MembersOnlyData</a></code> will be populated, as will
+the info returned for <code>GET /api/v3/fez/open</code>. For users that have joined the fez the <code><a href="../Structs/FezData/MembersOnlyData.html">FezData.MembersOnlyData</a></code> will be populated, as will
 the <code><a href="../Classes/FezPost.html">FezPost</a></code>s. </p>
 
 <p><strong>Query Parameters:</strong></p>
@@ -1623,7 +1631,7 @@ should be reported as a likely bug, please and thank you.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">fezHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/FezData.html">FezData</a></span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">fezHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/FezData.html">FezData</a></span></code></pre>
 
                         </div>
                       </div>
@@ -1651,7 +1659,7 @@ should be reported as a likely bug, please and thank you.</p>
                         <p><a href="doc:FezData">doc:FezData</a> with fez info and all discussion posts.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L229-L245">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L229-L244">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1709,7 +1717,7 @@ reported as a likely bug, please and thank you.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">joinHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Response</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">joinHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Response</span></code></pre>
 
                         </div>
                       </div>
@@ -1737,7 +1745,7 @@ reported as a likely bug, please and thank you.</p>
                         <p><a href="doc:FezData">doc:FezData</a> containing the updated fez data.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L264-L288">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L263-L287">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1775,7 +1783,7 @@ reported as a likely bug, please and thank you.
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">unjoinHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/FezData.html">FezData</a></span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">unjoinHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/FezData.html">FezData</a></span></code></pre>
 
                         </div>
                       </div>
@@ -1803,7 +1811,7 @@ reported as a likely bug, please and thank you.
                         <p><a href="doc:FezData">doc:FezData</a> containing the updated fez data.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L300-L312">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L299-L311">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1854,7 +1862,7 @@ as a likely bug, please and thank you.
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">postAddHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/FezPostData.html">FezPostData</a></span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">postAddHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/FezPostData.html">FezPostData</a></span></code></pre>
 
                         </div>
                       </div>
@@ -1894,7 +1902,7 @@ as a likely bug, please and thank you.
                         <p><a href="doc:FezPostData">doc:FezPostData</a> containing the user&rsquo;s new post.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L327-L390">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L326-L389">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1931,7 +1939,7 @@ available. A 5xx response should be reported as a likely bug, please and thank y
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">postDeleteHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">HTTPStatus</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">postDeleteHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">HTTPStatus</span></code></pre>
 
                         </div>
                       </div>
@@ -1959,7 +1967,7 @@ available. A 5xx response should be reported as a likely bug, please and thank y
                         <p>HTTP 204 No Content</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L401-L442">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L400-L441">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2004,7 +2012,7 @@ send an empty string in the <code>.message</code> field.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">reportFezPostHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">HTTPStatus</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">reportFezPostHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">HTTPStatus</span></code></pre>
 
                         </div>
                       </div>
@@ -2044,7 +2052,7 @@ send an empty string in the <code>.message</code> field.</p>
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L457-L468">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L456-L467">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2107,7 +2115,7 @@ limit: &ldquo;there is no minimum&rdquo;, &ldquo;there is no maximum&rdquo;.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">createHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Response</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">createHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Response</span></code></pre>
 
                         </div>
                       </div>
@@ -2135,7 +2143,7 @@ limit: &ldquo;there is no minimum&rdquo;, &ldquo;there is no maximum&rdquo;.</p>
                         <p>201 Created; <a href="doc:FezData">doc:FezData</a> containing the newly created fez.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L491-L512">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L490-L539">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2176,7 +2184,7 @@ reported as a likely bug, please and thank you.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">cancelHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/FezData.html">FezData</a></span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">cancelHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/FezData.html">FezData</a></span></code></pre>
 
                         </div>
                       </div>
@@ -2204,7 +2212,7 @@ reported as a likely bug, please and thank you.</p>
                         <p><a href="doc:FezData">doc:FezData</a> with the updated fez info.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L525-L536">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L552-L563">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2243,7 +2251,7 @@ The owner of a fez may Cancel the fez, which tells the members the fez was cance
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">fezDeleteHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">HTTPStatus</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">fezDeleteHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">HTTPStatus</span></code></pre>
 
                         </div>
                       </div>
@@ -2271,7 +2279,7 @@ The owner of a fez may Cancel the fez, which tells the members the fez was cance
                         <p>204 No Content on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L549-L561">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L576-L588">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2313,7 +2321,7 @@ A 5xx response should be reported as a likely bug, please and thank you.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">updateHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/FezData.html">FezData</a></span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">updateHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/FezData.html">FezData</a></span></code></pre>
 
                         </div>
                       </div>
@@ -2353,7 +2361,7 @@ A 5xx response should be reported as a likely bug, please and thank you.</p>
                         <p><a href="doc:FezData">doc:FezData</a> containing the updated fez info.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L576-L600">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L603-L627">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2389,7 +2397,7 @@ owner. A 5xx response should be reported as a likely bug, please and thank you.
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">userAddHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/FezData.html">FezData</a></span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">userAddHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/FezData.html">FezData</a></span></code></pre>
 
                         </div>
                       </div>
@@ -2429,7 +2437,7 @@ owner. A 5xx response should be reported as a likely bug, please and thank you.
                         <p><a href="doc:FezData">doc:FezData</a> containing the updated fez info.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L611-L637">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L638-L664">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2465,7 +2473,7 @@ owner. A 5xx response should be reported as a likely bug, please and thank you.
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">userRemoveHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/FezData.html">FezData</a></span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">userRemoveHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/FezData.html">FezData</a></span></code></pre>
 
                         </div>
                       </div>
@@ -2505,7 +2513,7 @@ owner. A 5xx response should be reported as a likely bug, please and thank you.
                         <p><a href="doc:FezData">doc:FezData</a> containing the updated fez info.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L648-L667">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L675-L694">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2543,7 +2551,7 @@ send an empty string in the <code>.message</code> field.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">reportFezHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">HTTPStatus</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">reportFezHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">HTTPStatus</span></code></pre>
 
                         </div>
                       </div>
@@ -2583,7 +2591,7 @@ send an empty string in the <code>.message</code> field.</p>
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L681-L686">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L708-L713">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2640,12 +2648,12 @@ fez a user joins and keep them open continually. Use <code>WS /api/v3/notificati
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">createFezSocket</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="n">_</span> <span class="nv">ws</span><span class="p">:</span> <span class="kt">WebSocket</span><span class="p">)</span> <span class="k">async</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">createFezSocket</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="n">_</span> <span class="nv">ws</span><span class="p">:</span> <span class="kt">WebSocket</span><span class="p">)</span> <span class="n">async</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L704-L721">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L731-L748">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2674,7 +2682,7 @@ fez a user joins and keep them open continually. Use <code>WS /api/v3/notificati
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L724-L758">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L751-L785">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2703,7 +2711,7 @@ fez a user joins and keep them open continually. Use <code>WS /api/v3/notificati
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L761-L777">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L788-L804">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2746,7 +2754,7 @@ fez a user joins and keep them open continually. Use <code>WS /api/v3/notificati
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L791-L822">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L818-L849">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2773,13 +2781,13 @@ fez a user joins and keep them open continually. Use <code>WS /api/v3/notificati
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">buildPostsForFez</span><span class="p">(</span><span class="n">_</span> <span class="nv">fez</span><span class="p">:</span> <span class="kt"><a href="../Classes/FriendlyFez.html">FriendlyFez</a></span><span class="p">,</span> <span class="nv">pivot</span><span class="p">:</span> <span class="kt"><a href="../Classes/FezParticipant.html">FezParticipant</a></span><span class="p">?,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">user</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserCacheData.html">UserCacheData</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">buildPostsForFez</span><span class="p">(</span><span class="n">_</span> <span class="nv">fez</span><span class="p">:</span> <span class="kt"><a href="../Classes/FriendlyFez.html">FriendlyFez</a></span><span class="p">,</span> <span class="nv">pivot</span><span class="p">:</span> <span class="kt"><a href="../Classes/FezParticipant.html">FezParticipant</a></span><span class="p">?,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">user</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserCacheData.html">UserCacheData</a></span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span>
 		<span class="o">-&gt;</span> <span class="p">([</span><span class="kt"><a href="../Structs/FezPostData.html">FezPostData</a></span><span class="p">],</span> <span class="kt"><a href="../Structs/Paginator.html">Paginator</a></span><span class="p">)</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L825-L854">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L852-L881">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2806,12 +2814,12 @@ fez a user joins and keep them open continually. Use <code>WS /api/v3/notificati
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">getUserPivot</span><span class="p">(</span><span class="nv">fez</span><span class="p">:</span> <span class="kt"><a href="../Classes/FriendlyFez.html">FriendlyFez</a></span><span class="p">,</span> <span class="nv">userID</span><span class="p">:</span> <span class="kt">UUID</span><span class="p">,</span> <span class="n">on</span> <span class="nv">db</span><span class="p">:</span> <span class="kt">Database</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Classes/FezParticipant.html">FezParticipant</a></span><span class="p">?</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">getUserPivot</span><span class="p">(</span><span class="nv">fez</span><span class="p">:</span> <span class="kt"><a href="../Classes/FriendlyFez.html">FriendlyFez</a></span><span class="p">,</span> <span class="nv">userID</span><span class="p">:</span> <span class="kt">UUID</span><span class="p">,</span> <span class="n">on</span> <span class="nv">db</span><span class="p">:</span> <span class="kt">Database</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Classes/FezParticipant.html">FezParticipant</a></span><span class="p">?</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L856-L858">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L883-L885">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2840,7 +2848,7 @@ fez a user joins and keep them open continually. Use <code>WS /api/v3/notificati
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L860-L862">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L887-L889">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2869,7 +2877,36 @@ fez a user joins and keep them open continually. Use <code>WS /api/v3/notificati
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L867-L885">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L894-L912">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App13FezControllerV16getEffectiveUser4user3req3fezAA0F9CacheDataVAI_5Vapor7RequestCAA08FriendlyB0CtF"></a>
+                    <a name="//apple_ref/swift/Method/getEffectiveUser(user:req:fez:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App13FezControllerV16getEffectiveUser4user3req3fezAA0F9CacheDataVAI_5Vapor7RequestCAA08FriendlyB0CtF">getEffectiveUser(user:<wbr>req:<wbr>fez:<wbr>)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">getEffectiveUser</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserCacheData.html">UserCacheData</a></span><span class="p">,</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">fez</span><span class="p">:</span> <span class="kt"><a href="../Classes/FriendlyFez.html">FriendlyFez</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/UserCacheData.html">UserCacheData</a></span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L917-L933">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2882,7 +2919,7 @@ fez a user joins and keep them open continually. Use <code>WS /api/v3/notificati
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-04-17)</p>
+      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-05-21)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.2</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
     </section>
   </body>

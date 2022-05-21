@@ -463,12 +463,6 @@
                 <a class="nav-group-task-link" href="../Extensions.html#/s:3App9Formatter33_2E4405C112A566F0233F43EEAF77E5B8LLa">Formatter</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Extensions/Foundation.html">Foundation</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Extensions/Foundation/Bundle.html">– Bundle</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Extensions/ISO8601DateFormatter.html">ISO8601DateFormatter</a>
               </li>
               <li class="nav-group-task">
@@ -692,6 +686,14 @@
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Other%20Global%20Variables.html#/s:3App23usernameSeparatorStringSSvp">usernameSeparatorString</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Other%20Extensions.html">Other Extensions</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Foundation.Bundle.html">Foundation.Bundle</a>
               </li>
             </ul>
           </li>
@@ -1070,6 +1072,9 @@
                 <a class="nav-group-task-link" href="../Structs/ReportPageContext.html">ReportPageContext</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ReportsContext.html">ReportsContext</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/RequireAdminMiddleware.html">RequireAdminMiddleware</a>
               </li>
               <li class="nav-group-task">
@@ -1244,6 +1249,9 @@
                 <a class="nav-group-task-link" href="../Structs/UserNotificationData/ModeratorNotificationData.html">– ModeratorNotificationData</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserProfileEditContext.html">UserProfileEditContext</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserProfileUploadData.html">UserProfileUploadData</a>
               </li>
               <li class="nav-group-task">
@@ -1310,7 +1318,7 @@
 <p>See <code>UserController.createHandler(_:data:)</code>, <code>UserController.addHandler(_:data:)</code>.</p>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1263-L1271">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1267-L1275">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1344,7 +1352,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1265">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1269">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1374,7 +1382,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1267">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1271">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1392,8 +1400,8 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Optional verification code. If set, must be a valid code. On success, user will be created with .verified access level, consuming this code.
-See <code>/api/v3/user/verify</code></p>
+                        <p>Verification code, emailed to all cruisegoers by THO before embarkation. On success, user will be created with .verified access level, consuming this code.
+Required for creating &lsquo;parent&rsquo; accounts; must be nil when used to create a sub-account with <code>POST /api/v3/user/add</code>.</p>
 
                       </div>
                       <div class="declaration">
@@ -1405,7 +1413,7 @@ See <code>/api/v3/user/verify</code></p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1270">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1274">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1434,7 +1442,7 @@ See <code>/api/v3/user/verify</code></p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1274-L1288">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1278-L1292">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1447,7 +1455,7 @@ See <code>/api/v3/user/verify</code></p>
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-04-17)</p>
+      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-05-21)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.2</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
     </section>
   </body>

@@ -463,12 +463,6 @@
                 <a class="nav-group-task-link" href="../Extensions.html#/s:3App9Formatter33_2E4405C112A566F0233F43EEAF77E5B8LLa">Formatter</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Extensions/Foundation.html">Foundation</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Extensions/Foundation/Bundle.html">– Bundle</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Extensions/ISO8601DateFormatter.html">ISO8601DateFormatter</a>
               </li>
               <li class="nav-group-task">
@@ -692,6 +686,14 @@
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Other%20Global%20Variables.html#/s:3App23usernameSeparatorStringSSvp">usernameSeparatorString</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Other%20Extensions.html">Other Extensions</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Extensions/Foundation.Bundle.html">Foundation.Bundle</a>
               </li>
             </ul>
           </li>
@@ -1070,6 +1072,9 @@
                 <a class="nav-group-task-link" href="../Structs/ReportPageContext.html">ReportPageContext</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ReportsContext.html">ReportsContext</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/RequireAdminMiddleware.html">RequireAdminMiddleware</a>
               </li>
               <li class="nav-group-task">
@@ -1244,6 +1249,9 @@
                 <a class="nav-group-task-link" href="../Structs/UserNotificationData/ModeratorNotificationData.html">– ModeratorNotificationData</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UserProfileEditContext.html">UserProfileEditContext</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserProfileUploadData.html">UserProfileUploadData</a>
               </li>
               <li class="nav-group-task">
@@ -1301,7 +1309,7 @@
 to the twit-arr stream.</p>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L103-L623">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L135-L661">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1344,7 +1352,7 @@ to the twit-arr stream.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L107-L133">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L139-L165">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1392,7 +1400,7 @@ to the twit-arr stream.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">twarrtHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/TwarrtDetailData.html">TwarrtDetailData</a></span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">twarrtHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/TwarrtDetailData.html">TwarrtDetailData</a></span></code></pre>
 
                         </div>
                       </div>
@@ -1420,7 +1428,7 @@ to the twit-arr stream.</p>
                         <p><a href="doc:TwarrtDetailData">doc:TwarrtDetailData</a> containing the specified twarrt.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L148-L187">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L180-L219">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1460,6 +1468,7 @@ the result set will match all provided filters.</p>
 <li><code>?bookmarked=true</code> - Only return twarrts the user has bookmarked.</li>
 <li><code>?replyGroup=ID</code> - Only return twarrts in the given replyGroup. The twarrt whose twarrtID == ID is always considered to be in the reply group,
 even if there are no replies to it.</li>
+<li><code>?hideReplies=true</code> - Filter out twarrts that are replies to other twarrts. Will still return the twarrt that starts a replyGroup. Ignored if <code>replyGroup</code> option is used.</li>
 <li><code>?likeType=[like, laugh, love, all]</code> - Only return twarrts the user has reacted to.</li>
 </ul>
 
@@ -1519,7 +1528,7 @@ involves users or twarrts the user has previously interacted with (<code>inBarre
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">twarrtsHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt"><a href="../Structs/TwarrtData.html">TwarrtData</a></span><span class="p">]</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">twarrtsHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt"><a href="../Structs/TwarrtData.html">TwarrtData</a></span><span class="p">]</span></code></pre>
 
                         </div>
                       </div>
@@ -1528,7 +1537,7 @@ involves users or twarrts the user has previously interacted with (<code>inBarre
                         <p>An array of <a href="doc:TwarrtData">doc:TwarrtData</a> containing the requested twarrts.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L248-L365">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L281-L403">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1563,7 +1572,7 @@ involves users or twarrts the user has previously interacted with (<code>inBarre
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">bookmarkAddHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">HTTPStatus</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">bookmarkAddHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">HTTPStatus</span></code></pre>
 
                         </div>
                       </div>
@@ -1591,7 +1600,7 @@ involves users or twarrts the user has previously interacted with (<code>inBarre
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L374-L383">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L412-L421">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1626,7 +1635,7 @@ involves users or twarrts the user has previously interacted with (<code>inBarre
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">bookmarkRemoveHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">HTTPStatus</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">bookmarkRemoveHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">HTTPStatus</span></code></pre>
 
                         </div>
                       </div>
@@ -1654,7 +1663,7 @@ involves users or twarrts the user has previously interacted with (<code>inBarre
                         <p>204 NoContent on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L392-L403">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L430-L441">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1700,7 +1709,7 @@ they&rsquo;re directly replying to. If B is created as a reply to A, and C is cr
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">replyHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Response</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">replyHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Response</span></code></pre>
 
                         </div>
                       </div>
@@ -1740,7 +1749,7 @@ they&rsquo;re directly replying to. If B is created as a reply to A, and C is cr
                         <p>A <a href="doc:TwarrtData">doc:TwarrtData</a> containing the twarrt&rsquo;s contents and metadata. HTTP 201 status if successful.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L421-L448">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L459-L486">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1770,7 +1779,7 @@ they&rsquo;re directly replying to. If B is created as a reply to A, and C is cr
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">twarrtCreateHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Response</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">twarrtCreateHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Response</span></code></pre>
 
                         </div>
                       </div>
@@ -1798,7 +1807,7 @@ they&rsquo;re directly replying to. If B is created as a reply to A, and C is cr
                         <p><a href="doc:TwarrtData">doc:TwarrtData</a> containing the twarrt&rsquo;s contents and metadata. HTTP 201 status if successful.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L456-L473">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L494-L511">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1834,7 +1843,7 @@ they&rsquo;re directly replying to. If B is created as a reply to A, and C is cr
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">twarrtDeleteHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">HTTPStatus</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">twarrtDeleteHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">HTTPStatus</span></code></pre>
 
                         </div>
                       </div>
@@ -1862,7 +1871,7 @@ they&rsquo;re directly replying to. If B is created as a reply to A, and C is cr
                         <p>204 No Content on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L483-L491">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L521-L529">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1904,7 +1913,7 @@ sent an empty string in the <code>.message</code> field.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">twarrtReportHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">HTTPStatus</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">twarrtReportHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">HTTPStatus</span></code></pre>
 
                         </div>
                       </div>
@@ -1944,7 +1953,7 @@ sent an empty string in the <code>.message</code> field.</p>
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L506-L511">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L544-L549">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1979,7 +1988,7 @@ sent an empty string in the <code>.message</code> field.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">twarrtLaughHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/TwarrtData.html">TwarrtData</a></span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">twarrtLaughHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/TwarrtData.html">TwarrtData</a></span></code></pre>
 
                         </div>
                       </div>
@@ -2007,7 +2016,7 @@ sent an empty string in the <code>.message</code> field.</p>
                         <p><a href="doc:TwarrtData">doc:TwarrtData</a> containing the updated like info.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L520-L522">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L558-L560">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2042,7 +2051,7 @@ sent an empty string in the <code>.message</code> field.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">twarrtLikeHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/TwarrtData.html">TwarrtData</a></span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">twarrtLikeHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/TwarrtData.html">TwarrtData</a></span></code></pre>
 
                         </div>
                       </div>
@@ -2070,7 +2079,7 @@ sent an empty string in the <code>.message</code> field.</p>
                         <p><a href="doc:TwarrtData">doc:TwarrtData</a> containing the updated like info.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L531-L533">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L569-L571">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2105,7 +2114,7 @@ sent an empty string in the <code>.message</code> field.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">twarrtLoveHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/TwarrtData.html">TwarrtData</a></span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">twarrtLoveHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/TwarrtData.html">TwarrtData</a></span></code></pre>
 
                         </div>
                       </div>
@@ -2133,7 +2142,7 @@ sent an empty string in the <code>.message</code> field.</p>
                         <p><a href="doc:TwarrtData">doc:TwarrtData</a> containing the updated like info.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L542-L544">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L580-L582">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2167,7 +2176,7 @@ sent an empty string in the <code>.message</code> field.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">twarrtReactHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">likeType</span><span class="p">:</span> <span class="kt"><a href="../Enums/LikeType.html">LikeType</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/TwarrtData.html">TwarrtData</a></span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">twarrtReactHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">likeType</span><span class="p">:</span> <span class="kt"><a href="../Enums/LikeType.html">LikeType</a></span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/TwarrtData.html">TwarrtData</a></span></code></pre>
 
                         </div>
                       </div>
@@ -2207,7 +2216,7 @@ sent an empty string in the <code>.message</code> field.</p>
                         <p><a href="doc:TwarrtData">doc:TwarrtData</a> containing the updated like info.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L553-L566">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L591-L604">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2243,7 +2252,7 @@ sent an empty string in the <code>.message</code> field.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">twarrtUnreactHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/TwarrtData.html">TwarrtData</a></span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">twarrtUnreactHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/TwarrtData.html">TwarrtData</a></span></code></pre>
 
                         </div>
                       </div>
@@ -2271,7 +2280,7 @@ sent an empty string in the <code>.message</code> field.</p>
                         <p><a href="doc:TwarrtData">doc:TwarrtData</a> containing the updated like info.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L576-L589">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L614-L627">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2306,7 +2315,7 @@ sent an empty string in the <code>.message</code> field.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">twarrtUpdateHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/TwarrtData.html">TwarrtData</a></span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">twarrtUpdateHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/TwarrtData.html">TwarrtData</a></span></code></pre>
 
                         </div>
                       </div>
@@ -2346,7 +2355,7 @@ sent an empty string in the <code>.message</code> field.</p>
                         <p><a href="doc:TwarrtData">doc:TwarrtData</a> containing the twarrt&rsquo;s contents and metadata.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L599-L622">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L637-L660">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2377,12 +2386,12 @@ sent an empty string in the <code>.message</code> field.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">buildTwarrtData</span><span class="p">(</span><span class="n">from</span> <span class="nv">twarrt</span><span class="p">:</span> <span class="kt"><a href="../Classes/Twarrt.html">Twarrt</a></span><span class="p">,</span> <span class="nv">userID</span><span class="p">:</span> <span class="kt">UUID</span><span class="p">,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/TwarrtData.html">TwarrtData</a></span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">buildTwarrtData</span><span class="p">(</span><span class="n">from</span> <span class="nv">twarrt</span><span class="p">:</span> <span class="kt"><a href="../Classes/Twarrt.html">Twarrt</a></span><span class="p">,</span> <span class="nv">userID</span><span class="p">:</span> <span class="kt">UUID</span><span class="p">,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/TwarrtData.html">TwarrtData</a></span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L629-L635">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L667-L673">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2410,12 +2419,12 @@ sent an empty string in the <code>.message</code> field.</p>
                         <div class="language">
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">buildTwarrtData</span><span class="p">(</span><span class="n">from</span> <span class="nv">twarrts</span><span class="p">:</span> <span class="p">[</span><span class="kt"><a href="../Classes/Twarrt.html">Twarrt</a></span><span class="p">],</span> <span class="nv">userID</span><span class="p">:</span> <span class="kt">UUID</span><span class="p">,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">mutewords</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> 
-		<span class="nv">assumeBookmarked</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">matchHashtag</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt"><a href="../Structs/TwarrtData.html">TwarrtData</a></span><span class="p">]</span></code></pre>
+		<span class="nv">assumeBookmarked</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">matchHashtag</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt"><a href="../Structs/TwarrtData.html">TwarrtData</a></span><span class="p">]</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L639-L669">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L677-L707">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2442,12 +2451,12 @@ sent an empty string in the <code>.message</code> field.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">processTwarrtMentions</span><span class="p">(</span><span class="nv">twarrt</span><span class="p">:</span> <span class="kt"><a href="../Classes/Twarrt.html">Twarrt</a></span><span class="p">,</span> <span class="nv">editedText</span><span class="p">:</span> <span class="kt">String</span><span class="p">?,</span> <span class="nv">isCreate</span><span class="p">:</span> <span class="kt">Bool</span> <span class="o">=</span> <span class="kc">false</span><span class="p">,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">processTwarrtMentions</span><span class="p">(</span><span class="nv">twarrt</span><span class="p">:</span> <span class="kt"><a href="../Classes/Twarrt.html">Twarrt</a></span><span class="p">,</span> <span class="nv">editedText</span><span class="p">:</span> <span class="kt">String</span><span class="p">?,</span> <span class="nv">isCreate</span><span class="p">:</span> <span class="kt">Bool</span> <span class="o">=</span> <span class="kc">false</span><span class="p">,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L677-L717">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L715-L755">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2460,7 +2469,7 @@ sent an empty string in the <code>.message</code> field.</p>
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-04-17)</p>
+      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-05-21)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.2</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
     </section>
   </body>
