@@ -19,3 +19,5 @@ __pycache__/
 !/Sources/App/seeds/Private Swiftarr Config/Template.env
 !/Sources/App/seeds/Private Swiftarr Config/Docker-Template.env
 /[Ii]mages/
+doc.json
+docs/docsets/

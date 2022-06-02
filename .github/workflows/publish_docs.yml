@@ -1,0 +1,14 @@
+name: PublishDocumentation
+on:
+  workflow_dispatch:
+  push:
+jobs:
+  publish:
+    runs-on: macos-12
+    steps:
+    - uses: actions/checkout@v2
+    - name: Publish Jazzy Docs
+      uses: jocosocial/publish-jazzy-docs@v2
+      with:
+        personal_access_token: ${{ secrets.DOCS_ACCESS_TOKEN }}
+        config: .jazzy.yaml

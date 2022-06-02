@@ -21,20 +21,20 @@
     <header class="header">
       <p class="header-col header-col--primary">
         <a class="header-link" href="index.html">
-          swiftarr 0.1.0
+          Swiftarr - The v3 Twitarr server
         </a>
          (100% documented)
       </p>
     
-      <p class="header-col--secondary">
+      <div class="header-col--secondary">
         <form role="search" action="search.json">
           <input type="text" placeholder="Search documentation" data-typeahead>
         </form>
-      </p>
+      </div>
     
         <p class="header-col header-col--secondary">
-          <a class="header-link" href="https://github.com/grundoon/swiftarr">
-            <img class="header-icon" src="img/gh.png"/>
+          <a class="header-link" href="https://github.com/jocosocial/swiftarr">
+            <img class="header-icon" src="img/gh.png" alt="GitHub"/>
             View on GitHub
           </a>
         </p>
@@ -42,8 +42,8 @@
     </header>
 
     <p class="breadcrumbs">
-      <a class="breadcrumb" href="index.html">App Reference</a>
-      <img class="carat" src="img/carat.png" />
+      <a class="breadcrumb" href="index.html">Swiftarr Reference</a>
+      <img class="carat" src="img/carat.png" alt=""/>
       Return Structs  Reference
     </p>
 
@@ -51,13 +51,79 @@
       <nav class="navigation">
         <ul class="nav-groups">
           <li class="nav-group-name">
+            <a class="nav-group-name-link" href="Overview.html">Overview</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="contributing.html">Contributing</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="development.html">Development</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="roadmap.html">Roadmap</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="special-files.html">Special Files</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="documentation.html">Documentation</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="Operations.html">Operations</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="configuration.html">Configuration</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="macos-installation.html">MacOS Installation</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="linux-installation.html">Linux Installation</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="docker-installation.html">Docker Installation</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="database-migration.html">Database Migration</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="deployment.html">Deployment</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="Twitarr%20API.html">Twitarr API</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="pitch.html">Pitch</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="api-overview.html">API Overview</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="canonical-links.html">Canonical Links</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="api-changelist.html">API Changelist</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
             <a class="nav-group-name-link" href="Controllers.html">Controllers</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/AdminController.html">AdminController</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/AlertController.html">AlertController</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/AuthController.html">AuthController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/BoardgameController.html">BoardgameController</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/ClientController.html">ClientController</a>
@@ -70,6 +136,15 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/ForumController.html">ForumController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/ImageController.html">ImageController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/KaraokeController.html">KaraokeController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/ModerationController.html">ModerationController</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/TestController.html">TestController</a>
@@ -89,10 +164,19 @@
             <a class="nav-group-name-link" href="Models.html">Models</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Classes/Barrel.html">Barrel</a>
+                <a class="nav-group-task-link" href="Classes/AlertWord.html">AlertWord</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/Announcement.html">Announcement</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/Boardgame.html">Boardgame</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Classes/Category.html">Category</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/DailyTheme.html">DailyTheme</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Classes/Event.html">Event</a>
@@ -101,31 +185,58 @@
                 <a class="nav-group-task-link" href="Classes/FezPost.html">FezPost</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Classes/Forum.html">Forum</a>
+                <a class="nav-group-task-link" href="Classes/ForumEdit.html">ForumEdit</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/ForumPostEdit.html">ForumPostEdit</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Classes/ForumPost.html">ForumPost</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/Forum.html">Forum</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/FriendlyFezEdit.html">FriendlyFezEdit</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/FriendlyFez.html">FriendlyFez</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/KaraokePlayedSong.html">KaraokePlayedSong</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/KaraokeSong.html">KaraokeSong</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/ModeratorAction.html">ModeratorAction</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/MuteWord.html">MuteWord</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/ProfileEdit.html">ProfileEdit</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Classes/RegistrationCode.html">RegistrationCode</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/Report.html">Report</a>
+                <a class="nav-group-task-link" href="Classes/Report.html">Report</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Classes/Token.html">Token</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Classes/Twarrt.html">Twarrt</a>
+                <a class="nav-group-task-link" href="Classes/TwarrtEdit.html">TwarrtEdit</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Classes/User.html">User</a>
+                <a class="nav-group-task-link" href="Classes/Twarrt.html">Twarrt</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Classes/UserNote.html">UserNote</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Classes/UserProfile.html">UserProfile</a>
+                <a class="nav-group-task-link" href="Classes/User.html">User</a>
               </li>
             </ul>
           </li>
@@ -133,22 +244,49 @@
             <a class="nav-group-name-link" href="Enumerations.html">Enumerations</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Enums/BarrelType.html">BarrelType</a>
+                <a class="nav-group-task-link" href="Enums/ContentModerationStatus.html">ContentModerationStatus</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Enums/EventModification.html">EventModification</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Enums/EventType.html">EventType</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Enums/ExportableFormat.html">ExportableFormat</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Enums/FezType.html">FezType</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Enums/ImageHandlerType.html">ImageHandlerType</a>
+                <a class="nav-group-task-link" href="Enums/GDError.html">GDError</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Enums/ImageSizeGroup.html">ImageSizeGroup</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Enums/ImageUsage.html">ImageUsage</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Enums/ImportableFormat.html">ImportableFormat</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Enums/LikeType.html">LikeType</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Enums/ModeratorActionType.html">ModeratorActionType</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Enums/NotificationType.html">NotificationType</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Enums/ReportType.html">ReportType</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Enums/SwiftarrClientApp.html">SwiftarrClientApp</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Enums/SwiftarrFeature.html">SwiftarrFeature</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Enums/UserAccessLevel.html">UserAccessLevel</a>
@@ -159,7 +297,7 @@
             <a class="nav-group-name-link" href="Request%20Structs.html">Request Structs</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/BarrelCreateData.html">BarrelCreateData</a>
+                <a class="nav-group-task-link" href="Structs/AnnouncementCreateData.html">AnnouncementCreateData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/EventsUpdateData.html">EventsUpdateData</a>
@@ -177,16 +315,7 @@
                 <a class="nav-group-task-link" href="Structs/NoteCreateData.html">NoteCreateData</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/NoteUpdateData.html">NoteUpdateData</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/PostContentData.html">PostContentData</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/PostCreateData.html">PostCreateData</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/ProfileEditData.html">ProfileEditData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/ReportData.html">ReportData</a>
@@ -215,22 +344,16 @@
                 <a class="nav-group-task-link" href="Structs/AddedUserData.html">AddedUserData</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/AlertKeywordData.html">AlertKeywordData</a>
+                <a class="nav-group-task-link" href="Structs/AnnouncementData.html">AnnouncementData</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/BarrelData.html">BarrelData</a>
+                <a class="nav-group-task-link" href="Structs/BoardgameData.html">BoardgameData</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/BarrelListData.html">BarrelListData</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/BlockedUserData.html">BlockedUserData</a>
+                <a class="nav-group-task-link" href="Structs/BoardgameResponseData.html">BoardgameResponseData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/CategoryData.html">CategoryData</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/CreatedNoteData.html">CreatedNoteData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/CreatedUserData.html">CreatedUserData</a>
@@ -245,7 +368,7 @@
                 <a class="nav-group-task-link" href="Structs/FezData.html">FezData</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/FezDetailData.html">FezDetailData</a>
+                <a class="nav-group-task-link" href="Structs/FezData/MembersOnlyData.html">– MembersOnlyData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/FezPostData.html">FezPostData</a>
@@ -257,16 +380,7 @@
                 <a class="nav-group-task-link" href="Structs/ForumListData.html">ForumListData</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/MuteKeywordData.html">MuteKeywordData</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/MutedUserData.html">MutedUserData</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/NoteData.html">NoteData</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/NoteEditData.html">NoteEditData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/PostData.html">PostData</a>
@@ -278,9 +392,6 @@
                 <a class="nav-group-task-link" href="Structs/ProfilePublicData.html">ProfilePublicData</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/SeaMonkey.html">SeaMonkey</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/TokenStringData.html">TokenStringData</a>
               </li>
               <li class="nav-group-task">
@@ -290,16 +401,7 @@
                 <a class="nav-group-task-link" href="Structs/TwarrtDetailData.html">TwarrtDetailData</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/UploadedImageData.html">UploadedImageData</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/UserHeader.html">UserHeader</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/UserInfo.html">UserInfo</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/UserProfileData.html">UserProfileData</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/UserSearch.html">UserSearch</a>
@@ -310,7 +412,46 @@
             <a class="nav-group-name-link" href="Extensions.html">Extensions</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Extensions/Application.html">Application</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Extensions/Application/Redis.html">– Redis</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Extensions/Application/UserCacheStorage.html">– UserCacheStorage</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Extensions/Application/UserCacheStorageKey.html">– UserCacheStorageKey</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Extensions/Application.html#/s:5Vapor11ApplicationC3AppE16UserCacheLockKeyV">– UserCacheLockKey</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Extensions/Application/WebSocketStorage.html">– WebSocketStorage</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Extensions/Application/WebSocketStorageKey.html">– WebSocketStorageKey</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Extensions/Application.html#/s:5Vapor11ApplicationC3AppE23WebSocketStorageLockKeyV">– WebSocketStorageLockKey</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Extensions/Array.html">Array</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Extensions/Bool.html">Bool</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Extensions/CharacterSet.html">CharacterSet</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Extensions/Collection.html">Collection</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Extensions/Comparable.html">Comparable</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Extensions/Data.html">Data</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Extensions/Date.html">Date</a>
@@ -319,7 +460,13 @@
                 <a class="nav-group-task-link" href="Extensions/Formatter.html">Formatter</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Extensions/Future.html">Future</a>
+                <a class="nav-group-task-link" href="Extensions.html#/s:3App9Formatter33_2E4405C112A566F0233F43EEAF77E5B8LLa">Formatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Extensions/Foundation.html">Foundation</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Extensions/Foundation/Bundle.html">– Bundle</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Extensions/ISO8601DateFormatter.html">ISO8601DateFormatter</a>
@@ -337,10 +484,34 @@
                 <a class="nav-group-task-link" href="Extensions/JSONEncoder/DateEncodingStrategy.html">– DateEncodingStrategy</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Extensions/RouteCollection.html">RouteCollection</a>
+                <a class="nav-group-task-link" href="Extensions/Model.html">Model</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Extensions/PathComponent.html">PathComponent</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Extensions/RedisClient.html">RedisClient</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Extensions/Request.html">Request</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Extensions/Request/Redis.html">– Redis</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Extensions/Request/UserCache.html">– UserCache</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Extensions/Request/WebSocketStorage.html">– WebSocketStorage</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Extensions/SiblingsProperty.html">SiblingsProperty</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Extensions/String.html">String</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Extensions/UUID.html">UUID</a>
               </li>
             </ul>
           </li>
@@ -348,28 +519,49 @@
             <a class="nav-group-name-link" href="Migrations.html">Migrations</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/AdminUser.html">AdminUser</a>
+                <a class="nav-group-task-link" href="Structs/CreateAdminUsers.html">CreateAdminUsers</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/Categories.html">Categories</a>
+                <a class="nav-group-task-link" href="Structs/CreateCategories.html">CreateCategories</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/ClientUsers.html">ClientUsers</a>
+                <a class="nav-group-task-link" href="Structs/CreateCategories/CategoryCreateInfo.html">– CategoryCreateInfo</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/EventForums.html">EventForums</a>
+                <a class="nav-group-task-link" href="Structs/SetInitialCategoryForumCounts.html">SetInitialCategoryForumCounts</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/Events.html">Events</a>
+                <a class="nav-group-task-link" href="Structs/CreateClientUsers.html">CreateClientUsers</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/Forums.html">Forums</a>
+                <a class="nav-group-task-link" href="Structs/CreateClientUsers/ClientUserData.html">– ClientUserData</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/RegistrationCodes.html">RegistrationCodes</a>
+                <a class="nav-group-task-link" href="Structs/ImportBoardgames.html">ImportBoardgames</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/TestUsers.html">TestUsers</a>
+                <a class="nav-group-task-link" href="Structs/SetInitialEventForums.html">SetInitialEventForums</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/ImportRegistrationCodes.html">ImportRegistrationCodes</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/ImportEvents.html">ImportEvents</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/ImportKaraokeSongs.html">ImportKaraokeSongs</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateForums.html">CreateForums</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateCustomEnums.html">CreateCustomEnums</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateTestUsers.html">CreateTestUsers</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateTestData.html">CreateTestData</a>
               </li>
             </ul>
           </li>
@@ -388,16 +580,40 @@
             <a class="nav-group-name-link" href="Protocols.html">Protocols</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Protocols/APIRouteCollection.html">APIRouteCollection</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Protocols/ContentFilterable.html">ContentFilterable</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Protocols/ImageHandler.html">ImageHandler</a>
+                <a class="nav-group-task-link" href="Protocols/ExportableFormatter.html">ExportableFormatter</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Protocols/UserBookmarkable.html">UserBookmarkable</a>
+                <a class="nav-group-task-link" href="Protocols/FezProtocol.html">FezProtocol</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Protocols/UserTaggable.html">UserTaggable</a>
+                <a class="nav-group-task-link" href="Protocols/ImportableFormatter.html">ImportableFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Protocols/LibGdExportableFormatter.html">LibGdExportableFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Protocols/LibGdImportableFormatter.html">LibGdImportableFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Protocols/LibGdParametrizableExportFormatter.html">LibGdParametrizableExportFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Protocols/RCFValidatable.html">RCFValidatable</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Protocols/Reportable.html">Reportable</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Protocols/SiteControllerUtils.html">SiteControllerUtils</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Protocols/StoredSetting.html">StoredSetting</a>
               </li>
             </ul>
           </li>
@@ -408,16 +624,74 @@
                 <a class="nav-group-task-link" href="Classes/EventParser.html">EventParser</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/ForumEdit.html">ForumEdit</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/ProfileEdit.html">ProfileEdit</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Classes/Settings.html">Settings</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/TwarrtEdit.html">TwarrtEdit</a>
+                <a class="nav-group-task-link" href="Classes/Settings/SettingsValue.html">– SettingsValue</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/Settings/StoredSettingsValue.html">– StoredSettingsValue</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="Other%20Classes.html">Other Classes</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/AlertWordPivot.html">AlertWordPivot</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/BoardgameFavorite.html">BoardgameFavorite</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/DecoderProxy.html">DecoderProxy</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/EventFavorite.html">EventFavorite</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/FezParticipant.html">FezParticipant</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/ForumReaders.html">ForumReaders</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/GDImage.html">GDImage</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/GDImage/FlipMode.html">– FlipMode</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/GDImage/ImageType.html">– ImageType</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/KaraokeFavorite.html">KaraokeFavorite</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/SiteErrorMiddleware.html">SiteErrorMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/SwiftarrErrorMiddleware.html">SwiftarrErrorMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/ValidatingDecoder.html">ValidatingDecoder</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/ValidatingDecoder/ValidatingUnkeyedContainer.html">– ValidatingUnkeyedContainer</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/ValidatingDecoder/ValidatingSingleValueContainer.html">– ValidatingSingleValueContainer</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/ValidatingJSONDecoder.html">ValidatingJSONDecoder</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="Other%20Global%20Variables.html">Other Global Variables</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Other%20Global%20Variables.html#/s:3App23usernameSeparatorStringSSvp">usernameSeparatorString</a>
               </li>
             </ul>
           </li>
@@ -425,16 +699,587 @@
             <a class="nav-group-name-link" href="Other%20Functions.html">Other Functions</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Other%20Functions.html#/s:3App3appy5Vapor11ApplicationC7Service11EnvironmentVKF">app(_:)</a>
+                <a class="nav-group-task-link" href="Other%20Functions.html#/s:3App23HTTPServerConfigurationyy5Vapor11ApplicationCKF">HTTPServerConfiguration(_:)</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Other%20Functions.html#/s:3App4bootyy5Vapor11ApplicationCKF">boot(_:)</a>
+                <a class="nav-group-task-link" href="Other%20Functions.html#/s:3App9configureyy5Vapor11ApplicationCKF">configure(_:)</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Other%20Functions.html#/s:3App9configureyy7Service6ConfigVz_AC11EnvironmentVzAC8ServicesVztKF">configure(_:_:_:)</a>
+                <a class="nav-group-task-link" href="Other%20Functions.html#/s:3App22configureBasicSettingsyy5Vapor11ApplicationCKF">configureBasicSettings(_:)</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Other%20Functions.html#/s:3App6routesyy5Vapor6Router_pKF">routes(_:)</a>
+                <a class="nav-group-task-link" href="Other%20Functions.html#/s:3App15configureBundleyy5Vapor11ApplicationCKF">configureBundle(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Other%20Functions.html#/s:3App17configureCommandsyy5Vapor11ApplicationCF">configureCommands(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Other%20Functions.html#/s:3App13configureLeafyy5Vapor11ApplicationCKF">configureLeaf(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Other%20Functions.html#/s:3App19configureMiddlewareyy5Vapor11ApplicationCKF">configureMiddleware(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Other%20Functions.html#/s:3App19configureMigrationsyy5Vapor11ApplicationCKF">configureMigrations(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Other%20Functions.html#/s:3App19configurePrometheusyy5Vapor11ApplicationCKF">configurePrometheus(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Other%20Functions.html#/s:3App17configureSessionsyy5Vapor11ApplicationCKF">configureSessions(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Other%20Functions.html#/s:3App23configureStoredSettingsyy5Vapor11ApplicationCKF">configureStoredSettings(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Other%20Functions.html#/s:3App31databaseConnectionConfigurationyy5Vapor11ApplicationCKF">databaseConnectionConfiguration(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Other%20Functions.html#/s:3App21generateContentGroups4fromSayAA06ReportC5GroupVGSayAA0F14ModerationDataVG_tF">generateContentGroups(from:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Other%20Functions.html#/s:3App23operatingSystemPlatformSSSgyF">operatingSystemPlatform()</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Other%20Functions.html#/s:3App6routesyy5Vapor11ApplicationCKF">routes(_:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Other%20Functions.html#/s:3App11titleAndTab33_94832BE10C5E3B640E9445FB32A24984LL3forSS_AA12TrunkContextV0D0Ot5Vapor7RequestC_tF">titleAndTab(for:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Other%20Functions.html#/s:3App19usernameValidations33_73DBEC6ED8C61CC2B437AD3D0947A196LL0B0SaySSGSS_tF">usernameValidations(username:)</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Other%20Functions.html#/s:3App19verifyConfigurationyy5Vapor11ApplicationCKF">verifyConfiguration(_:)</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="Other%20Structs.html">Other Structures</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/AddJocomojiTag.html">AddJocomojiTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/AddWordFormStruct.html">AddWordFormStruct</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/AlertmanagerAlert.html">AlertmanagerAlert</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/AlertmanagerWebhookPayload.html">AlertmanagerWebhookPayload</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/Angle.html">Angle</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/AvatarTag.html">AvatarTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/BMPFormatter.html">BMPFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/Color.html">Color</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateAlertWordPivotSchema.html">CreateAlertWordPivotSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateAlertWordSchema.html">CreateAlertWordSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateAnnouncementSchema.html">CreateAnnouncementSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateBoardgameFavoriteSchema.html">CreateBoardgameFavoriteSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateBoardgameSchema.html">CreateBoardgameSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateCategorySchema.html">CreateCategorySchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateDailyThemeSchema.html">CreateDailyThemeSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateEventFavoriteSchema.html">CreateEventFavoriteSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateEventSchema.html">CreateEventSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateFezParticipantSchema.html">CreateFezParticipantSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateFezPostFormContent.html">CreateFezPostFormContent</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateFezPostSchema.html">CreateFezPostSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateForumEditSchema.html">CreateForumEditSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateForumPostEditSchema.html">CreateForumPostEditSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateForumPostSchema.html">CreateForumPostSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateForumReadersSchema.html">CreateForumReadersSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateForumSchema.html">CreateForumSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateFriendlyFezEditSchema.html">CreateFriendlyFezEditSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateFriendlyFezSchema.html">CreateFriendlyFezSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateKaraokeFavoriteSchema.html">CreateKaraokeFavoriteSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateKaraokePlayedSongSchema.html">CreateKaraokePlayedSongSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateKaraokeSongSchema.html">CreateKaraokeSongSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateModeratorActionSchema.html">CreateModeratorActionSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateMuteWordSchema.html">CreateMuteWordSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreatePostLikesSchema.html">CreatePostLikesSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateProfileEditSchema.html">CreateProfileEditSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateRegistrationCodeSchema.html">CreateRegistrationCodeSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateReportSchema.html">CreateReportSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateTokenSchema.html">CreateTokenSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateTwarrtEditSchema.html">CreateTwarrtEditSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateTwarrtLikesSchema.html">CreateTwarrtLikesSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateTwarrtSchema.html">CreateTwarrtSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateUserNoteSchema.html">CreateUserNoteSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateUserSchema.html">CreateUserSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CruiseDayIndexTag.html">CruiseDayIndexTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/DailyThemeData.html">DailyThemeData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/DailyThemeUploadData.html">DailyThemeUploadData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/DisabledAPISectionMiddleware.html">DisabledAPISectionMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/DisabledFeature.html">DisabledFeature</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/DisabledFeaturesGroup.html">DisabledFeaturesGroup</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/DisabledSiteSectionMiddleware.html">DisabledSiteSectionMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/ErrorResponse.html">ErrorResponse</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/EventTimeTag.html">EventTimeTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/EventUpdateDifferenceData.html">EventUpdateDifferenceData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/FezCreateUpdatePageContext.html">FezCreateUpdatePageContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/FezEditLogData.html">FezEditLogData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/FezListData.html">FezListData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/FezModerationData.html">FezModerationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/FezPostModerationData.html">FezPostModerationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/FezTimeTag.html">FezTimeTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/FormatPostTextTag.html">FormatPostTextTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/FormatPostTextTag/Usage.html">– Usage</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/ForumEditLogData.html">ForumEditLogData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/ForumModerationData.html">ForumModerationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/ForumPageContext.html">ForumPageContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/ForumPostModerationData.html">ForumPostModerationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/ForumPostSearchQueryOptions.html">ForumPostSearchQueryOptions</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/ForumSearchData.html">ForumSearchData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/ForumsSearchPageContext.html">ForumsSearchPageContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/ForumsSearchPageContext/SearchType.html">– SearchType</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/GIFFormatter.html">GIFFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/GameExpansionsContext.html">GameExpansionsContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/GameListContext.html">GameListContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/GameRatingTag.html">GameRatingTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/JPGFormatter.html">JPGFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/JsonGamesListGame.html">JsonGamesListGame</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/KaraokePerformedSongsData.html">KaraokePerformedSongsData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/KaraokeSongData.html">KaraokeSongData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/KaraokeSongResponseData.html">KaraokeSongResponseData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/KeywordData.html">KeywordData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/LocalTimeTag.html">LocalTimeTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/MessagePostContext.html">MessagePostContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/MessagePostContext/InitType.html">– InitType</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/MessagePostFormContent.html">MessagePostFormContent</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/ModeratorActionLogData.html">ModeratorActionLogData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/NotificationsMiddleware.html">NotificationsMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/PNGFormatter.html">PNGFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/Paginator.html">Paginator</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/PaginatorContext.html">PaginatorContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/PaginatorContext/PageInfo.html">– PageInfo</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/Point.html">Point</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/PostEditLogData.html">PostEditLogData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/PostSearchData.html">PostSearchData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/PostSearchPageContext.html">PostSearchPageContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/PostSearchPageContext/SearchType.html">– SearchType</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/ProfileEditLogData.html">ProfileEditLogData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/ProfileFormContent.html">ProfileFormContent</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/ProfileModerationData.html">ProfileModerationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/PublicProfileContext.html">PublicProfileContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/Rectangle.html">Rectangle</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/RegistrationCodeStatsData.html">RegistrationCodeStatsData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/RegistrationCodeUserData.html">RegistrationCodeUserData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/RelativeTimeTag.html">RelativeTimeTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/ReportContentGroup.html">ReportContentGroup</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/ReportModerationData.html">ReportModerationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/ReportPageContext.html">ReportPageContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/RequireAdminMiddleware.html">RequireAdminMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/RequireModeratorMiddleware.html">RequireModeratorMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/RequireTHOMiddleware.html">RequireTHOMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/RequireTwitarrTeamMiddleware.html">RequireTwitarrTeamMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/RequireVerifiedMiddleware.html">RequireVerifiedMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/ScheduleMungerCommand.html">ScheduleMungerCommand</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/ScheduleMungerCommand/Signature.html">– Signature</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SettingsAdminData.html">SettingsAdminData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SettingsAppFeaturePair.html">SettingsAppFeaturePair</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SettingsUpdateData.html">SettingsUpdateData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SiteAdminController.html">SiteAdminController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SiteAdminController/AnnouncementViewData.html">– AnnouncementViewData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SiteAdminController/ManageUserLevelViewContext.html">– ManageUserLevelViewContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SiteBoardgameController.html">SiteBoardgameController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SiteController.html">SiteController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SiteEventsController.html">SiteEventsController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SiteFileController.html">SiteFileController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SiteForumController.html">SiteForumController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SiteFriendlyFezController.html">SiteFriendlyFezController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SiteFriendlyFezController/FezTab.html">– FezTab</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SiteKaraokeController.html">SiteKaraokeController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SiteLoginController.html">SiteLoginController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SiteLoginController/LoginPageContext.html">– LoginPageContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SiteLoginController/UserCreatedContext.html">– UserCreatedContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SiteModController.html">SiteModController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SiteRequireAdminMiddleware.html">SiteRequireAdminMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SiteRequireModeratorMiddleware.html">SiteRequireModeratorMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SiteRequireTHOMiddleware.html">SiteRequireTHOMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SiteRequireTwitarrTeamMiddleware.html">SiteRequireTwitarrTeamMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SiteRequireVerifiedMiddleware.html">SiteRequireVerifiedMiddleware</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SiteSeamailController.html">SiteSeamailController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SiteTwitarrController.html">SiteTwitarrController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SiteUserController.html">SiteUserController</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/Size.html">Size</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SocketFezMemberChangeData.html">SocketFezMemberChangeData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SocketFezPostData.html">SocketFezPostData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SocketNotificationData.html">SocketNotificationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/SocketNotificationData/NotificationTypeData.html">– NotificationTypeData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/StaticTimeTag.html">StaticTimeTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/TGAFormatter.html">TGAFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/TIFFFormatter.html">TIFFFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/TrunkContext.html">TrunkContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/TrunkContext/Tab.html">– Tab</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/TwarrtModerationData.html">TwarrtModerationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/TwarrtQueryOptions.html">TwarrtQueryOptions</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/TweetEditPageContext.html">TweetEditPageContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/TweetPageContext.html">TweetPageContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/TweetPageContext/FilterType.html">– FilterType</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/UserAuthorizedToCreateKaraokeLogs.html">UserAuthorizedToCreateKaraokeLogs</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/UserBylineTag.html">UserBylineTag</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/UserCacheData.html">UserCacheData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/UserCacheData/BasicAuth.html">– BasicAuth</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/UserCacheData/TokenAuthenticator.html">– TokenAuthenticator</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/UserCacheData/SessionAuth.html">– SessionAuth</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/UserModerationData.html">UserModerationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/UserNotificationAlertwordData.html">UserNotificationAlertwordData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/UserNotificationData.html">UserNotificationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/UserNotificationData/ModeratorNotificationData.html">– ModeratorNotificationData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/UserProfileUploadData.html">UserProfileUploadData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/UserSocket.html">UserSocket</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/ValidatingKeyedContainer.html">ValidatingKeyedContainer</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/ValidationError.html">ValidationError</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/ValidationFailure.html">ValidationFailure</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/WBMPFormatter.html">WBMPFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/WEBPFormatter.html">WEBPFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/Xoshiro.html">Xoshiro</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Other%20Structs.html#/s:3App3zzzV">zzz</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="Other%20Typealiases.html">Other Type Aliases</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Other%20Typealiases.html#/s:3App14LibGdFormatter33_2E4405C112A566F0233F43EEAF77E5B8LLa">LibGdFormatter</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Other%20Typealiases.html#/s:3App28LibGdParametrizableFormatter33_2E4405C112A566F0233F43EEAF77E5B8LLa">LibGdParametrizableFormatter</a>
               </li>
             </ul>
           </li>
@@ -470,7 +1315,7 @@
 
 <p>Returned by: <code>POST /api/v3/user/add</code></p>
 
-<p>See <code><a href="Structs/UserController.html#/s:3App14UserControllerV10addHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA0B10CreateDataVtKF">UserController.addHandler(_:data:)</a></code>.</p>
+<p>See <code>UserController.addHandler(_:data:)</code>.</p>
 
                         <a href="Structs/AddedUserData.html" class="slightly-smaller">See more</a>
                       </div>
@@ -478,12 +1323,12 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">AddedUserData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">AddedUserData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L8-L13">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L8-L13">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -491,9 +1336,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App16AlertKeywordDataV"></a>
-                    <a name="//apple_ref/swift/Struct/AlertKeywordData" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App16AlertKeywordDataV">AlertKeywordData</a>
+                    <a name="/s:3App16AnnouncementDataV"></a>
+                    <a name="//apple_ref/swift/Struct/AnnouncementData" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App16AnnouncementDataV">AnnouncementData</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -501,31 +1346,34 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Used to obtain the user&rsquo;s current list of alert keywords.</p>
+                        <p>An announcement to display to all users. </p>
+<div class="aside aside-note">
+    <p class="aside-title">Note</p>
+    Admins can modify Announcements, but should only do so to correct typos or change the displayUntil time. Therefore if a user has seen an announcement,
+they need not be notified again if the announcement is edited. Any material change to the content of an announcement should be done via a <strong>new</strong> announcement, 
+so that user notifications work correctly.
+
+</div>
 
 <p>Returned by:</p>
 
 <ul>
-<li><code>GET /api/v3/user/alertwords</code></li>
-<li><code>POST /api/v3/user/alertwords/add/STRING</code></li>
-<li><code>POST /api/v3/user/alertwords/remove/STRING</code></li>
+<li><code>GET /api/v3/notification/announcements</code></li>
+<li><code>GET /api/v3/notification/announcement/ID</code> for admins/THO only.</li>
 </ul>
 
-<p>See <code><a href="Structs/UserController.html#/s:3App14UserControllerV17alertwordsHandlery3NIO15EventLoopFutureCyAA16AlertKeywordDataVG5Vapor7RequestCKF">UserController.alertwordsHandler(_:)</a></code>, <code><a href="Structs/UserController.html#/s:3App14UserControllerV20alertwordsAddHandlery3NIO15EventLoopFutureCyAA16AlertKeywordDataVG5Vapor7RequestCKF">UserController.alertwordsAddHandler(_:)</a></code>,
-<code><a href="Structs/UserController.html#/s:3App14UserControllerV23alertwordsRemoveHandlery3NIO15EventLoopFutureCyAA16AlertKeywordDataVG5Vapor7RequestCKF">UserController.alertwordsRemoveHandler(_:)</a></code>.</p>
-
-                        <a href="Structs/AlertKeywordData.html" class="slightly-smaller">See more</a>
+                        <a href="Structs/AnnouncementData.html" class="slightly-smaller">See more</a>
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">AlertKeywordData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">AnnouncementData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L24-L29">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L24-L39">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -533,9 +1381,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App10BarrelDataV"></a>
-                    <a name="//apple_ref/swift/Struct/BarrelData" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App10BarrelDataV">BarrelData</a>
+                    <a name="/s:3App13BoardgameDataV"></a>
+                    <a name="//apple_ref/swift/Struct/BoardgameData" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App13BoardgameDataV">BoardgameData</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -543,34 +1391,35 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Used to return the contents of a user-owned <code>.seamonkey</code> or <code>.userWords</code> <code><a href="Classes/Barrel.html">Barrel</a></code>.</p>
+                        <p>Used to obtain a list of board games. </p>
+
+<p>Each year there&rsquo;s a list of boardgames published that&rsquo;ll be brought onboard for the games library. The board game data is produced
+by running a script that pulls game data from <code>http://boardgamegeek.com</code>&lsquo;s API and merging it with the games library table.</p>
+
+<p>Games in the library may not match anything in BGG&rsquo;s database (or we can&rsquo;t find a match), so all the BGG fields are optional.</p>
 
 <p>Returned by:</p>
 
 <ul>
-<li><code>POST /api/v3/user/barrel</code></li>
-<li><code>GET /api/v3/user/barrels/ID</code></li>
-<li><code>POST /api/v3/user/barrels/ID/add/STRING</code></li>
-<li><code>POST /api/v3/user/barrels/ID/remove/STRING</code></li>
-<li><code>POST /api/v3/user/barrels/ID/rename/STRING</code></li>
+<li><code>GET /api/v3/boardgames</code> (inside <code><a href="Structs/BoardgameResponseData.html">BoardgameResponseData</a></code>)</li>
+<li><code>GET /api/v3/boardgames/:boardgameID</code></li>
+<li><code>GET /api/v3/boardgames/expansions/:boardgameID</code></li>
 </ul>
 
-<p>See <code><a href="Structs/UserController.html#/s:3App14UserControllerV19createBarrelHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA0E10CreateDataVtKF">UserController.createBarrelHandler(_:data:)</a></code>, <code><a href="Structs/UserController.html#/s:3App14UserControllerV13barrelHandlery3NIO15EventLoopFutureCyAA10BarrelDataVG5Vapor7RequestCKF">UserController.barrelHandler(_:)</a></code>,
-<code><a href="Structs/UserController.html#/s:3App14UserControllerV16barrelAddHandlery3NIO15EventLoopFutureCyAA10BarrelDataVG5Vapor7RequestCKF">UserController.barrelAddHandler(_:)</a></code>, <code><a href="Structs/UserController.html#/s:3App14UserControllerV19barrelRemoveHandlery3NIO15EventLoopFutureCyAA10BarrelDataVG5Vapor7RequestCKF">UserController.barrelRemoveHandler(_:)</a></code>,
-<code><a href="Structs/UserController.html#/s:3App14UserControllerV19renameBarrelHandlery3NIO15EventLoopFutureCyAA0E4DataVG5Vapor7RequestCKF">UserController.renameBarrelHandler(_:)</a></code>.</p>
+<p>See <code><a href="Structs/BoardgameController/getBoardgames%28_%3A%29.html">BoardgameController.getBoardgames(_:)</a></code>, <code><a href="Structs/BoardgameController.html#/s:3App19BoardgameControllerV13getExpansionsySayAA0B4DataVG5Vapor7RequestCYaKF">BoardgameController.getExpansions(_:)</a></code>.</p>
 
-                        <a href="Structs/BarrelData.html" class="slightly-smaller">See more</a>
+                        <a href="Structs/BoardgameData.html" class="slightly-smaller">See more</a>
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">BarrelData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">BoardgameData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L57-L66">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L83-L128">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -578,9 +1427,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App14BarrelListDataV"></a>
-                    <a name="//apple_ref/swift/Struct/BarrelListData" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App14BarrelListDataV">BarrelListData</a>
+                    <a name="/s:3App21BoardgameResponseDataV"></a>
+                    <a name="//apple_ref/swift/Struct/BoardgameResponseData" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App21BoardgameResponseDataV">BoardgameResponseData</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -588,64 +1437,26 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Used to obtain a list of user-owned <code><a href="Classes/Barrel.html">Barrel</a></code> names and IDs.</p>
+                        <p>Wraps an array of <code><a href="Structs/BoardgameData.html">BoardgameData</a></code> with info needed to paginate the result set.</p>
 
 <p>Returned by:</p>
 
 <ul>
-<li><code>GET /api/v3/user/barrels</code></li>
-<li><code>GET /api/v3/user/barrels/seamonkey</code></li>
+<li><code>GET /api/v3/boardgames</code></li>
 </ul>
 
-<p>See <code><a href="Structs/UserController.html#/s:3App14UserControllerV14barrelsHandlery3NIO15EventLoopFutureCySayAA14BarrelListDataVGG5Vapor7RequestCKF">UserController.barrelsHandler(_:)</a></code>, <code><a href="Structs/UserController.html#/s:3App14UserControllerV23seamonkeyBarrelsHandlery3NIO15EventLoopFutureCySayAA14BarrelListDataVGG5Vapor7RequestCKF">UserController.seamonkeyBarrelsHandler(_:)</a></code>.</p>
-
-                        <a href="Structs/BarrelListData.html" class="slightly-smaller">See more</a>
+                        <a href="Structs/BoardgameResponseData.html" class="slightly-smaller">See more</a>
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">BarrelListData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">BoardgameResponseData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L75-L80">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App15BlockedUserDataV"></a>
-                    <a name="//apple_ref/swift/Struct/BlockedUserData" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App15BlockedUserDataV">BlockedUserData</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Used to obtain the user&rsquo;s list of blocked users.</p>
-
-<p>Returned by: <code>GET /api/v3/user/blocks</code></p>
-
-<p>See <code><a href="Structs/UserController.html#/s:3App14UserControllerV13blocksHandlery3NIO15EventLoopFutureCyAA07BlockedB4DataVG5Vapor7RequestCKF">UserController.blocksHandler(_:)</a></code>.</p>
-
-                        <a href="Structs/BlockedUserData.html" class="slightly-smaller">See more</a>
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">BlockedUserData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L87-L92">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L59-L68">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -663,18 +1474,16 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Used to return the ID and title of a <code><a href="Classes/Category.html">Category</a></code>.</p>
+                        <p>Used to return the ID and title of a <code><a href="Classes/Category.html">Category</a></code>. </p>
 
 <p>Returned by:</p>
 
 <ul>
 <li><code>GET /api/v3/forum/categories</code></li>
-<li><code>GET /api/v3/forum/categories/admin</code></li>
-<li><code>GET /api/v3/forum/categories/user</code></li>
+<li><code>GET /api/v3/forum/catgories/ID</code></li>
 </ul>
 
-<p>See <code><a href="Structs/ForumController.html#/s:3App15ForumControllerV17categoriesHandlery3NIO15EventLoopFutureCySayAA12CategoryDataVGG5Vapor7RequestCKF">ForumController.categoriesHandler(_:)</a></code>, <code><a href="Structs/ForumController.html#/s:3App15ForumControllerV22categoriesAdminHandlery3NIO15EventLoopFutureCySayAA12CategoryDataVGG5Vapor7RequestCKF">ForumController.categoriesAdminHandler(_:)</a></code>,
-<code><a href="Structs/ForumController.html#/s:3App15ForumControllerV21categoriesUserHandlery3NIO15EventLoopFutureCySayAA12CategoryDataVGG5Vapor7RequestCKF">ForumController.categoriesUserHandler(_:)</a></code>.</p>
+<p>See <code><a href="Structs/ForumController.html#/s:3App15ForumControllerV17categoriesHandlerySayAA12CategoryDataVG5Vapor7RequestCYaKF">ForumController.categoriesHandler(_:)</a></code></p>
 
                         <a href="Structs/CategoryData.html" class="slightly-smaller">See more</a>
                       </div>
@@ -682,47 +1491,12 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">CategoryData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">CategoryData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L103-L108">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App15CreatedNoteDataV"></a>
-                    <a name="//apple_ref/swift/Struct/CreatedNoteData" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App15CreatedNoteDataV">CreatedNoteData</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Used to return a newly created <code><a href="Classes/UserNote.html">UserNote</a></code> for display or further edit.</p>
-
-<p>Returned by: <code>POST /api/v3/users/ID/note</code></p>
-
-<p>See <code><a href="Structs/UsersController.html#/s:3App15UsersControllerV17noteCreateHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA04NoteE4DataVtKF">UsersController.noteCreateHandler(_:data:)</a></code>.</p>
-
-                        <a href="Structs/CreatedNoteData.html" class="slightly-smaller">See more</a>
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">CreatedNoteData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L115-L120">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L167-L180">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -744,7 +1518,7 @@
 
 <p>Returned by: <code>POST /api/v3/user/create</code></p>
 
-<p>See <code><a href="Structs/UserController.html#/s:3App14UserControllerV13createHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA0B10CreateDataVtKF">UserController.createHandler(_:data:).</a></code></p>
+<p>See <code>UserController.createHandler(_:data:).</code></p>
 
                         <a href="Structs/CreatedUserData.html" class="slightly-smaller">See more</a>
                       </div>
@@ -752,12 +1526,12 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">CreatedUserData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">CreatedUserData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L127-L134">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L198-L205">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -779,7 +1553,7 @@
 
 <p>Returned by: <code>GET /api/v3/user/whoami</code></p>
 
-<p>See <code><a href="Structs/UserController.html#/s:3App14UserControllerV13whoamiHandlery3NIO15EventLoopFutureCyAA07CurrentB4DataVG5Vapor7RequestCKF">UserController.whoamiHandler(_:).</a></code></p>
+<p>See <code><a href="Structs/UserController.html#/s:3App14UserControllerV13whoamiHandleryAA07CurrentB4DataV5Vapor7RequestCKF">UserController.whoamiHandler(_:).</a></code></p>
 
                         <a href="Structs/CurrentUserData.html" class="slightly-smaller">See more</a>
                       </div>
@@ -787,12 +1561,12 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">CurrentUserData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">CurrentUserData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L141-L148">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L212-L219">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -816,24 +1590,10 @@
 
 <ul>
 <li><code>GET /api/v3/events</code></li>
-<li><code>GET /api/v3/events/official</code></li>
-<li><code>GET /api/v3/events/shadow</code></li>
-<li><code>GET /api/v3/events/now</code></li>
-<li><code>GET /api/v3/events/official/now</code></li>
-<li><code>GET /api/v3/events/shadow/now</code></li>
-<li><code>GET /api/v3/events/today</code></li>
-<li><code>GET /api/v3/events/official/today</code></li>
-<li><code>GET /api/v3/events/shadow/today</code></li>
-<li><code>GET /api/v3/events/match/STRING</code></li>
 <li><code>GET /api/v3/events/favorites</code></li>
 </ul>
 
-<p>See <code><a href="Structs/EventController.html#/s:3App15EventControllerV13eventsHandlery3NIO0B10LoopFutureCySayAA0B4DataVGG5Vapor7RequestCKF">EventController.eventsHandler(_:)</a></code>, <code><a href="Structs/EventController.html#/s:3App15EventControllerV15officialHandlery3NIO0B10LoopFutureCySayAA0B4DataVGG5Vapor7RequestCKF">EventController.officialHandler(_:)</a></code>,
-<code><a href="Structs/EventController.html#/s:3App15EventControllerV13shadowHandlery3NIO0B10LoopFutureCySayAA0B4DataVGG5Vapor7RequestCKF">EventController.shadowHandler(_:)</a></code>, <code><a href="Structs/EventController.html#/s:3App15EventControllerV16eventsNowHandlery3NIO0B10LoopFutureCySayAA0B4DataVGG5Vapor7RequestCKF">EventController.eventsNowHandler(_:)</a></code>,
-<code>EventController.officialNowHandler(_:)</code>,<code>EventController.shadowNowHandler(_:)</code>,
-<code><a href="Structs/EventController.html#/s:3App15EventControllerV18eventsTodayHandlery3NIO0B10LoopFutureCySayAA0B4DataVGG5Vapor7RequestCKF">EventController.eventsTodayHandler(_:)</a></code>, <code><a href="Structs/EventController.html#/s:3App15EventControllerV20officialTodayHandlery3NIO0B10LoopFutureCySayAA0B4DataVGG5Vapor7RequestCKF">EventController.officialTodayHandler(_:)</a></code>,
-<code><a href="Structs/EventController.html#/s:3App15EventControllerV18shadowTodayHandlery3NIO0B10LoopFutureCySayAA0B4DataVGG5Vapor7RequestCKF">EventController.shadowTodayHandler(_:)</a></code>, <code><a href="Structs/EventController.html#/s:3App15EventControllerV18eventsMatchHandlery3NIO0B10LoopFutureCySayAA0B4DataVGG5Vapor7RequestCKF">EventController.eventsMatchHandler(_:)</a></code>
-<code><a href="Structs/EventController.html#/s:3App15EventControllerV16favoritesHandlery3NIO0B10LoopFutureCySayAA0B4DataVGG5Vapor7RequestCKF">EventController.favoritesHandler(_:)</a></code>.</p>
+<p>See <code><a href="Structs/EventController/eventsHandler%28_%3A%29.html">EventController.eventsHandler(_:)</a></code>, <code><a href="Structs/EventController.html#/s:3App15EventControllerV16favoritesHandlerySayAA0B4DataVG5Vapor7RequestCYaKF">EventController.favoritesHandler(_:)</a></code>.</p>
 
                         <a href="Structs/EventData.html" class="slightly-smaller">See more</a>
                       </div>
@@ -841,12 +1601,12 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">EventData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">EventData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L171-L190">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L295-L316">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -864,12 +1624,11 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Used to return a FriendlyFez <code><a href="Classes/Barrel.html">Barrel</a></code>&lsquo;s data.</p>
+                        <p>Used to return a <code><a href="Classes/FriendlyFez.html">FriendlyFez</a></code>&lsquo;s data.</p>
 
-<p>Returned by:</p>
+<p>Returned by these methods, with <code>members</code> set to nil.</p>
 
 <ul>
-<li><code>POST /api/v3/fez/create</code></li>
 <li><code>POST /api/v3/fez/ID/join</code></li>
 <li><code>POST /api/v3/fez/ID/unjoin</code></li>
 <li><code>GET /api/v3/fez/joined</code></li>
@@ -880,11 +1639,19 @@
 <li><code>POST /api/v3/fez/ID/cancel</code></li>
 </ul>
 
-<p>See <code><a href="Structs/FezController.html#/s:3App13FezControllerV13createHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA0B11ContentDataVtKF">FezController.createHandler(_:data:)</a></code>, <code><a href="Structs/FezController.html#/s:3App13FezControllerV11joinHandlery3NIO15EventLoopFutureCy5Vapor8ResponseCGAH7RequestCKF">FezController.joinHandler(_:)</a></code>,
-<code><a href="Structs/FezController.html#/s:3App13FezControllerV13unjoinHandlery3NIO15EventLoopFutureCy5Vapor8ResponseCGAH7RequestCKF">FezController.unjoinHandler(_:)</a></code>, <code><a href="Structs/FezController.html#/s:3App13FezControllerV13joinedHandlery3NIO15EventLoopFutureCySayAA0B4DataVGG5Vapor7RequestCKF">FezController.joinedHandler(_:)</a></code>
-<code>FezController.openhandler(_:)</code>, <code><a href="Structs/FezController.html#/s:3App13FezControllerV12ownerHandlery3NIO15EventLoopFutureCySayAA0B4DataVGG5Vapor7RequestCKF">FezController.ownerHandler(_:)</a></code>,
-<code><a href="Structs/FezController.html#/s:3App13FezControllerV14userAddHandlery3NIO15EventLoopFutureCy5Vapor8ResponseCGAH7RequestCKF">FezController.userAddHandler(_:)</a></code>, <code><a href="Structs/FezController.html#/s:3App13FezControllerV17userRemoveHandlery3NIO15EventLoopFutureCy5Vapor8ResponseCGAH7RequestCKF">FezController.userRemoveHandler(_:)</a></code>,
-<code><a href="Structs/FezController.html#/s:3App13FezControllerV13cancelHandlery3NIO15EventLoopFutureCyAA0B4DataVG5Vapor7RequestCKF">FezController.cancelHandler(_:)</a></code>.</p>
+<p>Returned by these  methods, with <code>members</code> populated.</p>
+
+<ul>
+<li><code>GET /api/v3/fez/ID</code></li>
+<li><code>POST /api/v3/fez/create</code></li>
+<li><code>POST /api/v3/fez/ID/post</code></li>
+<li><code>POST /api/v3/fex/ID/post/ID/delete</code>
+See <code>FezController.createHandler(_:data:)</code>, <code><a href="Structs/FezController.html#/s:3App13FezControllerV11joinHandlery5Vapor8ResponseCAE7RequestCYaKF">FezController.joinHandler(_:)</a></code>,
+<code><a href="Structs/FezController.html#/s:3App13FezControllerV13unjoinHandleryAA0B4DataV5Vapor7RequestCYaKF">FezController.unjoinHandler(_:)</a></code>, <code><a href="Structs/FezController/joinedHandler%28_%3A%29.html">FezController.joinedHandler(_:)</a></code>
+<code>FezController.openhandler(_:)</code>, <code><a href="Structs/FezController.html#/s:3App13FezControllerV12ownerHandleryAA0B8ListDataV5Vapor7RequestCYaKF">FezController.ownerHandler(_:)</a></code>,
+<code><a href="Structs/FezController.html#/s:3App13FezControllerV14userAddHandleryAA0B4DataV5Vapor7RequestCYaKF">FezController.userAddHandler(_:)</a></code>, <code><a href="Structs/FezController.html#/s:3App13FezControllerV17userRemoveHandleryAA0B4DataV5Vapor7RequestCYaKF">FezController.userRemoveHandler(_:)</a></code>,
+<code><a href="Structs/FezController.html#/s:3App13FezControllerV13cancelHandleryAA0B4DataV5Vapor7RequestCYaKF">FezController.cancelHandler(_:)</a></code>.</li>
+</ul>
 
                         <a href="Structs/FezData.html" class="slightly-smaller">See more</a>
                       </div>
@@ -892,54 +1659,12 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">FezData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">FezData</span> <span class="p">:</span> <span class="kt">Content</span><span class="p">,</span> <span class="kt">ResponseEncodable</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L246-L267">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App13FezDetailDataV"></a>
-                    <a name="//apple_ref/swift/Struct/FezDetailData" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App13FezDetailDataV">FezDetailData</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Used to return a FriendlyFez <code><a href="Classes/Barrel.html">Barrel</a></code>&lsquo;s data with discussion posts.</p>
-
-<p>Returned by:</p>
-
-<ul>
-<li><code>GET /api/v3/fez/ID</code></li>
-<li><code>POST /api/v3/fez/ID/post</code></li>
-<li><code>POST /api/v3/fex/ID/post/ID/delete</code></li>
-</ul>
-
-<p>See <code><a href="Structs/FezController.html#/s:3App13FezControllerV10fezHandlery3NIO15EventLoopFutureCyAA0B10DetailDataVG5Vapor7RequestCKF">FezController.fezHandler(_:)</a></code>, <code><a href="Structs/FezController.html#/s:3App13FezControllerV14postAddHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA14PostCreateDataVtKF">FezController.postAddHandler(_:data:)</a></code>,
-<code><a href="Structs/FezController.html#/s:3App13FezControllerV17postDeleteHandlery3NIO15EventLoopFutureCy5Vapor8ResponseCGAH7RequestCKF">FezController.postDeleteHandler(_:)</a></code>.</p>
-
-                        <a href="Structs/FezDetailData.html" class="slightly-smaller">See more</a>
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">FezDetailData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L278-L301">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L411-L459">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -967,8 +1692,8 @@
 <li><code>POST /api/v3/fez/ID/post/ID/delete</code></li>
 </ul>
 
-<p>See: <code><a href="Structs/FezController.html#/s:3App13FezControllerV10fezHandlery3NIO15EventLoopFutureCyAA0B10DetailDataVG5Vapor7RequestCKF">FezController.fezHandler(_:)</a></code>, <code><a href="Structs/FezController.html#/s:3App13FezControllerV14postAddHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA14PostCreateDataVtKF">FezController.postAddHandler(_:data:)</a></code>,
-<code><a href="Structs/FezController.html#/s:3App13FezControllerV17postDeleteHandlery3NIO15EventLoopFutureCy5Vapor8ResponseCGAH7RequestCKF">FezController.postDeleteHandler(_:)</a></code>.</p>
+<p>See: <code><a href="Structs/FezController.html#/s:3App13FezControllerV10fezHandleryAA0B4DataV5Vapor7RequestCYaKF">FezController.fezHandler(_:)</a></code>, <code>FezController.postAddHandler(_:data:)</code>,
+<code><a href="Structs/FezController.html#/s:3App13FezControllerV17postDeleteHandlery8NIOHTTP118HTTPResponseStatusO5Vapor7RequestCYaKF">FezController.postDeleteHandler(_:)</a></code>.</p>
 
                         <a href="Structs/FezPostData.html" class="slightly-smaller">See more</a>
                       </div>
@@ -976,12 +1701,12 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">FezPostData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">FezPostData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L312-L321">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L489-L500">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1009,8 +1734,8 @@
 <li><code>GET /api/v3/events/ID/forum</code></li>
 </ul>
 
-<p>See <code><a href="Structs/ForumController.html#/s:3App15ForumControllerV18forumCreateHandler_4data3NIO15EventLoopFutureCyAA0B4DataVG5Vapor7RequestC_AA0beL0VtKF">ForumController.forumCreateHandler(_:data:)</a></code>, <code><a href="Structs/ForumController.html#/s:3App15ForumControllerV12forumHandlery3NIO15EventLoopFutureCyAA0B4DataVG5Vapor7RequestCKF">ForumController.forumHandler(_:)</a></code>,
-<code><a href="Structs/EventController.html#/s:3App15EventControllerV17eventForumHandlery3NIO0B10LoopFutureCyAA0E4DataVG5Vapor7RequestCKF">EventController.eventForumHandler(_:)</a></code>.</p>
+<p>See <code>ForumController.forumCreateHandler(_:data:)</code>, <code><a href="Structs/ForumController.html#/s:3App15ForumControllerV12forumHandleryAA0B4DataV5Vapor7RequestCYaKF">ForumController.forumHandler(_:)</a></code>,
+<code>EventController.eventForumHandler(_:)</code>.</p>
 
                         <a href="Structs/ForumData.html" class="slightly-smaller">See more</a>
                       </div>
@@ -1018,12 +1743,12 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">ForumData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">ForumData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L346-L359">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L544-L561">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1049,12 +1774,11 @@
 <li><code>GET /api/v3/forum/categories/ID</code></li>
 <li><code>GET /api/v3/forum/owner</code></li>
 <li><code>GET /api/v3/user/forums</code></li>
-<li><code>GET /api/v3/forum/match/STRING</code></li>
 <li><code>GET /api/v3/forum/favorites</code></li>
 </ul>
 
-<p>See <code><a href="Structs/ForumController.html#/s:3App15ForumControllerV21categoryForumsHandlery3NIO15EventLoopFutureCySayAA0B8ListDataVGG5Vapor7RequestCKF">ForumController.categoryForumsHandler(_:)</a></code>, <code><a href="Structs/ForumController.html#/s:3App15ForumControllerV12ownerHandlery3NIO15EventLoopFutureCySayAA0B8ListDataVGG5Vapor7RequestCKF">ForumController.ownerHandler(_:)</a></code>,
-<code><a href="Structs/ForumController.html#/s:3App15ForumControllerV17forumMatchHandlery3NIO15EventLoopFutureCySayAA0B8ListDataVGG5Vapor7RequestCKF">ForumController.forumMatchHandler(_:)</a></code>, `ForumController.favoritesHandler(_:).</p>
+<p>See <code><a href="Structs/ForumController.html#/s:3App15ForumControllerV21categoryForumsHandleryAA12CategoryDataV5Vapor7RequestCYaKF">ForumController.categoryForumsHandler(_:)</a></code>, <code><a href="Structs/ForumController.html#/s:3App15ForumControllerV12ownerHandleryAA0B10SearchDataV5Vapor7RequestCYaKF">ForumController.ownerHandler(_:)</a></code>,
+<code>ForumController.forumMatchHandler(_:)</code>, `ForumController.favoritesHandler(_:).</p>
 
                         <a href="Structs/ForumListData.html" class="slightly-smaller">See more</a>
                       </div>
@@ -1062,89 +1786,12 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">ForumListData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">ForumListData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L372-L385">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App15MuteKeywordDataV"></a>
-                    <a name="//apple_ref/swift/Struct/MuteKeywordData" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App15MuteKeywordDataV">MuteKeywordData</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Used to obtain the user&rsquo;s current list of keywords for muting public content.</p>
-
-<p>Returned by:</p>
-
-<ul>
-<li><code>GET /api/v3/user/mutewords</code></li>
-<li><code>POST /api/v3/user/mutewords/add/STRING</code></li>
-<li><code>POST /api/v3/user/mutewords/remove/STRING</code></li>
-</ul>
-
-<p>See <code><a href="Structs/UserController.html#/s:3App14UserControllerV16mutewordsHandlery3NIO15EventLoopFutureCyAA15MuteKeywordDataVG5Vapor7RequestCKF">UserController.mutewordsHandler(_:)</a></code>, <code><a href="Structs/UserController.html#/s:3App14UserControllerV19mutewordsAddHandlery3NIO15EventLoopFutureCyAA15MuteKeywordDataVG5Vapor7RequestCKF">UserController.mutewordsAddHandler(_:)</a></code>,
-<code><a href="Structs/UserController.html#/s:3App14UserControllerV22mutewordsRemoveHandlery3NIO15EventLoopFutureCyAA15MuteKeywordDataVG5Vapor7RequestCKF">UserController.mutewordsRemoveHandler(_:)</a></code>.</p>
-
-                        <a href="Structs/MuteKeywordData.html" class="slightly-smaller">See more</a>
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">MuteKeywordData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L408-L413">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App13MutedUserDataV"></a>
-                    <a name="//apple_ref/swift/Struct/MutedUserData" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App13MutedUserDataV">MutedUserData</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Used to obtain the user&rsquo;s list of muted users.</p>
-
-<p>Returned by: <code>GET /api/v3/user/mutes</code></p>
-
-<p>See <code><a href="Structs/UserController.html#/s:3App14UserControllerV12mutesHandlery3NIO15EventLoopFutureCyAA05MutedB4DataVG5Vapor7RequestCKF">UserController.mutesHandler(_:)</a></code>.</p>
-
-                        <a href="Structs/MutedUserData.html" class="slightly-smaller">See more</a>
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">MutedUserData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L420-L425">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L590-L612">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1168,10 +1815,11 @@
 
 <ul>
 <li><code>GET /api/v3/user/notes</code></li>
+<li><code>GET /api/v3/users/ID/note</code></li>
 <li><code>POST /api/v3/user/note</code></li>
 </ul>
 
-<p>See <code><a href="Structs/UserController.html#/s:3App14UserControllerV12notesHandlery3NIO15EventLoopFutureCySayAA8NoteDataVGG5Vapor7RequestCKF">UserController.notesHandler(_:)</a></code>, <code><a href="Structs/UserController.html#/s:3App14UserControllerV11noteHandler_4data3NIO15EventLoopFutureCyAA8NoteDataVG5Vapor7RequestC_AA0k6UpdateL0VtKF">UserController.noteHandler(_:data:)</a></code>.</p>
+<p>See <code><a href="Structs/UserController.html#/s:3App14UserControllerV12notesHandlerySayAA8NoteDataVG5Vapor7RequestCYaKF">UserController.notesHandler(_:)</a></code>, <code>UserController.noteHandler(_:data:)</code>.</p>
 
                         <a href="Structs/NoteData.html" class="slightly-smaller">See more</a>
                       </div>
@@ -1179,47 +1827,12 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">NoteData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">NoteData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L444-L457">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App12NoteEditDataV"></a>
-                    <a name="//apple_ref/swift/Struct/NoteEditData" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App12NoteEditDataV">NoteEditData</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Used to obtain the contents of a <code><a href="Classes/UserNote.html">UserNote</a></code> for edit when viewing the associated profile.</p>
-
-<p>Returned by: <code>GET /api/v3/users/ID/note</code></p>
-
-<p>See <code><a href="Structs/UsersController.html#/s:3App15UsersControllerV11noteHandlery3NIO15EventLoopFutureCyAA12NoteEditDataVG5Vapor7RequestCKF">UsersController.noteHandler(_:)</a></code>.</p>
-
-                        <a href="Structs/NoteEditData.html" class="slightly-smaller">See more</a>
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">NoteEditData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L464-L469">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L798-L807">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1259,14 +1872,14 @@
 <li><code>GET /api/v3/forum/post/hashtag/#STRING</code></li>
 </ul>
 
-<p>See <code><a href="Structs/ForumController.html#/s:3App15ForumControllerV17postCreateHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA04PostE4DataVtKF">ForumController.postCreateHandler(_:data:)</a></code>, <code>ForumController.postUpdateHandler(_:data:)</code>,
-<code><a href="Structs/ForumController.html#/s:3App15ForumControllerV12imageHandler_4data3NIO15EventLoopFutureCyAA8PostDataVG5Vapor7RequestC_AA011ImageUploadL0VtKF">ForumController.imageHandler(_:data:)</a></code>, <code><a href="Structs/ForumController.html#/s:3App15ForumControllerV18imageRemoveHandlery3NIO15EventLoopFutureCyAA8PostDataVG5Vapor7RequestCKF">ForumController.imageRemoveHandler(_:)</a></code>,
-<code><a href="Structs/ForumController.html#/s:3App15ForumControllerV18forumSearchHandlery3NIO15EventLoopFutureCySayAA8PostDataVGG5Vapor7RequestCKF">ForumController.forumSearchHandler(_:)</a></code>, <code><a href="Structs/ForumController.html#/s:3App15ForumControllerV17postSearchHandlery3NIO15EventLoopFutureCySayAA8PostDataVGG5Vapor7RequestCKF">ForumController.postSearchHandler(_:)</a></code>
-<code><a href="Structs/ForumController.html#/s:3App15ForumControllerV16postLaughHandlery3NIO15EventLoopFutureCyAA8PostDataVG5Vapor7RequestCKF">ForumController.postLaughHandler(_:)</a></code>, <code><a href="Structs/ForumController.html#/s:3App15ForumControllerV15postLikeHandlery3NIO15EventLoopFutureCyAA8PostDataVG5Vapor7RequestCKF">ForumController.postLikeHandler(_:)</a></code>
-<code><a href="Structs/ForumController.html#/s:3App15ForumControllerV15postLoveHandlery3NIO15EventLoopFutureCyAA8PostDataVG5Vapor7RequestCKF">ForumController.postLoveHandler(_:)</a></code>, <code><a href="Structs/ForumController.html#/s:3App15ForumControllerV18postUnreactHandlery3NIO15EventLoopFutureCyAA8PostDataVG5Vapor7RequestCKF">ForumController.postUnreactHandler(_:)</a></code>,
-<code><a href="Structs/ForumController.html#/s:3App15ForumControllerV16bookmarksHandlery3NIO15EventLoopFutureCySayAA8PostDataVGG5Vapor7RequestCKF">ForumController.bookmarksHandler(_:)</a></code>, <code>ForumCOntroller.likesHandler(_:)</code>,
-<code><a href="Structs/ForumController.html#/s:3App15ForumControllerV15mentionsHandlery3NIO15EventLoopFutureCySayAA8PostDataVGG5Vapor7RequestCKF">ForumController.mentionsHandler(_:)</a></code>, <code><a href="Structs/ForumController.html#/s:3App15ForumControllerV12postsHandlery3NIO15EventLoopFutureCySayAA8PostDataVGG5Vapor7RequestCKF">ForumController.postsHandler(_:)</a></code>,
-<code><a href="Structs/ForumController.html#/s:3App15ForumControllerV18postHashtagHandlery3NIO15EventLoopFutureCySayAA8PostDataVGG5Vapor7RequestCKF">ForumController.postHashtagHandler(_:)</a></code>.</p>
+<p>See <code>ForumController.postCreateHandler(_:data:)</code>, <code>ForumController.postUpdateHandler(_:data:)</code>,
+<code>ForumController.imageHandler(_:data:)</code>, <code>ForumController.imageRemoveHandler(_:)</code>,
+<code><a href="Structs/ForumController.html#/s:3App15ForumControllerV18forumSearchHandleryAA0bE4DataV5Vapor7RequestCYaKF">ForumController.forumSearchHandler(_:)</a></code>, <code><a href="Structs/ForumController.html#/s:3App15ForumControllerV17postSearchHandleryAA04PostE4DataV5Vapor7RequestCYaKF">ForumController.postSearchHandler(_:)</a></code>
+<code><a href="Structs/ForumController.html#/s:3App15ForumControllerV16postLaughHandleryAA8PostDataV5Vapor7RequestCYaKF">ForumController.postLaughHandler(_:)</a></code>, <code><a href="Structs/ForumController.html#/s:3App15ForumControllerV15postLikeHandleryAA8PostDataV5Vapor7RequestCYaKF">ForumController.postLikeHandler(_:)</a></code>
+<code><a href="Structs/ForumController.html#/s:3App15ForumControllerV15postLoveHandleryAA8PostDataV5Vapor7RequestCYaKF">ForumController.postLoveHandler(_:)</a></code>, <code><a href="Structs/ForumController.html#/s:3App15ForumControllerV18postUnreactHandleryAA8PostDataV5Vapor7RequestCYaKF">ForumController.postUnreactHandler(_:)</a></code>,
+<code>ForumController.bookmarksHandler(_:)</code>, <code>ForumCOntroller.likesHandler(_:)</code>,
+<code>ForumController.mentionsHandler(_:)</code>, <code>ForumController.postsHandler(_:)</code>,
+<code>ForumController.postHashtagHandler(_:)</code>.</p>
 
                         <a href="Structs/PostData.html" class="slightly-smaller">See more</a>
                       </div>
@@ -1274,12 +1887,12 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">PostData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">PostData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L537-L554">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L909-L926">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1301,7 +1914,7 @@
 
 <p>Returned by: <code>GET /api/v3/forum/post/ID</code></p>
 
-<p>See <code><a href="Structs/ForumController.html#/s:3App15ForumControllerV11postHandlery3NIO15EventLoopFutureCyAA14PostDetailDataVG5Vapor7RequestCKF">ForumController.postHandler(_:)</a></code>.</p>
+<p>See <code><a href="Structs/ForumController.html#/s:3App15ForumControllerV11postHandleryAA14PostDetailDataV5Vapor7RequestCYaKF">ForumController.postHandler(_:)</a></code>.</p>
 
                         <a href="Structs/PostDetailData.html" class="slightly-smaller">See more</a>
                       </div>
@@ -1309,12 +1922,12 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">PostDetailData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">PostDetailData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L562-L581">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L976-L999">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1332,11 +1945,11 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Used to return a user&rsquo;s public profile contents.</p>
+                        <p>Used to return a user&rsquo;s public profile contents. For viewing/editing a user&rsquo;s own profile, see <code>UserProfileData</code>.</p>
 
 <p>Returned by: <code>GET /api/v3/users/ID/profile</code></p>
 
-<p>See <code><a href="Structs/UsersController.html#/s:3App15UsersControllerV14profileHandlery3NIO15EventLoopFutureCyAA17ProfilePublicDataVG5Vapor7RequestCKF">UsersController.profileHandler(_:)</a></code>.</p>
+<p>See <code><a href="Structs/UsersController.html#/s:3App15UsersControllerV14profileHandleryAA17ProfilePublicDataV5Vapor7RequestCYaKF">UsersController.profileHandler(_:)</a></code>.</p>
 
                         <a href="Structs/ProfilePublicData.html" class="slightly-smaller">See more</a>
                       </div>
@@ -1344,43 +1957,12 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">ProfilePublicData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">ProfilePublicData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L614-L635">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App9SeaMonkeyV"></a>
-                    <a name="//apple_ref/swift/Struct/SeaMonkey" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App9SeaMonkeyV">SeaMonkey</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Returned by <code><a href="Classes/Barrel.html">Barrel</a></code>s as a unit representing a user.</p>
-
-                        <a href="Structs/SeaMonkey.html" class="slightly-smaller">See more</a>
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">SeaMonkey</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L652-L657">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1024-L1043">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1400,6 +1982,12 @@
                       <div class="abstract">
                         <p>Used to return a token string for use in HTTP Bearer Authentication.</p>
 
+<p>Clients can use the <code>userID</code> field  to validate the user that logged in matches the user they <em>thiought</em> was logging in.
+This guards against a situation where one user changes their username to the previous username value
+of another user. A client using <code>/client/user/updates/since</code> could end up associating a login with the wrong
+<code><a href="Classes/User.html">User</a></code> because they were matching on <code>username</code> instead of <code>userID</code>.  That is, a user picks a username and logs in
+with their own password. Their client has a (out of date) stored User record, for a different user, that had the same username.</p>
+
 <p>Returned by:</p>
 
 <ul>
@@ -1407,7 +1995,7 @@
 <li><code>POST /api/v3/auth/recovery</code></li>
 </ul>
 
-<p>See <code><a href="Structs/AuthController.html#/s:3App14AuthControllerV12loginHandlery3NIO15EventLoopFutureCyAA15TokenStringDataVG5Vapor7RequestCKF">AuthController.loginHandler(_:)</a></code> and <code><a href="Structs/AuthController.html#/s:3App14AuthControllerV15recoveryHandler_4data3NIO15EventLoopFutureCyAA15TokenStringDataVG5Vapor7RequestC_AA012UserRecoveryM0VtKF">AuthController.recoveryHandler(_:data:)</a></code>.</p>
+<p>See <code><a href="Structs/AuthController.html#/s:3App14AuthControllerV12loginHandleryAA15TokenStringDataV5Vapor7RequestCYaKF">AuthController.loginHandler(_:)</a></code> and <code>AuthController.recoveryHandler(_:data:)</code>.</p>
 
                         <a href="Structs/TokenStringData.html" class="slightly-smaller">See more</a>
                       </div>
@@ -1415,12 +2003,12 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">TokenStringData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">TokenStringData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L666-L674">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1109-L1144">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1463,15 +2051,15 @@
 <li><code>GET /api/v3/twitarr/user/ID</code></li>
 </ul>
 
-<p>See <code><a href="Structs/TwitarrController.html#/s:3App17TwitarrControllerV19twarrtCreateHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA04PostE4DataVtKF">TwitarrController.twarrtCreateHandler(_:data:)</a></code>, <code><a href="Structs/TwitarrController.html#/s:3App17TwitarrControllerV19twarrtUpdateHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA15PostContentDataVtKF">TwitarrController.twarrtUpdateHandler(_:data:)</a></code>
-<code>TwitarrController. imageHandler(_:data:)</code>, <code><a href="Structs/TwitarrController.html#/s:3App17TwitarrControllerV18imageRemoveHandlery3NIO15EventLoopFutureCyAA10TwarrtDataVG5Vapor7RequestCKF">TwitarrController.imageRemoveHandler(_:)</a></code>
-<code><a href="Structs/TwitarrController.html#/s:3App17TwitarrControllerV18twarrtLaughHandlery3NIO15EventLoopFutureCyAA10TwarrtDataVG5Vapor7RequestCKF">TwitarrController.twarrtLaughHandler(_:)</a></code>, <code><a href="Structs/TwitarrController.html#/s:3App17TwitarrControllerV17twarrtLikeHandlery3NIO15EventLoopFutureCyAA10TwarrtDataVG5Vapor7RequestCKF">TwitarrController.twarrtLikeHandler(_:)</a></code>,
-<code><a href="Structs/TwitarrController.html#/s:3App17TwitarrControllerV17twarrtLoveHandlery3NIO15EventLoopFutureCyAA10TwarrtDataVG5Vapor7RequestCKF">TwitarrController.twarrtLoveHandler(_:)</a></code>, <code><a href="Structs/TwitarrController.html#/s:3App17TwitarrControllerV20twarrtUnreactHandlery3NIO15EventLoopFutureCyAA10TwarrtDataVG5Vapor7RequestCKF">TwitarrController.twarrtUnreactHandler(_:)</a></code>,
-<code><a href="Structs/TwitarrController.html#/s:3App17TwitarrControllerV12replyHandler_4data3NIO15EventLoopFutureCy5Vapor8ResponseCGAI7RequestC_AA14PostCreateDataVtKF">TwitarrController.replyHandler(_:data:)</a></code>, <code><a href="Structs/TwitarrController.html#/s:3App17TwitarrControllerV16bookmarksHandlery3NIO15EventLoopFutureCySayAA10TwarrtDataVGG5Vapor7RequestCKF">TwitarrController.bookmarksHandler(_:)</a></code>,
-<code><a href="Structs/TwitarrController.html#/s:3App17TwitarrControllerV12likesHandlery3NIO15EventLoopFutureCySayAA10TwarrtDataVGG5Vapor7RequestCKF">TwitarrController.likesHandler(_:)</a></code>, <code><a href="Structs/TwitarrController.html#/s:3App17TwitarrControllerV15mentionsHandlery3NIO15EventLoopFutureCySayAA10TwarrtDataVGG5Vapor7RequestCKF">TwitarrController.mentionsHandler(_:)</a></code>,
-<code><a href="Structs/TwitarrController.html#/s:3App17TwitarrControllerV14twarrtsHandlery3NIO15EventLoopFutureCySayAA10TwarrtDataVGG5Vapor7RequestCKF">TwitarrController.twarrtsHandler(_:)</a></code>, <code><a href="Structs/TwitarrController.html#/s:3App17TwitarrControllerV20twarrtsBarrelHandlery3NIO15EventLoopFutureCySayAA10TwarrtDataVGG5Vapor7RequestCKF">TwitarrController.twarrtsBarrelHandler(_:)</a></code>,
-<code><a href="Structs/TwitarrController.html#/s:3App17TwitarrControllerV21twarrtsHashtagHandlery3NIO15EventLoopFutureCySayAA10TwarrtDataVGG5Vapor7RequestCKF">TwitarrController.twarrtsHashtagHandler(_:)</a></code>, <code><a href="Structs/TwitarrController.html#/s:3App17TwitarrControllerV20twarrtsSearchHandlery3NIO15EventLoopFutureCySayAA10TwarrtDataVGG5Vapor7RequestCKF">TwitarrController.twarrtsSearchHandler(_:)</a></code>,
-<code><a href="Structs/TwitarrController.html#/s:3App17TwitarrControllerV18twarrtsUserHandlery3NIO15EventLoopFutureCySayAA10TwarrtDataVGG5Vapor7RequestCKF">TwitarrController.twarrtsUserHandler(_:)</a></code>, <code><a href="Structs/TwitarrController.html#/s:3App17TwitarrControllerV11userHandlery3NIO15EventLoopFutureCySayAA10TwarrtDataVGG5Vapor7RequestCKF">TwitarrController.userHandler(_:)</a></code>.</p>
+<p>See <code>TwitarrController.twarrtCreateHandler(_:data:)</code>, <code>TwitarrController.twarrtUpdateHandler(_:data:)</code>
+<code>TwitarrController. imageHandler(_:data:)</code>, <code>TwitarrController.imageRemoveHandler(_:)</code>
+<code><a href="Structs/TwitarrController.html#/s:3App17TwitarrControllerV18twarrtLaughHandleryAA10TwarrtDataV5Vapor7RequestCYaKF">TwitarrController.twarrtLaughHandler(_:)</a></code>, <code><a href="Structs/TwitarrController.html#/s:3App17TwitarrControllerV17twarrtLikeHandleryAA10TwarrtDataV5Vapor7RequestCYaKF">TwitarrController.twarrtLikeHandler(_:)</a></code>,
+<code><a href="Structs/TwitarrController.html#/s:3App17TwitarrControllerV17twarrtLoveHandleryAA10TwarrtDataV5Vapor7RequestCYaKF">TwitarrController.twarrtLoveHandler(_:)</a></code>, <code><a href="Structs/TwitarrController.html#/s:3App17TwitarrControllerV20twarrtUnreactHandleryAA10TwarrtDataV5Vapor7RequestCYaKF">TwitarrController.twarrtUnreactHandler(_:)</a></code>,
+<code>TwitarrController.replyHandler(_:data:)</code>, <code>TwitarrController.bookmarksHandler(_:)</code>,
+<code>TwitarrController.likesHandler(_:)</code>, <code>TwitarrController.mentionsHandler(_:)</code>,
+<code><a href="Structs/TwitarrController.html#/s:3App17TwitarrControllerV14twarrtsHandlerySayAA10TwarrtDataVG5Vapor7RequestCYaKF">TwitarrController.twarrtsHandler(_:)</a></code>, <code>TwitarrController.twarrtsBarrelHandler(_:)</code>,
+<code>TwitarrController.twarrtsHashtagHandler(_:)</code>, <code>TwitarrController.twarrtsSearchHandler(_:)</code>,
+<code>TwitarrController.twarrtsUserHandler(_:)</code>, <code>TwitarrController.userHandler(_:)</code>.</p>
 
                         <a href="Structs/TwarrtData.html" class="slightly-smaller">See more</a>
                       </div>
@@ -1479,12 +2067,12 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">TwarrtData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">TwarrtData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L707-L726">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1177-L1196">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1506,7 +2094,7 @@
 
 <p>Returned by: <code>GET /api/v3/twitarr/ID</code></p>
 
-<p>See <code><a href="Structs/TwitarrController.html#/s:3App17TwitarrControllerV13twarrtHandlery3NIO15EventLoopFutureCyAA16TwarrtDetailDataVG5Vapor7RequestCKF">TwitarrController.twarrtHandler(_:)</a></code>.</p>
+<p>See <code><a href="Structs/TwitarrController.html#/s:3App17TwitarrControllerV13twarrtHandleryAA16TwarrtDetailDataV5Vapor7RequestCYaKF">TwitarrController.twarrtHandler(_:)</a></code>.</p>
 
                         <a href="Structs/TwarrtDetailData.html" class="slightly-smaller">See more</a>
                       </div>
@@ -1514,47 +2102,12 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">TwarrtDetailData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">TwarrtDetailData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L734-L755">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App17UploadedImageDataV"></a>
-                    <a name="//apple_ref/swift/Struct/UploadedImageData" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App17UploadedImageDataV">UploadedImageData</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Used to return a filename for an uploaded image.</p>
-
-<p>Returned by: <code>POST /api/v3/user/image</code></p>
-
-<p>See <code><a href="Structs/UserController.html#/s:3App14UserControllerV12imageHandler_4data3NIO15EventLoopFutureCyAA17UploadedImageDataVG5Vapor7RequestC_AA0l6UploadM0VtKF">UserController.imageHandler(_:data:)</a></code></p>
-
-                        <a href="Structs/UploadedImageData.html" class="slightly-smaller">See more</a>
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">UploadedImageData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L762-L765">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1220-L1243">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1581,7 +2134,7 @@
 <li><code>GET /api/v3/client/user/headers/since/DATE</code></li>
 </ul>
 
-<p>See <code><a href="Structs/UsersController.html#/s:3App15UsersControllerV13headerHandlery3NIO15EventLoopFutureCyAA10UserHeaderVG5Vapor7RequestCKF">UsersController.headerHandler(_:)</a></code>, <code><a href="Structs/ClientController.html#/s:3App16ClientControllerV18userHeadersHandlery3NIO15EventLoopFutureCySayAA10UserHeaderVGG5Vapor7RequestCKF">ClientController.userHeadersHandler(_:)</a></code>.</p>
+<p>See <code><a href="Structs/UsersController.html#/s:3App15UsersControllerV13headerHandleryAA10UserHeaderV5Vapor7RequestCKF">UsersController.headerHandler(_:)</a></code>, <code>ClientController.userHeadersHandler(_:)</code>.</p>
 
                         <a href="Structs/UserHeader.html" class="slightly-smaller">See more</a>
                       </div>
@@ -1589,94 +2142,12 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">UserHeader</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">UserHeader</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L788-L795">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App8UserInfoV"></a>
-                    <a name="//apple_ref/swift/Struct/UserInfo" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App8UserInfoV">UserInfo</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Used to obtain user identity and determine whether any cached information may be stale.</p>
-
-<p>Returned by:</p>
-
-<ul>
-<li><code>GET /api/v3/users/ID</code></li>
-<li><code>GET /api/v3/users/find/STRING</code></li>
-<li><code>GET /api/v3/client/user/updates/since/DATE</code></li>
-</ul>
-
-<p>See <code><a href="Structs/UsersController.html#/s:3App15UsersControllerV11userHandlery3NIO15EventLoopFutureCyAA8UserInfoVG5Vapor7RequestCKF">UsersController.userHandler(_:)</a></code>, <code><a href="Structs/UsersController.html#/s:3App15UsersControllerV11findHandlery3NIO15EventLoopFutureCyAA8UserInfoVG5Vapor7RequestCKF">UsersController.findHandler(_:)</a></code>,
-<code><a href="Structs/ClientController.html#/s:3App16ClientControllerV18userUpdatesHandlery3NIO15EventLoopFutureCySayAA8UserInfoVGG5Vapor7RequestCKF">ClientController.userUpdatesHandler(_:)</a></code>.</p>
-
-                        <a href="Structs/UserInfo.html" class="slightly-smaller">See more</a>
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">UserInfo</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L806-L813">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App15UserProfileDataV"></a>
-                    <a name="//apple_ref/swift/Struct/UserProfileData" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App15UserProfileDataV">UserProfileData</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Used to display a user&rsquo;s profile contents for editing.</p>
-
-<p>Returned by:</p>
-
-<ul>
-<li><code>GET /api/v3/user/profile</code></li>
-<li><code>POST /api/v3/user/profile</code></li>
-</ul>
-
-<p>See <code><a href="Structs/UserController.html#/s:3App14UserControllerV14profileHandlery3NIO15EventLoopFutureCyAA0B11ProfileDataVG5Vapor7RequestCKF">UserController.profileHandler(_:)</a></code>, <code><a href="Structs/UserController.html#/s:3App14UserControllerV20profileUpdateHandler_4data3NIO15EventLoopFutureCyAA0B11ProfileDataVG5Vapor7RequestC_AA0l4EditM0VtKF">UserController.profileUpdateHandler(_:data:)</a></code>.</p>
-
-                        <a href="Structs/UserProfileData.html" class="slightly-smaller">See more</a>
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">UserProfileData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L832-L855">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1298-L1307">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1703,7 +2174,7 @@
 <li><code>GET /api/v3/client/usersearch</code></li>
 </ul>
 
-<p>See <code><a href="Structs/UsersController.html#/s:3App15UsersControllerV20matchAllNamesHandlery3NIO15EventLoopFutureCySayAA10UserSearchVGG5Vapor7RequestCKF">UsersController.matchAllNamesHandler(_:)</a></code>, <code><a href="Structs/ClientController.html#/s:3App16ClientControllerV17userSearchHandlery3NIO15EventLoopFutureCySayAA04UserE0VGG5Vapor7RequestCKF">ClientController.userSearchHandler(_:)</a></code>.</p>
+<p>See <code><a href="Structs/UsersController.html#/s:3App15UsersControllerV20matchAllNamesHandlerySayAA10UserHeaderVG5Vapor7RequestCYaKF">UsersController.matchAllNamesHandler(_:)</a></code>, <code><a href="Structs/ClientController.html#/s:3App16ClientControllerV17userSearchHandlerySayAA04UserE0VG5Vapor7RequestCYaKF">ClientController.userSearchHandler(_:)</a></code>.</p>
 
                         <a href="Structs/UserSearch.html" class="slightly-smaller">See more</a>
                       </div>
@@ -1711,12 +2182,12 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">UserSearch</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">UserSearch</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/grundoon/swiftarr/tree/master/Sources/App/Controllers/ControllerStructs.swift#L876-L881">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1572-L1577">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1729,9 +2200,8 @@
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2019 <a class="link" href="" target="_blank" rel="external">grundoon</a>. All rights reserved. (Last updated: 2019-12-24)</p>
-      <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external">jazzy ♪♫ v0.13.0</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external">Realm</a> project.</p>
+      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-04-17)</p>
+      <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.2</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
     </section>
   </body>
-</div>
 </html>

@@ -1,0 +1,35 @@
+version: '3'
+services:
+
+  postgres:
+    image: ubuntu/postgres
+    environment:
+      POSTGRES_DB: swiftarr
+      POSTGRES_USER: swiftarr
+      POSTGRES_PASSWORD: password
+    ports:
+      - 5432:5432
+
+  redis:
+    image: ubuntu/redis
+    ports:
+      - 6379:6379
+    environment:
+      ALLOW_EMPTY_PASSWORD: "yes"
+
+  prometheus:
+    image: ubuntu/prometheus
+    ports:
+      - 9090:9090
+    volumes:
+      - ./Prometheus/swiftarr.yml:/etc/prometheus/swiftarr.yml:ro
+      - ./Prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+    command:
+      - '--web.enable-admin-api'
+      - '--config.file=/etc/prometheus/swiftarr.yml'
+  alertmanager:
+    image: ubuntu/prometheus-alertmanager
+    ports:
+      - 9093:9093
+    volumes:
+      - ./Prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
