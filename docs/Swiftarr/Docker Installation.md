@@ -11,7 +11,6 @@ Prerequisites
    
     | Configuration | Description                                                         |
     |---------------|---------------------------------------------------------------------|
-    | Development   | Service dependencies and secondary instances of each for testing.   |
     | Instance      | Service dependencies only.                                          |
     | Stack         | Service dependencies and production-ready web server image.         |
    
