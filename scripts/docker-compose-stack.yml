@@ -20,7 +20,7 @@ services:
   web:
     build:
       context: ..
-      dockerfile: scripts/Dockerfile.stack
+      dockerfile: Dockerfile
       args:
         # We always build the image in production mode.
         env: production
