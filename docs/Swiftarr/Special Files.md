@@ -31,9 +31,7 @@ So I made this.
 - `development.sh`: Bash script to start/stop the database containers, and also reset them. Wraps docker-compose calls.
 - `docker-compose-development.yml`: 
 - `docker-compose-instance.yml`:
-- `docker-compose-linux-testing.yml`:
 - `docker-compose-stack.yml`:
-- `Dockerfile.linux-testing`:
 - `Dockerfile.stack`:
 - `generatedocs.sh`: Shell script that uses swift doc to generate documentation files for the API from inline header comments.
 - `instance.sh`: Shell script for staring/stopping/resetting the databases in on a Mac.

@@ -13,7 +13,6 @@ Prerequisites
     |---------------|---------------------------------------------------------------------|
     | Development   | Service dependencies and secondary instances of each for testing.   |
     | Instance      | Service dependencies only.                                          |
-    | Linux-Testing | Service dependencies and web server image that will run test suite. |
     | Stack         | Service dependencies and production-ready web server image.         |
    
     Each configuration has a corresponding shell script located in `/scripts` that is a 
@@ -38,7 +37,7 @@ Prerequisites
 Build
 -----
 
-This only applies to the Linux-Testing or Stack configurations.
+This only applies to the Stack configurations.
 
 01. `docker-compose` will handle the building of the image.
 
