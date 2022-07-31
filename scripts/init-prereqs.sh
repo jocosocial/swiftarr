@@ -11,15 +11,16 @@ set -ex
 # https://linuxhint.com/debian_frontend_noninteractive/
 export DEBIAN_FRONTEND=noninteractive
 
-# Basic prereqs
+# Basic prereqs.
+# libicu tends to rev pretty aggressively with different base images!
 apt-get -qq update
 apt-get install -y \
-  curl libatomic1 libicu60 libxml2 gnupg2 \
+  curl libatomic1 libicu66 libxml2 gnupg2 \
   libcurl4 libz-dev libbsd0 tzdata libgd3
 
 # Postgres client. Make sure to keep the repo in sync with whatever base image you're using.
 curl -sS https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add
-echo 'deb http://apt.postgresql.org/pub/repos/apt/ bionic-pgdg main' > /etc/apt/sources.list.d/pgdg.list
+echo 'deb http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main' > /etc/apt/sources.list.d/pgdg.list
 apt-get -qq update
 apt-get install -y postgresql-client-14
 
