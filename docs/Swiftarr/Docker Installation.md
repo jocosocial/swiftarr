@@ -15,8 +15,7 @@ Prerequisites
     | Stack         | Service dependencies and production-ready web server image.         |
    
     Each configuration has a corresponding shell script located in `/scripts` that is a 
-    wrapper around `docker-compose` which will aid in getting up and running. All scripts
-    should be run from the root of the repo (not from within the scripts directory).
+    wrapper around `docker-compose` which will aid in getting up and running.
    
     If you are considering doing a Stack deployment you need to decide what environment you
     wish to run. Generally this is `development` or `production`. There isn't a ton of
