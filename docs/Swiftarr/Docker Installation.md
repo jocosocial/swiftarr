@@ -60,3 +60,15 @@ Run
     ```
     scripts/stack.sh -e production down [-v]
     ```
+
+Images
+------
+As of 2022-07-31:
+
+We desire to support both AMD64 and ARM64 architectures since this offers interoperability between M*-Mac
+devs and Linux devs. Unfortunately the dependency ecosystem around ARM64 is somewhat fragmented. Bitnami,
+who publish excellent images, do [not yet support ARM64 images](https://github.com/bitnami/charts/issues/7305). The
+"Official" images (ie, `docker.io/library/*`) do support ARM64 but lack the convenience wrappers that publishers
+often add (like setting Redis credentials, etc). Canonical started publishing a bunch of images that offer both
+ARM64 support and convenience wrappers but they're still stamped Beta. Until Bitnami improves their ecosystem we're
+gonna use the Ubuntu images.
