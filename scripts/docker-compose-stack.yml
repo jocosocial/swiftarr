@@ -24,6 +24,7 @@ services:
       args:
         # We always build the image in production mode.
         env: production
+        port: ${SWIFTARR_PORT}
     ports:
       - ${SWIFTARR_PORT}:${SWIFTARR_PORT}
     depends_on:
