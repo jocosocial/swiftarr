@@ -214,6 +214,10 @@ func configureBasicSettings(_ app: Application) throws {
 	}
 	Settings.shared.apiUrl = apiUrl!
 	Logger(label: "app.swiftarr.configuration") .notice("API URL base is '\(Settings.shared.apiUrl)'.")
+
+	// Always capture stack traces, regardless of log level. Default is false.
+	// https://docs.vapor.codes/basics/errors/
+	StackTrace.isCaptureEnabled = false
 }
 func databaseConnectionConfiguration(_ app: Application) throws {
 	// configure PostgreSQL connection
