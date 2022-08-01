@@ -196,6 +196,11 @@ struct ClientController: APIRouteCollection {
 	/// `GET /api/v3/client/health`
 	///
 	/// HTTP endpoint to report application health status.
+	/// During the 2022 "Bad Gateway" issue we noticed the app taking a while to start
+	/// up with a bunch of Users in the table. During this time Traefik would route
+	/// requests but the app wasn't listening yet. This healthcheck won't complete
+	/// successfully unless the app has started so it's a good barometer of when we're
+	/// ready to service requests.
 	/// 
 	/// - Throws: 500 error if Redis or Postgres are unhappy.
 	/// - Returns: 200 OK.
