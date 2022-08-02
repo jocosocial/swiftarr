@@ -253,8 +253,10 @@ func databaseConnectionConfiguration(_ app: Application) throws {
 	// configure Redis connection
 	// support for Heroku environment. Heroku also provides "REDIS_TLS_URL", but Vapor's Redis package 
 	// may not yet support TLS database connections.
+	let redisPoolOptions: RedisConfiguration.PoolOptions = RedisConfiguration.PoolOptions(maximumConnectionCount: .maximumActiveConnections(20))
+
 	if let redisString = Environment.get("REDIS_URL"), let redisURL = URL(string: redisString) {
-		app.redis.configuration = try RedisConfiguration(url: redisURL)
+		app.redis.configuration = try RedisConfiguration(url: redisURL, pool: redisPoolOptions)
 	} else 
 	{
 		// otherwise
@@ -264,7 +266,7 @@ func databaseConnectionConfiguration(_ app: Application) throws {
 		if redisPassword == "" {
 			redisPassword = nil
 		}
-		app.redis.configuration = try RedisConfiguration(hostname: redisHostname, port: redisPort, password: redisPassword)
+		app.redis.configuration = try RedisConfiguration(hostname: redisHostname, port: redisPort, password: redisPassword, pool: redisPoolOptions)
 	}
 }
 
