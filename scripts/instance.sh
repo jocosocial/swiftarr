@@ -15,6 +15,15 @@
 # this requires any new verbs to be supported by this wrapper which feels overly
 # complex.
 
+# To accurately load the right compose file but not require the user to be in
+# specific directories in the repo, we use Git voodoo to cd to the right place for
+# this script. Then regardless if the compose fails we'll go back to where their
+# shell started.
+CURRENT_DIR=$(pwd)
+GIT_ROOT=$(git rev-parse --show-toplevel)
+
+cd $GIT_ROOT
 COMPOSE_PROJECT_NAME="swiftarr_instance"
 COMPOSE_FILE="scripts/docker-compose-instance.yml"
 docker-compose -p ${COMPOSE_PROJECT_NAME} -f ${COMPOSE_FILE} "$@"
+cd $CURRENT_DIR

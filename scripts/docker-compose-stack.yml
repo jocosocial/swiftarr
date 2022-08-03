@@ -1,23 +1,26 @@
 version: '3'
 services:
+
   postgres:
-    image: docker.io/bitnami/postgresql:14
+    image: docker.io/ubuntu/postgres:14-22.04_beta
+    user: postgres
     env_file:
       - "../Sources/App/seeds/Private Swiftarr Config/${ENVIRONMENT}.env"
     volumes:
-      - pgdata:/bitnami/postgresql
+      - pgdata:/var/lib/postgresql/data
 
   redis:
-    image: docker.io/bitnami/redis:6.2
+    image: docker.io/ubuntu/redis:6.0-22.04_beta
+    user: redis
     env_file:
       - "../Sources/App/seeds/Private Swiftarr Config/${ENVIRONMENT}.env"
     volumes:
-      - redisdata:/bitnami/redis/data
+      - redisdata:/data
 
   web:
     build:
       context: ..
-      dockerfile: scripts/Dockerfile.stack
+      dockerfile: Dockerfile
       args:
         # We always build the image in production mode.
         env: production

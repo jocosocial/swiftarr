@@ -18,7 +18,7 @@ they are:
 * `./build/workspace-state.json`
 * `./build/checkouts`
 
-The `Dockerfile.stack` will automatically attempt to copy them into the image build
+The `Dockerfile` will automatically attempt to copy them into the image build
 context if they exist. As long as they don't change that image layer will cache and
 and there will be a performance benefit in doing incremental Docker builds. Otherwise
 it'll just have to copy them into a new builder image (not the end of the world).
