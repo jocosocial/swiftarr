@@ -77,4 +77,4 @@ COPY --from=builder /build/bin/swiftarr_App.resources /app/swiftarr_App.resource
 
 # Healthcheck & Network 
 EXPOSE $port
-HEALTHCHECK --interval=10s --retries=3 --start-period=10s --timeout=10s CMD [ "/health.sh" ]
+HEALTHCHECK --interval=10s --retries=3 --start-period=3s --timeout=10s CMD [ "/health.sh" ]
