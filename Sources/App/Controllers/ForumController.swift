@@ -618,7 +618,9 @@ struct ForumController: APIRouteCollection {
 		let forum = try Forum(title: data.title, category: category, creatorID: effectiveAuthor.userID, isLocked: false)
 		async let forumSave: () = try forum.save(on: req.db)
 		try await forum.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
-		// create first post
+		// Create first post. This means we need to save the new forum so it gets it's ID from the
+		// database that we can refer to in the forumPost.
+		_ = try await forumSave
 		let forumPost = try await ForumPost(forum: forum, authorID: effectiveAuthor.userID, text: data.firstPost.text, images: imageFilenames)
 		async let postSave: () = try await forumPost.save(on: req.db)
 		try await forumPost.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
@@ -627,7 +629,7 @@ struct ForumController: APIRouteCollection {
 		category.forumCount = try await Int32(forumCount)
 		async let categorySave: () = category.save(on: req.db)
 		// At this point we've saved everything. Wait for saves to complete.
-		_ = try await [forumSave, postSave, categorySave]
+		_ = try await [postSave, categorySave]
 		// If the post @mentions anyone, update their mention counts
 		try await processForumMentions(forum: forum, post: forumPost, editedText: nil, isCreate: true, on: req)
 		let creatorHeader = effectiveAuthor.makeHeader()
