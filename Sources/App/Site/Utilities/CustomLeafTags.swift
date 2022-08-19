@@ -151,27 +151,23 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 			return $0
 		}
 		string = words.joined(separator: " ")
-		
-		// This uses a regex to find URL links that point to our server, and (somewhat) shorten them. 
-		// It attempts to use Vapor's configured hostname to match against.
-		// This would be cooler if we could parse the link path and make the link text into a description of
-		// where the link goes. e.g. "http://192.168.0.19:8081/fez/ADDBA5D9-1154-4033-88AE-07B12F3AE162"
+
+		// Links in posts should be automatically clickable. Similarly, we desire to shorten Twitarr
+		// specific links. Maybe someday we could parse them and give some linktext?
+		// e.g. "http://192.168.0.19:8081/fez/ADDBA5D9-1154-4033-88AE-07B12F3AE162"
 		// could have linktext "[An LFG Link]" or somesuch.
-		let matches = urlRegex.matches(in: string, range: NSRange(0..<string.count))
-		for match in matches.reversed() {
-			if let stringRange = Range(match.range(at: 0), in: string) {
-				var urlStr = String(string[stringRange])
-				// iOS Safari doesn't put "http(s)://" at the start links copied from the linkbar.
-				if !urlStr.hasPrefix("http") {
-					urlStr = "http://" + urlStr
-				}
-				var shortenedLinkText = urlStr
-				if match.numberOfRanges > 1, let range2 = Range(match.range(at: 1), in: string) {
-					shortenedLinkText = String(string[range2])
-				}
-				string.replaceSubrange(stringRange, with: "<a href=\"\(urlStr)\">\(shortenedLinkText)</a>")
-			}
-		}
+
+		// Since we have multiple potential Twitarr hostnames (twitarr.com, joco.hollandamerica.com)
+		// and to aid in development (localhost, etc) we can be configured with a set of canonical hostnames
+		// to replace to whatever the origin of the users request came from. For example, if you are
+		// browsing at https://twitarr.com a Twitarr link should not take you to http://joco.hollandamerica.com.
+		// While it's not the end of the world it represents a poor experience for the user.
+
+		// Find all matches in the entire text string (range 0 to end).
+		let matches = genericUrlRegex.matches(in: string, range: NSRange(0..<string.count))
+		processUrlMatches(string: &string, matches: matches)
+		let canonicalNameMatches = canonicalNamesRegex.matches(in: string, range: NSRange(0..<string.count))
+		processUrlMatches(string: &string, matches: canonicalNameMatches)
 
 		// Also convert newlines to HTML breaks.
 		string = string.replacingOccurrences(of: "\r\n", with: "<br>")
@@ -179,6 +175,51 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		string = string.replacingOccurrences(of: "\n", with: "<br>")
 		
 		return LeafData.string(string)
+	}
+
+	/// Process a set of regex matches and substitute appropriate content in a return HTML string.
+	///
+	/// Pass by ref can kinda be voodoo.
+	/// https://stackoverflow.com/questions/27364117/is-swift-pass-by-value-or-pass-by-reference
+	///
+	/// - Parameters:
+	///   - string: Reference to the Leaf string that is the HTML content to return to the user.
+	///   - matches: Array of regex matching ranges.
+	/// - Returns: void
+	///
+	private func processUrlMatches(string: inout String, matches: [NSTextCheckingResult]) -> Void {
+		// We reverse the matches since we're gonna manipulate the string and insert characters (ie, HTML)
+		// so we want to preserve the range indices if there are multiple matches within the same string.
+		for match in matches.reversed() {
+			guard let stringRange = Range(match.range(at: 0), in: string) else { continue }
+			var urlStr = String(string[stringRange])
+			// iOS Safari doesn't put "http(s)://" at the start links copied from the linkbar.
+			// If the scheme isn't specified it messes with the URLComponents constructor and it
+			// interprets the entire string as a path component. Weird.
+			if !urlStr.hasPrefix("http") {
+				urlStr = "http://\(urlStr)"
+			}
+			// Sometimes people write urls at the end of sentence like https://twitarr.com. This is
+			// not a valid URL and usually 404's, so we chomp off that last period from the match.
+			// https://stackoverflow.com/questions/24122288/remove-last-character-from-string-swift-language
+			//
+			// A future consideration could be to insert a special unicode character or sequence that the 
+			// frontend JS can detect and give users a popup saying their URL has been messed with.
+			var urlTextSuffix = ""
+			if urlStr.hasSuffix(".") {
+				urlStr = String(urlStr.dropLast())
+				urlTextSuffix = "."
+			}
+			// Strip the scheme/host/port from the link so that the origin the user is already
+			// at is preserved. The browser will automatically handle this for us.
+			// Only do this for URLs that have a real path (ie, not top level).
+			guard var url = URLComponents(string: urlStr) else { continue }
+			if Settings.shared.canonicalHostnames.contains(url.host ?? "") && !["", "/"].contains(url.path) {
+				(url.scheme, url.host, url.port) = (nil, nil, nil)
+			}
+			// This is where we replace the text in the Leaf string with the newly crafted <a> element.
+			string.replaceSubrange(stringRange, with: "<a href=\"\(url.string!)\">\(url.string!)</a>\(urlTextSuffix)")
+		}
 	}
 	
 	enum Usage {
@@ -188,12 +229,24 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		case seamail
 	}
 	let usage: Usage
-	let urlRegex: NSRegularExpression
-	init(_ forUsage: Usage, hostname: String) throws {
+	let genericUrlRegex: NSRegularExpression
+	let canonicalNamesRegex: NSRegularExpression
+	init(_ forUsage: Usage) throws {
 		usage = forUsage
-		let regexHostname = hostname.replacingOccurrences(of: ".", with: "\\.")
-		let regexStr = "(?:https?://)?\(regexHostname)(?::[0-9]+)?([-A-Z0-9+&@#/%?=~_|!:,.;]*[A-Z0-9+&@#/%=~_|])"
-		urlRegex = try NSRegularExpression(pattern: regexStr, options: .caseInsensitive)
+		
+		// Let https://regex101.com/ be your guide on this spiritual journey.
+		// This regex matches any URL starting in http:// or https://.
+		// Certain browsers (looking at you Safari on iOS) do not prefix the scheme in pasted links from the linkbar.
+		// These will not be caught by this regex but instead by the canonical names one below.
+		let genericUrlRegexStr = "(https?://)(?:[-/:.0-9A-Z?#_]+)"
+		genericUrlRegex = try NSRegularExpression(pattern: genericUrlRegexStr, options: .caseInsensitive)
+
+		// To be at least a little bit safe we replace all hostname dots (twittar.com) with regex-escaped literal dots.
+		// The canonicalNamesRegexStr has both http and https seperated because lookbacks must be of fixed length.
+		// So https?:// is unavailable which makes me sad.
+		let escapedCanonicalHostnames = Settings.shared.canonicalHostnames.joined(separator: "|").replacingOccurrences(of: ".", with: "\\.")
+		let canonicalNamesRegexStr = "(?<!(http://))(?<!(https://))(\(escapedCanonicalHostnames))(?:[-/:.0-9A-Z?#_]+)?"
+		canonicalNamesRegex = try NSRegularExpression(pattern: canonicalNamesRegexStr, options: .caseInsensitive)
 	}
 }
 
