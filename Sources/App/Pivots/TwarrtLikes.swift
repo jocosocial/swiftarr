@@ -41,6 +41,7 @@ final class TwarrtLikes: Model {
 		self.$twarrt.id = try twarrt.requireID()
 		self.$twarrt.value = twarrt
 		self.likeType = likeType
+		self.isFavorite = false
 	}
 }
 
@@ -50,7 +51,7 @@ struct CreateTwarrtLikesSchema: AsyncMigration {
 				.id()
 				.unique(on: "user", "twarrt")
 				.field("liketype", .string)
-				.field("favorite", .bool)
+				.field("favorite", .bool, .required)
  				.field("user", .uuid, .required, .references("user", "id", onDelete: .cascade))
  				.field("twarrt", .int, .required, .references("twarrt", "id", onDelete: .cascade))
 				.create()
