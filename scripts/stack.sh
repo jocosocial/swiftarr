@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# To accurately load the right compose file but not require the user to be in
+# specific directories in the repo, we use Git voodoo to cd to the right place for
+# this script. Then regardless if the compose fails we'll go back to where their
+# shell started.
+CURRENT_DIR=$(pwd)
+GIT_ROOT=$(git rev-parse --show-toplevel)
+cd $GIT_ROOT
+
 # Defaults
 environment="production"
 stackname="swiftarr"
@@ -46,3 +54,4 @@ envfile="./Sources/App/seeds/Private Swiftarr Config/${environment}.env"
 echo "Using env file at ${envfile}"
 
 docker-compose --project-name "${stackname}" --env-file "${envfile}" --file "${filename}" "${@}"
+cd $CURRENT_DIR
