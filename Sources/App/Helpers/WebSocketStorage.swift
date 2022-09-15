@@ -19,7 +19,7 @@ public struct UserSocket {
 }
 
 extension Application {
- 	/// This is where UserCache stores its in-memory cache.
+ 	/// This is where we store active WebSockets.
 	var websocketStorage: WebSocketStorage {
 		get {
 			guard let result = self.storage[WebSocketStorageKey.self] else {
@@ -33,7 +33,10 @@ extension Application {
 	}
 
 	/// This is the datatype that gets stored in UserCacheStorage. Vapor's Services API uses this.
-	struct WebSocketStorage {
+	/// Making this a class instead of a struct. This prevents internal modifications (e.g. adding/removing a value from the dicts) from causing the entire app.storage 
+	/// getting copied, in the case where app.storage is a value type composed of other value types. The custom setter for app.storage is not thread-safe. So, this is a 
+	/// workaround for app.storage having a non-thread-safe setter.
+	class WebSocketStorage {
 		// Stored by user, so userID : [UserSocket]
 		var notificationSockets: [UUID : [UserSocket]] = [:]
 		// Stored by fezID, so fezID : [UserSocket]
@@ -107,10 +110,10 @@ extension Request {
 		}
 	
 		func storeFezSocket(_ ws: UserSocket) throws {
-			let cacheLock = request.application.locks.lock(for: Application.WebSocketStorageLockKey.self)
 			guard let fezID = ws.fezID else { 
 				throw Abort(.badRequest, reason: "WebSocket for a conversation needs the conversation ID")
 			}
+			let cacheLock = request.application.locks.lock(for: Application.WebSocketStorageLockKey.self)
 			cacheLock.withLock {
 				var sockets = request.application.websocketStorage.fezSockets[fezID] ?? []
 				sockets.append(ws)
