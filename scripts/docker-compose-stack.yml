@@ -8,6 +8,8 @@ services:
       - "../Sources/App/seeds/Private Swiftarr Config/${ENVIRONMENT}.env"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    ports:
+      - ${DATABASE_PORT}:5432
 
   redis:
     image: docker.io/ubuntu/redis:6.0-22.04_beta
@@ -16,6 +18,8 @@ services:
       - "../Sources/App/seeds/Private Swiftarr Config/${ENVIRONMENT}.env"
     volumes:
       - redisdata:/data
+    ports:
+      - ${REDIS_PORT}:6379
 
   web:
     build:
@@ -24,6 +28,7 @@ services:
       args:
         # We always build the image in production mode.
         env: production
+        port: ${SWIFTARR_PORT}
     ports:
       - ${SWIFTARR_PORT}:${SWIFTARR_PORT}
     depends_on:

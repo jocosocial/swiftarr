@@ -8,6 +8,7 @@ docs
 # We exclude deployment scripts from the image builds to prevent
 # them from triggering an image build if we were to `COPY . .`
 scripts
+!scripts/health.sh
 !scripts/run.sh
 !scripts/init-prereqs.sh
 # Making these end with a * silences a warning about missing resources

@@ -83,8 +83,8 @@ struct CreateClientUsers: AsyncMigration {
 				}
 				// normalize recoveryKey, then encrypt
 				let normalizedKey = triad[2].lowercased().replacingOccurrences(of: " ", with: "")
-				let password = try? Bcrypt.hash(triad[1].trimmingCharacters(in: .whitespaces))
-				let recovery = try? Bcrypt.hash(normalizedKey)
+				let password = try? Bcrypt.hash(triad[1].trimmingCharacters(in: .whitespaces), cost: 9)
+				let recovery = try? Bcrypt.hash(normalizedKey, cost: 9)
 				guard let passwordHash = password,
 					let recoveryHash = recovery else {
 						fatalError("could not create client users: password hash failed")
