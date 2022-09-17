@@ -45,6 +45,7 @@ FROM ubuntu:20.04 as base
 # Prereqs
 COPY scripts/init-prereqs.sh /
 COPY scripts/run.sh /
+COPY scripts/health.sh /
 RUN mkdir -p /app/images
 RUN /init-prereqs.sh
 
@@ -62,7 +63,9 @@ CMD ["/run.sh"]
 FROM base
 
 ARG env
+ARG port
 ENV ENVIRONMENT=$env
+ENV PORT=$port
 ENV AUTO_MIGRATE=true
 
 # App installation
@@ -71,3 +74,7 @@ COPY --from=builder /build/bin/Run /app
 COPY --from=builder /build/lib/* /usr/lib/
 COPY --from=builder /build/bin/swiftarr_App.resources /app/swiftarr_App.resources
 # @TODO tests???
+
+# Healthcheck & Network 
+EXPOSE $port
+HEALTHCHECK --interval=10s --retries=3 --start-period=3s --timeout=10s CMD [ "/health.sh" ]

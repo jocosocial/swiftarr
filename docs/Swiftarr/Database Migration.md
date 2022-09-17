@@ -5,10 +5,9 @@ Database Migration
 01. If you are populating a fresh database then you'll need to run a migration.
     to get some data.
     See the [Vapor docs](https://docs.vapor.codes/4.0/fluent/overview/#migrate) for details.
-    This will be interactive so enter `y` at the prompt.
     ```
     # Note there is no `swift` eqivalent here. You need the vapor CLI.
-    vapor run migrate
+    swift run Run migrate [--yes]
     ```
     Example output:
     ```

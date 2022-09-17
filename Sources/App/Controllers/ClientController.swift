@@ -18,6 +18,9 @@ struct ClientController: APIRouteCollection {
 		// convenience route group for all /api/v3/client endpoints
 		let clientRoutes = app.grouped("api", "v3", "client")
 
+		// open access endpoints
+		clientRoutes.get("health", use: healthHandler)
+
 		// endpoints available only when logged in
 		let tokenAuthGroup = addTokenCacheAuthGroup(to: clientRoutes)
 		tokenAuthGroup.get("user", "updates", "since", ":date", use: userUpdatesHandler)
@@ -188,6 +191,26 @@ struct ClientController: APIRouteCollection {
 		// It's possible that Alertmanager could do something with the information
 		// it gets back but that can be a project for a different day.
 		return Response(status: .ok)
+	}
+
+	/// `GET /api/v3/client/health`
+	///
+	/// HTTP endpoint to report application health status.
+	/// During the 2022 "Bad Gateway" issue we noticed the app taking a while to start
+	/// up with a bunch of Users in the table. During this time Traefik would route
+	/// requests but the app wasn't listening yet. This healthcheck won't complete
+	/// successfully unless the app has started so it's a good barometer of when we're
+	/// ready to service requests.
+	/// 
+	/// - Throws: 500 error if Redis or Postgres are unhappy.
+	/// - Returns: 200 OK.
+	func healthHandler(_ req: Request) async throws -> HealthResponse {
+		// Redis only tests that Redis replies, which should be a pretty good indicator.
+		let _ = try await req.redis.ping().get()
+		// Postgres has to actually do a query.
+		let _ = try await User.query(on: req.db).first()
+
+		return HealthResponse()
 	}
 }
 

@@ -26,7 +26,7 @@ apt-get install -y postgresql-client-14
 
 # Wait tool. This will guarantee the database is available before allowing the container to proceed.
 # Hopefully this is not a bad idea.
-WAIT_VERSION=2.7.2
+WAIT_VERSION=2.9.0
 curl -sL -o /wait "https://github.com/ufoscout/docker-compose-wait/releases/download/${WAIT_VERSION}/wait"
 chmod +x /wait
 

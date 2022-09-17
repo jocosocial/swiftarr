@@ -1698,3 +1698,12 @@ public struct AlertmanagerWebhookPayload: Content {
 	// List of AlertmanagerAlert objects that are within this group/update.
 	var alerts: [AlertmanagerAlert]
 }
+
+/// Healthcheck URL response payload.
+/// This smells roughly the same as an error fields-wise without inheriting from the error.
+///
+public struct HealthResponse: Content {
+	var status: HTTPResponseStatus = HTTPResponseStatus.ok
+	var reason: String = "OK"
+	var error: Bool = false
+}
