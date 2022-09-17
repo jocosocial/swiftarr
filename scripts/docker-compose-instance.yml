@@ -17,7 +17,7 @@ services:
     ports:
       - 6379:6379
     environment:
-      ALLOW_EMPTY_PASSWORD: "yes"
+      REDIS_PASSWORD: password
 
   prometheus:
     image: docker.io/ubuntu/prometheus:2.20-20.04_beta

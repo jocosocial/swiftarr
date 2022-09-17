@@ -1,6 +1,8 @@
 from locust import HttpUser, task, between, FastHttpUser
 from locust import events
+import websocket
 import random
+from urllib.parse import urlparse
 
 class LoggedOutUser(FastHttpUser):
 	wait_time = between(1, 5)
@@ -565,3 +567,40 @@ class ProfileAPIUser(FastHttpUser):
 # FezUser
 # ImageUser; uploads/downloads images
 # UserUser; modifies profile, sets alertwords/blocks/mutes/mutewords
+
+class SeamailWebsocketUser(FastHttpUser):
+	wait_time = between(1, 5)
+	samAuth = { "Authorization": "Bearer " }
+	samID = ""
+	heidiAuth = { "Authorization": "Bearer " }
+	heidiID = ""
+	jamesAuth = { "Authorization": "Bearer " }
+	jamesID = ""
+	fezID = ""
+	cookie = ""
+	
+	def on_start(self):
+		authResponse = self.client.post("/api/v3/auth/login", auth=('sam', 'password'))
+		self.samAuth = { "Authorization": "Bearer " + authResponse.json()["token"] }
+		self.samID = authResponse.json()["userID"]
+		authResponse = self.client.post("/api/v3/auth/login", auth=('heidi', 'password'))
+		self.heidiAuth = { "Authorization": "Bearer " + authResponse.json()["token"] }
+		self.heidiID = authResponse.json()["userID"]
+		authResponse = self.client.post("/api/v3/auth/login", auth=('james', 'password'))
+		self.jamesAuth = { "Authorization": "Bearer " + authResponse.json()["token"] }
+		self.jamesID = authResponse.json()["userID"]
+		createResponse = self.client.post("/api/v3/fez/create", headers = self.heidiAuth, 
+				json={ "fezType": "closed", "title": "Hey Everyone", "info": "what", "minCapacity": 0, "maxCapacity": 0, "initialUsers": [ self.samID, self.jamesID ] })
+		self.fezID = createResponse.json()["fezID"]
+
+		# We need a cookie for the websocket module to talk.
+		cookieAuthResponse = self.client.post("/login", json={"username":"heidi", "password":"password"})
+		self.cookie = cookieAuthResponse.headers.get('set-cookie')
+
+	@task
+	def open_fez_websocket(self):
+		ws_host = urlparse(self.client.base_url).netloc
+
+		ws = websocket.create_connection("ws://%s/fez/%s/socket" % (ws_host, self.fezID), cookie=self.cookie)
+		ws.send("test")
+		ws.close()

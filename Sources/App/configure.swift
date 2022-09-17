@@ -217,6 +217,10 @@ func configureBasicSettings(_ app: Application) throws {
 	}
 	Settings.shared.apiUrl = apiUrl!
 	Logger(label: "app.swiftarr.configuration") .notice("API URL base is '\(Settings.shared.apiUrl)'.")
+
+	// Always capture stack traces, regardless of log level. Default is false.
+	// https://docs.vapor.codes/basics/errors/
+	StackTrace.isCaptureEnabled = false
 }
 func databaseConnectionConfiguration(_ app: Application) throws {
 	// configure PostgreSQL connection
@@ -229,7 +233,7 @@ func databaseConnectionConfiguration(_ app: Application) throws {
 	if let databaseURL = Environment.get("DATABASE_URL"), var postgresConfig = PostgresConfiguration(url: databaseURL) {
 		postgresConfig.tlsConfiguration = .makeClientConfiguration()
 		postgresConfig.tlsConfiguration?.certificateVerification = .none
-		app.databases.use(.postgres(configuration: postgresConfig, connectionPoolTimeout: .seconds(databaseTimeoutSeconds!)), as: .psql)
+		app.databases.use(.postgres(configuration: postgresConfig, maxConnectionsPerEventLoop: 1, connectionPoolTimeout: .seconds(databaseTimeoutSeconds!)), as: .psql)
 	} else 
 	{
 		// otherwise
@@ -246,14 +250,16 @@ func databaseConnectionConfiguration(_ app: Application) throws {
 			postgresPort = 5432
 		}
 		app.databases.use(.postgres(hostname: postgresHostname, port: postgresPort, username: postgresUser, 
-				password: postgresPassword, database: postgresDB, connectionPoolTimeout: .seconds(databaseTimeoutSeconds!)), as: .psql)
+				password: postgresPassword, database: postgresDB, maxConnectionsPerEventLoop: 1, connectionPoolTimeout: .seconds(databaseTimeoutSeconds!)), as: .psql)
 	}
 	
 	// configure Redis connection
 	// support for Heroku environment. Heroku also provides "REDIS_TLS_URL", but Vapor's Redis package 
 	// may not yet support TLS database connections.
+	let redisPoolOptions: RedisConfiguration.PoolOptions = RedisConfiguration.PoolOptions(maximumConnectionCount: .maximumActiveConnections(2))
+
 	if let redisString = Environment.get("REDIS_URL"), let redisURL = URL(string: redisString) {
-		app.redis.configuration = try RedisConfiguration(url: redisURL)
+		app.redis.configuration = try RedisConfiguration(url: redisURL, pool: redisPoolOptions)
 	} else 
 	{
 		// otherwise
@@ -263,7 +269,7 @@ func databaseConnectionConfiguration(_ app: Application) throws {
 		if redisPassword == "" {
 			redisPassword = nil
 		}
-		app.redis.configuration = try RedisConfiguration(hostname: redisHostname, port: redisPort, password: redisPassword)
+		app.redis.configuration = try RedisConfiguration(hostname: redisHostname, port: redisPort, password: redisPassword, pool: redisPoolOptions)
 	}
 }
 
