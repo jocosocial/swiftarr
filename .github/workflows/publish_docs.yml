@@ -8,7 +8,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Publish Jazzy Docs
-      uses: jocosocial/publish-jazzy-docs@v2
+      uses: jocosocial/publish-jazzy-docs@v2.1
       with:
         personal_access_token: ${{ secrets.DOCS_ACCESS_TOKEN }}
         config: .jazzy.yaml
