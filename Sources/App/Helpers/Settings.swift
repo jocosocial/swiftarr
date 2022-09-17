@@ -138,6 +138,9 @@ final class Settings : Encodable {
 
 	/// Endpoint to call for the API.
 	@SettingsValue var apiUrl: URL = URL(string: "http://localhost:8081/api/v3")!
+
+	/// Canonical hostnames for the Twitarr server.
+	@SettingsValue var canonicalHostnames: [String] = ["twitarr.com", "joco.hollandamerica.com"]
 }
 
 /// Derivative directory paths. These are computed property getters that return a path based on a root path.

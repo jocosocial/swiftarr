@@ -221,7 +221,26 @@ func configureBasicSettings(_ app: Application) throws {
 	// Always capture stack traces, regardless of log level. Default is false.
 	// https://docs.vapor.codes/basics/errors/
 	StackTrace.isCaptureEnabled = false
+
+	// Load the FQDNs that we expect Twitarr to be available from. This feeds into link processing to help
+	// ensure a smooth experience between users who enter the site via different hostnames. For example:
+	// http://joco.hollandamerica.com and https://twitarr.com are both expected to function and bring you
+	// the same content.
+	// The empty-string-undefined thing is a little hacky. But it solves a problem of wanting to disable all
+	// canonical hostnames. The built-in defaults are set in Settings.swift but without a feature switch boolean
+	// you can't disable them. So you can specify the environment variable empty and it will effectively
+	// generate a hostname that will never exist, thus the regexes in CustomLeafTags will never match.
+	if let canonicalHostnamesStr: String = Environment.get("SWIFTARR_CANONICAL_HOSTNAMES") {
+		if canonicalHostnamesStr == "" {
+			Settings.shared.canonicalHostnames = ["canonical-hostnames-are-undefined"]
+		} else {
+			let canonicalHostnames = canonicalHostnamesStr.split(separator: ",").map { String($0) }
+			Settings.shared.canonicalHostnames = canonicalHostnames
+		}
+		app.logger.debug("Setting canonical hostnames: \(Settings.shared.canonicalHostnames)")
+	}
 }
+
 func databaseConnectionConfiguration(_ app: Application) throws {
 	// configure PostgreSQL connection
 	// note: environment variable nomenclature is vapor.cloud compatible
@@ -365,10 +384,10 @@ func configureLeaf(_ app: Application) throws {
 
 	// Custom Leaf tags
 	app.leaf.tags["addJocomoji"] = AddJocomojiTag()
-	app.leaf.tags["formatTwarrtText"] = try FormatPostTextTag(.twarrt, hostname: app.http.server.configuration.hostname)
-	app.leaf.tags["formatPostText"] = try FormatPostTextTag(.forumpost, hostname: app.http.server.configuration.hostname)
-	app.leaf.tags["formatFezText"] = try FormatPostTextTag(.fez, hostname: app.http.server.configuration.hostname)
-	app.leaf.tags["formatSeamailText"] = try FormatPostTextTag(.seamail, hostname: app.http.server.configuration.hostname)
+	app.leaf.tags["formatTwarrtText"] = try FormatPostTextTag(.twarrt)
+	app.leaf.tags["formatPostText"] = try FormatPostTextTag(.forumpost)
+	app.leaf.tags["formatFezText"] = try FormatPostTextTag(.fez)
+	app.leaf.tags["formatSeamailText"] = try FormatPostTextTag(.seamail)
 	app.leaf.tags["relativeTime"] = RelativeTimeTag()
 	app.leaf.tags["eventTime"] = EventTimeTag()
 	app.leaf.tags["staticTime"] = StaticTimeTag()
