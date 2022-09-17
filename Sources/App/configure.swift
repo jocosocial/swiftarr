@@ -89,17 +89,20 @@ public func configure(_ app: Application) throws {
 // will handle all the cases, finding the bundle dir correctly. We also check that we can find our resource files
 // on launch.
 func configureBundle(_ app: Application) throws {
-	var resourcesPath: URL
+	var resourcesURL: URL
 	if app.environment.name == "heroku" || operatingSystemPlatform() == "Linux" {
-		resourcesPath = Bundle.main.bundleURL.appendingPathComponent("swiftarr_App.resources")
+		resourcesURL = Bundle.main.bundleURL.appendingPathComponent("swiftarr_App.resources")
 	}
 	else if Bundle(for: Settings.self).url(forResource: "swiftarr", withExtension: "css", subdirectory: "Resources/Assets/css") != nil {
-		resourcesPath = Bundle(for: Settings.self).resourceURL ?? Bundle(for: Settings.self).bundleURL
+		resourcesURL = Bundle(for: Settings.self).resourceURL ?? Bundle(for: Settings.self).bundleURL
 	}
 	else {
-		resourcesPath = Bundle.main.bundleURL.appendingPathComponent("swiftarr_App.bundle")
+		resourcesURL = Bundle.main.bundleURL.appendingPathComponent("swiftarr_App.bundle")
+		if let swiftarrBundle = Bundle(url: resourcesURL), let swiftarrResourceURL = swiftarrBundle.resourceURL {
+			resourcesURL = swiftarrResourceURL
+		}
 	}
-	Settings.shared.staticFilesRootPath = resourcesPath
+	Settings.shared.staticFilesRootPath = resourcesURL
 	Logger(label: "app.swiftarr.configuration") .notice("Set static files path to \(Settings.shared.staticFilesRootPath.path).")
 
 	// Load the variables in the .env file into our environment. This calls `setenv` on each key-value pair in the file.
