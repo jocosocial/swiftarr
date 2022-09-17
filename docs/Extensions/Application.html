@@ -976,6 +976,9 @@
                 <a class="nav-group-task-link" href="../Structs/GameRatingTag.html">GameRatingTag</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/HealthResponse.html">HealthResponse</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/JPGFormatter.html">JPGFormatter</a>
               </li>
               <li class="nav-group-task">
@@ -1507,9 +1510,9 @@ Load all users into cache at startup.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:5Vapor11ApplicationC3AppE16websocketStorageAcDE09WebSocketE0Vvp"></a>
+                    <a name="/s:5Vapor11ApplicationC3AppE16websocketStorageAcDE09WebSocketE0Cvp"></a>
                     <a name="//apple_ref/swift/Property/websocketStorage" class="dashAnchor"></a>
-                    <a class="token" href="#/s:5Vapor11ApplicationC3AppE16websocketStorageAcDE09WebSocketE0Vvp">websocketStorage</a>
+                    <a class="token" href="#/s:5Vapor11ApplicationC3AppE16websocketStorageAcDE09WebSocketE0Cvp">websocketStorage</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -1517,7 +1520,7 @@ Load all users into cache at startup.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>This is where UserCache stores its in-memory cache.</p>
+                        <p>This is where we store active WebSockets.</p>
 
                       </div>
                       <div class="declaration">
@@ -1537,9 +1540,9 @@ Load all users into cache at startup.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:5Vapor11ApplicationC3AppE16WebSocketStorageV"></a>
-                    <a name="//apple_ref/swift/Struct/WebSocketStorage" class="dashAnchor"></a>
-                    <a class="token" href="#/s:5Vapor11ApplicationC3AppE16WebSocketStorageV">WebSocketStorage</a>
+                    <a name="/s:5Vapor11ApplicationC3AppE16WebSocketStorageC"></a>
+                    <a name="//apple_ref/swift/Class/WebSocketStorage" class="dashAnchor"></a>
+                    <a class="token" href="#/s:5Vapor11ApplicationC3AppE16WebSocketStorageC">WebSocketStorage</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -1547,7 +1550,10 @@ Load all users into cache at startup.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>This is the datatype that gets stored in UserCacheStorage. Vapor&rsquo;s Services API uses this.</p>
+                        <p>This is the datatype that gets stored in UserCacheStorage. Vapor&rsquo;s Services API uses this.
+Making this a class instead of a struct. This prevents internal modifications (e.g. adding/removing a value from the dicts) from causing the entire app.storage 
+getting copied, in the case where app.storage is a value type composed of other value types. The custom setter for app.storage is not thread-safe. So, this is a 
+workaround for app.storage having a non-thread-safe setter.</p>
 
                         <a href="../Extensions/Application/WebSocketStorage.html" class="slightly-smaller">See more</a>
                       </div>
@@ -1555,12 +1561,12 @@ Load all users into cache at startup.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">WebSocketStorage</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">class</span> <span class="kt">WebSocketStorage</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/WebSocketStorage.swift#L36-L41">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/WebSocketStorage.swift#L39-L44">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1591,7 +1597,7 @@ Load all users into cache at startup.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/WebSocketStorage.swift#L44-L46">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/WebSocketStorage.swift#L47-L49">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1622,7 +1628,7 @@ with this lock&rsquo;s <code>withLock()</code> method are serialized against eac
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/WebSocketStorage.swift#L50">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/WebSocketStorage.swift#L53">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1635,8 +1641,8 @@ with this lock&rsquo;s <code>withLock()</code> method are serialized against eac
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-05-21)</p>
-      <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.2</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
+      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-09-17)</p>
+      <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
     </section>
   </body>
 </html>

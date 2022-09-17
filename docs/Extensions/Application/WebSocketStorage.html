@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>WebSocketStorage Structure Reference</title>
+    <title>WebSocketStorage Class Reference</title>
     <link rel="stylesheet" type="text/css" href="../../css/jazzy.css" />
     <link rel="stylesheet" type="text/css" href="../../css/highlight.css" />
     <meta charset="utf-8">
@@ -14,9 +14,9 @@
   </head>
   <body>
 
-    <a name="//apple_ref/swift/Struct/WebSocketStorage" class="dashAnchor"></a>
+    <a name="//apple_ref/swift/Class/WebSocketStorage" class="dashAnchor"></a>
 
-    <a title="WebSocketStorage Structure Reference"></a>
+    <a title="WebSocketStorage Class Reference"></a>
 
     <header class="header">
       <p class="header-col header-col--primary">
@@ -44,7 +44,7 @@
     <p class="breadcrumbs">
       <a class="breadcrumb" href="../../index.html">Swiftarr Reference</a>
       <img class="carat" src="../../img/carat.png" alt=""/>
-      WebSocketStorage Structure Reference
+      WebSocketStorage Class Reference
     </p>
 
     <div class="content-wrapper">
@@ -976,6 +976,9 @@
                 <a class="nav-group-task-link" href="../../Structs/GameRatingTag.html">GameRatingTag</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../../Structs/HealthResponse.html">HealthResponse</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../../Structs/JPGFormatter.html">JPGFormatter</a>
               </li>
               <li class="nav-group-task">
@@ -1301,14 +1304,17 @@
               <div class="declaration">
                 <div class="language">
                   
-                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">WebSocketStorage</span></code></pre>
+                  <pre class="highlight swift"><code><span class="kd">class</span> <span class="kt">WebSocketStorage</span></code></pre>
 
                 </div>
               </div>
-            <p>This is the datatype that gets stored in UserCacheStorage. Vapor&rsquo;s Services API uses this.</p>
+            <p>This is the datatype that gets stored in UserCacheStorage. Vapor&rsquo;s Services API uses this.
+Making this a class instead of a struct. This prevents internal modifications (e.g. adding/removing a value from the dicts) from causing the entire app.storage 
+getting copied, in the case where app.storage is a value type composed of other value types. The custom setter for app.storage is not thread-safe. So, this is a 
+workaround for app.storage having a non-thread-safe setter.</p>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/WebSocketStorage.swift#L36-L41">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/WebSocketStorage.swift#L39-L44">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1320,9 +1326,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:5Vapor11ApplicationC3AppE16WebSocketStorageV19notificationSocketsSDy10Foundation4UUIDVSayAD04UserE0VGGvp"></a>
+                    <a name="/s:5Vapor11ApplicationC3AppE16WebSocketStorageC19notificationSocketsSDy10Foundation4UUIDVSayAD04UserE0VGGvp"></a>
                     <a name="//apple_ref/swift/Property/notificationSockets" class="dashAnchor"></a>
-                    <a class="token" href="#/s:5Vapor11ApplicationC3AppE16WebSocketStorageV19notificationSocketsSDy10Foundation4UUIDVSayAD04UserE0VGGvp">notificationSockets</a>
+                    <a class="token" href="#/s:5Vapor11ApplicationC3AppE16WebSocketStorageC19notificationSocketsSDy10Foundation4UUIDVSayAD04UserE0VGGvp">notificationSockets</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -1341,7 +1347,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/WebSocketStorage.swift#L38">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/WebSocketStorage.swift#L41">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1349,9 +1355,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:5Vapor11ApplicationC3AppE16WebSocketStorageV10fezSocketsSDy10Foundation4UUIDVSayAD04UserE0VGGvp"></a>
+                    <a name="/s:5Vapor11ApplicationC3AppE16WebSocketStorageC10fezSocketsSDy10Foundation4UUIDVSayAD04UserE0VGGvp"></a>
                     <a name="//apple_ref/swift/Property/fezSockets" class="dashAnchor"></a>
-                    <a class="token" href="#/s:5Vapor11ApplicationC3AppE16WebSocketStorageV10fezSocketsSDy10Foundation4UUIDVSayAD04UserE0VGGvp">fezSockets</a>
+                    <a class="token" href="#/s:5Vapor11ApplicationC3AppE16WebSocketStorageC10fezSocketsSDy10Foundation4UUIDVSayAD04UserE0VGGvp">fezSockets</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -1370,7 +1376,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/WebSocketStorage.swift#L40">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/WebSocketStorage.swift#L43">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1383,8 +1389,8 @@
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-05-21)</p>
-      <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.2</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
+      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-09-17)</p>
+      <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
     </section>
   </body>
 </html>

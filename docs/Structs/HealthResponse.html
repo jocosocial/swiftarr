@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>CreateForumPostSchema Structure Reference</title>
+    <title>HealthResponse Structure Reference</title>
     <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
     <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
     <meta charset="utf-8">
@@ -14,9 +14,9 @@
   </head>
   <body>
 
-    <a name="//apple_ref/swift/Struct/CreateForumPostSchema" class="dashAnchor"></a>
+    <a name="//apple_ref/swift/Struct/HealthResponse" class="dashAnchor"></a>
 
-    <a title="CreateForumPostSchema Structure Reference"></a>
+    <a title="HealthResponse Structure Reference"></a>
 
     <header class="header">
       <p class="header-col header-col--primary">
@@ -44,7 +44,7 @@
     <p class="breadcrumbs">
       <a class="breadcrumb" href="../index.html">Swiftarr Reference</a>
       <img class="carat" src="../img/carat.png" alt=""/>
-      CreateForumPostSchema Structure Reference
+      HealthResponse Structure Reference
     </p>
 
     <div class="content-wrapper">
@@ -1300,17 +1300,19 @@
 
         <section class="section">
           <div class="section-content top-matter">
-            <h1>CreateForumPostSchema</h1>
+            <h1>HealthResponse</h1>
               <div class="declaration">
                 <div class="language">
                   
-                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">CreateForumPostSchema</span> <span class="p">:</span> <span class="kt">AsyncMigration</span></code></pre>
+                  <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">HealthResponse</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
 
                 </div>
               </div>
-            
+            <p>Healthcheck URL response payload.
+This smells roughly the same as an error fields-wise without inheriting from the error.</p>
+
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/ForumPost.swift#L85-L104">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1705-L1709">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1322,13 +1324,10 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App21CreateForumPostSchemaV7prepare2ony9FluentKit8Database_p_tYaKF"></a>
-                    <a name="//apple_ref/swift/Method/prepare(on:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App21CreateForumPostSchemaV7prepare2ony9FluentKit8Database_p_tYaKF">prepare(on:<wbr>)</a>
+                    <a name="/s:3App14HealthResponseV6status8NIOHTTP118HTTPResponseStatusOvp"></a>
+                    <a name="//apple_ref/swift/Property/status" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App14HealthResponseV6status8NIOHTTP118HTTPResponseStatusOvp">status</a>
                     </code>
-                      <span class="declaration-note">
-                        Asynchronous
-                      </span>
                   </div>
                   <div class="height-container">
                     <div class="pointer-container"></div>
@@ -1341,12 +1340,12 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">prepare</span><span class="p">(</span><span class="n">on</span> <span class="nv">database</span><span class="p">:</span> <span class="kt">Database</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span></code></pre>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">status</span><span class="p">:</span> <span class="kt">HTTPResponseStatus</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/ForumPost.swift#L86-L99">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1706">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1354,13 +1353,10 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App21CreateForumPostSchemaV6revert2ony9FluentKit8Database_p_tYaKF"></a>
-                    <a name="//apple_ref/swift/Method/revert(on:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App21CreateForumPostSchemaV6revert2ony9FluentKit8Database_p_tYaKF">revert(on:<wbr>)</a>
+                    <a name="/s:3App14HealthResponseV6reasonSSvp"></a>
+                    <a name="//apple_ref/swift/Property/reason" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App14HealthResponseV6reasonSSvp">reason</a>
                     </code>
-                      <span class="declaration-note">
-                        Asynchronous
-                      </span>
                   </div>
                   <div class="height-container">
                     <div class="pointer-container"></div>
@@ -1373,12 +1369,41 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">revert</span><span class="p">(</span><span class="n">on</span> <span class="nv">database</span><span class="p">:</span> <span class="kt">Database</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span></code></pre>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">reason</span><span class="p">:</span> <span class="kt">String</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/ForumPost.swift#L101-L103">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1707">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App14HealthResponseV5errorSbvp"></a>
+                    <a name="//apple_ref/swift/Property/error" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App14HealthResponseV5errorSbvp">error</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">error</span><span class="p">:</span> <span class="kt">Bool</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1708">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

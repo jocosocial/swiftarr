@@ -976,6 +976,9 @@
                 <a class="nav-group-task-link" href="../Structs/GameRatingTag.html">GameRatingTag</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/HealthResponse.html">HealthResponse</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/JPGFormatter.html">JPGFormatter</a>
               </li>
               <li class="nav-group-task">
@@ -1310,7 +1313,7 @@
 bulk retrieval services for registered API clients.</p>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L11-L192">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L11-L215">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1353,7 +1356,7 @@ bulk retrieval services for registered API clients.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L16-L30">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L16-L33">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1419,7 +1422,7 @@ is missing or invalid. 403 error if user is not a registered client.
 of all users, sorted by username.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L48-L72">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L51-L75">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1497,7 +1500,7 @@ is missing or invalid. 403 error if user is not a registered client.
                         <p>An array of <a href="doc:UserHeader">doc:UserHeader</a> containing all updated users.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L91-L116">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L94-L119">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1541,7 +1544,7 @@ by Prometheus.</p>
 plus a bunch of other metrics data. All the data is in some opaquish Prometheus format.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L127-L137">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L130-L140">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1599,7 +1602,56 @@ people to get spammed with messages while on vacation.</p>
                         <p>201 created.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L156-L191">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L159-L194">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App16ClientControllerV13healthHandleryAA14HealthResponseV5Vapor7RequestCYaKF"></a>
+                    <a name="//apple_ref/swift/Method/healthHandler(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App16ClientControllerV13healthHandleryAA14HealthResponseV5Vapor7RequestCYaKF">healthHandler(_:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>GET /api/v3/client/health</code></p>
+
+<p>HTTP endpoint to report application health status.
+During the 2022 &ldquo;Bad Gateway&rdquo; issue we noticed the app taking a while to start
+up with a bunch of Users in the table. During this time Traefik would route
+requests but the app wasn&rsquo;t listening yet. This healthcheck won&rsquo;t complete
+successfully unless the app has started so it&rsquo;s a good barometer of when we&rsquo;re
+ready to service requests.</p>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    500 error if Redis or Postgres are unhappy.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">healthHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/HealthResponse.html">HealthResponse</a></span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>200 OK.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ClientController.swift#L207-L214">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1612,8 +1664,8 @@ people to get spammed with messages while on vacation.</p>
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-05-21)</p>
-      <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.2</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
+      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-09-17)</p>
+      <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
     </section>
   </body>
 </html>
