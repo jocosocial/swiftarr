@@ -15,46 +15,61 @@
 </head>
 <body style="background-image: url('/img/background.png'); background-size: 100%;">
 
-	<nav class="navbar navbar-dark bg-light pt-3 sticky-top" style="background-image: url('/img/header-waves.png'); background-repeat: repeat-x;">
-		<div class="container-fluid justify-content-start">
-			<div class="row">
-				<div class="col pe-0 mt-1">	  
-					<span class="link-light navbar-brand me-2" data-bs-toggle="collapse" data-bs-target="\#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+	<nav class="navbar navbar-dark bg-light pt-3 mb-2 sticky-top" style="background-image: url('/img/header-waves.png'); background-repeat: repeat-x;">
+		<div class="container-fluid px-0">
+			<div class="row justify-content-between w-100 ms-3 me-2">
+				<div class="col-auto px-0 mt-1">	  
+					<span class="link-light navbar-brand me-1" data-bs-toggle="collapse" data-bs-target="\#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
 						<span class="#if(trunk.alertCounts.newAnnouncementCount > 0):border-bottom border-danger#endif#if(trunk.inTwitarrSubmenu): fw-bold#endif">
-							Twit-arr			
+							<img src="/img/menuIcon.png" width=24 height=24 alt="Twit-arr">
 						</span>
 					</span>
 				</div>
-				<div class="col px-0">	  
+				<div class="col-auto px-0">	  
 					<a class="nav-item nav-link link-light px-1 #if(trunk.tab == "twarrts"):active#endif" #if(trunk.tab == "twarrts"):aria-current="page"#endif href="/tweets">
 						<span class="#if(trunk.alertCounts.newTwarrtMentionCount > 0 || trunk.newTweetAlertwords):border-bottom border-danger#endif">
 							Tweets			
 						</span>
 					</a>
 				</div>
-				<div class="col px-0">	  
+				<div class="col-auto px-0">	  
 					<a class="nav-item nav-link link-light px-1#if(trunk.tab == "forums"): active#endif" #if(trunk.tab == "forums"):aria-current="page"#endif href="/forums">
 						<span class="#if(trunk.alertCounts.newForumMentionCount > 0 || trunk.newForumAlertwords):border-bottom border-danger#endif">
 							Forums
 						</span>
 					</a>
 				</div>
-				<div class="col px-0">	  
+				<div class="col-auto px-0">	  
 					<a class="nav-item nav-link link-light px-1#if(trunk.tab == "seamail"): active#endif" #if(trunk.tab == "seamail"):aria-current="page"#endif href="/seamail">
 						<span #if(trunk.alertCounts.newSeamailMessageCount > 0):class="border-bottom border-danger"#endif>
-							Seamail
+							Chat
 						</span>
 					</a>
 				</div>
-				<div class="col px-0">	  
+				<div class="col-auto px-0">	  
 					<a class="nav-item nav-link link-light px-1 #if(trunk.tab == "events"): active#endif" #if(trunk.tab == "events"):aria-current="page"#endif href="/events">
 						<span #if(trunk.eventStartingSoon == true):class="border-bottom border-danger"#endif>
 							Schedule
 						</span>
 					</a>
 				</div>
+				<div class="col-auto px-0">	  
+					<a class="nav-item nav-link link-light px-1 #if(trunk.tab == "lfg"): active#endif" #if(trunk.tab == "lfg"):aria-current="page"#endif href="/fez">
+						<span class="#if(trunk.alertCounts.newFezMessageCount > 0):border-bottom border-danger#endif">
+							LFG
+						</span>
+					</a>
+				</div>
+				<div class="col px-0"></div>
+				#if(trunk.searchPrompt):
+					<div class="col-auto px-0 mt-1">	  
+						<span class="link-light navbar-brand me-0" data-bs-toggle="collapse" data-bs-target="\#searchBar" aria-controls="searchBar" aria-expanded="false" aria-label="Toggle Search Bar">
+							<img src="/img/searchIcon.png" width=24 height=24 alt="Search Bar">
+						</span>
+					</div>
+				#endif
 			</div>
-			<div class="collapse navbar-collapse" id="navbarSupportedContent">
+			<div class="collapse navbar-collapse px-3" id="navbarSupportedContent">
 				<ul class="navbar-nav navbar-dark bg-transparent mb-3">
 					<li class="nav-item d-flex align-items-center">
 						<a class="nav-link #if(trunk.tab == "home"): active#endif" href="/">
@@ -127,26 +142,34 @@
 					#endif
 					</li>
 				</ul>
-				#if(trunk.searchPrompt):
+			</div>
+			#if(trunk.searchPrompt):
+				<div class="container-fluid collapse swiftarr-searchbar#if(trunk.searchString): show#endif" id="searchBar">
 					#if(trunk.tab == "forums"):
-						<form class="d-flex" action="/forum/search">
-							<div class="input-group btn-group" role="group" aria-label="Search bar and options">
-								<input class="form-control" type="search" name="search" placeholder="#(trunk.searchPrompt)" aria-label="Search" autocapitalize="off" required>
-								<input type="radio" class="btn-check" name="searchType" value="forums" id="forumsButton" autocomplete="off" checked>
-								<label class="btn btn-outline-success flex-grow-0" for="forumsButton">Forums</label>
-								<input type="radio" class="btn-check" name="searchType" value="posts" id="postsButton" autocomplete="off">
-								<label class="btn btn-outline-success flex-grow-0" for="postsButton">Posts</label>
+						<form action="/forum/search">
+							<div class="btn-group w-100 mb-1" role="group" aria-label="Toggle for searching Forums or Posts">
+									<input type="radio" class="btn-check" name="searchType" value="forums" id="forumsButton" autocomplete="off" #if(trunk.searchPosts == false):checked#endif>
+									<label class="btn btn-outline-success flex-grow-0 col-6 ms-0" for="forumsButton">Forums</label>
+									<input type="radio" class="btn-check" name="searchType" value="posts" id="postsButton" autocomplete="off" #if(trunk.searchPosts == true):checked#endif>
+									<label class="btn btn-outline-success flex-grow-0 col-6 ms-0" for="postsButton">Posts</label>
 							</div>
-							<button class="btn btn-success ms-2" type="submit">Search</button>
+							<div class="row justify-content-between">
+								<div class="col flex-grow-1 pe-0">
+									<input class="form-control" type="search" name="search" value="#(trunk.searchString)" placeholder="#(trunk.searchPrompt)" aria-label="Search" autocapitalize="off" required>
+								</div>
+								<div class="col col-auto ps-0">
+									<button class="btn btn-success ms-2" type="submit">Search</button>
+								</div>
+							</div>
 						</form>
 					#else:
 						<form class="d-flex">
-							<input class="form-control" type="search" name="search" placeholder="#(trunk.searchPrompt)" aria-label="Search" autocapitalize="off" required>
+							<input class="form-control" type="search" name="search" value="#(trunk.searchString)" placeholder="#(trunk.searchPrompt)" aria-label="Search" autocapitalize="off" required>
 							<button class="btn btn-success ms-2" type="submit">Search</button>
 						</form>
 					#endif
-				#endif
-			</div>
+				</div>
+			#endif
 		</div>
 	</nav>
 

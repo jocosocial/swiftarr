@@ -6,7 +6,9 @@ import FluentSQL
 struct TrunkContext: Encodable {
 	var title: String
 	var metaRedirectURL: String?
-	var searchPrompt: String?
+	var searchPrompt: String?				// Tells user what search fields does e.g. "Search Tweets" 
+	var searchString: String?				// The user's previously entered search string. Nil if this page isn't search results.
+	var searchPosts: Bool					// TRUE if we're searching posts; only relevant if we're using the Forum search form
 	
 	// current nav item
 	enum Tab: String, Codable {
@@ -82,6 +84,13 @@ struct TrunkContext: Encodable {
 		self.inTwitarrSubmenu = [.home, .lfg, .games, .karaoke, .moderator, .admin].contains(tab)
 		self.searchPrompt = search
 		self.displayTimeZone = Settings.shared.getDisplayTimeZone()
+		
+		// Pull search params, if any, out of the request's query. 
+		// This is to place the (just-run) search params back in the search form.
+		let queryItems = req.url.query?.split(separator: "&")
+		searchString = queryItems?.first(where: { $0.hasPrefix("search=") })?.dropFirst(7).replacingOccurrences(of: "+", with: " ")
+				.removingPercentEncoding
+		searchPosts = queryItems?.contains("searchType=posts") ?? false
 		
 		newTweetAlertwords = alertCounts.alertWords.contains { $0.newTwarrtMentionCount > 0 }
 		newForumAlertwords = alertCounts.alertWords.contains { $0.newForumMentionCount > 0 }
@@ -540,8 +549,8 @@ extension SiteControllerUtils {
     	}
     	
     	// Step 2: Generate URLComponents, extract a 'clean' path, append the 'clean' path for the endpoint.
-		guard var urlComponents = URLComponents(url: Settings.shared.apiUrl, resolvingAgainstBaseURL: true),
-				let apiPathURL = URL(string: urlComponents.path),
+		var urlComponents = Settings.shared.apiUrlComponents
+		guard let apiPathURL = URL(string: urlComponents.path),
 				let endpointComponents = URLComponents(string: endpoint) else {
 		 	throw Abort(.internalServerError, reason: "Unable to decode API URL components.")
 		}

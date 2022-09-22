@@ -54,7 +54,7 @@ public func configure(_ app: Application) throws {
 
 	// Remember: Stored Settings are not available during configuration--only 'basic' settings.
 	try databaseConnectionConfiguration(app)
-	try HTTPServerConfiguration(app)
+	try configureHTTPServer(app)
 	try configureMiddleware(app)
 	try configureSessions(app)
 	try configureLeaf(app)
@@ -66,6 +66,8 @@ public func configure(_ app: Application) throws {
 	// Posts on RedisKit's github bug db say the solution is to call boot() early. 
 	try app.boot()
 	
+	try configureAPIURL(app)
+
 	// Check that we can access everything.
 	try verifyConfiguration(app)
 	
@@ -123,6 +125,8 @@ func configureBundle(_ app: Application) throws {
 	}
 }
 
+// Sets up the cruise start date, image file types supported on the local machine, and determines a few local file paths.
+// Note that other configuration methods rely on values set by this method.
 func configureBasicSettings(_ app: Application) throws {
 
 	// Set the cruise start date to a date that works with the Schedule.ics file that we have. Until we have
@@ -200,45 +204,9 @@ func configureBasicSettings(_ app: Application) throws {
 	}
 	Logger(label: "app.swiftarr.configuration") .notice("Set userImages path to \(Settings.shared.userImagesRootPath.path).")
 
-	// API URL. We used to determine this in SiteController in apiQuery() based on the HTTP Host headers.
-	// Due to the way the boat network is architected the HTTP host headers had to be stripped away and reset
-	// to the container hostname/IP because of some NAT translations that we had no control over. Additionally,
-	// to facilitate the eventual breaking up of the UI and API it would be better if we could point the UI
-	// at any API endpoint and say "go". Unfortunately the Settings constructs are somewhat interlinked but
-	// hey maybe someday we will complete the split.
-	let apiScheme = Environment.get("API_SCHEME") ?? "http"
-	let apiHostname = Environment.get("API_HOSTNAME") ?? "127.0.0.1"
-	// Don't bother casting this to an int, we're just gonna process it as a string the whole way through.
-	let apiPort = Environment.get("API_PORT") ?? "8081"
-	let apiPrefix = Environment.get("API_PREFIX") ?? "/api/v3"
-	let apiUrl = URL(string: "\(apiScheme)://\(apiHostname):\(apiPort)\(apiPrefix)")
-	guard apiUrl != nil else {
-		throw "Unable to construct a valid API URL."
-	}
-	Settings.shared.apiUrl = apiUrl!
-	Logger(label: "app.swiftarr.configuration") .notice("API URL base is '\(Settings.shared.apiUrl)'.")
-
 	// Always capture stack traces, regardless of log level. Default is false.
 	// https://docs.vapor.codes/basics/errors/
 	StackTrace.isCaptureEnabled = false
-
-	// Load the FQDNs that we expect Twitarr to be available from. This feeds into link processing to help
-	// ensure a smooth experience between users who enter the site via different hostnames. For example:
-	// http://joco.hollandamerica.com and https://twitarr.com are both expected to function and bring you
-	// the same content.
-	// The empty-string-undefined thing is a little hacky. But it solves a problem of wanting to disable all
-	// canonical hostnames. The built-in defaults are set in Settings.swift but without a feature switch boolean
-	// you can't disable them. So you can specify the environment variable empty and it will effectively
-	// generate a hostname that will never exist, thus the regexes in CustomLeafTags will never match.
-	if let canonicalHostnamesStr: String = Environment.get("SWIFTARR_CANONICAL_HOSTNAMES") {
-		if canonicalHostnamesStr == "" {
-			Settings.shared.canonicalHostnames = ["canonical-hostnames-are-undefined"]
-		} else {
-			let canonicalHostnames = canonicalHostnamesStr.split(separator: ",").map { String($0) }
-			Settings.shared.canonicalHostnames = canonicalHostnames
-		}
-		app.logger.debug("Setting canonical hostnames: \(Settings.shared.canonicalHostnames)")
-	}
 }
 
 func databaseConnectionConfiguration(_ app: Application) throws {
@@ -292,7 +260,7 @@ func databaseConnectionConfiguration(_ app: Application) throws {
 	}
 }
 
-
+// Loads stored setting values from Redis. Must be called after app.boot, because Redis isn't ready until then.
 func configureStoredSettings(_ app: Application) throws {
 	let promise = app.eventLoopGroup.next().makePromise(of: Void.self)
 	promise.completeWithTask {
@@ -301,8 +269,8 @@ func configureStoredSettings(_ app: Application) throws {
 	let _ : EventLoopFuture<Void> = promise.futureResult
 }
 
-func HTTPServerConfiguration(_ app: Application) throws {
-	// run API on port 8081 by default and set a 10MB hard limit on file size
+func configureHTTPServer(_ app: Application) throws {
+	// run Web UI on port 8081 by default and set a 10MB hard limit on file size
     let port = Int(Environment.get("SWIFTARR_PORT") ?? "8081")!
 	app.http.server.configuration.port = port
 	app.routes.defaultMaxBodySize = "10mb"
@@ -310,7 +278,10 @@ func HTTPServerConfiguration(_ app: Application) throws {
 	// Enable HTTP response compression.
 	// app.http.server.configuration.responseCompression = .enabled
 	
-	if let host = Environment.get("SWIFTARR_IP") {
+	// Each environment type has its own default hostname. The hostname controls which address we will accept new connections on.
+	// The default hostname for an environment may be overridden with the "SWIFTARR_HOSTNAME" environment variable,
+	// and the "--hostname <addr>" command line parameter overrides the environment var.
+	if let host = Environment.get("SWIFTARR_HOSTNAME") {
 		app.http.server.configuration.hostname = host
 	}
 	else if app.environment == .development {
@@ -322,6 +293,42 @@ func HTTPServerConfiguration(_ app: Application) throws {
 	else if app.environment.name == "heroku" {
 		app.http.server.configuration.hostname = "swiftarr.herokuapp.com"
 	}
+	
+	// Load the FQDNs that we expect Twitarr to be available from. This feeds into link processing to help
+	// ensure a smooth experience between users who enter the site via different hostnames. For example:
+	// http://joco.hollandamerica.com and https://twitarr.com are both expected to function and bring you
+	// the same content.
+	// The empty-string-undefined thing is a little hacky. But it solves a problem of wanting to disable all
+	// canonical hostnames. The built-in defaults are set in Settings.swift but without a feature switch boolean
+	// you can't disable them. So you can specify the environment variable empty and it will effectively
+	// generate a hostname that will never exist, thus the regexes in CustomLeafTags will never match.
+	if let canonicalHostnamesStr: String = Environment.get("SWIFTARR_CANONICAL_HOSTNAMES") {
+		Settings.shared.canonicalHostnames = canonicalHostnamesStr.split(separator: ",").map { String($0) }
+	}
+	else if !app.http.server.configuration.hostname.isEmpty {
+		Settings.shared.canonicalHostnames.append(app.http.server.configuration.hostname)
+	}
+	app.logger.debug("Setting canonical hostnames: \(Settings.shared.canonicalHostnames)")
+}
+
+func configureAPIURL(_ app: Application) throws {
+	// API URL. We used to determine this in SiteController in apiQuery() based on the HTTP Host headers.
+	// Due to the way the boat network is architected the HTTP host headers had to be stripped away and reset
+	// to the container hostname/IP because of some NAT translations that we had no control over. Additionally,
+	// to facilitate the eventual breaking up of the UI and API it would be better if we could point the UI
+	// at any API endpoint and say "go". Unfortunately the Settings constructs are somewhat interlinked but
+	// hey maybe someday we will complete the split.
+	let apiScheme = Environment.get("API_SCHEME") ?? "http"
+	let apiHostname = app.http.server.configuration.hostname	// Environment.get("API_HOSTNAME") ?? "127.0.0.1"
+	// Don't bother casting this to an int, we're just gonna process it as a string the whole way through.
+	let apiPort = app.http.server.configuration.port			// Environment.get("API_PORT") ?? "8081"
+	let apiPrefix = Environment.get("API_PREFIX") ?? "/api/v3"
+	guard let apiUrlComponents = URLComponents(string: "\(apiScheme)://\(apiHostname):\(apiPort)\(apiPrefix)"),
+		let outputURL = apiUrlComponents.url else {
+		throw "Unable to construct a valid API URL."
+	}
+	Settings.shared.apiUrlComponents = apiUrlComponents
+	Logger(label: "app.swiftarr.configuration") .notice("API URL base is '\(outputURL)'.")
 }
 
 // register global middleware

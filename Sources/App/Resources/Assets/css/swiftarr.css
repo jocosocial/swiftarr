@@ -124,3 +124,7 @@ duration-select:focus {
 .swiftarr-textfield {
 	max-width: 300px;
 }
+
+.swiftarr-searchbar {
+	background-color: #063953;
+}

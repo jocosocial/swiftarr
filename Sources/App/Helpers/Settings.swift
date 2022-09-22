@@ -137,7 +137,7 @@ final class Settings : Encodable {
 	@SettingsValue var userImagesRootPath: URL = URL(fileURLWithPath: "~/swiftarrImages")
 
 	/// Endpoint to call for the API.
-	@SettingsValue var apiUrl: URL = URL(string: "http://localhost:8081/api/v3")!
+	@SettingsValue var apiUrlComponents: URLComponents = URLComponents(string: "http://localhost:8081/api/v3")!
 
 	/// Canonical hostnames for the Twitarr server.
 	@SettingsValue var canonicalHostnames: [String] = ["twitarr.com", "joco.hollandamerica.com"]

@@ -108,3 +108,11 @@ extension Comparable {
 		return max(limits.lowerBound, min(self, limits.upperBound))
 	}
 }
+
+// Another thing Foundation ought to have. String(substring) requires a non-optional substring. 
+// let x: String? = substring?.string -- uses chaining to allow an optional substring to be converted into an optional String.
+extension Substring {
+	var string: String {
+		String(self)
+	}
+}
