@@ -18,11 +18,13 @@
 	<nav class="navbar navbar-dark bg-light pt-3 mb-2 sticky-top" style="background-image: url('/img/header-waves.png'); background-repeat: repeat-x;">
 		<div class="container-fluid px-0">
 			<div class="row justify-content-between w-100 ms-3 me-2">
-				<div class="col-auto px-0 mt-1">	  
-					<span class="link-light navbar-brand me-1" data-bs-toggle="collapse" data-bs-target="\#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-						<span class="#if(trunk.alertCounts.newAnnouncementCount > 0):border-bottom border-danger#endif#if(trunk.inTwitarrSubmenu): fw-bold#endif">
+				<div class="col-auto px-0 mt-1 me-1">	  
+					<span class="link-light navbar-brand me-0 #if(trunk.alertCounts.newAnnouncementCount > 0):border-bottom border-danger#endif" data-bs-toggle="collapse" data-bs-target="\#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+						#if(trunk.inTwitarrSubmenu):
+							<img src="/img/menuIconBold.png" width=24 height=24 alt="Twit-arr">
+						#else:
 							<img src="/img/menuIcon.png" width=24 height=24 alt="Twit-arr">
-						</span>
+						#endif
 					</span>
 				</div>
 				<div class="col-auto px-0">	  
@@ -103,7 +105,9 @@
 						<a class="nav-link #if(trunk.tab == "time"): active#endif" href="/time">Time Zone Check</a>
 					</li>
 					#if(trunk.userIsMod):
-						<hr class="main-menu-divider">
+						<li>
+							<hr class="main-menu-divider">
+						</li>
 						<li class="nav-item d-flex align-items-center">
 							<a class="nav-link #if(trunk.tab == "moderator"): active#endif" href="/moderator">
 								<span class="#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 0 || trunk.alertCounts.moderatorData.openReportCount):border-bottom border-danger#endif">Moderator Pages</span>
@@ -133,7 +137,9 @@
 							#endif
 						</li>
 					#endif
-					<hr class="main-menu-divider">
+					<li>
+						<hr class="main-menu-divider">
+					</li>
 					<li class="nav-item">
 					#if(trunk.userIsLoggedIn):
 						<a class="nav-link" href="/logout">Logout #(trunk.username)</a>
