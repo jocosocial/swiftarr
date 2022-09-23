@@ -19,7 +19,7 @@ struct ForumPageContext : Encodable {
 		}
 		else {
 			category = CategoryData(categoryID: UUID(), title: "Unknown Category", purpose: "",
-					isRestricted: false, numThreads: 0, forumThreads: nil)
+					isRestricted: false, isEventCategory: false, numThreads: 0, forumThreads: nil)
 		}
 		paginator = PaginatorContext(forum.paginator) { pageIndex in
 			"/forum/\(forum.forumID)?start=\(pageIndex * forum.paginator.limit)&limit=\(forum.paginator.limit)"
@@ -273,6 +273,7 @@ struct SiteForumController: SiteControllerUtils {
 			var forums: CategoryData
 			var paginator: PaginatorContext
 			
+			var sortEventTime: String?
 			var sortMostRecent: String
 			var sortCreationTime: String
 			var sortTitle: String
@@ -283,15 +284,16 @@ struct SiteForumController: SiteControllerUtils {
 				self.forums = forums
 				paginator = .init(start: start, total: Int(forums.numThreads), limit: limit) { pageIndex in
 					"/forums/\(forums.categoryID)?start=\(pageIndex * limit)&limit=\(limit)"
-				}				
+				}
+				if forums.isEventCategory {
+					sortEventTime = Self.makeSortPath(urlStr: req.url.string, name: "sort", value: "event")
+				}
 				sortMostRecent = Self.makeSortPath(urlStr: req.url.string, name: "sort", value: "update")
 				sortCreationTime = Self.makeSortPath(urlStr: req.url.string, name: "sort", value: "create")
 				sortTitle = Self.makeSortPath(urlStr: req.url.string, name: "sort", value: "title")
+				activeSort = forums.isEventCategory ? "event" : "update"
 				if let components = URLComponents(string: req.url.string), let sort = components.queryItems?.first(where: { $0.name == "sort" }) {
-					activeSort = sort.value ?? "update"
-				}
-				else {
-					activeSort = "update"
+					activeSort = sort.value ?? (forums.isEventCategory ? "event" : "update")
 				}
 			}
 			
@@ -330,7 +332,7 @@ struct SiteForumController: SiteControllerUtils {
 				}
 				else {
 					category = CategoryData(categoryID: UUID(), title: "Unknown Category", purpose: "",
-							isRestricted: false, numThreads: 0, forumThreads: nil)
+							isRestricted: false, isEventCategory: false, numThreads: 0, forumThreads: nil)
 				}
 			}
 		}

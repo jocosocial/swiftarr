@@ -17,6 +17,9 @@
 							Sort
 						</button>
 						<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="eventFilterMenu">
+							#if(sortEventTime):
+								<li><a class="dropdown-item #if(activeSort == "event"):active#endif" href="#(sortEventTime)">Event Time</a></li>
+							#endif
 							<li><a class="dropdown-item #if(activeSort == "update"):active#endif" href="#(sortMostRecent)">Most Recent Post</a></li>
 							<li><a class="dropdown-item #if(activeSort == "create"):active#endif" href="#(sortCreationTime)">Creation Time</a></li>
 							<li><a class="dropdown-item #if(activeSort == "title"):active#endif" href="#(sortTitle)">Title</a></li>

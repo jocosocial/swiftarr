@@ -25,6 +25,9 @@ final class Category: Model {
 	/// A short string describing what the Category is for. Color commentary for the category.
 	@Field(key: "purpose") var purpose: String
 	
+	/// TRUE if this category holds forums for Events. 
+	@Field(key: "is_event_category") var isEventCategory: Bool
+	
 	/// Minimum access level to view posts in this category. Usually set to `.quarantined`. But, a category reserved for moderators only
 	/// could have this set to `.moderator`.
 	@Enum(key: "view_access_level") var accessLevelToView: UserAccessLevel
@@ -61,12 +64,14 @@ final class Category: Model {
 	/// - Parameters:
 	///   - title: The title for the the category.
 	///   - isRestricted: Whether users can create forums in the category.
-	init(title: String,  purpose: String, viewAccess: UserAccessLevel = .quarantined, createForumAccess: UserAccessLevel = .verified) {
+	init(title: String,  purpose: String, viewAccess: UserAccessLevel = .quarantined, createForumAccess: UserAccessLevel = .verified,
+			isEventCategory: Bool = false) {
 		self.title = title
 		self.purpose = purpose
 		self.accessLevelToView = viewAccess
 		self.accessLevelToCreate = createForumAccess
 		self.forumCount = 0
+		self.isEventCategory = isEventCategory
 	}
 }
 
@@ -78,6 +83,7 @@ struct CreateCategorySchema: AsyncMigration {
 				.field("title", .string, .required)
 				.unique(on: "title")
 				.field("purpose", .string, .required)
+				.field("is_event_category", .bool, .required)
 				.field("view_access_level", userAccessLevel, .required)
 				.field("create_access_level", userAccessLevel, .required)
 				.field("forumCount", .int32, .required)

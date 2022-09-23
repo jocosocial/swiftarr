@@ -22,8 +22,8 @@ struct CreateCategories: AsyncMigration {
 			.init(title: "Mods Only Dumpster Fire", purpose: "Mods: Move flamewar theads here", viewAccess: .moderator, createForumAccess: .moderator),
 
 			// categories in which users cannot add forums but can post in existing forums
-			.init(title: "Event Forums", purpose: "A thread for each Official event", createForumAccess: .moderator),
-			.init(title: "Shadow Event Forums", purpose: "A thread for each Shadow event", createForumAccess: .moderator),
+			.init(title: "Event Forums", purpose: "A thread for each Official event", createForumAccess: .moderator, isEventCategory: true),
+			.init(title: "Shadow Event Forums", purpose: "A thread for each Shadow event", createForumAccess: .moderator, isEventCategory: true),
 
 			// categories in which users can add forums
 			.init(title: "Help Desk", purpose: "Need help? Ask here."),

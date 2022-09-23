@@ -173,6 +173,8 @@ public struct CategoryData: Content {
 	var purpose: String
 	/// If TRUE, the user cannot create/modify threads in this forum. Should be sorted to top of category list.
 	var isRestricted: Bool
+	/// if TRUE, this category is for Event Forums, and is prepopulated with forum threads for each Schedule Event.
+	var isEventCategory: Bool
 	/// The number of threads in this category
 	var numThreads: Int32
 	///The threads in the category. Only populated for /categories/ID.
@@ -185,6 +187,7 @@ extension CategoryData {
 		title = cat.title
 		purpose = cat.purpose
 		isRestricted = restricted
+		isEventCategory = cat.isEventCategory
 		numThreads = cat.forumCount
 		self.forumThreads = forumThreads
 	}

@@ -117,7 +117,9 @@ struct ForumController: APIRouteCollection {
 	/// Retrieve a list of forums in the specifiec `Category`. Will not return forums created by blocked users.
 	/// 
 	/// **URL Query Parameters:**
-	/// * `?sort=[create, update, title]` - Sort forums by `create`, `update`, or `title`. Create and update return newest forums first.
+	/// * `?sort=[create, update, title, event]` - Sort forums by `create`, `update`, or `title`, or the start time of their associated `Event`. 
+	/// Create and update return newest forums first. `event` is only valid for Event categories, and returns forums in ascending event start time; secondary sort
+	/// is alpha on event title.
 	/// * `?start=INT` - The index into the sorted list of forums to start returning results. 0 for first item, which is the default.
 	/// * `?limit=INT` - The max # of entries to return. Defaults to 50
 	/// 
@@ -157,7 +159,17 @@ struct ForumController: APIRouteCollection {
 		switch req.query[String.self, at: "sort"] {
 			case "create": _ = query.sort(\.$createdAt, .descending)
 			case "title": _ = query.sort(.custom("lower(title)"))
-			default: _ = query.sort(\.$updatedAt, .descending); dateFilterUsesUpdate = true
+			case "update": _ = query.sort(\.$updatedAt, .descending); dateFilterUsesUpdate = true
+			case "event": _ = query.join(child: \.$scheduleEvent).sort(Event.self, \Event.$startTime, .ascending)
+					.sort(Event.self, \Event.$title, .ascending)
+			default:
+				if category.isEventCategory {
+					_ = query.join(child: \.$scheduleEvent).sort(Event.self, \Event.$startTime, .ascending)
+							.sort(Event.self, \Event.$title, .ascending)
+				}
+				else {
+					_ = query.sort(\.$updatedAt, .descending); dateFilterUsesUpdate = true
+				} 
 		}
 		if let beforeDate = req.query[Date.self, at: "beforedate"] {
 			query.filter((dateFilterUsesUpdate ? \.$updatedAt : \.$createdAt) < beforeDate)

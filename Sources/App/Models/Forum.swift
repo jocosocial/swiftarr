@@ -53,6 +53,9 @@ final class Forum: Model {
 
 	/// The child `ForumEdit` accountability records of the forum.
 	@Children(for: \.$forum) var edits: [ForumEdit]
+	
+	/// If this forum is for discussing an event on the schedule, this is the event that's the topic of the forum.
+	@OptionalChild(for: \.$forum) var scheduleEvent: Event?
 
 	// MARK: Initialization
 	
