@@ -13,16 +13,13 @@
 
     			<div class="col col-auto">
 					<div class="dropdown">
-						<button class="btn #if(trunk.alertCounts.newTwarrtMentionCount > 0 || trunk.newTweetAlertwords):btn-outline-danger#else:btn-outline-primary#endif dropdown-toggle btn-sm" type="button" id="eventFilterMenu" data-bs-toggle="dropdown" data-selected="all" aria-expanded="false">
+						<button class="btn btn-outline-primary dropdown-toggle btn-sm" type="button" id="forumSortMenu" data-bs-toggle="dropdown" data-selected="all" aria-expanded="false">
 							Sort
 						</button>
-						<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="eventFilterMenu">
-							#if(sortEventTime):
-								<li><a class="dropdown-item #if(activeSort == "event"):active#endif" href="#(sortEventTime)">Event Time</a></li>
-							#endif
-							<li><a class="dropdown-item #if(activeSort == "update"):active#endif" href="#(sortMostRecent)">Most Recent Post</a></li>
-							<li><a class="dropdown-item #if(activeSort == "create"):active#endif" href="#(sortCreationTime)">Creation Time</a></li>
-							<li><a class="dropdown-item #if(activeSort == "title"):active#endif" href="#(sortTitle)">Title</a></li>
+						<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="forumSortMenu">
+							#for(sortOrder in sortOrders):
+								<li><a class="dropdown-item #if(sortOrder.active):active#endif" href="#(sortOrder.url)">#(sortOrder.name)</a></li>
+							#endfor
  							<li><hr class="dropdown-divider"></li>
 							<li><h6 class="dropdown-header">Only show:</h6></li>
  							<li><a class="dropdown-item" href="/forum/favorites?cat=#(forums.categoryID)">Favorites</a></li>

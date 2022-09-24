@@ -10,6 +10,22 @@
 						</ol>
 					</nav>
 				</div>
+				
+				#if(count(sortOrders) > 0):
+					<div class="col col-auto">
+						<div class="dropdown">
+							<button class="btn btn-outline-primary dropdown-toggle btn-sm" type="button" id="forumSortMenu" data-bs-toggle="dropdown" data-selected="all" aria-expanded="false">
+								Sort
+							</button>
+							<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="forumSortMenu">
+								#for(sortOrder in sortOrders):
+									<li><a class="dropdown-item #if(sortOrder.active):active#endif" href="#(sortOrder.url)">#(sortOrder.name)</a></li>
+								#endfor
+							</ul>
+						</div>
+					</div>
+				#endif
+				
 			</div>
 			<div class="list-group">
 				#if(count(forums.forumThreads) > 0):

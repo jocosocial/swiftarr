@@ -25,6 +25,9 @@ final class Forum: Model {
 	/// could have this set to `.moderator`. Copied from the category when a thread is created.
 	@Enum(key: "view_access_level") var accessLevelToView: UserAccessLevel
 	
+	/// The creation time of the last post added to this forum. Used to sort forums. Edits to posts don't count.
+	@Field(key:"last_post_time") var lastPostTime: Date
+	
 	/// Moderators can set several statuses on forums that modify editability and visibility.
 	@Enum(key: "mod_status") var moderationStatus: ContentModerationStatus
 	
@@ -74,6 +77,7 @@ final class Forum: Model {
 		self.$category.id = try category.requireID()
 		self.$category.value = category
 		self.$creator.id = creatorID
+		self.lastPostTime = Date()
 		self.moderationStatus = .normal
 		self.accessLevelToView = category.accessLevelToView
 	}
@@ -88,6 +92,7 @@ struct CreateForumSchema: AsyncMigration {
 				.field("title", .string, .required)
 				.field("mod_status", modStatusEnum, .required)
 				.field("view_access_level", userAccessLevel, .required)
+				.field("last_post_time", .datetime, .required)
 				.field("created_at", .datetime)
 				.field("updated_at", .datetime)
 				.field("deleted_at", .datetime)

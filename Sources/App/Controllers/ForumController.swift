@@ -48,7 +48,7 @@ struct ForumController: APIRouteCollection {
 			// Posts - CRUD first, then actions on posts
 		tokenCacheAuthGroup.post(forumIDParam, "create", use: postCreateHandler)
 		tokenCacheAuthGroup.get("post", postIDParam, use: postHandler)
-		tokenCacheAuthGroup.post("post", postIDParam, "update", use: postUpateHandler)
+		tokenCacheAuthGroup.post("post", postIDParam, "update", use: postUpdateHandler)
 		tokenCacheAuthGroup.post("post", postIDParam, "delete", use: postDeleteHandler)
 		tokenCacheAuthGroup.delete("post", postIDParam, use: postDeleteHandler)
 
@@ -159,7 +159,7 @@ struct ForumController: APIRouteCollection {
 		switch req.query[String.self, at: "sort"] {
 			case "create": _ = query.sort(\.$createdAt, .descending)
 			case "title": _ = query.sort(.custom("lower(title)"))
-			case "update": _ = query.sort(\.$updatedAt, .descending); dateFilterUsesUpdate = true
+			case "update": _ = query.sort(\.$lastPostTime, .descending); dateFilterUsesUpdate = true
 			case "event": _ = query.join(child: \.$scheduleEvent).sort(Event.self, \Event.$startTime, .ascending)
 					.sort(Event.self, \Event.$title, .ascending)
 			default:
@@ -168,14 +168,24 @@ struct ForumController: APIRouteCollection {
 							.sort(Event.self, \Event.$title, .ascending)
 				}
 				else {
-					_ = query.sort(\.$updatedAt, .descending); dateFilterUsesUpdate = true
+					_ = query.sort(\.$lastPostTime, .descending); dateFilterUsesUpdate = true
 				} 
 		}
 		if let beforeDate = req.query[Date.self, at: "beforedate"] {
-			query.filter((dateFilterUsesUpdate ? \.$updatedAt : \.$createdAt) < beforeDate)
+			if dateFilterUsesUpdate {
+				query.filter(\.$lastPostTime < beforeDate)
+			}
+			else {
+				query.filter(\.$createdAt < beforeDate)
+			}
 		}
 		else if let afterDate = req.query[Date.self, at: "afterdate"] {
-			query.filter((dateFilterUsesUpdate ? \.$updatedAt : \.$createdAt) > afterDate)
+			if dateFilterUsesUpdate {
+				query.filter(\.$lastPostTime > afterDate)
+			}
+			else {
+				query.filter(\.$createdAt > afterDate)
+			}
 		}
 		let forums = try await query.all()
 		let forumList = try await buildForumListData(forums, on: req, user: cacheUser)
@@ -184,12 +194,13 @@ struct ForumController: APIRouteCollection {
 	
 	/// `GET /api/v3/forum/search`
 	///
-	/// Retrieve all `Forum`s in all categories that match the specified criteria. Results will be sorted in decending order of creation time.
+	/// Retrieve all `Forum`s in all categories that match the specified criteria. Results will be sorted by most recent post time by default..
 	/// Does not return results from categories for which the user does not have access.
 	///
 	/// **URL Query Parameters**:
 	/// * `?start=INT` - The index into the array of forums to start returning results. 0 for first forum.
 	/// * `?limit=INT` - The max # of entries to return. Defaults to 50. Clamped to a max value set in Settings.
+	/// * `?sort=[create, update, title]` - Sort forums by `create`, `update`, or `title`. Create and update return newest forums first.  
 	/// 
 	/// * `?search=STRING` - Matches forums with STRING in their title.
 	/// * `?creator=STRING` - Matches forums created by the given username.
@@ -219,17 +230,24 @@ struct ForumController: APIRouteCollection {
 		}
 		// get forums and total forum count, turn into [ForumListData] and then insert into ForumSearchData
 		async let forumCount = try countQuery.count()
-		async let forums = try countQuery.copy().sort(\.$createdAt, .descending).range(start..<(start + limit)).all()
+		let forumQuery = countQuery.copy().range(start..<(start + limit))
+		switch req.query[String.self, at: "sort"] {
+			case "create": _ = forumQuery.sort(\.$createdAt, .descending)
+			case "title": _ = forumQuery.sort(.custom("lower(title)"))
+			default: _ = forumQuery.sort(\.$lastPostTime, .descending)
+		}
+		async let forums = try forumQuery.all()
 		let forumList = try await buildForumListData(forums, on: req, user: cacheUser)
 		return try await ForumSearchData(paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
 	}
 		
 	/// `GET /api/v3/forum/owner`
 	///
-	/// Retrieve a list of all `Forum`s created by the user, sorted by title.
+	/// Retrieve a list of all `Forum`s created by the user. Default is to be sorted by title.
 	///
 	/// **URL Query Parameters**:
 	/// * `?cat=CATEGORY_ID` - Limit returned list to forums in the given category (that were also created by the current user).
+	/// * `?sort=[create, update, title]` - Sort forums by `create`, `update`, or `title`. Create and update return newest forums first.  
 	/// * `?start=INT` - The index into the array of forums to start returning results. 0 for first forum.
 	/// * `?limit=INT` - The max # of entries to return. Defaults to 50. Clamped to a max value set in Settings.
 	///
@@ -244,7 +262,13 @@ struct ForumController: APIRouteCollection {
 			countQuery.filter(\.$category.$id == cat)
 		}
 		async let forumCount = try countQuery.count()
-		async let forums = try countQuery.copy().sort(\.$title, .ascending).range(start..<(start + limit)).all()
+		let forumQuery = countQuery.copy().range(start..<(start + limit))
+		switch req.query[String.self, at: "sort"] {
+			case "create": _ = forumQuery.sort(\.$createdAt, .descending)
+			case "update": _ = forumQuery.sort(\.$lastPostTime, .descending)
+			default: _ = forumQuery.sort(.custom("lower(title)"), .ascending)
+		}
+		async let forums = try forumQuery.all()
 		let forumList = try await buildForumListData(forums, on: req, user: cacheUser)
 		return try await ForumSearchData(paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
 	}
@@ -255,7 +279,7 @@ struct ForumController: APIRouteCollection {
 	/// 
 	/// **URL Query Parameters**:
 	/// * `?cat=CATEGORY_ID` - Only show favorites in the given category
-	/// * `?sort=STRING` - Sort forums by `create`, `update`, or `title`. Create and update return newest forums first. `title` is the default.
+	/// * `?sort=STRING` - Sort forums by `create`, `update`, or `title`. Create and update return newest forums first. `update` is the default..
 	/// * `?start=INT` - The index into the sorted list of forums to start returning results. 0 for first item, which is the default.
 	/// * `?limit=INT` - The max # of entries to return. Defaults to 50
 	///
@@ -273,20 +297,20 @@ struct ForumController: APIRouteCollection {
 			countQuery.filter(\.$category.$id == cat)
 		}
 		async let forumCount = try countQuery.count()
-		let rangeQuery = countQuery.copy().range(start..<(start + limit))
+		let forumQuery = countQuery.copy().range(start..<(start + limit))
 		switch req.query[String.self, at: "sort"] {
-			case "update": _ = rangeQuery.sort(\.$updatedAt, .descending);
-			case "title": _ = rangeQuery.sort(\.$title, .ascending)
-			default: _ = rangeQuery.sort(\.$createdAt, .descending)
+			case "create": _ = forumQuery.sort(\.$createdAt, .descending)
+			case "title": _ = forumQuery.sort(.custom("lower(title)"), .ascending)
+			default: _ = forumQuery.sort(\.$lastPostTime, .descending)
 		}
-		async let forums = try rangeQuery.all()
+		async let forums = try forumQuery.all()
 		let forumList = try await buildForumListData(forums, on: req, user: cacheUser, forceIsFavorite: true)
 		return try await ForumSearchData(paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
 	}
 	
 	/// `GET /api/v3/forum/recent`
 	///
-	/// Retrieve the `Forum`s the user has recently visited..
+	/// Retrieve the `Forum`s the user has recently visited. Results are sorted by most recent time each forum was visited.
 	/// 
 	/// **URL Query Parameters**:
 	/// * `?start=INT` - The index into the sorted list of forums to start returning results. 0 for first item, which is the default.
@@ -573,6 +597,8 @@ struct ForumController: APIRouteCollection {
 					start: start, limit: limit, posts: postData)
 	}
 	
+	// MARK: POST and DELETE actions
+	
 	/// `POST /api/v3/forum/post/ID/bookmark`
 	///
 	/// Add a bookmark of the specified `ForumPost`.
@@ -780,7 +806,7 @@ struct ForumController: APIRouteCollection {
 	///
 	/// Create a new `ForumPost` in the specified `Forum`. 
 	/// 
-	/// Creating a new post in a forum updates that forum's `updatedAt` timestamp. Editing, deleting, or reacting to posts does not change the timestamp. 
+	/// Creating a new post in a forum updates that forum's `lastPostTime` timestamp. Editing, deleting, or reacting to posts does not change the timestamp. 
 	/// This behavior sets the sort order for forums in a category when using the `update` sort order.
 	///
 	/// - Parameter forumID: in URL path
@@ -804,6 +830,7 @@ struct ForumController: APIRouteCollection {
 		let effectiveAuthor = newPostData.effectiveAuthor(actualAuthor: cacheUser, on: req)
 		let forumPost = try ForumPost(forum: forum, authorID: effectiveAuthor.userID, text: newPostData.text, images: filenames)
 		try await forumPost.save(on: req.db)
+		forum.lastPostTime = Date()
 		try await forum.save(on: req.db)
 		try await forumPost.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
 		// If the post @mentions anyone, update their mention counts
@@ -949,7 +976,7 @@ struct ForumController: APIRouteCollection {
 	/// - Parameter requestBody: <doc:PostContentData> 
 	/// - Throws: 403 error if user is not post owner or has read-only access.
 	/// - Returns: <doc:PostData> containing the post's contents and metadata.
-	func postUpateHandler(_ req: Request) async throws -> PostData {
+	func postUpdateHandler(_ req: Request) async throws -> PostData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		// see `PostContentData.validations()`
 		let newPostData = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)

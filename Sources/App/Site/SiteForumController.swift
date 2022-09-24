@@ -2,6 +2,29 @@ import Vapor
 import Crypto
 import FluentSQL
 
+// Used to encode a Sort menu item for Leaf. Each instance of this struct has the user-readable name of the
+// sort order and the URL to go to a view using that sort. 
+struct ForumsSortOrder: Encodable {
+	var name: String		// User-visible name of the sort order
+	var url: String			// URL to go to that switches the current search to the given sort order
+	var active: Bool		// True if this is the currently active sort order for the results page
+
+	// Uses the urlStr to determine the current sort, if specified in the query. If one is specified,
+	// compares against `value` to determine if this is the currently active sort. If no sort is specified in the URL,
+	// this is the current sort iff `isDefault` is true.
+	init(urlStr: String, name: String, value: String, isDefault: Bool = false) {
+		var components = URLComponents(string: urlStr) ?? URLComponents()
+		var queryItems: [URLQueryItem] = components.queryItems ?? []
+		let currentSort = queryItems.first { $0.name == "sort" }?.value
+		queryItems = queryItems.filter { $0.name != "sort" }
+		queryItems.append(URLQueryItem(name: "sort", value: value))
+		components.queryItems = queryItems
+		url = components.string ?? ""
+		self.name = name
+		active = currentSort == nil ? isDefault : currentSort == value
+	}
+}
+
 // Used to show a single forum on a page
 struct ForumPageContext : Encodable {
 	var trunk: TrunkContext
@@ -34,6 +57,7 @@ struct ForumsSearchPageContext : Encodable {
 	var paginator: PaginatorContext
 	var filterDescription: String
 	var searchType: SearchType
+	var sortOrders: [ForumsSortOrder]
 	
 	enum SearchType: String, Codable {
 		case owned							// Created by this user
@@ -65,6 +89,14 @@ struct ForumsSearchPageContext : Encodable {
 			return paginatorBase.string ?? ""
 		}
 		filterDescription = filterDesc
+		if searchType == .recent {
+			sortOrders = []
+		}
+		else {
+			sortOrders = [ .init(urlStr: req.url.string, name: "Most Recent Post", value: "update", isDefault: [.favorite, .textSearch].contains(searchType)),
+					.init(urlStr: req.url.string, name: "Creation Time", value: "create"),
+					.init(urlStr: req.url.string, name: "Title", value: "title", isDefault: searchType == .owned)]
+		}
 	}
 }
 
@@ -272,37 +304,23 @@ struct SiteForumController: SiteControllerUtils {
 			var trunk: TrunkContext
 			var forums: CategoryData
 			var paginator: PaginatorContext
-			
-			var sortEventTime: String?
-			var sortMostRecent: String
-			var sortCreationTime: String
-			var sortTitle: String
-			var activeSort: String
-			
+			var sortOrders: [ForumsSortOrder]
+						
 			init(_ req: Request, forums: CategoryData, start: Int, limit: Int) throws {
 				trunk = .init(req, title: "Forum Threads", tab: .forums, search: "Search")
 				self.forums = forums
 				paginator = .init(start: start, total: Int(forums.numThreads), limit: limit) { pageIndex in
 					"/forums/\(forums.categoryID)?start=\(pageIndex * limit)&limit=\(limit)"
 				}
+				
+				sortOrders = [ .init(urlStr: req.url.string, name: "Most Recent Post", value: "update", isDefault: !forums.isEventCategory),
+						.init(urlStr: req.url.string, name: "Creation Time", value: "create"),
+						.init(urlStr: req.url.string, name: "Title", value: "title")]
 				if forums.isEventCategory {
-					sortEventTime = Self.makeSortPath(urlStr: req.url.string, name: "sort", value: "event")
-				}
-				sortMostRecent = Self.makeSortPath(urlStr: req.url.string, name: "sort", value: "update")
-				sortCreationTime = Self.makeSortPath(urlStr: req.url.string, name: "sort", value: "create")
-				sortTitle = Self.makeSortPath(urlStr: req.url.string, name: "sort", value: "title")
-				activeSort = forums.isEventCategory ? "event" : "update"
-				if let components = URLComponents(string: req.url.string), let sort = components.queryItems?.first(where: { $0.name == "sort" }) {
-					activeSort = sort.value ?? (forums.isEventCategory ? "event" : "update")
+					sortOrders.insert(ForumsSortOrder(urlStr: req.url.string, name: "Event Time", value: "event", isDefault: true), at: 0)
 				}
 			}
 			
-			static func makeSortPath(urlStr: String, name: String, value: String) -> String {
-				var components = URLComponents(string: urlStr) ?? URLComponents()
-				components.queryItems = (components.queryItems ?? []).filter { $0.name != "sort" }
-				components.queryItems?.append(URLQueryItem(name: name, value: value))
-				return components.string ?? ""
-			}
 		}
 		let ctx = try ForumsPageContext(req, forums: forums, start: start, limit: limit)
 		return try await req.view.render("Forums/forums", ctx)
