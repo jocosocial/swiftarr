@@ -110,8 +110,9 @@ struct FezController: APIRouteCollection {
 	/// Retrieve all the FriendlyFez chats that the user has joined. Results are sorted by descending fez update time.
 	/// 
 	/// **Query Parameters:**
-	/// - `?type=STRING` -	Only return fezzes of the given fezType. See `FezType` for a list.
+	/// - `?type=STRING` - Only return fezzes of the given fezType. See `FezType` for a list.
 	/// - `?excludetype=STRING` - Don't return fezzes of the given type. See `FezType` for a list.
+	/// - `?onlynew=TRUE` - Only return fezzes with unread messages.
 	/// - `?start=INT` - The offset to the first result to return in the filtered + sorted array of results.
 	/// - `?limit=INT` - The maximum number of fezzes to return; defaults to 50.
 	/// 
@@ -127,6 +128,7 @@ struct FezController: APIRouteCollection {
 		struct QueryStruct: Content {
 			var type: String?
 			var excludetype: String?
+			var onlynew: Bool?
 			var start: Int?
 			var limit: Int?
 			var foruser: String?
@@ -144,6 +146,13 @@ struct FezController: APIRouteCollection {
 		else if let typeStr = req.query[String.self, at: "excludetype"], let fezType = FezType.fromAPIString(typeStr) {
 			// excludetype is really only here to exclude .closed fezzes.
 			query.filter(FriendlyFez.self, \.$fezType != fezType)
+		}
+		if let onlyNew = urlQuery.onlynew {
+			// Uses a custom filter to test "readCount + hiddenCount < FriendlyFez.postCount". If true, there's unread messages
+			// in this chat. Because it uses a custom filter for parameter 1, the other params use the weird long-form notation.
+			query.filter(DatabaseQuery.Field.custom("\(FezParticipant().$readCount.key) + \(FezParticipant().$hiddenCount.key)"),
+					onlyNew ? DatabaseQuery.Filter.Method.lessThan : DatabaseQuery.Filter.Method.equal,
+    				DatabaseQuery.Field.path(FriendlyFez.path(for: \.$postCount), schema: FriendlyFez.schema))
 		}
 		async let fezCount = try query.count()
 		async let pivots = query.sort(FriendlyFez.self, \.$updatedAt, .descending).range(start..<(start + limit)).all()

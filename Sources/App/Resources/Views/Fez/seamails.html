@@ -6,6 +6,10 @@
     				<h6><b>#(trunk.title)</b></h6>
 				</div>
     			<div class="col col-auto align-self-end">
+			    	<a class="btn btn-outline-secondary btn-sm #if(filterActive):active#endif" role="button" 
+			    			href="#(filterURL)" autocomplete="off" #if(filterActive):aria-pressed="true"#endif>
+			    		Filter: New Msgs
+					</a>
 			    	<a class="btn btn-primary btn-sm" role="button" href="/seamail/create">New Seamail</a>
 				</div>
 			</div>
@@ -14,7 +18,11 @@
 				#if(count(fezzes) == 0):
 					<div class="row">
 						<div class="col">
-							<li class="list-group-item">You haven't received any Seamail messages yet, but you can create one by tapping "New Seamail"</li>
+							#if(filterActive):
+								<li class="list-group-item">You have no Seamail chats with new messages.</li>
+							#else:
+								<li class="list-group-item">You haven't received any Seamail messages yet, but you can create one by tapping "New Seamail"</li>
+							#endif
 						</div>
 					</div>
 				#else:

@@ -46,6 +46,8 @@ struct SiteSeamailController: SiteControllerUtils {
 			var fezzes: [FezData]
 			var effectiveUser: String?
 			var paginator: PaginatorContext
+			var filterURL: String
+			var filterActive: Bool
 			
 			init(_ req: Request, fezList: FezListData, fezzes: [FezData]) throws {
 				effectiveUser = req.query[String.self, at: "foruser"]
@@ -57,7 +59,8 @@ struct SiteSeamailController: SiteControllerUtils {
 				paginator = .init(fezList.paginator) { pageIndex in
 					"/seamail?start=\(pageIndex * limit)&limit=\(limit)"
 				}
-
+				filterActive = req.query[String.self, at: "onlynew"]?.lowercased() == "true"
+				filterURL = filterActive ? "/seamail" : "/seamail?onlynew=true"
 			}
 		}
 		let ctx = try SeamailRootPageContext(req, fezList: fezList, fezzes: allFezzes)
