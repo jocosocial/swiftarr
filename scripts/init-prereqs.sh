@@ -20,7 +20,7 @@ apt-get install -y \
 
 # Postgres client. Make sure to keep the repo in sync with whatever base image you're using.
 curl -sS https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add
-echo 'deb http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main' > /etc/apt/sources.list.d/pgdg.list
+echo 'deb http://apt.postgresql.org/pub/repos/apt/ jammy-pgdg main' > /etc/apt/sources.list.d/pgdg.list
 apt-get -qq update
 apt-get install -y postgresql-client-14
 
