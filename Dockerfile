@@ -1,7 +1,7 @@
 # Builder image
 # 
 # This sets up the environment used to build swiftarr.
-FROM swift:5.7-jammy as builder
+FROM docker.io/library/swift:5.7-jammy as builder
 
 ARG env
 
@@ -40,7 +40,7 @@ RUN swift build -c release && mv `swift build -c release --show-bin-path` /build
 # This has its own build stage to allow the depedencies from the internet
 # to be installed in a cached image. Otherwise it'd be running the steps
 # every time which we don't want.
-FROM ubuntu:22.04 as base
+FROM docker.io/library/ubuntu:22.04 as base
 
 # Prereqs
 COPY scripts/init-prereqs.sh /
