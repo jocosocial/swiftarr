@@ -21,6 +21,7 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 		case "delete": btn.addEventListener("click", deleteAction); break;
 		case "eventFiltersChanged": btn.addEventListener("click", filterEvents); break;
 		case "filterEventType": btn.addEventListener("click", eventFilterDropdownTappedAction); break;
+		case "eventScrollToNow": btn.addEventListener("click", soonButtonTappedAction); break;
 		case "filterFezDay": 
 			dropdownButtonSetup(btn); 
 			btn.addEventListener("click", fezDayFilterDropdownTappedAction);
@@ -369,6 +370,103 @@ function submitAJAXForm(formElement, event) {
 
 // MARK: - Schedule Page Handlers
 
+// Apply the locally saved event type and following filters to the list of events.
+if ((new URL(document.location)).searchParams.get('cruiseday') != null) {
+	let onlyFollowing = false;
+	if (localStorage.getItem('eventFollowingFilterState') == 'true') {
+		document.getElementById("eventFollowingFilter").classList.add('active');
+		onlyFollowing = true;
+	}
+	let category = localStorage.getItem('eventCategoryFilterState');
+	if (category) {
+		let menuElement = document.getElementById("eventFilterMenuItems").querySelector(`[data-selection="${category}"]`);
+		if (menuElement) {
+			updateDropdownButton(menuElement);
+		}
+	}
+	for (let listItem of document.querySelectorAll('[data-eventid]')) {
+		let hideEvent = (onlyFollowing && listItem.dataset.eventfavorite == "false") ||
+				(category && category != "all" && category != listItem.dataset.eventcategory)
+		if (hideEvent && listItem.classList.contains("show")) {
+			listItem.classList.remove("show");
+		}
+		else if (!hideEvent && !listItem.classList.contains("show")) {
+			listItem.classList.add("show");
+		}
+	}
+}
+
+// Every 15 secs, update the 'Soon' and 'Now' banners on the event cells.
+if (document.querySelector('[data-cruiseday]') != null) {
+	function updateEventBanners() {
+		let [minutesSince3AM, cruiseDay] = calcCruiseDayTime(new Date());
+		for (let listItem of document.querySelectorAll('[data-eventid]')) {
+			if (listItem.getAttribute('data-cruiseday') == cruiseDay) {
+				let eventStartMinutes = calcCruiseDayTime(new Date(listItem.getAttribute('data-starttime') * 1000))[0];
+				let eventEndMinutes = calcCruiseDayTime(new Date(listItem.getAttribute('data-endtime') * 1000))[0];
+				if (minutesSince3AM >= eventStartMinutes && minutesSince3AM < eventEndMinutes) {
+					listItem.classList.remove("event-soon-badge");
+					listItem.classList.add("event-now-badge");
+				}
+				else if (minutesSince3AM >= eventStartMinutes - 30 && minutesSince3AM < eventStartMinutes) {
+					listItem.classList.remove("event-now-badge");
+					listItem.classList.add("event-soon-badge");
+				}
+				else {
+					listItem.classList.remove("event-soon-badge");
+					listItem.classList.remove("event-now-badge");
+				}
+			}
+		}
+	}
+	updateEventBanners();
+	if ((new URL(document.location)).searchParams.get('now') != null) {
+		scrollToCurrentEvent();
+	}
+	let timerFn = setInterval(updateEventBanners, 15000);
+}
+
+// Embarkation day is CruiseDay 0. For testing, returns dayOfWeek() + 1 when we're not on the cruise.
+function calcCruiseDayTime(dateValue) {
+	let listElement = document.querySelector('[data-cruisestart]');
+	let cruiseStartDate = new Date(listElement.getAttribute('data-cruisestart') * 1000);
+	let cruiseEndDate = new Date(listElement.getAttribute('data-cruiseend') * 1000);
+	let cruiseStartDay = cruiseStartDate.getDay();
+	if (cruiseStartDate.getHours() > 12) {		// Hackish. StartDate is midnight EST, which makes getDay return the day before in [PCM]ST.
+		cruiseStartDay = (cruiseStartDay + 1) % 7;
+	}
+	// Subtract 3 hours so the 'day' divider for events is 3AM. NOT doing timezone math here.
+	let adjustedDate = new Date(dateValue.getTime() - 3 * 60 * 60 * 1000);
+	let cruiseDay = (7 - cruiseStartDay + adjustedDate.getDay()) % 7;
+	if (adjustedDate >= cruiseStartDate && adjustedDate < cruiseEndDate) {
+		cruiseDay = parseInt((adjustedDate - cruiseStartDate) / (1000 * 60 * 60 * 24))
+	}
+	let minutesSince3AM = adjustedDate.getHours() * 60 + adjustedDate.getMinutes();
+	return [minutesSince3AM, cruiseDay];
+}
+
+function soonButtonTappedAction() {
+	if (!scrollToCurrentEvent()) {
+		window.location.href = "/events?now";
+	}
+}
+
+function scrollToCurrentEvent() {
+	// each 'day' for events starts/ends at 3AM, to make events starting at 11:30 PM work better.
+	let [minutesSince3AM, cruiseDay] = calcCruiseDayTime(new Date());
+	for (let listItem of document.querySelectorAll('[data-eventid]')) {
+		if (listItem.getAttribute('data-cruiseday') == cruiseDay) {
+			let eventStartMinutes = calcCruiseDayTime(new Date(listItem.getAttribute('data-starttime') * 1000))[0];
+			let eventEndMinutes = calcCruiseDayTime(new Date(listItem.getAttribute('data-endtime') * 1000))[0];
+			if (minutesSince3AM <= eventEndMinutes && eventEndMinutes - eventStartMinutes <= 120) {
+				listItem.scrollIntoView({ block: "center" });
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 function eventFilterDropdownTappedAction() {
 	updateDropdownButton(event.target);
 	filterEvents();
@@ -388,13 +486,12 @@ function filterEvents() {
 		let hideEvent = (onlyFollowing && listItem.dataset.eventfavorite == "false") ||
 				(category && category != "all" && category != listItem.dataset.eventcategory) ||
 				(selectedDays.length > 0 && !selectedDays.includes(listItem.dataset.cruiseday))
-		if (hideEvent && listItem.classList.contains("show")) {
-			new bootstrap.Collapse(listItem)
-		}
-		else if (!hideEvent && !listItem.classList.contains("show")) {
-			new bootstrap.Collapse(listItem)
+		if ((hideEvent && listItem.classList.contains("show")) || (!hideEvent && !listItem.classList.contains("show"))) {
+			bootstrap.Collapse.getOrCreateInstance(listItem).toggle();
 		}
 	}
+	localStorage.setItem('eventFollowingFilterState', onlyFollowing.toString());
+	localStorage.setItem('eventCategoryFilterState', category);
 }
 
 // MARK: - Fez Handlers

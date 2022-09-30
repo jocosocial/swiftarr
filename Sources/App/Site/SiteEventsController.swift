@@ -61,7 +61,7 @@ struct SiteEventsController: SiteControllerUtils {
 			components.queryItems?.append(URLQueryItem(name: "cruiseday", value: String(cruisedayParam)))
 			dayOfCruise = cruisedayParam
 		}		
-		else if components.queryItems!.isEmpty {
+		else if components.queryItems?.isEmpty == true {
 			let thisWeekday = Settings.shared.getDisplayCalendar().component(.weekday, from: Date())
 			dayOfCruise = (7 + thisWeekday - Settings.shared.cruiseStartDayOfWeek) % 7 + 1
 			components.queryItems?.append(URLQueryItem(name: "cruiseday", value: String(dayOfCruise)))
@@ -71,8 +71,8 @@ struct SiteEventsController: SiteControllerUtils {
 		let events = try response.content.decode([EventData].self)
 		struct EventPageContext : Encodable {
 			struct CruiseDay : Encodable {
-				var name: String
-				var index: Int
+				var name: String				// "Sun", "Mon", etc.
+				var index: Int					// [0...7] For a Saturday...Saturday cruise, embark is day 0, return is day 7.
 				var activeDay: Bool
 			}
 			var trunk: TrunkContext
@@ -83,6 +83,8 @@ struct SiteEventsController: SiteControllerUtils {
 			var upcomingEvent: EventData?
 			var filterString: String
 			var useAllDays: Bool
+			var cruiseStartDate: Date
+			var cruiseEndDate: Date
 
 			init(_ req: Request, events: [EventData], dayOfCruise: Int, filterString: String, allDays: Bool) {
 				self.events = events
@@ -109,6 +111,10 @@ struct SiteEventsController: SiteControllerUtils {
 				}
 				self.filterString = filterString
 				self.useAllDays = allDays
+				self.cruiseStartDate = Settings.shared.cruiseStartDate
+				var dateComponent = DateComponents()
+				dateComponent.day = Settings.shared.cruiseLengthInDays
+				self.cruiseEndDate = Calendar.current.date(byAdding: dateComponent, to: cruiseStartDate) ?? cruiseStartDate
 			}
 		}
 		let eventContext = EventPageContext(req, events: events, dayOfCruise: dayOfCruise, 

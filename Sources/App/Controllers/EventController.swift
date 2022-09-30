@@ -123,7 +123,7 @@ struct EventController: APIRouteCollection {
 		if let user = req.auth.get(UserCacheData.self) {
 			let eventIDs = try events.map { try $0.requireID() }
 			favoriteEventIDs = try await EventFavorite.query(on: req.db).filter(\.$user.$id == user.userID)
-					.filter(\.$event.$id ~~ eventIDs).all().map { try $0.requireID() }
+					.filter(\.$event.$id ~~ eventIDs).all().map { $0.$event.id }
 		}
 		let result = try events.map { try EventData($0, isFavorite: favoriteEventIDs.contains($0.requireID())) }
 		return result

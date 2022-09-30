@@ -128,3 +128,18 @@ duration-select:focus {
 .swiftarr-searchbar {
 	background-color: #063953;
 }
+
+.soon-button {
+	position: fixed;
+	right: 20px;
+	bottom: 10px;
+	border-radius: 16px;
+}
+
+.event-soon-badge {
+	background: url('/img/event-soon.png') 0 0/16px repeat-y;
+}
+
+.event-now-badge {
+	background: url('/img/event-now.png') 0 0/16px repeat-y;
+}
