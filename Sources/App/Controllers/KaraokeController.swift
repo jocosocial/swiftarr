@@ -51,8 +51,9 @@ struct KaraokeController: APIRouteCollection {
 		let limit = (filters.limit ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
 		let songQuery = KaraokeSong.query(on: req.db).sort(\.$artist, .ascending).sort(\.$title, .ascending)
 		if let search = filters.search {
-			songQuery.group(.or) { group in 
-				group.filter(\.$artist, .custom("ILIKE"), "%\(search)%").filter(\.$title, .custom("ILIKE"), "%\(search)%")
+			songQuery.group(.or) { (or) in 
+				or.filter(\.$artist, .custom("@@"), "to_tsvector('\(search)')")
+        or.filter(\.$title, .custom("@@"), "to_tsvector('\(search)')")
 			}
 		}
 		var filteringFavorites = false
