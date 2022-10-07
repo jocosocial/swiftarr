@@ -220,7 +220,7 @@ struct ForumController: APIRouteCollection {
 			search = search.replacingOccurrences(of: "_", with: "\\_")
 			search = search.replacingOccurrences(of: "%", with: "\\%")
 			search = search.trimmingCharacters(in: .whitespacesAndNewlines)
-			countQuery.filter(\.$title, .custom("@@"), "to_tsvector('\(search)')")
+			countQuery.filter(.sql(embed: "\"forum\".\"title\" @@ websearch_to_tsquery(\(bind: search))"))
 		}
 		if let creator = req.query[String.self, at: "creator"], let creatingUser = req.userCache.getUser(username: creator) {
 			countQuery.filter(\.$creator.$id == creatingUser.userID)
@@ -543,7 +543,7 @@ struct ForumController: APIRouteCollection {
 			searchStr = searchStr.replacingOccurrences(of: "_", with: "\\_")
 					.replacingOccurrences(of: "%", with: "\\%")
 					.trimmingCharacters(in: .whitespacesAndNewlines)
-			query = query.filter(\.$text, .custom("@@"), "to_tsvector('\(searchStr)')")
+			query = query.filter(.sql(embed: "\"forumpost\".\"text\" @@ websearch_to_tsquery(\(bind: searchStr))"))
 			if !searchStr.contains(" ") && start == 0 {
 				try await markNotificationViewed(user: cacheUser, type: .alertwordPost(searchStr, 0), on: req)
 			}

@@ -68,8 +68,8 @@ struct EventController: APIRouteCollection {
 			search = search.replacingOccurrences(of: "%", with: "\\%")
 			search = search.trimmingCharacters(in: .whitespacesAndNewlines)
 			query.group(.or) { (or) in
-				or.filter(\.$title, .custom("@@"), "to_tsvector('\(search)')")
-				or.filter(\.$info, .custom("@@"), "to_tsvector('\(search)')")
+				or.filter(.sql(embed: "\"event\".\"title\" @@ websearch_to_tsquery(\(bind: search))"))
+				or.filter(.sql(embed: "\"event\".\"info\" @@ websearch_to_tsquery(\(bind: search))"))
 			}
 		}
 		if let eventType = options.type {

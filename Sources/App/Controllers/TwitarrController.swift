@@ -322,7 +322,7 @@ struct TwitarrController: APIRouteCollection {
 		
 		// Process query params that filter for specific content.
 		if let searchStr = filters.search {
-			twarrtQuery.filter(\.$text, .custom("@@"), "to_tsvector('\(searchStr)')")
+			twarrtQuery.filter(.sql(embed: "\"twarrt\".\"text\" @@ websearch_to_tsquery(\(bind: searchStr))"))
 			if !searchStr.contains(" ") && start == 0 {
 				try await markNotificationViewed(user: cachedUser, type: .alertwordTwarrt(searchStr, 0), on: req)
 			}
