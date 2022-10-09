@@ -787,6 +787,9 @@
                 <a class="nav-group-task-link" href="Structs/BMPFormatter.html">BMPFormatter</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/BoardgameRecommendationData.html">BoardgameRecommendationData</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/Color.html">Color</a>
               </li>
               <li class="nav-group-task">
@@ -980,6 +983,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/GameListContext.html">GameListContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/GameListContext/QueryOptions.html">– QueryOptions</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/GameRatingTag.html">GameRatingTag</a>
@@ -1630,6 +1636,46 @@ that they&rsquo;ll persist through app launches. Any optional values set to nil 
                 <li class="item">
                   <div>
                     <code>
+                    <a name="/s:3App27BoardgameRecommendationDataV"></a>
+                    <a name="//apple_ref/swift/Struct/BoardgameRecommendationData" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App27BoardgameRecommendationDataV">BoardgameRecommendationData</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Parameters for the game recommender engine. Pass these values in, get back a <code><a href="Structs/BoardgameResponseData.html">BoardgameResponseData</a></code> with a 
+list of games filtered to match the criteria, and sorted based on how well they match the criteria. The sort takes into account each games&rsquo;
+overall rating from BGG, the recommended number of players (not just min and max allowed players), the average playtime, 
+and the complexity score of the game.</p>
+
+<p>Sent to these methods as the JSON  request body:</p>
+
+<ul>
+<li><code>GET /api/v3/boardgames/recommend</code></li>
+</ul>
+
+                        <a href="Structs/BoardgameRecommendationData.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">BoardgameRecommendationData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L62-L75">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
                     <a name="/s:3App14DailyThemeDataV"></a>
                     <a name="//apple_ref/swift/Struct/DailyThemeData" class="dashAnchor"></a>
                     <a class="token" href="#/s:3App14DailyThemeDataV">DailyThemeData</a>
@@ -1655,7 +1701,7 @@ that they&rsquo;ll persist through app launches. Any optional values set to nil 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L228-L239">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L251-L262">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1691,7 +1737,7 @@ the server entirely or disallowing specific clients entirely. </p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L257-L263">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L280-L286">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1738,7 +1784,7 @@ After fixing those issues, the user could still get an error becuase they are qu
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L279-L289">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L302-L312">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1769,7 +1815,7 @@ After fixing those issues, the user could still get an error becuase they are qu
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L388-L393">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L411-L416">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1810,7 +1856,7 @@ forums need not be from the same category. Instead, this returns forums that mat
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L647-L653">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L670-L676">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1845,7 +1891,7 @@ See <code>KaraokeController.getKaraokeSongs()</code>.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L692-L701">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L715-L724">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1879,7 +1925,7 @@ Incorporated into: <code><a href="Structs/KaraokeSongResponseData.html">KaraokeS
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L707-L723">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L730-L746">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1913,7 +1959,7 @@ Incorporated into: <code><a href="Structs/KaraokeSongData.html">KaraokeSongData<
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L747-L756">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L770-L779">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1958,7 +2004,7 @@ Incorporated into: <code><a href="Structs/KaraokeSongData.html">KaraokeSongData<
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L770-L773">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L793-L796">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2004,7 +2050,7 @@ be calculated with <code>start + limit</code>, not with <code>start + collection
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L842-L849">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L865-L872">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2038,7 +2084,7 @@ However, this gives the results of a search for posts across all the forums.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L965-L976">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L988-L999">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2077,7 +2123,7 @@ However, this gives the results of a search for posts across all the forums.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1258-L1261">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1281-L1284">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2109,7 +2155,7 @@ Used inside UserNotificationData.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1330-L1343">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1353-L1366">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2143,7 +2189,7 @@ Used inside UserNotificationData.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1359-L1423">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1382-L1446">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2190,7 +2236,7 @@ Used inside UserNotificationData.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1496-L1515">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1519-L1538">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2235,7 +2281,7 @@ Applied from <a href="https://prometheus.io/docs/alerting/latest/configuration/#
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1646-L1678">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1669-L1701">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2267,7 +2313,7 @@ Applied from <a href="https://prometheus.io/docs/alerting/latest/configuration/#
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1683-L1703">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1706-L1726">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2299,7 +2345,7 @@ This smells roughly the same as an error fields-wise without inheriting from the
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1708-L1712">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1731-L1735">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3895,7 +3941,7 @@ struct is specifically for migration.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Boardgame.swift#L97-L132">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Boardgame.swift#L152-L187">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -4855,7 +4901,7 @@ struct is specifically for migration.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteBoardgameController.swift#L6-L36">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteBoardgameController.swift#L6-L46">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -4885,7 +4931,7 @@ struct is specifically for migration.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteBoardgameController.swift#L38-L46">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteBoardgameController.swift#L48-L56">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -4916,7 +4962,7 @@ struct is specifically for migration.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteBoardgameController.swift#L50-L136">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteBoardgameController.swift#L60-L179">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -6508,7 +6554,7 @@ Via any method, Vapor Sessions aren&rsquo;t set up for finding sessions by user,
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-10-07)</p>
+      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-10-09)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
     </section>
   </body>

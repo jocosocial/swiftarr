@@ -787,6 +787,9 @@
                 <a class="nav-group-task-link" href="../Structs/BMPFormatter.html">BMPFormatter</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/BoardgameRecommendationData.html">BoardgameRecommendationData</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/Color.html">Color</a>
               </li>
               <li class="nav-group-task">
@@ -980,6 +983,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/GameListContext.html">GameListContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/GameListContext/QueryOptions.html">– QueryOptions</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/GameRatingTag.html">GameRatingTag</a>
@@ -1320,7 +1326,7 @@
             <p>A boardgame in the Games Library.</p>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Boardgame.swift#L5-L95">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Boardgame.swift#L5-L150">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -2153,6 +2159,159 @@ BoardGameGeek sometimes has a slightly different title for a game. This is the e
                     </section>
                   </div>
                 </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App9BoardgameC24canUseForRecommendationsSbyF"></a>
+                    <a name="//apple_ref/swift/Method/canUseForRecommendations()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App9BoardgameC24canUseForRecommendationsSbyF">canUseForRecommendations()</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Determines whether a game has enough information to be used by the recommendation engine.</p>
+
+<p>BoardGameGeek&rsquo;s data is user-provided and is not complete for all games in their database. If a
+game is missing one of these fields, we can still create a reasonable score for how well the game 
+matches a set of criteria. If it&rsquo;s missing a bunch of these fields, scoring the game would be meaningless.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">canUseForRecommendations</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Bool</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Boardgame.swift#L101-L122">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App9BoardgameC19getSuggestedPlayersSiyF"></a>
+                    <a name="//apple_ref/swift/Method/getSuggestedPlayers()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App9BoardgameC19getSuggestedPlayersSiyF">getSuggestedPlayers()</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">getSuggestedPlayers</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Int</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Boardgame.swift#L124-L130">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App9BoardgameC17getAvgPlayingTimeSiyF"></a>
+                    <a name="//apple_ref/swift/Method/getAvgPlayingTime()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App9BoardgameC17getAvgPlayingTimeSiyF">getAvgPlayingTime()</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">getAvgPlayingTime</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Int</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Boardgame.swift#L132-L138">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App9BoardgameC12getAvgRatingSfyF"></a>
+                    <a name="//apple_ref/swift/Method/getAvgRating()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App9BoardgameC12getAvgRatingSfyF">getAvgRating()</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Unwraps, and gives games with no rating a low but not terrible default rating</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">getAvgRating</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Float</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Boardgame.swift#L141-L143">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App9BoardgameC13getComplexitySfyF"></a>
+                    <a name="//apple_ref/swift/Method/getComplexity()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App9BoardgameC13getComplexitySfyF">getComplexity()</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Unwraps, and gives games with no complexity rating an average complexity value as a default.
+Ideally we&rsquo;d give games with no complexity value a scoring penalty.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">getComplexity</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Float</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Boardgame.swift#L147-L149">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
               </ul>
             </div>
           </div>
@@ -2161,7 +2320,7 @@ BoardGameGeek sometimes has a slightly different title for a game. This is the e
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-10-07)</p>
+      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-10-09)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
     </section>
   </body>

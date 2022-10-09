@@ -787,6 +787,9 @@
                 <a class="nav-group-task-link" href="../Structs/BMPFormatter.html">BMPFormatter</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/BoardgameRecommendationData.html">BoardgameRecommendationData</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/Color.html">Color</a>
               </li>
               <li class="nav-group-task">
@@ -980,6 +983,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/GameListContext.html">GameListContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/GameListContext/QueryOptions.html">– QueryOptions</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/GameRatingTag.html">GameRatingTag</a>
@@ -1320,7 +1326,7 @@
             <p>Pages for displaying board games in the onboard Board Game Library.</p>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteBoardgameController.swift#L50-L136">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteBoardgameController.swift#L60-L179">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1353,7 +1359,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteBoardgameController.swift#L52-L63">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteBoardgameController.swift#L62-L74">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1397,7 +1403,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteBoardgameController.swift#L74-L79">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteBoardgameController.swift#L85-L90">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1430,7 +1436,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteBoardgameController.swift#L84-L92">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteBoardgameController.swift#L95-L103">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1465,7 +1471,55 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteBoardgameController.swift#L97-L114">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteBoardgameController.swift#L108-L125">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App23SiteBoardgameControllerV21boardgameGuideHandlery5Vapor4ViewVAE7RequestCYaKF"></a>
+                    <a name="//apple_ref/swift/Method/boardgameGuideHandler(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App23SiteBoardgameControllerV21boardgameGuideHandlery5Vapor4ViewVAE7RequestCYaKF">boardgameGuideHandler(_:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>GET /boardgames/guide</code></p>
+
+<p>Finds boardgames that match a set of user&rsquo;s criteria. Uses a scoring system to find games that best match the criteria given in the URL query.
+With no query, just shows the input form.</p>
+
+<p>To avoid confusion: The API has both maxAge and minAge parameters. The URL query in the UI only has maxage, but considers the value 14
+to actually be a minAge parameter.</p>
+
+<p>Query Parameters:</p>
+
+<ul>
+<li><code>numplayers=INT</code>      The desired number of players. Filters for games that allow this # of players, and sorts for recommendedPlayers close to this.</li>
+<li><code>timetoplay=INT</code>      How much time you have to play. Filters for games with a avgPlayTime shorter than this, sorts for games with avgPlayTime close to this.</li>
+<li><code>maxage=INT</code>          If nonzero, filters out games with a minAge greater than this value. Special Case: The value 14 filters out games with minAge less than 14.</li>
+<li><code>complexity=INT</code>      If nonzero, sorts for games with near this complexity value.</li>
+</ul>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">boardgameGuideHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">View</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteBoardgameController.swift#L140-L157">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1498,7 +1552,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteBoardgameController.swift#L118-L124">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteBoardgameController.swift#L161-L167">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1531,7 +1585,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteBoardgameController.swift#L128-L134">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteBoardgameController.swift#L171-L177">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1544,7 +1598,7 @@
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-10-07)</p>
+      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-10-09)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
     </section>
   </body>

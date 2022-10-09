@@ -787,6 +787,9 @@
                 <a class="nav-group-task-link" href="../Structs/BMPFormatter.html">BMPFormatter</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/BoardgameRecommendationData.html">BoardgameRecommendationData</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/Color.html">Color</a>
               </li>
               <li class="nav-group-task">
@@ -980,6 +983,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/GameListContext.html">GameListContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/GameListContext/QueryOptions.html">– QueryOptions</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/GameRatingTag.html">GameRatingTag</a>
@@ -1320,7 +1326,7 @@
             <p>Methods for accessing the list of boardgames available in the onboard Games Library.</p>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L6-L156">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L6-L211">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1354,7 +1360,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L9-L24">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L9-L25">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1404,7 +1410,7 @@ if logged in favorite information is returned.</p>
                         <p><a href="doc:BoardgameResponseData">doc:BoardgameResponseData</a></p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L38-L61">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L39-L62">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1462,7 +1468,7 @@ if logged in favorite information is returned.</p>
                         <p><a href="doc:BoardgameData">doc:BoardgameData</a></p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L69-L74">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L70-L75">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1525,7 +1531,7 @@ if logged in favorite information is returned.</p>
                         <p>An array of <a href="doc:BoardgameData">doc:BoardgameData</a>. First item is the base game, other items are expansions.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L83-L96">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L84-L97">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1583,7 +1589,7 @@ if logged in favorite information is returned.</p>
                         <p>201 Created on success; 200 OK if already favorited.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L104-L118">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L105-L119">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1642,7 +1648,60 @@ if logged in favorite information is returned.</p>
                         <p>204 No Content on success; 200 OK if already not a favorite.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L127-L138">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L128-L139">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App19BoardgameControllerV14recommendGamesyAA0B12ResponseDataV5Vapor7RequestCYaKF"></a>
+                    <a name="//apple_ref/swift/Method/recommendGames(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App19BoardgameControllerV14recommendGamesyAA0B12ResponseDataV5Vapor7RequestCYaKF">recommendGames(_:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>GET /api/v3/boardgames/recommend</code></p>
+
+<p>Returns an array of boardgames in a structure designed to support pagination. The returned array of board games will be sorted 
+in decreasing order of how closely each games matches the criteria in the <code><a href="../Structs/BoardgameRecommendationData.html">BoardgameRecommendationData</a></code> JSON content.
+Can be called while not logged in; if logged in favorite information is returned.</p>
+
+<p>The recommendation algorithom filters out games that don&rsquo;t match the given criteria, i.e. if you ask for games for 6 players, games for 1-4 players 
+will not be returned. Then, games are assigned a score taking each games&rsquo; <code>suggestedNumPlayers</code>, <code>avgPlayingTime</code>, <code>avgRating</code>, 
+and <code>gameComplexity</code> into account.</p>
+
+<p><strong>URL Query Parameters</strong></p>
+
+<ul>
+<li><code>?start=INT</code> - Offset from start of results set</li>
+<li><p><code>?limit=INT</code> - the maximum number of games to retrieve: 1-200, default is 50. </p></li>
+</ul>
+
+                        <a href="../Structs/BoardgameController/recommendGames%28_%3A%29.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">recommendGames</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/BoardgameResponseData.html">BoardgameResponseData</a></span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p><a href="doc:BoardgameResponseData">doc:BoardgameResponseData</a></p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L156-L193">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1687,7 +1746,7 @@ if logged in favorite information is returned.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L144-L155">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L199-L210">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1700,7 +1759,7 @@ if logged in favorite information is returned.</p>
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-10-07)</p>
+      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-10-09)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
     </section>
   </body>
