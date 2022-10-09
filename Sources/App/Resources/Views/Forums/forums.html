@@ -49,7 +49,7 @@
 							</div>
 							<div class="row">
 								<div class="col">
-									#(forum.postCount) post#if(forum.postCount != 1):s#endif#if(forum.readCount < forum.postCount):, #(forum.postCount - forum.readCount) new#endif
+									#(forum.postCount) post#if(forum.postCount != 1):s#endif#if(forum.readCount < forum.postCount):, <span class="text-danger">#(forum.postCount - forum.readCount) new</span>#endif
 								</div>
 								<div class="col col-auto">
 									<span class="text-muted">Last post: @#(forum.lastPoster.username)</span>
