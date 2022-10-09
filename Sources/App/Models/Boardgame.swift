@@ -92,6 +92,61 @@ final class Boardgame: Model {
 		self.notes = jsonGame.notes
 		self.numCopies = jsonGame.numCopies
 	}
+	
+	/// Determines whether a game has enough information to be used by the recommendation engine.
+	/// 
+	/// BoardGameGeek's data is user-provided and is not complete for all games in their database. If a
+	/// game is missing one of these fields, we can still create a reasonable score for how well the game 
+	/// matches a set of criteria. If it's missing a bunch of these fields, scoring the game would be meaningless.
+	func canUseForRecommendations() -> Bool {
+		var invalidCount = 0
+		if suggestedPlayers == nil || suggestedPlayers == 0 {
+			invalidCount += 1
+			guard let min = minPlayers, let max = maxPlayers, min != 0, max != 0 else {
+				return false
+			}
+		}
+		if avgPlayingTime == nil || avgPlayingTime == 0 {
+			invalidCount += 1
+			guard let min = minPlayingTime, let max = maxPlayingTime, min != 0, max != 0 else {
+				return false
+			}
+		}
+		if avgRating == nil || avgRating == 0 {
+			invalidCount += 1
+		}
+		if complexity == nil || complexity == 0 {
+			invalidCount += 1
+		}
+		return invalidCount <= 1
+	}
+	
+	func getSuggestedPlayers() -> Int {
+		var result = suggestedPlayers ?? 0
+		if result == 0 {
+			result = ((minPlayers ?? 0) + (maxPlayers ?? 0) + 1) / 2
+		}
+		return result
+	}
+	
+	func getAvgPlayingTime() -> Int {
+		var result = avgPlayingTime ?? 0
+		if result == 0 {
+			result = ((minPlayingTime ?? 0) + (maxPlayingTime ?? 0)) / 2
+		}
+		return result
+	}
+	
+	/// Unwraps, and gives games with no rating a low but not terrible default rating
+	func getAvgRating() -> Float {
+		return (avgRating ?? 0) == 0 ? 4.5 : (avgRating ?? 0)
+	}
+	
+	/// Unwraps, and gives games with no complexity rating an average complexity value as a default.
+	/// Ideally we'd give games with no complexity value a scoring penalty.
+	func getComplexity() -> Float {
+		return (complexity ?? 0) == 0 ? 3.0 : (complexity ?? 0)
+	}
 }
 
 struct CreateBoardgameSchema: AsyncMigration {

@@ -52,6 +52,29 @@ extension AnnouncementData {
 	}
 }
 
+/// Parameters for the game recommender engine. Pass these values in, get back a `BoardgameResponseData` with a 
+/// list of games filtered to match the criteria, and sorted based on how well they match the criteria. The sort takes into account each games'
+/// overall rating from BGG, the recommended number of players (not just min and max allowed players), the average playtime, 
+/// and the complexity score of the game.
+/// 
+/// Sent to these methods as the JSON  request body:
+/// * `GET /api/v3/boardgames/recommend`
+public struct BoardgameRecommendationData: Content {
+	/// How many players are going to play
+	var numPlayers: Int
+	/// How much time they have, in minutes
+	var timeToPlay: Int
+	/// If nonzero, limit results to games appropriate for this player age. Does not factor into the sort criteria. That is, if you
+	/// request games appropriate for 14 years olds, games appropriate for ages 18 and older will be filtered out, but games appropriate
+	/// for ages 1 and up won't be ranked any lower than games rated for 14 year olds.
+	var maxAge: Int
+	/// If nonzero, filter OUT games with a minAge lower than this age. Useful for filtering out games intended for young children. Does not factor into the sort criteria. 
+	var minAge: Int
+	/// Desired complexity in the range [1...5], or zero to not consider complexity in rankings.
+	var complexity: Int
+}
+
+
 /// Wraps an array of `BoardgameData` with info needed to paginate the result set.
 /// 
 /// Returned by:
