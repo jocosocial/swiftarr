@@ -95,6 +95,17 @@ func configureBundle(_ app: Application) throws {
 	if app.environment.name == "heroku" || operatingSystemPlatform() == "Linux" {
 		resourcesURL = Bundle.main.bundleURL.appendingPathComponent("swiftarr_App.resources")
 	}
+	else if let appLinkedLocation = Bundle.main.resourceURL?.appendingPathComponent("swiftarr_App.bundle"), 
+			let bundle = Bundle.init(url: appLinkedLocation), let loc = bundle.resourceURL {
+		resourcesURL = loc
+	}
+	else if let fwLinkedLocation = Bundle(for: Settings.self).resourceURL?.appendingPathComponent("swiftarr_App.bundle"), 
+			let bundle = Bundle.init(url: fwLinkedLocation), let loc = bundle.resourceURL {
+		resourcesURL = loc
+	}
+	else if let bundle = Bundle.init(url: Bundle.main.bundleURL.appendingPathComponent("swiftarr_App.bundle")), let loc = bundle.resourceURL {
+		resourcesURL = loc
+	}
 	else if Bundle(for: Settings.self).url(forResource: "swiftarr", withExtension: "css", subdirectory: "Resources/Assets/css") != nil {
 		resourcesURL = Bundle(for: Settings.self).resourceURL ?? Bundle(for: Settings.self).bundleURL
 	}
