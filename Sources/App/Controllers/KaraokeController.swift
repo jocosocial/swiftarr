@@ -52,8 +52,8 @@ struct KaraokeController: APIRouteCollection {
 		let songQuery = KaraokeSong.query(on: req.db).sort(\.$artist, .ascending).sort(\.$title, .ascending)
 		if let search = filters.search {
 			songQuery.group(.or) { (or) in 
-				or.filter(.sql(embed: "\"karaokesong\".\"artist\" @@ websearch_to_tsquery(\(bind: search))"))
-        or.filter(.sql(embed: "\"karaokesong\".\"title\" @@ websearch_to_tsquery(\(bind: search))"))
+				or.fullTextFilter(\.$artist, search)
+				or.fullTextFilter(\.$title, search)
 			}
 		}
 		var filteringFavorites = false
