@@ -484,6 +484,9 @@ func configureMigrations(_ app: Application) throws {
 	// Fifth, migrations that touch up initial state
 	app.migrations.add(SetInitialEventForums(), to: .psql)
 	app.migrations.add(SetInitialCategoryForumCounts(), to: .psql)
+
+  // Finally, any additional migrations. List newly-written migrations here!
+  app.migrations.add(CreateSearchIndexes(), to: .psql)
 }
   
 // Perform several sanity checks to verify that we can access the dbs and resource files that we need.
