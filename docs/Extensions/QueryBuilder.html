@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>Paginator Structure Reference</title>
+    <title>QueryBuilder Extension Reference</title>
     <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
     <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
     <meta charset="utf-8">
@@ -14,9 +14,9 @@
   </head>
   <body>
 
-    <a name="//apple_ref/swift/Struct/Paginator" class="dashAnchor"></a>
+    <a name="//apple_ref/swift/Extension/QueryBuilder" class="dashAnchor"></a>
 
-    <a title="Paginator Structure Reference"></a>
+    <a title="QueryBuilder Extension Reference"></a>
 
     <header class="header">
       <p class="header-col header-col--primary">
@@ -44,7 +44,7 @@
     <p class="breadcrumbs">
       <a class="breadcrumb" href="../index.html">Swiftarr Reference</a>
       <img class="carat" src="../img/carat.png" alt=""/>
-      Paginator Structure Reference
+      QueryBuilder Extension Reference
     </p>
 
     <div class="content-wrapper">
@@ -1318,33 +1318,17 @@
 
         <section class="section">
           <div class="section-content top-matter">
-            <h1>Paginator</h1>
+            <h1>QueryBuilder</h1>
               <div class="declaration">
                 <div class="language">
                   
-                  <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">Paginator</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                  <pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">QueryBuilder</span></code></pre>
 
                 </div>
               </div>
-            <p>Composes into other structs to add pagination.</p>
-
-<p>Generally this will be added to a top-level struct along with an array of some result type, like this:</p>
-<pre class="highlight swift"><code>    <span class="kd">struct</span> <span class="kt">SomeCollectionData</span><span class="p">:</span> <span class="kt">Content</span> <span class="p">{</span>
-        <span class="k">var</span> <span class="nv">paginator</span><span class="p">:</span> <span class="kt">Paginator</span>
-        <span class="k">var</span> <span class="nv">collection</span><span class="p">:</span> <span class="p">[</span><span class="kt">CollectionElementType</span><span class="p">]</span>
-    <span class="p">}</span>
-</code></pre>
-
-<p>The Paginator lets you page through results, showing the total number of pages and the current page.
-The outer-level struct should document the sort ordering for the returned collection; the first element
-in the sorted collection is returned in the first result element when start = 0.</p>
-
-<p>In many cases the size of the returned array will be smaller than limit, and not only at the end of the results.
-In several cases the results may be filtered after the database query returns. The next &lsquo;page&rsquo; of results should
-be calculated with <code>start + limit</code>, not with <code>start + collection.count</code>.</p>
-
+            
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L865-L872">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/.build/checkouts/fluent-kit/Sources/FluentKit/Query/Builder/QueryBuilder.swift#L175-L189">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1356,9 +1340,9 @@ be calculated with <code>start + limit</code>, not with <code>start + collection
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App9PaginatorV5totalSivp"></a>
-                    <a name="//apple_ref/swift/Property/total" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App9PaginatorV5totalSivp">total</a>
+                    <a name="/s:9FluentKit12QueryBuilderC3AppE14fullTextFilteryACyxGXDs7KeyPathCyxqd__G_SSt5ModelQyd__RszAA17QueryablePropertyRd__SS5ValueRtd__lF"></a>
+                    <a name="//apple_ref/swift/Method/fullTextFilter(_:_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:9FluentKit12QueryBuilderC3AppE14fullTextFilteryACyxGXDs7KeyPathCyxqd__G_SSt5ModelQyd__RszAA17QueryablePropertyRd__SS5ValueRtd__lF">fullTextFilter(_:<wbr>_:<wbr>)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -1366,79 +1350,22 @@ be calculated with <code>start + limit</code>, not with <code>start + collection
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>The total number of items returnable by the request.</p>
+                        <p>Uses Postgres full text search capabilities for improved search when using a Postgres db. This fn is modeled after the many filter() methods
+in FluentKit&rsquo;s QueryBuilder+Filter.swift.</p>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">total</span><span class="p">:</span> <span class="kt">Int</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">@discardableResult</span>
+<span class="kd">public</span> <span class="kd">func</span> <span class="n">fullTextFilter</span><span class="o">&lt;</span><span class="kt">Field</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nv">field</span><span class="p">:</span> <span class="kt">KeyPath</span><span class="o">&lt;</span><span class="kt">Model</span><span class="p">,</span> <span class="kt">Field</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">_</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="k">Self</span> 
+<span class="k">where</span> <span class="kt">Field</span><span class="p">:</span> <span class="kt">QueryableProperty</span><span class="p">,</span> <span class="kt">Field</span><span class="o">.</span><span class="kt">Model</span> <span class="o">==</span> <span class="kt">Model</span><span class="p">,</span> <span class="kt">Field</span><span class="o">.</span><span class="kt">Value</span> <span class="o">==</span> <span class="kt">String</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L867">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App9PaginatorV5startSivp"></a>
-                    <a name="//apple_ref/swift/Property/start" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App9PaginatorV5startSivp">start</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>The index number of the first item in the collection array, relative to the overall returnable results.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">start</span><span class="p">:</span> <span class="kt">Int</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L869">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App9PaginatorV5limitSivp"></a>
-                    <a name="//apple_ref/swift/Property/limit" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App9PaginatorV5limitSivp">limit</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>The number of results requested. The collection array could be smaller than this number.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">limit</span><span class="p">:</span> <span class="kt">Int</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L871">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Extensions/Fluent+Extensions.swift#L179-L188">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
