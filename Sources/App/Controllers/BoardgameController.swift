@@ -49,7 +49,7 @@ struct BoardgameController: APIRouteCollection {
 		let limit = (filters.limit ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
 		let query = Boardgame.query(on: req.db)
 		if let search = filters.search {
-			query.filter(\.$gameName, .custom("ILIKE"), "%\(search)%")
+			query.fullTextFilter(\.$gameName, search)
 		}
 		if let fav = filters.favorite, fav.lowercased() == "true", let user = user {
 			query.join(BoardgameFavorite.self, on: \Boardgame.$id == \BoardgameFavorite.$boardgame.$id)

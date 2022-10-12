@@ -68,8 +68,8 @@ struct EventController: APIRouteCollection {
 			search = search.replacingOccurrences(of: "%", with: "\\%")
 			search = search.trimmingCharacters(in: .whitespacesAndNewlines)
 			query.group(.or) { (or) in
-				or.filter(\.$title, .custom("ILIKE"), "%\(search)%")
-				or.filter(\.$info, .custom("ILIKE"), "%\(search)%")
+				or.fullTextFilter(\.$title, search)
+				or.fullTextFilter(\.$info, search)
 			}
 		}
 		if let eventType = options.type {
