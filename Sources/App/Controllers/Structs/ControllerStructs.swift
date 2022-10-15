@@ -905,7 +905,7 @@ extension PostContentData: RCFValidatable {
 		tester.validate(text.count < 2048, forKey: .text, or: "post length of \(text.count) is over the 2048 character limit")
 		tester.validate(images.count < 5, forKey: .images, or: "posts are limited to 4 image attachments")
 		let lines = text.replacingOccurrences(of: "\r\n", with: "\r").components(separatedBy: .newlines).count
-		tester.validate(lines <= 25, forKey: .images, or: "posts are limited to 25 lines of text")
+		tester.validate(lines <= 25, forKey: .text, or: "posts are limited to 25 lines of text")
 	}
 }
 

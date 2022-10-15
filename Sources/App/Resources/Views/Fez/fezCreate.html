@@ -94,9 +94,19 @@
 										and at most <input type="number" name="maximum" min="2" max="50" step="1" value="#(maxPeople)"> attendees
 									</div>
 								</div>
-								<div class="row mb-2">
+								<div class="row">
 									<div class="col">
-										<textarea class="form-control" maxlength="2000" rows="4" placeholder="Event Info" name="postText">#(info)</textarea>
+										<textarea class="form-control" 
+												maxlength="2000" 
+												data-lengthlabel="fezTextLimitsLabel" 
+												rows="4" 
+												placeholder="Event Info" 
+												name="postText">#(info)</textarea>
+									</div>
+								</div>
+								<div class="row justify-content-end mb-2">
+									<div class="col col-auto">
+										<div class="input-group-text input-group-sm py-0" id="fezTextLimitsLabel"></div>
 									</div>
 								</div>
 								<div class="alert alert-danger mt-3 d-none" role="alert">

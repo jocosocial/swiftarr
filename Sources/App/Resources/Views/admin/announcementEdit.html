@@ -19,8 +19,18 @@
 				<li class="list-group-item bg-transparent mb-3">				
 					<form class="ajax" action="#(post.formAction)" enctype="multipart/form-data" method="POST" data-successurl="#(post.postSuccessURL)" id="messagePostForm">
 						<div class="container-fluid">
-							<div class="row mb-2"> 
-								<textarea class="form-control" maxlength="2000" rows="5" name="postText" id="postText" placeholder="Announcement Text">#(post.messageText)</textarea>
+							<div class="row"> 
+								<textarea 
+										class="form-control" 
+										maxlength="2000" 
+										data-lengthlabel="announcementLimitsLabel" 
+										rows="5" 
+										name="postText" 
+										id="postText" 
+										placeholder="Announcement Text">#(post.messageText)</textarea>
+							</div>
+							<div class="row justify-content-end mb-3">
+								<div class="col col-auto input-group-text input-group-sm py-0" id="announcementLimitsLabel"></div>
 							</div>
 							<div class="row mb-2">
 								<div class="col">

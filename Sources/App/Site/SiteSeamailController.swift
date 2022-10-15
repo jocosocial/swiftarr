@@ -4,6 +4,14 @@ import FluentSQL
 
 struct SiteSeamailController: SiteControllerUtils {
 
+	struct SeamailCreateFormContent : Content {
+		var subject: String
+		var postText: String
+		var participants: String			// Comma separated list of participant usernames
+		var postAsModerator: String?
+		var postAsTwitarrTeam: String?
+	}
+
 	func registerRoutes(_ app: Application) throws {
 		// Routes that require login but are generally 'global' -- Two logged-in users could share this URL and both see the content
 		// Not for Seamails, pages for posting new content, mod pages, etc. Logged-out users given one of these links should get
@@ -17,6 +25,7 @@ struct SiteSeamailController: SiteControllerUtils {
 		privateRoutes.get("seamail", "usernames", "search", ":searchString", use: seamailUsernameAutocompleteHandler)
 		privateRoutes.post("seamail", "create", use: seamailCreatePostHandler)
 		privateRoutes.get("seamail", fezIDParam, use: seamailViewPageHandler)
+		privateRoutes.post("seamail", fezIDParam, use: seamailViewPageHandler)
 		privateRoutes.post("seamail", fezIDParam, "post", use: seamailThreadPostHandler)
 		privateRoutes.webSocket("seamail", fezIDParam, "socket", shouldUpgrade: shouldCreateMsgSocket, onUpgrade: createMsgSocket) 
 	}
@@ -111,19 +120,18 @@ struct SiteSeamailController: SiteControllerUtils {
 	// POSTs a seamail creation request.
 	func seamailCreatePostHandler(_ req: Request) async throws -> Response {
 		let user = try req.auth.require(UserCacheData.self)
-		struct SeamailCreateFormContent : Content {
-			var subject: String
-			var postText: String
-			var participants: String			// Comma separated list of participant usernames
-			var postAsModerator: String?
-			var postAsTwitarrTeam: String?
-		}
 		let formContent = try req.content.decode(SeamailCreateFormContent.self)
+		// Normally we let the API do validations, but in this case we make one call to create the Fez and another
+		// to post the message. Catching likely errors here reduces the chance we have to deal with partial failure.
 		guard formContent.subject.count > 0 else {
 			throw Abort(.badRequest, reason: "Subject cannot be empty.")
 		}
 		guard formContent.postText.count > 0 else {
 			throw Abort(.badRequest, reason: "First message cannot be empty.")
+		}
+		let lines = formContent.postText.replacingOccurrences(of: "\r\n", with: "\r").components(separatedBy: .newlines).count
+		guard lines <= 25 else {
+			throw Abort(.badRequest, reason: "Messages are limited to 25 lines of text.")
 		}
 		let participants = formContent.participants.split(separator: ",").compactMap { UUID(uuidString: String($0)) }
 		var allUsers = Set(participants)
@@ -137,13 +145,22 @@ struct SiteSeamailController: SiteControllerUtils {
 				createdByTwitarrTeam: formContent.postAsTwitarrTeam != nil)
 		let createResponse = try await apiQuery(req, endpoint: "/fez/create", method: .POST, encodeContent: fezContent)
 		let fezData = try createResponse.content.decode(FezData.self)
-		let postContentData = PostContentData(text: formContent.postText, images: [], postAsModerator: formContent.postAsModerator != nil, 
-				postAsTwitarrTeam: formContent.postAsTwitarrTeam != nil)
-		let response = try await apiQuery(req, endpoint: "/fez/\(fezData.fezID)/post", method: .POST, encodeContent: postContentData)
-		return try await response.encodeResponse(for: req)
+		do {
+			let postContentData = PostContentData(text: formContent.postText, images: [], postAsModerator: formContent.postAsModerator != nil, 
+					postAsTwitarrTeam: formContent.postAsTwitarrTeam != nil)
+			let response = try await apiQuery(req, endpoint: "/fez/\(fezData.fezID)/post", method: .POST, encodeContent: postContentData)
+			return try await response.encodeResponse(for: req)
+		}
+		catch {
+			// If we successfully create the chat but can't add the initial message to it, redirect to the new chat.
+			let headers = HTTPHeaders(dictionaryLiteral: ("Location", "/seamail/\(fezData.fezID)"))
+			let response = Response(status: .badRequest, headers: headers)
+			return response
+		}
 	}
 	
 	// GET /seamail/:seamail_ID
+	// POST /seamail/:seamail_ID 		-- only used for cases where we create a chat but then the initial post fails
 	//
 	// Paginated.
 	// 
@@ -173,6 +190,10 @@ struct SiteSeamailController: SiteControllerUtils {
 				newPosts = []
 				showDivider = false
 				post = .init(forType: .seamailPost(fez))
+				if req.method == .POST, let formContent = try? req.content.decode(SeamailCreateFormContent.self) {
+					post.messageText = formContent.postText
+					post.postErrorString = "Created the chat, but was not able to post the initial message."
+				}
 				socketURL = "/fez/\(fez.fezID)/socket"
 				breadcrumbURL = "/seamail"
 				if let foruser = req.query[String.self, at: "foruser"], var comp = URLComponents(string: post.postSuccessURL) {

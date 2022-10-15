@@ -156,6 +156,7 @@ struct MessagePostContext: Encodable {
 	var photoFilenames: [String] = ["", "", "", ""]	// Must have 4 values to make Leaf templating work. Use "" as placeholder.
 	var allowedImageTypes: String
 	var displayUntil: String = ""					// Used by announcements.
+	var postErrorString: String = ""				// Prepopulates the error alert. Useful for partial successes.
 
 	var formAction: String
 	var postSuccessURL: String

@@ -239,6 +239,25 @@ function updateDropdownButton(menuItemBtn) {
 
 // MARK: - messagePostForm Handlers
 
+// Updates the char/line count labels as text input fields change
+for (let input of document.querySelectorAll('[data-lengthlabel]')) {
+	updateInputFieldCharCounts(input);
+	input.addEventListener("input", function() { updateInputFieldCharCounts(event.target); });
+}
+function updateInputFieldCharCounts(inputElement) {
+	let label = document.getElementById(inputElement.dataset.lengthlabel);
+	let maxlength = inputElement.getAttribute("maxLength");
+	let maxlines = inputElement.dataset.maxlines;
+	if (label != null && maxlength != null) {
+		let str = inputElement.value;
+		let lines = str.split(/\r\n|\r|\n/).length;
+		label.innerHTML = "<span " + (str.length > maxlength ? 'class="text-danger">' : ">") + str.length + "/" + maxlength + " chars</span>";
+		if (maxlines != null) {
+			label.innerHTML += "&nbsp;<span " + (lines > maxlines ? 'class="text-danger">' : ">") + lines + "/" + maxlines + " lines</span>";
+		}
+	}
+}
+
 // Updates a photo card when its file input field changes (mostly, shows the photo selected).
 for (let input of document.querySelectorAll('.image-upload-input')) {
 	updatePhotoCardState(input.closest('.card'));
@@ -329,21 +348,24 @@ function swapUploadImage() {
 for (let form of document.querySelectorAll('form.ajax')) {
 	form.addEventListener("submit", function(event) { submitAJAXForm(form, event); });
 }
-function submitAJAXForm(formElement, event) {
+async function submitAJAXForm(formElement, event) {
+	if (!formElement.classList.contains('ajax')) {
+		return;
+	}
     event.preventDefault();
-	var req = new XMLHttpRequest();
-	req.onload = function() {
-		if (this.status < 300) {
+    try {
+		let response = await fetch(formElement.action, { method: 'POST', body: new FormData(formElement) });
+		if (response.status < 300) {
 			let successURL = formElement.dataset.successurl;
+			formElement.reset();
+			for (let elem of formElement.querySelectorAll('textarea,input.text')) {
+				elem.value = "";
+				updateInputFieldCharCounts(elem);
+			}
 			if (successURL == "reset") {
-				formElement.reset();
-				for (let elem of formElement.querySelectorAll('textarea')) {
-					elem.value = "";
-				}
 				formElement.querySelector('.twitarr-image-remove').click();
 			}
 			else if (successURL) {
-				formElement.reset();
 				location.assign(successURL);
 			}
 			else {
@@ -351,7 +373,14 @@ function submitAJAXForm(formElement, event) {
 			}
 		}
 		else {
-			var data = JSON.parse(this.responseText);
+			let newloc = response.headers.get('Location');
+			if (newloc != null) {
+				formElement.classList.remove("ajax");
+				formElement.setAttribute("action", newloc);
+				formElement.submit();
+				return;
+			}
+			let data = await response.json();
 			let alertElement = formElement.querySelector('.alert');
 			if (alertElement) {
 				alertElement.innerHTML = "<b>Error:</b> " + data.reason;
@@ -359,13 +388,11 @@ function submitAJAXForm(formElement, event) {
 			}
 		}
 	}
-	req.onerror = function() {
+	catch(e) {
 		let alertElement = formElement.querySelector('.alert');
 		alertElement.innerHTML = "<b>Error:</b> " + this.statusText;
 		alertElement.classList.remove("d-none");
 	}
-	req.open("post", formElement.action);
-    req.send(new FormData(formElement));
 }
 
 // MARK: - Schedule Page Handlers

@@ -23,7 +23,9 @@ extension Application {
 	var websocketStorage: WebSocketStorage {
 		get {
 			guard let result = self.storage[WebSocketStorageKey.self] else {
-				return WebSocketStorage()
+				let newResult = WebSocketStorage()
+				self.storage[WebSocketStorageKey.self] = newResult
+				return newResult
 			}
 			return result
 		}
