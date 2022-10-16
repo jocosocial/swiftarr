@@ -11,6 +11,11 @@ import Redis
 /// call hset directly makes it difficult to answer questions like, "What fields should exist in this hash set?" So, all that is centralized here.
 extension Request.Redis {
 // MARK: Notification State Change
+// 
+// Every user session keeps track of the notifications for that user, as basically every page in the UI has
+// to show state info on the user's active unseen notifications. When a new notification is added we add
+// their userID to this redis set, and then check it on every page we deliver to see if we need to rebuild the
+// session data.
 	func addUsersWithStateChange(_ userIDs: [UUID]) async throws {
 		_ = try await sadd(userIDs, to: "UsersWithNotificationStateChange").get()
 	}
@@ -21,6 +26,17 @@ extension Request.Redis {
 
 
 // MARK: User Hash
+//
+// This key is a hash for each user. Each entry in the hash tracks either the total number of a type of notification
+// that has been produced, or the total number of those notifications the user has 'seen'. Generally we compute
+// the number of unseen notifications for a notification type by subtracting seen from total. Doing it this way lets
+// us revise the total (if, for example, an announcement is deleted, or a tweet with an @mention is edited to no longer have
+// that @mention) and not screw up the system.
+//
+// A side effect is that we generally only update the 'seen' value by declaring the user 'up to date' with that notification
+// type, and seen gets set to be equal to total.
+//
+// Note that some of the hash keys (like alertwords) use the word as part of the hash key.
 	func userHashRedisKey(userID: UUID) -> RedisKey {
 		return RedisKey("NotificationHash-\(userID)")
 	}
@@ -84,6 +100,8 @@ extension Request.Redis {
 		
 
 // MARK: Karaoke Song Managers
+//
+// Vaguely ACL-like, this key is a set of userIDs that have permission to use the Karaoke manager functions.
 	static let karaokeManagerRedisKey = RedisKey("KaraokeSongManagers")
 
 	func getKaraokeManagers() async throws -> [UUID] {
@@ -110,6 +128,11 @@ extension Request.Redis {
 	}
 	
 // MARK: Hashtags
+//
+// This is an ordered set of all the hashtags anyone has used. Because of how zrangebylex works, the 'scores' are all 0.
+// We use an ordered set because zrangebylex lets us query for all hashtags that start with a substring, but that only
+// works when all the scores are the same. It'd be nicer if we could increment a tag's score each time it's used, and
+// getHashtags could then return tags matching a substring, ordered by frequency of use.
 	static let hashtagsRedisKey = RedisKey("hashtags")
 
 	func getHashtags(matching: String) async throws -> [String] {
@@ -162,6 +185,9 @@ extension Request.Redis {
 
 
 // MARK: Announcements
+//
+// Each announcement gets a monotonically increasing ID, and announcements have an 'end time' where they
+// automatically stop being shown. This lets us quickly get the currently-active announcement IDs.
 	static let activeAnnouncementRedisKey = RedisKey("ActiveAnnouncementIDs")
 
 	func getActiveAnnouncementIDs() async throws -> [Int]? {
@@ -180,6 +206,12 @@ extension Request.Redis {
 	}
 
 // MARK: Seamails
+//
+// Each user has up to 4 Redis keys for tracking unread seamail and LFG messages. Each key roughly translates to
+// a mailbox. Each key is a hash associating the UUID of a message thread with the # of messages the user hasn't
+// read. This means each user with mod privledges has their own counts of the moderator seamails they haven't read.
+// This also means that given a seamail thread that has both @moderator and Alice (a mod user) in the thread, Alice
+// will have 2 separate unread notifications for this email.
 	enum MailInbox {
 		case seamail
 		case moderatorSeamail
@@ -222,6 +254,17 @@ extension Request.Redis {
 	}
 	
 // MARK: Blocks
+//
+// Blocks are bidirectional filtering of all content between two parent accounts, including all sub-accounts. 
+// Postgres stores a list of userIDs that an account has chosen to block. That list always adds the
+// userID of the blockee to the block list of the parent account (if any) of the blocker. This lets the blocker
+// view their blocks, remove a block (importantly, still showing the user that was blocked, not their parent acct),
+// while the blockee sees nothing. 
+//
+// To actually enforce blocks we use Redis sets. For each user we make a key of all the userIDs whose content
+// are blocked, regardless of whether the block is incoming or outgoing. 
+// If user A blocks user B, "rblocks:A" will contain B's userID and userIDs of accounts under B's parent, and "rblocks:B"
+// will contain all userIDs under A's parent.
 	func addBlockedUsers(_ blockedUsers: [UUID], blockedBy requester: UUID) async throws {
 		_ = try await sadd(blockedUsers, to: "rblocks:\(requester)").get()
 	}
@@ -242,6 +285,8 @@ extension Request.Redis {
 extension RedisClient {
 	
 // MARK: Settings
+//
+// Values in Settings.swift are stored in Redis, using a Redis hash.
 	func readSetting(_ field: String) async throws -> RESPValue {
 		return try await hget(field, from: "Settings").get()
 	}
