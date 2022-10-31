@@ -18,7 +18,7 @@ struct ImportBoardgames: AsyncMigration {
 		// get gamesFile
 		let gamesFile: String
 		do {
-			if (try Environment.detect().name != "heroku") {
+			if (try Environment.detect().isRelease) {
 				gamesFile = "JoCoGamesCatalog.json"
 			} else {
 				gamesFile = "test-JoCoGamesCatalog.json"

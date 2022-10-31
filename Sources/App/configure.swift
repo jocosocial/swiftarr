@@ -14,8 +14,6 @@ import gd
 /// 
 /// Besides the standard .development, .production, and .testing, there's a few custom environment values that can be set, either on the command line
 /// with `--env <ENVIRONMENT>` or with the `VAPOR_ENV` environment variable
-/// * --env heroku: Use this for Heroku installs. This changes the Migrations for games and karaoke to load fewer items and use fewer table rows. It also
-/// 	may change the way images are stored. Otherwise like .production.
 /// 
 /// Environment variables used by Swiftarr:
 /// * DATABASE_URL: 
@@ -92,7 +90,7 @@ public func configure(_ app: Application) throws {
 // on launch.
 func configureBundle(_ app: Application) throws {
 	var resourcesURL: URL
-	if app.environment.name == "heroku" || operatingSystemPlatform() == "Linux" {
+	if operatingSystemPlatform() == "Linux" {
 		resourcesURL = Bundle.main.bundleURL.appendingPathComponent("swiftarr_App.resources")
 	}
 	else if let appLinkedLocation = Bundle.main.resourceURL?.appendingPathComponent("swiftarr_App.bundle"), 
@@ -223,10 +221,9 @@ func configureBasicSettings(_ app: Application) throws {
 func databaseConnectionConfiguration(_ app: Application) throws {
 	// configure PostgreSQL connection
 	// note: environment variable nomenclature is vapor.cloud compatible
-	// support for Heroku environment
 
-  // Specify a database connection timeout in case we find ourselves stuck on a slow laptop.
-  let databaseTimeoutSeconds = Int64(Environment.get("DATABASE_TIMEOUT") ?? "10")
+	// Specify a database connection timeout in case we find ourselves stuck on a slow laptop.
+	let databaseTimeoutSeconds = Int64(Environment.get("DATABASE_TIMEOUT") ?? "10")
 
 	if let databaseURL = Environment.get("DATABASE_URL"), var postgresConfig = PostgresConfiguration(url: databaseURL) {
 		postgresConfig.tlsConfiguration = .makeClientConfiguration()
@@ -297,9 +294,6 @@ func configureHTTPServer(_ app: Application) throws {
 	}
 	else if app.environment == .production {
 		app.http.server.configuration.hostname = "joco.hollandamerica.com"
-	}
-	else if app.environment.name == "heroku" {
-		app.http.server.configuration.hostname = "swiftarr.herokuapp.com"
 	}
 	
 	// Load the FQDNs that we expect Twitarr to be available from. This feeds into link processing to help
