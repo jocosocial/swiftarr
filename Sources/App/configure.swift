@@ -251,19 +251,16 @@ func databaseConnectionConfiguration(_ app: Application) throws {
 				password: postgresPassword, database: postgresDB, maxConnectionsPerEventLoop: 1, connectionPoolTimeout: .seconds(databaseTimeoutSeconds!)), as: .psql)
 	}
 	
-	// configure Redis connection
-	// support for Heroku environment. Heroku also provides "REDIS_TLS_URL", but Vapor's Redis package 
-	// may not yet support TLS database connections.
+	// Configure Redis connection
+	// Vapor's Redis package may not yet support TLS database connections so we support going both ways.
 	let redisPoolOptions: RedisConfiguration.PoolOptions = RedisConfiguration.PoolOptions(maximumConnectionCount: .maximumActiveConnections(2))
 
 	if let redisString = Environment.get("REDIS_URL"), let redisURL = URL(string: redisString) {
 		app.redis.configuration = try RedisConfiguration(url: redisURL, pool: redisPoolOptions)
-	} else 
-	{
-		// otherwise
+	} else {
 		let redisHostname = Environment.get("REDIS_HOSTNAME") ?? "localhost"
 		let redisPort = (app.environment == .testing) ? Int(Environment.get("REDIS_PORT") ?? "6380")! : 6379
-		var redisPassword = Environment.get("REDIS_PASSWORD") ?? "password"
+		var redisPassword: String? = Environment.get("REDIS_PASSWORD") ?? "password"
 		if redisPassword == "" {
 			redisPassword = nil
 		}
