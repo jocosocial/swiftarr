@@ -254,7 +254,7 @@ func databaseConnectionConfiguration(_ app: Application) throws {
 		let redisPort = (app.environment == .testing) ? Int(Environment.get("REDIS_PORT") ?? "6380")! : 6379
 		var redisPassword = Environment.get("REDIS_PASSWORD") ?? "password"
 		if redisPassword == "" {
-			redisPassword = "password"
+			redisPassword = nil
 		}
 		app.redis.configuration = try RedisConfiguration(hostname: redisHostname, port: redisPort, password: redisPassword, pool: redisPoolOptions)
 	}
