@@ -75,7 +75,6 @@ The git repo is configured to ignore all files in the `Sources/App/Run/Private S
 There are several predefined environments:
 - `development` is the default
 - `production` and `testing` also predefined by Vapor
-- `heroku` is a custom (to Vapor) environment defined by Swiftarr
 - You can also create and name custom environments.
 
 In the environment file, the values that you should be sure to set include:

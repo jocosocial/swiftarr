@@ -374,6 +374,7 @@ struct TwitarrController: APIRouteCollection {
 				case "like": twarrtQuery.filter(TwarrtLikes.self, \TwarrtLikes.$likeType == .like)
 				case "laugh": twarrtQuery.filter(TwarrtLikes.self, \TwarrtLikes.$likeType == .laugh)
 				case "love": twarrtQuery.filter(TwarrtLikes.self, \TwarrtLikes.$likeType == .love)
+				case "all": twarrtQuery.filter(TwarrtLikes.self, \TwarrtLikes.$likeType != nil)
 				default: break
 			}
 			if filters.bookmarked == true {
@@ -416,7 +417,7 @@ struct TwitarrController: APIRouteCollection {
 		let twarrtLike = try await TwarrtLikes.query(on: req.db).filter(\.$user.$id == user.userID)
 				.filter(\.$twarrt.$id == twarrt.requireID()).first() ?? TwarrtLikes(user.userID, twarrt, likeType: nil)
 		twarrtLike.isFavorite = true
-		try await twarrt.save(on: req.db)
+		try await twarrtLike.save(on: req.db)
 		return .created
 	}
 	
