@@ -374,6 +374,7 @@ struct TwitarrController: APIRouteCollection {
 				case "like": twarrtQuery.filter(TwarrtLikes.self, \TwarrtLikes.$likeType == .like)
 				case "laugh": twarrtQuery.filter(TwarrtLikes.self, \TwarrtLikes.$likeType == .laugh)
 				case "love": twarrtQuery.filter(TwarrtLikes.self, \TwarrtLikes.$likeType == .love)
+				case "all": twarrtQuery.filter(TwarrtLikes.self, \TwarrtLikes.$likeType != nil)
 				default: break
 			}
 			if filters.bookmarked == true {
