@@ -668,6 +668,9 @@
                 <a class="nav-group-task-link" href="Classes/SwiftarrErrorMiddleware.html">SwiftarrErrorMiddleware</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/TimeZoneChange.html">TimeZoneChange</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Classes/ValidatingDecoder.html">ValidatingDecoder</a>
               </li>
               <li class="nav-group-task">
@@ -880,6 +883,9 @@
                 <a class="nav-group-task-link" href="Structs/CreateReportSchema.html">CreateReportSchema</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateTimeZoneChangeSchema.html">CreateTimeZoneChangeSchema</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/CreateTokenSchema.html">CreateTokenSchema</a>
               </li>
               <li class="nav-group-task">
@@ -997,6 +1003,9 @@
                 <a class="nav-group-task-link" href="Structs/HealthResponse.html">HealthResponse</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/ImportTimeZoneChanges.html">ImportTimeZoneChanges</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/JPGFormatter.html">JPGFormatter</a>
               </li>
               <li class="nav-group-task">
@@ -1111,12 +1120,6 @@
                 <a class="nav-group-task-link" href="Structs/RequireVerifiedMiddleware.html">RequireVerifiedMiddleware</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/ScheduleMungerCommand.html">ScheduleMungerCommand</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/ScheduleMungerCommand/Signature.html">– Signature</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/SettingsAdminData.html">SettingsAdminData</a>
               </li>
               <li class="nav-group-task">
@@ -1222,6 +1225,15 @@
                 <a class="nav-group-task-link" href="Structs/TIFFFormatter.html">TIFFFormatter</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/TimeZoneChangeData.html">TimeZoneChangeData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/TimeZoneChangeData/Record.html">– Record</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/TimeZoneChangeSet.html">TimeZoneChangeSet</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/TrunkContext.html">TrunkContext</a>
               </li>
               <li class="nav-group-task">
@@ -1241,6 +1253,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/TweetPageContext/FilterType.html">– FilterType</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/UTCTimeTag.html">UTCTimeTag</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/UserAuthorizedToCreateKaraokeLogs.html">UserAuthorizedToCreateKaraokeLogs</a>
@@ -1298,9 +1313,6 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/Xoshiro.html">Xoshiro</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Other%20Structs.html#/s:3App3zzzV">zzz</a>
               </li>
             </ul>
           </li>
@@ -1478,6 +1490,40 @@
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Image/Image.swift#L12-L299">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App14TimeZoneChangeC"></a>
+                    <a name="//apple_ref/swift/Class/TimeZoneChange" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App14TimeZoneChangeC">TimeZoneChange</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>A <code>TimeZoneChange</code> model says that at a specific UTC Date the ship will adopt a given timezone, specified by abbreviation and UTC offset.</p>
+
+<p>The &lsquo;current&rsquo; TimeZoneChange is the one with the a start date in the most recent past.  The timezone indicated by the current TimeZoneChange 
+is in force until the next (in Date order) TimeZoneChange becomes current.</p>
+
+                        <a href="Classes/TimeZoneChange.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">TimeZoneChange</span> <span class="p">:</span> <span class="kt">Model</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/TimeZoneChange.swift#L10-L48">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1706,7 +1752,7 @@
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-11-01)</p>
+      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-11-08)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
     </section>
   </body>

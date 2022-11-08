@@ -668,6 +668,9 @@
                 <a class="nav-group-task-link" href="Classes/SwiftarrErrorMiddleware.html">SwiftarrErrorMiddleware</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/TimeZoneChange.html">TimeZoneChange</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Classes/ValidatingDecoder.html">ValidatingDecoder</a>
               </li>
               <li class="nav-group-task">
@@ -880,6 +883,9 @@
                 <a class="nav-group-task-link" href="Structs/CreateReportSchema.html">CreateReportSchema</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateTimeZoneChangeSchema.html">CreateTimeZoneChangeSchema</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/CreateTokenSchema.html">CreateTokenSchema</a>
               </li>
               <li class="nav-group-task">
@@ -997,6 +1003,9 @@
                 <a class="nav-group-task-link" href="Structs/HealthResponse.html">HealthResponse</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/ImportTimeZoneChanges.html">ImportTimeZoneChanges</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/JPGFormatter.html">JPGFormatter</a>
               </li>
               <li class="nav-group-task">
@@ -1111,12 +1120,6 @@
                 <a class="nav-group-task-link" href="Structs/RequireVerifiedMiddleware.html">RequireVerifiedMiddleware</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/ScheduleMungerCommand.html">ScheduleMungerCommand</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Structs/ScheduleMungerCommand/Signature.html">– Signature</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/SettingsAdminData.html">SettingsAdminData</a>
               </li>
               <li class="nav-group-task">
@@ -1222,6 +1225,15 @@
                 <a class="nav-group-task-link" href="Structs/TIFFFormatter.html">TIFFFormatter</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/TimeZoneChangeData.html">TimeZoneChangeData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/TimeZoneChangeData/Record.html">– Record</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/TimeZoneChangeSet.html">TimeZoneChangeSet</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/TrunkContext.html">TrunkContext</a>
               </li>
               <li class="nav-group-task">
@@ -1241,6 +1253,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/TweetPageContext/FilterType.html">– FilterType</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/UTCTimeTag.html">UTCTimeTag</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/UserAuthorizedToCreateKaraokeLogs.html">UserAuthorizedToCreateKaraokeLogs</a>
@@ -1299,9 +1314,6 @@
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/Xoshiro.html">Xoshiro</a>
               </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="Other%20Structs.html#/s:3App3zzzV">zzz</a>
-              </li>
             </ul>
           </li>
           <li class="nav-group-name">
@@ -1331,37 +1343,6 @@
           <div class="section-content">
             <div class="task-group">
               <ul class="item-container">
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App21ScheduleMungerCommandV"></a>
-                    <a name="//apple_ref/swift/Struct/ScheduleMungerCommand" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App21ScheduleMungerCommandV">ScheduleMungerCommand</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Then take the munged.ics file and either replace /Sources/App/seeds/schedule.ics with it, or use the Admin UI to apply munged.ics as a schedule update.</p>
-
-                        <a href="Structs/ScheduleMungerCommand.html" class="slightly-smaller">See more</a>
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">ScheduleMungerCommand</span> <span class="p">:</span> <span class="kt">Command</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Commands/ScheduleMunger.swift#L11-L89">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
                 <li class="item">
                   <div>
                     <code>
@@ -1422,7 +1403,7 @@ Copied from <a href="https://github.com/mattgallagher/CwlUtils/blob/master/Sourc
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/AdminControllerStructs.swift#L23-L32">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/AdminControllerStructs.swift#L24-L33">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1463,7 +1444,7 @@ Deleted events take their contents from the database. All other arrays take cont
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/AdminControllerStructs.swift#L55-L64">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/AdminControllerStructs.swift#L56-L65">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1494,7 +1475,7 @@ Deleted events take their contents from the database. All other arrays take cont
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/AdminControllerStructs.swift#L67-L72">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/AdminControllerStructs.swift#L68-L73">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1528,7 +1509,7 @@ This struct lets the admins quickly view some basic stats on account usage.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/AdminControllerStructs.swift#L78-L88">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/AdminControllerStructs.swift#L79-L89">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1563,7 +1544,7 @@ related to that feature. Either the app or feature field could be &lsquo;all&rsq
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/AdminControllerStructs.swift#L95-L100">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/AdminControllerStructs.swift#L96-L101">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1598,7 +1579,7 @@ related to that feature. Either the app or feature field could be &lsquo;all&rsq
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/AdminControllerStructs.swift#L107-L123">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/AdminControllerStructs.swift#L108-L123">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1634,7 +1615,40 @@ that they&rsquo;ll persist through app launches. Any optional values set to nil 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/AdminControllerStructs.swift#L153-L172">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/AdminControllerStructs.swift#L152-L169">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App18TimeZoneChangeDataV"></a>
+                    <a name="//apple_ref/swift/Struct/TimeZoneChangeData" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App18TimeZoneChangeDataV">TimeZoneChangeData</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Used to return information about the time zone changes scheduled to occur during the cruise.</p>
+
+<p>Returned by: <code>GET /api/v3/admin/timezonechanges</code></p>
+
+                        <a href="Structs/TimeZoneChangeData.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">TimeZoneChangeData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/AdminControllerStructs.swift#L174-L193">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1821,7 +1835,7 @@ After fixing those issues, the user could still get an error becuase they are qu
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L411-L416">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L418-L423">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1862,7 +1876,7 @@ forums need not be from the same category. Instead, this returns forums that mat
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L670-L676">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L680-L686">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1897,7 +1911,7 @@ See <code>KaraokeController.getKaraokeSongs()</code>.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L715-L724">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L725-L734">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1931,7 +1945,7 @@ Incorporated into: <code><a href="Structs/KaraokeSongResponseData.html">KaraokeS
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L730-L746">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L740-L756">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1965,7 +1979,7 @@ Incorporated into: <code><a href="Structs/KaraokeSongData.html">KaraokeSongData<
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L770-L779">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L780-L789">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2010,7 +2024,7 @@ Incorporated into: <code><a href="Structs/KaraokeSongData.html">KaraokeSongData<
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L793-L796">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L803-L806">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2056,7 +2070,7 @@ be calculated with <code>start + limit</code>, not with <code>start + collection
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L865-L872">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L875-L882">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2090,7 +2104,7 @@ However, this gives the results of a search for posts across all the forums.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L988-L999">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L998-L1009">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2129,7 +2143,7 @@ However, this gives the results of a search for posts across all the forums.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1281-L1284">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1291-L1294">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2161,7 +2175,7 @@ Used inside UserNotificationData.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1353-L1366">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1363-L1376">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2195,7 +2209,7 @@ Used inside UserNotificationData.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1382-L1446">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1392-L1456">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2242,7 +2256,7 @@ Used inside UserNotificationData.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1519-L1538">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1529-L1548">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2287,7 +2301,7 @@ Applied from <a href="https://prometheus.io/docs/alerting/latest/configuration/#
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1669-L1701">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1679-L1711">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2319,7 +2333,7 @@ Applied from <a href="https://prometheus.io/docs/alerting/latest/configuration/#
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1706-L1726">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1716-L1736">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2351,7 +2365,7 @@ This smells roughly the same as an error fields-wise without inheriting from the
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1731-L1735">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1741-L1745">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3092,7 +3106,7 @@ The string will be of the form, &ldquo;User @authorName wrote a forum post that 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L217-L248">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L229-L260">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3865,6 +3879,42 @@ struct is specifically for migration.</p>
                 <li class="item">
                   <div>
                     <code>
+                    <a name="/s:3App21ImportTimeZoneChangesV"></a>
+                    <a name="//apple_ref/swift/Struct/ImportTimeZoneChanges" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App21ImportTimeZoneChangesV">ImportTimeZoneChanges</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>A <code>Migration</code> that imports timezone change data located in the <code>seeds/</code> subdirectory of the project.
+The <code>time-zone-changes.txt</code> file should contain tab-delimited data, 3 fields on each line:
+    <code>20220305T070000Z   -5  EST</code>
+This line says that on March 5, 2022 at 2:00 AM EST (7 AM UTC), the boat will be in the EST timezone, with a timezone offset of -5 hours.
+Because we usually use the previous year&rsquo;s schedule data for testing until we get the next year&rsquo;s schedule, it&rsquo;s intended that the <code>time-zone-changes.txt</code> file
+will have more than one sailing&rsquo;s worth of timezone changes in it.</p>
+
+                        <a href="Structs/ImportTimeZoneChanges.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">ImportTimeZoneChanges</span> <span class="p">:</span> <span class="kt">AsyncMigration</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Migrations/Data Import/TimeZoneChanges.swift#L12-L83">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
                     <a name="/s:3App21CreateAlertWordSchemaV"></a>
                     <a name="//apple_ref/swift/Struct/CreateAlertWordSchema" class="dashAnchor"></a>
                     <a class="token" href="#/s:3App21CreateAlertWordSchemaV">CreateAlertWordSchema</a>
@@ -4465,6 +4515,67 @@ struct is specifically for migration.</p>
                 <li class="item">
                   <div>
                     <code>
+                    <a name="/s:3App26CreateTimeZoneChangeSchemaV"></a>
+                    <a name="//apple_ref/swift/Struct/CreateTimeZoneChangeSchema" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App26CreateTimeZoneChangeSchemaV">CreateTimeZoneChangeSchema</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>This is the migration that creates the TimeZoneChange table.</p>
+
+                        <a href="Structs/CreateTimeZoneChangeSchema.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">CreateTimeZoneChangeSchema</span> <span class="p">:</span> <span class="kt">AsyncMigration</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/TimeZoneChange.swift#L51-L64">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App17TimeZoneChangeSetV"></a>
+                    <a name="//apple_ref/swift/Struct/TimeZoneChangeSet" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App17TimeZoneChangeSetV">TimeZoneChangeSet</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        
+                        <a href="Structs/TimeZoneChangeSet.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">TimeZoneChangeSet</span> <span class="p">:</span> <span class="kt">Codable</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/TimeZoneChange.swift#L68-L144">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
                     <a name="/s:3App17CreateTokenSchemaV"></a>
                     <a name="//apple_ref/swift/Struct/CreateTokenSchema" class="dashAnchor"></a>
                     <a class="token" href="#/s:3App17CreateTokenSchemaV">CreateTokenSchema</a>
@@ -4877,7 +4988,7 @@ struct is specifically for migration.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteAdminController.swift#L5-L703">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteAdminController.swift#L5-L725">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -4998,7 +5109,7 @@ struct is specifically for migration.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteController.swift#L6-L98">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteController.swift#L6-L95">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -5030,7 +5141,7 @@ the context is set up to only allow one paginator per page, at a path of &ldquo;
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteController.swift#L102-L148">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteController.swift#L99-L145">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -5060,7 +5171,7 @@ the context is set up to only allow one paginator per page, at a path of &ldquo;
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteController.swift#L151-L293">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteController.swift#L148-L290">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -5090,7 +5201,7 @@ the context is set up to only allow one paginator per page, at a path of &ldquo;
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteController.swift#L297-L312">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteController.swift#L294-L309">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -5120,7 +5231,7 @@ the context is set up to only allow one paginator per page, at a path of &ldquo;
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteController.swift#L330-L383">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteController.swift#L327-L380">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -5151,49 +5262,7 @@ the context is set up to only allow one paginator per page, at a path of &ldquo;
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteController.swift#L386-L496">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-              </ul>
-            </div>
-            <div class="task-group">
-              <div class="task-name-container">
-                <a name="/Utilities"></a>
-                <a name="//apple_ref/swift/Section/Utilities" class="dashAnchor"></a>
-                <div class="section-name-container">
-                  <a class="section-name-link" href="#/Utilities"></a>
-                  <h3 class="section-name"><span>Utilities</span>
-</h3>
-                </div>
-              </div>
-              <ul class="item-container">
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App3zzzV"></a>
-                    <a name="//apple_ref/swift/Struct/zzz" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App3zzzV">zzz</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="nv">zzz</span> <span class="p">:</span> <span class="kt">Encodable</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteController.swift#L504">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteController.swift#L383-L494">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -5223,7 +5292,7 @@ the context is set up to only allow one paginator per page, at a path of &ldquo;
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteEventsController.swift#L5-L190">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteEventsController.swift#L5-L191">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -5498,7 +5567,7 @@ shouldn&rsquo;t be using the files served from these endpoints.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteFriendlyFezController.swift#L17-L83">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteFriendlyFezController.swift#L17-L79">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -5528,7 +5597,7 @@ shouldn&rsquo;t be using the files served from these endpoints.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteFriendlyFezController.swift#L87-L547">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteFriendlyFezController.swift#L83-L543">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -6112,7 +6181,7 @@ munging of the input.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/Utilities/CustomLeafTags.swift#L313-L331">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/Utilities/CustomLeafTags.swift#L313-L335">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -6132,7 +6201,7 @@ munging of the input.</p>
                       <div class="abstract">
                         <p>Returns a string descibing when an LFG is taking place. Shows both the start and end time.</p>
 
-<p>Usage in Leaf templates:: #eventTime(startTime, endTime) -&gt; String</p>
+<p>Usage in Leaf templates:: #fezTime(startTime, endTime) -&gt; String</p>
 
                         <a href="Structs/FezTimeTag.html" class="slightly-smaller">See more</a>
                       </div>
@@ -6145,7 +6214,7 @@ munging of the input.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/Utilities/CustomLeafTags.swift#L336-L354">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/Utilities/CustomLeafTags.swift#L340-L360">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -6179,7 +6248,41 @@ than a range or duration.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/Utilities/CustomLeafTags.swift#L360-L375">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/Utilities/CustomLeafTags.swift#L366-L382">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App10UTCTimeTagV"></a>
+                    <a name="//apple_ref/swift/Struct/UTCTimeTag" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App10UTCTimeTagV">UTCTimeTag</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Returns a string describing a time, expressed as a ISO8601 time string in the GMT timezone.
+That is: <code>20221103T002152Z</code>.</p>
+
+<p>Usage in Leaf templates:: #UTCTime(time) -&gt; String</p>
+
+                        <a href="Structs/UTCTimeTag.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">UTCTimeTag</span> <span class="p">:</span> <span class="kt">LeafTag</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/Utilities/CustomLeafTags.swift#L388-L399">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -6197,7 +6300,7 @@ than a range or duration.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Return an ISO8601-ish time string for use with the datetime-local input type.
+                        <p>Return an ISO8601-ish time string for use with the HTML datetime-local form input type.
 It cannot take an ISO8601 since that requires a timezone to be included (suffix
 of [+-]H:MM) and the input chokes on that. So here we translate the following:</p>
 
@@ -6214,7 +6317,7 @@ of [+-]H:MM) and the input chokes on that. So here we translate the following:</
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/Utilities/CustomLeafTags.swift#L383-L396">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/Utilities/CustomLeafTags.swift#L407-L421">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -6248,7 +6351,7 @@ This code counts &ldquo;days&rsquo; as starting/ending at 3AM instead of midnigh
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/Utilities/CustomLeafTags.swift#L402-L412">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/Utilities/CustomLeafTags.swift#L427-L437">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -6285,7 +6388,7 @@ based on the size of  the image tag it is being placed in. Only produces square 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/Utilities/CustomLeafTags.swift#L421-L438">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/Utilities/CustomLeafTags.swift#L446-L463">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -6322,7 +6425,7 @@ Or: #userByline(userHeader, &ldquo;nolink&rdquo;) to display the username and di
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/Utilities/CustomLeafTags.swift#L447-L468">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/Utilities/CustomLeafTags.swift#L472-L493">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -6355,7 +6458,7 @@ Or: #userByline(userHeader, &ldquo;nolink&rdquo;) to display the username and di
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/Utilities/CustomLeafTags.swift#L473-L481">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/Utilities/CustomLeafTags.swift#L498-L506">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -6560,7 +6663,7 @@ Via any method, Vapor Sessions aren&rsquo;t set up for finding sessions by user,
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-11-01)</p>
+      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-11-08)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
     </section>
   </body>

@@ -668,6 +668,9 @@
                 <a class="nav-group-task-link" href="../Classes/SwiftarrErrorMiddleware.html">SwiftarrErrorMiddleware</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/TimeZoneChange.html">TimeZoneChange</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/ValidatingDecoder.html">ValidatingDecoder</a>
               </li>
               <li class="nav-group-task">
@@ -880,6 +883,9 @@
                 <a class="nav-group-task-link" href="../Structs/CreateReportSchema.html">CreateReportSchema</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateTimeZoneChangeSchema.html">CreateTimeZoneChangeSchema</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/CreateTokenSchema.html">CreateTokenSchema</a>
               </li>
               <li class="nav-group-task">
@@ -997,6 +1003,9 @@
                 <a class="nav-group-task-link" href="../Structs/HealthResponse.html">HealthResponse</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/ImportTimeZoneChanges.html">ImportTimeZoneChanges</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/JPGFormatter.html">JPGFormatter</a>
               </li>
               <li class="nav-group-task">
@@ -1111,12 +1120,6 @@
                 <a class="nav-group-task-link" href="../Structs/RequireVerifiedMiddleware.html">RequireVerifiedMiddleware</a>
               </li>
               <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/ScheduleMungerCommand.html">ScheduleMungerCommand</a>
-              </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Structs/ScheduleMungerCommand/Signature.html">– Signature</a>
-              </li>
-              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/SettingsAdminData.html">SettingsAdminData</a>
               </li>
               <li class="nav-group-task">
@@ -1222,6 +1225,15 @@
                 <a class="nav-group-task-link" href="../Structs/TIFFFormatter.html">TIFFFormatter</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TimeZoneChangeData.html">TimeZoneChangeData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TimeZoneChangeData/Record.html">– Record</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/TimeZoneChangeSet.html">TimeZoneChangeSet</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/TrunkContext.html">TrunkContext</a>
               </li>
               <li class="nav-group-task">
@@ -1241,6 +1253,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/TweetPageContext/FilterType.html">– FilterType</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UTCTimeTag.html">UTCTimeTag</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserAuthorizedToCreateKaraokeLogs.html">UserAuthorizedToCreateKaraokeLogs</a>
@@ -1299,9 +1314,6 @@
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/Xoshiro.html">Xoshiro</a>
               </li>
-              <li class="nav-group-task">
-                <a class="nav-group-task-link" href="../Other%20Structs.html#/s:3App3zzzV">zzz</a>
-              </li>
             </ul>
           </li>
           <li class="nav-group-name">
@@ -1332,7 +1344,7 @@
             <p>A (hopefully) thread-safe singleton that provides modifiable global settings.</p>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L6-L144">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L6-L143">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1354,7 +1366,8 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Wraps settings properties, making them thread-safe. All access to the internalValue</p>
+                        <p>Wraps settings properties, making them thread-safe. All access to the internalValue should be done through the wrapper 
+because of the thread-safety thing.</p>
 
                         <a href="../Classes/Settings/SettingsValue.html" class="slightly-smaller">See more</a>
                       </div>
@@ -1368,7 +1381,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L9-L24">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L10-L25">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1401,7 +1414,7 @@ Use this for settings that should be database-backed.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L28-L52">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L29-L53">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1431,7 +1444,7 @@ Use this for settings that should be database-backed.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L55">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L56">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1461,7 +1474,7 @@ Use this for settings that should be database-backed.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L58">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L59">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1492,7 +1505,7 @@ Use this for settings that should be database-backed.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L61">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L62">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1523,7 +1536,7 @@ Use this for settings that should be database-backed.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L64">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L65">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1567,7 +1580,7 @@ Use this for settings that should be database-backed.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L69">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L70">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1598,7 +1611,7 @@ Use this for settings that should be database-backed.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L72">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L73">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1642,7 +1655,7 @@ Use this for settings that should be database-backed.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L76">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L77">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1673,7 +1686,7 @@ Use this for settings that should be database-backed.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L79">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L80">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1704,7 +1717,7 @@ Use this for settings that should be database-backed.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L82">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L83">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1735,7 +1748,7 @@ Use this for settings that should be database-backed.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L85">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L86">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1766,7 +1779,7 @@ Use this for settings that should be database-backed.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L88">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L89">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1810,7 +1823,7 @@ Use this for settings that should be database-backed.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L92">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L93">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1841,7 +1854,7 @@ Use this for settings that should be database-backed.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L95">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L96">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1872,7 +1885,7 @@ Use this for settings that should be database-backed.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L98">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L99">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1893,9 +1906,9 @@ Use this for settings that should be database-backed.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App8SettingsC15cruiseStartDate10Foundation0E0Vvp"></a>
-                    <a name="//apple_ref/swift/Property/cruiseStartDate" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App8SettingsC15cruiseStartDate10Foundation0E0Vvp">cruiseStartDate</a>
+                    <a name="/s:3App8SettingsC25cruiseStartDateComponents10Foundation0eF0Vvp"></a>
+                    <a name="//apple_ref/swift/Property/cruiseStartDateComponents" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App8SettingsC25cruiseStartDateComponents10Foundation0eF0Vvp">cruiseStartDateComponents</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -1912,12 +1925,12 @@ The default here should usually get overwritten in configure.swift.</p>
                         <div class="language">
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="kd">@Settings</span>
-<span class="o">.</span><span class="kt"><a href="../Classes/Settings/SettingsValue.html">SettingsValue</a></span> <span class="k">var</span> <span class="nv">cruiseStartDate</span><span class="p">:</span> <span class="kt">Date</span> <span class="p">{</span> <span class="k">get</span> <span class="k">set</span> <span class="p">}</span></code></pre>
+<span class="o">.</span><span class="kt"><a href="../Classes/Settings/SettingsValue.html">SettingsValue</a></span> <span class="k">var</span> <span class="nv">cruiseStartDateComponents</span><span class="p">:</span> <span class="kt">DateComponents</span> <span class="p">{</span> <span class="k">get</span> <span class="k">set</span> <span class="p">}</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L103">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L104">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1987,37 +2000,6 @@ The default here should usually get overwritten in configure.swift.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App8SettingsC19displayTimeZoneAbbrSSvp"></a>
-                    <a name="//apple_ref/swift/Property/displayTimeZoneAbbr" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App8SettingsC19displayTimeZoneAbbrSSvp">displayTimeZoneAbbr</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Abbreviation of the time zone that we should display data in.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">@Settings</span>
-<span class="o">.</span><span class="kt"><a href="../Classes/Settings/StoredSettingsValue.html">StoredSettingsValue</a></span> <span class="k">var</span> <span class="nv">displayTimeZoneAbbr</span><span class="p">:</span> <span class="kt">String</span> <span class="p">{</span> <span class="k">get</span> <span class="k">set</span> <span class="p">}</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L113">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
                     <a name="/s:3App8SettingsC12portTimeZone10Foundation0dE0Vvp"></a>
                     <a name="//apple_ref/swift/Property/portTimeZone" class="dashAnchor"></a>
                     <a class="token" href="#/s:3App8SettingsC12portTimeZone10Foundation0dE0Vvp">portTimeZone</a>
@@ -2028,7 +2010,7 @@ The default here should usually get overwritten in configure.swift.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>TimeZone representative of where we departed port from.</p>
+                        <p>TimeZone representative of where we departed port from. This should equal the TZ that Sched.com uses to list Events.</p>
 
                       </div>
                       <div class="declaration">
@@ -2041,7 +2023,37 @@ The default here should usually get overwritten in configure.swift.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L116">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L113">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App8SettingsC15timeZoneChangesAA04TimeD9ChangeSetVvp"></a>
+                    <a name="//apple_ref/swift/Property/timeZoneChanges" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App8SettingsC15timeZoneChangesAA04TimeD9ChangeSetVvp">timeZoneChanges</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">@Settings</span>
+<span class="o">.</span><span class="kt"><a href="../Classes/Settings/SettingsValue.html">SettingsValue</a></span> <span class="k">var</span> <span class="nv">timeZoneChanges</span><span class="p">:</span> <span class="kt"><a href="../Structs/TimeZoneChangeSet.html">TimeZoneChangeSet</a></span> <span class="p">{</span> <span class="k">get</span> <span class="k">set</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L115">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2086,7 +2098,7 @@ If our server app is moved to a new machine after it&rsquo;s built, the valid in
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L121">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L120">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2118,7 +2130,7 @@ If our server app is moved to a new machine after it&rsquo;s built, the valid in
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L125">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L124">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2149,7 +2161,7 @@ If our server app is moved to a new machine after it&rsquo;s built, the valid in
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L128">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L127">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2195,7 +2207,7 @@ The Resources and Seeds dirs get <em>copied</em> into this dir from the root of 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L134">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L133">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2226,7 +2238,7 @@ The Resources and Seeds dirs get <em>copied</em> into this dir from the root of 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L137">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L136">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2257,7 +2269,7 @@ The Resources and Seeds dirs get <em>copied</em> into this dir from the root of 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L140">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L139">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2288,7 +2300,7 @@ The Resources and Seeds dirs get <em>copied</em> into this dir from the root of 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L143">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L142">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2318,7 +2330,7 @@ The Resources and Seeds dirs get <em>copied</em> into this dir from the root of 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L150-L154">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L149-L153">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2348,7 +2360,7 @@ The Resources and Seeds dirs get <em>copied</em> into this dir from the root of 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L157-L159">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L156-L158">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2356,9 +2368,9 @@ The Resources and Seeds dirs get <em>copied</em> into this dir from the root of 
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App8SettingsC18getDisplayTimeZone10Foundation0eF0VyF"></a>
-                    <a name="//apple_ref/swift/Method/getDisplayTimeZone()" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App8SettingsC18getDisplayTimeZone10Foundation0eF0VyF">getDisplayTimeZone()</a>
+                    <a name="/s:3App8SettingsC15cruiseStartDate10Foundation0E0VyF"></a>
+                    <a name="//apple_ref/swift/Method/cruiseStartDate()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App8SettingsC15cruiseStartDate10Foundation0E0VyF">cruiseStartDate()</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -2366,19 +2378,18 @@ The Resources and Seeds dirs get <em>copied</em> into this dir from the root of 
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>TimeZone to use for rendering any time.</p>
-
+                        
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">getDisplayTimeZone</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">TimeZone</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">cruiseStartDate</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Date</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L165-L167">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L163-L173">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2386,9 +2397,9 @@ The Resources and Seeds dirs get <em>copied</em> into this dir from the root of 
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App8SettingsC18getDisplayCalendar10Foundation0E0VyF"></a>
-                    <a name="//apple_ref/swift/Method/getDisplayCalendar()" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App8SettingsC18getDisplayCalendar10Foundation0E0VyF">getDisplayCalendar()</a>
+                    <a name="/s:3App8SettingsC15calendarForDatey10Foundation8CalendarVAE0E0VF"></a>
+                    <a name="//apple_ref/swift/Method/calendarForDate(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App8SettingsC15calendarForDatey10Foundation8CalendarVAE0E0VF">calendarForDate(_:<wbr>)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -2396,21 +2407,48 @@ The Resources and Seeds dirs get <em>copied</em> into this dir from the root of 
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Calendar to use for calculating dates (like what day it is).
-.current vs .autoupdatingCurrent had some weird implications for TimeZone so I hope
-this doesn&rsquo;t do the same here. Time will tell&hellip;. pun very much intended.</p>
+                        <p>Calendar to use for calculating dates (like what day it is). The returned calendar has the correct timezone for the given date.</p>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">getDisplayCalendar</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Calendar</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">calendarForDate</span><span class="p">(</span><span class="n">_</span> <span class="nv">date</span><span class="p">:</span> <span class="kt">Date</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Calendar</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L172-L176">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L176-L180">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App8SettingsC15getPortCalendar10Foundation0E0VyF"></a>
+                    <a name="//apple_ref/swift/Method/getPortCalendar()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App8SettingsC15getPortCalendar10Foundation0E0VyF">getPortCalendar()</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">getPortCalendar</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Calendar</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L182-L186">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2442,7 +2480,7 @@ this doesn&rsquo;t do the same here. Time will tell&hellip;. pun very much inten
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L186-L193">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L196-L205">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2474,7 +2512,7 @@ this doesn&rsquo;t do the same here. Time will tell&hellip;. pun very much inten
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L196-L202">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L208-L214">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2487,7 +2525,7 @@ this doesn&rsquo;t do the same here. Time will tell&hellip;. pun very much inten
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-11-01)</p>
+      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-11-08)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
     </section>
   </body>
