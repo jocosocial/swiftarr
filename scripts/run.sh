@@ -12,7 +12,7 @@ if [ "${AUTO_MIGRATE}" = true ]; then
   # To avoid doubling up on environment variables, we're gonna consume
   # the ones passed to the app and reset the psql env vars to match.
   export PGHOST=${DATABASE_HOSTNAME} PGUSER=${DATABASE_USER} PGPASSWORD=${DATABASE_PASSWORD} PGDATABASE=${DATABASE_DB}
-  psql -P pager=off -c "SELECT * FROM users LIMIT 1;" > /dev/null
+  psql -P pager=off -c "SELECT * FROM public.user LIMIT 1;" > /dev/null
 
   if [ $? != 0 ]; then
     echo "Database not initialized. Running migration..."
@@ -25,4 +25,4 @@ else
   echo "Automatic database migration was disabled."
 fi
 
-/app/Run serve --env "${ENVIRONMENT}" --hostname ${SWIFTARR_IP} --port ${SWIFTARR_PORT}
+exec /app/Run serve --env "${ENVIRONMENT}" --hostname ${SWIFTARR_IP} --port ${SWIFTARR_PORT}

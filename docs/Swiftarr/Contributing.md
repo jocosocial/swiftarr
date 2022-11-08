@@ -24,6 +24,5 @@ Contributions to Swiftarr are absolutely welcome! Some general guidelines:
 
 ### Test Environment
 
-A demo/test instance is usually available at https://swiftarr.herokuapp.com. Contact the Twitarr Team via Discord
-for access (or try various default credentials). Due to Heroku limitations any image uploads are removed after 24
-hours though the references to the image will remain.
+A demo/test instance is usually available at https://beta.twitarr.com. Contact the Twitarr Team via Discord
+for access (or try various default credentials).
