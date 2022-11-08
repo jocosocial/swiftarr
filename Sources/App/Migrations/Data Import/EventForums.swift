@@ -60,7 +60,7 @@ struct SetInitialEventForums: AsyncMigration {
 	static func buildEventForum(_ event: Event, creatorID: UUID, shadowCategory: Category, officialCategory: Category) throws -> Forum {
 		// date formatter for titles
 		let dateFormatter = DateFormatter()
-		dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+		dateFormatter.timeZone = TimeZone(identifier: "GMT")
 		dateFormatter.dateFormat = "(E, HH:mm)"
 		// build title and forum
 		let title = dateFormatter.string(from: event.startTime) + " \(event.title)"
@@ -72,30 +72,29 @@ struct SetInitialEventForums: AsyncMigration {
 	/// Builds a text string for posting to the Events forum thread for an Event. This post is created by `admin`.
 	/// On initial Events migration, each Event gets a thread in the Events category associated with it, and each thread
 	/// gets an initial post. 
-	///
-	/// When Schedule Updating is added, schedule updates will need to modify the initial post for
-	/// events whose data get modified. The post modifications should include e.g. "UPDATED TIME" or
-	/// "UPDATED LOCATION".
 	/// 
 	/// - Parameter event: The event for which to produce a blurb.
 	/// - Returns: A string suitable for adding to a ForumPost, describing the event.
 	static func buildEventPostText(_ event: Event) -> String {
+		let timeZoneChanges = Settings.shared.timeZoneChanges
+		let startTime = timeZoneChanges.portTimeToDisplayTime(event.startTime)
+		let endTime = timeZoneChanges.portTimeToDisplayTime(event.endTime)
 
 		let dateFormatter = DateFormatter()
 		dateFormatter.dateFormat = "E, h:mm a"
 		dateFormatter.locale = Locale(identifier: "en_US")
-		dateFormatter.timeZone = TimeZone(abbreviation: "EST")
-		var timeString = dateFormatter.string(from: event.startTime)
+		dateFormatter.timeZone = timeZoneChanges.tzAtTime(startTime)
+		var timeString = dateFormatter.string(from: startTime)
 
 		// Omit endTime date if same as startTime
 		dateFormatter.dateFormat = "E"
-		if dateFormatter.string(from: event.startTime) == dateFormatter.string(from: event.endTime) {
+		if dateFormatter.string(from: startTime) == dateFormatter.string(from: endTime) {
 			dateFormatter.dateFormat = "h:mm a z"
 		}
 		else {
 			dateFormatter.dateFormat = "E, h:mm a"
 		}
-		timeString.append(" - \(dateFormatter.string(from: event.endTime))")
+		timeString.append(" - \(dateFormatter.string(from: endTime))")
 		
 		let postText = """
 				\(event.title)

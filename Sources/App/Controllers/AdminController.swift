@@ -50,6 +50,9 @@ struct AdminController: APIRouteCollection {
 		adminAuthGroup.get("serversettings", use: settingsHandler)
 		adminAuthGroup.post("serversettings", "update", use: settingsUpdateHandler)
 		
+		adminAuthGroup.get("timezonechanges", use: timeZoneChangeHandler)
+		adminAuthGroup.post("timezonechanges", "reloadtzdata", use: reloadTimeZoneChangeData)
+		
 		// Only admin may promote to THO 
 		adminAuthGroup.post("tho", "promote", userIDParam, use: makeTHOHandler)
 	}
@@ -160,12 +163,6 @@ struct AdminController: APIRouteCollection {
  		if let value = data.allowAnimatedImages {
  			Settings.shared.allowAnimatedImages = value
  		}
-		if let value = data.displayTimeZoneAbbr {
-			guard TimeZone(abbreviation: value) != nil else {
-				throw Abort(.badRequest, reason: "Bad time zone given.")
-			}
-			Settings.shared.displayTimeZoneAbbr = value
-		}
  		if let value = data.shipWifiSSID {
  			Settings.shared.shipWifiSSID = value
  		}
@@ -190,6 +187,30 @@ struct AdminController: APIRouteCollection {
  		}
  		Settings.shared.disabledFeatures = DisabledFeaturesGroup(value: localDisables)
 		try await Settings.shared.storeSettings(on: req)
+		return .ok
+	}
+	
+	/// `GET /api/v3/admin/timezonechanges`
+	/// 
+	/// Returns information about the declared time zone changes happening during the cruise.
+	/// 
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: <doc:TimeZoneChangeData>
+	func timeZoneChangeHandler(_ req: Request) async throws -> TimeZoneChangeData {
+		let tzChangeSet = try await TimeZoneChangeSet(req.db)
+		let result = TimeZoneChangeData(tzChangeSet)
+		return result
+	}
+	
+	/// `POST /api/v3/admin/serversettings/reloadtzdata`
+	///
+	///  Reloads the time zone change data from the seed file. Removes all previous entries.
+	/// 
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: `HTTP 200 OK` if the settings were updated.
+	func reloadTimeZoneChangeData(_ req: Request) async throws -> HTTPStatus {
+		let migrator = ImportTimeZoneChanges()
+		try await migrator.loadTZFile(on: req.db, isMigrationTime: false)
 		return .ok
 	}
 	
@@ -253,8 +274,8 @@ struct AdminController: APIRouteCollection {
 		createduids.forEach { uid in
 			if let updated = updateEventDict[uid] {
 				let eventData = EventData(eventID: UUID(), uid: updated.uid, title: updated.title, 
-					description: updated.description, startTime: updated.startTime, endTime: updated.endTime, 
-					location: updated.location, eventType: updated.eventType.rawValue, forum: nil, isFavorite: false)
+						description: updated.description, startTime: updated.startTime, endTime: updated.endTime, timeZone: "", 
+						location: updated.location, eventType: updated.eventType.rawValue, forum: nil, isFavorite: false)
 				responseData.createdEvents.append(eventData)
 			}
 		}
@@ -264,8 +285,8 @@ struct AdminController: APIRouteCollection {
 		updatedEvents.forEach { uid in
 			if let existing = existingEventDict[uid], let updated = updateEventDict[uid] {
 				let eventData = EventData(eventID: UUID(), uid: updated.uid, title: updated.title, 
-					description: updated.description, startTime: updated.startTime, endTime: updated.endTime, 
-					location: updated.location, eventType: updated.eventType.rawValue, forum: nil, isFavorite: false)
+						description: updated.description, startTime: updated.startTime, endTime: updated.endTime, timeZone: "", 
+						location: updated.location, eventType: updated.eventType.rawValue, forum: nil, isFavorite: false)
 				if existing.startTime != updated.startTime || existing.endTime != updated.endTime {
 					responseData.timeChangeEvents.append(eventData)
 				}

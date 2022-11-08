@@ -13,7 +13,7 @@ final class EventParser {
 		dateFormatter.dateFormat = "yyyyMMdd'T'HHmmss'Z'"
 		// FIXME: still need to figure out how to serve up dates
 		// -18000/-14400 seconds is EST/EDT
-		dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+		dateFormatter.timeZone = TimeZone(identifier: "GMT")
 		return dateFormatter
 	}()
 	

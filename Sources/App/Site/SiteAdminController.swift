@@ -30,6 +30,9 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTTRoutes.get("serversettings", use: settingsViewHandler)
 		privateTTRoutes.post("serversettings", use: settingsPostHandler)
 
+		privateTTRoutes.get("timezonechanges", use: timeZonesViewHandler)
+		privateTTRoutes.post("serversettings", "reloadtzfile", use: settingsReloadTZFilePostHandler)
+
 		privateTTRoutes.get("scheduleupload", use: scheduleUploadViewHandler)
 		privateTTRoutes.post("scheduleupload", use: scheduleUploadPostHandler)
 		privateTTRoutes.get("scheduleverify", use: scheduleVerifyViewHandler)
@@ -138,12 +141,10 @@ struct SiteAdminController: SiteControllerUtils {
 		struct AnnouncementEditContext : Encodable {
 			var trunk: TrunkContext
 			var post: MessagePostContext
-			var timeZoneName: String
 
 			init(_ req: Request) throws {
 				trunk = .init(req, title: "Create Announcement", tab: .admin)
 				self.post = .init(forType: .announcement)
-				timeZoneName = Settings.shared.displayTimeZoneAbbr
 			}
 		}
 		let ctx = try AnnouncementEditContext(req)
@@ -175,12 +176,10 @@ struct SiteAdminController: SiteControllerUtils {
 		struct AnnouncementEditContext : Encodable {
 			var trunk: TrunkContext
 			var post: MessagePostContext
-			var timeZoneName: String
 
 			init(_ req: Request, data: AnnouncementData) throws {
 				trunk = .init(req, title: "Edit Announcement", tab: .admin)
 				self.post = .init(forType: .announcementEdit(data))
-				timeZoneName = Settings.shared.displayTimeZoneAbbr
 			}
 		}
 		let ctx = try AnnouncementEditContext(req, data: announcementData)
@@ -230,11 +229,9 @@ struct SiteAdminController: SiteControllerUtils {
 				trunk = .init(req, title: "Daily Tmemes", tab: .admin)
 				themes = data
 				
-				let cal = Settings.shared.getDisplayCalendar()
-				let components = cal.dateComponents([.day], from: cal.startOfDay(for: Settings.shared.cruiseStartDate), 
-						to: cal.startOfDay(for: Date()))
+				let cal = Settings.shared.getPortCalendar()
+				let components = cal.dateComponents([.day], from: cal.startOfDay(for: Settings.shared.cruiseStartDate()), to: Date())
 				currentCruiseDay = Int(components.day ?? 0)
-
 			}
 		}
 		let ctx = try ThemeDataViewContext(req, data: themeData)
@@ -358,7 +355,6 @@ struct SiteAdminController: SiteControllerUtils {
 			var allowAnimatedImages: String?
 			var disableAppName: String
 			var disableFeatureName: String
-			var displayTimeZoneAbbr: String
 			// In the .leaf file, the name property for the select that sets this is "reenable[]". 
 			// The "[]" in the name is magic, somewhere in multipart-kit. It collects all form-data value with the same name into an array.
 			var reenable: [String]?				
@@ -391,12 +387,38 @@ struct SiteAdminController: SiteControllerUtils {
 				userAutoQuarantineThreshold: postStruct.userAutoQuarantineThreshold, 
 				allowAnimatedImages: postStruct.allowAnimatedImages == "on",
 				enableFeatures: enablePairs, disableFeatures: disablePairs,
-				displayTimeZoneAbbr: postStruct.displayTimeZoneAbbr,
 				shipWifiSSID: postStruct.shipWifiSSID)
 		try await apiQuery(req, endpoint: "/admin/serversettings/update", method: .POST, encodeContent: apiPostContent)
 		return .ok
 	}
 	
+	// GET /admin/timezonechanges
+	//
+	// Shows the list of time zone changes that occur during the cruise.
+	func timeZonesViewHandler(_ req: Request) async throws -> View {
+		let apiResponse = try await apiQuery(req, endpoint: "/admin/timezonechanges", method: .GET)
+		let response = try apiResponse.content.decode(TimeZoneChangeData.self)
+		struct TZViewContext : Encodable {
+			var trunk: TrunkContext
+			var timeZones: TimeZoneChangeData
+
+			init(_ req: Request, timeZones: TimeZoneChangeData) throws {
+				trunk = .init(req, title: "Time Zone Change Table", tab: .admin)
+				self.timeZones = timeZones
+			}
+		}
+		let ctx = try TZViewContext(req, timeZones: response)
+		return try await req.view.render("admin/timezonechanges", ctx)
+	}
+	
+	// POST /admin/serversettings/reloadtzfile
+	//
+	// Kicks off a reload operation. Admin only; the new time zone data file must be uploaded to /seeds, probably via git push.
+	func settingsReloadTZFilePostHandler(_ req: Request) async throws -> HTTPStatus {
+		try await apiQuery(req, endpoint: "/admin/timezonechanges/reloadtzdata", method: .POST)
+		return .ok
+	}
+
 	// GET /admin/scheduleupload
 	//
 	// Shows a form with a file upload button for upload a new schedule.ics file. This the start of a flow, going from

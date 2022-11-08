@@ -148,27 +148,27 @@ func configureBasicSettings(_ app: Application) throws {
 	// We do not have the displayCalendar yet so we have to build our own. Since the departure port/timezone is
 	// well-known we can safely rely on it here. Perhaps someday make it an environment variable or some other
 	// method of configuration for app startup?
-	var portCalendar = Calendar.current
-	let portTimeZone = TimeZone(abbreviation: "EST")!
+	var portCalendar = Calendar(identifier: .gregorian)
+	let portTimeZone = TimeZone(identifier: "America/New_York")!
 	portCalendar.timeZone = portTimeZone
 	Settings.shared.portTimeZone = portTimeZone
 
 	if app.environment == .testing {
 		Logger(label: "app.swiftarr.configuration") .notice("Starting up in Testing mode.")
-		Settings.shared.cruiseStartDate = portCalendar.date(from: DateComponents(year: 2022, month: 3, day: 5))!
+		Settings.shared.cruiseStartDateComponents = DateComponents(year: 2022, month: 3, day: 5)
 	}
 	else if app.environment == .development {
 		Logger(label: "app.swiftarr.configuration") .notice("Starting up in Development mode.")
-		Settings.shared.cruiseStartDate = portCalendar.date(from: DateComponents(year: 2022, month: 3, day: 5))!
+		Settings.shared.cruiseStartDateComponents = DateComponents(year: 2022, month: 3, day: 5)
 	}
 	else if app.environment == .production {
 		Logger(label: "app.swiftarr.configuration") .notice("Starting up in Production mode.")
 		// Until we get a proper future schedule, we're using the current schedule for testing. 
-		Settings.shared.cruiseStartDate = portCalendar.date(from: DateComponents(year: 2022, month: 3, day: 5))!
+		Settings.shared.cruiseStartDateComponents = DateComponents(year: 2023, month: 3, day: 5)
 	}
 	else {
 		Logger(label: "app.swiftarr.configuration") .notice("Starting up in Custom \"\(app.environment.name)\" mode.")
-		Settings.shared.cruiseStartDate = portCalendar.date(from: DateComponents(year: 2022, month: 3, day: 5))!
+		Settings.shared.cruiseStartDateComponents = DateComponents(year: 2023, month: 3, day: 5)
 	}
 	
 	// Ask the GD Image library what filetypes are available on the local machine.
@@ -409,6 +409,7 @@ func configureLeaf(_ app: Application) throws {
 	app.leaf.tags["relativeTime"] = RelativeTimeTag()
 	app.leaf.tags["eventTime"] = EventTimeTag()
 	app.leaf.tags["staticTime"] = StaticTimeTag()
+	app.leaf.tags["UTCTime"] = UTCTimeTag()
 	app.leaf.tags["fezTime"] = FezTimeTag()
 	app.leaf.tags["avatar"] = AvatarTag()
 	app.leaf.tags["userByline"] = UserBylineTag()
@@ -464,6 +465,7 @@ func configureMigrations(_ app: Application) throws {
 	app.migrations.add(CreateKaraokeSongSchema(), to: .psql)
 	app.migrations.add(CreateKaraokePlayedSongSchema(), to: .psql)
 	app.migrations.add(CreateKaraokeFavoriteSchema(), to: .psql)
+	app.migrations.add(CreateTimeZoneChangeSchema(), to: .psql)
 
 	// Third, migrations that seed the db with initial data
 	app.migrations.add(CreateAdminUsers(), to: .psql)
@@ -477,6 +479,7 @@ func configureMigrations(_ app: Application) throws {
 	
 	// Fourth, migrations that import data from /seeds
 	app.migrations.add(ImportRegistrationCodes(), to: .psql)
+	app.migrations.add(ImportTimeZoneChanges(), to: .psql)
 	app.migrations.add(ImportEvents(), to: .psql)
 	app.migrations.add(ImportBoardgames(), to: .psql)	
 	app.migrations.add(ImportKaraokeSongs(), to: .psql)	
@@ -600,5 +603,4 @@ func operatingSystemPlatform() -> String? {
 // Wrapper function to add any custom CLI commands. Might be overkill but at least it's scalable.
 // These should be stored in Sources/App/Commands.
 func configureCommands(_ app: Application) {
-	app.commands.use(ScheduleMungerCommand(), as: "munge")
 }

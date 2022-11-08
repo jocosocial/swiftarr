@@ -338,7 +338,7 @@ extension APIRouteCollection {
 	
 	// Calculates the start time of the earliest future followed event. Caches the value in Redis for quick access.
 	func storeNextFollowedEvent(userID: UUID, on req: Request) async throws -> (Date, UUID)? {
-		let cruiseStartDate = Settings.shared.cruiseStartDate
+		let cruiseStartDate = Settings.shared.cruiseStartDate()
 		var filterDate = Date()
 		// If the cruise is in the future or more than 10 days in the past, construct a fake date during the cruise week
 		let secondsPerDay = 24 * 60 * 60.0
@@ -346,15 +346,16 @@ extension APIRouteCollection {
 			// This filtering nonsense is whack. There is a way to do .DateComponents() without needing the in: but then you
 			// have to specify the Calendar.Components that you want. Since I don't have enough testing around this I'm going
 			// to keep pumping the timezone in which lets me bypass that requirement.
-			var filterDateComponents = Settings.shared.getDisplayCalendar().dateComponents(in: Settings.shared.getDisplayTimeZone(), from: cruiseStartDate)
-			let currentDateComponents = Settings.shared.getDisplayCalendar().dateComponents(in: Settings.shared.getDisplayTimeZone(), from: Date())
+			let cal = Settings.shared.getPortCalendar()
+			var filterDateComponents = cal.dateComponents(in: Settings.shared.portTimeZone, from: cruiseStartDate)
+			let currentDateComponents = cal.dateComponents(in: Settings.shared.portTimeZone, from: Date())
 			filterDateComponents.hour = currentDateComponents.hour
 			filterDateComponents.minute = currentDateComponents.minute
 			filterDateComponents.second = currentDateComponents.second
-			filterDate = Settings.shared.getDisplayCalendar().date(from: filterDateComponents) ?? Date()
+			filterDate = cal.date(from: filterDateComponents) ?? Date()
 			if let currentDayOfWeek = currentDateComponents.weekday {
 				let daysToAdd = (7 + currentDayOfWeek - Settings.shared.cruiseStartDayOfWeek) % 7 
-				if let adjustedDate = Settings.shared.getDisplayCalendar().date(byAdding: .day, value: daysToAdd, to: filterDate) {
+				if let adjustedDate = cal.date(byAdding: .day, value: daysToAdd, to: filterDate) {
 					filterDate = adjustedDate
 				}
 			}

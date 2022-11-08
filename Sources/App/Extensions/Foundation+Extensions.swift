@@ -35,7 +35,7 @@ extension ISO8601DateFormatter {
 	///   - formatOptions: `ISO8601DateFormater.Options` array to pass to the initialization.
 	///   - timeZone: The time zone for representations, defaults to UTC.
 	/// - Returns: An initialized `ISO8601DateFormatter`.
-	convenience init(_ formatOptions: Options, timeZone: TimeZone? = TimeZone(secondsFromGMT: 0)) {
+	convenience init(_ formatOptions: Options, timeZone: TimeZone? = TimeZone(identifier: "GMT")) {
 		self.init()
 		self.formatOptions = formatOptions
 		self.timeZone = timeZone

@@ -6,7 +6,8 @@ import Vapor
 public struct AnnouncementCreateData: Content {
 	/// The text of the announcement
 	var text: String
-	/// How long to display the announcement to users. User-level API route methods will only return this Announcement until this time. 
+	/// How long to display the announcement to users. User-level API route methods will only return this Announcement until this time. The given Date is interpreted
+	/// as a floating time in the ship's Port timezone.
 	var displayUntil: Date
 }
 
@@ -118,7 +119,6 @@ public struct SettingsAdminData: Content {
 	var allowAnimatedImages: Bool
 	/// Currently disabled app:feature pairs.
 	var disabledFeatures: [SettingsAppFeaturePair]
-	var displayTimeZoneAbbr: String
 	var shipWifiSSID: String?
 }
 
@@ -133,7 +133,6 @@ extension SettingsAdminData {
 		self.postAutoQuarantineThreshold = settings.postAutoQuarantineThreshold
 		self.userAutoQuarantineThreshold = settings.userAutoQuarantineThreshold
 		self.allowAnimatedImages = settings.allowAnimatedImages
-		self.displayTimeZoneAbbr = settings.displayTimeZoneAbbr
 		disabledFeatures = []
 		for (app, features) in settings.disabledFeatures.value {
 			for feature in features {
@@ -165,8 +164,42 @@ public struct SettingsUpdateData: Content {
 	var enableFeatures: [SettingsAppFeaturePair]
 	/// App:feature pairs to disable. Only list deltas here; no need to re-list currently disabled app:feature pairs..
 	var disableFeatures: [SettingsAppFeaturePair]
-  /// Time zone to display to people
-	var displayTimeZoneAbbr: String?
 	/// The wifi name of the onboard wifi network
 	var shipWifiSSID: String?
+}
+
+/// Used to return information about the time zone changes scheduled to occur during the cruise.
+/// 
+/// Returned by: `GET /api/v3/admin/timezonechanges`
+public struct TimeZoneChangeData: Content {
+	public struct Record: Content {
+		/// When the new time zone becomes active.
+		var activeDate: Date
+		/// The 3 letter abbreviation for the timezone that becomes active at `activeDate`
+		var timeZoneAbbrev: String
+		/// The Foundation ID for the timezone that becomes active at `activeDate`. Prefer using this to make TimeZone objects over the abbreviation.
+		/// There is a list of all Foundation TimeZone names at `seeds/TimeZoneNames.txt`
+		var timeZoneID: String
+	}
+	
+	/// All the timezone changes that will occur during the cruise, sorted by activeDate.
+	var records: [Record]
+	/// The 3 letter abbreviation for the timezone the ship is currently observing.
+	var currentTimeZoneAbbrev: String
+	/// The Foundation ID of the current time zone.
+	var currentTimeZoneID: String
+	/// The number of seconds between the current timezone and GMT. Generally a negative number in the western hemisphere.
+	var currentOffsetSeconds: Int
+}
+
+extension TimeZoneChangeData {
+	init(_ changeSet: TimeZoneChangeSet) {
+		records = changeSet.changePoints.map { 
+			Record(activeDate: $0.startTime, timeZoneAbbrev: $0.timeZoneName, timeZoneID: $0.timeZoneID) 
+		}
+		let current = changeSet.tzAtTime(Date())
+		currentTimeZoneAbbrev = current.abbreviation(for: Date()) ?? "EST"
+		currentTimeZoneID = current.identifier
+		currentOffsetSeconds = current.secondsFromGMT(for: Date())
+	}
 }

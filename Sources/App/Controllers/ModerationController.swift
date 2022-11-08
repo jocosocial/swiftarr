@@ -654,13 +654,7 @@ struct ModerationController: APIRouteCollection {
 			}
 		}
 		else { 
-			if let endDate = Settings.shared.getDisplayCalendar().date(byAdding: .hour, value: quarantineHours, to: Date()) {
-				allAccounts.forEach { $0.tempQuarantineUntil = endDate }
-			}
-			else {
-				// Do it the old way
-				allAccounts.forEach { $0.tempQuarantineUntil = Date() + Double(quarantineHours) * 60.0 * 60.0 }
-			}
+			allAccounts.forEach { $0.tempQuarantineUntil = Date() + Double(quarantineHours) * 60.0 * 60.0 }
 			// Note: If user was previously quarantined, and this action changes the length of time, we still
 			// log the quarantine action.
 			await allAccounts[0].logIfModeratorAction(.tempQuarantine, user: user, on: req)

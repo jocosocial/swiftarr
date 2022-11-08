@@ -30,7 +30,7 @@ final class AlertWordPivot: Model {
 	/// Used by Fluent
  	init() { }
  	
-	/// Initializes a new Announcement.
+	/// Initializes a new AlertWord object.
 	///
 	/// - Parameters:
 	///   - word: the word to alert on..

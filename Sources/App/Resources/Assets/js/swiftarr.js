@@ -363,7 +363,8 @@ async function submitAJAXForm(formElement, event) {
 				updateInputFieldCharCounts(elem);
 			}
 			if (successURL == "reset") {
-				formElement.querySelector('.twitarr-image-remove').click();
+				formElement.querySelector('.twitarr-image-remove')?.click();
+				formElement.querySelector('.alert-success')?.classList.remove("d-none")
 			}
 			else if (successURL) {
 				location.assign(successURL);
@@ -381,7 +382,7 @@ async function submitAJAXForm(formElement, event) {
 				return;
 			}
 			let data = await response.json();
-			let alertElement = formElement.querySelector('.alert');
+			let alertElement = formElement.querySelector('.alert-danger');
 			if (alertElement) {
 				alertElement.innerHTML = "<b>Error:</b> " + data.reason;
 				alertElement.classList.remove("d-none");
@@ -389,7 +390,7 @@ async function submitAJAXForm(formElement, event) {
 		}
 	}
 	catch(e) {
-		let alertElement = formElement.querySelector('.alert');
+		let alertElement = formElement.querySelector('.alert-danger');
 		alertElement.innerHTML = "<b>Error:</b> " + this.statusText;
 		alertElement.classList.remove("d-none");
 	}

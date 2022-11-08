@@ -85,15 +85,15 @@ struct FezController: APIRouteCollection {
 			fezQuery.filter(\.$fezType == typeFilter)
 		}
 		if let dayFilter = req.query[Int.self, at: "cruiseday"] {
-			let dayStart = Settings.shared.getDisplayCalendar().date(byAdding: .day, value: dayFilter, to: Settings.shared.cruiseStartDate) ??
-					Settings.shared.cruiseStartDate
-			let dayEnd = Settings.shared.getDisplayCalendar().date(byAdding: .day, value: dayFilter, to: dayStart) ??
-					Date()
-			fezQuery.filter(\.$startTime > dayStart).filter(\.$startTime < dayEnd)
+			let portCalendar = Settings.shared.getPortCalendar()
+			let threeAMCutoff = portCalendar.date(byAdding: .hour, value: 3, to: Settings.shared.cruiseStartDate()) ?? Settings.shared.cruiseStartDate()
+			let dayStart = portCalendar.date(byAdding: .day, value: dayFilter, to: threeAMCutoff) ?? threeAMCutoff
+			let dayEnd = portCalendar.date(byAdding: .day, value: 1, to: dayStart) ?? Date()
+			fezQuery.filter(\.$startTime >= dayStart).filter(\.$startTime < dayEnd)
 		}
 		let fezCount = try await fezQuery.count()
 		let fezzes = try await fezQuery.sort(\.$startTime, .ascending).sort(\.$title, .ascending).range(start..<(start + limit)).all()
-		let fezDataArray = try fezzes.compactMap { fez -> FezData? in
+		let fezDataArray = try fezzes.compactMap { fez in
 			// Fezzes are only 'open' if their waitlist is < 1/2 the size of their capacity. A fez with a max of 10 people
 			// could have a waitlist of 5, then it stops showing up in 'open' searches.
 			if (fez.maxCapacity == 0 || fez.participantArray.count < Int(Double(fez.maxCapacity) * 1.5)) &&

@@ -62,7 +62,8 @@ struct SiteEventsController: SiteControllerUtils {
 			dayOfCruise = cruisedayParam
 		}		
 		else if components.queryItems?.isEmpty == true {
-			let thisWeekday = Settings.shared.getDisplayCalendar().component(.weekday, from: Date())
+			let cal = Settings.shared.calendarForDate(Date())
+			let thisWeekday = cal.component(.weekday, from: Date())
 			dayOfCruise = (7 + thisWeekday - Settings.shared.cruiseStartDayOfWeek) % 7 + 1
 			components.queryItems?.append(URLQueryItem(name: "cruiseday", value: String(dayOfCruise)))
 			filterString = "Today's " + filterString
@@ -89,9 +90,9 @@ struct SiteEventsController: SiteControllerUtils {
 			init(_ req: Request, events: [EventData], dayOfCruise: Int, filterString: String, allDays: Bool) {
 				self.events = events
 				trunk = .init(req, title: "Events", tab: .events, search: "Search Events")
-				isBeforeCruise = Date() < Settings.shared.cruiseStartDate
-				isAfterCruise = Date() > Settings.shared.getDisplayCalendar().date(byAdding: .day, value: Settings.shared.cruiseLengthInDays, 
-						to: Settings.shared.cruiseStartDate) ?? Date()
+				isBeforeCruise = Date() < Settings.shared.cruiseStartDate()
+				isAfterCruise = Date() > Settings.shared.getPortCalendar().date(byAdding: .day, value: Settings.shared.cruiseLengthInDays, 
+						to: Settings.shared.cruiseStartDate()) ?? Date()
 
 				// Set up the day buttons, one for each day of the cruise.		
 				let daynames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
@@ -103,15 +104,15 @@ struct SiteEventsController: SiteControllerUtils {
 
 				if let _ = trunk.alertCounts.nextFollowedEventTime {
 					let secondsPerWeek = 60 * 60 * 24 * 7
-					let partialWeek = Int(Date().timeIntervalSince(Settings.shared.cruiseStartDate)) % secondsPerWeek
-					let dateInCruiseWeek = Settings.shared.cruiseStartDate + TimeInterval(partialWeek)
+					let partialWeek = Int(Date().timeIntervalSince(Settings.shared.cruiseStartDate())) % secondsPerWeek
+					let dateInCruiseWeek = Settings.shared.cruiseStartDate() + TimeInterval(partialWeek)
 					upcomingEvent = events.first {
 						return $0.isFavorite && ((-5 * 60)...(15 * 60)).contains(dateInCruiseWeek.timeIntervalSince($0.startTime))
 					}
 				}
 				self.filterString = filterString
 				self.useAllDays = allDays
-				self.cruiseStartDate = Settings.shared.cruiseStartDate
+				self.cruiseStartDate = Settings.shared.cruiseStartDate()
 				var dateComponent = DateComponents()
 				dateComponent.day = Settings.shared.cruiseLengthInDays
 				self.cruiseEndDate = Calendar.current.date(byAdding: dateComponent, to: cruiseStartDate) ?? cruiseStartDate

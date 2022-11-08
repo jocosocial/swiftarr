@@ -24,7 +24,7 @@ final class MuteWord: Model {
 	/// Used by Fluent
  	init() { }
  	
-	/// Initializes a new Announcement.
+	/// Initializes a new MuteWord object.
 	///
 	/// - Parameters:
 	///   - word: the word to alert on..

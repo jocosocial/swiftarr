@@ -44,7 +44,7 @@ extension AnnouncementData {
 		author = authorHeader
 		text = from.text
 		updatedAt = from.updatedAt ?? Date()
-		displayUntil = from.displayUntil
+		displayUntil = Settings.shared.timeZoneChanges.portTimeToDisplayTime(from.displayUntil)
 		isDeleted = false
 		if let deleteTime = from.deletedAt, deleteTime < Date() {
 			isDeleted = true
@@ -331,6 +331,8 @@ public struct EventData: Content {
 	var startTime: Date
 	/// Ending time of the event.
 	var endTime: Date
+	/// The timezone that the ship is going to be in when the event occurs. Delivered as an abbreviation e.g. "EST".
+	var timeZone: String
 	/// The location of the event.
 	var location: String
 	/// The event category.
@@ -342,13 +344,18 @@ public struct EventData: Content {
 }
 
 extension EventData {
+	/// Makes an eventData.
+	/// 
+	/// The startTime, endTime, and timeZone are the corrected Date values for the event, given the time zone the ship was/will be in at the event start time. 
 	init(_ event: Event, isFavorite: Bool = false) throws {
+		let timeZoneChanges = Settings.shared.timeZoneChanges
 		eventID = try event.requireID()
 		uid = event.uid
 		title = event.title
 		description = event.info
-		startTime = event.startTime
-		endTime = event.endTime
+		self.startTime = timeZoneChanges.portTimeToDisplayTime(event.startTime)
+		self.endTime = timeZoneChanges.portTimeToDisplayTime(event.endTime)
+		self.timeZone = timeZoneChanges.abbrevAtTime(self.startTime)
 		location = event.location
 		eventType = event.eventType.label
 		forum = event.$forum.id
@@ -453,6 +460,8 @@ public struct FezData: Content, ResponseEncodable {
 	var startTime: Date?
 	/// The ending time of the fez.
 	var endTime: Date?
+	/// The 3 letter abbreviation for the active time zone at the time and place where the fez is happening. 
+	var timeZone: String?
 	/// The location for the fez.
 	var location: String?
 	/// How many users are currently members of the fez. Can be larger than maxParticipants; which indicates a waitlist.
@@ -495,8 +504,9 @@ extension FezData {
 		self.fezType = fez.fezType
 		self.title = fez.moderationStatus.showsContent() ? fez.title : "Fez Title is under moderator review"
 		self.info = fez.moderationStatus.showsContent() ? fez.info : "Fez Information field is under moderator review"
-		self.startTime = fez.startTime
-		self.endTime = fez.endTime
+		self.startTime = fez.startTime == nil ? nil : Settings.shared.timeZoneChanges.portTimeToDisplayTime(fez.startTime)
+		self.endTime = fez.endTime == nil ? nil : Settings.shared.timeZoneChanges.portTimeToDisplayTime(fez.endTime)
+		self.timeZone = self.startTime == nil ? nil :  Settings.shared.timeZoneChanges.abbrevAtTime(self.startTime)
 		self.location = fez.moderationStatus.showsContent() ? fez.location : "Fez Location field is under moderator review"
 		self.lastModificationTime = fez.updatedAt ?? Date()
 		self.participantCount = fez.participantArray.count
@@ -1449,8 +1459,8 @@ extension UserNotificationData	{
 	init(newFezCount: Int, newSeamailCount: Int, activeAnnouncementIDs: [Int], newAnnouncementCount: Int, 
 			nextEventTime: Date?, nextEvent: UUID?) {
 		serverTime = ISO8601DateFormatter().string(from: Date())
-		serverTimeOffset = Settings.shared.getDisplayTimeZone().secondsFromGMT()
-		serverTimeZone = Settings.shared.displayTimeZoneAbbr
+		serverTimeOffset = Settings.shared.timeZoneChanges.tzAtTime().secondsFromGMT(for: Date())
+		serverTimeZone = Settings.shared.timeZoneChanges.abbrevAtTime()
 		self.disabledFeatures = Settings.shared.disabledFeatures.buildDisabledFeatureArray()
 		self.shipWifiSSID = Settings.shared.shipWifiSSID
 		self.activeAnnouncementIDs = activeAnnouncementIDs
@@ -1469,8 +1479,8 @@ extension UserNotificationData	{
 	// Initializes an dummy struct, for when there's no user logged in.
 	init() {
 		serverTime = ISO8601DateFormatter().string(from: Date())
-		serverTimeOffset = Settings.shared.getDisplayTimeZone().secondsFromGMT()
-		serverTimeZone = Settings.shared.displayTimeZoneAbbr
+		serverTimeOffset = Settings.shared.timeZoneChanges.tzAtTime().secondsFromGMT(for: Date())
+		serverTimeZone = Settings.shared.timeZoneChanges.abbrevAtTime()
 		self.disabledFeatures = []
 		self.shipWifiSSID = nil
 		self.activeAnnouncementIDs = []
