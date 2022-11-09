@@ -93,7 +93,7 @@ struct FezController: APIRouteCollection {
 		}
 		let fezCount = try await fezQuery.count()
 		let fezzes = try await fezQuery.sort(\.$startTime, .ascending).sort(\.$title, .ascending).range(start..<(start + limit)).all()
-		let fezDataArray = try fezzes.compactMap { fez in
+		let fezDataArray: [FezData] = try fezzes.compactMap { fez in
 			// Fezzes are only 'open' if their waitlist is < 1/2 the size of their capacity. A fez with a max of 10 people
 			// could have a waitlist of 5, then it stops showing up in 'open' searches.
 			if (fez.maxCapacity == 0 || fez.participantArray.count < Int(Double(fez.maxCapacity) * 1.5)) &&
