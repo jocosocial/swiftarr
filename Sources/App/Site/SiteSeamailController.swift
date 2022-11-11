@@ -8,6 +8,7 @@ struct SiteSeamailController: SiteControllerUtils {
 		var subject: String
 		var postText: String
 		var participants: String			// Comma separated list of participant usernames
+		var openchat: String?
 		var postAsModerator: String?
 		var postAsTwitarrTeam: String?
 	}
@@ -35,7 +36,7 @@ struct SiteSeamailController: SiteControllerUtils {
 	//
 	// Shows the root Seamail page, with a list of all conversations.
 	func seamailRootPageHandler(_ req: Request) async throws -> View {
-		let response = try await apiQuery(req, endpoint: "/fez/joined?type=closed")
+		let response = try await apiQuery(req, endpoint: "/fez/joined?type=closed&type=open")
 		let fezList = try response.content.decode(FezListData.self)
 		// Re-sort fezzes so ones with new msgs are first. Keep most-recent-change sort within each group.
 		var newMsgFezzes: [FezData] = []
@@ -79,9 +80,9 @@ struct SiteSeamailController: SiteControllerUtils {
 	// GET /seamail/create
 	//
 	// Query Parameters:
-	// * `?withuser=UUID` - auto-adds the given user to the conversation. Currently can only be applied once.
+	// * `?withuser=UUID` - prefills the participant list with the given user. Currently can only be applied once.
 	//
-	// Shows the Create New Seamail page
+	// Shows the Create New Seamail page. This page lets you add users to the chat, and give the chat a subject and initial message.
 	func seamailCreatePageHandler(_ req: Request) async throws -> View {
 		var withUser: UserHeader?
 		if let initialUser = req.query[UUID.self, at: "withuser"] {
@@ -140,7 +141,8 @@ struct SiteSeamailController: SiteControllerUtils {
 			throw Abort(.badRequest, reason: "Seamail conversations require at least 2 users.")
 		}
 		
-		let fezContent = FezContentData(fezType: .closed, title: formContent.subject, info: "", startTime: nil, endTime: nil,
+		let fezType = formContent.openchat == nil ? FezType.closed : FezType.open
+		let fezContent = FezContentData(fezType: fezType, title: formContent.subject, info: "", startTime: nil, endTime: nil,
 				location: nil, minCapacity: 0, maxCapacity: 0, initialUsers: participants, createdByModerator: formContent.postAsModerator != nil, 
 				createdByTwitarrTeam: formContent.postAsTwitarrTeam != nil)
 		let createResponse = try await apiQuery(req, endpoint: "/fez/create", method: .POST, encodeContent: fezContent)

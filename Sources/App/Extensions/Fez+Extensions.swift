@@ -14,7 +14,7 @@ extension FriendlyFez: Reportable {
 
 extension FriendlyFez {
 	func notificationType() throws -> NotificationType {
-		if fezType == .closed {
+		if [.closed, .open].contains(fezType) {
 			return try .seamailUnreadMsg(requireID())
 		}
 		return try .fezUnreadMsg(requireID())

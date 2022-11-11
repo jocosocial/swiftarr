@@ -3,10 +3,47 @@ import Crypto
 import FluentSQL
 import Fluent
 
-/// The collection of /api/v3/fez/* route endpoints and handler functions related
-/// to FriendlyFez/LFG barrels.
-
+/// The collection of `/api/v3/fez/*` route endpoints and handler functions related to Looking For Group and Seamail chats.
 struct FezController: APIRouteCollection {
+
+	// A struct with common URL query parameters for routes in the Fez Controller.
+	// Most route handlers don't actually use all these options; each handler's header comment
+	// specifies what URL options it uses.
+	// The decode() call decodes the URL Query into this struct; trying to decode keys the the handler doesn't use
+	// doesn't matter; whether or not the URL Query contains the option or not. However, it is possible a malformed
+	// but unused query parameter would result in an error for the call.
+	struct FezURLQueryStruct: Content {
+		var type: [String]
+		var excludetype: [String]
+		var onlynew: Bool?
+		var start: Int?
+		var limit: Int?
+		var cruiseDay: Int?
+		
+		func getTypes() throws -> [FezType]? {
+			let includeTypes = try type.map {  try FezType.fromAPIString($0) }
+			return includeTypes.count > 0 ? includeTypes : nil
+		}
+		
+		func getExcludeTypes() throws -> [FezType]? {
+			let excludeTypes = try excludetype.map {  try FezType.fromAPIString($0) }
+			return excludeTypes.count > 0 ? excludeTypes : nil
+		}
+		
+		func calcStart() -> Int {
+			return start ?? 0
+		}
+		
+		func calcLimit() -> Int {
+			return (limit ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts) 
+		}
+		
+		// Used for: dbQuery.range(urlQuery.calcRange())
+		func calcRange() -> Range<Int> {
+			let rangeStart = calcStart()
+			return rangeStart..<(rangeStart + calcLimit())
+		}
+	}
 
 	/// Required. Registers routes to the incoming router.
 	func registerRoutes(_ app: Application) throws {
@@ -70,19 +107,16 @@ struct FezController: APIRouteCollection {
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: An array of <doc:FezData> containing current fezzes with open slots.
 	func openHandler(_ req: Request) async throws -> FezListData {
+		let urlQuery = try req.query.decode(FezURLQueryStruct.self)
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		let start = (req.query[Int.self, at: "start"] ?? 0)
-		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
+		let searchStartTime = Settings.shared.timeZoneChanges.displayTimeToPortTime().addingTimeInterval(-3600)
 		let fezQuery = FriendlyFez.query(on: req.db)
-				.filter(\.$fezType != .closed)
+				.filter(\.$fezType !~ [.closed, .open])
 				.filter(\.$owner.$id !~ cacheUser.getBlocks())
 				.filter(\.$cancelled == false)
-				.filter(\.$startTime > Date().addingTimeInterval(-3600))
-		if let typeFilterStr = req.query[String.self, at: "type"] {
-			guard let typeFilter = FezType.fromAPIString(typeFilterStr) else {
-				throw Abort(.badRequest, reason: "Could not map 'type' query parameter to FezType.")
-			}
-			fezQuery.filter(\.$fezType == typeFilter)
+				.filter(\.$startTime > searchStartTime)
+		if let typeFilter = try urlQuery.getTypes() {
+			fezQuery.filter(\.$fezType ~~ typeFilter)
 		}
 		if let dayFilter = req.query[Int.self, at: "cruiseday"] {
 			let portCalendar = Settings.shared.getPortCalendar()
@@ -92,7 +126,7 @@ struct FezController: APIRouteCollection {
 			fezQuery.filter(\.$startTime >= dayStart).filter(\.$startTime < dayEnd)
 		}
 		let fezCount = try await fezQuery.count()
-		let fezzes = try await fezQuery.sort(\.$startTime, .ascending).sort(\.$title, .ascending).range(start..<(start + limit)).all()
+		let fezzes = try await fezQuery.sort(\.$startTime, .ascending).sort(\.$title, .ascending).range(urlQuery.calcRange()).all()
 		let fezDataArray: [FezData] = try fezzes.compactMap { fez in
 			// Fezzes are only 'open' if their waitlist is < 1/2 the size of their capacity. A fez with a max of 10 people
 			// could have a waitlist of 5, then it stops showing up in 'open' searches.
@@ -102,7 +136,7 @@ struct FezController: APIRouteCollection {
 			}
 			return nil
 		}
-		return FezListData(paginator: Paginator(total: fezCount, start: start, limit: limit), fezzes: fezDataArray)
+		return FezListData(paginator: Paginator(total: fezCount, start: urlQuery.calcStart(), limit: urlQuery.calcLimit()), fezzes: fezDataArray)
 	}
 
 	/// `GET /api/v3/fez/joined`
@@ -125,27 +159,16 @@ struct FezController: APIRouteCollection {
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: An array of <doc:FezData> containing all the fezzes joined by the user.
 	func joinedHandler(_ req: Request) async throws -> FezListData {
-		struct QueryStruct: Content {
-			var type: String?
-			var excludetype: String?
-			var onlynew: Bool?
-			var start: Int?
-			var limit: Int?
-			var foruser: String?
-		}
-		let urlQuery = try req.query.decode(QueryStruct.self)
+		let urlQuery = try req.query.decode(FezURLQueryStruct.self)
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let effectiveUser = try getEffectiveUser(user: cacheUser, req: req)
-		let start = urlQuery.start ?? 0
-		let limit = (urlQuery.limit ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
 		let query = FezParticipant.query(on: req.db).filter(\.$user.$id == effectiveUser.userID)
 				.join(FriendlyFez.self, on: \FezParticipant.$fez.$id == \FriendlyFez.$id)
-		if let typeStr = req.query[String.self, at: "type"], let fezType = FezType.fromAPIString(typeStr) {
-			query.filter(FriendlyFez.self, \.$fezType == fezType)
+		if let includeTypes = try urlQuery.getTypes() {
+			query.filter(FriendlyFez.self, \.$fezType ~~ includeTypes)
 		}
-		else if let typeStr = req.query[String.self, at: "excludetype"], let fezType = FezType.fromAPIString(typeStr) {
-			// excludetype is really only here to exclude .closed fezzes.
-			query.filter(FriendlyFez.self, \.$fezType != fezType)
+		else if let excludeTypes = try urlQuery.getExcludeTypes() {
+			query.filter(FriendlyFez.self, \.$fezType !~ excludeTypes)
 		}
 		if let onlyNew = urlQuery.onlynew {
 			// Uses a custom filter to test "readCount + hiddenCount < FriendlyFez.postCount". If true, there's unread messages
@@ -155,17 +178,18 @@ struct FezController: APIRouteCollection {
     				DatabaseQuery.Field.path(FriendlyFez.path(for: \.$postCount), schema: FriendlyFez.schema))
 		}
 		async let fezCount = try query.count()
-		async let pivots = query.sort(FriendlyFez.self, \.$updatedAt, .descending).range(start..<(start + limit)).all()
+		async let pivots = query.sort(FriendlyFez.self, \.$updatedAt, .descending).range(urlQuery.calcRange()).all()
 		let fezDataArray = try await pivots.map { pivot -> FezData in
 			let fez = try pivot.joined(FriendlyFez.self)
 			return try buildFezData(from: fez, with: pivot, for: effectiveUser, on: req)
 		}
-		return try await FezListData(paginator: Paginator(total: fezCount, start: start, limit: limit), fezzes: fezDataArray)
+		return try await FezListData(paginator: Paginator(total: fezCount, start: urlQuery.calcStart(), limit: urlQuery.calcLimit()), 
+				fezzes: fezDataArray)
 	}
 	
 	/// `GET /api/v3/fez/owner`
 	///
-	/// Retrieve the FriendlyFez barrels created by the user.
+	/// Retrieve the FriendlyFez chats created by the user.
 	///
 	/// - Note: There is no block filtering on this endpoint. In theory, a block could only
 	///   apply if it were set *after* the fez had been joined by the second party. The
@@ -173,7 +197,7 @@ struct FezController: APIRouteCollection {
 	///   longer visible to the non-owning party.
 	///
 	/// **Query Parameters:**
-	/// - `?type=STRING` -	Only return fezzes of the given fezType. See `FezType` for a list.
+	/// - `?type=STRING` - Only return fezzes of the given fezType. See `FezType` for a list.
 	/// - `?excludetype=STRING` - Don't return fezzes of the given type. See `FezType` for a list.
 	/// * `?start=INT` - The offset to the first result to return in the filtered + sorted array of results.
 	/// * `?limit=INT` - The maximum number of fezzes to return; defaults to 50.
@@ -181,18 +205,18 @@ struct FezController: APIRouteCollection {
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: An array of <doc:FezData> containing all the fezzes created by the user.
 	func ownerHandler(_ req: Request) async throws -> FezListData {
+		let urlQuery = try req.query.decode(FezURLQueryStruct.self)
 		let user = try req.auth.require(UserCacheData.self)
 		let start = (req.query[Int.self, at: "start"] ?? 0)
 		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
 		let query = FriendlyFez.query(on: req.db).filter(\.$owner.$id == user.userID)
 				.join(FezParticipant.self, on: \FezParticipant.$fez.$id == \FriendlyFez.$id)
 				.filter(FezParticipant.self, \.$user.$id == user.userID)
-		if let typeStr = req.query[String.self, at: "type"], let fezType = FezType.fromAPIString(typeStr) {
-			query.filter(\.$fezType == fezType)
+		if let includeTypes = try urlQuery.getTypes() {
+			query.filter(\.$fezType ~~ includeTypes)
 		}
-		else if let typeStr = req.query[String.self, at: "excludetype"], let fezType = FezType.fromAPIString(typeStr) {
-			// excludetype is really only here to exclude .closed fezzes.
-			query.filter(\.$fezType != fezType)
+		else if let excludeTypes = try urlQuery.getExcludeTypes() {
+			query.filter(\.$fezType !~ excludeTypes)
 		}
 		// get owned fezzes
 		async let fezCount = query.count()
@@ -212,8 +236,8 @@ struct FezController: APIRouteCollection {
 	/// the `FezPost`s. 
 	/// 
 	/// **Query Parameters:**
-	/// * `?start=INT` - The offset to the first result to return in the filtered + sorted array of results.
-	/// * `?limit=INT` - The maximum number of fezzes to return; defaults to 50.
+	/// * `?start=INT` - The offset to the first post to return in the array of posts.
+	/// * `?limit=INT` - The maximum number of posts to return; defaults to 50.
 	/// 
 	/// Start and limit only have an effect when the user is a member of the Fez. Limit defaults to 50 and start defaults to `(readCount / limit) * limit`, 
 	/// where readCount is how many posts the user has read already.
@@ -240,7 +264,7 @@ struct FezController: APIRouteCollection {
 		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
 		let effectiveUser = getEffectiveUser(user: cacheUser, req: req, fez: fez)
 		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
-			throw Abort(.notFound, reason: "this fez is not available")
+			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
 		}
 		let pivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == effectiveUser.userID).first()
 		var fezData = try buildFezData(from: fez, with: pivot, for: cacheUser, on: req)
@@ -272,12 +296,18 @@ struct FezController: APIRouteCollection {
 	func joinHandler(_ req: Request) async throws -> Response {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		guard fez.fezType != .closed else {
+			throw Abort(.badRequest, reason: "Cannot add members to a closed chat")
+		}
+		guard fez.fezType != .open else {
+			throw Abort(.badRequest, reason: "Cannot add youself to a Seamail chat. Ask the chat creator to add you.")
+		}
 		guard !fez.participantArray.contains(cacheUser.userID) else {
-			throw Abort(.notFound, reason: "user is already a member of this LFG")
+			throw Abort(.notFound, reason: "user is already a member of this \(fez.fezType.lfgLabel)")
 		}
 		// respect blocks
 		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
-			throw Abort(.notFound, reason: "LFG is not available")
+			throw Abort(.notFound, reason: "This \(fez.fezType.lfgLabel) is not available")
 		}
 		// add user to both the participantArray and attach a pivot for them.
 		fez.participantArray.append(cacheUser.userID)
@@ -308,6 +338,9 @@ struct FezController: APIRouteCollection {
 	func unjoinHandler(_ req: Request) async throws -> FezData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		guard fez.fezType != .closed else {
+			throw Abort(.badRequest, reason: "Cannot remove members to a closed chat")
+		}
 		// remove user from participantArray and also remove the pivot.
 		if let index = fez.participantArray.firstIndex(of: cacheUser.userID) {
 			fez.participantArray.remove(at: index)
@@ -337,22 +370,22 @@ struct FezController: APIRouteCollection {
 		try cacheUser.guardCanCreateContent()
 		// see PostContentData.validations()
  		let data = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
- 		guard data.images.count <= 1 else {
- 			throw Abort(.badRequest, reason: "Fez posts may only have one image")
- 		}
 		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		guard ![.closed, .open].contains(fez.fezType) || data.images.count == 0 else {
+			throw Abort(.badRequest, reason: "Private conversations can't contain photos.")
+		}
+ 		guard data.images.count <= 1 else {
+ 			throw Abort(.badRequest, reason: "posts may only have one image")
+ 		}
 		guard fez.participantArray.contains(cacheUser.userID) || cacheUser.accessLevel.hasAccess(.moderator) else {
-			throw Abort(.forbidden, reason: "user is not member of LFG; cannot post")
+			throw Abort(.forbidden, reason: "user is not member of \(fez.fezType.lfgLabel); cannot post")
 		}
 		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
-			throw Abort(.notFound, reason: "LFG is not available")
-		}
-		guard fez.fezType != .closed || data.images.count == 0 else {
-			throw Abort(.badRequest, reason: "Private conversations can't contain photos.")
+			throw Abort(.notFound, reason: "\(fez.fezType.lfgLabel) is not available")
 		}
 		guard fez.moderationStatus != .locked else {
 			// Note: Users should still be able to post in a quarantined LFG so they can figure out what (else) to do.
-			throw Abort(.badRequest, reason: "LFG is locked; cannot post.")
+			throw Abort(.badRequest, reason: "\(fez.fezType.lfgLabel) is locked; cannot post.")
 		}
 		// process image
 		let filenames = try await processImages(data.images, usage: .fezPost, on: req)
@@ -384,7 +417,7 @@ struct FezController: APIRouteCollection {
 		try await post.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
 		var infoStr = "@\(effectiveAuthor.username) wrote, \"\(post.text)\""
 		if fez.fezType != .closed {
-			infoStr.append(" in LFG \"\(fez.title)\".")
+			infoStr.append(" in \(fez.fezType.lfgLabel) \"\(fez.title)\".")
 		}
 		try await addNotifications(users: participantNotifyList, type: fez.notificationType(), info: infoStr, on: req)
 		try forwardPostToSockets(fez, post, on: req)
@@ -412,10 +445,10 @@ struct FezController: APIRouteCollection {
 		try cacheUser.guardCanModifyContent(post)
 		// get fez and all its participant pivots. Also get count of posts before the one we're deleting.
 		guard let fez = try await post.$fez.query(on: req.db).with(\.$participants.$pivots).first() else {
-			throw Abort(.internalServerError, reason: "LFG not found")
+			throw Abort(.internalServerError, reason: "On delete: container for post not found")
 		}
 		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
-			throw Abort(.notFound, reason: "LFG is not available")
+			throw Abort(.notFound, reason: "\(fez.fezType.lfgLabel) is not available")
 		}
 		let postIndex = try await fez.$fezPosts.query(on: req.db).filter(\.$id < post.requireID()).count()
 		// delete post, reduce post count cached in fez
@@ -467,10 +500,10 @@ struct FezController: APIRouteCollection {
 		let data = try req.content.decode(ReportData.self)		
 		let reportedPost = try await FezPost.findFromParameter(fezPostIDParam, on: req)
 		guard let reportedFriendlyFez = try await FriendlyFez.find(reportedPost.$fez.id, on: req.db) else {
-			throw Abort(.notFound, reason: "could not find parent fez")
+			throw Abort(.notFound, reason: "While trying to file report: could not find container for post")
 		}
 		guard reportedFriendlyFez.fezType != FezType.closed else {
-			throw Abort(.badRequest, reason: "cannot report private (closed) fez posts")
+			throw Abort(.badRequest, reason: "cannot report private (closed) posts")
 		}
 		return try await reportedPost.fileReport(submitter: submitter, submitterMessage: data.message, on: req)
 	}
@@ -498,7 +531,7 @@ struct FezController: APIRouteCollection {
 	/// - Returns: 201 Created; <doc:FezData> containing the newly created fez.
 	func createHandler(_ req: Request) async throws -> Response {
 		let user = try req.auth.require(UserCacheData.self)
-		try user.guardCanCreateContent(customErrorString: "User cannot create LFG.")
+		try user.guardCanCreateContent(customErrorString: "User cannot create LFGs/Seamails.")
 		// see `FezContentData.validations()`
 		let data = try ValidatingJSONDecoder().decode(FezContentData.self, fromBodyOf: req)
 		var creator = user
@@ -533,7 +566,7 @@ struct FezController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "Fewer than 2 users in seamail after applying user filters")
 		}
 		guard initialUsers.count >= 1 else {
-			throw Abort(.badRequest, reason: "Cannot create LFG with 0 participants")
+			throw Abort(.badRequest, reason: "Cannot create \(fez.fezType.lfgLabel) with 0 participants")
 		}
 		fez.participantArray = initialUsers
 		try await fez.save(on: req.db)
@@ -562,7 +595,7 @@ struct FezController: APIRouteCollection {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
 		guard fez.$owner.id == cacheUser.userID else {
-			throw Abort(.forbidden, reason: "user does not own this LFG")
+			throw Abort(.forbidden, reason: "user does not own this \(fez.fezType.lfgLabel)")
 		}
 		// FIXME: this should send out notifications
 		fez.cancelled = true
@@ -584,10 +617,10 @@ struct FezController: APIRouteCollection {
 	/// - Returns: 204 No Content on success.
 	func fezDeleteHandler(_ req: Request) async throws -> HTTPStatus {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		guard cacheUser.accessLevel.canEditOthersContent() else {
-			throw Abort(.forbidden, reason: "User does not have access to delete an LFG.")
-		}
 		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		guard cacheUser.accessLevel.canEditOthersContent() else {
+			throw Abort(.forbidden, reason: "User does not have access to delete an \(fez.fezType.lfgLabel).")
+		}
 		try cacheUser.guardCanModifyContent(fez)
 		try await deleteFezNotifications(userIDs: fez.participantArray, fez: fez, on: req)
 		try await fez.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: req)
@@ -616,6 +649,12 @@ struct FezController: APIRouteCollection {
 		// get fez
 		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
 		try cacheUser.guardCanModifyContent(fez, customErrorString: "User cannot modify LFG")
+		guard ![.closed, .open].contains(fez.fezType) else {
+			throw Abort(.forbidden, reason: "Cannot edit info on Seamail chats")
+		}
+		guard ![.closed, .open].contains(data.fezType) else {
+			throw Abort(.forbidden, reason: "Cannot turn a LFG into a Seamail chat")
+		}
 		if data.title != fez.title || data.location != fez.location || data.info != fez.info {
 			let fezEdit = try FriendlyFezEdit(fez: fez, editorID: cacheUser.userID)
 			try await fez.logIfModeratorAction(.edit, moderatorID: cacheUser.userID, on: req)
@@ -637,7 +676,7 @@ struct FezController: APIRouteCollection {
 		
 	/// `POST /api/v3/fez/ID/user/ID/add`
 	///
-	/// Add the specified `User` to the specified FriendlyFez barrel. This lets a fez owner invite others.
+	/// Add the specified `User` to the specified LFG or open chat. This lets the owner invite others.
 	///
 	/// - Parameter fezID: in URL path.
 	/// - Parameter userID: in URL path.
@@ -648,14 +687,17 @@ struct FezController: APIRouteCollection {
 		let requester = try req.auth.require(UserCacheData.self)
 		// get fez and user to add
 		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		guard fez.fezType != .closed else {
+			throw Abort(.forbidden, reason: "Cannot add users to closed chat")
+		}
 		guard let userID = req.parameters.get(userIDParam.paramString, as: UUID.self), let cacheUser = req.userCache.getUser(userID) else {
 			throw Abort(.forbidden, reason: "invalid user ID in request parameter")
 		}
 		guard fez.$owner.id == requester.userID else {
-			throw Abort(.forbidden, reason: "requester does not own LFG")
+			throw Abort(.forbidden, reason: "requester does not own \(fez.fezType.lfgLabel)")
 		}
 		guard !fez.participantArray.contains(userID) else {
-			throw Abort(.badRequest, reason: "user is already in LFG")
+			throw Abort(.badRequest, reason: "user is already in \(fez.fezType.lfgLabel)")
 		}
 		guard !requester.getBlocks().contains(userID) else {
 			throw Abort(.badRequest, reason: "user is not available")
@@ -687,12 +729,15 @@ struct FezController: APIRouteCollection {
 		let removeUser = try await User.findFromParameter(userIDParam, on: req)
 		let removeUserID = try removeUser.requireID()
 		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		guard fez.fezType != .closed else {
+			throw Abort(.forbidden, reason: "Cannot remove users from closed chat")
+		}
 		guard fez.$owner.id == requester.userID else {
-			throw Abort(.forbidden, reason: "requester does not own LFG")
+			throw Abort(.forbidden, reason: "requester does not own \(fez.fezType.lfgLabel)")
 		}
 		// remove user
 		guard let index = fez.participantArray.firstIndex(of: removeUserID) else {
-			throw Abort(.badRequest, reason: "user is not a member of this LFG")
+			throw Abort(.badRequest, reason: "user is not a member of this \(fez.fezType.lfgLabel)")
 		}
 		fez.participantArray.remove(at: index)
 		try await fez.save(on: req.db)
@@ -718,6 +763,9 @@ struct FezController: APIRouteCollection {
 		let submitter = try req.auth.require(UserCacheData.self)
 		let data = try req.content.decode(ReportData.self)		
 		let reportedFez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		guard reportedFez.fezType != .closed else {
+			throw Abort(.forbidden, reason: "Cannot file reports on closed chats")
+		}
 		return try await reportedFez.fileReport(submitter: submitter, submitterMessage: data.message, on: req)
 	}
 

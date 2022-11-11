@@ -93,7 +93,7 @@ enum NotificationType {
 	
 	/// A shortcut method to get the RedisKey to use to store notification data about a fez.
 	static func redisKeyForFez(_ fez: FriendlyFez, userID: UUID) throws -> RedisKey {
-		return try fez.fezType == .closed ? NotificationType.seamailUnreadMsg(fez.requireID()).redisKeyName(userID: userID) :
+		return try [.open, .closed].contains(fez.fezType) ? NotificationType.seamailUnreadMsg(fez.requireID()).redisKeyName(userID: userID) :
 				NotificationType.fezUnreadMsg(fez.requireID()).redisKeyName(userID: userID)
 	}
 	

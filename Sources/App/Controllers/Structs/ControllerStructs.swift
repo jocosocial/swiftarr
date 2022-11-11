@@ -398,9 +398,9 @@ public struct FezContentData: Content {
 extension FezContentData: RCFValidatable {
 	func runValidations(using decoder: ValidatingDecoder) throws {
 		let tester = try decoder.validator(keyedBy: CodingKeys.self)
-		if fezType != .closed {
-			tester.validate(title.count >= 2, forKey: .title, or: "title field has a 2 character minimum")
-			tester.validate(title.count <= 100, forKey: .title, or: "title field has a 100 character limit")
+		tester.validate(title.count >= 2, forKey: .title, or: "title field has a 2 character minimum")
+		tester.validate(title.count <= 100, forKey: .title, or: "title field has a 100 character limit")
+		if ![.closed, .open].contains(fezType) {
 			tester.validate(info.count >= 2, forKey: .info, or: "info field has a 2 character minimum")
 			tester.validate(info.count <= 2048, forKey: .info, or: "info field length of \(info.count) is over the 2048 character limit")
 			if let loc = location {

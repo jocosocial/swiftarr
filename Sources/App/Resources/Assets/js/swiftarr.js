@@ -16,6 +16,7 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 		case "unmute":
 		case "alertWordDelete":
 		case "muteWordDelete":
+		case "redirect":
 			btn.addEventListener("click", spinnerButtonAction); 
 			break;
 		case "delete": btn.addEventListener("click", deleteAction); break;
@@ -95,6 +96,15 @@ async function spinnerButtonAction() {
 					break;
 				case "reload":
 					location.reload();
+					break;
+				case "redirect": 
+					let newLoc = tappedButton.dataset.successpath;
+					if (newLoc != null) {
+						window.location.replace(newLoc);
+					}
+					else {
+						window.location.relace("/");
+					}
 					break;
 				case "block":
 				case "mute":

@@ -9,8 +9,19 @@
 				  </ol>
 				</nav>
 			</div>
-			<div class="row">
-				<h6>Participants</h6>
+			<div class="row mb-1">
+				<div class="col">
+					<h6>Participants</h6>
+				</div>
+				#if(fez.fezType == "open"):
+					<div class="col col-auto btn-group btn-group-sm" role="group" aria-label="member actions">
+						#if(fez.owner.userID == trunk.userID):
+							<a class="btn btn-outline-primary" href="/fez/#(fez.fezID)/members">Manage Members</a>
+						#else:
+							<button type="button" class="btn btn-outline-primary px-3" data-bs-toggle="modal" data-bs-target="\#leaveFezModal">Leave</button>
+						#endif
+					</div>
+				#endif
 			</div>
 			<div class="row mb-2 mx-0">
 				#for(participant in fez.members.participants):
@@ -84,11 +95,47 @@
 						</form>
 					</li>
 				</ul>
+				#if(fez.fezType == "open"):
+					<div class="alert text-muted alert-secondary py-0 my-1" role="alert">
+						This is an open chat. The creator can add or remove members at any time.
+					</div>
+				#endif
 				<div class="row">
 					<div class="col text-muted fst-italic" id="socket-status"></div>
 				</div>
 			#endif
 		</div>
+
+		<div class="modal fade" id="leaveFezModal" tabindex="-1" aria-labelledby="leave chat modal" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="leave chat modal">Leave Chat</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						Are you sure you want to leave the chat?
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+						<input type="checkbox" class="btn-check" autocomplete="off" data-action="redirect" 
+								data-successpath="/seamail"
+								data-actionpath="/fez/#(fez.fezID)/leave"
+								data-errordiv="fezDialog_errorDisplay"
+								id="#(fez.fezID)_leave">
+						<label class="btn btn-primary px-4" for="#(fez.fezID)_leave">
+							Leave
+							<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+							<span class="visually-hidden">Loading...</span>
+						</label>
+					</div>
+					<div class="mx-3 pb-1 text-end text-danger d-none error-display" id="fezDialog_errorDisplay">
+						Error attempting to leave chat: <span class="errortext"></span>
+					</div>
+				</div>
+			</div>
+		</div>
+		
     #endexport
 #endextend
 
