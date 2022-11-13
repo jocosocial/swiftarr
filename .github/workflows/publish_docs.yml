@@ -2,8 +2,11 @@ name: PublishDocumentation
 on:
   workflow_dispatch:
   push:
+    branches:
+    - master
 jobs:
   publish:
+    if: github.repository == 'jocosocial/swiftarr'
     runs-on: macos-12
     steps:
     - uses: actions/checkout@v2

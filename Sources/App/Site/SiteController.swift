@@ -42,8 +42,6 @@ struct TrunkContext: Encodable {
 	var eventStartingSoon: Bool
 	var newTweetAlertwords: Bool
 	var newForumAlertwords: Bool
-
-	var displayTimeZone: TimeZone
 	
 	init(_ req: Request, title: String, tab: Tab, search: String? = nil) {
 		if let user = req.auth.get(UserCacheData.self) {
@@ -83,7 +81,6 @@ struct TrunkContext: Encodable {
 		self.tab = tab
 		self.inTwitarrSubmenu = [.home, .lfg, .games, .karaoke, .moderator, .admin].contains(tab)
 		self.searchPrompt = search
-		self.displayTimeZone = Settings.shared.getDisplayTimeZone()
 		
 		// Pull search params, if any, out of the request's query. 
 		// This is to place the (just-run) search params back in the search form.
@@ -156,6 +153,7 @@ struct MessagePostContext: Encodable {
 	var photoFilenames: [String] = ["", "", "", ""]	// Must have 4 values to make Leaf templating work. Use "" as placeholder.
 	var allowedImageTypes: String
 	var displayUntil: String = ""					// Used by announcements.
+	var postErrorString: String = ""				// Prepopulates the error alert. Useful for partial successes.
 
 	var formAction: String
 	var postSuccessURL: String
@@ -401,9 +399,8 @@ struct SiteController: SiteControllerUtils {
 		let announcements = try await announcementResponse.content.decode([AnnouncementData].self)
 		let themes = try await themeResponse.content.decode([DailyThemeData].self)
 
-		let cal = Settings.shared.getDisplayCalendar()
-		let components = cal.dateComponents([.day], from: cal.startOfDay(for: Settings.shared.cruiseStartDate), 
-				to: cal.startOfDay(for: Date()))
+		let cal = Settings.shared.getPortCalendar()
+		let components = cal.dateComponents([.day], from: cal.startOfDay(for: Settings.shared.cruiseStartDate()), to: Date())
 		let cruiseDay = Int32(components.day ?? 0)
 		var backupTheme: DailyThemeData
 		if cruiseDay < 0 {
@@ -457,9 +454,9 @@ struct SiteController: SiteControllerUtils {
 	func timePageHandler(_ req: Request) async throws -> View {
 		struct TimePageContext : Encodable {
 			var trunk: TrunkContext
-			var serverTime: String
-			var displayTime: String
-			var portTime: String
+			var displayTime: String				// The time on the Boat's clocks, with the current TZ
+			var serverTime: String				// The current time on the server box, including the box's timezone
+			var portTime: String				// The time in the port we embarked from
 
 			init(_ req: Request) throws {
 				trunk = .init(req, title: "Time Zone Check", tab: .time)
@@ -469,18 +466,20 @@ struct SiteController: SiteControllerUtils {
 				let serverDateFormatter = DateFormatter()
 				serverDateFormatter.timeZone = TimeZone.current
 				serverDateFormatter.setLocalizedDateFormatFromTemplate(dateFormatTemplate)
+				
 				let displayDateFormatter = DateFormatter()
 				// This could use the GMToffset stuff but then it renders a different time zone
 				// name leading to inconsistencies. For eaxmple, if the setting is "AST" then
 				// this would render "GMT-04:00" which is the same thing in effect but more
 				// confusing for people to read.
-				displayDateFormatter.timeZone = Settings.shared.getDisplayTimeZone()
+				displayDateFormatter.timeZone = Settings.shared.timeZoneChanges.tzAtTime()
 				displayDateFormatter.setLocalizedDateFormatFromTemplate(dateFormatTemplate)
+				
 				let portDateFormatter = DateFormatter()
 				portDateFormatter.timeZone = Settings.shared.portTimeZone
 				portDateFormatter.setLocalizedDateFormatFromTemplate(dateFormatTemplate)
 				// serverDate is a Date() that is a precise moment in time represented as an ISO8601 string in UTC.
-				// There is no implicit timezone information contained there.
+				// There is no useful timezone information contained there (this date being UTC doesn't mean the server is set to UTC).
 				let serverDate = ISO8601DateFormatter().date(from: trunk.alertCounts.serverTime) ?? Date()
 
 				self.serverTime = serverDateFormatter.string(from: serverDate)
@@ -499,8 +498,6 @@ struct SiteController: SiteControllerUtils {
 protocol SiteControllerUtils {
 	func registerRoutes(_ app: Application) throws
 }
-
-struct zzz : Encodable { }
 
 extension SiteControllerUtils {
 
@@ -622,6 +619,10 @@ extension SiteControllerUtils {
 	
 	// Convert a date string submitted by a client into a Date. Usually this comes from a form input field.
 	// https://www.w3.org/TR/NOTE-datetime specifies a subset of what the ISO 8601 spec allows for date formats.
+	//
+	// Date objects that get stored in the db are stored in the ship's portTimeZone, and the API layer converts them
+	// to the ship's current tz when retrieved. This fn returns Dates matching the indicated ISO8601 'floating' time
+	// in the ship's port time zone for that reason.
 	// 
 	// In Swift's libs, both DateFormatter and ISO8601DateFormatter require specific formatting options be set that match
 	// the format of the input string--generally, they assume you know what a specific string is going to look like before
@@ -632,7 +633,7 @@ extension SiteControllerUtils {
 	// (at least with the 2019 version of the spec; IIRC previous versions had ambiguities preventing general-case parsing).
 	func dateFromW3DatetimeString(_ dateStr: String) -> Date? {
 		let dateFormatter = DateFormatter()
-		dateFormatter.timeZone = Settings.shared.getDisplayTimeZone()
+		dateFormatter.timeZone = Settings.shared.portTimeZone
 		dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSXXXXX"
 		if let date = dateFormatter.date(from: dateStr) {
 			return date

@@ -57,3 +57,22 @@ for this game.
 
 * FezContentData now has createdByModerator and createdByTwitarrTeam fields, allowing mods to create Seamails that appear to be
 from the @moderator user and not themselves.
+
+## Apr 30, 2022
+
+* Added "GET /api/v3/forum/recent" to retrieve recently viewed forums for a user.
+
+## Sep 22, 2022
+
+* When getting forum threads in a category, threads may now be sorted by the start time of the associated Event for each thread.
+Only applicable for Event categories (Official Events, Shadow Events). Event categories get Event sorting by default.
+* CategoryData now has an isEventCategory field. 
+
+## Sep 24, 2022
+
+* Adds a new filter option when getting fez info: "onlynew", which only returns fezzes with new messages.
+
+## Oct 8, 2022
+
+* Added a board game recommendation engine at: "/api/v3/boardgames/recommend". This code uses some values the DB has about games that
+aren't currently available through the API.

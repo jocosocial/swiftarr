@@ -28,11 +28,8 @@ struct FezCreateUpdatePageContext : Encodable {
 	var info: String = ""
 	var formAction: String
 	var submitButtonTitle: String = "Create"
-	var timeZoneName: String
 
 	init(_ req: Request, fezToUpdate: FezData? = nil) throws {
-		
-		self.timeZoneName = Settings.shared.displayTimeZoneAbbr
 		if let fez = fezToUpdate {
 			trunk = .init(req, title: "Update Looking For Group", tab: .lfg)
 			self.fez = fezToUpdate
@@ -78,7 +75,6 @@ struct FezCreateUpdatePageContext : Encodable {
 		}
 		formAction = "/fez/create"
 		submitButtonTitle = "Create"
-		self.timeZoneName = Settings.shared.displayTimeZoneAbbr
 	}
 }
 	
@@ -181,7 +177,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 	//
 	// Shows the Joined Fezzes page.
 	func joinedFezPageHandler(_ req: Request) async throws -> View {
-		let response = try await apiQuery(req, endpoint: "/fez/joined?excludetype=closed")
+		let response = try await apiQuery(req, endpoint: "/fez/joined?excludetype=closed&excludetype=open")
 		let fezList = try response.content.decode(FezListData.self)
 		struct JoinedFezPageContext : Encodable {
 			var trunk: TrunkContext
@@ -207,7 +203,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 	//
 	// Shows the Owned Fezzes page. These are the Fezzes a user has created.
 	func ownedFezPageHandler(_ req: Request) async throws -> View {
-		let response = try await apiQuery(req, endpoint: "/fez/owner?excludetype=closed")
+		let response = try await apiQuery(req, endpoint: "/fez/owner?excludetype=closed&excludetype=open")
 		let fezList = try response.content.decode(FezListData.self)
 		struct OwnedFezPageContext : Encodable {
 			var trunk: TrunkContext
@@ -316,7 +312,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 				self.fez = fez
 				self.userID = cacheUser.userID
 				userIsMember = false
-				showModButton = trunk.userIsMod && fez.fezType != .closed
+				showModButton = trunk.userIsMod && ![.closed, .open].contains(fez.fezType)
 				oldPosts = []
 				newPosts = []
 				showDivider = false

@@ -171,3 +171,19 @@ extension PathComponent {
 		}
 	}
 }
+
+extension QueryBuilder {
+
+	/// Uses Postgres full text search capabilities for improved search when using a Postgres db. This fn is modeled after the many filter() methods
+	/// in FluentKit's QueryBuilder+Filter.swift.
+    @discardableResult public func fullTextFilter<Field>(_ field: KeyPath<Model, Field>, _ value: String) -> Self 
+			where Field: QueryableProperty, Field.Model == Model, Field.Value == String {
+    	if database is SQLDatabase {
+			return filter(.extendedPath(Model.path(for: field), schema: Model.schemaOrAlias, space: Model.space), 
+					.custom("@@"), DatabaseQuery.Value.custom("websearch_to_tsquery(\(bind: String(value)))" as SQLQueryString))
+    	}
+    	else {
+    		return filter(field, .custom("ILIKE"), value)
+    	}
+    }
+}

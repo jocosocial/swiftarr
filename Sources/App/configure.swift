@@ -14,8 +14,6 @@ import gd
 /// 
 /// Besides the standard .development, .production, and .testing, there's a few custom environment values that can be set, either on the command line
 /// with `--env <ENVIRONMENT>` or with the `VAPOR_ENV` environment variable
-/// * --env heroku: Use this for Heroku installs. This changes the Migrations for games and karaoke to load fewer items and use fewer table rows. It also
-/// 	may change the way images are stored. Otherwise like .production.
 /// 
 /// Environment variables used by Swiftarr:
 /// * DATABASE_URL: 
@@ -92,8 +90,19 @@ public func configure(_ app: Application) throws {
 // on launch.
 func configureBundle(_ app: Application) throws {
 	var resourcesURL: URL
-	if app.environment.name == "heroku" || operatingSystemPlatform() == "Linux" {
+	if operatingSystemPlatform() == "Linux" {
 		resourcesURL = Bundle.main.bundleURL.appendingPathComponent("swiftarr_App.resources")
+	}
+	else if let appLinkedLocation = Bundle.main.resourceURL?.appendingPathComponent("swiftarr_App.bundle"), 
+			let bundle = Bundle.init(url: appLinkedLocation), let loc = bundle.resourceURL {
+		resourcesURL = loc
+	}
+	else if let fwLinkedLocation = Bundle(for: Settings.self).resourceURL?.appendingPathComponent("swiftarr_App.bundle"), 
+			let bundle = Bundle.init(url: fwLinkedLocation), let loc = bundle.resourceURL {
+		resourcesURL = loc
+	}
+	else if let bundle = Bundle.init(url: Bundle.main.bundleURL.appendingPathComponent("swiftarr_App.bundle")), let loc = bundle.resourceURL {
+		resourcesURL = loc
 	}
 	else if Bundle(for: Settings.self).url(forResource: "swiftarr", withExtension: "css", subdirectory: "Resources/Assets/css") != nil {
 		resourcesURL = Bundle(for: Settings.self).resourceURL ?? Bundle(for: Settings.self).bundleURL
@@ -137,27 +146,27 @@ func configureBasicSettings(_ app: Application) throws {
 	// We do not have the displayCalendar yet so we have to build our own. Since the departure port/timezone is
 	// well-known we can safely rely on it here. Perhaps someday make it an environment variable or some other
 	// method of configuration for app startup?
-	var portCalendar = Calendar.current
-	let portTimeZone = TimeZone(abbreviation: "EST")!
+	var portCalendar = Calendar(identifier: .gregorian)
+	let portTimeZone = TimeZone(identifier: "America/New_York")!
 	portCalendar.timeZone = portTimeZone
 	Settings.shared.portTimeZone = portTimeZone
 
 	if app.environment == .testing {
 		Logger(label: "app.swiftarr.configuration") .notice("Starting up in Testing mode.")
-		Settings.shared.cruiseStartDate = portCalendar.date(from: DateComponents(year: 2022, month: 3, day: 5))!
+		Settings.shared.cruiseStartDateComponents = DateComponents(year: 2022, month: 3, day: 5)
 	}
 	else if app.environment == .development {
 		Logger(label: "app.swiftarr.configuration") .notice("Starting up in Development mode.")
-		Settings.shared.cruiseStartDate = portCalendar.date(from: DateComponents(year: 2022, month: 3, day: 5))!
+		Settings.shared.cruiseStartDateComponents = DateComponents(year: 2022, month: 3, day: 5)
 	}
 	else if app.environment == .production {
 		Logger(label: "app.swiftarr.configuration") .notice("Starting up in Production mode.")
 		// Until we get a proper future schedule, we're using the current schedule for testing. 
-		Settings.shared.cruiseStartDate = portCalendar.date(from: DateComponents(year: 2022, month: 3, day: 5))!
+		Settings.shared.cruiseStartDateComponents = DateComponents(year: 2023, month: 3, day: 5)
 	}
 	else {
 		Logger(label: "app.swiftarr.configuration") .notice("Starting up in Custom \"\(app.environment.name)\" mode.")
-		Settings.shared.cruiseStartDate = portCalendar.date(from: DateComponents(year: 2022, month: 3, day: 5))!
+		Settings.shared.cruiseStartDateComponents = DateComponents(year: 2023, month: 3, day: 5)
 	}
 	
 	// Ask the GD Image library what filetypes are available on the local machine.
@@ -212,10 +221,9 @@ func configureBasicSettings(_ app: Application) throws {
 func databaseConnectionConfiguration(_ app: Application) throws {
 	// configure PostgreSQL connection
 	// note: environment variable nomenclature is vapor.cloud compatible
-	// support for Heroku environment
 
-  // Specify a database connection timeout in case we find ourselves stuck on a slow laptop.
-  let databaseTimeoutSeconds = Int64(Environment.get("DATABASE_TIMEOUT") ?? "10")
+	// Specify a database connection timeout in case we find ourselves stuck on a slow laptop.
+	let databaseTimeoutSeconds = Int64(Environment.get("DATABASE_TIMEOUT") ?? "10")
 
 	if let databaseURL = Environment.get("DATABASE_URL"), var postgresConfig = PostgresConfiguration(url: databaseURL) {
 		postgresConfig.tlsConfiguration = .makeClientConfiguration()
@@ -240,19 +248,16 @@ func databaseConnectionConfiguration(_ app: Application) throws {
 				password: postgresPassword, database: postgresDB, maxConnectionsPerEventLoop: 1, connectionPoolTimeout: .seconds(databaseTimeoutSeconds!)), as: .psql)
 	}
 	
-	// configure Redis connection
-	// support for Heroku environment. Heroku also provides "REDIS_TLS_URL", but Vapor's Redis package 
-	// may not yet support TLS database connections.
+	// Configure Redis connection
+	// Vapor's Redis package may not yet support TLS database connections so we support going both ways.
 	let redisPoolOptions: RedisConfiguration.PoolOptions = RedisConfiguration.PoolOptions(maximumConnectionCount: .maximumActiveConnections(2))
 
 	if let redisString = Environment.get("REDIS_URL"), let redisURL = URL(string: redisString) {
 		app.redis.configuration = try RedisConfiguration(url: redisURL, pool: redisPoolOptions)
-	} else 
-	{
-		// otherwise
+	} else {
 		let redisHostname = Environment.get("REDIS_HOSTNAME") ?? "localhost"
 		let redisPort = (app.environment == .testing) ? Int(Environment.get("REDIS_PORT") ?? "6380")! : 6379
-		var redisPassword = Environment.get("REDIS_PASSWORD") ?? nil
+		var redisPassword: String? = Environment.get("REDIS_PASSWORD") ?? "password"
 		if redisPassword == "" {
 			redisPassword = nil
 		}
@@ -289,9 +294,6 @@ func configureHTTPServer(_ app: Application) throws {
 	}
 	else if app.environment == .production {
 		app.http.server.configuration.hostname = "joco.hollandamerica.com"
-	}
-	else if app.environment.name == "heroku" {
-		app.http.server.configuration.hostname = "swiftarr.herokuapp.com"
 	}
 	
 	// Load the FQDNs that we expect Twitarr to be available from. This feeds into link processing to help
@@ -398,6 +400,7 @@ func configureLeaf(_ app: Application) throws {
 	app.leaf.tags["relativeTime"] = RelativeTimeTag()
 	app.leaf.tags["eventTime"] = EventTimeTag()
 	app.leaf.tags["staticTime"] = StaticTimeTag()
+	app.leaf.tags["UTCTime"] = UTCTimeTag()
 	app.leaf.tags["fezTime"] = FezTimeTag()
 	app.leaf.tags["avatar"] = AvatarTag()
 	app.leaf.tags["userByline"] = UserBylineTag()
@@ -453,6 +456,7 @@ func configureMigrations(_ app: Application) throws {
 	app.migrations.add(CreateKaraokeSongSchema(), to: .psql)
 	app.migrations.add(CreateKaraokePlayedSongSchema(), to: .psql)
 	app.migrations.add(CreateKaraokeFavoriteSchema(), to: .psql)
+	app.migrations.add(CreateTimeZoneChangeSchema(), to: .psql)
 
 	// Third, migrations that seed the db with initial data
 	app.migrations.add(CreateAdminUsers(), to: .psql)
@@ -466,6 +470,7 @@ func configureMigrations(_ app: Application) throws {
 	
 	// Fourth, migrations that import data from /seeds
 	app.migrations.add(ImportRegistrationCodes(), to: .psql)
+	app.migrations.add(ImportTimeZoneChanges(), to: .psql)
 	app.migrations.add(ImportEvents(), to: .psql)
 	app.migrations.add(ImportBoardgames(), to: .psql)	
 	app.migrations.add(ImportKaraokeSongs(), to: .psql)	
@@ -589,5 +594,4 @@ func operatingSystemPlatform() -> String? {
 // Wrapper function to add any custom CLI commands. Might be overkill but at least it's scalable.
 // These should be stored in Sources/App/Commands.
 func configureCommands(_ app: Application) {
-	app.commands.use(ScheduleMungerCommand(), as: "munge")
 }

@@ -15,6 +15,7 @@ struct BoardgameController: APIRouteCollection {
 		flexAuthGroup.get("", use: getBoardgames)
 		flexAuthGroup.get(boardgameIDParam, use: getBoardgame)
 		flexAuthGroup.get("expansions", boardgameIDParam, use: getExpansions)
+		flexAuthGroup.get("recommend", use: recommendGames)
 		
 		
 		let tokenAuthGroup = addTokenCacheAuthGroup(to: boardgameRoutes)
@@ -48,13 +49,13 @@ struct BoardgameController: APIRouteCollection {
 		let limit = (filters.limit ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
 		let query = Boardgame.query(on: req.db)
 		if let search = filters.search {
-			query.filter(\.$gameName, .custom("ILIKE"), "%\(search)%")
+			query.fullTextFilter(\.$gameName, search)
 		}
 		if let fav = filters.favorite, fav.lowercased() == "true", let user = user {
 			query.join(BoardgameFavorite.self, on: \Boardgame.$id == \BoardgameFavorite.$boardgame.$id)
 					.filter(BoardgameFavorite.self, \.$user.$id == user.userID)
 		}
-		async let totalGames = query.count()
+		async let totalGames = query.copy().count()
 		async let games = query.sort(\.$gameName, .ascending).range(start..<(start + limit)).all()
 		let gamesArray = try await buildBoardgameData(for: user, games: games, on: req.db)
 		return try await BoardgameResponseData(totalGames: totalGames, start: start, limit: limit, gameArray: gamesArray)
@@ -135,6 +136,60 @@ struct BoardgameController: APIRouteCollection {
 		}
 		try await pivot.delete(on: req.db)
 		return .noContent
+	}
+	
+	/// `GET /api/v3/boardgames/recommend`
+	/// 
+	/// Returns an array of boardgames in a structure designed to support pagination. The returned array of board games will be sorted 
+	/// in decreasing order of how closely each games matches the criteria in the `BoardgameRecommendationData` JSON content.
+	/// Can be called while not logged in; if logged in favorite information is returned.
+	/// 
+	/// The recommendation algorithom filters out games that don't match the given criteria, i.e. if you ask for games for 6 players, games for 1-4 players 
+	/// will not be returned. Then, games are assigned a score taking each games' `suggestedNumPlayers`, `avgPlayingTime`, `avgRating`, 
+	/// and `gameComplexity` into account.
+	/// 
+	/// **URL Query Parameters**
+	///	* `?start=INT` - Offset from start of results set
+	/// * `?limit=INT` - the maximum number of games to retrieve: 1-200, default is 50. 
+	/// 
+	/// - Returns: <doc:BoardgameResponseData>
+	func recommendGames(_ req: Request) async throws -> BoardgameResponseData {
+		let user = req.auth.get(UserCacheData.self)
+		let data = try ValidatingJSONDecoder().decode(BoardgameRecommendationData.self, fromBodyOf: req)
+		let start = (req.query[Int.self, at: "start"] ?? 0)
+		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
+		let query = Boardgame.query(on: req.db).filter(\.$minPlayers <= data.numPlayers)
+				.filter(\.$maxPlayers >= data.numPlayers)
+				.filter(\.$avgPlayingTime <= data.timeToPlay)
+		if data.maxAge != 0 {
+			query.filter(\.$minAge <= data.maxAge)
+		}
+		if data.minAge != 0 {
+			query.filter(\.$minAge >= data.minAge)
+		}
+		let games = try await query.all()
+		struct GameScore {
+			let game: Boardgame
+			let score: Float
+		}
+		// In raw SQL it'd be possible to do the sort as part of the query; but the ORM layer is too restrictive for complex
+		// sorts like this, going down to the SQLKit layer is a pain, and it's not *that* bad to get all the games and sort locally.
+		let orderedGames = games.compactMap { game -> GameScore? in 
+			guard game.canUseForRecommendations() else {
+				return nil
+			}			
+			var score: Float = 100.0 + game.getAvgRating() 
+			score -= Float(abs(data.numPlayers - game.getSuggestedPlayers())) * 2.0
+			score -= Float(abs(data.timeToPlay - game.getAvgPlayingTime())) / 15.0
+			if data.complexity != 0 {
+				score -= abs(Float(data.complexity.clamped(to: 1...5)) - game.getComplexity()) * 1.5
+			}
+			return GameScore(game: game, score: score)
+		}.sorted { $0.score > $1.score }
+		
+		let orderedPageOfGames = orderedGames.enumerated().compactMap { (start...(start + limit)).contains($0.0) ? $0.1.game : nil } 
+		let gamesArray = try await buildBoardgameData(for: user, games: orderedPageOfGames, on: req.db)
+		return BoardgameResponseData(totalGames: orderedGames.count, start: start, limit: limit, gameArray: gamesArray)
 	}
 	
 // MARK: - Utilities

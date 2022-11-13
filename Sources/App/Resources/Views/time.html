@@ -6,14 +6,20 @@
             </div>
             <div class="row">
                 <p>
-                    JoCo Cruise will be making at least one time zone change this year. St Croix is in Atlantic Standard 
+                    JoCo Cruise will be making at least one time zone change this year. San Juan and Tortola are in Atlantic Standard 
                     Time while the rest of our voyage will be in Eastern Standard Time. Be careful when scheduling events 
                     that you take note of the expected time zone. The server that Twitarr runs on will be in UTC (Coordinated 
                     Universal Time, Greenwich Mean Time, Zero/Zulu time) for the duration of the cruise.
                 </p>
             </div>
             <div class="row">
-                <p><b>Display time: </b><span>#(displayTime)</span></p>
+				<div class="col">
+					<div class="alert alert-primary">This should match clocks on the boat. But the Captain sets boat time, so if they don't match, boat clocks are right and Twitarr is wrong.</div>
+				</div>
+                <p><b>Boat time: </b><span>#(displayTime)</span></p>
+				<div class="col">
+					<div class="alert alert-primary">Device time is the current time on the device you're holding in your hand.</div>
+				</div>
                 <p><b>Device time: </b><span id="browserTimeDisplay">Unknown</span></p>
             </div>
             <div class="row">

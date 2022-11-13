@@ -50,13 +50,34 @@
 										<input type="text" class="form-control" placeholder="Subject" name="subject" aria-label="Subject">
 									</div>
 								</div>
-								<div class="row mb-2">
+								<div class="row">
 									<div class="col">
-										<textarea class="form-control" maxlength="2000" rows="4" placeholder="First message" name="postText"></textarea>
+										<textarea class="form-control" 
+												maxlength="2000" 
+												data-lengthlabel="seamailTextLimitsLabel" 
+												rows="4" 
+												data-maxlines="25" 
+												placeholder="First message" 
+												name="postText"></textarea>
+									</div>
+								</div>
+								<div class="row justify-content-end mb-2">
+									<div class="col col-auto">
+										<div class="input-group-text input-group-sm py-0" id="seamailTextLimitsLabel"></div>
 									</div>
 								</div>
 								<div class="alert alert-danger mt-3 d-none" role="alert">
 								</div>				
+								<div class="row mb-2">
+									<div class="col">
+										<div class="form-check">
+											<input class="form-check-input" type="checkbox" value="" name="openchat" id="openChatCheckbox">
+											<label class="form-check-label" for="openChatCheckbox">
+												Make this an open chat so you can add or remove users later
+											</label>
+										</div>
+									</div>
+								</div>
 								<div class="row mb-2">
 									<div class="col">
 										<small>Please remember to abide by the <a href="/codeOfConduct">Code of Conduct</a></small>
@@ -73,7 +94,7 @@
 												<label class="form-check-label small" for="flexCheckDefault">Post as TwitarrTeam</label>
 											</div>
 										#endif
-										<div class="col col-auto form-check gx-0">
+										<div class="col col-auto form-check">
 											<input class="form-check-input" type="checkbox" value="" name="postAsModerator" id="flexCheckDefault">
 											<label class="form-check-label small" for="flexCheckDefault">Post as Moderator</label>
 										</div>

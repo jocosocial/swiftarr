@@ -44,13 +44,36 @@ extension AnnouncementData {
 		author = authorHeader
 		text = from.text
 		updatedAt = from.updatedAt ?? Date()
-		displayUntil = from.displayUntil
+		displayUntil = Settings.shared.timeZoneChanges.portTimeToDisplayTime(from.displayUntil)
 		isDeleted = false
 		if let deleteTime = from.deletedAt, deleteTime < Date() {
 			isDeleted = true
 		}
 	}
 }
+
+/// Parameters for the game recommender engine. Pass these values in, get back a `BoardgameResponseData` with a 
+/// list of games filtered to match the criteria, and sorted based on how well they match the criteria. The sort takes into account each games'
+/// overall rating from BGG, the recommended number of players (not just min and max allowed players), the average playtime, 
+/// and the complexity score of the game.
+/// 
+/// Sent to these methods as the JSON  request body:
+/// * `GET /api/v3/boardgames/recommend`
+public struct BoardgameRecommendationData: Content {
+	/// How many players are going to play
+	var numPlayers: Int
+	/// How much time they have, in minutes
+	var timeToPlay: Int
+	/// If nonzero, limit results to games appropriate for this player age. Does not factor into the sort criteria. That is, if you
+	/// request games appropriate for 14 years olds, games appropriate for ages 18 and older will be filtered out, but games appropriate
+	/// for ages 1 and up won't be ranked any lower than games rated for 14 year olds.
+	var maxAge: Int
+	/// If nonzero, filter OUT games with a minAge lower than this age. Useful for filtering out games intended for young children. Does not factor into the sort criteria. 
+	var minAge: Int
+	/// Desired complexity in the range [1...5], or zero to not consider complexity in rankings.
+	var complexity: Int
+}
+
 
 /// Wraps an array of `BoardgameData` with info needed to paginate the result set.
 /// 
@@ -308,6 +331,8 @@ public struct EventData: Content {
 	var startTime: Date
 	/// Ending time of the event.
 	var endTime: Date
+	/// The timezone that the ship is going to be in when the event occurs. Delivered as an abbreviation e.g. "EST".
+	var timeZone: String
 	/// The location of the event.
 	var location: String
 	/// The event category.
@@ -319,13 +344,18 @@ public struct EventData: Content {
 }
 
 extension EventData {
+	/// Makes an eventData.
+	/// 
+	/// The startTime, endTime, and timeZone are the corrected Date values for the event, given the time zone the ship was/will be in at the event start time. 
 	init(_ event: Event, isFavorite: Bool = false) throws {
+		let timeZoneChanges = Settings.shared.timeZoneChanges
 		eventID = try event.requireID()
 		uid = event.uid
 		title = event.title
 		description = event.info
-		startTime = event.startTime
-		endTime = event.endTime
+		self.startTime = timeZoneChanges.portTimeToDisplayTime(event.startTime)
+		self.endTime = timeZoneChanges.portTimeToDisplayTime(event.endTime)
+		self.timeZone = timeZoneChanges.abbrevAtTime(self.startTime)
 		location = event.location
 		eventType = event.eventType.label
 		forum = event.$forum.id
@@ -368,9 +398,9 @@ public struct FezContentData: Content {
 extension FezContentData: RCFValidatable {
 	func runValidations(using decoder: ValidatingDecoder) throws {
 		let tester = try decoder.validator(keyedBy: CodingKeys.self)
-		if fezType != .closed {
-			tester.validate(title.count >= 2, forKey: .title, or: "title field has a 2 character minimum")
-			tester.validate(title.count <= 100, forKey: .title, or: "title field has a 100 character limit")
+		tester.validate(title.count >= 2, forKey: .title, or: "title field has a 2 character minimum")
+		tester.validate(title.count <= 100, forKey: .title, or: "title field has a 100 character limit")
+		if ![.closed, .open].contains(fezType) {
 			tester.validate(info.count >= 2, forKey: .info, or: "info field has a 2 character minimum")
 			tester.validate(info.count <= 2048, forKey: .info, or: "info field length of \(info.count) is over the 2048 character limit")
 			if let loc = location {
@@ -430,6 +460,8 @@ public struct FezData: Content, ResponseEncodable {
 	var startTime: Date?
 	/// The ending time of the fez.
 	var endTime: Date?
+	/// The 3 letter abbreviation for the active time zone at the time and place where the fez is happening. 
+	var timeZone: String?
 	/// The location for the fez.
 	var location: String?
 	/// How many users are currently members of the fez. Can be larger than maxParticipants; which indicates a waitlist.
@@ -472,8 +504,9 @@ extension FezData {
 		self.fezType = fez.fezType
 		self.title = fez.moderationStatus.showsContent() ? fez.title : "Fez Title is under moderator review"
 		self.info = fez.moderationStatus.showsContent() ? fez.info : "Fez Information field is under moderator review"
-		self.startTime = fez.startTime
-		self.endTime = fez.endTime
+		self.startTime = fez.startTime == nil ? nil : Settings.shared.timeZoneChanges.portTimeToDisplayTime(fez.startTime)
+		self.endTime = fez.endTime == nil ? nil : Settings.shared.timeZoneChanges.portTimeToDisplayTime(fez.endTime)
+		self.timeZone = self.startTime == nil ? nil :  Settings.shared.timeZoneChanges.abbrevAtTime(self.startTime)
 		self.location = fez.moderationStatus.showsContent() ? fez.location : "Fez Location field is under moderator review"
 		self.lastModificationTime = fez.updatedAt ?? Date()
 		self.participantCount = fez.participantArray.count
@@ -882,7 +915,7 @@ extension PostContentData: RCFValidatable {
 		tester.validate(text.count < 2048, forKey: .text, or: "post length of \(text.count) is over the 2048 character limit")
 		tester.validate(images.count < 5, forKey: .images, or: "posts are limited to 4 image attachments")
 		let lines = text.replacingOccurrences(of: "\r\n", with: "\r").components(separatedBy: .newlines).count
-		tester.validate(lines <= 25, forKey: .images, or: "posts are limited to 25 lines of text")
+		tester.validate(lines <= 25, forKey: .text, or: "posts are limited to 25 lines of text")
 	}
 }
 
@@ -1426,8 +1459,8 @@ extension UserNotificationData	{
 	init(newFezCount: Int, newSeamailCount: Int, activeAnnouncementIDs: [Int], newAnnouncementCount: Int, 
 			nextEventTime: Date?, nextEvent: UUID?) {
 		serverTime = ISO8601DateFormatter().string(from: Date())
-		serverTimeOffset = Settings.shared.getDisplayTimeZone().secondsFromGMT()
-		serverTimeZone = Settings.shared.displayTimeZoneAbbr
+		serverTimeOffset = Settings.shared.timeZoneChanges.tzAtTime().secondsFromGMT(for: Date())
+		serverTimeZone = Settings.shared.timeZoneChanges.abbrevAtTime()
 		self.disabledFeatures = Settings.shared.disabledFeatures.buildDisabledFeatureArray()
 		self.shipWifiSSID = Settings.shared.shipWifiSSID
 		self.activeAnnouncementIDs = activeAnnouncementIDs
@@ -1446,8 +1479,8 @@ extension UserNotificationData	{
 	// Initializes an dummy struct, for when there's no user logged in.
 	init() {
 		serverTime = ISO8601DateFormatter().string(from: Date())
-		serverTimeOffset = Settings.shared.getDisplayTimeZone().secondsFromGMT()
-		serverTimeZone = Settings.shared.displayTimeZoneAbbr
+		serverTimeOffset = Settings.shared.timeZoneChanges.tzAtTime().secondsFromGMT(for: Date())
+		serverTimeZone = Settings.shared.timeZoneChanges.abbrevAtTime()
 		self.disabledFeatures = []
 		self.shipWifiSSID = nil
 		self.activeAnnouncementIDs = []

@@ -5,7 +5,8 @@ import Redis
 
 final class Settings : Encodable {
 	
-	/// Wraps settings properties, making them thread-safe. All access to the internalValue 
+	/// Wraps settings properties, making them thread-safe. All access to the internalValue should be done through the wrapper 
+	/// because of the thread-safety thing.
 	@propertyWrapper class SettingsValue<T>: Encodable where T: Encodable {
 		fileprivate var internalValue: T
 		var wrappedValue: T {
@@ -100,8 +101,7 @@ final class Settings : Encodable {
 // MARK: Dates
 	/// A Date set to midnight on the day the cruise ship leaves port, in the timezone the ship leaves from. Used by the Events Controller for date arithimetic.
 	/// The default here should usually get overwritten in configure.swift.
-	@SettingsValue var cruiseStartDate: Date = Calendar.autoupdatingCurrent.date(from: DateComponents(calendar: Calendar.current, 
-			timeZone: TimeZone(abbreviation: "EST")!, year: 2022, month: 3, day: 5))!
+	@SettingsValue var cruiseStartDateComponents: DateComponents = DateComponents(year: 2022, month: 3, day: 5)
 	
 	/// The day of week when the cruise embarks, expressed as number as Calendar's .weekday uses them: Range 1...7, Sunday == 1.
 	@SettingsValue var cruiseStartDayOfWeek: Int = 7
@@ -109,11 +109,10 @@ final class Settings : Encodable {
 	/// The length in days of the cruise, includes partial days. A cruise that embarks on Saturday and returns the next Saturday should have a value of 8.
 	@SettingsValue var cruiseLengthInDays: Int = 8
 
-	/// Abbreviation of the time zone that we should display data in.
-	@StoredSettingsValue("displayTimeZoneAbbr", defaultValue: "EST") var displayTimeZoneAbbr: String
-
-	/// TimeZone representative of where we departed port from.
-	@SettingsValue var portTimeZone: TimeZone = TimeZone(abbreviation: "EST")!
+	/// TimeZone representative of where we departed port from. This should equal the TZ that Sched.com uses to list Events.
+	@SettingsValue var portTimeZone: TimeZone = TimeZone(identifier: "America/New_York")!
+	
+	@SettingsValue var timeZoneChanges: TimeZoneChangeSet = TimeZoneChangeSet()
 	
 // MARK: Images
 	/// The  set of image file types that we can parse with the GD library. I believe GD hard-codes these values on install based on what ./configure finds.
@@ -161,17 +160,28 @@ extension Settings {
 
 /// Provide one common place for time-related objects.
 extension Settings {
-	/// TimeZone to use for rendering any time.
-	func getDisplayTimeZone() -> TimeZone {
-		return TimeZone(abbreviation: displayTimeZoneAbbr) ?? TimeZone.autoupdatingCurrent
+	func cruiseStartDate() -> Date {
+		var cal = Calendar(identifier: .gregorian)
+		cal.timeZone = portTimeZone
+		var startDateComponents = DateComponents(year: 2022, month: 3, day: 5)
+		startDateComponents.calendar = Calendar(identifier: .gregorian)
+		startDateComponents.timeZone = portTimeZone
+		guard let result = cal.date(from: startDateComponents) else {
+			fatalError("Swiftarr Settings: must be able to produce a Date from cruiseStartDate.")
+		}
+		return result
 	}
 
-	/// Calendar to use for calculating dates (like what day it is).
-	/// .current vs .autoupdatingCurrent had some weird implications for TimeZone so I hope
-	/// this doesn't do the same here. Time will tell.... pun very much intended.
-	func getDisplayCalendar() -> Calendar {
-		var cal = Calendar.autoupdatingCurrent
-		cal.timeZone = getDisplayTimeZone()
+	/// Calendar to use for calculating dates (like what day it is). The returned calendar has the correct timezone for the given date.
+	func calendarForDate(_ date: Date) -> Calendar {
+		var cal = Calendar(identifier: .gregorian)
+		cal.timeZone = timeZoneChanges.tzAtTime(date)
+		return cal
+	}
+	
+	func getPortCalendar() -> Calendar {
+		var cal = Calendar(identifier: .gregorian)
+		cal.timeZone = portTimeZone
 		return cal
 	}
 }
@@ -190,6 +200,8 @@ extension Settings {
 			}
 			try await storedSetting.readFromRedis(redis: app.redis)
 		}
+		// TimeZoneChanges load in from postgres
+		timeZoneChanges = try await TimeZoneChangeSet(app.db)
 	}
 	
 	// Stores all settings to Redis

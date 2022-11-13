@@ -68,8 +68,8 @@ struct EventController: APIRouteCollection {
 			search = search.replacingOccurrences(of: "%", with: "\\%")
 			search = search.trimmingCharacters(in: .whitespacesAndNewlines)
 			query.group(.or) { (or) in
-				or.filter(\.$title, .custom("ILIKE"), "%\(search)%")
-				or.filter(\.$info, .custom("ILIKE"), "%\(search)%")
+				or.fullTextFilter(\.$title, search)
+				or.fullTextFilter(\.$info, search)
 			}
 		}
 		if let eventType = options.type {
@@ -80,11 +80,12 @@ struct EventController: APIRouteCollection {
 				query.filter(\.$eventType != .shadow)
 			}
 		}
-		var serverCalendar = Calendar(identifier: .gregorian)
-		serverCalendar.timeZone = Settings.shared.getDisplayTimeZone()
-		// For the purpose of events, 'days' start and end at 3 AM.
-		let cruiseStartDate = serverCalendar.date(byAdding: .hour, value: 3, to: Settings.shared.cruiseStartDate) ??
-				Settings.shared.cruiseStartDate
+		// Events are stored as 'floating' times in the portTimeZone. So, filtering against dates calculated in portTimeZone
+		// should do the right thing, even when the dates are then adjusted to the current TZ for delivery.
+		let portCalendar = Settings.shared.getPortCalendar()
+		// For the purpose of events, 'days' start and end at 3 AM in the Port timezone.
+		let cruiseStartDate = portCalendar.date(byAdding: .hour, value: 3, to: Settings.shared.cruiseStartDate()) ??
+				Settings.shared.cruiseStartDate()
 		var searchStartTime: Date?
 		var searchEndTime: Date?
 		if let day = options.day {
@@ -101,16 +102,16 @@ struct EventController: APIRouteCollection {
 				case "fri": cruiseDayIndex = 6
 				default: cruiseDayIndex = 0
 			}
-			searchStartTime = serverCalendar.date(byAdding: .day, value: cruiseDayIndex, to: cruiseStartDate)
-			searchEndTime = serverCalendar.date(byAdding: .day, value: cruiseDayIndex + 1, to: cruiseStartDate)
+			searchStartTime = portCalendar.date(byAdding: .day, value: cruiseDayIndex, to: cruiseStartDate)
+			searchEndTime = portCalendar.date(byAdding: .day, value: cruiseDayIndex + 1, to: cruiseStartDate)
 		}
 		else if let cruiseday = options.cruiseday {
-			searchStartTime = serverCalendar.date(byAdding: .day, value: cruiseday - 1, to: cruiseStartDate)
-			searchEndTime = serverCalendar.date(byAdding: .day, value: cruiseday, to: cruiseStartDate)
+			searchStartTime = portCalendar.date(byAdding: .day, value: cruiseday - 1, to: cruiseStartDate)
+			searchEndTime = portCalendar.date(byAdding: .day, value: cruiseday, to: cruiseStartDate)
 		}
 		else if let date = options.date {
-			searchStartTime = serverCalendar.date(byAdding: .hour, value: 3, to: serverCalendar.startOfDay(for: date))
-			searchEndTime = serverCalendar.date(byAdding: .day, value: 1, to: searchStartTime ?? cruiseStartDate) 
+			searchStartTime = portCalendar.date(byAdding: .hour, value: 3, to: portCalendar.startOfDay(for: date))
+			searchEndTime = portCalendar.date(byAdding: .day, value: 1, to: searchStartTime ?? cruiseStartDate) 
 		}
 		else if let time = options.time {
 			query.filter(\.$startTime <= time).filter(\.$endTime > time)
@@ -123,7 +124,7 @@ struct EventController: APIRouteCollection {
 		if let user = req.auth.get(UserCacheData.self) {
 			let eventIDs = try events.map { try $0.requireID() }
 			favoriteEventIDs = try await EventFavorite.query(on: req.db).filter(\.$user.$id == user.userID)
-					.filter(\.$event.$id ~~ eventIDs).all().map { try $0.requireID() }
+					.filter(\.$event.$id ~~ eventIDs).all().map { $0.$event.id }
 		}
 		let result = try events.map { try EventData($0, isFavorite: favoriteEventIDs.contains($0.requireID())) }
 		return result

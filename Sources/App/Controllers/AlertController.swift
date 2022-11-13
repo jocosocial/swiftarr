@@ -121,7 +121,8 @@ struct AlertController: APIRouteCollection {
 			return alertIDs
 		}
 		else {
-			let activeAnnouncements = try await Announcement.query(on: req.db).filter(\.$displayUntil > Date()).all()
+			let portTZDate = Settings.shared.timeZoneChanges.displayTimeToPortTime()
+			let activeAnnouncements = try await Announcement.query(on: req.db).filter(\.$displayUntil > portTZDate).all()
 			let ids = try activeAnnouncements.map { try $0.requireID() }
 			try await req.redis.setActiveAnnouncementIDs(ids)
 			return ids 
@@ -246,7 +247,8 @@ struct AlertController: APIRouteCollection {
 			query.withDeleted()
 		}
 		else {
-			query.filter(\.$displayUntil > Date())
+			let portTZDate = Settings.shared.timeZoneChanges.displayTimeToPortTime()
+			query.filter(\.$displayUntil > portTZDate)
 		}
 		let announcements = try await query.all()
 		var maxID = 0

@@ -1,0 +1,50 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 my-1">
+			<div class="row">
+    			<div class="col">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+							<li class="breadcrumb-item active" aria-current="page">Time Zone Change Table</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+			<table class="table">
+				<thead>
+					<tr>
+						<th scope="col">Starts</th>
+						<th scope="col">Abbrev</th>
+						<th scope="col">ID</th>
+					</tr>
+				</thead>
+				<tbody>
+					#for(record in timeZones.records):
+						<tr>
+						<td>#UTCTime(record.activeDate)</td>	
+						<td>#(record.timeZoneAbbrev)</td>	
+						<td>#(record.timeZoneID)</td>	
+						</tr>
+					#endfor
+				</tbody>
+			</table>
+			
+			<div class="row my-1">
+				<div class="col">
+					Reloads the "time-zone-changes.txt" file, found in /seeds.
+				</div>
+			</div>
+			<form class="ajax" action="/admin/serversettings/reloadtzfile" enctype="multipart/form-data" method="POST" data-successurl="reset" id="reloadTZDataForm">
+				<div class="row mb-2">
+					<div class="col col-auto">
+						<button type="submit" class="btn btn-primary">Reload Timezone Data File</button>
+					</div>
+				</div>
+				<div class="alert alert-danger mt-3 d-none" role="alert">
+				</div>				
+				<div class="alert alert-success mt-3 d-none" role="alert">Success. (reload page to view new table).</div>				
+			</form>
+    	</div>
+	#endexport
+#endextend
