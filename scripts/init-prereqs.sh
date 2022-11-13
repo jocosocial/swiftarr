@@ -15,7 +15,7 @@ export DEBIAN_FRONTEND=noninteractive
 # libicu tends to rev pretty aggressively with different base images!
 apt-get -qq update
 apt-get install -y \
-  curl libatomic1 libicu66 libxml2 gnupg2 \
+  curl libatomic1 libicu70 libxml2 gnupg2 \
   libcurl4 libz-dev libbsd0 tzdata libgd3
 
 # Postgres client. Make sure to keep the repo in sync with whatever base image you're using.
