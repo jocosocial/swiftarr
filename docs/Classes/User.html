@@ -674,6 +674,9 @@
                 <a class="nav-group-task-link" href="../Classes/TimeZoneChange.html">TimeZoneChange</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/UserRole.html">UserRole</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/ValidatingDecoder.html">ValidatingDecoder</a>
               </li>
               <li class="nav-group-task">
@@ -692,6 +695,14 @@
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Other%20Global%20Variables.html#/s:3App23usernameSeparatorStringSSvp">usernameSeparatorString</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Other%20Enums.html">Other Enumerations</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Enums/UserRoleType.html">UserRoleType</a>
               </li>
             </ul>
           </li>
@@ -902,6 +913,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/CreateUserNoteSchema.html">CreateUserNoteSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateUserRoleSchema.html">CreateUserRoleSchema</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/CreateUserSchema.html">CreateUserSchema</a>
@@ -1362,7 +1376,7 @@ sub-accounts (if any) inherit these three credentials.</p>
  otherwise modified.</p>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L20-L226">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L20-L229">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -2383,6 +2397,37 @@ the login token.</p>
                 <li class="item">
                   <div>
                     <code>
+                    <a name="/s:3App4UserC5rolesSayAA0B4RoleCGvp"></a>
+                    <a name="//apple_ref/swift/Property/roles" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App4UserC5rolesSayAA0B4RoleCGvp">roles</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The child <code><a href="../Classes/UserRole.html">UserRole</a></code>s this user has. Roles generally give a user the ability to perform new actions or view more information.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">@User</span>
+<span class="o">.</span><span class="kt">Children</span> <span class="k">var</span> <span class="nv">roles</span><span class="p">:</span> <span class="p">[</span><span class="kt"><a href="../Classes/UserRole.html">UserRole</a></span><span class="p">]</span> <span class="p">{</span> <span class="k">get</span> <span class="k">set</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L137">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
                     <a name="/s:3App4UserC7twarrtsSayAA6TwarrtCGvp"></a>
                     <a name="//apple_ref/swift/Property/twarrts" class="dashAnchor"></a>
                     <a class="token" href="#/s:3App4UserC7twarrtsSayAA6TwarrtCGvp">twarrts</a>
@@ -2406,7 +2451,7 @@ the login token.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L137">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L140">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2437,7 +2482,7 @@ the login token.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L140">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L143">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2468,7 +2513,7 @@ the login token.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L143">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L146">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2499,7 +2544,7 @@ the login token.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L146">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L149">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2530,7 +2575,7 @@ the login token.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L149">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L152">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2561,7 +2606,7 @@ the login token.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L152">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L155">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2592,7 +2637,7 @@ the login token.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L155">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L158">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2623,7 +2668,7 @@ the login token.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L158">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L161">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2654,7 +2699,7 @@ the login token.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L161">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L164">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2685,7 +2730,7 @@ the login token.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L164">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L167">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2716,7 +2761,7 @@ the login token.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L167">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L170">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2747,7 +2792,7 @@ the login token.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L170">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L173">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2778,7 +2823,7 @@ the login token.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L173">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L176">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2809,7 +2854,7 @@ the login token.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L176">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L179">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2851,7 +2896,7 @@ the login token.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L181">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L184">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3011,7 +3056,7 @@ epoch.</p>
                         </table>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L200-L225">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L203-L228">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3555,7 +3600,7 @@ In particular we&rsquo;re likely to let unverified users edit their profile.</p>
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-11-14)</p>
+      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-11-20)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
     </section>
   </body>

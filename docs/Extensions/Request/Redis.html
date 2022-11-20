@@ -674,6 +674,9 @@
                 <a class="nav-group-task-link" href="../../Classes/TimeZoneChange.html">TimeZoneChange</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../../Classes/UserRole.html">UserRole</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../../Classes/ValidatingDecoder.html">ValidatingDecoder</a>
               </li>
               <li class="nav-group-task">
@@ -692,6 +695,14 @@
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../../Other%20Global%20Variables.html#/s:3App23usernameSeparatorStringSSvp">usernameSeparatorString</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../../Other%20Enums.html">Other Enumerations</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../../Enums/UserRoleType.html">UserRoleType</a>
               </li>
             </ul>
           </li>
@@ -902,6 +913,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../../Structs/CreateUserNoteSchema.html">CreateUserNoteSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../../Structs/CreateUserRoleSchema.html">CreateUserRoleSchema</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../../Structs/CreateUserSchema.html">CreateUserSchema</a>
@@ -1353,7 +1367,7 @@ about changes to how we structure data in Redis.</p>
 call hset directly makes it difficult to answer questions like, &ldquo;What fields should exist in this hash set?&rdquo; So, all that is centralized here.</p>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/.build/checkouts/redis/Sources/Redis/Request+Redis.swift#L12-L283">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/.build/checkouts/redis/Sources/Redis/Request+Redis.swift#L12-L255">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1792,176 +1806,6 @@ call hset directly makes it difficult to answer questions like, &ldquo;What fiel
             </div>
             <div class="task-group">
               <div class="task-name-container">
-                <a name="/Karaoke%20Song%20Managers"></a>
-                <a name="//apple_ref/swift/Section/Karaoke Song Managers" class="dashAnchor"></a>
-                <div class="section-name-container">
-                  <a class="section-name-link" href="#/Karaoke%20Song%20Managers"></a>
-                  <h3 class="section-name"><span>Karaoke Song Managers</span>
-</h3>
-                </div>
-              </div>
-              <ul class="item-container">
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:5Vapor7RequestC5RedisEADV3AppE014karaokeManagerC3Key9RediStack0cG0VvpZ"></a>
-                    <a name="//apple_ref/swift/Variable/karaokeManagerRedisKey" class="dashAnchor"></a>
-                    <a class="token" href="#/s:5Vapor7RequestC5RedisEADV3AppE014karaokeManagerC3Key9RediStack0cG0VvpZ">karaokeManagerRedisKey</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">static</span> <span class="k">let</span> <span class="nv">karaokeManagerRedisKey</span><span class="p">:</span> <span class="kt">RedisKey</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L105">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:5Vapor7RequestC5RedisEADV3AppE18getKaraokeManagersSay10Foundation4UUIDVGyYaKF"></a>
-                    <a name="//apple_ref/swift/Method/getKaraokeManagers()" class="dashAnchor"></a>
-                    <a class="token" href="#/s:5Vapor7RequestC5RedisEADV3AppE18getKaraokeManagersSay10Foundation4UUIDVGyYaKF">getKaraokeManagers()</a>
-                    </code>
-                      <span class="declaration-note">
-                        Asynchronous
-                      </span>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">getKaraokeManagers</span><span class="p">()</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">UUID</span><span class="p">]</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L107-L110">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:5Vapor7RequestC5RedisEADV3AppE16isKaraokeManagerySb10Foundation4UUIDVYaKF"></a>
-                    <a name="//apple_ref/swift/Method/isKaraokeManager(_:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:5Vapor7RequestC5RedisEADV3AppE16isKaraokeManagerySb10Foundation4UUIDVYaKF">isKaraokeManager(_:<wbr>)</a>
-                    </code>
-                      <span class="declaration-note">
-                        Asynchronous
-                      </span>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">isKaraokeManager</span><span class="p">(</span><span class="n">_</span> <span class="nv">userID</span><span class="p">:</span> <span class="kt">UUID</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Bool</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L112-L114">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:5Vapor7RequestC5RedisEADV3AppE17addKaraokeManager6userIDy10Foundation4UUIDV_tYaKF"></a>
-                    <a name="//apple_ref/swift/Method/addKaraokeManager(userID:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:5Vapor7RequestC5RedisEADV3AppE17addKaraokeManager6userIDy10Foundation4UUIDV_tYaKF">addKaraokeManager(userID:<wbr>)</a>
-                    </code>
-                      <span class="declaration-note">
-                        Asynchronous
-                      </span>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">addKaraokeManager</span><span class="p">(</span><span class="nv">userID</span><span class="p">:</span> <span class="kt">UUID</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L116-L121">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:5Vapor7RequestC5RedisEADV3AppE20removeKaraokeManager6userIDy10Foundation4UUIDV_tYaKF"></a>
-                    <a name="//apple_ref/swift/Method/removeKaraokeManager(userID:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:5Vapor7RequestC5RedisEADV3AppE20removeKaraokeManager6userIDy10Foundation4UUIDV_tYaKF">removeKaraokeManager(userID:<wbr>)</a>
-                    </code>
-                      <span class="declaration-note">
-                        Asynchronous
-                      </span>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">removeKaraokeManager</span><span class="p">(</span><span class="nv">userID</span><span class="p">:</span> <span class="kt">UUID</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L123-L128">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-              </ul>
-            </div>
-            <div class="task-group">
-              <div class="task-name-container">
                 <a name="/Hashtags"></a>
                 <a name="//apple_ref/swift/Section/Hashtags" class="dashAnchor"></a>
                 <div class="section-name-container">
@@ -1995,7 +1839,7 @@ call hset directly makes it difficult to answer questions like, &ldquo;What fiel
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L136">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L108">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2027,7 +1871,7 @@ call hset directly makes it difficult to answer questions like, &ldquo;What fiel
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L138-L143">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L110-L115">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2059,7 +1903,7 @@ call hset directly makes it difficult to answer questions like, &ldquo;What fiel
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L145-L148">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L117-L120">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2101,7 +1945,7 @@ call hset directly makes it difficult to answer questions like, &ldquo;What fiel
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L163">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L135">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2133,7 +1977,7 @@ call hset directly makes it difficult to answer questions like, &ldquo;What fiel
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L166-L170">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L138-L142">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2165,7 +2009,7 @@ call hset directly makes it difficult to answer questions like, &ldquo;What fiel
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L172-L174">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L144-L146">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2197,7 +2041,7 @@ call hset directly makes it difficult to answer questions like, &ldquo;What fiel
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L176-L178">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L148-L150">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2229,7 +2073,7 @@ call hset directly makes it difficult to answer questions like, &ldquo;What fiel
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L181-L184">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L153-L156">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2271,7 +2115,7 @@ call hset directly makes it difficult to answer questions like, &ldquo;What fiel
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L191">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L163">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2303,7 +2147,7 @@ call hset directly makes it difficult to answer questions like, &ldquo;What fiel
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L193-L196">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L165-L168">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2335,7 +2179,7 @@ call hset directly makes it difficult to answer questions like, &ldquo;What fiel
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L198-L201">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L170-L173">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2367,7 +2211,7 @@ call hset directly makes it difficult to answer questions like, &ldquo;What fiel
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L204-L206">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L176-L178">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2410,7 +2254,7 @@ call hset directly makes it difficult to answer questions like, &ldquo;What fiel
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L215-L220">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L187-L192">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2439,7 +2283,7 @@ call hset directly makes it difficult to answer questions like, &ldquo;What fiel
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L222-L229">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L194-L201">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2471,7 +2315,7 @@ call hset directly makes it difficult to answer questions like, &ldquo;What fiel
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L231-L235">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L203-L207">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2503,7 +2347,7 @@ call hset directly makes it difficult to answer questions like, &ldquo;What fiel
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L237-L239">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L209-L211">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2535,7 +2379,7 @@ call hset directly makes it difficult to answer questions like, &ldquo;What fiel
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L242-L244">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L214-L216">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2567,7 +2411,7 @@ call hset directly makes it difficult to answer questions like, &ldquo;What fiel
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L247-L249">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L219-L221">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2599,7 +2443,7 @@ call hset directly makes it difficult to answer questions like, &ldquo;What fiel
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L252-L254">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L224-L226">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2644,7 +2488,7 @@ call hset directly makes it difficult to answer questions like, &ldquo;What fiel
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L268-L270">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L240-L242">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2676,7 +2520,7 @@ call hset directly makes it difficult to answer questions like, &ldquo;What fiel
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L272-L274">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L244-L246">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2708,7 +2552,7 @@ call hset directly makes it difficult to answer questions like, &ldquo;What fiel
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L278-L282">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/RedisWrapper.swift#L250-L254">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2862,7 +2706,7 @@ call hset directly makes it difficult to answer questions like, &ldquo;What fiel
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-11-14)</p>
+      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-11-20)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
     </section>
   </body>

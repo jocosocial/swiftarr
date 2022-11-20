@@ -674,6 +674,9 @@
                 <a class="nav-group-task-link" href="../Classes/TimeZoneChange.html">TimeZoneChange</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/UserRole.html">UserRole</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/ValidatingDecoder.html">ValidatingDecoder</a>
               </li>
               <li class="nav-group-task">
@@ -692,6 +695,14 @@
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Other%20Global%20Variables.html#/s:3App23usernameSeparatorStringSSvp">usernameSeparatorString</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Other%20Enums.html">Other Enumerations</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Enums/UserRoleType.html">UserRoleType</a>
               </li>
             </ul>
           </li>
@@ -902,6 +913,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/CreateUserNoteSchema.html">CreateUserNoteSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateUserRoleSchema.html">CreateUserRoleSchema</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/CreateUserSchema.html">CreateUserSchema</a>
@@ -1366,7 +1380,7 @@ Only moderators can can change a forum&rsquo;s <code>moderationStatus</code>.</p
 </div>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Forum.swift#L13-L84">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Forum.swift#L13-L79">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1482,38 +1496,6 @@ Only moderators can can change a forum&rsquo;s <code>moderationStatus</code>.</p
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App5ForumC17accessLevelToViewAA010UserAccessD0Ovp"></a>
-                    <a name="//apple_ref/swift/Property/accessLevelToView" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App5ForumC17accessLevelToViewAA010UserAccessD0Ovp">accessLevelToView</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Minimum access level to view posts in this thread. Usually set to <code>.quarantined</code>. But, a category reserved for moderators only
-could have this set to <code>.moderator</code>. Copied from the category when a thread is created.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">@Forum</span>
-<span class="o">.</span><span class="kt">Enum</span> <span class="k">var</span> <span class="nv">accessLevelToView</span><span class="p">:</span> <span class="kt"><a href="../Enums/UserAccessLevel.html">UserAccessLevel</a></span> <span class="p">{</span> <span class="k">get</span> <span class="k">set</span> <span class="p">}</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Forum.swift#L26">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
                     <a name="/s:3App5ForumC12lastPostTime10Foundation4DateVvp"></a>
                     <a name="//apple_ref/swift/Property/lastPostTime" class="dashAnchor"></a>
                     <a class="token" href="#/s:3App5ForumC12lastPostTime10Foundation4DateVvp">lastPostTime</a>
@@ -1537,7 +1519,7 @@ could have this set to <code>.moderator</code>. Copied from the category when a 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Forum.swift#L29">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Forum.swift#L25">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1568,7 +1550,7 @@ could have this set to <code>.moderator</code>. Copied from the category when a 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Forum.swift#L32">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Forum.swift#L28">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1599,7 +1581,7 @@ could have this set to <code>.moderator</code>. Copied from the category when a 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Forum.swift#L35">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Forum.swift#L31">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1630,7 +1612,7 @@ could have this set to <code>.moderator</code>. Copied from the category when a 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Forum.swift#L38">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Forum.swift#L34">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1661,7 +1643,7 @@ could have this set to <code>.moderator</code>. Copied from the category when a 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Forum.swift#L41">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Forum.swift#L37">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1705,7 +1687,7 @@ could have this set to <code>.moderator</code>. Copied from the category when a 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Forum.swift#L46">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Forum.swift#L42">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1736,7 +1718,7 @@ could have this set to <code>.moderator</code>. Copied from the category when a 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Forum.swift#L49">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Forum.swift#L45">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1767,7 +1749,7 @@ could have this set to <code>.moderator</code>. Copied from the category when a 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Forum.swift#L52">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Forum.swift#L48">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1798,7 +1780,7 @@ could have this set to <code>.moderator</code>. Copied from the category when a 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Forum.swift#L55">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Forum.swift#L51">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1829,7 +1811,7 @@ could have this set to <code>.moderator</code>. Copied from the category when a 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Forum.swift#L58">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Forum.swift#L54">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1860,7 +1842,7 @@ could have this set to <code>.moderator</code>. Copied from the category when a 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Forum.swift#L61">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Forum.swift#L57">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1902,7 +1884,7 @@ could have this set to <code>.moderator</code>. Copied from the category when a 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Forum.swift#L66">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Forum.swift#L62">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1987,7 +1969,7 @@ could have this set to <code>.moderator</code>. Copied from the category when a 
                         </table>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Forum.swift#L75-L83">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/Forum.swift#L71-L78">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2088,7 +2070,7 @@ could have this set to <code>.moderator</code>. Copied from the category when a 
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-11-14)</p>
+      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-11-20)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
     </section>
   </body>

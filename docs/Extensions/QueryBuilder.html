@@ -674,6 +674,9 @@
                 <a class="nav-group-task-link" href="../Classes/TimeZoneChange.html">TimeZoneChange</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/UserRole.html">UserRole</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/ValidatingDecoder.html">ValidatingDecoder</a>
               </li>
               <li class="nav-group-task">
@@ -692,6 +695,14 @@
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Other%20Global%20Variables.html#/s:3App23usernameSeparatorStringSSvp">usernameSeparatorString</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Other%20Enums.html">Other Enumerations</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Enums/UserRoleType.html">UserRoleType</a>
               </li>
             </ul>
           </li>
@@ -902,6 +913,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/CreateUserNoteSchema.html">CreateUserNoteSchema</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateUserRoleSchema.html">CreateUserRoleSchema</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/CreateUserSchema.html">CreateUserSchema</a>
@@ -1346,7 +1360,7 @@
               </div>
             
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/.build/checkouts/fluent-kit/Sources/FluentKit/Query/Builder/QueryBuilder.swift#L175-L189">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/.build/checkouts/fluent-kit/Sources/FluentKit/Query/Builder/QueryBuilder.swift#L1340-L1370">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1355,6 +1369,38 @@
           <div class="section-content">
             <div class="task-group">
               <ul class="item-container">
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:9FluentKit12QueryBuilderC3AppE20categoryAccessFilter3forACyxGXDAD13UserCacheDataVSg_tF"></a>
+                    <a name="//apple_ref/swift/Method/categoryAccessFilter(for:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:9FluentKit12QueryBuilderC3AppE20categoryAccessFilter3forACyxGXDAD13UserCacheDataVSg_tF">categoryAccessFilter(for:<wbr>)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Given a <code><a href="../Classes/ForumPost.html">ForumPost</a></code>, <code><a href="../Classes/Forum.html">Forum</a></code>, or <code><a href="../Classes/Category.html">Category</a></code> query, adds filters to the query to filter out entities in categories the current user cannot see.
+Joins the Category (and the Forum, if necessary) to the query to do this.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">@discardableResult</span>
+<span class="kd">func</span> <span class="nf">categoryAccessFilter</span><span class="p">(</span><span class="k">for</span> <span class="nv">possibleUser</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserCacheData.html">UserCacheData</a></span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="k">Self</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1344-L1369">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
                 <li class="item">
                   <div>
                     <code>
@@ -1396,7 +1442,7 @@ in FluentKit&rsquo;s QueryBuilder+Filter.swift.</p>
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-11-14)</p>
+      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-11-20)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
     </section>
   </body>
