@@ -1373,7 +1373,7 @@
 <code>ForumController.forumMatchHandler(_:)</code>, `ForumController.favoritesHandler(_:).</p>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L630-L652">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L630-L656">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1686,9 +1686,69 @@ Blocked and muted posts are included in this number, but not returned in the arr
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App13ForumListDataV5forum7creator9postCount04readH010lastPostAt0J6Poster10isFavoriteAcA0B0C_AA10UserHeaderVS2i10Foundation4DateVSgANSgSbtKcfc"></a>
-                    <a name="//apple_ref/swift/Method/init(forum:creator:postCount:readCount:lastPostAt:lastPoster:isFavorite:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App13ForumListDataV5forum7creator9postCount04readH010lastPostAt0J6Poster10isFavoriteAcA0B0C_AA10UserHeaderVS2i10Foundation4DateVSgANSgSbtKcfc">init(forum:<wbr>creator:<wbr>postCount:<wbr>readCount:<wbr>lastPostAt:<wbr>lastPoster:<wbr>isFavorite:<wbr>)</a>
+                    <a name="/s:3App13ForumListDataV9eventTime10Foundation4DateVSgvp"></a>
+                    <a name="//apple_ref/swift/Property/eventTime" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App13ForumListDataV9eventTime10Foundation4DateVSgvp">eventTime</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>If this forum is for an Event on the schedule, the start time of the event.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">eventTime</span><span class="p">:</span> <span class="kt">Date</span><span class="p">?</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L653">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App13ForumListDataV8timeZoneSSSgvp"></a>
+                    <a name="//apple_ref/swift/Property/timeZone" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App13ForumListDataV8timeZoneSSSgvp">timeZone</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>If this forum is for an Event on the schedule, the timezone that the ship is going to be in when the event occurs. Delivered as an abbreviation e.g. &ldquo;EST&rdquo;.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">timeZone</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L655">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App13ForumListDataV5forum7creator9postCount04readH010lastPostAt0J6Poster10isFavorite5eventAcA0B0C_AA10UserHeaderVS2i10Foundation4DateVSgAOSgSbAA5EventCSgtKcfc"></a>
+                    <a name="//apple_ref/swift/Method/init(forum:creator:postCount:readCount:lastPostAt:lastPoster:isFavorite:event:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App13ForumListDataV5forum7creator9postCount04readH010lastPostAt0J6Poster10isFavorite5eventAcA0B0C_AA10UserHeaderVS2i10Foundation4DateVSgAOSgSbAA5EventCSgtKcfc">init(forum:<wbr>creator:<wbr>postCount:<wbr>readCount:<wbr>lastPostAt:<wbr>lastPoster:<wbr>isFavorite:<wbr>event:<wbr>)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -1702,12 +1762,13 @@ Blocked and muted posts are included in this number, but not returned in the arr
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="nf">init</span><span class="p">(</span><span class="nv">forum</span><span class="p">:</span> <span class="kt"><a href="../Classes/Forum.html">Forum</a></span><span class="p">,</span> <span class="nv">creator</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserHeader.html">UserHeader</a></span><span class="p">,</span> <span class="nv">postCount</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">readCount</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">lastPostAt</span><span class="p">:</span> <span class="kt">Date</span><span class="p">?,</span> <span class="nv">lastPoster</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserHeader.html">UserHeader</a></span><span class="p">?,</span> <span class="nv">isFavorite</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+                          <pre class="highlight swift"><code><span class="nf">init</span><span class="p">(</span><span class="nv">forum</span><span class="p">:</span> <span class="kt"><a href="../Classes/Forum.html">Forum</a></span><span class="p">,</span> <span class="nv">creator</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserHeader.html">UserHeader</a></span><span class="p">,</span> <span class="nv">postCount</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">readCount</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">lastPostAt</span><span class="p">:</span> <span class="kt">Date</span><span class="p">?,</span> <span class="nv">lastPoster</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserHeader.html">UserHeader</a></span><span class="p">?,</span> <span class="nv">isFavorite</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">,</span>
+		<span class="nv">event</span><span class="p">:</span> <span class="kt"><a href="../Classes/Event.html">Event</a></span><span class="p">?)</span> <span class="k">throws</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L655-L669">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L659-L679">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

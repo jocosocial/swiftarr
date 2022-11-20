@@ -1497,9 +1497,9 @@ are returned. You&rsquo;ll still need to be logged in to see the contents of the
 <p><strong>URL Query Parameters:</strong></p>
 
 <ul>
-<li><code>?sort=[create, update, title, event]</code> - Sort forums by <code>create</code>, <code>update</code>, or <code>title</code>, or the start time of their associated <code><a href="../Classes/Event.html">Event</a></code>. 
-Create and update return newest forums first. <code>event</code> is only valid for Event categories, and returns forums in ascending event start time; secondary sort
-is alpha on event title.</li>
+<li><code>?sort=[create, update, title, event]</code> - Sort forums by <code>create</code> time, <code>update</code> time, or <code>title</code>, or the start time of their associated <code><a href="../Classes/Event.html">Event</a></code>. 
+Create and update return newest forums first. <code>event</code> is only valid for Event categories, is default for them, and returns forums in ascending event start time; secondary sort
+is alpha on event title. <code>Update</code> is the default for non-event categories.</li>
 <li><code>?start=INT</code> - The index into the sorted list of forums to start returning results. 0 for first item, which is the default.</li>
 <li><code>?limit=INT</code> - The max # of entries to return. Defaults to 50</li>
 </ul>
@@ -1516,7 +1516,7 @@ These options are mutally exclusive; if both are present, beforeDate will be use
 <li><code>?beforedate=DATE</code> -</li>
 </ul>
 
-<p>With no parameters, defaults to <code>?sort=create&amp;start=0&amp;limit=50</code>.</p>
+<p>With no parameters, defaults to <code>?sort=update&amp;start=0&amp;limit=50</code>.</p>
 
 <p>If you want to ensure you have all the threads in a category, you can sort by create time and ask for threads newer than 
 the last time you asked. If you want to update last post times and post counts, you can sort by update time and get the
@@ -1541,7 +1541,7 @@ latest updates. </p>
                         <p><a href="doc:CategoryData">doc:CategoryData</a> containing category forums.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L144-L194">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L144-L193">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1611,7 +1611,7 @@ Does not return results from categories for which the user does not have access.
                         <p>A <a href="doc:ForumSearchData">doc:ForumSearchData</a> containing all matching forums.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L212-L243">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L211-L242">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1659,7 +1659,7 @@ Does not return results from categories for which the user does not have access.
                         <p>A <a href="doc:ForumSearchData">doc:ForumSearchData</a> containing all forums created by the user.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L256-L275">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L255-L274">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1707,7 +1707,7 @@ Does not return results from categories for which the user does not have access.
                         <p>A <a href="doc:ForumSearchData">doc:ForumSearchData</a> containing the user&rsquo;s favorited forums.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L288-L310">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L287-L309">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1753,7 +1753,7 @@ Does not return results from categories for which the user does not have access.
                         <p>A <a href="doc:ForumSearchData">doc:ForumSearchData</a> containing the user&rsquo;s favorited forums.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L321-L334">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L320-L334">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3404,7 +3404,7 @@ uses SQLKit to make a more complicated query, returning answers for all forums i
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1115-L1139">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1115-L1140">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3438,7 +3438,7 @@ to return only a subset of the forums&rsquo; posts (for forums where postCount &
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1143-L1202">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1144-L1203">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3471,7 +3471,7 @@ to return only a subset of the forums&rsquo; posts (for forums where postCount &
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1208-L1239">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1209-L1240">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3503,7 +3503,7 @@ to return only a subset of the forums&rsquo; posts (for forums where postCount &
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1243-L1314">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1244-L1315">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3535,7 +3535,7 @@ to return only a subset of the forums&rsquo; posts (for forums where postCount &
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1318-L1337">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1319-L1338">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
