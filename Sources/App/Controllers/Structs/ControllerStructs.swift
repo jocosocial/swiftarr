@@ -649,10 +649,15 @@ public struct ForumListData: Content {
 	var isLocked: Bool
 	/// Whether user has favorited forum.
 	var isFavorite: Bool
+	/// If this forum is for an Event on the schedule, the start time of the event.
+	var eventTime: Date?
+	/// If this forum is for an Event on the schedule, the timezone that the ship is going to be in when the event occurs. Delivered as an abbreviation e.g. "EST".
+	var timeZone: String?
 }
 
 extension ForumListData {
-	init(forum: Forum, creator: UserHeader, postCount: Int, readCount: Int, lastPostAt: Date?, lastPoster: UserHeader?, isFavorite: Bool) throws {
+	init(forum: Forum, creator: UserHeader, postCount: Int, readCount: Int, lastPostAt: Date?, lastPoster: UserHeader?, isFavorite: Bool,
+			event: Event?) throws {
 		guard creator.userID == forum.$creator.id else {
 			throw Abort(.internalServerError, reason: "Internal server error--Forum's creator does not match.")
 		}
@@ -666,6 +671,11 @@ extension ForumListData {
 		self.lastPoster = lastPoster
 		self.isLocked = forum.moderationStatus == .locked
 		self.isFavorite = isFavorite
+		if let event = event, event.id != nil {
+			let timeZoneChanges = Settings.shared.timeZoneChanges
+			self.eventTime = timeZoneChanges.portTimeToDisplayTime(event.startTime)
+			self.timeZone = timeZoneChanges.abbrevAtTime(self.eventTime)
+		}
 	}
 }
 

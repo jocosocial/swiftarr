@@ -58,13 +58,7 @@ struct SetInitialEventForums: AsyncMigration {
 	}
 	
 	static func buildEventForum(_ event: Event, creatorID: UUID, shadowCategory: Category, officialCategory: Category) throws -> Forum {
-		// date formatter for titles
-		let dateFormatter = DateFormatter()
-		dateFormatter.timeZone = TimeZone(identifier: "GMT")
-		dateFormatter.dateFormat = "(E, HH:mm)"
-		// build title and forum
-		let title = dateFormatter.string(from: event.startTime) + " \(event.title)"
-		let forum = try Forum(title: title, category: event.eventType == .shadow ? shadowCategory : officialCategory,
+		let forum = try Forum(title: event.title, category: event.eventType == .shadow ? shadowCategory : officialCategory,
 				creatorID: creatorID, isLocked: false)
 		return forum
 	}

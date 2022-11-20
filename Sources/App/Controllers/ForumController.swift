@@ -118,9 +118,9 @@ struct ForumController: APIRouteCollection {
 	/// Retrieve a list of forums in the specifiec `Category`. Will not return forums created by blocked users.
 	/// 
 	/// **URL Query Parameters:**
-	/// * `?sort=[create, update, title, event]` - Sort forums by `create`, `update`, or `title`, or the start time of their associated `Event`. 
-	/// Create and update return newest forums first. `event` is only valid for Event categories, and returns forums in ascending event start time; secondary sort
-	/// is alpha on event title.
+	/// * `?sort=[create, update, title, event]` - Sort forums by `create` time, `update` time, or `title`, or the start time of their associated `Event`. 
+	/// Create and update return newest forums first. `event` is only valid for Event categories, is default for them, and returns forums in ascending event start time; secondary sort
+	/// is alpha on event title. `Update` is the default for non-event categories.
 	/// * `?start=INT` - The index into the sorted list of forums to start returning results. 0 for first item, which is the default.
 	/// * `?limit=INT` - The max # of entries to return. Defaults to 50
 	/// 
@@ -133,7 +133,7 @@ struct ForumController: APIRouteCollection {
 	/// * `?afterdate=DATE` - 
 	/// * `?beforedate=DATE` - 
 	/// 
-	/// With no parameters, defaults to `?sort=create&start=0&limit=50`.
+	/// With no parameters, defaults to `?sort=update&start=0&limit=50`.
 	/// 
 	/// If you want to ensure you have all the threads in a category, you can sort by create time and ask for threads newer than 
 	/// the last time you asked. If you want to update last post times and post counts, you can sort by update time and get the
@@ -146,9 +146,7 @@ struct ForumController: APIRouteCollection {
 		let start = (req.query[Int.self, at: "start"] ?? 0)
 		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
 		let category = try await Category.findFromParameter(categoryIDParam, on: req)
-		guard cacheUser.accessLevel.hasAccess(category.accessLevelToView) else {
-			throw Abort(.forbidden, reason: "User cannot view this forum category.")
-		}
+		try guardUserCanAccessCategory(cacheUser, category: category)
 		// remove blocks from results, unless it's an admin category
 		let blocked = category.accessLevelToCreate.hasAccess(.moderator) ? [] : cacheUser.getBlocks()
 		// sort user categories
@@ -156,17 +154,18 @@ struct ForumController: APIRouteCollection {
 				.filter(\.$category.$id == category.requireID())
 				.filter(\.$creator.$id !~ blocked)
 				.range(start..<(start + limit))
+		if category.isEventCategory {
+			_ = query.join(child: \.$scheduleEvent, method: .left)
+		}
 		var dateFilterUsesUpdate = false
 		switch req.query[String.self, at: "sort"] {
 			case "create": _ = query.sort(\.$createdAt, .descending)
 			case "title": _ = query.sort(.custom("lower(title)"))
 			case "update": _ = query.sort(\.$lastPostTime, .descending); dateFilterUsesUpdate = true
-			case "event": _ = query.join(child: \.$scheduleEvent).sort(Event.self, \Event.$startTime, .ascending)
-					.sort(Event.self, \Event.$title, .ascending)
 			default:
 				if category.isEventCategory {
-					_ = query.join(child: \.$scheduleEvent).sort(Event.self, \Event.$startTime, .ascending)
-							.sort(Event.self, \Event.$title, .ascending)
+					// Sort by event start time
+					_ = query.sort(Event.self, \Event.$startTime, .ascending).sort(Event.self, \Event.$title, .ascending)
 				}
 				else {
 					_ = query.sort(\.$lastPostTime, .descending); dateFilterUsesUpdate = true
@@ -231,7 +230,7 @@ struct ForumController: APIRouteCollection {
 		}
 		// get forums and total forum count, turn into [ForumListData] and then insert into ForumSearchData
 		async let forumCount = try countQuery.count()
-		let forumQuery = countQuery.copy().range(start..<(start + limit))
+		let forumQuery = countQuery.copy().range(start..<(start + limit)).join(child: \.$scheduleEvent, method: .left)
 		switch req.query[String.self, at: "sort"] {
 			case "create": _ = forumQuery.sort(\.$createdAt, .descending)
 			case "title": _ = forumQuery.sort(.custom("lower(title)"))
@@ -263,7 +262,7 @@ struct ForumController: APIRouteCollection {
 			countQuery.filter(\.$category.$id == cat)
 		}
 		async let forumCount = try countQuery.count()
-		let forumQuery = countQuery.copy().range(start..<(start + limit))
+		let forumQuery = countQuery.copy().range(start..<(start + limit)).join(child: \.$scheduleEvent, method: .left)
 		switch req.query[String.self, at: "sort"] {
 			case "create": _ = forumQuery.sort(\.$createdAt, .descending)
 			case "update": _ = forumQuery.sort(\.$lastPostTime, .descending)
@@ -298,7 +297,7 @@ struct ForumController: APIRouteCollection {
 			countQuery.filter(\.$category.$id == cat)
 		}
 		async let forumCount = try countQuery.count()
-		let forumQuery = countQuery.copy().range(start..<(start + limit))
+		let forumQuery = countQuery.copy().range(start..<(start + limit)).join(child: \.$scheduleEvent, method: .left)
 		switch req.query[String.self, at: "sort"] {
 			case "create": _ = forumQuery.sort(\.$createdAt, .descending)
 			case "title": _ = forumQuery.sort(.custom("lower(title)"), .ascending)
@@ -328,6 +327,7 @@ struct ForumController: APIRouteCollection {
 				.filter(ForumReaders.self, \.$user.$id == cacheUser.userID)
 		async let forumCount = try countQuery.count()
 		let rangeQuery = countQuery.copy().range(start..<(start + limit)).sort(ForumReaders.self, \.$updatedAt, .descending)
+				.join(child: \.$scheduleEvent, method: .left)
 		async let forums = try rangeQuery.all()
 		let forumList = try await buildForumListData(forums, on: req, user: cacheUser, forceIsFavorite: false)
 		return try await ForumSearchData(paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
@@ -1130,10 +1130,11 @@ extension ForumController {
 				lastPostTime = lastPost.createdAt
 			}
 			let thisForumReaderPivot = readerPivotsDict[forumID]
+			let joinedEvent = try? forum.joined(Event.self)
 			return try ForumListData(forum: forum, creator: creatorHeader, postCount: postCounts[forumID] ?? 0, 
 					readCount: thisForumReaderPivot?.readCount ?? 0, 
 					lastPostAt: lastPostTime, lastPoster: lastPosterHeader,
-					isFavorite: forceIsFavorite ?? thisForumReaderPivot?.isFavorite ?? false)
+					isFavorite: forceIsFavorite ?? thisForumReaderPivot?.isFavorite ?? false, event: joinedEvent)
 		}
 		return returnListData
 	}
