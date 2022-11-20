@@ -76,3 +76,8 @@ Only applicable for Event categories (Official Events, Shadow Events). Event cat
 
 * Added a board game recommendation engine at: "/api/v3/boardgames/recommend". This code uses some values the DB has about games that
 aren't currently available through the API.
+
+## Nov 20, 2022
+
+* With the addition of User Roles, there are now 3 Admin endpoints for managing roles (get/add/delete) for THO and above,
+and 3 similar endpoints for use by those with the Shutternaut Manager role for managing the Shutternaut role.
