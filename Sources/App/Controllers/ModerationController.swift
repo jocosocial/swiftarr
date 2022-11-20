@@ -348,7 +348,6 @@ struct ModerationController: APIRouteCollection {
 		newCategory.forumCount += 1
 		// Set forum's new parent, also update the forum's accessLevelToView.
 		try await ForumEdit(forum: forum, editorID: user.userID, categoryChanged: true).save(on: req.db)
-		forum.accessLevelToView = newCategory.accessLevelToView
 		forum.$category.id = try newCategory.requireID()
 		forum.$category.value = newCategory
 		try await req.db.transaction { db in

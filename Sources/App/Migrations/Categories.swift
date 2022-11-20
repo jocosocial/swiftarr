@@ -32,6 +32,9 @@ struct CreateCategories: AsyncMigration {
 			.init(title: "Activities", purpose: "Things to do that aren't Events. Pokemon, KrakenMail, puzzles..."),
 			.init(title: "Safe Space", purpose: "No hate, only hugs"),
 			.init(title: "Egype", purpose: "Did a performer do something silly? Do you want to meme about it?"),
+			
+			// Categories restricted to specific UserRoleTypes
+			.init(title: "Shutternauts", purpose: "🧑 📸:joco:, 📸:pirate:, 📸:ship:", requiredRole: .shutternaut)
 		]
 
 		// save categories

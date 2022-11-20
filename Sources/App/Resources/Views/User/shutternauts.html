@@ -5,15 +5,15 @@
     			<div class="col">
 					<nav aria-label="breadcrumb">
 						<ol class="breadcrumb">
-							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
-							<li class="breadcrumb-item active" aria-current="page">Karaoke Managers</li>
+							<li class="breadcrumb-item"><a href="/forums">Forums</a></li>
+							<li class="breadcrumb-item active" aria-current="page">User Roles</li>
 						</ol>
 					</nav>
 				</div>
 			</div>
 			<div class="row my-2">
 				<div class="col">
-					<b>Search for Users to Promote To Karaoke Manager</b>
+					<b>Search for Users to Promote To Shutternaut</b>
 				</div>
 			</div>
 			<div class="row my-2">
@@ -37,7 +37,7 @@
 								</div>
 								<div class="col col-auto">
 									<button type="button" class="btn btn-sm btn-primary" autocomplete="off" data-action="reload" 
-											data-actionpath="/admin/user/#(user.userID)/karaoke/manager/promote"
+											data-actionpath="/userrole/shutternaut/add/#(user.userID)"
 											data-errordiv="#(user.userID)_errorDisplay">
 										Promote
 										<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
@@ -46,7 +46,7 @@
 								</div>
 							</div>
 							<div class="text-end text-danger d-none" id="#(user.userID)_errorDisplay">
-								Could not promote to karaoke manager: <span class="errortext"></span>
+								Could not promote to Shutternaut: <span class="errortext"></span>
 							</div>
 						</li>
 					#endfor
@@ -54,13 +54,13 @@
 			#endif
 			<div class="row my-2">
 				<div class="col">
-					<b>Current Karaoke Managers:</b>
+					<b>Current Shutternauts:</b>
 				</div>
 			</div>
 			<ul class="list-group">
 				#if(count(currentMgrs) == 0):
 					<li class="list-group-item bg-transparent text-center">
-						No users have been promoted to Karaoke Manager yet.
+						No users have been promoted to Shutternaut yet.
 					</li>
 				#else:
 					#for(mgr in currentMgrs):
@@ -71,7 +71,7 @@
 								</div>
 								<div class="col col-auto">
 									<button type="button" class="btn btn-sm btn-primary" autocomplete="off" data-action="reload" 
-											data-actionpath="/admin/user/#(mgr.userID)/karaoke/manager/demote"
+											data-actionpath="/userrole/shutternaut/remove/#(mgr.userID)"
 											data-errordiv="#(mgr.userID)_mgrErrorDisplay">
 										Demote
 										<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
@@ -81,7 +81,7 @@
 							</div>
 							<div class="row">
 								<div class="col text-end text-danger d-none" id="#(mgr.userID)_mgrErrorDisplay">
-									Could not demote to verified: <span class="errortext"></span>
+									Could not remove user role: <span class="errortext"></span>
 								</div>
 							</div>
 						</li>

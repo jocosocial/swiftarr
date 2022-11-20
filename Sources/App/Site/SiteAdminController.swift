@@ -5,6 +5,7 @@ import FluentSQL
 struct SiteAdminController: SiteControllerUtils {
 
 	var dailyThemeParam = PathComponent(":theme_id")
+	var userRoleParam = PathComponent(":user_role")
 
 	func registerRoutes(_ app: Application) throws {
 		// Routes for non-shareable content. If you're not logged in we failscreen.
@@ -42,9 +43,10 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTTRoutes.get("regcodes", use: getRegCodeHandler)
 		privateTTRoutes.get("regcodes", "showuser", userIDParam, use: getRegCodeForUserHandler)
 		
-		privateTTRoutes.get("karaoke", "managers", use: getKaraokeManagersHandler)
-		privateTTRoutes.post("user", userIDParam, "karaoke", "manager", "promote", use: promoteKaraokeManager)
-		privateTTRoutes.post("user", userIDParam, "karaoke", "manager", "demote", use: demoteKaraokeManager)
+		privateTTRoutes.get("userroles", use: getUserRoleManagementHandler)
+		privateTTRoutes.get("userroles", userRoleParam,  use: getUserRoleManagementHandler)
+		privateTTRoutes.post("userroles", userRoleParam, "addrole", userIDParam, use: addRoleToUser)
+		privateTTRoutes.post("userroles", userRoleParam, "removerole", userIDParam, use: removeRoleFromUser)
 
 		// Mods, TwitarrTeam, and THO levels can all be promoted to, but they all demote back to Verified.
 		let privateTHORoutes = getPrivateRoutes(app).grouped(SiteRequireTHOMiddleware()).grouped("admin")
@@ -674,9 +676,10 @@ struct SiteAdminController: SiteControllerUtils {
 		return response.status
 	}
 	
-	// GET /admin/karaoke/managers
+	// GET /admin/userroles
+	// GET /admin/userroles/:user_role
 	//
-	func getKaraokeManagersHandler(_ req: Request) async throws -> View {
+	func getUserRoleManagementHandler(_ req: Request) async throws -> View {
 		var searchResults: [UserHeader]?
 		var searchStr = ""
 		if let str = req.query[String.self, at: "search"]?.percentEncodeFilePathEntry() {
@@ -684,42 +687,57 @@ struct SiteAdminController: SiteControllerUtils {
 			let searchResponse = try await apiQuery(req, endpoint: "/users/match/allnames/\(searchStr)")
 			searchResults = try searchResponse.content.decode([UserHeader].self)
 		}
-		let response = try await apiQuery(req, endpoint: "/admin/karaoke/managers")
-		let currentMgrs = try response.content.decode([UserHeader].self)
+		var currentMgrs = [UserHeader]()
+		let userRoleStr = req.parameters.get(userRoleParam.paramString)?.percentEncodeFilePathEntry() 
+		if let userRoleStr = userRoleStr {
+			let response = try await apiQuery(req, endpoint: "/admin/userroles/\(userRoleStr)")
+			currentMgrs = try response.content.decode([UserHeader].self)
+		}
 		struct KaraokeManagersViewContext : Encodable {
 			var trunk: TrunkContext
 			var currentMgrs: [UserHeader]
 			var userSearch: String
 			var searchResults: [UserHeader]?
+			var role: String?					// State of the "Choose Role To Manage" dropdown
+			var rolename: String				// User-visible name for selected role, or "".
 			
-			init(_ req: Request, currentMgrs: [UserHeader], searchStr: String, searchResults: [UserHeader]?) throws {
+			init(_ req: Request, currentMgrs: [UserHeader], searchStr: String, searchResults: [UserHeader]?, role: String?) throws {
 				trunk = .init(req, title: "Karaoke Managers", tab: .admin)
 				self.currentMgrs = currentMgrs
 				self.userSearch = searchStr
 				self.searchResults = searchResults
+				self.role = role
+				self.rolename = UserRoleType(fromString: role)?.label ?? "User Roles"
 			}
 		}
-		let ctx = try KaraokeManagersViewContext(req, currentMgrs: currentMgrs, searchStr: searchStr, searchResults: searchResults)
-		return try await req.view.render("admin/showKaraokeManagers", ctx)
+		let ctx = try KaraokeManagersViewContext(req, currentMgrs: currentMgrs, searchStr: searchStr, searchResults: searchResults,
+				role: userRoleStr)
+		return try await req.view.render("admin/showUserRoles", ctx)
 	}
 
-	// POST /admin/user/:user_id/karaoke/manager/promote
+	// POST /admin/user/:user_id/addrole/:user_role
 	//
-	func promoteKaraokeManager(_ req: Request) async throws -> HTTPStatus {
+	func addRoleToUser(_ req: Request) async throws -> HTTPStatus {
 		guard let userID = req.parameters.get(userIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw "Invalid user ID"
 		}
-		let response = try await apiQuery(req, endpoint: "/admin/karaoke/manager/promote/\(userID)", method: .POST)
+		guard let userRole = req.parameters.get(userRoleParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw "Invalid user role"
+		}
+		let response = try await apiQuery(req, endpoint: "/admin/userroles/\(userRole)/addrole/\(userID)", method: .POST)
 		return response.status
 	}
 	
-	// POST /admin/user/:user_id/karaoke/manager/demote
+	// POST /admin/user/:user_id/removerole/:user_role
 	//
-	func demoteKaraokeManager(_ req: Request) async throws -> HTTPStatus {
+	func removeRoleFromUser(_ req: Request) async throws -> HTTPStatus {
 		guard let userID = req.parameters.get(userIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw "Invalid user ID"
 		}
-		let response = try await apiQuery(req, endpoint: "/admin/karaoke/manager/demote/\(userID)", method: .POST)
+		guard let userRole = req.parameters.get(userRoleParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw "Invalid user role"
+		}
+		let response = try await apiQuery(req, endpoint: "/admin/userroles/\(userRole)/removerole/\(userID)", method: .POST)
 		return response.status
 	}
 }

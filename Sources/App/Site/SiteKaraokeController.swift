@@ -37,10 +37,8 @@ struct SiteKaraokeController: SiteControllerUtils {
 		let favorite = req.query[String.self, at: "favorite"] == nil ? false : true
 		if !searchStr.isEmpty || favorite {
 			var isKaraokeMgr = false
-			if let _ = req.auth.get(UserCacheData.self) {
-				let mgrResponse = try await apiQuery(req, endpoint: "/karaoke/userismanager", passThroughQuery: false)
-				let userIsMgr = try mgrResponse.content.decode(UserAuthorizedToCreateKaraokeLogs.self)
-				isKaraokeMgr = userIsMgr.isAuthorized
+			if let cacheUser = req.auth.get(UserCacheData.self) {
+				isKaraokeMgr = cacheUser.userRoles.contains(.karaokemanager)
 			}
 			let songResponse = try await apiQuery(req, endpoint: "/karaoke")
 			let matchingSongs = try songResponse.content.decode(KaraokeSongResponseData.self)

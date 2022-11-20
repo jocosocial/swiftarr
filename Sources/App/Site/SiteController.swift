@@ -35,6 +35,8 @@ struct TrunkContext: Encodable {
 	var userIsMod: Bool
 	var userIsTwitarrTeam: Bool
 	var userIsTHO: Bool
+	var userIsShutternautManager: Bool
+	
 	var username: String
 	var userID: UUID
 	
@@ -50,6 +52,7 @@ struct TrunkContext: Encodable {
 			userIsMod = userAccessLevel.hasAccess(.moderator)
 			userIsTwitarrTeam = userAccessLevel.hasAccess(.twitarrteam)
 			userIsTHO = userAccessLevel.hasAccess(.tho)
+			userIsShutternautManager = user.userRoles.contains(.shutternautmanager)
 			username = user.username
 			userID = user.userID
 		}
@@ -58,6 +61,7 @@ struct TrunkContext: Encodable {
 			userIsMod = false
 			userIsTwitarrTeam = false
 			userIsTHO = false
+			userIsShutternautManager = false
 			username = ""
 			userID = UUID()
 		}

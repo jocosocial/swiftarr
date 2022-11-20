@@ -41,10 +41,10 @@ struct AdminController: APIRouteCollection {
 		thoAuthGroup.post("twitarrteam", "promote", userIDParam, use: makeTwitarrTeamHandler)
 		thoAuthGroup.post("user", "demote", userIDParam, use: demoteToVerifiedHandler)
 		
-			// KaraokeManager isn't a separate access level; it's more like an ACL.
-		thoAuthGroup.get("karaoke", "managers", use: getKaraokeManagers)
-		thoAuthGroup.post("karaoke", "manager", "promote", userIDParam, use: makeKaraokeManager)
-		thoAuthGroup.post("karaoke", "manager", "demote", userIDParam, use: removeKaraokeManager)
+			// User Role management
+		thoAuthGroup.get("userroles", userRoleParam, use: getUsersWithRole)
+		thoAuthGroup.post("userroles", userRoleParam, "addrole", userIDParam, use: addRoleForUser)
+		thoAuthGroup.post("userroles", userRoleParam, "removerole", userIDParam, use: removeRoleForUser)
 
 		let adminAuthGroup = addTokenCacheAuthGroup(to: adminRoutes).grouped([RequireAdminMiddleware()])
 		adminAuthGroup.get("serversettings", use: settingsHandler)
@@ -661,50 +661,58 @@ struct AdminController: APIRouteCollection {
 		return .ok
 	}
 	
-	/// `GET /api/v3/admin/karaoke/managers`
+	/// `GET /api/v3/admin/userroles/:user_role`
 	/// 
-	///  Returns a list of all Karaoke managers. Karaoke managers are able to create KaraokePlayedSong entries which contain the song that was 
-	///  performed, who performed it, and the time of the performance.
+	///  Returns a list of all users that have the given role.
 	///  
 	/// - Returns: Array of <doc:UserHeader>.
-	func getKaraokeManagers(_ req: Request) async throws -> [UserHeader] {
-		let managerIDs = try await req.redis.getKaraokeManagers()
-		return req.userCache.getHeaders(managerIDs)
+	func getUsersWithRole(_ req: Request) async throws -> [UserHeader] {
+		guard let parameter = req.parameters.get(userRoleParam.paramString) else {
+			throw Abort(.badRequest, reason: "No UserRoleType found in request.")
+		}
+		let role = try UserRoleType(fromAPIString: parameter)		
+		let userIDsWithRole = try await User.query(on: req.db).join(UserRole.self, on: \User.$id == \UserRole.$user.$id)
+				.filter(UserRole.self, \.$role == role).all(\.$id)
+		return req.userCache.getHeaders(userIDsWithRole)
 	}
 	
-	/// `POST /api/v3/admin/karaoke/manager/promote/:user_id`
+	/// `POST /api/v3/admin/userroles/:user_id/addrole/:user_role`
 	/// 
-	/// Makes the target user a karaoke manager. Only THO and above may call this method. The user being promotedmust have an access level 
-	/// of `.verified` and not be temp-quarantined. Karaoke Manager status is orthogonal to a user's access level. 
+	/// Adds the given role to the given user's role list. Only THO and above may call this method.
 	///  
-	/// - Throws: badRequest if the target user isn't verified, they're temp quarantined, or already a karaoke manager.
-	/// - Returns: 200 OK if the user was made a karaoke manager.
-	func makeKaraokeManager(_ req: Request) async throws -> HTTPStatus {
+	/// - Throws: badRequest if the target user already has the role.
+	/// - Returns: 200 OK if the user now has the given role.
+	func addRoleForUser(_ req: Request) async throws -> HTTPStatus {
 		let targetUser = try await User.findFromParameter(userIDParam, on: req)
-		guard targetUser.accessLevel.hasAccess(.verified) else {
-			throw Abort(.badRequest, reason: "Only verified users may be promoted to karaoke managers.")
-		}
-		if let tempQuarantineEndTime = targetUser.tempQuarantineUntil {
-			guard tempQuarantineEndTime <= Date() else {
-				throw Abort(.badRequest, reason: "Temp Quarantined users may not be promoted to karaoke managers.")
-			}
+		guard let userRoleString = req.parameters.get(userRoleParam.paramString) else {
+			throw Abort(.badRequest, reason: "No UserRoleType found in request.")
 		}
 		let targetUserID = try targetUser.requireID()
-		try await req.redis.addKaraokeManager(userID: targetUserID)
+		let role = try UserRoleType(fromAPIString: userRoleString)		
+		if let _ = try await UserRole.query(on: req.db).filter(\.$role == role).filter(\.$user.$id == targetUserID).first() {
+			throw Abort(.badRequest, reason: "User \(targetUser.username) already has role of \(role.label)")
+		}
+		try await UserRole(user: targetUserID, role: role).create(on: req.db)
+		try await req.userCache.updateUser(targetUserID)
 		return .ok
 	}
 	
-	/// `POST /api/v3/admin/karaoke/manager/demote/:user_id`
+	/// `POST /api/v3/admin/userroles/:user_id/removerole/:user_role`
 	/// 
-	/// Removes the target user from the list of Karaoke Managers. Only admins may call this method.
+	/// Removes the given role from the target user's role list. Only THO and above may call this method.
 	///  
 	/// - Throws: badRequest if the target user isn't a Karaoke Manager.
 	/// - Returns: 200 OK if the user was demoted successfully.
-	func removeKaraokeManager(_ req: Request) async throws -> HTTPStatus {
+	func removeRoleForUser(_ req: Request) async throws -> HTTPStatus {
+		guard let userRoleString = req.parameters.get(userRoleParam.paramString) else {
+			throw Abort(.badRequest, reason: "No UserRoleType found in request.")
+		}
+		let role = try UserRoleType(fromAPIString: userRoleString)		
 		guard let targetUserIDStr = req.parameters.get(userIDParam.paramString), let targetUserID = UUID(targetUserIDStr) else {
 			throw Abort(.badRequest, reason: "Missing user ID parameter.")
 		}
-		try await req.redis.removeKaraokeManager(userID: targetUserID)
+		try await UserRole.query(on: req.db).filter(\.$role == role).filter(\.$user.$id == targetUserID).delete()
+		try await req.userCache.updateUser(targetUserID)
 		return .ok
 	}
 

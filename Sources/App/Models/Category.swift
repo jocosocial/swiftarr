@@ -37,6 +37,10 @@ final class Category: Model {
 	/// forum and leave it unlocked so that anyone that can see the thread can post in it. Or, they could lock the thread, preventing posting.
 	@Enum(key: "create_access_level") var accessLevelToCreate: UserAccessLevel
 	
+	/// If non-nil, the UserRoleType that a User is required to posess in order to view items in this category. This test is bypassed for Moderator users.
+	/// For everyone else, both the Role test and the accessLevel test must pass in order to view.
+	@OptionalEnum(key: "required_role") var requiredRole: UserRoleType?
+	
 	/// The number of forums containted in this Category. Should always be equal to forums.count.
 	@Field(key: "forumCount") var forumCount: Int32
 	
@@ -65,13 +69,14 @@ final class Category: Model {
 	///   - title: The title for the the category.
 	///   - isRestricted: Whether users can create forums in the category.
 	init(title: String,  purpose: String, viewAccess: UserAccessLevel = .quarantined, createForumAccess: UserAccessLevel = .verified,
-			isEventCategory: Bool = false) {
+			isEventCategory: Bool = false, requiredRole: UserRoleType? = nil) {
 		self.title = title
 		self.purpose = purpose
 		self.accessLevelToView = viewAccess
 		self.accessLevelToCreate = createForumAccess
 		self.forumCount = 0
 		self.isEventCategory = isEventCategory
+		self.requiredRole = requiredRole
 	}
 }
 
@@ -86,6 +91,7 @@ struct CreateCategorySchema: AsyncMigration {
 				.field("is_event_category", .bool, .required)
 				.field("view_access_level", userAccessLevel, .required)
 				.field("create_access_level", userAccessLevel, .required)
+				.field("required_role", .string)
 				.field("forumCount", .int32, .required)
 				.field("created_at", .datetime)
 				.field("updated_at", .datetime)

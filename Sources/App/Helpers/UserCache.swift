@@ -33,6 +33,7 @@ public struct UserCacheData: Authenticatable, SessionAuthenticatable {
 	let mutewords: [String]?
 	let token: String?
 	let accessLevel: UserAccessLevel
+	let userRoles: Set<UserRoleType>
 	let tempQuarantineUntil: Date?
 	
 	init(userID: UUID, user: User, blocks: [UUID]?, mutewords: [String]?) {
@@ -48,6 +49,7 @@ public struct UserCacheData: Authenticatable, SessionAuthenticatable {
 		self.token = user.$token.value??.token ?? nil
 		self.accessLevel = user.accessLevel
 		self.tempQuarantineUntil = user.tempQuarantineUntil
+		self.userRoles = Set(user.roles.map { $0.role })
 	}
 	
 	// Used by sessionAuthenticatable, but this doesn't go into the cookie.
@@ -216,7 +218,11 @@ extension Application {
 	
 //		let _ = Task {
 			var initialStorage = UserCacheStorage()
-			let results = try User.query(on: app.db).with(\.$token).with(\.$muteWords).all().wait()
+			let results = try User.query(on: app.db)
+					.with(\.$token)
+					.with(\.$roles)
+					.with(\.$muteWords)
+					.all().wait()
 			for user in results {
 				let userID = try user.requireID()
 				let blocks = try app.redis.getBlocks(for: userID)
@@ -380,7 +386,11 @@ extension Request {
 		}
 		
 		private func getUpdatedUserCacheData(_ userID: UUID) async throws -> UserCacheData {
-			async let user = User.query(on: request.db).filter(\.$id == userID).with(\.$token).with(\.$muteWords).first()
+			async let user = User.query(on: request.db).filter(\.$id == userID)
+					.with(\.$token)
+					.with(\.$roles)
+					.with(\.$muteWords)
+					.first()
 			async let blocks = try request.redis.getBlocks(for: userID)
 			guard let user = try await user else {
 				throw Abort(.internalServerError, reason: "user not found")

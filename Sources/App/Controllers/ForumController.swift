@@ -84,10 +84,11 @@ struct ForumController: APIRouteCollection {
 	/// - Returns: An array of <doc:CategoryData> containing all category IDs and titles. Or just the one, if you use the ?cat parameter.
 	func categoriesHandler(_ req: Request)  async throws -> [CategoryData] {
 		var effectiveAccessLevel: UserAccessLevel = .unverified
-		if let user = req.auth.get(UserCacheData.self) {
+		let user = req.auth.get(UserCacheData.self)
+		if let user = user {
 			effectiveAccessLevel = user.accessLevel
 		}
-		let categoryQuery = Category.query(on: req.db).filter(\.$accessLevelToView <= effectiveAccessLevel)
+		let categoryQuery = Category.query(on: req.db).categoryAccessFilter(for: user)
 		if let catID = req.query[UUID.self, at: "cat"]  {
 			categoryQuery.filter(\.$id == catID)
 		}
@@ -214,7 +215,7 @@ struct ForumController: APIRouteCollection {
 		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
 		let countQuery = Forum.query(on: req.db)
 				.filter(\.$creator.$id !~ cacheUser.getBlocks())
-				.filter(\.$accessLevelToView <= cacheUser.accessLevel)
+				.categoryAccessFilter(for: cacheUser)
 		// postgres "_" and "%" are wildcards, so escape for literals
 		if var search = req.query[String.self, at: "search"] {
 			search = search.replacingOccurrences(of: "_", with: "\\_")
@@ -257,7 +258,7 @@ struct ForumController: APIRouteCollection {
 		let start = (req.query[Int.self, at: "start"] ?? 0)
 		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
 		let countQuery = Forum.query(on: req.db).filter(\.$creator.$id == cacheUser.userID)
-					.filter(\.$accessLevelToView <= cacheUser.accessLevel)
+					.categoryAccessFilter(for: cacheUser)
 		if let cat = req.query[UUID.self, at: "cat"] {
 			countQuery.filter(\.$category.$id == cat)
 		}
@@ -266,7 +267,7 @@ struct ForumController: APIRouteCollection {
 		switch req.query[String.self, at: "sort"] {
 			case "create": _ = forumQuery.sort(\.$createdAt, .descending)
 			case "update": _ = forumQuery.sort(\.$lastPostTime, .descending)
-			default: _ = forumQuery.sort(.custom("lower(title)"), .ascending)
+			default: _ = forumQuery.sort(.custom("lower(forum.title)"), .ascending)
 		}
 		async let forums = try forumQuery.all()
 		let forumList = try await buildForumListData(forums, on: req, user: cacheUser)
@@ -289,7 +290,7 @@ struct ForumController: APIRouteCollection {
 		let start = (req.query[Int.self, at: "start"] ?? 0)
 		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
 		let countQuery = Forum.query(on: req.db).filter(\.$creator.$id !~ cacheUser.getBlocks())
-				.filter(\.$accessLevelToView <= cacheUser.accessLevel)
+				.categoryAccessFilter(for: cacheUser)
 				.join(ForumReaders.self, on: \Forum.$id == \ForumReaders.$forum.$id)
 				.filter(ForumReaders.self, \.$user.$id == cacheUser.userID)
 				.filter(ForumReaders.self, \.$isFavorite == true)
@@ -322,7 +323,7 @@ struct ForumController: APIRouteCollection {
 		let start = (req.query[Int.self, at: "start"] ?? 0)
 		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
 		let countQuery = Forum.query(on: req.db).filter(\.$creator.$id !~ cacheUser.getBlocks())
-				.filter(\.$accessLevelToView <= cacheUser.accessLevel)
+				.categoryAccessFilter(for: cacheUser)
 				.join(ForumReaders.self, on: \Forum.$id == \ForumReaders.$forum.$id)
 				.filter(ForumReaders.self, \.$user.$id == cacheUser.userID)
 		async let forumCount = try countQuery.count()
@@ -359,10 +360,10 @@ struct ForumController: APIRouteCollection {
 	/// - Returns: <doc:ForumData> containing the forum's metadata and posts.
 	func forumThreadHandler(_ req: Request) async throws -> ForumData {
 		let user = try req.auth.require(UserCacheData.self)
-		let forum = try await Forum.findFromParameter(forumIDParam, on: req)
-		guard user.accessLevel.hasAccess(forum.accessLevelToView) else {
-			throw Abort(.forbidden, reason: "User cannot view this forum category.")
+		let forum = try await Forum.findFromParameter(forumIDParam, on: req) { query in
+			query.with(\.$category)
 		}
+		try guardUserCanAccessCategory(user, category: forum.category)
 		return try await buildForumData(forum, on: req)
 	}
 	
@@ -389,14 +390,14 @@ struct ForumController: APIRouteCollection {
 	func postForumThreadHandler(_ req: Request) async throws -> ForumData {
 		let user = try req.auth.require(UserCacheData.self)
 		let post = try await ForumPost.findFromParameter(postIDParam, on: req) { query in
-			query.with(\.$forum)
+			query.with(\.$forum) { forum in
+				forum.with(\.$category)
+			}
 		}
 		guard let forum = post.$forum.value else {
 			throw Abort(.internalServerError, reason: "Could not find the forum containing this forum post.")
 		}
-		guard user.accessLevel.hasAccess(forum.accessLevelToView) else {
-			throw Abort(.forbidden, reason: "User cannot view this forum.")
-		}
+		try guardUserCanAccessCategory(user, category: post.forum.category)
 		return try await buildForumData(forum, on: req, startPostID: post.requireID())
 	}
 	
@@ -415,14 +416,14 @@ struct ForumController: APIRouteCollection {
 	func eventForumThreadHandler(_ req: Request) async throws -> ForumData {
 		let user = try req.auth.require(UserCacheData.self)
 		let event = try await Event.findFromParameter("event_id", on: req) { query in
-			query.with(\.$forum)
+			query.with(\.$forum) { forum in
+				forum.with(\.$category)
+			}
 		}
 		guard let forum = event.forum else {
 			throw Abort(.internalServerError, reason: "event has no forum")
 		}
-		guard user.accessLevel.hasAccess(forum.accessLevelToView) else {
-			throw Abort(.forbidden, reason: "User cannot view this forum.")
-		}
+		try guardUserCanAccessCategory(user, category: forum.category)
 		return try await buildForumData(forum, on: req)
 	}
 
@@ -436,11 +437,11 @@ struct ForumController: APIRouteCollection {
 	func postHandler(_ req: Request) async throws -> PostDetailData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let post = try await ForumPost.findFromParameter(postIDParam, on: req) { query in
-			query.with(\.$forum)
+			query.with(\.$forum) { forum in
+				forum.with(\.$category)
+			}
 		}
-		guard cacheUser.accessLevel.hasAccess(post.forum.accessLevelToView) else {
-			throw Abort(.forbidden, reason: "User cannot view this forum.")
-		}
+		try guardUserCanAccessCategory(cacheUser, category: post.forum.category)
 		if cacheUser.getBlocks().contains(post.$author.id) || cacheUser.getMutes().contains(post.$author.id) ||
 				post.containsMutewords(using: cacheUser.mutewords ?? []) {
 			throw Abort(.notFound, reason: "post is not available")
@@ -499,23 +500,14 @@ struct ForumController: APIRouteCollection {
 	func postSearchHandler(_ req: Request) async throws -> PostSearchData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		var postFilterMentions: String? = nil
-		
-//		if let isBookmarked = req.query[String.self, at: "bookmarked"], isBookmarked == "true" {
-//			bookmarkFuture = Barrel.query(on: req.db).filter(\.$ownerID == cacheUser.userID).filter(\.$barrelType == .bookmarkedPost)
-//					.first().map { barrel in
-//				return (barrel?.userInfo["bookmarks"] ?? []).compactMap { Int($0) }
-//			}			
-//		}
-		
 		let start = (req.query[Int.self, at: "start"] ?? 0)
 		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForumPosts)
 		// Start building a query.
-		// Note: The forum join() here is used to check access level, but other filters may require the join as well.
+		// Note: categoryAccessFilter() joins the post's forum and category, but other filters (below) may require the join as well.
 		var query = ForumPost.query(on: req.db).filter(\.$author.$id !~ cacheUser.getBlocks())
 				.filter(\.$author.$id !~ cacheUser.getMutes())
 				.sort(\.$id, .descending)
-				.join(Forum.self, on: \ForumPost.$forum.$id == \Forum.$id)
-				.filter(Forum.self, \.$accessLevelToView <= cacheUser.accessLevel)
+				.categoryAccessFilter(for: cacheUser)
 
 		let matchBookmarked = req.query[String.self, at: "bookmarked"] == "true"
 		let ownReacts = req.query[String.self, at: "bookmarked"] == "true"
@@ -607,10 +599,12 @@ struct ForumController: APIRouteCollection {
 	/// - Throws: 400 error if the post is already bookmarked.
 	/// - Returns: 201 Created on success; 200 OK if already bookmarked.
 	func bookmarkAddHandler(_ req: Request) async throws -> HTTPStatus {
-		let user = try req.auth.require(UserCacheData.self)
-		let post = try await ForumPost.findFromParameter(postIDParam, on: req)
-		let postLike = try await PostLikes.query(on: req.db).filter(\.$post.$id == post.requireID()).filter(\.$user.$id == user.userID)
-				.first() ?? PostLikes(user.userID, post)
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let post = try await ForumPost.findFromParameter(postIDParam, on: req) { query in
+			query.categoryAccessFilter(for: cacheUser)
+		}
+		let postLike = try await PostLikes.query(on: req.db).filter(\.$post.$id == post.requireID()).filter(\.$user.$id == cacheUser.userID)
+				.first() ?? PostLikes(cacheUser.userID, post)
 		if postLike.isFavorite {
 			return .ok
 		}
@@ -628,10 +622,12 @@ struct ForumController: APIRouteCollection {
 	/// - Throws: 400 error if the user has not bookmarked any posts.
 	/// - Returns: 204 NoContent on success.
 	func bookmarkRemoveHandler(_ req: Request) async throws -> HTTPStatus {
-		let user = try req.auth.require(UserCacheData.self)
-		let post = try await ForumPost.findFromParameter(postIDParam, on: req)
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let post = try await ForumPost.findFromParameter(postIDParam, on: req) { query in
+			query.categoryAccessFilter(for: cacheUser)
+		}
 		guard let postLike = try await PostLikes.query(on: req.db).filter(\.$post.$id == post.requireID())
-				.filter(\.$user.$id == user.userID).first(), postLike.isFavorite == true else {
+				.filter(\.$user.$id == cacheUser.userID).first(), postLike.isFavorite == true else {
 			return .noContent		
 		}
 		postLike.isFavorite = false
@@ -647,7 +643,9 @@ struct ForumController: APIRouteCollection {
 	/// - Returns: 201 Created on success; 200 OK if already favorited.
 	func favoriteAddHandler(_ req: Request) async throws -> HTTPStatus {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		let forum = try await Forum.findFromParameter(forumIDParam, on: req)
+		let forum = try await Forum.findFromParameter(forumIDParam, on: req) { query in
+			query.categoryAccessFilter(for: cacheUser)
+		}
 		let forumReader = try await ForumReaders.query(on: req.db).filter(\.$forum.$id == forum.requireID())
 				.filter(\.$user.$id == cacheUser.userID).first() ?? ForumReaders(cacheUser.userID, forum)
 		if forumReader.isFavorite {
@@ -701,6 +699,7 @@ struct ForumController: APIRouteCollection {
 		guard cacheUser.accessLevel.hasAccess(category.accessLevelToCreate) else {
 			throw Abort(.forbidden, reason: "users cannot create forums in category")
 		}
+		try guardUserCanAccessCategory(cacheUser, category: category)
 		// process images
 		async let imageFilenames = try self.processImages(data.firstPost.images, usage: .forumPost, on: req)
 		// create forum
@@ -716,7 +715,7 @@ struct ForumController: APIRouteCollection {
 		category.forumCount = try await Int32(category.$forums.query(on: req.db).count())
 		try await category.save(on: req.db)
 		// If the post @mentions anyone, update their mention counts
-		try await processForumMentions(forum: forum, post: forumPost, editedText: nil, isCreate: true, on: req)
+		try await processForumMentions(post: forumPost, editedText: nil, isCreate: true, on: req)
 		let creatorHeader = effectiveAuthor.makeHeader()
 		let postData = try PostData(post: forumPost, author: creatorHeader, bookmarked: false, userLike: nil, likeCount: 0)
 		let forumData = try ForumData(forum: forum, creator: creatorHeader,
@@ -738,7 +737,9 @@ struct ForumController: APIRouteCollection {
 		guard let nameParameter = req.parameters.get("new_name"), nameParameter.count > 0 else {
 			throw Abort(.badRequest, reason: "No new name parameter for forum name change.")
 		}
-		let forum = try await Forum.findFromParameter(forumIDParam, on: req)
+		let forum = try await Forum.findFromParameter(forumIDParam, on: req) { query in
+			query.categoryAccessFilter(for: cacheUser)
+		}
 		// must be forum owner or .moderator
 		try cacheUser.guardCanModifyContent(forum, customErrorString: "User cannot modify forum title.")
 		if forum.title != nameParameter {
@@ -764,10 +765,12 @@ struct ForumController: APIRouteCollection {
 	/// - Parameter requestBody: <doc:ReportData> payload in the HTTP body.
 	/// - Returns: 201 Created on success.
 	func forumReportHandler(_ req: Request) async throws -> HTTPStatus {
-		let user = try req.auth.require(UserCacheData.self)
+		let cacheUser = try req.auth.require(UserCacheData.self)
 		let data = try req.content.decode(ReportData.self)
-		let forum = try await Forum.findFromParameter(forumIDParam, on: req)
-		return try await forum.fileReport(submitter: user, submitterMessage: data.message, on: req)
+		let forum = try await Forum.findFromParameter(forumIDParam, on: req) { query in
+			query.categoryAccessFilter(for: cacheUser)
+		}
+		return try await forum.fileReport(submitter: cacheUser, submitterMessage: data.message, on: req)
 	}
 	
 	/// `POST /api/v3/forum/ID/delete`
@@ -787,7 +790,9 @@ struct ForumController: APIRouteCollection {
 		guard cacheUser.accessLevel.canEditOthersContent() else {
 			throw Abort(.forbidden, reason: "User does not have access to delete forums.")
 		}
-		let forum = try await Forum.findFromParameter(forumIDParam, on: req)
+		let forum = try await Forum.findFromParameter(forumIDParam, on: req) { query in
+			query.categoryAccessFilter(for: cacheUser)
+		}
 		let category = try await forum.$category.get(on: req.db)
 		try cacheUser.guardCanModifyContent(forum)
 		try await forum.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: req)
@@ -818,7 +823,10 @@ struct ForumController: APIRouteCollection {
 		// see `PostContentData.validations()`
  		let newPostData = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
 		// get forum
-		let forum = try await Forum.findFromParameter(forumIDParam, on: req)
+		let forum = try await Forum.findFromParameter(forumIDParam, on: req) { query in
+			query.with(\.$category)
+		}
+		try guardUserCanAccessCategory(cacheUser, category: forum.category)
 		try guardUserCanPostInForum(cacheUser, in: forum)
 		// ensure user has access to forum; user cannot retrieve block-owned forum, but prevent end-run
 		guard !cacheUser.getBlocks().contains(forum.$creator.id) else {
@@ -834,7 +842,7 @@ struct ForumController: APIRouteCollection {
 		try await forum.save(on: req.db)
 		try await forumPost.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
 		// If the post @mentions anyone, update their mention counts
-		try await processForumMentions(forum: forum, post: forumPost, editedText: nil, isCreate: true, on: req)
+		try await processForumMentions(post: forumPost, editedText: nil, isCreate: true, on: req)
 		// return as PostData, with 201 status
 		let response = Response(status: .created)
 		try response.content.encode(PostData(post: forumPost, author: effectiveAuthor.makeHeader()))
@@ -854,11 +862,14 @@ struct ForumController: APIRouteCollection {
 	func postDeleteHandler(_ req: Request) async throws -> HTTPStatus {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let post = try await ForumPost.findFromParameter(postIDParam, on: req) { query in
-			query.with(\.$forum)
+			query.with(\.$forum) { forum in
+				forum.with(\.$category)
+			}
 		}
+		try guardUserCanAccessCategory(cacheUser, category: post.forum.category)
 		try guardUserCanPostInForum(cacheUser, in: post.forum, editingPost: post)
 		try await post.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: req)
-		try await processForumMentions(forum: post.forum, post: post, editedText: nil, on: req)
+		try await processForumMentions(post: post, editedText: nil, on: req)
 		try await post.delete(on: req.db)
 		return .noContent
 	}
@@ -875,10 +886,15 @@ struct ForumController: APIRouteCollection {
 	/// - Throws: 409 error if user has already reported the post.
 	/// - Returns: 201 Created on success.
 	func postReportHandler(_ req: Request) async throws -> HTTPStatus {
-		let user = try req.auth.require(UserCacheData.self)
+		let cacheUser = try req.auth.require(UserCacheData.self)
 		let data = try req.content.decode(ReportData.self)
-		let post = try await ForumPost.findFromParameter(postIDParam, on: req)
-		return try await post.fileReport(submitter: user, submitterMessage: data.message, on: req)
+		let post = try await ForumPost.findFromParameter(postIDParam, on: req) { query in
+			query.with(\.$forum) { forum in
+				forum.with(\.$category)
+			}
+		}
+		try guardUserCanAccessCategory(cacheUser, category: post.forum.category)
+		return try await post.fileReport(submitter: cacheUser, submitterMessage: data.message, on: req)
 	}
 	
 	/// `POST /api/v3/forum/post/ID/laugh`
@@ -921,13 +937,13 @@ struct ForumController: APIRouteCollection {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		// get post and forum
 		let post = try await ForumPost.findFromParameter(postIDParam, on: req) { query in
-			query.with(\.$forum)
+			query.with(\.$forum) { forum in
+				forum.with(\.$category)
+			}
 		}
+		try guardUserCanAccessCategory(cacheUser, category: post.forum.category)
 		guard post.$author.id != cacheUser.userID else {
 			throw Abort(.forbidden, reason: "user cannot like own post")
-		}
-		guard cacheUser.accessLevel.hasAccess(post.forum.accessLevelToView) else {
-			throw Abort(.forbidden, reason: "User cannot view this forum.")
 		}
 		let postLike = try await PostLikes.query(on: req.db).filter(\.$user.$id == cacheUser.userID).filter(\.$post.$id == post.requireID())
 				.first() ?? PostLikes(cacheUser.userID, post)
@@ -951,13 +967,13 @@ struct ForumController: APIRouteCollection {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		// get post and forum
 		let post = try await ForumPost.findFromParameter(postIDParam, on: req) { query in
-			query.with(\.$forum)
+			query.with(\.$forum) { forum in
+				forum.with(\.$category)
+			}
 		}
+		try guardUserCanAccessCategory(cacheUser, category: post.forum.category)
 		guard post.$author.id != cacheUser.userID else {
 			throw Abort(.forbidden, reason: "user cannot like own post")
-		}
-		guard cacheUser.accessLevel.hasAccess(post.forum.accessLevelToView) else {
-			throw Abort(.forbidden, reason: "User cannot view this forum.")
 		}
 		if let postLike = try await PostLikes.query(on: req.db).filter(\.$user.$id == cacheUser.userID)
 				.filter(\.$post.$id == post.requireID()).first() {
@@ -981,20 +997,21 @@ struct ForumController: APIRouteCollection {
 		// see `PostContentData.validations()`
 		let newPostData = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
 		let post = try await ForumPost.findFromParameter(postIDParam, on: req) { query in
-			query.with(\.$forum)
+			query.with(\.$forum) { forum in
+				forum.with(\.$category)
+			}
 		}
+		// Ensure use can view items in this category
+		try guardUserCanAccessCategory(cacheUser, category: post.forum.category)
 		// ensure user has write access, the post can be modified by them, and the forum isn't locked.
 		try guardUserCanPostInForum(cacheUser, in: post.forum, editingPost: post)
-		guard cacheUser.accessLevel.hasAccess(post.forum.accessLevelToView) else {
-			throw Abort(.forbidden, reason: "User cannot view this forum.")
-		}
 		// process images
 		let filenames = try await self.processImages(newPostData.images, usage: .forumPost, on: req)
 		// update if there are changes
 		let normalizedText = newPostData.text.replacingOccurrences(of: "\r\n", with: "\r")
 		if post.text != normalizedText || post.images != filenames {
 			// If the post @mentions anyone, update their mention counts
-			try await processForumMentions(forum: post.forum, post: post, editedText: normalizedText, on: req)
+			try await processForumMentions(post: post, editedText: normalizedText, on: req)
 			// Save current contents into an Edit record first
 			let forumEdit = try ForumPostEdit(post: post, editorID: cacheUser.userID)
 			post.text = normalizedText
@@ -1008,22 +1025,9 @@ struct ForumController: APIRouteCollection {
 		return postDataArray[0]
 	}
 }
-
+	
 // Utilities for route methods
 extension ForumController {
-
-	/// Ensures the given user has appropriate access to create or edit posts in the given forum. If editing a post, you must pass the post in the `editingPost` parameter.
-	func guardUserCanPostInForum(_ user: User, in forum: Forum, editingPost: ForumPost? = nil) throws {
-		if let post = editingPost {
-			try user.guardCanModifyContent(post) 
-		}
-		else {
-			try user.guardCanCreateContent()
-		}
-		guard user.accessLevel.canEditOthersContent() || (forum.moderationStatus == .normal || forum.moderationStatus == .modReviewed) else {
-			throw Abort(.forbidden, reason: "Forum is locked.")
-		}
-	}
 	
 	/// Ensures the given user has appropriate access to create or edit posts in the given forum. If editing a post, you must pass the post in the `editingPost` parameter.
 	func guardUserCanPostInForum(_ user: UserCacheData, in forum: Forum, editingPost: ForumPost? = nil) throws {
@@ -1038,6 +1042,18 @@ extension ForumController {
 		}
 	}
 	
+	/// Ensures the given user has the required access to view forums and posts in the given category.
+	func guardUserCanAccessCategory(_ user: UserCacheData, category: Category) throws {
+		guard user.accessLevel.hasAccess(category.accessLevelToView) else {
+			throw Abort(.forbidden, reason: "User cannot view this forum category.")
+		}
+		if !user.accessLevel.hasAccess(.moderator), let requiredRole = category.requiredRole {
+			guard user.userRoles.contains(requiredRole) else {
+				throw Abort(.forbidden, reason: "User does not have role to view this forum category.")
+			}
+		}
+	}
+
 	/// Returns a dictionary mapping ForumIDs to ForumPosts, where each ForumPost is the last post made in its Forum by a user who isn't blocked or muted.
 	/// The code in the guard works by running a query for each Forum in the array; for 50 forums it takes ~82ms to resolve. The code in the bottom half of the fn
 	/// uses SQLKit to make a more complicated query, returning answers for all forums in one result set. Takes ~9ms.
@@ -1224,21 +1240,35 @@ extension ForumController {
 	
 	// Scans the text of forum posts as they are created/edited/deleted, finds @mentions, updates mention counts for
 	// mentioned `User`s.
-	func processForumMentions(forum: Forum, post: ForumPost, editedText: String?, isCreate: Bool = false, on req: Request) async throws {
+	func processForumMentions(post: ForumPost, editedText: String?, isCreate: Bool = false, on req: Request) async throws {
 		let postID = post.id ?? 0
 		try await withThrowingTaskGroup(of: Void.self) { group in
+			// Load the forum and category for this post, if we don't have it already. Usually these values are already loaded in.
+			if post.$forum.value == nil {
+				try await post.$forum.load(on: req.db)
+			}
+			if post.forum.$category.value == nil {
+				try await post.forum.$category.load(on: req.db)
+			}
+			let accessLevelToView = post.forum.category.accessLevelToView
+			let role = post.forum.category.requiredRole
+			let canUserAccessCategory = { (user: UserCacheData) -> UUID? in
+				if !user.accessLevel.hasAccess(accessLevelToView) {
+					return nil
+				}
+				if !user.accessLevel.hasAccess(.moderator), let role = role, !user.userRoles.contains(role) {
+					return nil
+				}
+				return user.userID
+			}
 // Mentions
 			let (subtracts, adds) = post.getMentionsDiffs(editedString: editedText, isCreate: isCreate)
 			if !subtracts.isEmpty {
-				let subtractUUIDs = req.userCache.getUsers(usernames: subtracts).compactMap { 
-					$0.accessLevel.hasAccess(forum.accessLevelToView) ? $0.userID : nil
-				}
+				let subtractUUIDs = req.userCache.getUsers(usernames: subtracts).compactMap(canUserAccessCategory)
 				group.addTask { try await subtractNotifications(users: subtractUUIDs, type: .forumMention(postID), on: req) }
 			}
 			if !adds.isEmpty {
-				let addUUIDs = req.userCache.getUsers(usernames: adds).compactMap { 
-					$0.accessLevel.hasAccess(forum.accessLevelToView) ? $0.userID : nil
-				}
+				let addUUIDs = req.userCache.getUsers(usernames: adds).compactMap(canUserAccessCategory)
 				var authorText = "A user"
 				if let authorName = req.userCache.getUser(post.$author.id)?.username {
 					authorText = "User @\(authorName)"
@@ -1253,7 +1283,9 @@ extension ForumController {
 			let addingAlertWords = alertAdds.intersection(alertSet)
 			subtractingAlertWords.forEach { word in
 				group.addTask {
-					try await subtractAlertwordNotifications(type: .alertwordPost(word, postID), minAccess: forum.accessLevelToView, on: req) 
+					let userIDs = try await req.redis.getUsersForAlertword(word)
+					let validUserIDs = req.userCache.getUsers(userIDs).compactMap(canUserAccessCategory)
+					try await subtractNotifications(users: validUserIDs, type: .alertwordPost(word, postID), on: req)
 				}
 			}
 			if addingAlertWords.count > 0 {
@@ -1263,8 +1295,11 @@ extension ForumController {
 				}
 				addingAlertWords.forEach { word in
 					let infoStr = "\(authorText) wrote a forum post containing your alert word '\(word)'."
-					group.addTask { try await addAlertwordNotifications(type: .alertwordPost(word, postID), minAccess: forum.accessLevelToView,
-							info: infoStr, on: req) }
+					group.addTask { 
+						let userIDs = try await req.redis.getUsersForAlertword(word)
+						let validUserIDs = req.userCache.getUsers(userIDs).compactMap(canUserAccessCategory)
+						try await addNotifications(users: validUserIDs, type: .alertwordPost(word, postID), info: infoStr, on: req)
+					}
 				}
 			}
 			
@@ -1274,7 +1309,7 @@ extension ForumController {
 				group.addTask { try await req.redis.addHashtags(hashtags) }
 			}
 			// I believe this line is required to let subtasks propagate thrown errors by rethrowing.
-			for try await _ in group { }
+			try await group.waitForAll()
 		}
 	}
 	
@@ -1297,6 +1332,39 @@ extension ForumController {
 				}
 			}
 			for try await _ in group { }
+		}
+		// FIXME: I believe this fn should also adjust alertword counts, but need to test first to prove it doesn't do the right thing.
+	}
+}
+
+extension QueryBuilder {
+
+    /// Given a `ForumPost`, `Forum`, or `Category` query, adds filters to the query to filter out entities in categories the current user cannot see.
+	/// Joins the Category (and the Forum, if necessary) to the query to do this.
+	@discardableResult func categoryAccessFilter(for possibleUser: UserCacheData?) -> Self {
+		switch Model.self {
+			case is ForumPost.Type: 
+				self.join(Forum.self, on: \Forum.$id == \ForumPost.$forum.$id)
+				self.join(Category.self, on: \Category.$id == \Forum.$category.$id)
+			case is Forum.Type: 
+				self.join(Category.self, on: \Category.$id == \Forum.$category.$id)
+			case is Category.Type: 
+				break
+			default: break
+		}
+		guard let user = possibleUser else {
+			return self.filter(Category.self, \.$accessLevelToView <= .unverified).filter(Category.self, \.$requiredRole == nil)
+		}	
+		self.filter(Category.self, \Category.$accessLevelToView <= user.accessLevel)
+		if user.accessLevel >= .moderator {
+			return self
+		}
+		if user.userRoles.isEmpty {
+			return self.filter(Category.self, \.$requiredRole == nil)
+		}
+		
+		return self.group(.or) { group in
+			group.filter(Category.self, \.$requiredRole == nil).filter(Category.self, \.$requiredRole ~~ user.userRoles)
 		}
 	}
 }

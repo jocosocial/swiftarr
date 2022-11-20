@@ -104,6 +104,16 @@
 					<li class="nav-item">
 						<a class="nav-link #if(trunk.tab == "time"): active#endif" href="/time">Time Zone Check</a>
 					</li>
+					#if(trunk.userIsShutternautManager):
+						<li>
+							<hr class="main-menu-divider">
+						</li>
+						<li class="nav-item d-flex align-items-center">
+							<a class="nav-link #if(trunk.tab == "moderator"): active#endif" href="/userrole/shutternaut/manage">
+								Manage Shutternauts
+							</a>
+						</li>
+					#endif
 					#if(trunk.userIsMod):
 						<li>
 							<hr class="main-menu-divider">

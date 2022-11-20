@@ -106,6 +106,12 @@ struct SiteUserController: SiteControllerUtils {
 		privateRoutes.post("alertword", alertWordParam, "remove", use: removeAlertwordPostHandler)
 		privateRoutes.post("muteword", "add", use: addMutewordPostHandler)
 		privateRoutes.post("muteword", muteWordParam, "remove", use: removeMutewordPostHandler)
+		
+		// User Role Management, which for now means Shutternaut management
+		// These paths may well change to take the role as a parameter and become generic Role mgmt methods.
+		privateRoutes.get("userrole", "shutternaut", "manage", use: getShutternautsHandler)
+		privateRoutes.post("userrole", "shutternaut", "add", userIDParam, use: addShutternautHandler)
+		privateRoutes.post("userrole", "shutternaut", "remove", userIDParam, use: removeShutternautHandler)
 	}
 	
 	/// GET /avatar/full/ID
@@ -481,5 +487,72 @@ struct SiteUserController: SiteControllerUtils {
 		let postStruct = try req.content.decode(ReportData.self)
  		try await apiQuery(req, endpoint: "/users/\(targetUserID)/report", method: .POST, encodeContent: postStruct)
 		return .created
+	}
+	
+// MARK: - User Role Management
+
+	// `GET /userrole/shutternaut/manage`
+	// 
+	//  Returns the list of users with the Shutternaut role. Must have the Shutternaut Manager role to use.
+	//	This method is similar to the Admin-level method that manages user roles, but has different restrictions on
+	//	who can call it and what roles may be altered.
+	//  
+	func getShutternautsHandler(_ req: Request) async throws -> View {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		guard cacheUser.userRoles.contains(.shutternautmanager) else {
+			throw Abort(.badRequest, reason: "User cannot set shutternaut roles")
+		}
+		var searchResults: [UserHeader]?
+		var searchStr = ""
+		if let str = req.query[String.self, at: "search"]?.percentEncodeFilePathEntry() {
+			searchStr = str
+			let searchResponse = try await apiQuery(req, endpoint: "/users/match/allnames/\(searchStr)")
+			searchResults = try searchResponse.content.decode([UserHeader].self)
+		}
+		var currentMgrs = [UserHeader]()
+		let response = try await apiQuery(req, endpoint: "/users/userrole/shutternaut")
+		currentMgrs = try response.content.decode([UserHeader].self)
+		struct ShutternautsViewContext : Encodable {
+			var trunk: TrunkContext
+			var currentMgrs: [UserHeader]
+			var userSearch: String
+			var searchResults: [UserHeader]?
+			
+			init(_ req: Request, currentMgrs: [UserHeader], searchStr: String, searchResults: [UserHeader]?) throws {
+				trunk = .init(req, title: "Karaoke Managers", tab: .admin)
+				self.currentMgrs = currentMgrs
+				self.userSearch = searchStr
+				self.searchResults = searchResults
+			}
+		}
+		let ctx = try ShutternautsViewContext(req, currentMgrs: currentMgrs, searchStr: searchStr, searchResults: searchResults)
+		return try await req.view.render("User/shutternauts", ctx)
+	}
+	
+	/// `POST /userrole/shutternaut/add/:user_id`
+	/// 
+	/// Adds the given role to the given user's role list. Caller must have the Shutternaut Manager role. Currently limited to adding the 'shutternaut' role.
+	///  
+	/// - Throws: badRequest if the target user already has the role.
+	/// - Returns: 200 OK if the user now has the given role.
+	func addShutternautHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let targetUserID = req.parameters.get(userIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing user ID parameter.")
+		}
+ 		let response = try await apiQuery(req, endpoint: "/users/userrole/shutternaut/addrole/\(targetUserID)", method: .POST)
+ 		return response.status
+	}
+	
+	/// `POST /userrole/shutternaut/remove/:user_id`
+	/// 
+	/// Removes the given role from the target user's role list. Caller must have the Shutternaut Manager role. Currently limited to removing the 'shutternaut' role.
+	///   
+	/// - Returns: 200 OK if the user was demoted successfully.
+	func removeShutternautHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let targetUserID = req.parameters.get(userIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing user ID parameter.")
+		}
+ 		let response = try await apiQuery(req, endpoint: "/users/userrole/shutternaut/removerole/\(targetUserID)", method: .POST)
+ 		return response.status
 	}
 }

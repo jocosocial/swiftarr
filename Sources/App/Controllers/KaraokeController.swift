@@ -173,7 +173,7 @@ struct KaraokeController: APIRouteCollection {
 	/// - Returns: 200 OK
 	func userCanLogKaraokeSongPerformances(_ req: Request) async throws -> UserAuthorizedToCreateKaraokeLogs {
 		let user = try req.auth.require(UserCacheData.self)
-		return try await UserAuthorizedToCreateKaraokeLogs(isAuthorized: req.redis.isKaraokeManager(user.userID))
+		return UserAuthorizedToCreateKaraokeLogs(isAuthorized: user.userRoles.contains(.karaokemanager))
 	}
 	
 	/// `POST /api/v3/karaoke/:songID/logperformance`
@@ -187,7 +187,7 @@ struct KaraokeController: APIRouteCollection {
 	/// - Returns: 201 Created on success.
 	func logSongPerformance(_ req: Request) async throws -> HTTPStatus {
 		let user = try req.auth.require(UserCacheData.self)
-		guard try await req.redis.isKaraokeManager(user.userID) else {
+		guard user.userRoles.contains(.karaokemanager) else {
 			throw Abort(.forbidden, reason: "User is not authorized to log Karaoke song performances.")
 		}
 		let song = try await KaraokeSong.findFromParameter(songIDParam, on: req)

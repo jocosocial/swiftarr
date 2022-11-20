@@ -20,11 +20,7 @@ final class Forum: Model {
 	
 	/// The title of the forum.
 	@Field(key: "title") var title: String
-		
-	/// Minimum access level to view posts in this thread. Usually set to `.quarantined`. But, a category reserved for moderators only
-	/// could have this set to `.moderator`. Copied from the category when a thread is created.
-	@Enum(key: "view_access_level") var accessLevelToView: UserAccessLevel
-	
+			
 	/// The creation time of the last post added to this forum. Used to sort forums. Edits to posts don't count.
 	@Field(key:"last_post_time") var lastPostTime: Date
 	
@@ -79,19 +75,16 @@ final class Forum: Model {
 		self.$creator.id = creatorID
 		self.lastPostTime = Date()
 		self.moderationStatus = .normal
-		self.accessLevelToView = category.accessLevelToView
 	}
 }
 
 struct CreateForumSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		let modStatusEnum = try await database.enum("moderation_status").read()
-		let userAccessLevel = try await database.enum("user_access_level").read()
 		try await database.schema("forum")
 				.id()
 				.field("title", .string, .required)
 				.field("mod_status", modStatusEnum, .required)
-				.field("view_access_level", userAccessLevel, .required)
 				.field("last_post_time", .datetime, .required)
 				.field("created_at", .datetime)
 				.field("updated_at", .datetime)

@@ -20,7 +20,6 @@ extension APIRouteCollection {
 	var reportIDParam: PathComponent { PathComponent(":report_id") }
 	var modStateParam: PathComponent { PathComponent(":mod_state") }
 	var announcementIDParam: PathComponent { PathComponent(":announcement_id") }
-	var barrelIDParam: PathComponent { PathComponent(":barrel_id") }
 	var alertwordParam: PathComponent { PathComponent(":alert_word") }
 	var mutewordParam: PathComponent { PathComponent(":mute_word") }
 	var searchStringParam: PathComponent { PathComponent(":search_string") }
@@ -28,6 +27,7 @@ extension APIRouteCollection {
 	var accessLevelParam: PathComponent { PathComponent(":access_level") }
 	var boardgameIDParam: PathComponent { PathComponent(":boardgame_id") }
 	var songIDParam: PathComponent { PathComponent(":karaoke_song+id") }
+	var userRoleParam: PathComponent { PathComponent(":user_role") }
 
 
 	/// Transforms a string that might represent a date (either a `Double` or an ISO 8601
@@ -112,24 +112,7 @@ extension APIRouteCollection {
 	}
 
 // MARK: - Notification Management
-	
-	// When we detect a twarrt or post with an alertword in it, call this method to find the users that are looking
-	// for that alertword and increment each of their hit counts. Differs from addNotifications because the list
-	// of users to notify is itself stored in Redis.
-	func addAlertwordNotifications(type: NotificationType, minAccess: UserAccessLevel = .quarantined,
-			info: String, on req: Request) async throws {
-		var alertWord = ""
-		switch type {
-			case .alertwordTwarrt(let word, _): alertWord = word
-			case .alertwordPost(let word, _): alertWord = word
-			default:
-				return 
-		}
-		let userIDs = try await req.redis.getUsersForAlertword(alertWord)
-		let validUserIDs = req.userCache.getUsers(userIDs).compactMap { $0.accessLevel >= minAccess ? $0.userID : nil }
-		return try await addNotifications(users: validUserIDs, type: type, info: info, on: req)
-	}
-	
+		
 	// When an event happens that could change notification counts for someone (e.g. a user posts a Twarrt with an @mention) 
 	// call this method to do the notification bookkeeping.
 	// 
@@ -218,23 +201,6 @@ extension APIRouteCollection {
 		}
 	}
 		
-	// When a twarrt or post with an alertword in it gets edited/deleted and the alertword is removed,
-	// you'll need to call this method to find the users that are looking for that alertword and decreemnt their hit counts.
-	// Differs from subtractNotifications because the list of users to notify is itself stored in Redis.	
-	func subtractAlertwordNotifications(type: NotificationType, minAccess: UserAccessLevel = .quarantined, on req: Request) async throws {
-		switch type {
-		case .alertwordTwarrt(let word, _):
-			let userIDs = try await req.redis.getUsersForAlertword(word)
-			return try await subtractNotifications(users: userIDs, type: type, on: req)
-		case .alertwordPost(let word, _):
-			let userIDs = try await req.redis.getUsersForAlertword(word)
-			let validUserIDs = req.userCache.getUsers(userIDs).compactMap { $0.accessLevel >= minAccess ? $0.userID : nil }
-			return try await subtractNotifications(users: validUserIDs, type: type, on: req)
-		default:
-			break
-		}
-	}
-	
 	// When an event happens that could reduce notification counts for someone (e.g. a user deletes a Twarrt with an @mention) 
 	// call this method to do the notification bookkeeping. DON'T call this to mark notifications as "seen".
 	func subtractNotifications(users: [UUID], type: NotificationType, subtractCount: Int = 1, on req: Request) async throws {
@@ -295,7 +261,7 @@ extension APIRouteCollection {
 			group.addTask { try await req.redis.addUsersWithStateChange(users) }
 			
 			// I believe this line is required to let subtasks propagate thrown errors by rethrowing.
-			for try await _ in group { }
+			try await group.waitForAll()
 		}
 	}
 	

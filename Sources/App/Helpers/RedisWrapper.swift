@@ -98,34 +98,6 @@ extension Request.Redis {
 		}
 	}
 		
-
-// MARK: Karaoke Song Managers
-//
-// Vaguely ACL-like, this key is a set of userIDs that have permission to use the Karaoke manager functions.
-	static let karaokeManagerRedisKey = RedisKey("KaraokeSongManagers")
-
-	func getKaraokeManagers() async throws -> [UUID] {
-		let managersIDOptionals = try await smembers(of: Request.Redis.karaokeManagerRedisKey, as: UUID.self).get()
-		return managersIDOptionals.compactMap { $0 }
-	}
-	
-	func isKaraokeManager(_ userID: UUID) async throws -> Bool {
-		return try await sismember(userID, of: Request.Redis.karaokeManagerRedisKey).get()
-	}
-	
-	func addKaraokeManager(userID: UUID) async throws {
-		let numAdds = try await sadd(userID, to: Request.Redis.karaokeManagerRedisKey).get()
-		if numAdds == 0 {
-			throw Abort(.badRequest, reason: "Cannot promote to Karaoke Manager: user is already a Karaoke Manager.")
-		}
-	}
-	
-	func removeKaraokeManager(userID: UUID) async throws {
-		let numRemoves = try await srem(userID, from: Request.Redis.karaokeManagerRedisKey).get()
-		if numRemoves == 0 {
-			throw Abort(.badRequest, reason: "Cannot demote: User isn't a Karaoke Manager.")
-		}
-	}
 	
 // MARK: Hashtags
 //

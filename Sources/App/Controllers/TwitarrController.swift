@@ -735,13 +735,20 @@ extension TwitarrController {
 			let subtractingAlertWords = alertSubtracts.intersection(alertSet)
 			let addingAlertWords = alertAdds.intersection(alertSet)
 			subtractingAlertWords.forEach { word in
-				group.addTask { try await subtractAlertwordNotifications(type: .alertwordTwarrt(word, twarrtID), on: req) }
+				group.addTask { 
+					let userIDs = try await req.redis.getUsersForAlertword(word)
+					return try await subtractNotifications(users: userIDs, type: .alertwordTwarrt(word, twarrtID), on: req)
+				}
 			}
 			if addingAlertWords.count > 0 {
 				let authorName = req.userCache.getUser(twarrt.$author.id)?.username
 				addingAlertWords.forEach { word in
 					let infoStr = "\(authorName == nil ? "A user" : "User @\(authorName!)") posted a twarrt containing your alert word '\(word)'."
-					group.addTask { try await addAlertwordNotifications(type: .alertwordTwarrt(word, twarrtID), info: infoStr, on: req) }
+					group.addTask { 
+						let userIDs = try await req.redis.getUsersForAlertword(word)
+						let validUserIDs = req.userCache.getUsers(userIDs).compactMap { $0.accessLevel >= .quarantined ? $0.userID : nil }
+						return try await addNotifications(users: validUserIDs, type: .alertwordTwarrt(word, twarrtID), info: infoStr, on: req)
+					}
 				}
 			}
 

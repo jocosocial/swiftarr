@@ -427,6 +427,7 @@ func configureMigrations(_ app: Application) throws {
 	app.migrations.add(CreateTokenSchema(), to: .psql)
 	app.migrations.add(CreateRegistrationCodeSchema(), to: .psql)
 	app.migrations.add(CreateProfileEditSchema(), to: .psql)
+	app.migrations.add(CreateUserRoleSchema(), to: .psql)
 	app.migrations.add(CreateUserNoteSchema(), to: .psql)
 	app.migrations.add(CreateMuteWordSchema(), to: .psql)
 	app.migrations.add(CreateAlertWordSchema(), to: .psql)
