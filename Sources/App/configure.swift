@@ -93,9 +93,17 @@ func configureBundle(_ app: Application) throws {
 	if operatingSystemPlatform() == "Linux" {
 		resourcesURL = Bundle.main.bundleURL.appendingPathComponent("swiftarr_App.resources")
 	}
-	else if let appLinkedLocation = Bundle.main.resourceURL?.appendingPathComponent("swiftarr_App.bundle"), 
-			let bundle = Bundle.init(url: appLinkedLocation), let loc = bundle.resourceURL {
+	else if let xcodeLinkedLocation = Bundle.main.resourceURL?.appendingPathComponent("swiftarr_App.bundle"), 
+			let bundle = Bundle.init(url: xcodeLinkedLocation), let loc = bundle.resourceURL,
+			FileManager.default.fileExists(atPath: loc.appendingPathComponent("seeds").path) {
+		// Xcode build toolchain uses this case
 		resourcesURL = loc
+	}
+	else if let cliLinkedLocation = Bundle.main.resourceURL?.appendingPathComponent("swiftarr_App.bundle"), 
+			let bundle = Bundle.init(url: cliLinkedLocation),
+			FileManager.default.fileExists(atPath: bundle.bundleURL.appendingPathComponent("seeds").path) {
+		// Command line toolchain (`swift build`) uses this case
+		resourcesURL = bundle.bundleURL
 	}
 	else if let fwLinkedLocation = Bundle(for: Settings.self).resourceURL?.appendingPathComponent("swiftarr_App.bundle"), 
 			let bundle = Bundle.init(url: fwLinkedLocation), let loc = bundle.resourceURL {
