@@ -3,6 +3,7 @@
     	<div class="container-md ms-0 my-1">
     		<div class="row align-items-center">
 				#if(topMorePostsURL):
+					<!--Newer-->
 					<div class="col col-auto ps-1">
 						<a class="btn btn-primary btn-sm" href="#(topMorePostsURL)">#(topMorePostsLabel)</a>
 					</div>
@@ -11,11 +12,13 @@
 			    	<b>#(filterDesc)</b>
 				</div>
 
-				<div class="col col-auto pe-0">
+				<!--Help-->
+				<div class="col col-auto ps-0">
 					<button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="\#helpModal">?</a>
 				</div>
 
-    			<div class="col col-auto">
+				<!--Filter-->
+    			<div class="col col-auto ps-0">
 					<div class="dropdown">
 						<button class="btn #if(trunk.alertCounts.newTwarrtMentionCount > 0 || trunk.newTweetAlertwords):btn-outline-danger#else:btn-outline-primary#endif dropdown-toggle btn-sm" type="button" id="eventFilterMenu" data-bs-toggle="dropdown" data-selected="all" aria-expanded="false">
 							Filter
@@ -49,6 +52,7 @@
 				</div>
 
 				#if(!isReplyGroup):
+					<!--New Post-->
 					<div class="col col-auto ps-0 pe-1">
 						<button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="\#newPostBox" aria-expanded="false" aria-controls="newPostBox">New Post</button>
 					</div>
