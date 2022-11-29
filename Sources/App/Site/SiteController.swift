@@ -502,13 +502,23 @@ struct SiteController: SiteControllerUtils {
 	/// 
 	/// Ship map
 	func mapPageHandler(_ req: Request) async throws -> View {
+		var mapPath: String? = nil
+		if let deckParam = req.query[String.self, at: "deck"] {
+			mapPath = "/img/map/deck\(deckParam).png"
+		}
+
+		print(mapPath)
+
 		struct MapContext : Encodable {
 			var trunk: TrunkContext
-			init(_ req: Request) throws {
+			var imgPath: String?
+			init(_ req: Request, imgPath: String?) throws {
 				trunk = .init(req, title: "Ship Map", tab: .map)
+				self.imgPath = imgPath
 			}
 		}
-		let ctx = try MapContext(req)
+
+		let ctx = try MapContext(req, imgPath: mapPath)
 		return try await req.view.render("map", ctx)
 	}
 }

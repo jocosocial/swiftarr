@@ -6,23 +6,27 @@
             </div>
             <div class="row my-3">
                 <div class="col btn-group btn-group-sm" role="group" aria-label="Deck Select" id="shipDeckSelect">
-                    <a class="btn btn-outline-primary " href="#deck=1">1</a>
-                    <a class="btn btn-outline-primary " href="#deck=2">2</a>
-                    <a class="btn btn-outline-primary " href="#deck=3">3</a>
-                    <a class="btn btn-outline-primary " href="#deck=4">4</a>
-                    <a class="btn btn-outline-primary " href="#deck=5">5</a>
-                    <a class="btn btn-outline-primary " href="#deck=6">6</a>
-                    <a class="btn btn-outline-primary " href="#deck=7">7</a>
-                    <a class="btn btn-outline-primary " href="#deck=8">8</a>
-                    <a class="btn btn-outline-primary " href="#deck=9">9</a>
-                    <a class="btn btn-outline-primary " href="#deck=10">10</a>
-                    <a class="btn btn-outline-primary " href="#deck=11">11</a>
+                    <a class="btn btn-outline-primary " href="/map?deck=1">1</a>
+                    <a class="btn btn-outline-primary " href="/map?deck=2">2</a>
+                    <a class="btn btn-outline-primary " href="/map?deck=3">3</a>
+                    <a class="btn btn-outline-primary " href="/map?deck=4">4</a>
+                    <a class="btn btn-outline-primary " href="/map?deck=5">5</a>
+                    <a class="btn btn-outline-primary " href="/map?deck=6">6</a>
+                    <a class="btn btn-outline-primary " href="/map?deck=7">7</a>
+                    <a class="btn btn-outline-primary " href="/map?deck=8">8</a>
+                    <a class="btn btn-outline-primary " href="/map?deck=9">9</a>
+                    <a class="btn btn-outline-primary " href="/map?deck=10">10</a>
+                    <a class="btn btn-outline-primary " href="/map?deck=11">11</a>
                 </div>
             </div>
             <div class="row justify-content-center align-items-center mx-1 mb-3">
+                #if(imgPath):
                 <div class="col col-auto p-1 border">
-                    <img src="/img/map/deck1.png" class="swiftarr-deck-map" />
+                    <img src="#(imgPath)" class="swiftarr-deck-map" />
                 </div>
+                #else:
+                <p>Select a deck above.</p>
+                #endif
                 <div class="col-sm">
                 </div>
             </div>
