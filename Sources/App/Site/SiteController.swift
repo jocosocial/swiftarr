@@ -25,6 +25,7 @@ struct TrunkContext: Encodable {
 		case moderator
 		case admin
 		case time
+		case map
 		
 		case none
 	}
@@ -392,6 +393,7 @@ struct SiteController: SiteControllerUtils {
 		openRoutes.get(use: rootPageHandler)
 		openRoutes.get("about", use: aboutTwitarrViewHandler)
 		openRoutes.get("time", use: timePageHandler)
+		openRoutes.get("map", use: mapPageHandler)
 	}
 	
 	/// GET /
@@ -494,6 +496,20 @@ struct SiteController: SiteControllerUtils {
 
 		let ctx = try TimePageContext(req)
 		return try await req.view.render("time", ctx)
+	}
+
+	/// GET /map
+	/// 
+	/// Ship map
+	func mapPageHandler(_ req: Request) async throws -> View {
+		struct MapContext : Encodable {
+			var trunk: TrunkContext
+			init(_ req: Request) throws {
+				trunk = .init(req, title: "Ship Map", tab: .map)
+			}
+		}
+		let ctx = try MapContext(req)
+		return try await req.view.render("map", ctx)
 	}
 }
 	

@@ -143,3 +143,9 @@ duration-select:focus {
 .event-now-badge {
 	background: url('/img/event-now.png') 0 0/16px repeat-y;
 }
+
+.swiftarr-deck-map {
+  max-width: 100%;
+  width: 20em;
+  padding: 1em;
+}
