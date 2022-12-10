@@ -711,7 +711,9 @@ struct FezController: APIRouteCollection {
 		newParticipant.hiddenCount = hiddenPostCount 
 		try await newParticipant.save(on: req.db)
 		try forwardMembershipChangeToSockets(fez, participantID: userID, joined: true, on: req)
-		return try buildFezData(from: fez, with: newParticipant, for: requester, on: req)
+		let effectiveUser = getEffectiveUser(user: requester, req: req, fez: fez)
+		let pivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == effectiveUser.userID).first()
+		return try buildFezData(from: fez, with: pivot, for: requester, on: req)
 	}
 	
 	/// `POST /api/v3/fez/ID/user/:userID/remove`
@@ -744,7 +746,9 @@ struct FezController: APIRouteCollection {
 		try await fez.$participants.detach(removeUser, on: req.db)
 		try await deleteFezNotifications(userIDs: [removeUserID], fez: fez, on: req)
 		try forwardMembershipChangeToSockets(fez, participantID: removeUserID, joined: false, on: req)
-		return try buildFezData(from: fez, with: nil, for: requester, on: req)
+		let effectiveUser = getEffectiveUser(user: requester, req: req, fez: fez)
+		let pivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == effectiveUser.userID).first()
+		return try buildFezData(from: fez, with: pivot, for: requester, on: req)
 	}
 
 	/// `POST /api/v3/fez/ID/report`

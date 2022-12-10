@@ -1354,7 +1354,7 @@ extension QueryBuilder {
 			default: break
 		}
 		guard let user = possibleUser else {
-			return self.filter(Category.self, \.$accessLevelToView <= .unverified).filter(Category.self, \.$requiredRole == nil)
+			return self.filter(Category.self, \.$accessLevelToView <= .quarantined).filter(Category.self, \.$requiredRole == nil)
 		}	
 		self.filter(Category.self, \Category.$accessLevelToView <= user.accessLevel)
 		if user.accessLevel >= .moderator {

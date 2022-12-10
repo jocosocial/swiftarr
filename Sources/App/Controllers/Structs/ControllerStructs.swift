@@ -391,7 +391,7 @@ public struct FezContentData: Content {
 	var initialUsers: [UUID]
 	/// If TRUE, the Fez will be created by user @moderator instead of the current user. Current user must be a mod.
 	var createdByModerator: Bool?
-	/// If TRUE, the Fez will be created by user @moderator instead of the current user. Current user must be a mod.
+	/// If TRUE, the Fez will be created by user @TwitarrTeam instead of the current user. Current user must be a TT member.
 	var createdByTwitarrTeam: Bool?
 }
 
