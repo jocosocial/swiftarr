@@ -1,0 +1,27 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 mt-2">
+            <div class="row my-3">
+                <h4>Ship Map</h4>
+            </div>
+            <div class="row my-3">
+                <div class="col btn-group btn-group-sm" role="group" aria-label="Deck Select" id="shipDeckSelect">
+                    #for(deck in decks):
+                    <a class="btn btn-outline-primary #if(deckNumber == deck):active#endif" href="/map?deck=#(deck)">#(deck)</a>
+                    #endfor
+                </div>
+            </div>
+            <div class="row justify-content-center align-items-center mx-1 mb-3">
+                #if(deckNumber):
+                <div class="col col-auto p-1 border">
+                    <img src="/img/map/deck#(deckNumber).png" class="swiftarr-deck-map" />
+                </div>
+                #else:
+                <p>Select a deck above.</p>
+                #endif
+                <div class="col-sm">
+                </div>
+            </div>
+		</div>
+    #endexport
+#endextend
