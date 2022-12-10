@@ -190,13 +190,16 @@ async function deleteAction() {
 
 // Make every post expand when first clicked, showing the previously hidden action bar.
 for (let posElement of document.querySelectorAll('.has-action-bar')) {
-	posElement.addEventListener("click", showActionBar);
+	posElement.addEventListener("click", toggleActionBar);
 }
-function showActionBar() {
+function toggleActionBar() {
 	let actionBar = event.currentTarget.querySelector('[data-label="actionbar"]');
 	if (actionBar && !actionBar.classList.contains("show")) {
 		var bsCollapse = new bootstrap.Collapse(actionBar, { toggle: false }).show();
 		updateLikeCounts(event.currentTarget);
+	}
+	else if (actionBar && actionBar.classList.contains("show")) {
+		var bsCollapse = new bootstrap.Collapse(actionBar, { toggle: false }).hide();
 	}
 }
 // When a post is expanded, get like count details and update counts.

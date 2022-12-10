@@ -3,7 +3,8 @@
     	<div class="container-md ms-0 my-1">
     		<div class="row align-items-center">
 				#if(topMorePostsURL):
-					<div class="col col-auto">
+					<!--Newer-->
+					<div class="col col-auto ps-1">
 						<a class="btn btn-primary btn-sm" href="#(topMorePostsURL)">#(topMorePostsLabel)</a>
 					</div>
 				#endif
@@ -11,7 +12,13 @@
 			    	<b>#(filterDesc)</b>
 				</div>
 
-    			<div class="col col-auto">
+				<!--Help-->
+				<div class="col col-auto ps-0">
+					<button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="\#helpModal">?</a>
+				</div>
+
+				<!--Filter-->
+    			<div class="col col-auto ps-0">
 					<div class="dropdown">
 						<button class="btn #if(trunk.alertCounts.newTwarrtMentionCount > 0 || trunk.newTweetAlertwords):btn-outline-danger#else:btn-outline-primary#endif dropdown-toggle btn-sm" type="button" id="eventFilterMenu" data-bs-toggle="dropdown" data-selected="all" aria-expanded="false">
 							Filter
@@ -45,7 +52,8 @@
 				</div>
 
 				#if(!isReplyGroup):
-					<div class="col col-auto ps-0">
+					<!--New Post-->
+					<div class="col col-auto ps-0 pe-1">
 						<button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="\#newPostBox" aria-expanded="false" aria-controls="newPostBox">New Post</button>
 					</div>
 				#endif
@@ -104,6 +112,25 @@
 					</div>
 					<div class="mx-3 pb-1 text-end text-danger error-display d-none">
 						Could not delete twarrt: <span class="errortext"></span>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalTitle" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="helpModalTitle">Help</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<p>Click/tap on a Twarrt to favorite, start a thread, or add a reaction.</p>
+						<p>Use the filter dropdown to view certain Twarrts.</p>
+						<p>Click/tap Newer to see the latest content.</p>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
 					</div>
 				</div>
 			</div>
