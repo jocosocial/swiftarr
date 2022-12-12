@@ -20,7 +20,7 @@ final class ForumReaders: Model {
 	@Field(key: "favorite") var isFavorite: Bool
 
 	/// False unless the user has muted this forum and does not want any notifications.
-	@Field(key: "mute") var isMute: Bool
+	@Field(key: "mute") var isMuted: Bool
 		
 // Timestamps
 	
@@ -53,7 +53,7 @@ final class ForumReaders: Model {
 		self.$forum.value = forum
 		self.readCount = 0
 		self.isFavorite = false
-		self.isMute = false
+		self.isMuted = false
 	}
 }
 

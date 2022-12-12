@@ -594,6 +594,8 @@ public struct ForumData: Content {
 	var isLocked: Bool
 	/// Whether the user has favorited forum.
 	var isFavorite: Bool
+	/// Whether the user has muted the forum.
+	var isMuted: Bool
 	/// The paginator contains the total number of posts in the forum, and the start and limit of the requested subset in `posts`.
 	var paginator: Paginator
 	/// Posts in the forum.
@@ -601,7 +603,7 @@ public struct ForumData: Content {
 }
 
 extension ForumData {
-	init(forum: Forum, creator: UserHeader, isFavorite: Bool, posts: [PostData], pager: Paginator) throws {
+	init(forum: Forum, creator: UserHeader, isFavorite: Bool, isMuted: Bool, posts: [PostData], pager: Paginator) throws {
 		guard creator.userID == forum.$creator.id else {
 			throw Abort(.internalServerError, reason: "Internal server error--Forum's creator does not match.")
 		}
@@ -612,6 +614,7 @@ extension ForumData {
 		self.creator = creator
 		isLocked = forum.moderationStatus == .locked
 		self.isFavorite = isFavorite
+		self.isMuted = isMuted
 		self.posts = posts
 		self.paginator = pager
 	}
@@ -649,6 +652,8 @@ public struct ForumListData: Content {
 	var isLocked: Bool
 	/// Whether user has favorited forum.
 	var isFavorite: Bool
+	/// Whether user has muted the forum.
+	var isMuted: Bool
 	/// If this forum is for an Event on the schedule, the start time of the event.
 	var eventTime: Date?
 	/// If this forum is for an Event on the schedule, the timezone that the ship is going to be in when the event occurs. Delivered as an abbreviation e.g. "EST".
@@ -656,8 +661,9 @@ public struct ForumListData: Content {
 }
 
 extension ForumListData {
-	init(forum: Forum, creator: UserHeader, postCount: Int, readCount: Int, lastPostAt: Date?, lastPoster: UserHeader?, isFavorite: Bool,
-			event: Event?) throws {
+	init(forum: Forum, creator: UserHeader, postCount: Int, readCount: Int, 
+			lastPostAt: Date?, lastPoster: UserHeader?, isFavorite: Bool,
+			isMuted: Bool, event: Event?) throws {
 		guard creator.userID == forum.$creator.id else {
 			throw Abort(.internalServerError, reason: "Internal server error--Forum's creator does not match.")
 		}
@@ -671,6 +677,7 @@ extension ForumListData {
 		self.lastPoster = lastPoster
 		self.isLocked = forum.moderationStatus == .locked
 		self.isFavorite = isFavorite
+		self.isMuted = isMuted
 		if let event = event, event.id != nil {
 			let timeZoneChanges = Settings.shared.timeZoneChanges
 			self.eventTime = timeZoneChanges.portTimeToDisplayTime(event.startTime)

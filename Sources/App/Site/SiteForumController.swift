@@ -64,6 +64,7 @@ struct ForumsSearchPageContext : Encodable {
 		case favorite						// Favorited by this user
 		case recent							// Recently viewed by this user
 		case textSearch						// Searches title for string
+		case mute							// Muted forums by this user
 	}
 	
 	init(_ req: Request, forums: ForumSearchData, searchType: SearchType, filterDesc: String) throws {
@@ -73,6 +74,7 @@ struct ForumsSearchPageContext : Encodable {
 			case .favorite: title = "Favorite Forums"
 			case .recent: title = "Recently Viewed"
 			case .textSearch: title = "Forum Search"
+			case .mute: title = "Muted Forums"
 		}
 		trunk = .init(req, title: title, tab: .forums, search: "Search")
 		self.forums = forums
@@ -248,6 +250,9 @@ struct SiteForumController: SiteControllerUtils {
 		privateRoutes.get("forum", "favorites", use: forumFavoritesPageHandler)
 		privateRoutes.post("forum", "favorite", forumIDParam, use: forumAddFavoritePostHandler)
 		privateRoutes.delete("forum", "favorite", forumIDParam, use: forumRemoveFavoritePostHandler)
+		privateRoutes.get("forum", "mutes", use: forumMutesPageHandler)
+		privateRoutes.post("forum", "mute", forumIDParam, use: forumAddMutePostHandler)
+		privateRoutes.delete("forum", "mute", forumIDParam, use: forumRemoveMutePostHandler)
 		privateRoutes.get("forum", "owned", use: forumsByUserPageHandler)
 		privateRoutes.get("forum", "recent", use: forumRecentsPageHandler)
 
@@ -519,6 +524,28 @@ struct SiteForumController: SiteControllerUtils {
 		try await apiQuery(req, endpoint: "/forum/\(forumID)/favorite/remove", method: .POST)
 		return .noContent
 	}
+
+	// POST /forum/mute/:forum_ID
+	//
+	// Adds a forum to the user's mute list.
+	func forumAddMutePostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let forumID = req.parameters.get(forumIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing forum_id parameter.")
+		}
+		try await apiQuery(req, endpoint: "/forum/\(forumID)/mute", method: .POST)
+		return .created
+	}
+	
+	// DELETE /forum/mute/:forum_ID
+	//
+	// Removes a forum from the user's mute list.
+	func forumRemoveMutePostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let forumID = req.parameters.get(forumIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing forum_id parameter.")
+		}
+		try await apiQuery(req, endpoint: "/forum/\(forumID)/mute/remove", method: .POST)
+		return .noContent
+	}
 	
 // MARK: - Posts
 
@@ -759,6 +786,17 @@ struct SiteForumController: SiteControllerUtils {
 		let response = try await apiQuery(req, endpoint: "/forum/favorites")
 		let forums = try response.content.decode(ForumSearchData.self)		
 		let ctx = try ForumsSearchPageContext(req, forums: forums, searchType: .favorite, filterDesc: "\(forums.paginator.total) Favorites")
+		return try await req.view.render("Forums/forumsList", ctx)
+	}
+
+	// GET /forum/mutes
+	//
+	// Displays a list of the user's mutes forums.
+	// URL QueryParameters start, limit are passed through.
+	func forumMutesPageHandler(_ req: Request) async throws -> View {
+		let response = try await apiQuery(req, endpoint: "/forum/mutes")
+		let forums = try response.content.decode(ForumSearchData.self)		
+		let ctx = try ForumsSearchPageContext(req, forums: forums, searchType: .mute, filterDesc: "\(forums.paginator.total) Muted Forums")
 		return try await req.view.render("Forums/forumsList", ctx)
 	}
 	
