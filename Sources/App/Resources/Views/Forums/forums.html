@@ -56,7 +56,7 @@
 							#endif
 							<div class="row">
 								<div class="col #if(forum.isMuted):text-muted#endif">
-									#(forum.postCount) post#if(forum.postCount != 1):s#endif#if(forum.readCount < forum.postCount):, <span class="text-danger #if(forum.isMuted):d-none#endif">#(forum.postCount - forum.readCount) new</span>#endif
+									#(forum.postCount) post#if(forum.postCount != 1):s#endif#if(forum.readCount < forum.postCount && !forum.isMuted):, <span class="text-danger #if(forum.isMuted):d-none#endif">#(forum.postCount - forum.readCount) new</span>#endif
 								</div>
 								<div class="col col-auto">
 									<span class="text-muted #if(forum.isMuted):d-none#endif">Last post: @#(forum.lastPoster.username)</span>
