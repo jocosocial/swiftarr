@@ -306,7 +306,7 @@ struct ForumController: APIRouteCollection {
 		let forumQuery = countQuery.copy().range(start..<(start + limit)).join(child: \.$scheduleEvent, method: .left)
 		switch req.query[String.self, at: "sort"] {
 			case "create": _ = forumQuery.sort(\.$createdAt, .descending)
-			case "title": _ = forumQuery.sort(.custom("lower(title)"), .ascending)
+			case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), .ascending)
 			default: _ = forumQuery.sort(\.$lastPostTime, .descending)
 		}
 		async let forums = try forumQuery.all()
@@ -341,7 +341,7 @@ struct ForumController: APIRouteCollection {
 		let forumQuery = countQuery.copy().range(start..<(start + limit)).join(child: \.$scheduleEvent, method: .left)
 		switch req.query[String.self, at: "sort"] {
 			case "create": _ = forumQuery.sort(\.$createdAt, .descending)
-			case "title": _ = forumQuery.sort(.custom("lower(title)"), .ascending)
+			case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), .ascending)
 			default: _ = forumQuery.sort(\.$lastPostTime, .descending)
 		}
 		async let forums = try forumQuery.all()
