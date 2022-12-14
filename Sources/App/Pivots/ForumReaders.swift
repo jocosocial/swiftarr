@@ -95,7 +95,7 @@ struct UpdateForumReadersSchema: AsyncMigration {
 				.field("mute", .bool, .sql(.default(false)), .required)
 				.update()
 		} catch let err as PostgresError where err.code == .duplicateColumn {
-			database.logger.warning("Duplicate column detected in upgrade migration.")
+			database.logger.info("Duplicate column detected in update migration. Skipping...")
 		}
 	}
 
