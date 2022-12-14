@@ -212,25 +212,7 @@ extension CategoryData {
 		isRestricted = restricted
 		isEventCategory = cat.isEventCategory
 		numThreads = cat.forumCount
-		self.forumThreads = sortForumThreads(forumThreads)
-	}
-
-	// This pre-empts any proper "sorting" system that we support and imposes any system-level
-	// sort functions on the list of threads within a category. At this time the only sorting
-	// of this nature we support is sending muted forums to the bottom of the list.
-	func sortForumThreads(_ forumThreads: [ForumListData]? = nil) -> [ForumListData]? {
-		var mutedForums: [ForumListData] = []
-		var regularForums: [ForumListData] = []
-
-		for thread in forumThreads ?? [] {
-			if thread.isMuted {
-				mutedForums.append(thread)
-			} else {
-				regularForums.append(thread)
-			}
-		}
-		
-		return regularForums + mutedForums ?? nil
+		self.forumThreads = forumThreads
 	}
 }
 

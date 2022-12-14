@@ -689,6 +689,9 @@ struct ForumController: APIRouteCollection {
 		}
 		let forumReader = try await ForumReaders.query(on: req.db).filter(\.$forum.$id == forum.requireID())
 				.filter(\.$user.$id == cacheUser.userID).first() ?? ForumReaders(cacheUser.userID, forum)
+		if forumReader.isMuted {
+			throw Abort(.badRequest, reason: "Cannot favorite a muted forum.")
+		}
 		if forumReader.isFavorite {
 			return .ok
 		}
@@ -732,6 +735,9 @@ struct ForumController: APIRouteCollection {
 		}
 		let forumReader = try await ForumReaders.query(on: req.db).filter(\.$forum.$id == forum.requireID())
 				.filter(\.$user.$id == cacheUser.userID).first() ?? ForumReaders(cacheUser.userID, forum)
+		if forumReader.isFavorite {
+			throw Abort(.badRequest, reason: "Cannot mute a favorited forum.")
+		}
 		if forumReader.isMuted {
 			return .ok
 		}
@@ -1222,7 +1228,16 @@ extension ForumController {
 					isMuted: forceIsMuted ?? thisForumReaderPivot?.isMuted ?? false,
 					event: joinedEvent)
 		}
-		return returnListData
+		var mutedForums: [ForumListData] = []
+		var regularForums: [ForumListData] = []
+		for forumData in returnListData {
+			if forumData.isMuted {
+				mutedForums.append(forumData)
+			} else {
+				regularForums.append(forumData)
+			}
+		}
+		return regularForums + mutedForums
 	}
 	
 	/// Builds a `ForumData` with the contents of the given `Forum`. Uses the requests' "limit" and "start" query parameters
