@@ -44,8 +44,8 @@
 				</div>
 			</div>
 			<div class="list-group">
-				#if(count(forums.forumThreads) > 0):
-					#for(forum in forums.forumThreads):
+				#if(count(forumThreads) > 0):
+					#for(forum in forumThreads):
 						<a href="/forum/#(forum.forumID)" class="list-group-item list-group-item-action">		
 							<div class="row">
 								<div class="col #if(forum.isMuted):text-muted#endif">

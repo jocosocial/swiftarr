@@ -119,7 +119,7 @@ struct ForumController: APIRouteCollection {
 	// header in the request.
 	
 	// MARK: Returns Forum Lists	
-	/// `GET /api/v3/forum/catgories/ID`
+	/// `GET /api/v3/forum/categories/ID`
 	///
 	/// Retrieve a list of forums in the specifiec `Category`. Will not return forums created by blocked users.
 	/// 
@@ -1228,16 +1228,7 @@ extension ForumController {
 					isMuted: forceIsMuted ?? thisForumReaderPivot?.isMuted ?? false,
 					event: joinedEvent)
 		}
-		var mutedForums: [ForumListData] = []
-		var regularForums: [ForumListData] = []
-		for forumData in returnListData {
-			if forumData.isMuted {
-				mutedForums.append(forumData)
-			} else {
-				regularForums.append(forumData)
-			}
-		}
-		return regularForums + mutedForums
+		return returnListData
 	}
 	
 	/// Builds a `ForumData` with the contents of the given `Forum`. Uses the requests' "limit" and "start" query parameters

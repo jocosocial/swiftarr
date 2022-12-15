@@ -310,6 +310,7 @@ struct SiteForumController: SiteControllerUtils {
 			var forums: CategoryData
 			var paginator: PaginatorContext
 			var sortOrders: [ForumsSortOrder]
+			var forumThreads: [ForumListData]
 						
 			init(_ req: Request, forums: CategoryData, start: Int, limit: Int) throws {
 				trunk = .init(req, title: "Forum Threads", tab: .forums, search: "Search")
@@ -324,8 +325,17 @@ struct SiteForumController: SiteControllerUtils {
 				if forums.isEventCategory {
 					sortOrders.insert(ForumsSortOrder(urlStr: req.url.string, name: "Event Time", value: "event", isDefault: true), at: 0)
 				}
+				var mutedForums: [ForumListData] = []
+				var regularForums: [ForumListData] = []
+				for forumData in forums.forumThreads ?? [] {
+					if forumData.isMuted {
+						mutedForums.append(forumData)
+					} else {
+						regularForums.append(forumData)
+					}
+				}
+				self.forumThreads = regularForums + mutedForums
 			}
-			
 		}
 		let ctx = try ForumsPageContext(req, forums: forums, start: start, limit: limit)
 		return try await req.view.render("Forums/forums", ctx)
