@@ -12,6 +12,9 @@
 				</div>
 				
 				#if(count(sortOrders) > 0):
+					<div class="col col-auto ps-0">
+						<button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="\#helpModal">?</a>
+					</div>
 					<div class="col col-auto">
 						<div class="dropdown">
 							<button class="btn btn-outline-primary dropdown-toggle btn-sm" type="button" id="forumSortMenu" data-bs-toggle="dropdown" data-selected="all" aria-expanded="false">
@@ -33,7 +36,7 @@
 						<a href="/forum/#(forum.forumID)" class="list-group-item list-group-item-action">		
 							<div class="row">
 								<div class="col #if(forum.isMuted):text-muted#endif">
-									#if(forum.isMuted):🔇#endif #(forum.title)
+									#if(forum.isMuted):🔇#elseif(forum.isFavorite):⭐#endif #(forum.title)
 								</div>
 								<div class="col col-auto">
 									<span class="text-muted d-none #if(!forum.isMuted):d-sm-flex#endif">by&nbsp;#userByline(forum.creator, "nolink"), #relativeTime(forum.lastPostAt)</span>
@@ -70,6 +73,22 @@
 						#endif
 					</div>
 				#endif
+			</div>
+		</div>
+		<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalTitle" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="helpModalTitle">Help</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<p>Muted threads appear at the end of this list, maybe even in another page of results.</p>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+					</div>
+				</div>
 			</div>
 		</div>
 		#extend("paginator")
