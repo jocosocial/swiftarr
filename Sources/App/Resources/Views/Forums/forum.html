@@ -17,6 +17,11 @@
 			</div>
     		<div class="row align-items-center justify-content-between mb-2">
 				<div class="col text-end">
+					<div class="btn-group btn-group-sm">
+						<div class="col col-auto ps-2">
+							<button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="\#helpModal">?</a>
+						</div>
+					</div>
 					<div class="btn-group btn-group-sm" role="group" aria-label="Forum Actions">
 						<input type="checkbox" class="btn-check" autocomplete="off" data-action="favorite" 
 								data-actionpath="/forum/favorite/#(forum.forumID)"
@@ -206,6 +211,22 @@
 					</div>
 					<div class="mx-3 pb-1 text-end text-danger error-display d-none">
 						Could not delete forum post: <span class="errortext"></span>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalTitle" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="helpModalTitle">Help</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<p>Click/tap on a post to favorite, edit, or add a reaction.</p>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
 					</div>
 				</div>
 			</div>
