@@ -551,7 +551,7 @@ struct ForumController: APIRouteCollection {
 				.categoryAccessFilter(for: cacheUser)
 
 		let matchBookmarked = req.query[String.self, at: "bookmarked"] == "true"
-		let ownReacts = req.query[String.self, at: "bookmarked"] == "true"
+		let ownReacts = req.query[String.self, at: "ownreacts"] == "true"
 		if ownReacts || matchBookmarked {
 			query.join(PostLikes.self, on: \ForumPost.$id == \PostLikes.$post.$id).filter(PostLikes.self, \.$user.$id == cacheUser.userID)
 			if matchBookmarked {
