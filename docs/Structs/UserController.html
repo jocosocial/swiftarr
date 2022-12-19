@@ -1366,7 +1366,7 @@ cleaner collection, since use of <code>User.parameter</code> in the paths here c
 entirely.</p>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L13-L722">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L13-L723">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1819,8 +1819,9 @@ if the user is a <code>.client</code>.
 while <code>/api/v3/user/:userID/username</code> allows moderators to change the username of the indicated user.</p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
-    400 error if the username is an invalid format. 403 error if the user is a
-<code>.client</code>. 409 error if the username is not available.
+    400 error if the username is an invalid format.
+403 error if you change username more than once per 20 hours (to prevent abuse). Or if the user is a <code>.client</code>.
+409 error if the username is not available.
 
 </div>
 
@@ -1857,7 +1858,7 @@ while <code>/api/v3/user/:userID/username</code> allows moderators to change the
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L346-L393">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L347-L394">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1939,7 +1940,7 @@ We don&rsquo;t check whether the file exists.</li>
                         <p><a href="doc:UserHeader">doc:UserHeader</a> containing the generated image identifier string.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L409-L431">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L410-L432">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2006,7 +2007,7 @@ We don&rsquo;t check whether the file exists.</li>
                         <p>204 No Content on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L444-L472">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L445-L473">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2057,7 +2058,7 @@ bug, please and thank you.</p>
                         <p><a href="doc:ProfilePublicData">doc:ProfilePublicData</a> containing the editable properties of the profile.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L485-L488">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L486-L489">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2140,7 +2141,7 @@ resets its respective profile property to <code>nil</code>.</p>
                         <p><a href="doc:ProfilePublicData">doc:ProfilePublicData</a> containing the updated editable properties of the profile.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L504-L538">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L505-L539">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2216,7 +2217,7 @@ resets its respective profile property to <code>nil</code>.</p>
                         <p><a href="doc:AlertKeywordData">doc:AlertKeywordData</a> containing the updated contents of the barrel.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L548-L566">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L549-L567">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2260,7 +2261,7 @@ resets its respective profile property to <code>nil</code>.</p>
                         <p><a href="doc:AlertKeywordData">doc:AlertKeywordData</a> containing the current alert keywords as an array of strings.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L574-L579">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L575-L580">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2323,7 +2324,7 @@ resets its respective profile property to <code>nil</code>.</p>
                         <p><a href="doc:AlertKeywordData">doc:AlertKeywordData</a> containing the updated contents of the barrel.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L588-L605">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L589-L606">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2399,7 +2400,7 @@ resets its respective profile property to <code>nil</code>.</p>
                         <p><a href="doc:MuteKeywordData">doc:MuteKeywordData</a> containing the updated contents of the barrel.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L617-L640">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L618-L641">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2443,7 +2444,7 @@ resets its respective profile property to <code>nil</code>.</p>
                         <p><a href="doc:MuteKeywordData">doc:MuteKeywordData</a> containing the current muting keywords as an array of  strings.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L648-L653">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L649-L654">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2506,7 +2507,7 @@ resets its respective profile property to <code>nil</code>.</p>
                         <p><a href="doc:MuteKeywordData">doc:MuteKeywordData</a> containing the updated contents of the barrel.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L662-L681">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L663-L682">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2555,7 +2556,7 @@ editing of notes outside of a profile-viewing context.</p>
                         <p>An array of  <a href="doc:NoteData">doc:NoteData</a> containing all of the user&rsquo;s notes.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L694-L704">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L695-L705">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2626,7 +2627,7 @@ editing of notes outside of a profile-viewing context.</p>
                         <p>A recoveryKey string.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L713-L721">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L714-L722">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2639,7 +2640,7 @@ editing of notes outside of a profile-viewing context.</p>
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-12-10)</p>
+      <p>&copy; 2022 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2022-12-19)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
     </section>
   </body>
