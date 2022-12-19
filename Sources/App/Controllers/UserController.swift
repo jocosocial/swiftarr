@@ -340,8 +340,9 @@ struct UserController: APIRouteCollection {
 	/// while `/api/v3/user/:userID/username` allows moderators to change the username of the indicated user.
 	///
 	/// - Parameter requestBody: <doc:UserUsernameData> containing the user's desired new username.
-	/// - Throws: 400 error if the username is an invalid format. 403 error if the user is a
-	///   `.client`. 409 error if the username is not available.
+	/// - Throws: 400 error if the username is an invalid format.
+	///   403 error if you change username more than once per 20 hours (to prevent abuse). Or if the user is a `.client`.
+	///   409 error if the username is not available.
 	/// - Returns: 201 Created on success.
 	func usernameHandler(_ req: Request) async throws -> HTTPStatus {
 		let cacheUser = try req.auth.require(UserCacheData.self)
