@@ -19,13 +19,18 @@ struct SiteEventsController: SiteControllerUtils {
 	
 // MARK: - Events
 	/// `GET /events`
+	/// `GET /events/:event_id`
 	///
-	/// By default, shows a day's worth events. Always attempts to show events from a day on the actual cruise. Uses `Settings.shared.cruiseStartDate`
-	/// for cruise dates; the ingested schedule should have events for that day and the next 7 days.
+	/// By default, shows a day's worth events. Always attempts to show events from a day on the actual cruise. Uses
+	/// `Settings.shared.cruiseStartDate` for cruise dates; the ingested schedule should have events for that day and
+	/// the next 7 days.
 	///
-	/// Use the 'day' or 'cruiseday' query parameter to request which day to show. If no parameter given, uses the current day of week.
+	/// Use the 'day' or 'cruiseday' query parameter to request which day to show. If no parameter given, uses the
+	/// current day of week.
 	///
 	/// When the search parameter is used, returns events for the entire cruise, that match the search value.
+	///
+	/// If given an :event_id URL path (note: NOT a query parameter!) show only that event and ignore all other params.
 	///
 	/// Query Parameters:
 	/// - day=STRING      One of: "sun" ... "sat". Can also use "1sat" for first Saturday (embarkation day), or "2sat" for the next Saturday.
@@ -69,6 +74,9 @@ struct SiteEventsController: SiteControllerUtils {
 			components.queryItems?.append(URLQueryItem(name: "cruiseday", value: String(dayOfCruise)))
 			filterString = "Today's " + filterString
 		}
+
+		// If this function got an event ID, we will only show that event. Otherwise (and most often)
+		// we will show all events, matching the particular query parameters if given.
 		var events: [EventData] = []
 		if let eventID = req.parameters.get(eventIDParam.paramString)?.percentEncodeFilePathEntry() {
 			let response = try await apiQuery(req, endpoint: "/events/\(eventID)")
@@ -128,29 +136,6 @@ struct SiteEventsController: SiteControllerUtils {
 		let eventContext = EventPageContext(req, events: events, dayOfCruise: dayOfCruise, 
 				filterString: filterString, allDays: useAllDays)
 		return try await req.view.render("events", eventContext)
-	}
-
-	/// GET `/events/:event_id`
-	///
-	/// Show a single event by ID.
-	///
-	func eventPageHandler(_ req: Request) async throws -> View {
-		guard let eventID = req.parameters.get(eventIDParam.paramString)?.percentEncodeFilePathEntry() else {
-			throw Abort(.badRequest, reason: "Missing event ID parameter.")
-		}
-		let response = try await apiQuery(req, endpoint: "/events/\(eventID)")
-		let event = try response.content.decode(EventData.self)
-		struct EventPageContext : Encodable {
-			var trunk: TrunkContext
-			var event: EventData
-
-			init(_ req: Request, event: EventData) {
-				self.event = event
-				trunk = .init(req, title: "Event", tab: .events, search: "Search Events")
-			}
-		}
-		let eventContext = EventPageContext(req, event: event)
-		return try await req.view.render("event", eventContext)
 	}
 	
 	func eventsDownloadICSHandler(_ req: Request) async throws -> Response {
