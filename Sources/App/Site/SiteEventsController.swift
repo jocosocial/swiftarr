@@ -8,6 +8,7 @@ struct SiteEventsController: SiteControllerUtils {
 		// Routes that the user does not need to be logged in to access.
 		let openRoutes = getOpenRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .schedule))
 		openRoutes.get("events", use: eventsPageHandler)
+		openRoutes.get("events", eventIDParam, use: eventPageHandler)
 		openRoutes.get("events", eventIDParam, "calendarevent.ics", use: eventsDownloadICSHandler)
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
@@ -21,15 +22,15 @@ struct SiteEventsController: SiteControllerUtils {
 	///
 	/// By default, shows a day's worth events. Always attempts to show events from a day on the actual cruise. Uses `Settings.shared.cruiseStartDate`
 	/// for cruise dates; the ingested schedule should have events for that day and the next 7 days.
-	/// 
+	///
 	/// Use the 'day' or 'cruiseday' query parameter to request which day to show. If no parameter given, uses the current day of week.
-	/// 
+	///
 	/// When the search parameter is used, returns events for the entire cruise, that match the search value.
 	///
 	/// Query Parameters:
-	/// - day=STRING			One of: "sun" ... "sat". Can also use "1sat" for first Saturday (embarkation day), or "2sat" for the next Saturday.
-	/// - cruiseday=INT		Generally 1...8, where 1 is embarkation day.
-	/// - search=STRING		Filter only events that match the given string.
+	/// - day=STRING      One of: "sun" ... "sat". Can also use "1sat" for first Saturday (embarkation day), or "2sat" for the next Saturday.
+	/// - cruiseday=INT   Generally 1...8, where 1 is embarkation day.
+	/// - search=STRING   Filter only events that match the given string.
 	func eventsPageHandler(_ req: Request) async throws -> View {
 		var components = URLComponents()
 		components.queryItems = []
@@ -60,7 +61,7 @@ struct SiteEventsController: SiteControllerUtils {
 		else if let cruisedayParam = req.query[Int.self, at: "cruiseday"] {
 			components.queryItems?.append(URLQueryItem(name: "cruiseday", value: String(cruisedayParam)))
 			dayOfCruise = cruisedayParam
-		}		
+		}
 		else if components.queryItems?.isEmpty == true {
 			let cal = Settings.shared.calendarForDate(Date())
 			let thisWeekday = cal.component(.weekday, from: Date())
@@ -120,7 +121,30 @@ struct SiteEventsController: SiteControllerUtils {
 		}
 		let eventContext = EventPageContext(req, events: events, dayOfCruise: dayOfCruise, 
 				filterString: filterString, allDays: useAllDays)
-		return try await req.view.render("events", eventContext)
+		return try await req.view.render("Events/events", eventContext)
+	}
+
+	/// GET `/events/:event_id`
+	///
+	/// Show a single event by ID.
+	///
+	func eventPageHandler(_ req: Request) async throws -> View {
+		guard let eventID = req.parameters.get(eventIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing event ID parameter.")
+		}
+		let response = try await apiQuery(req, endpoint: "/events/\(eventID)")
+		let event = try response.content.decode(EventData.self)
+		struct EventPageContext : Encodable {
+			var trunk: TrunkContext
+			var event: EventData
+
+			init(_ req: Request, event: EventData) {
+				self.event = event
+				trunk = .init(req, title: "Event", tab: .events, search: "Search Events")
+			}
+		}
+		let eventContext = EventPageContext(req, event: event)
+		return try await req.view.render("Events/event", eventContext)
 	}
 	
 	func eventsDownloadICSHandler(_ req: Request) async throws -> Response {
