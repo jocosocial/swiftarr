@@ -11,7 +11,8 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 		case "follow":
 		case "reload":
 		case "block":
-		case "mute": 
+		case "mute":
+		case "muteForum": // Different than mute[User] due to code in spinnerButtonAction.
 		case "unblock": 
 		case "unmute":
 		case "alertWordDelete":

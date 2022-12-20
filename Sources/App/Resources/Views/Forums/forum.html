@@ -17,6 +17,11 @@
 			</div>
     		<div class="row align-items-center justify-content-between mb-2">
 				<div class="col text-end">
+					<div class="btn-group btn-group-sm">
+						<div class="col col-auto ps-2">
+							<button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="\#helpModal">?</a>
+						</div>
+					</div>
 					<div class="btn-group btn-group-sm" role="group" aria-label="Forum Actions">
 						#if(forum.eventID):
 						<a class="btn btn-outline-primary" href="/events/#(forum.eventID)">Event</a>
@@ -32,6 +37,17 @@
 							<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
 							<span class="visually-hidden">Loading...</span>
 						</label>
+						<input type="checkbox" class="btn-check" autocomplete="off" data-action="muteForum" 
+								data-actionpath="/forum/mute/#(forum.forumID)"
+								data-istoggle="true"
+								data-errordiv="mute_errorDisplay"
+								id="#(forum.forumID)_mute"
+							#if(forum.isMuted):checked#endif>
+						<label class="btn btn-outline-primary" for="#(forum.forumID)_mute">
+							Mute<span class="laughtext"></span>
+							<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+							<span class="visually-hidden">Loading...</span>
+						</label>
 						#if(forum.creator.userID == trunk.userID):
 							<a class="btn btn-outline-primary btn-sm" href="/forum/#(forum.forumID)/edit">Edit</a>
 						#else:
@@ -44,6 +60,9 @@
 				</div>
 				<div class="col col-12 text-end text-danger d-none" id="favorite_errorDisplay">
 					Could not add/remove favorite: <span class="errortext"></span>
+				</div>
+				<div class="col col-12 text-end text-danger d-none" id="mute_errorDisplay">
+					Could not add/remove mute: <span class="errortext"></span>
 				</div>
 			</div>
 			#extend("paginator")
@@ -195,6 +214,22 @@
 					</div>
 					<div class="mx-3 pb-1 text-end text-danger error-display d-none">
 						Could not delete forum post: <span class="errortext"></span>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalTitle" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="helpModalTitle">Help</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<p>Click/tap on a post to favorite, edit, or add a reaction.</p>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
 					</div>
 				</div>
 			</div>

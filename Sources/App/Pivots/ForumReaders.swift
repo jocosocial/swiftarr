@@ -1,12 +1,15 @@
 import Foundation
 import Fluent
+import PostgresKit
 
-/// A `Pivot` holding a siblings relation between a `User` and a `Forum`. The pivot tracks how many posts the user has read in the forum.
+/// A `Pivot` holding a siblings relation between a `User` and a `Forum`. 
+/// The pivot tracks how many posts the user has read in the forum.
 
 final class ForumReaders: Model {
 	static let schema = "forum+readers"
 
 // MARK: Properties
+
 	/// The ID of the pivot.
 	@ID(key: .id) var id: UUID?
 	
@@ -15,6 +18,9 @@ final class ForumReaders: Model {
 	
 	/// TRUE if this forum is favorited by this user.
 	@Field(key: "favorite") var isFavorite: Bool
+
+	/// False unless the user has muted this forum and does not want any notifications.
+	@Field(key: "mute") var isMuted: Bool
 		
 // Timestamps
 	
@@ -32,6 +38,7 @@ final class ForumReaders: Model {
 	@Parent(key: "forum") var forum: Forum
 
 // MARK: Initialization
+
 	// Used by Fluent
  	init() { }
  	
@@ -46,24 +53,55 @@ final class ForumReaders: Model {
 		self.$forum.value = forum
 		self.readCount = 0
 		self.isFavorite = false
+		self.isMuted = false
 	}
 }
 
 struct CreateForumReadersSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		try await database.schema("forum+readers")
-				.id()
-				.unique(on: "user", "forum")
-				.field("read_count", .int, .required)
-				.field("favorite", .bool, .required)
-				.field("created_at", .datetime)
-				.field("updated_at", .datetime)
- 				.field("user", .uuid, .required, .references("user", "id", onDelete: .cascade))
-  				.field("forum", .uuid, .required, .references("forum", "id", onDelete: .cascade))
-				.create()
+			.id()
+			.unique(on: "user", "forum")
+			.field("read_count", .int, .required)
+			.field("favorite", .bool, .required)
+			.field("mute", .bool, .required)
+			.field("created_at", .datetime)
+			.field("updated_at", .datetime)
+			.field("user", .uuid, .required, .references("user", "id", onDelete: .cascade))
+			.field("forum", .uuid, .required, .references("forum", "id", onDelete: .cascade))
+			.create()
 	}
 	
 	func revert(on database: Database) async throws {
 		try await database.schema("forum+readers").delete()
+	}
+}
+
+// This is our first usage of an upgrade migration pattern. Adding new fields
+// is relatively trivial. Finding how to assign a default value was not.
+// https://stackoverflow.com/questions/57676112/add-a-default-value-in-migration-in-vapor
+// 
+// This gets complicated because this migration runs on already initialized databases
+// and on fresh ones. The .update() fails on fresh DBs because the column gets created above
+// in the initial schema migration. One solution would be to remove that column from there
+// and have it only get applied in the upgrade. I'm not quite sure that's a great idea
+// from a code perspective. But it means that the migration has to be smart enough to
+// realize that a dupliate column error is not a problem per-se. Not sure which is the "right"
+// path forward here.
+struct UpdateForumReadersSchema: AsyncMigration {
+	func prepare(on database: Database) async throws {
+		do {
+			try await database.schema("forum+readers")
+				.field("mute", .bool, .sql(.default(false)), .required)
+				.update()
+		} catch let err as PostgresError where err.code == .duplicateColumn {
+			database.logger.info("Duplicate column detected in update migration. Skipping...")
+		}
+	}
+
+	func revert(on database: Database) async throws {
+		try await database.schema("forum+readers")
+			.deleteField("mute")
+			.update()
 	}
 }

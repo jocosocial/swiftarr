@@ -41,6 +41,12 @@ struct ForumController: APIRouteCollection {
 		tokenCacheAuthGroup.post(forumIDParam, "favorite", "remove", use: favoriteRemoveHandler)
 		tokenCacheAuthGroup.delete(forumIDParam, "favorite", use: favoriteRemoveHandler)
 
+		// Muted
+		tokenCacheAuthGroup.get("mutes", use: mutesHandler)
+		tokenCacheAuthGroup.post(forumIDParam, "mute", use: muteAddHandler)
+		tokenCacheAuthGroup.post(forumIDParam, "mute", "remove", use: muteRemoveHandler)
+		tokenCacheAuthGroup.delete(forumIDParam, "mute", use: muteRemoveHandler)
+
 		tokenCacheAuthGroup.get("search", use: forumSearchHandler)
 		tokenCacheAuthGroup.get("owner", use: ownerHandler)
 		tokenCacheAuthGroup.get("recent", use: recentsHandler)
@@ -113,7 +119,7 @@ struct ForumController: APIRouteCollection {
 	// header in the request.
 	
 	// MARK: Returns Forum Lists	
-	/// `GET /api/v3/forum/catgories/ID`
+	/// `GET /api/v3/forum/categories/ID`
 	///
 	/// Retrieve a list of forums in the specifiec `Category`. Will not return forums created by blocked users.
 	/// 
@@ -300,11 +306,46 @@ struct ForumController: APIRouteCollection {
 		let forumQuery = countQuery.copy().range(start..<(start + limit)).join(child: \.$scheduleEvent, method: .left)
 		switch req.query[String.self, at: "sort"] {
 			case "create": _ = forumQuery.sort(\.$createdAt, .descending)
-			case "title": _ = forumQuery.sort(.custom("lower(title)"), .ascending)
+			case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), .ascending)
 			default: _ = forumQuery.sort(\.$lastPostTime, .descending)
 		}
 		async let forums = try forumQuery.all()
 		let forumList = try await buildForumListData(forums, on: req, user: cacheUser, forceIsFavorite: true)
+		return try await ForumSearchData(paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
+	}
+
+	/// `GET /api/v3/forum/mutes`
+	///
+	/// Retrieve the `Forum`s the user has muted.
+	/// 
+	/// **URL Query Parameters**:
+	/// * `?cat=CATEGORY_ID` - Only show favorites in the given category
+	/// * `?sort=STRING` - Sort forums by `create`, `update`, or `title`. Create and update return newest forums first. `update` is the default.
+	/// * `?start=INT` - The index into the sorted list of forums to start returning results. 0 for first item, which is the default.
+	/// * `?limit=INT` - The max # of entries to return. Defaults to 50
+	///
+	/// - Returns: A <doc:ForumSearchData> containing the user's muted forums.
+	func mutesHandler(_ req: Request) async throws -> ForumSearchData {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let start = (req.query[Int.self, at: "start"] ?? 0)
+		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
+		let countQuery = Forum.query(on: req.db).filter(\.$creator.$id !~ cacheUser.getBlocks())
+				.categoryAccessFilter(for: cacheUser)
+				.join(ForumReaders.self, on: \Forum.$id == \ForumReaders.$forum.$id)
+				.filter(ForumReaders.self, \.$user.$id == cacheUser.userID)
+				.filter(ForumReaders.self, \.$isMuted == true)
+		if let cat = req.query[UUID.self, at: "cat"] {
+			countQuery.filter(\.$category.$id == cat)
+		}
+		async let forumCount = try countQuery.count()
+		let forumQuery = countQuery.copy().range(start..<(start + limit)).join(child: \.$scheduleEvent, method: .left)
+		switch req.query[String.self, at: "sort"] {
+			case "create": _ = forumQuery.sort(\.$createdAt, .descending)
+			case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), .ascending)
+			default: _ = forumQuery.sort(\.$lastPostTime, .descending)
+		}
+		async let forums = try forumQuery.all()
+		let forumList = try await buildForumListData(forums, on: req, user: cacheUser, forceIsMuted: true)
 		return try await ForumSearchData(paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
 	}
 	
@@ -510,7 +551,7 @@ struct ForumController: APIRouteCollection {
 				.categoryAccessFilter(for: cacheUser)
 
 		let matchBookmarked = req.query[String.self, at: "bookmarked"] == "true"
-		let ownReacts = req.query[String.self, at: "bookmarked"] == "true"
+		let ownReacts = req.query[String.self, at: "ownreacts"] == "true"
 		if ownReacts || matchBookmarked {
 			query.join(PostLikes.self, on: \ForumPost.$id == \PostLikes.$post.$id).filter(PostLikes.self, \.$user.$id == cacheUser.userID)
 			if matchBookmarked {
@@ -648,6 +689,9 @@ struct ForumController: APIRouteCollection {
 		}
 		let forumReader = try await ForumReaders.query(on: req.db).filter(\.$forum.$id == forum.requireID())
 				.filter(\.$user.$id == cacheUser.userID).first() ?? ForumReaders(cacheUser.userID, forum)
+		if forumReader.isMuted {
+			throw Abort(.badRequest, reason: "Cannot favorite a muted forum.")
+		}
 		if forumReader.isFavorite {
 			return .ok
 		}
@@ -677,7 +721,52 @@ struct ForumController: APIRouteCollection {
 		try await forumReader.save(on: req.db)
 		return .noContent
 	}
-	
+
+	/// `POST /api/v3/forum/ID/mute`
+	///
+	/// Mute the `Forum` for the current user.
+	///
+	/// - Parameter forumID: In the URL path.
+	/// - Returns: 201 Created on success; 200 OK if already muted.
+	func muteAddHandler(_ req: Request) async throws -> HTTPStatus {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let forum = try await Forum.findFromParameter(forumIDParam, on: req) { query in
+			query.categoryAccessFilter(for: cacheUser)
+		}
+		let forumReader = try await ForumReaders.query(on: req.db).filter(\.$forum.$id == forum.requireID())
+				.filter(\.$user.$id == cacheUser.userID).first() ?? ForumReaders(cacheUser.userID, forum)
+		if forumReader.isFavorite {
+			throw Abort(.badRequest, reason: "Cannot mute a favorited forum.")
+		}
+		if forumReader.isMuted {
+			return .ok
+		}
+		forumReader.isMuted = true
+		try await forumReader.save(on: req.db)
+		return .created
+	}
+
+	/// `DELETE /api/v3/forum/ID/mute`
+	///
+	/// Unmute the specified `Forum` for the current user.
+	///
+	/// - Parameter forumID: In the URL path.
+	/// - Throws: 400 error if the forum was not muted.
+	/// - Returns: 204 No Content on success; 200 OK if already not muted.
+	func muteRemoveHandler(_ req: Request) async throws -> HTTPStatus {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		guard let forumID = req.parameters.get(forumIDParam.paramString, as: UUID.self) else {
+			throw Abort(.badRequest, reason: "Invalid Forum ID parameter")
+		}
+		guard let forumReader = try await ForumReaders.query(on: req.db).filter(\.$forum.$id == forumID)
+				.filter(\.$user.$id == cacheUser.userID).first(), forumReader.isMuted == true else {
+			return .ok	
+		}
+		forumReader.isMuted = false
+		try await forumReader.save(on: req.db)
+		return .noContent
+	}
+
 	/// `POST /api/v3/forum/categories/ID/create`
 	///
 	/// Creates a new `Forum` in the specified `Category`, and the first `ForumPost` within
@@ -719,7 +808,7 @@ struct ForumController: APIRouteCollection {
 		let creatorHeader = effectiveAuthor.makeHeader()
 		let postData = try PostData(post: forumPost, author: creatorHeader, bookmarked: false, userLike: nil, likeCount: 0)
 		let forumData = try ForumData(forum: forum, creator: creatorHeader,
-					isFavorite: false, posts: [postData], pager: Paginator(total: 1, start: 0, limit: 50))
+					isFavorite: false, isMuted: false, posts: [postData], pager: Paginator(total: 1, start: 0, limit: 50))
 		return forumData
 	}
 		
@@ -1111,8 +1200,9 @@ extension ForumController {
 //		subSelect.query.serialize(to: &s)
 //		print(s.sql)
 	
-	/// Builds an array of `ForumListData` from the given `Forums`. `ForumListData` does not return post content, but does return post counts.
-	func buildForumListData(_ forums: [Forum], on req: Request, user: UserCacheData, forceIsFavorite: Bool? = nil) async throws -> [ForumListData] {
+	/// Builds an array of `ForumListData` from the given `Forums`. 
+	/// `ForumListData` does not return post content, but does return post counts.
+	func buildForumListData(_ forums: [Forum], on req: Request, user: UserCacheData, forceIsFavorite: Bool? = nil, forceIsMuted: Bool? = nil) async throws -> [ForumListData] {
 		// get forum metadata
 		let forumIDs = try forums.map { try $0.requireID() }
 		let postCounts = try await forums.childCountsPerModel(atPath: \.$posts, on: req.db)
@@ -1131,10 +1221,12 @@ extension ForumController {
 			}
 			let thisForumReaderPivot = readerPivotsDict[forumID]
 			let joinedEvent = try? forum.joined(Event.self)
-			return try ForumListData(forum: forum, creator: creatorHeader, postCount: postCounts[forumID] ?? 0, 
-					readCount: thisForumReaderPivot?.readCount ?? 0, 
+			return try ForumListData(forum: forum, creator: creatorHeader, postCount: postCounts[forumID] ?? 0,
+					readCount: thisForumReaderPivot?.readCount ?? 0,
 					lastPostAt: lastPostTime, lastPoster: lastPosterHeader,
-					isFavorite: forceIsFavorite ?? thisForumReaderPivot?.isFavorite ?? false, event: joinedEvent)
+					isFavorite: forceIsFavorite ?? thisForumReaderPivot?.isFavorite ?? false,
+					isMuted: forceIsMuted ?? thisForumReaderPivot?.isMuted ?? false,
+					event: joinedEvent)
 		}
 		return returnListData
 	}
@@ -1202,8 +1294,9 @@ extension ForumController {
 		let event = try await forum.$scheduleEvent.query(on: req.db).first()
 
 		return try ForumData(forum: forum, creator: creatorHeader, 
-				isFavorite: readerPivot?.isFavorite ?? false, posts: flattenedPosts, 
-				pager: pager, event: event)
+				isFavorite: readerPivot?.isFavorite ?? false,
+				isMuted: readerPivot?.isMuted ?? false,
+				posts: flattenedPosts, pager: pager, event: event)
 	}
 		
 	// Builds an array of PostData structures from the given posts, adding the user's bookmarks and likes
