@@ -8,7 +8,7 @@ struct SiteEventsController: SiteControllerUtils {
 		// Routes that the user does not need to be logged in to access.
 		let openRoutes = getOpenRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .schedule))
 		openRoutes.get("events", use: eventsPageHandler)
-		openRoutes.get("events", eventIDParam, use: eventPageHandler)
+		openRoutes.get("events", eventIDParam, use: eventsPageHandler)
 		openRoutes.get("events", eventIDParam, "calendarevent.ics", use: eventsDownloadICSHandler)
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
@@ -69,8 +69,14 @@ struct SiteEventsController: SiteControllerUtils {
 			components.queryItems?.append(URLQueryItem(name: "cruiseday", value: String(dayOfCruise)))
 			filterString = "Today's " + filterString
 		}
-		let response = try await apiQuery(req, endpoint: "/events", query: components.queryItems, passThroughQuery: false)
-		let events = try response.content.decode([EventData].self)
+		var events: [EventData] = []
+		if let eventID = req.parameters.get(eventIDParam.paramString)?.percentEncodeFilePathEntry() {
+			let response = try await apiQuery(req, endpoint: "/events/\(eventID)")
+			events.append(try response.content.decode(EventData.self))
+		} else {
+			let response = try await apiQuery(req, endpoint: "/events", query: components.queryItems, passThroughQuery: false)
+			events = try response.content.decode([EventData].self)
+		}
 		struct EventPageContext : Encodable {
 			struct CruiseDay : Encodable {
 				var name: String				// "Sun", "Mon", etc.
@@ -121,7 +127,7 @@ struct SiteEventsController: SiteControllerUtils {
 		}
 		let eventContext = EventPageContext(req, events: events, dayOfCruise: dayOfCruise, 
 				filterString: filterString, allDays: useAllDays)
-		return try await req.view.render("Events/events", eventContext)
+		return try await req.view.render("events", eventContext)
 	}
 
 	/// GET `/events/:event_id`
@@ -144,7 +150,7 @@ struct SiteEventsController: SiteControllerUtils {
 			}
 		}
 		let eventContext = EventPageContext(req, event: event)
-		return try await req.view.render("Events/event", eventContext)
+		return try await req.view.render("event", eventContext)
 	}
 	
 	func eventsDownloadICSHandler(_ req: Request) async throws -> Response {
