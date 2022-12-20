@@ -1198,8 +1198,12 @@ extension ForumController {
 		let flattenedPosts = try await buildPostData(posts, userID: cacheUser.userID, on: req, mutewords: cacheUser.mutewords)
 		let creatorHeader = try req.userCache.getHeader(forum.$creator.id)
 		let pager = Paginator(total: postCount, start: start, limit: limit)
+		// For event forums
+		let event = try await forum.$scheduleEvent.query(on: req.db).first()
+
 		return try ForumData(forum: forum, creator: creatorHeader, 
-				isFavorite: readerPivot?.isFavorite ?? false, posts: flattenedPosts, pager: pager)
+				isFavorite: readerPivot?.isFavorite ?? false, posts: flattenedPosts, 
+				pager: pager, event: event)
 	}
 		
 	// Builds an array of PostData structures from the given posts, adding the user's bookmarks and likes

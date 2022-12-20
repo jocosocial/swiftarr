@@ -598,14 +598,15 @@ public struct ForumData: Content {
 	var paginator: Paginator
 	/// Posts in the forum.
 	var posts: [PostData]
+	/// If this forum is for an Event on the schedule, the ID of the event.
+	var eventID: UUID?
 }
 
 extension ForumData {
-	init(forum: Forum, creator: UserHeader, isFavorite: Bool, posts: [PostData], pager: Paginator) throws {
+	init(forum: Forum, creator: UserHeader, isFavorite: Bool, posts: [PostData], pager: Paginator, event: Event? = nil) throws {
 		guard creator.userID == forum.$creator.id else {
 			throw Abort(.internalServerError, reason: "Internal server error--Forum's creator does not match.")
 		}
-	
 		forumID = try forum.requireID()
 		categoryID = forum.$category.id
 		title = forum.moderationStatus.showsContent() ? forum.title : "Forum Title is under moderator review"
@@ -614,6 +615,9 @@ extension ForumData {
 		self.isFavorite = isFavorite
 		self.posts = posts
 		self.paginator = pager
+		if let event = event, event.id != nil {
+			self.eventID = event.id
+		}
 	}
 }
 
@@ -653,6 +657,8 @@ public struct ForumListData: Content {
 	var eventTime: Date?
 	/// If this forum is for an Event on the schedule, the timezone that the ship is going to be in when the event occurs. Delivered as an abbreviation e.g. "EST".
 	var timeZone: String?
+	/// If this forum is for an Event on the schedule, the ID of the event.
+	var eventID: UUID?
 }
 
 extension ForumListData {
@@ -675,6 +681,7 @@ extension ForumListData {
 			let timeZoneChanges = Settings.shared.timeZoneChanges
 			self.eventTime = timeZoneChanges.portTimeToDisplayTime(event.startTime)
 			self.timeZone = timeZoneChanges.abbrevAtTime(self.eventTime)
+			self.eventID = event.id
 		}
 	}
 }
