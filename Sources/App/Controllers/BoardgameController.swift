@@ -16,12 +16,14 @@ struct BoardgameController: APIRouteCollection {
 		flexAuthGroup.get(boardgameIDParam, use: getBoardgame)
 		flexAuthGroup.get("expansions", boardgameIDParam, use: getExpansions)
 		flexAuthGroup.get("recommend", use: recommendGames)
-		
-		
+
 		let tokenAuthGroup = addTokenCacheAuthGroup(to: boardgameRoutes)
 		tokenAuthGroup.post(boardgameIDParam, "favorite", use: addFavorite)
 		tokenAuthGroup.post(boardgameIDParam, "favorite", "remove", use: removeFavorite)
 		tokenAuthGroup.delete(boardgameIDParam, "favorite", use: removeFavorite)
+
+		let adminAuthGroup = addTokenCacheAuthGroup(to: boardgameRoutes).grouped([RequireAdminMiddleware()])		
+		adminAuthGroup.post("reload", use: reloadBoardGamesData)
 	}
 	
 	/// `GET /api/v3/boardgames`
@@ -190,6 +192,19 @@ struct BoardgameController: APIRouteCollection {
 		let orderedPageOfGames = orderedGames.enumerated().compactMap { (start...(start + limit)).contains($0.0) ? $0.1.game : nil } 
 		let gamesArray = try await buildBoardgameData(for: user, games: orderedPageOfGames, on: req.db)
 		return BoardgameResponseData(totalGames: orderedGames.count, start: start, limit: limit, gameArray: gamesArray)
+	}
+
+	/// `POST /api/v3/boardgames/reload`
+	///
+	///  Reloads the board game data from the seed file. Removes all previous entries.
+	/// 
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: `HTTP 200 OK` if the settings were updated.
+	func reloadBoardGamesData(_ req: Request) async throws -> HTTPStatus {
+		let migrator = ImportBoardgames()
+		try await migrator.revert(on: req.db)
+		try await migrator.prepare(on: req.db)
+		return .ok
 	}
 	
 // MARK: - Utilities

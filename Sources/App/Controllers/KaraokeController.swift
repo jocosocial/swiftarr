@@ -22,6 +22,9 @@ struct KaraokeController: APIRouteCollection {
 		tokenAuthGroup.delete(songIDParam, "favorite", use: removeFavorite)
 		tokenAuthGroup.get("userismanager", use: userCanLogKaraokeSongPerformances)
 		tokenAuthGroup.post(songIDParam, "logperformance", use: logSongPerformance)
+
+		let adminAuthGroup = addTokenCacheAuthGroup(to: baseRoute).grouped([RequireAdminMiddleware()])		
+		adminAuthGroup.post("reload", use: reloadKaraokeData)
 	}
 	
 	/// `GET /api/v3/karaoke`
@@ -194,6 +197,19 @@ struct KaraokeController: APIRouteCollection {
 		let data = try ValidatingJSONDecoder().decode(NoteCreateData.self, fromBodyOf: req)
 		try await KaraokePlayedSong(singer: data.note, song: song, managerID: user.userID).create(on: req.db)
 		return .created
+	}
+
+	/// `POST /api/v3/karaoke/reload`
+	///
+	///  Reloads the karaoke data from the seed file. Removes all previous entries.
+	/// 
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: `HTTP 200 OK` if the settings were updated.
+	func reloadKaraokeData(_ req: Request) async throws -> HTTPStatus {
+		let migrator = ImportKaraokeSongs()
+		try await migrator.revert(on: req.db)
+		try await migrator.prepare(on: req.db)
+		return .ok
 	}
 	
 // MARK: - Utilities

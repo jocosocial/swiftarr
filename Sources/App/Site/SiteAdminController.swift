@@ -59,8 +59,10 @@ struct SiteAdminController: SiteControllerUtils {
 		
 		let privateAdminRoutes = getPrivateRoutes(app).grouped(SiteRequireAdminMiddleware()).grouped("admin")
 		privateAdminRoutes.post("user", userIDParam, "tho", "promote", use: promoteUserLevel)
-		
-		
+		privateAdminRoutes.get("karaoke", use: karaokeHandler)
+		privateAdminRoutes.post("karaoke", "reload", use: karaokePostHandler)
+		privateAdminRoutes.get("boardgames", use: boardGamesHandler)
+		privateAdminRoutes.post("boardgames", "reload", use: boardGamesPostHandler)
 	}
 	
 // MARK: - Admin Pages
@@ -418,6 +420,54 @@ struct SiteAdminController: SiteControllerUtils {
 	// Kicks off a reload operation. Admin only; the new time zone data file must be uploaded to /seeds, probably via git push.
 	func settingsReloadTZFilePostHandler(_ req: Request) async throws -> HTTPStatus {
 		try await apiQuery(req, endpoint: "/admin/timezonechanges/reloadtzdata", method: .POST)
+		return .ok
+	}
+
+	// GET /admin/karaoke
+	//
+	// Shows administrator settings for karaoke.
+	func karaokeHandler(_ req: Request) async throws -> View {
+		struct AdminKaraokeContext : Encodable {
+			var trunk: TrunkContext
+
+			init(_ req: Request) throws {
+				trunk = .init(req, title: "Karaoke Admin", tab: .admin)
+			}
+		}
+		let ctx = try AdminKaraokeContext(req)
+		return try await req.view.render("admin/karaoke", ctx)
+	}
+	
+	// POST /admin/karaoke/reload
+	//
+	// Kicks off a reload operation. Admin only; the data file must be uploaded to /seeds, 
+	// probably via git push.
+	func karaokePostHandler(_ req: Request) async throws -> HTTPStatus {
+		try await apiQuery(req, endpoint: "/karaoke/reload", method: .POST)
+		return .ok
+	}
+
+	// GET /admin/boardgames
+	//
+	// Shows administrator settings for board games.
+	func boardGamesHandler(_ req: Request) async throws -> View {
+		struct AdminBoardGamesContext : Encodable {
+			var trunk: TrunkContext
+
+			init(_ req: Request) throws {
+				trunk = .init(req, title: "Board Games Admin", tab: .admin)
+			}
+		}
+		let ctx = try AdminBoardGamesContext(req)
+		return try await req.view.render("admin/boardgames", ctx)
+	}
+	
+	// POST /admin/boardgames/reload
+	//
+	// Kicks off a reload operation. Admin only; the data file must be uploaded to /seeds, 
+	// probably via git push.
+	func boardGamesPostHandler(_ req: Request) async throws -> HTTPStatus {
+		try await apiQuery(req, endpoint: "/boardgames/reload", method: .POST)
 		return .ok
 	}
 
