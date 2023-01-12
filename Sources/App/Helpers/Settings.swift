@@ -127,7 +127,7 @@ final class Settings : Encodable {
 	@StoredSettingsValue("allowAnimatedImages", defaultValue: true) var allowAnimatedImages: Bool
 
 	/// Set the size of automatically generated image thumbnails. This is the height value in pixels.
-	@SettingsValue var imageThumbnailSize: Int = 100
+	@SettingsValue var imageThumbnailSize: Int = 200
 	
 // MARK: Directories
 	/// Root dir for files used by Swiftarr. The front-end's CSS, JS, static image files, all the Leaf templates are in here,
