@@ -102,9 +102,9 @@ duration-select:focus {
 
 .swiftarr-closeup-box {
 	display: grid;
-	margin-top: 90px;
-	padding-top: 5px;
-	padding-bottom: 5px;
+	/* margin-top: 90px; */
+	/* padding-top: 5px; */
+	/* padding-bottom: 5px; */
 	background-color: #333;
 }
 
@@ -148,4 +148,9 @@ duration-select:focus {
   max-width: 100%;
   width: 20em;
   padding: 1em;
+}
+
+/* Overrides a Bootstrap class to make the background darker. */
+.modal-backdrop.show {
+  opacity: .75;
 }
