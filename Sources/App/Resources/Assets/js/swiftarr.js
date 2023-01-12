@@ -664,7 +664,7 @@ document.getElementById('imageCarouselModal')?.addEventListener('show.bs.modal',
 	let pageImg = event.relatedTarget.querySelector('img');
 	let modalImg = event.target.querySelector('.swiftarr-closeup-image');
 	if (pageImg && modalImg) {
-		modalImg.src = pageImg.src;
+		modalImg.src = pageImg.src.replace("thumb", "full");
 	}
 	deleteBtn.setAttribute('data-delete-postid', postElem.dataset.postid);
 })
