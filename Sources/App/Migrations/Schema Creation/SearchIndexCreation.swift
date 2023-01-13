@@ -51,7 +51,7 @@ struct CreateSearchIndexes: AsyncMigration {
     func createTwarrtSearchField(on database: SQLDatabase) async throws {
       try await database.raw("""
         ALTER TABLE twarrt
-        ADD COLUMN IF NOT EXISTS searchable_index_col tsvector
+        ADD COLUMN IF NOT EXISTS fulltext_search tsvector
           GENERATED ALWAYS AS (to_tsvector('english', text)) STORED;
       """).run()
     }
@@ -61,7 +61,7 @@ struct CreateSearchIndexes: AsyncMigration {
         CREATE INDEX IF NOT EXISTS idx_twarrt_search
         ON twarrt
         USING GIN
-        (searchable_index_col)
+        (fulltext_search)
       """).run()
     }
 
@@ -74,14 +74,14 @@ struct CreateSearchIndexes: AsyncMigration {
     func dropTwarrtSearchField(on database: SQLDatabase) async throws {
       try await database
         .alter(table: "twarrt")
-        .dropColumn("searchable_index_col")
+        .dropColumn("fulltext_search")
         .run()
     }
 
     func createForumSearchField(on database: SQLDatabase) async throws {
       try await database.raw("""
         ALTER TABLE forum
-        ADD COLUMN IF NOT EXISTS searchable_index_col tsvector
+        ADD COLUMN IF NOT EXISTS fulltext_search tsvector
           GENERATED ALWAYS AS (to_tsvector('english', title)) STORED;
       """).run()
     }
@@ -91,7 +91,7 @@ struct CreateSearchIndexes: AsyncMigration {
         CREATE INDEX IF NOT EXISTS idx_forum_search
         ON forum
         USING GIN
-        (searchable_index_col)
+        (fulltext_search)
       """).run()
     }
 
@@ -104,14 +104,14 @@ struct CreateSearchIndexes: AsyncMigration {
     func dropForumSearchField(on database: SQLDatabase) async throws {
       try await database
         .alter(table: "forum")
-        .dropColumn("searchable_index_col")
+        .dropColumn("fulltext_search")
         .run()
     }
 
     func createForumPostSearchField(on database: SQLDatabase) async throws {
       try await database.raw("""
         ALTER TABLE forumpost
-        ADD COLUMN IF NOT EXISTS searchable_index_col tsvector
+        ADD COLUMN IF NOT EXISTS fulltext_search tsvector
           GENERATED ALWAYS AS (to_tsvector('english', text)) STORED;
       """).run()
     }
@@ -121,7 +121,7 @@ struct CreateSearchIndexes: AsyncMigration {
         CREATE INDEX IF NOT EXISTS idx_forumpost_search
         ON forumpost
         USING GIN
-        (searchable_index_col)
+        (fulltext_search)
       """).run()
     }
 
@@ -134,14 +134,14 @@ struct CreateSearchIndexes: AsyncMigration {
     func dropForumPostSearchField(on database: SQLDatabase) async throws {
       try await database
         .alter(table: "forumpost")
-        .dropColumn("searchable_index_col")
+        .dropColumn("fulltext_search")
         .run()
     }
 
     func createEventSearchField(on database: SQLDatabase) async throws {
       try await database.raw("""
         ALTER TABLE event
-        ADD COLUMN IF NOT EXISTS searchable_index_col tsvector
+        ADD COLUMN IF NOT EXISTS fulltext_search tsvector
           GENERATED ALWAYS AS (to_tsvector('english', coalesce(title, '')) || ' ' || to_tsvector('english', coalesce(info, ''))) STORED;
       """).run()
     }
@@ -151,7 +151,7 @@ struct CreateSearchIndexes: AsyncMigration {
         CREATE INDEX IF NOT EXISTS idx_event_search
         ON event
         USING GIN
-        (searchable_index_col)
+        (fulltext_search)
       """).run()
     }
 
@@ -164,14 +164,14 @@ struct CreateSearchIndexes: AsyncMigration {
     func dropEventSearchField(on database: SQLDatabase) async throws {
       try await database
         .alter(table: "event")
-        .dropColumn("searchable_index_col")
+        .dropColumn("fulltext_search")
         .run()
     }
 
     func createBoardgameSearchField(on database: SQLDatabase) async throws {
       try await database.raw("""
         ALTER TABLE boardgame
-        ADD COLUMN IF NOT EXISTS searchable_index_col tsvector
+        ADD COLUMN IF NOT EXISTS fulltext_search tsvector
           GENERATED ALWAYS AS (to_tsvector('english', "gameName")) STORED;
       """).run()
     }
@@ -181,7 +181,7 @@ struct CreateSearchIndexes: AsyncMigration {
         CREATE INDEX IF NOT EXISTS idx_boardgame_search
         ON boardgame
         USING GIN
-        (searchable_index_col)
+        (fulltext_search)
       """).run()
     }
 
@@ -194,14 +194,14 @@ struct CreateSearchIndexes: AsyncMigration {
     func dropBoardgameSearchField(on database: SQLDatabase) async throws {
       try await database
         .alter(table: "boardgame")
-        .dropColumn("searchable_index_col")
+        .dropColumn("fulltext_search")
         .run()
     }
 
     func createKaraokeSongSearchField(on database: SQLDatabase) async throws {
       try await database.raw("""
         ALTER TABLE karaoke_song
-        ADD COLUMN IF NOT EXISTS searchable_index_col tsvector
+        ADD COLUMN IF NOT EXISTS fulltext_search tsvector
           GENERATED ALWAYS AS (to_tsvector('english', coalesce(artist, '')) || ' ' || to_tsvector('english', coalesce(title, ''))) STORED;
       """).run()
     }
@@ -211,7 +211,7 @@ struct CreateSearchIndexes: AsyncMigration {
         CREATE INDEX IF NOT EXISTS idx_karaoke_song_search
         ON karaoke_song
         USING GIN
-        (searchable_index_col)
+        (fulltext_search)
       """).run()
     }
 
@@ -224,7 +224,7 @@ struct CreateSearchIndexes: AsyncMigration {
     func dropKaraokeSongSearchField(on database: SQLDatabase) async throws {
       try await database
         .alter(table: "karaoke_song")
-        .dropColumn("searchable_index_col")
+        .dropColumn("fulltext_search")
         .run()
     }
 }
