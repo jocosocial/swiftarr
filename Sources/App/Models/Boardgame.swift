@@ -2,7 +2,7 @@ import Vapor
 import Fluent
 
 /// A boardgame in the Games Library. 
-final class Boardgame: Model {
+final class Boardgame: Model, Searchable {
 	static let schema = "boardgame"
 	
 	// MARK: Properties
@@ -48,6 +48,9 @@ final class Boardgame: Model {
 	
 	/// Timestamp of the model's creation, set automatically.
 	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
+
+	// Board games support fulltext search
+	@Field(key: "fulltext_search") var fullTextSearch: String
 	 
 	// MARK: Relations
 		

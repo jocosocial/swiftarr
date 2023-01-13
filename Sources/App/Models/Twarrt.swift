@@ -22,7 +22,7 @@ import Fluent
 	- See Also: [PostData](PostData) the DTO for creating or editing Twarrts.
 	- See Also: [CreateTwarrtSchema](CreateTwarrtSchema) the Migration for creating the Twarrts table in the database.
 */
-final class Twarrt: Model {
+final class Twarrt: Model, Searchable {
 	static let schema = "twarrt"
 	
 	// MARK: Properties
@@ -47,6 +47,9 @@ final class Twarrt: Model {
 	
 	/// Timestamp of the model's soft-deletion, set automatically.
 	@Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
+
+	// Twarrts support fulltext search
+	@Field(key: "fulltext_search") var fullTextSearch: String
 	
 	// MARK: Relations
 	

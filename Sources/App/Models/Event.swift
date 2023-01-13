@@ -10,7 +10,7 @@ import Fluent
 	 - See Also: [CreateEventSchema](CreateEventSchema) the Migration for creating the Event table in the database.
 	 - See Also: [EventType](EventType)
 */
-final class Event: Model {
+final class Event: Model, Searchable {
 	static let schema = "event"
 	
 	// MARK: Properties
@@ -47,6 +47,9 @@ final class Event: Model {
 	
 	/// Timestamp of the model's soft-deletion, set automatically.
 	@Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
+
+	// Events support fulltext search
+	@Field(key: "fulltext_search") var fullTextSearch: String
 	
  	// MARK: Relations
 
