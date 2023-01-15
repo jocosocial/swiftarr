@@ -5,225 +5,103 @@ struct CreateSearchIndexes: AsyncMigration {
       let sqlDatabase = (database as! SQLDatabase)
       try await sqlDatabase.raw("CREATE EXTENSION IF NOT EXISTS pg_trgm").run()
 
-      try await createTwarrtSearchField(on: sqlDatabase)
-      try await createTwarrtSearchIndex(on: sqlDatabase)
-
-      try await createForumSearchField(on: sqlDatabase)
-      try await createForumSearchIndex(on: sqlDatabase)
-
-      try await createForumPostSearchField(on: sqlDatabase)
-      try await createForumPostSearchIndex(on: sqlDatabase)
-
-      try await createEventSearchField(on: sqlDatabase)
-      try await createEventSearchIndex(on: sqlDatabase)
-
-      try await createBoardgameSearchField(on: sqlDatabase)
-      try await createBoardgameSearchIndex(on: sqlDatabase)
-
-      try await createKaraokeSongSearchField(on: sqlDatabase)
-      try await createKaraokeSongSearchIndex(on: sqlDatabase)
+      try await createTwarrtSearch(on: sqlDatabase)
+      try await createForumSearch(on: sqlDatabase)
+      try await createForumPostSearch(on: sqlDatabase)
+      try await createEventSearch(on: sqlDatabase)
+      try await createBoardgameSearch(on: sqlDatabase)
+      try await createKaraokeSongSearch(on: sqlDatabase)
     }
 
     func revert(on database: Database) async throws {
       let sqlDatabase = (database as! SQLDatabase)
 
-      try await dropTwarrtSearchIndex(on: sqlDatabase)
-      try await dropTwarrtSearchField(on: sqlDatabase)
-
-      try await dropForumSearchIndex(on: sqlDatabase)
-      try await dropForumSearchField(on: sqlDatabase)
-
-      try await dropForumPostSearchIndex(on: sqlDatabase)
-      try await dropForumPostSearchField(on: sqlDatabase)
-
-      try await dropEventSearchIndex(on: sqlDatabase)
-      try await dropEventSearchField(on: sqlDatabase)
-
-      try await dropBoardgameSearchIndex(on: sqlDatabase)
-      try await dropBoardgameSearchField(on: sqlDatabase)
-      
-      try await dropKaraokeSongSearchIndex(on: sqlDatabase)
-      try await dropKaraokeSongSearchField(on: sqlDatabase)
+      try await dropSearchIndexAndColumn(on: sqlDatabase, tableName: "twarrt")
+      try await dropSearchIndexAndColumn(on: sqlDatabase, tableName: "forum")
+      try await dropSearchIndexAndColumn(on: sqlDatabase, tableName: "forumpost")
+      try await dropSearchIndexAndColumn(on: sqlDatabase, tableName: "event")
+      try await dropSearchIndexAndColumn(on: sqlDatabase, tableName: "boardgame")
+      try await dropSearchIndexAndColumn(on: sqlDatabase, tableName: "karaoke_song")
 
       try await sqlDatabase.raw("DROP EXTENSION IF EXISTS pg_trgm").run()
     }
 
-    func createTwarrtSearchField(on database: SQLDatabase) async throws {
+    func createTwarrtSearch(on database: SQLDatabase) async throws {
       try await database.raw("""
         ALTER TABLE twarrt
         ADD COLUMN IF NOT EXISTS fulltext_search tsvector
           GENERATED ALWAYS AS (to_tsvector('english', text)) STORED;
       """).run()
+
+      try await createSearchIndex(on: database, tableName: "twarrt")
     }
 
-    func createTwarrtSearchIndex(on database: SQLDatabase) async throws {
-      try await database.raw("""
-        CREATE INDEX IF NOT EXISTS idx_twarrt_search
-        ON twarrt
-        USING GIN
-        (fulltext_search)
-      """).run()
-    }
-
-    func dropTwarrtSearchIndex(on database: SQLDatabase) async throws {
-      try await database
-        .drop(index: "idx_twarrt_search")
-        .run()
-    }
-
-    func dropTwarrtSearchField(on database: SQLDatabase) async throws {
-      try await database
-        .alter(table: "twarrt")
-        .dropColumn("fulltext_search")
-        .run()
-    }
-
-    func createForumSearchField(on database: SQLDatabase) async throws {
+    func createForumSearch(on database: SQLDatabase) async throws {
       try await database.raw("""
         ALTER TABLE forum
         ADD COLUMN IF NOT EXISTS fulltext_search tsvector
           GENERATED ALWAYS AS (to_tsvector('english', title)) STORED;
       """).run()
+
+      try await createSearchIndex(on: database, tableName: "forum")
     }
 
-    func createForumSearchIndex(on database: SQLDatabase) async throws {
-      try await database.raw("""
-        CREATE INDEX IF NOT EXISTS idx_forum_search
-        ON forum
-        USING GIN
-        (fulltext_search)
-      """).run()
-    }
-
-    func dropForumSearchIndex(on database: SQLDatabase) async throws {
-      try await database
-        .drop(index: "idx_forum_search")
-        .run()
-    }
-
-    func dropForumSearchField(on database: SQLDatabase) async throws {
-      try await database
-        .alter(table: "forum")
-        .dropColumn("fulltext_search")
-        .run()
-    }
-
-    func createForumPostSearchField(on database: SQLDatabase) async throws {
+    func createForumPostSearch(on database: SQLDatabase) async throws {
       try await database.raw("""
         ALTER TABLE forumpost
         ADD COLUMN IF NOT EXISTS fulltext_search tsvector
           GENERATED ALWAYS AS (to_tsvector('english', text)) STORED;
       """).run()
+
+      try await createSearchIndex(on: database, tableName: "forumpost")
     }
 
-    func createForumPostSearchIndex(on database: SQLDatabase) async throws {
-      try await database.raw("""
-        CREATE INDEX IF NOT EXISTS idx_forumpost_search
-        ON forumpost
-        USING GIN
-        (fulltext_search)
-      """).run()
-    }
-
-    func dropForumPostSearchIndex(on database: SQLDatabase) async throws {
-      try await database
-        .drop(index: "idx_forumpost_search")
-        .run()
-    }
-
-    func dropForumPostSearchField(on database: SQLDatabase) async throws {
-      try await database
-        .alter(table: "forumpost")
-        .dropColumn("fulltext_search")
-        .run()
-    }
-
-    func createEventSearchField(on database: SQLDatabase) async throws {
+    func createEventSearch(on database: SQLDatabase) async throws {
       try await database.raw("""
         ALTER TABLE event
         ADD COLUMN IF NOT EXISTS fulltext_search tsvector
           GENERATED ALWAYS AS (to_tsvector('english', coalesce(title, '')) || ' ' || to_tsvector('english', coalesce(info, ''))) STORED;
       """).run()
+
+      try await createSearchIndex(on: database, tableName: "event")
     }
 
-    func createEventSearchIndex(on database: SQLDatabase) async throws {
-      try await database.raw("""
-        CREATE INDEX IF NOT EXISTS idx_event_search
-        ON event
-        USING GIN
-        (fulltext_search)
-      """).run()
-    }
-
-    func dropEventSearchIndex(on database: SQLDatabase) async throws {
-      try await database
-        .drop(index: "idx_event_search")
-        .run()
-    }
-
-    func dropEventSearchField(on database: SQLDatabase) async throws {
-      try await database
-        .alter(table: "event")
-        .dropColumn("fulltext_search")
-        .run()
-    }
-
-    func createBoardgameSearchField(on database: SQLDatabase) async throws {
+    func createBoardgameSearch(on database: SQLDatabase) async throws {
       try await database.raw("""
         ALTER TABLE boardgame
         ADD COLUMN IF NOT EXISTS fulltext_search tsvector
           GENERATED ALWAYS AS (to_tsvector('english', "gameName")) STORED;
       """).run()
+
+      try await createSearchIndex(on: database, tableName: "boardgame")
     }
 
-    func createBoardgameSearchIndex(on database: SQLDatabase) async throws {
-      try await database.raw("""
-        CREATE INDEX IF NOT EXISTS idx_boardgame_search
-        ON boardgame
-        USING GIN
-        (fulltext_search)
-      """).run()
-    }
-
-    func dropBoardgameSearchIndex(on database: SQLDatabase) async throws {
-      try await database
-        .drop(index: "idx_boardgame_search")
-        .run()
-    }
-
-    func dropBoardgameSearchField(on database: SQLDatabase) async throws {
-      try await database
-        .alter(table: "boardgame")
-        .dropColumn("fulltext_search")
-        .run()
-    }
-
-    func createKaraokeSongSearchField(on database: SQLDatabase) async throws {
+    func createKaraokeSongSearch(on database: SQLDatabase) async throws {
       try await database.raw("""
         ALTER TABLE karaoke_song
         ADD COLUMN IF NOT EXISTS fulltext_search tsvector
           GENERATED ALWAYS AS (to_tsvector('english', coalesce(artist, '')) || ' ' || to_tsvector('english', coalesce(title, ''))) STORED;
       """).run()
+
+      try await createSearchIndex(on: database, tableName: "karaoke_song")
     }
 
-    func createKaraokeSongSearchIndex(on database: SQLDatabase) async throws {
+    func createSearchIndex(on database: SQLDatabase, tableName: String) async throws {
       try await database.raw("""
-        CREATE INDEX IF NOT EXISTS idx_karaoke_song_search
-        ON karaoke_song
+        CREATE INDEX IF NOT EXISTS idx_\(raw: tableName)_search
+        ON \(raw: tableName)
         USING GIN
         (fulltext_search)
       """).run()
     }
 
-    func dropKaraokeSongSearchIndex(on database: SQLDatabase) async throws {
+    func dropSearchIndexAndColumn(on database: SQLDatabase, tableName: String) async throws {
       try await database
-        .drop(index: "idx_karaoke_song_search")
+        .drop(index: "idx_\(tableName)_search")
         .run()
-    }
 
-    func dropKaraokeSongSearchField(on database: SQLDatabase) async throws {
       try await database
-        .alter(table: "karaoke_song")
+        .alter(table: tableName)
         .dropColumn("fulltext_search")
         .run()
     }
