@@ -24,9 +24,6 @@ final class KaraokeSong: Model, Searchable {
 	
 	/// If TRUE, this song is a MIDI track.
 	@Field(key: "midi") var midi: Bool
-
-	// Karaoke songs support fulltext search
-	@Field(key: "fulltext_search") var fullTextSearch: String
 	
 // MARK: Relations
 

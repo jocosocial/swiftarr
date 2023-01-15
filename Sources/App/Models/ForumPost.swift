@@ -39,9 +39,6 @@ final class ForumPost: Model, Searchable {
 	
 	/// Timestamp of the model's soft-deletion, set automatically.
 	@Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
-
-	// Forum posts support fulltext search
-	@Field(key: "fulltext_search") var fullTextSearch: String
  
 	// MARK: Relations
 

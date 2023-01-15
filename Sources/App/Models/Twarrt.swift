@@ -1,7 +1,6 @@
 import Vapor
 import Fluent
 
-
 /**
 	An individual post in the Twitarr stream. Posts must contain text content, and may also contain images.
 	
@@ -47,9 +46,6 @@ final class Twarrt: Model, Searchable {
 	
 	/// Timestamp of the model's soft-deletion, set automatically.
 	@Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
-
-	// Twarrts support fulltext search
-	@Field(key: "fulltext_search") var fullTextSearch: String
 	
 	// MARK: Relations
 	

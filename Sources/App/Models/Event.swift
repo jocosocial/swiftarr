@@ -2,7 +2,6 @@ import Foundation
 import Vapor
 import Fluent
 
-
 /**
 	 An `Event` on the official schedule, imported from sched.com's `.ics` format.
 	 
@@ -47,9 +46,6 @@ final class Event: Model, Searchable {
 	
 	/// Timestamp of the model's soft-deletion, set automatically.
 	@Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
-
-	// Events support fulltext search
-	@Field(key: "fulltext_search") var fullTextSearch: String
 	
  	// MARK: Relations
 
