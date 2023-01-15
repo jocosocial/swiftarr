@@ -73,7 +73,7 @@
 									@#(reportGroup.firstReport.reportedUser.username)'s #(reportGroup.reportType)
 								</div>
 								<div class="col col-auto">
-									#relativeTime(reportGroup.firstReport.creationTime)</b>
+									<span title="#localTime(reportGroup.firstReport.creationTime)">#relativeTime(reportGroup.firstReport.creationTime)</span>
 								</div>
 							</div>
 							<div class="row">
