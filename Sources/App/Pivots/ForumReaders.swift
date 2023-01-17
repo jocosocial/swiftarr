@@ -64,7 +64,6 @@ struct CreateForumReadersSchema: AsyncMigration {
 			.unique(on: "user", "forum")
 			.field("read_count", .int, .required)
 			.field("favorite", .bool, .required)
-			.field("mute", .bool, .required)
 			.field("created_at", .datetime)
 			.field("updated_at", .datetime)
 			.field("user", .uuid, .required, .references("user", "id", onDelete: .cascade))
@@ -80,23 +79,11 @@ struct CreateForumReadersSchema: AsyncMigration {
 // This is our first usage of an upgrade migration pattern. Adding new fields
 // is relatively trivial. Finding how to assign a default value was not.
 // https://stackoverflow.com/questions/57676112/add-a-default-value-in-migration-in-vapor
-// 
-// This gets complicated because this migration runs on already initialized databases
-// and on fresh ones. The .update() fails on fresh DBs because the column gets created above
-// in the initial schema migration. One solution would be to remove that column from there
-// and have it only get applied in the upgrade. I'm not quite sure that's a great idea
-// from a code perspective. But it means that the migration has to be smart enough to
-// realize that a dupliate column error is not a problem per-se. Not sure which is the "right"
-// path forward here.
-struct UpdateForumReadersSchema: AsyncMigration {
+struct UpdateForumReadersMuteSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {
-		do {
-			try await database.schema("forum+readers")
-				.field("mute", .bool, .sql(.default(false)), .required)
-				.update()
-		} catch let err as PostgresError where err.code == .duplicateColumn {
-			database.logger.info("Duplicate column detected in update migration. Skipping...")
-		}
+		try await database.schema("forum+readers")
+			.field("mute", .bool, .sql(.default(false)), .required)
+			.update()
 	}
 
 	func revert(on database: Database) async throws {

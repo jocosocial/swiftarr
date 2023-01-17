@@ -474,7 +474,7 @@ func configureMigrations(_ app: Application) throws {
 
 	// Second-and-a-halfly, updates to the schema since we 
 	// started tracking them (Dec 2022-ish).
-	app.migrations.add(UpdateForumReadersSchema(), to: .psql)
+	app.migrations.add(UpdateForumReadersMuteSchema(), to: .psql)
 
 	// Third, migrations that seed the db with initial data
 	app.migrations.add(CreateAdminUsers(), to: .psql)
