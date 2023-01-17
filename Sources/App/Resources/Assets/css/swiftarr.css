@@ -152,5 +152,5 @@ duration-select:focus {
 
 /* Overrides a Bootstrap class to make the background darker. */
 .modal-backdrop.show {
-  opacity: .75;
+  opacity: .85;
 }
