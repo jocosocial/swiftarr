@@ -10,7 +10,7 @@ import Fluent
 	- See Also: [ForumCreateData](ForumCreateData) the DTO for creating forums.
 	- See Also: [CreateForumSchema](CreateForumSchema) the Migration for creating the Forum table in the database.
 */
-final class Forum: Model {
+final class Forum: Model, Searchable {
 	static let schema = "forum"
 
 	// MARK: Properties

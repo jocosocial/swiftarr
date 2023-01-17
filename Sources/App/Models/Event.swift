@@ -2,7 +2,6 @@ import Foundation
 import Vapor
 import Fluent
 
-
 /**
 	 An `Event` on the official schedule, imported from sched.com's `.ics` format.
 	 
@@ -10,7 +9,7 @@ import Fluent
 	 - See Also: [CreateEventSchema](CreateEventSchema) the Migration for creating the Event table in the database.
 	 - See Also: [EventType](EventType)
 */
-final class Event: Model {
+final class Event: Model, Searchable {
 	static let schema = "event"
 	
 	// MARK: Properties
