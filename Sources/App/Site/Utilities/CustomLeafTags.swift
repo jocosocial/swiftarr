@@ -152,6 +152,12 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		}
 		string = words.joined(separator: " ")
 
+		// Also convert newlines to HTML breaks. Do this before link conversion due to a dumb bug with the regex parser
+		// where \r\n sequences that appear before the regex match have their reported match length reduced.
+		string = string.replacingOccurrences(of: "\r\n", with: "<br>")
+		string = string.replacingOccurrences(of: "\r", with: "<br>")
+		string = string.replacingOccurrences(of: "\n", with: "<br>")
+		
 		// Links in posts should be automatically clickable. Similarly, we desire to shorten Twitarr
 		// specific links. Maybe someday we could parse them and give some linktext?
 		// e.g. "http://192.168.0.19:8081/fez/ADDBA5D9-1154-4033-88AE-07B12F3AE162"
@@ -166,14 +172,7 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		// Find all matches in the entire text string (range 0 to end).
 		let matches = genericUrlRegex.matches(in: string, range: NSRange(0..<string.count))
 		processUrlMatches(string: &string, matches: matches)
-		let canonicalNameMatches = canonicalNamesRegex.matches(in: string, range: NSRange(0..<string.count))
-		processUrlMatches(string: &string, matches: canonicalNameMatches)
 
-		// Also convert newlines to HTML breaks.
-		string = string.replacingOccurrences(of: "\r\n", with: "<br>")
-		string = string.replacingOccurrences(of: "\r", with: "<br>")
-		string = string.replacingOccurrences(of: "\n", with: "<br>")
-		
 		return LeafData.string(string)
 	}
 
@@ -213,12 +212,54 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 			// Strip the scheme/host/port from the link so that the origin the user is already
 			// at is preserved. The browser will automatically handle this for us.
 			// Only do this for URLs that have a real path (ie, not top level).
-			guard var url = URLComponents(string: urlStr) else { continue }
-			if Settings.shared.canonicalHostnames.contains(url.host ?? "") && !["", "/"].contains(url.path) {
-				(url.scheme, url.host, url.port) = (nil, nil, nil)
+			guard var components = URLComponents(string: urlStr) else { continue }
+			if Settings.shared.canonicalHostnames.contains(components.host ?? "") && !["", "/"].contains(components.path) {
+				(components.scheme, components.host, components.port) = (nil, nil, nil)
+				var linkText = components.string
+				if let url = URL(string: urlStr), url.pathComponents.count > 1, url.pathComponents[0] == "/" {
+					switch url.pathComponents[1] {
+						case "tweets": linkText = "[Twitarr Tweet Link]"
+						case "forums": 
+							if url.pathComponents.count == 2 {
+								linkText = "[Forum Categories Link]"
+							}
+							else {
+								linkText = "[Forum Category Link]"
+							}
+						case "forum": linkText = "[Forum Link]"
+						case "seamail": linkText = "[Seamail Link]"
+						case "fez": 
+							if url.pathComponents.count > 2 {
+								switch url.pathComponents[2] {
+									case "joined": linkText = "[Joined LFGs Link]"
+									case "owned": linkText = "[Your LFGs Link]"
+									case "faq": linkText = "[LFG FAQ Link]"
+									default: linkText = "[LFG Link]"
+								}
+							}
+							else {
+								linkText = "[LFGs Link]"
+							}
+						case "events": linkText = "[Events Link]"
+						case "user", "profile": linkText = "[User Link]"
+						case "boardgames": 
+							if url.pathComponents.count > 2 {
+								linkText = "[Boardgame Link]"
+							}
+							else {
+								linkText = "[Boardgames Link]"
+							}
+						case "karaoke": linkText = "[Karaoke Link]"
+						default: linkText = "[Twitarr Link]"
+					}
+				}
+				// Replace the link's text with a wiki-like linkbox describing where the link goes
+				string.replaceSubrange(stringRange, with: "<a href=\"\(components.string!)\">\(linkText!)</a>\(urlTextSuffix)")
 			}
-			// This is where we replace the text in the Leaf string with the newly crafted <a> element.
-			string.replaceSubrange(stringRange, with: "<a href=\"\(url.string!)\">\(url.string!)</a>\(urlTextSuffix)")
+			else {
+				// This is where we replace the text in the Leaf string with the newly crafted <a> element.
+				string.replaceSubrange(stringRange, with: "<a href=\"\(components.string!)\">\(components.string!)</a>\(urlTextSuffix)")
+			}
 		}
 	}
 	
@@ -230,7 +271,6 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 	}
 	let usage: Usage
 	let genericUrlRegex: NSRegularExpression
-	let canonicalNamesRegex: NSRegularExpression
 	init(_ forUsage: Usage) throws {
 		usage = forUsage
 		
@@ -238,15 +278,12 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		// This regex matches any URL starting in http:// or https://.
 		// Certain browsers (looking at you Safari on iOS) do not prefix the scheme in pasted links from the linkbar.
 		// These will not be caught by this regex but instead by the canonical names one below.
-		let genericUrlRegexStr = "(https?://)(?:[-/:.0-9A-Z?#_]+)"
-		genericUrlRegex = try NSRegularExpression(pattern: genericUrlRegexStr, options: .caseInsensitive)
-
 		// To be at least a little bit safe we replace all hostname dots (twittar.com) with regex-escaped literal dots.
 		// The canonicalNamesRegexStr has both http and https seperated because lookbacks must be of fixed length.
 		// So https?:// is unavailable which makes me sad.
 		let escapedCanonicalHostnames = Settings.shared.canonicalHostnames.joined(separator: "|").replacingOccurrences(of: ".", with: "\\.")
-		let canonicalNamesRegexStr = "(?<!(http://))(?<!(https://))(\(escapedCanonicalHostnames))(?:[-/:.0-9A-Z?#_]+)?"
-		canonicalNamesRegex = try NSRegularExpression(pattern: canonicalNamesRegexStr, options: .caseInsensitive)
+		let genericUrlRegexStr = "(?i)\\b((?:https?:(?:/{1,3}|[a-z0-9%])|\(escapedCanonicalHostnames)/)(?:[^\\s()<>{}\\[\\]]+|\\([^\\s()]*?\\([^\\s()]+\\)[^\\s()]*?\\)|\\([^\\s]+?\\))+(?:\\([^\\s()]*?\\([^\\s()]+\\)[^\\s()]*?\\)|\\([^\\s]+?\\)|[^\\s`!()\\[\\]{};:'\".,<>?«»“”‘’])|(?:(?<!@)\(escapedCanonicalHostnames)\\b/?(?!@)))"
+		genericUrlRegex = try NSRegularExpression(pattern: genericUrlRegexStr, options: .caseInsensitive)
 	}
 }
 

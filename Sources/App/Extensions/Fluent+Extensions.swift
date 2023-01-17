@@ -178,8 +178,8 @@ extension QueryBuilder {
 	/// in FluentKit's QueryBuilder+Filter.swift.
     @discardableResult public func fullTextFilter<Field>(_ field: KeyPath<Model, Field>, _ value: String) -> Self 
 			where Field: QueryableProperty, Field.Model == Model, Field.Value == String {
-    	if database is SQLDatabase {
-			return filter(.extendedPath(Model.path(for: field), schema: Model.schemaOrAlias, space: Model.space), 
+		if database is SQLDatabase && Model.self is any Searchable.Type {
+			return filter(.extendedPath([FieldKey(stringLiteral: "fulltext_search")], schema: Model.schemaOrAlias, space: Model.space), 
 					.custom("@@"), DatabaseQuery.Value.custom("websearch_to_tsquery(\(bind: String(value)))" as SQLQueryString))
     	}
     	else {

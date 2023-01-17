@@ -304,6 +304,11 @@ func configureHTTPServer(_ app: Application) throws {
 		app.http.server.configuration.hostname = "joco.hollandamerica.com"
 	}
 	
+	// Make our chosen hostname a canonical hostname that Settings knows about
+	if !Settings.shared.canonicalHostnames.contains(app.http.server.configuration.hostname) {
+		Settings.shared.canonicalHostnames.append(app.http.server.configuration.hostname)
+	}
+	
 	// Load the FQDNs that we expect Twitarr to be available from. This feeds into link processing to help
 	// ensure a smooth experience between users who enter the site via different hostnames. For example:
 	// http://joco.hollandamerica.com and https://twitarr.com are both expected to function and bring you
@@ -491,6 +496,9 @@ func configureMigrations(_ app: Application) throws {
 	// Fifth, migrations that touch up initial state
 	app.migrations.add(SetInitialEventForums(), to: .psql)
 	app.migrations.add(SetInitialCategoryForumCounts(), to: .psql)
+
+	// Finally, any additional migrations. List newly-written migrations here!
+	app.migrations.add(CreateSearchIndexes(), to: .psql)
 }
   
 // Perform several sanity checks to verify that we can access the dbs and resource files that we need.

@@ -119,7 +119,7 @@ struct ForumController: APIRouteCollection {
 	// header in the request.
 	
 	// MARK: Returns Forum Lists	
-	/// `GET /api/v3/forum/categories/ID`
+	/// `GET /api/v3/forum/categories/:ID`
 	///
 	/// Retrieve a list of forums in the specifiec `Category`. Will not return forums created by blocked users.
 	/// 
