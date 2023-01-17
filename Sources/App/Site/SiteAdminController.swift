@@ -329,12 +329,14 @@ struct SiteAdminController: SiteControllerUtils {
 			var settings: SettingsAdminData
 			var clientAppNames: [String]
 			var appFeatureNames: [String]
+			var enableFields: Bool
 
 			init(_ req: Request, settings: SettingsAdminData) throws {
 				trunk = .init(req, title: "Edit Server Settings", tab: .admin)
 				self.settings = settings
 				clientAppNames = SwiftarrClientApp.allCases.compactMap { $0 == .unknown ? nil : $0.rawValue }
 				appFeatureNames = SwiftarrFeature.allCases.compactMap { $0 == .unknown ? nil : $0.rawValue }
+				enableFields = trunk.username == "admin" ? true : false
 			}
 		}
 		let ctx = try SettingsViewContext(req, settings: settings)

@@ -11,7 +11,7 @@
 					</nav>
 				</div>
 			</div>
-			#if(trunk.username != "admin"):
+			#if(!enableFields):
 			<div class="alert alert-warning" role="alert">
 				Only the admin user can modify server settings.
 			</div>
@@ -20,60 +20,60 @@
 				<div class="row my-1">
 					<div class="col">
 						<label for="maximumTwarrts">Maximum Alt Accounts per Primary Acct</label>
-						<input type="number" id="maxAlternateAccounts" name="maxAlternateAccounts" min="0" max="40" value="#(settings.maxAlternateAccounts)" #if(trunk.username != "admin"):disabled#endif>
+						<input type="number" id="maxAlternateAccounts" name="maxAlternateAccounts" min="0" max="40" value="#(settings.maxAlternateAccounts)" #if(!enableFields):disabled#endif>
 					</div>
 				</div>
 				<div class="row my-1">
 					<div class="col">
 						<label for="maximumTwarrts">Maximum Twarrts per request</label>
-						<input type="number" id="maximumTwarrts" name="maximumTwarrts" min="1" max="1000" value="#(settings.maximumTwarrts)" #if(trunk.username != "admin"):disabled#endif>
+						<input type="number" id="maximumTwarrts" name="maximumTwarrts" min="1" max="1000" value="#(settings.maximumTwarrts)" #if(!enableFields):disabled#endif>
 					</div>
 				</div>
 				<div class="row my-1">
 					<div class="col">
 						<label for="maximumForums">Maximum Forums per request</label>
-						<input type="number" id="maximumForums" name="maximumForums" min="1" max="1000" value="#(settings.maximumForums)" #if(trunk.username != "admin"):disabled#endif>
+						<input type="number" id="maximumForums" name="maximumForums" min="1" max="1000" value="#(settings.maximumForums)" #if(!enableFields):disabled#endif>
 					</div>
 				</div>
 				<div class="row my-1">
 					<div class="col">
 						<label for="maximumForumPosts">Maximum ForumPosts per request</label>
-						<input type="number" id="maximumForumPosts" name="maximumForumPosts" min="1" max="1000" value="#(settings.maximumForumPosts)" #if(trunk.username != "admin"):disabled#endif>
+						<input type="number" id="maximumForumPosts" name="maximumForumPosts" min="1" max="1000" value="#(settings.maximumForumPosts)" #if(!enableFields):disabled#endif>
 					</div>
 				</div>
 				<div class="row my-1">
 					<div class="col">
 						<label for="maxImageSize">Maximum image size</label>
-						<input type="number" id="maxImageSize" name="maxImageSize" min="1" max="1000" value="#(settings.maxImageSize / 1048576)" #if(trunk.username != "admin"):disabled#endif> MB
+						<input type="number" id="maxImageSize" name="maxImageSize" min="1" max="1000" value="#(settings.maxImageSize / 1048576)" #if(!enableFields):disabled#endif> MB
 					</div>
 				</div>
 				<div class="row my-1">
 					<div class="col">
 						<label for="forumAutoQuarantineThreshold">Reports to trigger auto-quarantine on a Forum</label>
-						<input type="number" id="forumAutoQuarantineThreshold" name="forumAutoQuarantineThreshold" min="1" max="1000" value="#(settings.forumAutoQuarantineThreshold)" #if(trunk.username != "admin"):disabled#endif>
+						<input type="number" id="forumAutoQuarantineThreshold" name="forumAutoQuarantineThreshold" min="1" max="1000" value="#(settings.forumAutoQuarantineThreshold)" #if(!enableFields):disabled#endif>
 					</div>
 				</div>
 				<div class="row my-1">
 					<div class="col">
 						<label for="postAutoQuarantineThreshold">Reports to trigger auto-quarantine on a Twarrt or Forum Post</label>
-						<input type="number" id="postAutoQuarantineThreshold" name="postAutoQuarantineThreshold" min="1" max="1000" value="#(settings.postAutoQuarantineThreshold)" #if(trunk.username != "admin"):disabled#endif>
+						<input type="number" id="postAutoQuarantineThreshold" name="postAutoQuarantineThreshold" min="1" max="1000" value="#(settings.postAutoQuarantineThreshold)" #if(!enableFields):disabled#endif>
 					</div>
 				</div>
 				<div class="row my-1">
 					<div class="col">
 						<label for="userAutoQuarantineThreshold">Reports to trigger auto-quarantine on a User</label>
-						<input type="number" id="userAutoQuarantineThreshold" name="userAutoQuarantineThreshold" min="1" max="1000" value="#(settings.userAutoQuarantineThreshold)" #if(trunk.username != "admin"):disabled#endif>
+						<input type="number" id="userAutoQuarantineThreshold" name="userAutoQuarantineThreshold" min="1" max="1000" value="#(settings.userAutoQuarantineThreshold)" #if(!enableFields):disabled#endif>
 					</div>
 				</div>
 				<div class="row my-1">
 					<div class="col">
 						<label for="shipWifiSSID">Onboard Wifi Network SSID</label>
-						<input type="text" id="shipWifiSSID" name="shipWifiSSID" value="#(settings.shipWifiSSID)" #if(trunk.username != "admin"):disabled#endif>
+						<input type="text" id="shipWifiSSID" name="shipWifiSSID" value="#(settings.shipWifiSSID)" #if(!enableFields):disabled#endif>
 					</div>
 				</div>
 				<div class="row my-1">
 					<div class="col">
-						<input type="checkbox" id="allowAnimatedImages" name="allowAnimatedImages" #if(settings.allowAnimatedImages):checked#endif #if(trunk.username != "admin"):disabled#endif>
+						<input type="checkbox" id="allowAnimatedImages" name="allowAnimatedImages" #if(settings.allowAnimatedImages):checked#endif #if(!enableFields):disabled#endif>
 						<label for="allowAnimatedImages">Allow animated image uploads</label>
 					</div>
 				</div>
@@ -84,7 +84,7 @@
 				</div>
 				<div class="row my-2">
 					<div class="col col-auto">
-						<select class="form-select" multiple name="reenable[]" #if(trunk.username != "admin"):disabled#endif>
+						<select class="form-select" multiple name="reenable[]" #if(!enableFields):disabled#endif>
 							#for(disabled in settings.disabledFeatures):
 								<option value="#(disabled.app):#(disabled.feature)">#(disabled.app) - #(disabled.feature)</option>
 							#endfor
@@ -116,7 +116,7 @@
 				</div>				
 				<div class="row mb-2">
 					<div class="col col-auto">
-						<button type="submit" class="btn btn-primary" #if(trunk.username != "admin"):disabled#endif>Save</button>
+						<button type="submit" class="btn btn-primary" #if(!enableFields):disabled#endif>Save</button>
 					</div>
 				</div>
 			</form>
