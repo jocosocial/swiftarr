@@ -2,13 +2,62 @@ import Vapor
 import Crypto
 import FluentSQL
 
+struct EventPageContext : Encodable {
+	struct CruiseDay : Encodable {
+		var name: String				// "Sun", "Mon", etc.
+		var index: Int					// [0...7] For a Saturday...Saturday cruise, embark is day 0, return is day 7.
+		var activeDay: Bool
+	}
+	var trunk: TrunkContext
+	var events: [EventData]
+	var days: [CruiseDay]
+	var isBeforeCruise: Bool
+	var isAfterCruise: Bool
+	var upcomingEvent: EventData?
+	var filterString: String
+	var useAllDays: Bool
+	var cruiseStartDate: Date
+	var cruiseEndDate: Date
+
+	init(_ req: Request, events: [EventData], dayOfCruise: Int, filterString: String, allDays: Bool) {
+		self.events = events
+		trunk = .init(req, title: "Events", tab: .events, search: "Search Events")
+		isBeforeCruise = Date() < Settings.shared.cruiseStartDate()
+		isAfterCruise = Date() > Settings.shared.getPortCalendar().date(byAdding: .day, value: Settings.shared.cruiseLengthInDays, 
+				to: Settings.shared.cruiseStartDate()) ?? Date()
+
+		// Set up the day buttons, one for each day of the cruise.		
+		let daynames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+		days = Array<CruiseDay>()
+		for dayIndex in 1...Settings.shared.cruiseLengthInDays {
+			let weekday = (Settings.shared.cruiseStartDayOfWeek + dayIndex - 2) % 7
+			days.append(CruiseDay(name: daynames[weekday], index: dayIndex - 1, activeDay: dayIndex == dayOfCruise))
+		}
+
+		if let _ = trunk.alertCounts.nextFollowedEventTime {
+			let secondsPerWeek = 60 * 60 * 24 * 7
+			let partialWeek = Int(Date().timeIntervalSince(Settings.shared.cruiseStartDate())) % secondsPerWeek
+			let dateInCruiseWeek = Settings.shared.cruiseStartDate() + TimeInterval(partialWeek)
+			upcomingEvent = events.first {
+				return $0.isFavorite && ((-5 * 60)...(15 * 60)).contains(dateInCruiseWeek.timeIntervalSince($0.startTime))
+			}
+		}
+		self.filterString = filterString
+		self.useAllDays = allDays
+		self.cruiseStartDate = Settings.shared.cruiseStartDate()
+		var dateComponent = DateComponents()
+		dateComponent.day = Settings.shared.cruiseLengthInDays
+		self.cruiseEndDate = Calendar.current.date(byAdding: dateComponent, to: cruiseStartDate) ?? cruiseStartDate
+	}
+}
+
 struct SiteEventsController: SiteControllerUtils {
 
 	func registerRoutes(_ app: Application) throws {
 		// Routes that the user does not need to be logged in to access.
 		let openRoutes = getOpenRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .schedule))
 		openRoutes.get("events", use: eventsPageHandler)
-		openRoutes.get("events", eventIDParam, use: eventsPageHandler)
+		openRoutes.get("events", eventIDParam, use: eventGetPageHandler)
 		openRoutes.get("events", eventIDParam, "calendarevent.ics", use: eventsDownloadICSHandler)
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
@@ -19,7 +68,6 @@ struct SiteEventsController: SiteControllerUtils {
 	
 // MARK: - Events
 	/// `GET /events`
-	/// `GET /events/:event_id`
 	///
 	/// By default, shows a day's worth events. Always attempts to show events from a day on the actual cruise. Uses
 	/// `Settings.shared.cruiseStartDate` for cruise dates; the ingested schedule should have events for that day and
@@ -29,8 +77,6 @@ struct SiteEventsController: SiteControllerUtils {
 	/// current day of week.
 	///
 	/// When the search parameter is used, returns events for the entire cruise, that match the search value.
-	///
-	/// If given an :event_id URL path (note: NOT a query parameter!) show only that event and ignore all other params.
 	///
 	/// Query Parameters:
 	/// - day=STRING      One of: "sun" ... "sat". Can also use "1sat" for first Saturday (embarkation day), or "2sat" for the next Saturday.
@@ -75,64 +121,35 @@ struct SiteEventsController: SiteControllerUtils {
 			filterString = "Today's " + filterString
 		}
 
-		// If this function got an event ID, we will only show that event. Otherwise (and most often)
-		// we will show all events, matching the particular query parameters if given.
+		let response = try await apiQuery(req, endpoint: "/events", query: components.queryItems, passThroughQuery: false)
+		let events: [EventData] = try response.content.decode([EventData].self)
+		
+		let eventContext = EventPageContext(req, events: events, dayOfCruise: dayOfCruise, 
+				filterString: filterString, allDays: useAllDays)
+		return try await req.view.render("events", eventContext)
+	}
+
+	// `GET /events/:event_id`
+	//
+	// Show a particular event. This shares a lot of minor functionality with the eventsPageHandler above
+	// regarding the day of the week, etc.
+	func eventGetPageHandler(_ req: Request) async throws -> View {
 		var events: [EventData] = []
+		var dayOfCruise: Int = -1
+		let filterString = "Event"
+		let useAllDays: Bool = false
+		let cal = Settings.shared.calendarForDate(Date())
+
+		var thisWeekday = cal.component(.weekday, from: Date())
 		if let eventID = req.parameters.get(eventIDParam.paramString)?.percentEncodeFilePathEntry() {
 			let response = try await apiQuery(req, endpoint: "/events/\(eventID)")
-			events.append(try response.content.decode(EventData.self))
-		} else {
-			let response = try await apiQuery(req, endpoint: "/events", query: components.queryItems, passThroughQuery: false)
-			events = try response.content.decode([EventData].self)
+			let event = try response.content.decode(EventData.self)
+			events.append(event)
+			thisWeekday = cal.component(.weekday, from: event.startTime)
 		}
-		struct EventPageContext : Encodable {
-			struct CruiseDay : Encodable {
-				var name: String				// "Sun", "Mon", etc.
-				var index: Int					// [0...7] For a Saturday...Saturday cruise, embark is day 0, return is day 7.
-				var activeDay: Bool
-			}
-			var trunk: TrunkContext
-			var events: [EventData]
-			var days: [CruiseDay]
-			var isBeforeCruise: Bool
-			var isAfterCruise: Bool
-			var upcomingEvent: EventData?
-			var filterString: String
-			var useAllDays: Bool
-			var cruiseStartDate: Date
-			var cruiseEndDate: Date
 
-			init(_ req: Request, events: [EventData], dayOfCruise: Int, filterString: String, allDays: Bool) {
-				self.events = events
-				trunk = .init(req, title: "Events", tab: .events, search: "Search Events")
-				isBeforeCruise = Date() < Settings.shared.cruiseStartDate()
-				isAfterCruise = Date() > Settings.shared.getPortCalendar().date(byAdding: .day, value: Settings.shared.cruiseLengthInDays, 
-						to: Settings.shared.cruiseStartDate()) ?? Date()
+		dayOfCruise = (7 + thisWeekday - Settings.shared.cruiseStartDayOfWeek) % 7 + 1
 
-				// Set up the day buttons, one for each day of the cruise.		
-				let daynames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-				days = Array<CruiseDay>()
-				for dayIndex in 1...Settings.shared.cruiseLengthInDays {
-					let weekday = (Settings.shared.cruiseStartDayOfWeek + dayIndex - 2) % 7
-					days.append(CruiseDay(name: daynames[weekday], index: dayIndex - 1, activeDay: dayIndex == dayOfCruise))
-				}
-
-				if let _ = trunk.alertCounts.nextFollowedEventTime {
-					let secondsPerWeek = 60 * 60 * 24 * 7
-					let partialWeek = Int(Date().timeIntervalSince(Settings.shared.cruiseStartDate())) % secondsPerWeek
-					let dateInCruiseWeek = Settings.shared.cruiseStartDate() + TimeInterval(partialWeek)
-					upcomingEvent = events.first {
-						return $0.isFavorite && ((-5 * 60)...(15 * 60)).contains(dateInCruiseWeek.timeIntervalSince($0.startTime))
-					}
-				}
-				self.filterString = filterString
-				self.useAllDays = allDays
-				self.cruiseStartDate = Settings.shared.cruiseStartDate()
-				var dateComponent = DateComponents()
-				dateComponent.day = Settings.shared.cruiseLengthInDays
-				self.cruiseEndDate = Calendar.current.date(byAdding: dateComponent, to: cruiseStartDate) ?? cruiseStartDate
-			}
-		}
 		let eventContext = EventPageContext(req, events: events, dayOfCruise: dayOfCruise, 
 				filterString: filterString, allDays: useAllDays)
 		return try await req.view.render("events", eventContext)
@@ -202,5 +219,4 @@ struct SiteEventsController: SiteControllerUtils {
 				.replacingOccurrences(of: "\n", with: "\\n")
 		return result
 	}
-
 }
