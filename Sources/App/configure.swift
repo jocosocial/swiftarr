@@ -495,7 +495,6 @@ func configureMigrations(_ app: Application) throws {
 
 	// Finally, any additional migrations. List newly-written migrations here!
 	app.migrations.add(CreateSearchIndexes(), to: .psql)
-	app.migrations.add(FixSearchIndexes(), to: .psql)
 }
   
 // Perform several sanity checks to verify that we can access the dbs and resource files that we need.
