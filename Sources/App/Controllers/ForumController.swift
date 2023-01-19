@@ -1297,7 +1297,10 @@ extension ForumController {
 		let creatorHeader = try req.userCache.getHeader(forum.$creator.id)
 		let pager = Paginator(total: postCount, start: start, limit: limit)
 		// For event forums
-		let event = try await forum.$scheduleEvent.query(on: req.db).first()
+		var event: Event? = nil
+		if forum.category.isEventCategory {
+			event = try await forum.$scheduleEvent.query(on: req.db).first()
+		}
 
 		return try ForumData(forum: forum, creator: creatorHeader, 
 				isFavorite: readerPivot?.isFavorite ?? false,
