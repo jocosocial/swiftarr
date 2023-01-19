@@ -5,6 +5,9 @@
     			<div class="col">
 			    	<b>Board Games</b>
 				</div>
+				<div class="col col-auto ps-2">
+					<button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="\#helpModal">?</a>
+				</div>
 				<div class="col col-auto" aria-label="Favorites Filter">
 					<a class="btn #if(showingFavorites):btn-primary#else:btn-outline-primary#endif #if(!trunk.userIsLoggedIn):d-none#endif"
 							href="#(favoriteBtnURL)">
@@ -106,5 +109,21 @@
 			</ul>
 			#extend("paginator")
     	</div>
+		<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalTitle" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="helpModalTitle">Help</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<p>Play time is the manufacturers specification. JoCo Cruise recommends adding 20-30 minutes if your party has not played before.</p>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+					</div>
+				</div>
+			</div>
+		</div>
 	#endexport
 #endextend
