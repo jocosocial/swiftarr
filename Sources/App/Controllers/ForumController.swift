@@ -160,6 +160,12 @@ struct ForumController: APIRouteCollection {
 				.filter(\.$category.$id == category.requireID())
 				.filter(\.$creator.$id !~ blocked)
 				.range(start..<(start + limit))
+				.join(ForumReaders.self, on: \Forum.$id == \ForumReaders.$forum.$id, method: .left)
+				.group(.or) { or in
+						or.filter(ForumReaders.self, \.$user.$id == cacheUser.userID)
+						or.filter(ForumReaders.self, \.$user.$id == .null)
+				}
+				.sort(ForumReaders.self, \.$isMuted, .descending)
 		if category.isEventCategory {
 			_ = query.join(child: \.$scheduleEvent, method: .left)
 		}
@@ -689,7 +695,7 @@ struct ForumController: APIRouteCollection {
 		}
 		let forumReader = try await ForumReaders.query(on: req.db).filter(\.$forum.$id == forum.requireID())
 				.filter(\.$user.$id == cacheUser.userID).first() ?? ForumReaders(cacheUser.userID, forum)
-		if forumReader.isMuted {
+		if forumReader.isMuted == true {
 			throw Abort(.badRequest, reason: "Cannot favorite a muted forum.")
 		}
 		if forumReader.isFavorite {
@@ -738,7 +744,7 @@ struct ForumController: APIRouteCollection {
 		if forumReader.isFavorite {
 			throw Abort(.badRequest, reason: "Cannot mute a favorited forum.")
 		}
-		if forumReader.isMuted {
+		if forumReader.isMuted != nil {
 			return .ok
 		}
 		forumReader.isMuted = true
@@ -762,7 +768,7 @@ struct ForumController: APIRouteCollection {
 				.filter(\.$user.$id == cacheUser.userID).first(), forumReader.isMuted == true else {
 			return .ok	
 		}
-		forumReader.isMuted = false
+		forumReader.isMuted = nil
 		try await forumReader.save(on: req.db)
 		return .noContent
 	}

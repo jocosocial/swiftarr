@@ -19,8 +19,11 @@ final class ForumReaders: Model {
 	/// TRUE if this forum is favorited by this user.
 	@Field(key: "favorite") var isFavorite: Bool
 
-	/// False unless the user has muted this forum and does not want any notifications.
-	@Field(key: "mute") var isMuted: Bool
+	/// True if the user has muted this forum and does not want any notifications.
+	/// Otherwise this field should be NIL, never FALSE. This rule makes searches for 
+	/// forums with no reader pivot (because the user has never read the forum) appear
+	/// equal to forums the user has read (and created a pivot) but not muted.
+	@Field(key: "mute") var isMuted: Bool?
 		
 // Timestamps
 	
@@ -53,7 +56,7 @@ final class ForumReaders: Model {
 		self.$forum.value = forum
 		self.readCount = 0
 		self.isFavorite = false
-		self.isMuted = false
+		self.isMuted = nil
 	}
 }
 
@@ -82,7 +85,7 @@ struct CreateForumReadersSchema: AsyncMigration {
 struct UpdateForumReadersMuteSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		try await database.schema("forum+readers")
-			.field("mute", .bool, .sql(.default(false)), .required)
+			.field("mute", .bool)
 			.update()
 	}
 
