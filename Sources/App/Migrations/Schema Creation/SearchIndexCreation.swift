@@ -60,7 +60,7 @@ struct CreateSearchIndexes: AsyncMigration {
       try await database.raw("""
         ALTER TABLE event
         ADD COLUMN IF NOT EXISTS fulltext_search tsvector
-          GENERATED ALWAYS AS (to_tsvector('english', coalesce(title, '') || ' ' || 'english', coalesce(info, ''))) STORED;
+          GENERATED ALWAYS AS (to_tsvector('english', coalesce(title, '') || ' ' || coalesce(info, ''))) STORED;
       """).run()
 
       try await createSearchIndex(on: database, tableName: "event")
@@ -80,7 +80,7 @@ struct CreateSearchIndexes: AsyncMigration {
       try await database.raw("""
         ALTER TABLE karaoke_song
         ADD COLUMN IF NOT EXISTS fulltext_search tsvector
-          GENERATED ALWAYS AS (to_tsvector('english', coalesce(artist, '') || ' ' || 'english', coalesce(title, ''))) STORED;
+          GENERATED ALWAYS AS (to_tsvector('english', coalesce(artist, '') || ' ' || coalesce(title, ''))) STORED;
       """).run()
 
       try await createSearchIndex(on: database, tableName: "karaoke_song")
