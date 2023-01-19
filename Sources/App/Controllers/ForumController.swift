@@ -172,7 +172,7 @@ struct ForumController: APIRouteCollection {
 		var dateFilterUsesUpdate = false
 		switch req.query[String.self, at: "sort"] {
 			case "create": _ = query.sort(\.$createdAt, .descending)
-			case "title": _ = query.sort(.custom("lower(title)"))
+			case "title": _ = query.sort(.custom("lower(\"forum\".\"title\")"))
 			case "update": _ = query.sort(\.$lastPostTime, .descending); dateFilterUsesUpdate = true
 			default:
 				if category.isEventCategory {
@@ -245,7 +245,7 @@ struct ForumController: APIRouteCollection {
 		let forumQuery = countQuery.copy().range(start..<(start + limit)).join(child: \.$scheduleEvent, method: .left)
 		switch req.query[String.self, at: "sort"] {
 			case "create": _ = forumQuery.sort(\.$createdAt, .descending)
-			case "title": _ = forumQuery.sort(.custom("lower(title)"))
+			case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"))
 			default: _ = forumQuery.sort(\.$lastPostTime, .descending)
 		}
 		async let forums = try forumQuery.all()
