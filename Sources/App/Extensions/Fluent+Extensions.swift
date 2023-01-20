@@ -180,7 +180,7 @@ extension QueryBuilder {
 			where Field: QueryableProperty, Field.Model == Model, Field.Value == String {
 		if database is SQLDatabase && Model.self is any Searchable.Type {
 			return filter(.extendedPath([FieldKey(stringLiteral: "fulltext_search")], schema: Model.schemaOrAlias, space: Model.space), 
-					.custom("@@"), DatabaseQuery.Value.custom("websearch_to_tsquery(\(bind: String(value)))" as SQLQueryString))
+					.custom("@@"), DatabaseQuery.Value.custom("websearch_to_tsquery('english', \(bind: String(value)))" as SQLQueryString))
     	}
     	else {
     		return filter(field, .custom("ILIKE"), value)
