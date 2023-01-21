@@ -25,7 +25,7 @@ struct ImportBoardgames: AsyncMigration {
 			}
 			let gamesFilePath = Settings.shared.seedsDirectoryPath.appendingPathComponent(gamesFile)
 			guard let data = FileManager.default.contents(atPath: gamesFilePath.path) else {
-				fatalError("Could not read boardgames file.")
+				throw Abort(.internalServerError, reason: "Could not read boardgames file.")
 			}
 			// parse to JsonGamesListGame array
 			let gamesList = try JSONDecoder().decode([JsonGamesListGame].self, from: data)
@@ -47,7 +47,7 @@ struct ImportBoardgames: AsyncMigration {
 				}
 			}
 		} catch let error {
-			fatalError("Failed to import games list: \(error)")
+			throw Abort(.internalServerError, reason: "Failed to import games list: \(error)")
 		}
 	}
 	

@@ -472,6 +472,10 @@ func configureMigrations(_ app: Application) throws {
 	app.migrations.add(CreateKaraokeFavoriteSchema(), to: .psql)
 	app.migrations.add(CreateTimeZoneChangeSchema(), to: .psql)
 
+	// Second-and-a-halfly, updates to the schema since we 
+	// started tracking them (Dec 2022-ish).
+	app.migrations.add(UpdateForumReadersMuteSchema(), to: .psql)
+
 	// Third, migrations that seed the db with initial data
 	app.migrations.add(CreateAdminUsers(), to: .psql)
 	app.migrations.add(CreateClientUsers(), to: .psql)

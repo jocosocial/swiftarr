@@ -1,7 +1,7 @@
 <li class="list-group-item list-group-item-action">
 	<div class="row " data-reportid="#(report.id)">
 		<div class="col">
-			<b>Reported by #userByline(report.author)<br>#relativeTime(report.creationTime)</b>
+			<span title="#localTime(report.creationTime)"><b>Reported by #userByline(report.author)<br>#relativeTime(report.creationTime)</b></span>
 		</div>
 		<div class="col col-auto text-end">
 			#if(report.handledBy):
