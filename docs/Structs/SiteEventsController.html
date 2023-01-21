@@ -956,6 +956,12 @@
                 <a class="nav-group-task-link" href="../Structs/ErrorResponse.html">ErrorResponse</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/EventPageContext.html">EventPageContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/EventPageContext/CruiseDay.html">– CruiseDay</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/EventTimeTag.html">EventTimeTag</a>
               </li>
               <li class="nav-group-task">
@@ -1286,6 +1292,9 @@
                 <a class="nav-group-task-link" href="../Structs/UTCTimeTag.html">UTCTimeTag</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UpdateForumReadersMuteSchema.html">UpdateForumReadersMuteSchema</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserAuthorizedToCreateKaraokeLogs.html">UserAuthorizedToCreateKaraokeLogs</a>
               </li>
               <li class="nav-group-task">
@@ -1371,7 +1380,7 @@
               </div>
             
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteEventsController.swift#L5-L191">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteEventsController.swift#L54-L222">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1404,7 +1413,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteEventsController.swift#L7-L17">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteEventsController.swift#L56-L67">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1440,22 +1449,23 @@
                       <div class="abstract">
                         <p><code>GET /events</code></p>
 
-<p>By default, shows a day&rsquo;s worth events. Always attempts to show events from a day on the actual cruise. Uses <code>Settings.shared.cruiseStartDate</code>
-for cruise dates; the ingested schedule should have events for that day and the next 7 days.</p>
+<p>By default, shows a day&rsquo;s worth events. Always attempts to show events from a day on the actual cruise. Uses
+<code>Settings.shared.cruiseStartDate</code> for cruise dates; the ingested schedule should have events for that day and
+the next 7 days.</p>
 
-<p>Use the &lsquo;day&rsquo; or &lsquo;cruiseday&rsquo; query parameter to request which day to show. If no parameter given, uses the current day of week.</p>
+<p>Use the &lsquo;day&rsquo; or &lsquo;cruiseday&rsquo; query parameter to request which day to show. If no parameter given, uses the
+current day of week.</p>
 
 <p>When the search parameter is used, returns events for the entire cruise, that match the search value.</p>
 
 <p>Query Parameters:</p>
 
 <ul>
-<li>day=STRING            One of: &ldquo;sun&rdquo; &hellip; &ldquo;sat&rdquo;. Can also use &ldquo;1sat&rdquo; for first Saturday (embarkation day), or &ldquo;2sat&rdquo; for the next Saturday.</li>
-<li>cruiseday=INT     Generally 1&hellip;8, where 1 is embarkation day.</li>
-<li>search=STRING     Filter only events that match the given string.</li>
+<li>day=STRING      One of: &ldquo;sun&rdquo; &hellip; &ldquo;sat&rdquo;. Can also use &ldquo;1sat&rdquo; for first Saturday (embarkation day), or &ldquo;2sat&rdquo; for the next Saturday.</li>
+<li>cruiseday=INT   Generally 1&hellip;8, where 1 is embarkation day.</li>
+<li>search=STRING   Filter only events that match the given string.</li>
 </ul>
 
-                        <a href="../Structs/SiteEventsController/eventsPageHandler%28_%3A%29.html" class="slightly-smaller">See more</a>
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
@@ -1466,7 +1476,39 @@ for cruise dates; the ingested schedule should have events for that day and the 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteEventsController.swift#L33-L124">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteEventsController.swift#L85-L130">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App20SiteEventsControllerV19eventGetPageHandlery5Vapor4ViewVAE7RequestCYaKF"></a>
+                    <a name="//apple_ref/swift/Method/eventGetPageHandler(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App20SiteEventsControllerV19eventGetPageHandlery5Vapor4ViewVAE7RequestCYaKF">eventGetPageHandler(_:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">eventGetPageHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">View</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteEventsController.swift#L136-L156">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1498,7 +1540,7 @@ for cruise dates; the ingested schedule should have events for that day and the 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteEventsController.swift#L126-L136">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteEventsController.swift#L158-L168">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1530,7 +1572,7 @@ for cruise dates; the ingested schedule should have events for that day and the 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteEventsController.swift#L139-L145">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteEventsController.swift#L171-L177">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1574,7 +1616,7 @@ It&rsquo;s the thing most calendar event importers have standardized on for data
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteEventsController.swift#L151-L180">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteEventsController.swift#L183-L212">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1603,7 +1645,7 @@ It&rsquo;s the thing most calendar event importers have standardized on for data
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteEventsController.swift#L183-L189">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Site/SiteEventsController.swift#L215-L221">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1616,7 +1658,7 @@ It&rsquo;s the thing most calendar event importers have standardized on for data
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2023 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2023-01-20)</p>
+      <p>&copy; 2023 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2023-01-21)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
     </section>
   </body>

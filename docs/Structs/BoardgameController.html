@@ -956,6 +956,12 @@
                 <a class="nav-group-task-link" href="../Structs/ErrorResponse.html">ErrorResponse</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/EventPageContext.html">EventPageContext</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/EventPageContext/CruiseDay.html">– CruiseDay</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/EventTimeTag.html">EventTimeTag</a>
               </li>
               <li class="nav-group-task">
@@ -1286,6 +1292,9 @@
                 <a class="nav-group-task-link" href="../Structs/UTCTimeTag.html">UTCTimeTag</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UpdateForumReadersMuteSchema.html">UpdateForumReadersMuteSchema</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UserAuthorizedToCreateKaraokeLogs.html">UserAuthorizedToCreateKaraokeLogs</a>
               </li>
               <li class="nav-group-task">
@@ -1372,7 +1381,7 @@
             <p>Methods for accessing the list of boardgames available in the onboard Games Library.</p>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L6-L211">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L6-L226">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1406,7 +1415,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L9-L25">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L9-L27">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1456,7 +1465,7 @@ if logged in favorite information is returned.</p>
                         <p><a href="doc:BoardgameResponseData">doc:BoardgameResponseData</a></p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L39-L62">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L41-L64">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1514,7 +1523,7 @@ if logged in favorite information is returned.</p>
                         <p><a href="doc:BoardgameData">doc:BoardgameData</a></p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L70-L75">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L72-L77">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1577,7 +1586,7 @@ if logged in favorite information is returned.</p>
                         <p>An array of <a href="doc:BoardgameData">doc:BoardgameData</a>. First item is the base game, other items are expansions.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L84-L97">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L86-L99">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1635,7 +1644,7 @@ if logged in favorite information is returned.</p>
                         <p>201 Created on success; 200 OK if already favorited.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L105-L119">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L107-L121">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1694,7 +1703,7 @@ if logged in favorite information is returned.</p>
                         <p>204 No Content on success; 200 OK if already not a favorite.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L128-L139">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L130-L141">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1747,7 +1756,51 @@ and <code>gameComplexity</code> into account.</p>
                         <p><a href="doc:BoardgameResponseData">doc:BoardgameResponseData</a></p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L156-L193">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L158-L195">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App19BoardgameControllerV20reloadBoardGamesDatay8NIOHTTP118HTTPResponseStatusO5Vapor7RequestCYaKF"></a>
+                    <a name="//apple_ref/swift/Method/reloadBoardGamesData(_:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App19BoardgameControllerV20reloadBoardGamesDatay8NIOHTTP118HTTPResponseStatusO5Vapor7RequestCYaKF">reloadBoardGamesData(_:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p><code>POST /api/v3/boardgames/reload</code></p>
+
+<p>Reloads the board game data from the seed file. Removes all previous entries.</p>
+<div class="aside aside-throws">
+    <p class="aside-title">Throws</p>
+    A 5xx response should be reported as a likely bug, please and thank you.
+
+</div>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">reloadBoardGamesData</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">HTTPStatus</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p><code>HTTP 200 OK</code> if the settings were updated.</p>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L203-L208">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1792,7 +1845,7 @@ and <code>gameComplexity</code> into account.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L199-L210">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L214-L225">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1805,7 +1858,7 @@ and <code>gameComplexity</code> into account.</p>
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2023 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2023-01-20)</p>
+      <p>&copy; 2023 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2023-01-21)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
     </section>
   </body>
