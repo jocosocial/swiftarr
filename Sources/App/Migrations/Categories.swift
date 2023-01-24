@@ -19,18 +19,18 @@ struct CreateCategories: AsyncMigration {
 		let categories: [Category] = [
 			// categories only mods can see and post in
 			.init(title: "Moderators Only", purpose: "Mod Chat. Only Mods can see this.", viewAccess: .moderator, createForumAccess: .moderator),
-			.init(title: "Mods Only Dumpster Fire", purpose: "Mods: Move flamewar theads here", viewAccess: .moderator, createForumAccess: .moderator),
+			.init(title: "Mods Only Dumpster Fire", purpose: "Mods: Move flamewar theads here.", viewAccess: .moderator, createForumAccess: .moderator),
 
 			// categories in which users cannot add forums but can post in existing forums
-			.init(title: "Event Forums", purpose: "A thread for each Official event", createForumAccess: .moderator, isEventCategory: true),
-			.init(title: "Shadow Event Forums", purpose: "A thread for each Shadow event", createForumAccess: .moderator, isEventCategory: true),
+			.init(title: "Event Forums", purpose: "A thread for each Official event.", createForumAccess: .moderator, isEventCategory: true),
+			.init(title: "Shadow Event Forums", purpose: "A thread for each Shadow event.", createForumAccess: .moderator, isEventCategory: true),
 
 			// categories in which users can add forums
 			.init(title: "Help Desk", purpose: "Need help? Ask here."),
-			.init(title: "General", purpose: "Discuss amongst yourselves"),
+			.init(title: "General", purpose: "Discuss amongst yourselves."),
 			.init(title: "Covid", purpose: "No hate, only hugs. Except for Covid—hate Covid."),
 			.init(title: "Activities", purpose: "Things to do that aren't Events. Pokemon, KrakenMail, puzzles..."),
-			.init(title: "Safe Space", purpose: "No hate, only hugs"),
+			.init(title: "Safe Space", purpose: "No hate, only hugs."),
 			.init(title: "Egype", purpose: "Did a performer do something silly? Do you want to meme about it?"),
 			
 			// Categories restricted to specific UserRoleTypes

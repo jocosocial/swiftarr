@@ -94,6 +94,8 @@ struct SiteUserController: SiteControllerUtils {
 		privateRoutes.get("profile", "report", userIDParam, use: profileReportPageHandler)
 		privateRoutes.post("profile", "report", userIDParam, use: profileReportPostHandler)
 
+		privateRoutes.get("directory", use: directoryPageHandler)
+
 		privateRoutes.post("user", userIDParam, "block", use: blockUserPostHandler)
 		privateRoutes.post("user", userIDParam, "unblock", use: unblockUserPostHandler)
 		privateRoutes.post("user", userIDParam, "mute", use: muteUserPostHandler)
@@ -554,5 +556,22 @@ struct SiteUserController: SiteControllerUtils {
 		}
  		let response = try await apiQuery(req, endpoint: "/users/userrole/shutternaut/removerole/\(targetUserID)", method: .POST)
  		return response.status
+	}
+
+	/// `GET /directory`
+	///
+	/// Render a page to search for a users profile. Requires at least two characters
+	/// of the username. Doesn't return a whole list of users for privacy reasons.
+	///
+	func directoryPageHandler(_ req: Request) async throws -> View {
+		struct DirectoryViewContext : Encodable {
+			var trunk: TrunkContext
+			
+			init(_ req: Request) throws {
+				trunk = .init(req, title: "User Directory", tab: .home)
+			}
+		}
+		let ctx = try DirectoryViewContext(req)
+		return try await req.view.render("User/directory", ctx)
 	}
 }

@@ -1,7 +1,6 @@
 import Vapor
 import Fluent
 
-
 /**
 	An individual post in the Twitarr stream. Posts must contain text content, and may also contain images.
 	
@@ -22,7 +21,7 @@ import Fluent
 	- See Also: [PostData](PostData) the DTO for creating or editing Twarrts.
 	- See Also: [CreateTwarrtSchema](CreateTwarrtSchema) the Migration for creating the Twarrts table in the database.
 */
-final class Twarrt: Model {
+final class Twarrt: Model, Searchable {
 	static let schema = "twarrt"
 	
 	// MARK: Properties

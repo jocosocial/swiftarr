@@ -13,7 +13,7 @@ import Fluent
 	- See Also: [PostContentData](PostContentData) the DTO for creating ForumPosts.
 	- See Also: [CreateForumPostSchema](CreateForumPostSchema) the Migration for creating the ForumPost table in the database.
 */
-final class ForumPost: Model {
+final class ForumPost: Model, Searchable {
 	static let schema = "forumpost"
 	
 	// MARK: Properties
@@ -53,7 +53,7 @@ final class ForumPost: Model {
 	
 	/// The sibling `User`s who have "liked" the post.
 	@Siblings(through: PostLikes.self, from: \.$post, to: \.$user) var likes
-	
+
 	// MARK: Initialization
 	
 	// Used by Fluent

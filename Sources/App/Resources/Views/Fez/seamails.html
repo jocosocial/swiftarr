@@ -33,7 +33,7 @@
 									#(fez.title)
 								</div>
 								<div class="col col-auto">
-									<span class="text-muted">#relativeTime(fez.lastModificationTime)</span>
+									<span title="#localTime(fez.lastModificationTime)" class="text-muted">#relativeTime(fez.lastModificationTime)</span>
 								</div>
 							</div>
 							<div class="row">
@@ -48,7 +48,7 @@
 							</div>
 							<div class="row">
 								<div class="col">
-									<span class="text-muted">#relativeTime(fez.lastModificationTime)</span>
+									<span title="#localTime(fez.lastModificationTime)" class="text-muted">#relativeTime(fez.lastModificationTime)</span>
 								</div>
 								<div class="col col-auto">
 									<span class="badge rounded-pill bg-light text-dark">#(fez.members.postCount) posts</span>

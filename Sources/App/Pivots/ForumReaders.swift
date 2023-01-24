@@ -1,12 +1,15 @@
 import Foundation
 import Fluent
+import PostgresKit
 
-/// A `Pivot` holding a siblings relation between a `User` and a `Forum`. The pivot tracks how many posts the user has read in the forum.
+/// A `Pivot` holding a siblings relation between a `User` and a `Forum`. 
+/// The pivot tracks how many posts the user has read in the forum.
 
 final class ForumReaders: Model {
 	static let schema = "forum+readers"
 
 // MARK: Properties
+
 	/// The ID of the pivot.
 	@ID(key: .id) var id: UUID?
 	
@@ -15,6 +18,12 @@ final class ForumReaders: Model {
 	
 	/// TRUE if this forum is favorited by this user.
 	@Field(key: "favorite") var isFavorite: Bool
+
+	/// True if the user has muted this forum and does not want any notifications.
+	/// Otherwise this field should be NIL, never FALSE. This rule makes searches for 
+	/// forums with no reader pivot (because the user has never read the forum) appear
+	/// equal to forums the user has read (and created a pivot) but not muted.
+	@Field(key: "mute") var isMuted: Bool?
 		
 // Timestamps
 	
@@ -32,6 +41,7 @@ final class ForumReaders: Model {
 	@Parent(key: "forum") var forum: Forum
 
 // MARK: Initialization
+
 	// Used by Fluent
  	init() { }
  	
@@ -46,24 +56,42 @@ final class ForumReaders: Model {
 		self.$forum.value = forum
 		self.readCount = 0
 		self.isFavorite = false
+		self.isMuted = nil
 	}
 }
 
 struct CreateForumReadersSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		try await database.schema("forum+readers")
-				.id()
-				.unique(on: "user", "forum")
-				.field("read_count", .int, .required)
-				.field("favorite", .bool, .required)
-				.field("created_at", .datetime)
-				.field("updated_at", .datetime)
- 				.field("user", .uuid, .required, .references("user", "id", onDelete: .cascade))
-  				.field("forum", .uuid, .required, .references("forum", "id", onDelete: .cascade))
-				.create()
+			.id()
+			.unique(on: "user", "forum")
+			.field("read_count", .int, .required)
+			.field("favorite", .bool, .required)
+			.field("created_at", .datetime)
+			.field("updated_at", .datetime)
+			.field("user", .uuid, .required, .references("user", "id", onDelete: .cascade))
+			.field("forum", .uuid, .required, .references("forum", "id", onDelete: .cascade))
+			.create()
 	}
 	
 	func revert(on database: Database) async throws {
 		try await database.schema("forum+readers").delete()
+	}
+}
+
+// This is our first usage of an upgrade migration pattern. Adding new fields
+// is relatively trivial. Finding how to assign a default value was not.
+// https://stackoverflow.com/questions/57676112/add-a-default-value-in-migration-in-vapor
+struct UpdateForumReadersMuteSchema: AsyncMigration {
+	func prepare(on database: Database) async throws {
+		try await database.schema("forum+readers")
+			.field("mute", .bool)
+			.update()
+	}
+
+	func revert(on database: Database) async throws {
+		try await database.schema("forum+readers")
+			.deleteField("mute")
+			.update()
 	}
 }

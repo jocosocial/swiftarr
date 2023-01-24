@@ -507,7 +507,7 @@ struct AvatarTag: UnsafeUnescapedLeafTag {
 				let userID = userHeader["userID"]?.string else {
 			throw "Leaf: avatarTag tag unable to get user header."
 		}
-		let imgLoadSize = imgSize > 100 ? "full" : "thumb"
+		let imgLoadSize = imgSize > Settings.shared.imageThumbnailSize ? "full" : "thumb"
 		var imagePath = "/api/v3/image/user/identicon/\(userID)"
 		if let customImage = userHeader["userImage"]?.string {
 			imagePath = "/api/v3/image/\(imgLoadSize)/\(customImage)"
