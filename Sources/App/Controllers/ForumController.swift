@@ -161,10 +161,7 @@ struct ForumController: APIRouteCollection {
 				.filter(\.$creator.$id !~ blocked)
 				.range(start..<(start + limit))
 				.join(ForumReaders.self, on: \Forum.$id == \ForumReaders.$forum.$id, method: .left)
-				.group(.or) { or in
-						or.filter(ForumReaders.self, \.$user.$id == cacheUser.userID)
-						or.filter(ForumReaders.self, \.$user.$id == .null)
-				}
+				.join(Forum.self, ForumReaders.self, on: .custom(#"AND "\#(ForumReaders.schema)"."\#(ForumReaders().$user.$id.key)" = '\#(cacheUser.userID)'"#))
 				.sort(ForumReaders.self, \.$isMuted, .descending)
 		if category.isEventCategory {
 			_ = query.join(child: \.$scheduleEvent, method: .left)
