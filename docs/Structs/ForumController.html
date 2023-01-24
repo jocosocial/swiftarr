@@ -836,6 +836,12 @@
                 <a class="nav-group-task-link" href="../Structs/CreateBoardgameSchema.html">CreateBoardgameSchema</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateCategoriesV2.html">CreateCategoriesV2</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateCategoriesV2/CategoryCreateInfo.html">– CategoryCreateInfo</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/CreateCategorySchema.html">CreateCategorySchema</a>
               </li>
               <li class="nav-group-task">
@@ -3582,7 +3588,8 @@ uses SQLKit to make a more complicated query, returning answers for all forums i
                       <div class="pointer"></div>
                       <div class="abstract">
                         <p>Builds an array of <code><a href="../Structs/ForumListData.html">ForumListData</a></code> from the given <code>Forums</code>. 
-<code><a href="../Structs/ForumListData.html">ForumListData</a></code> does not return post content, but does return post counts.</p>
+<code><a href="../Structs/ForumListData.html">ForumListData</a></code> does not return post content, but does return post counts.
+<code>eventTime</code> and <code>timeZone</code> only get filled in if there&rsquo;s a Event join attached to the Forum, which should only happen for forums in Event categories.</p>
 
                       </div>
                       <div class="declaration">
@@ -3594,7 +3601,7 @@ uses SQLKit to make a more complicated query, returning answers for all forums i
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1211-L1238">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1212-L1239">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3628,7 +3635,7 @@ to return only a subset of the forums&rsquo; posts (for forums where postCount &
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1242-L1309">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1243-L1310">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3661,7 +3668,7 @@ to return only a subset of the forums&rsquo; posts (for forums where postCount &
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1315-L1346">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1316-L1347">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3693,7 +3700,7 @@ to return only a subset of the forums&rsquo; posts (for forums where postCount &
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1350-L1421">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1351-L1422">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3725,7 +3732,7 @@ to return only a subset of the forums&rsquo; posts (for forums where postCount &
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1425-L1444">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1426-L1445">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3738,7 +3745,7 @@ to return only a subset of the forums&rsquo; posts (for forums where postCount &
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2023 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2023-01-21)</p>
+      <p>&copy; 2023 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2023-01-24)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
     </section>
   </body>
