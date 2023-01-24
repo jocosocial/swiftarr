@@ -189,14 +189,25 @@
 		#extend("paginator")
 
 		#if(!paginator.nextPageURL):
-			<div class="container-md ms-0 mt-2">
-				<div class="row">
-					<div class="col">
-						Post a new message:
+			#if(!forum.isLocked || trunk.userIsMod):
+				<div class="container-md ms-0 mt-2">
+					<div class="row">
+						<div class="col">
+							Post a new message:
+						</div>
+					</div>
+					#extend("messagePostForm")
+				</div>
+			#endif
+			#if(forum.isLocked):
+				<div class="container-md ms-0 mt-2">
+					<div class="row">
+						<div class="col">
+							<i class="text-secondary">Forum Locked</i>
+						</div>
 					</div>
 				</div>
-				#extend("messagePostForm")
-			</div>
+			#endif
 		#endif
 		<div class="modal fade modal-with-error" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalTitle" aria-hidden="true">
 			<div class="modal-dialog">
