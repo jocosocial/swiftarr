@@ -28,6 +28,7 @@ extension APIRouteCollection {
 	var boardgameIDParam: PathComponent { PathComponent(":boardgame_id") }
 	var songIDParam: PathComponent { PathComponent(":karaoke_song+id") }
 	var userRoleParam: PathComponent { PathComponent(":user_role") }
+	var phonecallParam: PathComponent { PathComponent(":phone_call") }
 
 
 	/// Transforms a string that might represent a date (either a `Double` or an ISO 8601
@@ -183,7 +184,7 @@ extension APIRouteCollection {
 				// Send a message to all involved users with open websockets.
 				let socketeers = req.webSocketStore.getSockets(users)
 				if socketeers.count > 0 {
-	//				req.logger.log(level: .info, "Socket: Sending \(type) msg to \(socketeers.count) client.")
+					req.logger.log(level: .info, "Socket: Sending \(type) msg to \(socketeers.count) client.")
 					let msgStruct = SocketNotificationData(type, info: info, id: type.objectID())
 					if let jsonData = try? JSONEncoder().encode(msgStruct), let jsonDataStr = String(data: jsonData, encoding: .utf8) {
 						socketeers.forEach { userSocket in

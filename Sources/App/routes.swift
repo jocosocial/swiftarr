@@ -23,6 +23,7 @@ public func routes(_ app: Application) throws {
 			TwitarrController(),
 			UserController(),
 			UsersController(),
+			PhonecallController(),
 	]
 	try apiControllers.forEach { try $0.registerRoutes(app) }
 

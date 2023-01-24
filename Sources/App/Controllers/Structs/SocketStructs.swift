@@ -92,6 +92,8 @@ struct SocketNotificationData: Content {
 		/// An event the user is following is about to start. NOT CURRENTLY IMPLEMENTED. Plan is to add support for this as a bulk process that runs every 30 mins
 		/// at :25 and :55, giving all users following an event about to start a notification 5 mins before the event start time.
 		case followedEventStarting
+		/// 
+		case incomingPhoneCall
 	}
 	/// The type of event that happened. See <doc:SocketNotificationData.NotificationTypeData> for values.
 	var type: NotificationTypeData
@@ -99,6 +101,8 @@ struct SocketNotificationData: Content {
 	var info: String
 	/// An ID of an Announcement, Fez, Twarrt, ForumPost, or Event.
 	var contentID: String
+	///
+	var caller: UserHeader?
 }
 
 extension SocketNotificationData {
@@ -116,4 +120,16 @@ extension SocketNotificationData {
 		self.info = info
 		self.contentID = id
 	}
+	
+	// Creates an incoming phone call notification
+	init(callID: UUID, caller: UserHeader) {
+		self.type = .incomingPhoneCall
+		self.info = caller.username
+		self.contentID = callID.uuidString
+		self.caller = caller
+	}
+}
+
+struct PhoneSocketStartData: Codable {
+	var phonecallStartTime: Date = Date()	
 }
