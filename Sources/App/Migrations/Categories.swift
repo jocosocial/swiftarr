@@ -69,3 +69,31 @@ struct SetInitialCategoryForumCounts: AsyncMigration {
 		// Nothing to do, really.
 	}
 }
+
+struct CreateCategoriesV2: AsyncMigration {  
+	struct CategoryCreateInfo {
+		var title: String
+		var purpose: String
+		var viewAccess: UserAccessLevel
+		var createAccess: UserAccessLevel
+	}
+  
+	/// Required by `Migration` protocol. Creates an initial set of categories for forums.
+	///
+	/// - Parameter database: A connection to the database, provided automatically.
+	/// - Returns: Void.
+	func prepare(on database: Database) async throws {		
+		let categories: [Category] = [
+			.init(title: "Where and When", purpose: "Cruise News You Can Use", createForumAccess: .moderator, isEventCategory: false),
+		]
+		try await categories.create(on: database)
+	}
+	
+	/// Undoes this migration, deleting all categories.
+	///
+	/// - Parameter conn: The database connection.
+	/// - Returns: Void.
+	func revert(on database: Database) async throws {
+		try await Category.query(on: database).filter(\.$title == "Where and When").delete()
+	}
+}

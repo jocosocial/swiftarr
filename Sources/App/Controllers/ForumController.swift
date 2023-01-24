@@ -1112,6 +1112,7 @@ extension ForumController {
 //		print(s.sql)
 	
 	/// Builds an array of `ForumListData` from the given `Forums`. `ForumListData` does not return post content, but does return post counts.
+	/// `eventTime` and `timeZone` only get filled in if there's a Event join attached to the Forum, which should only happen for forums in Event categories.
 	func buildForumListData(_ forums: [Forum], on req: Request, user: UserCacheData, forceIsFavorite: Bool? = nil) async throws -> [ForumListData] {
 		// get forum metadata
 		let forumIDs = try forums.map { try $0.requireID() }

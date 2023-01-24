@@ -15,7 +15,8 @@ let package = Package(
 		.package(url: "https://github.com/vapor/fluent-postgres-driver.git", from: "2.0.0"),
 		.package(url: "https://github.com/vapor/redis.git", from: "4.0.0"),
 		.package(url: "https://github.com/vapor/leaf.git", from: "4.0.0"),
-		.package(url: "https://github.com/MrLotU/SwiftPrometheus.git", from: "1.0.0-alpha")
+		.package(url: "https://github.com/MrLotU/SwiftPrometheus.git", from: "1.0.0-alpha"),
+		.package(url: "https://github.com/johnsundell/ink.git", from: "0.1.0")
 	],
 	targets: [
 		.systemLibrary(name: "gd", pkgConfig: "gdlib", providers: [.apt(["libgd-dev"]), .brew(["gd"])]),
@@ -30,6 +31,7 @@ let package = Package(
 											.product(name: "Redis", package: "redis"),
 											.product(name: "Leaf", package: "leaf"),
 											.product(name: "SwiftPrometheus", package: "SwiftPrometheus"),
+											.product(name: "Ink", package: "ink"),
 								],
 								resources: [.copy("Resources"),
 											.copy("seeds")

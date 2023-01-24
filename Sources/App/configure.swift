@@ -492,6 +492,9 @@ func configureMigrations(_ app: Application) throws {
 	// Fifth, migrations that touch up initial state
 	app.migrations.add(SetInitialEventForums(), to: .psql)
 	app.migrations.add(SetInitialCategoryForumCounts(), to: .psql)
+	
+	// Sixth, migrations that operate on an already-set-up DB to bring it forward to a newer version 
+	app.migrations.add(CreateCategoriesV2(), to: .psql)
 }
   
 // Perform several sanity checks to verify that we can access the dbs and resource files that we need.
