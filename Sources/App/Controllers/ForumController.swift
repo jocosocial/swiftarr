@@ -1182,6 +1182,7 @@ extension ForumController {
 				.columns(SQLColumn(forumFieldName), SQLAlias(SQLFunction("MAX", args: "id"), as: SQLColumn("latestpostid")))
 				.from(ForumPost.schema)
 				.where(forumFieldName, .in, forumUUIDArray)
+				.where(SQLColumn("deleted_at"), .is, SQLLiteral.null)
 				.groupBy(forumFieldName)
 		if !user.getBlocks().isEmpty || !user.getMutes().isEmpty {
 			subSelect.where(authorFieldName, .notIn, Array(user.getBlocks().union(user.getMutes())))
@@ -1209,7 +1210,18 @@ extension ForumController {
 	func buildForumListData(_ forums: [Forum], on req: Request, user: UserCacheData, forceIsFavorite: Bool? = nil, forceIsMuted: Bool? = nil) async throws -> [ForumListData] {
 		// get forum metadata
 		let forumIDs = try forums.map { try $0.requireID() }
-		let postCounts = try await forums.childCountsPerModel(atPath: \.$posts, on: req.db)
+		let postCounts = try await forums.childCountsPerModel(atPath: \.$posts, on: req.db,
+				fluentFilter: { builder in
+					// Deleted_at filter not required as Fluent will automatically filter soft-deleted posts.
+					builder.filter(\.$author.$id !~ user.getBlocks()).filter(\.$author.$id !~ user.getMutes())
+				},
+				sqlFilter: { builder in
+					builder.where(SQLColumn("deleted_at"), .is, SQLLiteral.null)
+					let hideAuthors = user.getBlocks().union(user.getMutes())
+					if !hideAuthors.isEmpty {
+						builder.where("author", .notIn, Array(hideAuthors))
+					}
+				})
 		let readerPivots = try await ForumReaders.query(on: req.db).filter(\.$user.$id == user.userID).filter(\.$forum.$id ~~ forumIDs).all()
 		let lastPostsDict = try await forumListGetLastPosts(forums, on: req, user: user)
 		
