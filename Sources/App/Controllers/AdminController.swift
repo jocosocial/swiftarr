@@ -24,6 +24,8 @@ struct AdminController: APIRouteCollection {
 		ttAuthGroup.get("regcodes", "stats", use: regCodeStatsHandler)
 		ttAuthGroup.get("regcodes", "find", searchStringParam, use: userForRegCodeHandler)
 		ttAuthGroup.get("regcodes", "findbyuser", userIDParam, use: regCodeForUserHandler)
+
+		ttAuthGroup.get("serversettings", use: settingsHandler)
 								 
 		// endpoints available for THO and Admin only
 		let thoAuthGroup = addTokenCacheAuthGroup(to: adminRoutes).grouped([RequireTHOMiddleware()])
@@ -47,7 +49,6 @@ struct AdminController: APIRouteCollection {
 		thoAuthGroup.post("userroles", userRoleParam, "removerole", userIDParam, use: removeRoleForUser)
 
 		let adminAuthGroup = addTokenCacheAuthGroup(to: adminRoutes).grouped([RequireAdminMiddleware()])
-		adminAuthGroup.get("serversettings", use: settingsHandler)
 		adminAuthGroup.post("serversettings", "update", use: settingsUpdateHandler)
 		
 		adminAuthGroup.get("timezonechanges", use: timeZoneChangeHandler)

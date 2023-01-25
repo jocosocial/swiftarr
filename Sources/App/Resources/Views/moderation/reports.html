@@ -25,7 +25,7 @@
 								@#(report.reportedUser.username)'s #(report.reportType)
 							</div>
 							<div class="col col-auto">
-								reported #relativeTime(report.firstReport.creationTime)
+								<span title="#localTime(report.firstReport.creationTime)">reported #relativeTime(report.firstReport.creationTime)</span>
 							</div>
 						</div>
 						<div class="row">

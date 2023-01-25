@@ -46,6 +46,9 @@
     			<div class="col">
     				<b>#(filterString)</b>
 				</div>
+				<div class="col col-auto ps-2">
+					<button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="\#helpModal">?</a>
+				</div>
     			<div class="col col-auto">
 					<div class="dropdown">
 						<button class="btn btn-outline-primary dropdown-toggle btn-sm" type="button" id="eventFilterMenu" data-bs-toggle="dropdown" data-selected="all" aria-expanded="false">
@@ -135,7 +138,7 @@
 								#(event.location)
 							</div>
 						</div>
-						<div class="row collapse justify-content-end" data-label="actionbar">	
+						<div class="row collapse justify-content-end #if(count(events) == 1):show#endif" data-label="actionbar">	
 							<div class="col-12">
 								#(event.description)
 							</div>
@@ -170,5 +173,21 @@
 		#endif
 		</ul>
 		<button class="btn btn-primary btn-sm position-fixed soon-button" type="button" data-action="eventScrollToNow">Soon™</button>
+		<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalTitle" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="helpModalTitle">Help</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<p>Click/tap on an event for a link to its forum, download an ICS file for your personal calendar of choice, or follow to save to a one-touch filter.</p>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+					</div>
+				</div>
+			</div>
+		</div>
     #endexport
 #endextend

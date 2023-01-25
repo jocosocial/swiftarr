@@ -51,7 +51,7 @@ struct ImportKaraokeSongs: AsyncMigration {
 			}
 		}
 		catch {
-			fatalError("Could not read karaoke songs file.")
+			throw Abort(.internalServerError, reason: "Could not read karaoke songs file.")
 		}
 	}
 	

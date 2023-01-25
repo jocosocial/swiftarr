@@ -173,6 +173,9 @@ struct SiteSeamailController: SiteControllerUtils {
 		}
 		let response = try await apiQuery(req, endpoint: "/fez/\(fezID)")
 		let fez = try response.content.decode(FezData.self)
+		guard fez.members != nil else {
+			throw Abort(.forbidden, reason: "You are not a member of this seamail.")
+		}
 		struct SeamailThreadPageContext : Encodable {
 			var trunk: TrunkContext
 			var fez: FezData

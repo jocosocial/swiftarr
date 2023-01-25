@@ -7,7 +7,7 @@ import Fluent
 	For Heroku deploys there's an alternate import file that only import ~1000 songs. This is due to Heroku's free tier limiting us
 	to 10000 database rows.
  */
-final class KaraokeSong: Model {
+final class KaraokeSong: Model, Searchable {
 	static let schema = "karaoke_song"
 	
 	/// The song's ID, provisioned automatically.

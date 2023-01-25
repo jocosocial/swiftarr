@@ -11,7 +11,8 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 		case "follow":
 		case "reload":
 		case "block":
-		case "mute": 
+		case "mute":
+		case "muteForum": // Different than mute[User] due to code in spinnerButtonAction.
 		case "unblock": 
 		case "unmute":
 		case "alertWordDelete":
@@ -663,7 +664,7 @@ document.getElementById('imageCarouselModal')?.addEventListener('show.bs.modal',
 	let pageImg = event.relatedTarget.querySelector('img');
 	let modalImg = event.target.querySelector('.swiftarr-closeup-image');
 	if (pageImg && modalImg) {
-		modalImg.src = pageImg.src;
+		modalImg.src = pageImg.src.replace("thumb", "full");
 	}
 	deleteBtn.setAttribute('data-delete-postid', postElem.dataset.postid);
 })

@@ -16,6 +16,7 @@ struct SiteFileController: SiteControllerUtils {
 		app.get("js", "**", use: streamJSFile)
 		// This replaces FileMiddleware from Sources/App/configure.swift.
 		app.get("public", "**", use: streamPublicFile)
+		app.get("faq", use: streamFaqFile)
 
 	}
 
@@ -39,6 +40,19 @@ struct SiteFileController: SiteControllerUtils {
 	// `GET /public/:catchall`
 	func streamPublicFile(_ req: Request) throws -> Response {
 		return try streamFile(req, basePath: "public")
+	}
+
+	// `GET /faq`
+	//
+	// Serve the JoCo Cruise FAQ document. This is an HTML file that comes from the moderators
+	// usually generated from a Google Doc. The export is achieved in Google Docs by going to
+	// File -> Download -> Web Page (.html, zipped). The zip archive should include only a single
+	// HTML file which we then shove in the Sources/App/Resources/Assets/public directory or
+	// equivalent mountpoint. Technically this is also available at ${server}/public/faq.html
+	// but we have this convenience URL for future purposes. Maybe some day we can find a sane
+	// way to implement it as a View here while still allowing moderators to easily make changes.
+	func streamFaqFile(_ req: Request) throws -> Response {
+		return try streamFile(req, basePath: "public/faq.html")
 	}
 
 	// Wraps fileio.streamFile. Sanity-checks the path, builds a file system path to the resource,

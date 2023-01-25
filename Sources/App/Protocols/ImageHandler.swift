@@ -204,7 +204,8 @@ extension APIRouteCollection {
 			try imageData.write(to: fullPath)
 			
 			// save thumbnail
-			if let thumbnail = image.resizedTo(height: 100) {
+			if let thumbnail = image.resizedTo(height: Settings.shared.imageThumbnailSize) {
+				thumbnail.internalImage.pointee.polyAllocated = origOrientation
 				let thumbnailData = try thumbnail.export(as: ExportableFormat(outputType))
 				try thumbnailData.write(to: thumbPath)
 			}
