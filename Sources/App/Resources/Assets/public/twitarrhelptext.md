@@ -102,7 +102,7 @@ Twit-arr is a labor of love, and a large group of contributers are responsible:
 - Nathan Walker (kvort) decided that he hated Status.net enough to rebuild the codebase for JCC4. For JCC5 he was joined in his quest 
 by Emily Ozols (wingar) and James Stapleton (tasermonkey).
 - RangerRick builds CruiseMonkey and integrates with the Twit-arr APIs.
-- grundoon attempts to step up when needed, and did a bunch of work to prepare for JCC8.
+- grundoon did a bunch of work to prepare for JCC8, did the original work on the Swiftarr server, and is greatly missed.
 - Dustin Hendrickson (hendusoone) fixed bugs, added features, and updated APIs for JCC9.
 - Hixie wrote Rainbow Monkey, Rachel Kammerer (ralykam) worked on the user experience, and ChrisR sent in many helpful patches.
 - Chall Fry (challf) wrote an iOS client called The Kraken for JCC 2020.

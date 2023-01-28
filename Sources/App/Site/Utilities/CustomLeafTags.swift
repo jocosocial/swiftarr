@@ -156,18 +156,18 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		string = string.replacingOccurrences(of: "\r\n", with: "\n")
 		string = string.replacingOccurrences(of: "\r", with: "\n")
 
-if string.hasPrefix("&lt;Markdown&gt;") {
-	string.removeFirst("&lt;Markdown&gt;".lengthOfBytes(using: .utf8))
-	var parser = MarkdownParser()
-	parser.addModifier(Modifier(target: .headings, closure: { html, markdown in
-		if html.hasPrefix("<h") {
-			return "<h5>\(html.dropFirst(4).dropLast(5))</h5>"
+		if string.hasPrefix("&lt;Markdown&gt;") {
+			string.removeFirst("&lt;Markdown&gt;".lengthOfBytes(using: .utf8))
+			var parser = MarkdownParser()
+//			parser.addModifier(Modifier(target: .headings, closure: { html, markdown in
+//				if html.hasPrefix("<h") {
+//					return "<h5>\(html.dropFirst(4).dropLast(5))</h5>"
+//				}
+//				return html
+//			}))
+			let html = parser.html(from: string)
+			return LeafData.string(html)
 		}
-		return html
-	}))
-	let html = parser.html(from: string)
-	return LeafData.string(html)
-}
 
 		// Also convert newlines to HTML breaks. Do this before link conversion due to a dumb bug with the regex parser
 		// where \r\n sequences that appear before the regex match have their reported match length reduced.
