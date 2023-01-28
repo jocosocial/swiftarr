@@ -826,7 +826,7 @@ struct ForumController: APIRouteCollection {
 	/// - Returns: 201 Created on success.
 	func forumRenameHandler(_ req: Request) async throws -> HTTPStatus {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		guard let nameParameter = req.parameters.get("new_name"), nameParameter.count > 0 else {
+		guard let nameParameter = req.parameters.get("new_name")?.removingPercentEncoding, nameParameter.count > 0 else {
 			throw Abort(.badRequest, reason: "No new name parameter for forum name change.")
 		}
 		let forum = try await Forum.findFromParameter(forumIDParam, on: req) { query in

@@ -9,7 +9,7 @@ struct KaraokeController: APIRouteCollection {
 	func registerRoutes(_ app: Application) throws {
 
 		// convenience route group for all /api/v3/karaoke endpoints
-		let baseRoute = app.grouped("api", "v3", "karaoke")
+		let baseRoute = app.grouped(DisabledAPISectionMiddleware(feature: .karaoke)).grouped("api", "v3", "karaoke")
 	
 		let flexAuthGroup = addFlexCacheAuthGroup(to: baseRoute)
 		flexAuthGroup.get("", use: getKaraokeSongs)
