@@ -47,7 +47,7 @@ extension Request.Redis {
 	}
 	
 	func getIntFromUserHash(_ hash: [String: RESPValue], field: NotificationType, viewed: Bool = false) -> Int {
-		return hash[viewed ? field.redisFieldName() : field.redisViewedFieldName()]?.int ?? 0
+		return hash[viewed ? field.redisViewedFieldName() : field.redisFieldName()]?.int ?? 0
 	}
 	
 	func getUUIDFromUserHash(_ hash: [String: RESPValue], field: NotificationType) -> UUID? {

@@ -3,6 +3,7 @@ services:
 
   postgres:
     image: docker.io/ubuntu/postgres:14-22.04_beta
+    command: ["postgres", "-c", "log_statement=all"]
     user: postgres
     environment:
       POSTGRES_DB: swiftarr
