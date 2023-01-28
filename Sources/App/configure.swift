@@ -500,6 +500,7 @@ func configureMigrations(_ app: Application) throws {
 	// Sixth, migrations that operate on an already-set-up DB to bring it forward to a newer version 
 	app.migrations.add(CreateSearchIndexes(), to: .psql)
 	app.migrations.add(CreateCategoriesV2(), to: .psql)
+	app.migrations.add(CreateUserFavoriteSchema(), to: .psql)
 }
   
 // Perform several sanity checks to verify that we can access the dbs and resource files that we need.

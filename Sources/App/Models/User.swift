@@ -178,6 +178,10 @@ final class User: Model {
 	/// The sibling `KaraokeSongs`s this user has favorited.
 	@Siblings(through: KaraokeFavorite.self, from: \.$user, to: \.$song) var favoriteSongs: [KaraokeSong]
 	
+	/// Pivots for users this user has favorited. 
+	/// Technically `\UserFavorite.$favorites` could be used as well but we shouldn't need to be looking at who has favorited a particular user.
+	@Children(for: \.$user) var favorites: [UserFavorite]
+	
 	// MARK: Initialization
 	
 	// Used by Fluent
@@ -225,6 +229,10 @@ final class User: Model {
 		self.mutedUserIDs = []
 		self.blockedUserIDs = []
 		buildUserSearchString()
+	}
+	
+	func makeUserHeader() throws -> UserHeader {
+		return try UserHeader(userID: requireID(), username: username, displayName: displayName, userImage: userImage)
 	}
 }
 
