@@ -158,7 +158,7 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 
 		if string.hasPrefix("&lt;Markdown&gt;") {
 			string.removeFirst("&lt;Markdown&gt;".lengthOfBytes(using: .utf8))
-			var parser = MarkdownParser()
+			let parser = MarkdownParser()
 //			parser.addModifier(Modifier(target: .headings, closure: { html, markdown in
 //				if html.hasPrefix("<h") {
 //					return "<h5>\(html.dropFirst(4).dropLast(5))</h5>"
