@@ -150,11 +150,7 @@ func configureBasicSettings(_ app: Application) throws {
 	// We do some shenanigans to date-shift the current date into a day of the cruise week (the time the schedule covers)
 	// for Events methods, because 'No Events Today' makes testing schedule features difficult.
 	Settings.shared.portTimeZone = TimeZone(identifier: "America/New_York")!
-	// 2022: StartDate=2022-03-05, DayOfWeek 7 (Sat)
-	// 2023: StartDate=2023-03-05, DayOfWeek 1 (Sun)
-	//Settings.shared.cruiseStartDateComponents = DateComponents(year: 2022, month: 3, day: 5)
-	//Settings.shared.cruiseStartDayOfWeek = 7
-	Settings.shared.cruiseStartDateComponents = DateComponents(year: 2023, month: 1, day: 29)
+	Settings.shared.cruiseStartDateComponents = DateComponents(year: 2023, month: 3, day: 5)
 	Settings.shared.cruiseStartDayOfWeek = 1
 	
 	// Ask the GD Image library what filetypes are available on the local machine.
