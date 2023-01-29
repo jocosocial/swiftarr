@@ -99,10 +99,10 @@ final class Settings : Encodable {
 	@StoredSettingsValue("userAutoQuarantineThreshold", defaultValue: 5) var userAutoQuarantineThreshold: Int
 	
 // MARK: Dates
-	/// A Date set to midnight on the day the cruise ship leaves port, in the timezone the ship leaves from. Used by the Events Controller for date arithimetic.
-	/// The default here should usually get overwritten in configure.swift.
-	@SettingsValue var cruiseStartDateComponents: DateComponents = DateComponents(year: 2022, month: 3, day: 5)
-	
+  /// A Date set to midnight on the day the cruise ship leaves port, in the timezone the ship leaves from. Used by the Events Controller for date arithimetic.
+  /// The default here should usually get overwritten in configure.swift.
+  @SettingsValue var cruiseStartDateComponents: DateComponents = DateComponents(year: 1970, month: 1, day: 1)
+
 	/// The day of week when the cruise embarks, expressed as number as Calendar's .weekday uses them: Range 1...7, Sunday == 1.
 	@SettingsValue var cruiseStartDayOfWeek: Int = 7
 
@@ -166,7 +166,7 @@ extension Settings {
 	func cruiseStartDate() -> Date {
 		var cal = Calendar(identifier: .gregorian)
 		cal.timeZone = portTimeZone
-		var startDateComponents = DateComponents(year: 2022, month: 3, day: 5)
+		var startDateComponents = cruiseStartDateComponents
 		startDateComponents.calendar = Calendar(identifier: .gregorian)
 		startDateComponents.timeZone = portTimeZone
 		guard let result = cal.date(from: startDateComponents) else {
