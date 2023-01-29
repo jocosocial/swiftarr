@@ -10,7 +10,7 @@ struct DisabledAPISectionMiddleware: AsyncMiddleware {
 
 	func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
 		let features = Settings.shared.disabledFeatures.value
-		if features[.all]?.contains(featureToCheck) ?? false {
+		if features[.all]?.contains(featureToCheck) ?? false || features[.all]?.contains(.all) ?? false {
 			throw Abort(.serviceUnavailable)
 		}
 		return try await next.respond(to: request)
@@ -26,7 +26,7 @@ struct DisabledSiteSectionMiddleware: AsyncMiddleware {
 
 	func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
 		let features = Settings.shared.disabledFeatures.value
-		if features[.all]?.contains(featureToCheck) ?? false || features[.swiftarr]?.contains(featureToCheck) ?? false {
+		if features[.all]?.contains(featureToCheck) ?? false || features[.swiftarr]?.contains(featureToCheck) ?? false || features[.all]?.contains(.all) ?? false {
 			struct DisabledSectionContext : Encodable {
 				var trunk: TrunkContext
 				init(_ req: Request) {
@@ -34,7 +34,7 @@ struct DisabledSiteSectionMiddleware: AsyncMiddleware {
 				}
 			}
 			let ctx = DisabledSectionContext(request)
-			return try await request.view.render("featureDisabled.leaf", ctx).encodeResponse(for: request)
+			return try await request.view.render("featureDisabled", ctx).encodeResponse(for: request)
 		}
 		return try await next.respond(to: request)
 	}
