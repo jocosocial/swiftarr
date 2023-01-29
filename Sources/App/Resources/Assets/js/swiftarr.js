@@ -683,6 +683,8 @@ window.addEventListener('DOMContentLoaded', function() {
 			hour12: true,
 			timeZoneName: 'long'
 		  });
-		document.getElementById('browserTimeDisplay').innerHTML = formatter.format(browserTime)
+		// I don't know how to get the DateTimeFormat to not spit out "Date at Time". This will at least match
+		// the formatting coming out of Swiftarr.
+		document.getElementById('browserTimeDisplay').innerHTML = formatter.format(browserTime).replace(" at ", ", ")
 	}
 })

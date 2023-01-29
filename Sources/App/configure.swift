@@ -147,15 +147,15 @@ func configureBundle(_ app: Application) throws {
 // Note that other configuration methods rely on values set by this method.
 func configureBasicSettings(_ app: Application) throws {
 
-	// Set the cruise start date to a date that works with the Schedule.ics file that we have. Until we have
-	// a 2022 schedule, we're using the 2020 schedule. Development builds by default will date-shift the current date
-	// into a day of the cruise week (the time the schedule covers) for Events methods, because 'No Events Today' 
-	// makes testing schedule features difficult.
+	// We do some shenanigans to date-shift the current date into a day of the cruise week (the time the schedule covers)
+	// for Events methods, because 'No Events Today' makes testing schedule features difficult.
 	Settings.shared.portTimeZone = TimeZone(identifier: "America/New_York")!
-  //Settings.shared.cruiseStartDateComponents = DateComponents(year: 2022, month: 3, day: 5)
-  //Settings.shared.cruiseStartDayOfWeek = 7 // 2022/Saturday=7
-  Settings.shared.cruiseStartDateComponents = DateComponents(year: 2023, month: 1, day: 29)
-  Settings.shared.cruiseStartDayOfWeek = 1 // 2023/Sunday=1
+	// 2022: StartDate=2022-03-05, DayOfWeek 7 (Sat)
+	// 2023: StartDate=2023-03-05, DayOfWeek 1 (Sun)
+	//Settings.shared.cruiseStartDateComponents = DateComponents(year: 2022, month: 3, day: 5)
+	//Settings.shared.cruiseStartDayOfWeek = 7
+	Settings.shared.cruiseStartDateComponents = DateComponents(year: 2023, month: 1, day: 29)
+	Settings.shared.cruiseStartDayOfWeek = 1
 	
 	// Ask the GD Image library what filetypes are available on the local machine.
 	// gd, gd2, xbm, xpm, wbmp, some other useless formats culled.
@@ -271,17 +271,17 @@ func configureHTTPServer(_ app: Application) throws {
 	// Enable HTTP response compression.
 	// app.http.server.configuration.responseCompression = .enabled
 	
-	// Each environment type has its own default hostname. The hostname controls which address we will accept new connections on.
-	// The default hostname for an environment may be overridden with the "SWIFTARR_HOSTNAME" environment variable,
-	// and the "--hostname <addr>" command line parameter overrides the environment var.
-	if let host = Environment.get("SWIFTARR_HOSTNAME") {
+	// Specify which interface Swiftarr should bind to. The default IP for an environment may be overridden 
+	// with the "SWIFTARR_IP" environment variable, and the "--hostname <addr>" command line parameter 
+	// overrides the environment var.
+	if let host = Environment.get("SWIFTARR_IP") {
 		app.http.server.configuration.hostname = host
+	}
+	else if app.environment == .production {
+		app.http.server.configuration.hostname = "0.0.0.0"
 	}
 	else if app.environment == .development {
 		app.http.server.configuration.hostname = "127.0.0.1"
-	}
-	else if app.environment == .production {
-		app.http.server.configuration.hostname = "joco.hollandamerica.com"
 	}
 	
 	// Make our chosen hostname a canonical hostname that Settings knows about

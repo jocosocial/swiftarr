@@ -99,9 +99,10 @@ final class Settings : Encodable {
 	@StoredSettingsValue("userAutoQuarantineThreshold", defaultValue: 5) var userAutoQuarantineThreshold: Int
 	
 // MARK: Dates
-  /// A Date set to midnight on the day the cruise ship leaves port, in the timezone the ship leaves from. Used by the Events Controller for date arithimetic.
-  /// The default here should usually get overwritten in configure.swift.
-  @SettingsValue var cruiseStartDateComponents: DateComponents = DateComponents(year: 1970, month: 1, day: 1)
+	/// A Date set to midnight on the day the cruise ship leaves port, in the timezone the ship leaves from. Used by the Events Controller for date arithimetic.
+	/// The default here should get overwritten in configure.swift. This is purely for convenience to set the start date via
+	/// configure.swift. This setting should not be referenced anywhere. That's what cruiseStartDate()` below is for.
+	@SettingsValue var cruiseStartDateComponents: DateComponents = DateComponents(year: 1970, month: 1, day: 1)
 
 	/// The day of week when the cruise embarks, expressed as number as Calendar's .weekday uses them: Range 1...7, Sunday == 1.
 	@SettingsValue var cruiseStartDayOfWeek: Int = 7
@@ -112,6 +113,7 @@ final class Settings : Encodable {
 	/// TimeZone representative of where we departed port from. This should equal the TZ that Sched.com uses to list Events.
 	@SettingsValue var portTimeZone: TimeZone = TimeZone(identifier: "America/New_York")!
 	
+	/// Struct representing a set of TimeZoneChange's for this cruise. This setting can then be referenced elsewhere in the application.
 	@SettingsValue var timeZoneChanges: TimeZoneChangeSet = TimeZoneChangeSet()
 	
 // MARK: Images
