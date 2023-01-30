@@ -26,8 +26,10 @@ struct DisabledSiteSectionMiddleware: AsyncMiddleware {
 
 	func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
 		let features = Settings.shared.disabledFeatures.value
-		if features[.all]?.contains(featureToCheck) ?? false || features[.swiftarr]?.contains(featureToCheck) ?? false || features[.all]?.contains(.all) ?? false || features[.swiftarr]?.contains(.all) ?? false {
-			struct DisabledSectionContext : Encodable {
+		if features[.all]?.contains(featureToCheck) ?? false || features[.swiftarr]?.contains(featureToCheck) ?? false
+			|| features[.all]?.contains(.all) ?? false || features[.swiftarr]?.contains(.all) ?? false
+		{
+			struct DisabledSectionContext: Encodable {
 				var trunk: TrunkContext
 				init(_ req: Request) {
 					trunk = .init(req, title: "Disabled Section", tab: .none)
