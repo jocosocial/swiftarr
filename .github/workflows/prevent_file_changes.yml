@@ -1,0 +1,16 @@
+name: Prevent File Changes
+on:
+  pull_request: null
+  push:
+    branches:
+      - master
+
+jobs:
+  prevent_file_changes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Lock Package.swift
+        uses: xalvarez/prevent-file-change-action@v1
+        with:
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          pattern: Package.swift
