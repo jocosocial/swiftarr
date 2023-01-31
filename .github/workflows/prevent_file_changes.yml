@@ -9,8 +9,8 @@ jobs:
   prevent_file_changes:
     runs-on: ubuntu-latest
     steps:
-      - name: Lock Package.swift
+      - name: Lock Package.resolved
         uses: xalvarez/prevent-file-change-action@v1
         with:
           githubToken: ${{ secrets.GITHUB_TOKEN }}
-          pattern: Package.swift
+          pattern: Package.resolved
