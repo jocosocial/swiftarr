@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  run:
+  prevent_file_changes:
     runs-on: ubuntu-latest
     steps:
       - name: Lock Package.swift
