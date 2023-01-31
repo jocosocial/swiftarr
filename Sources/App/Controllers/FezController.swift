@@ -19,6 +19,7 @@ struct FezController: APIRouteCollection {
 		var start: Int?
 		var limit: Int?
 		var cruiseDay: Int?
+		var search: String?
 		
 		func getTypes() throws -> [FezType]? {
 			let includeTypes = try type.map {  try FezType.fromAPIString($0) }
@@ -176,6 +177,10 @@ struct FezController: APIRouteCollection {
 			query.filter(DatabaseQuery.Field.custom("\(FezParticipant().$readCount.key) + \(FezParticipant().$hiddenCount.key)"),
 					onlyNew ? DatabaseQuery.Filter.Method.lessThan : DatabaseQuery.Filter.Method.equal,
     				DatabaseQuery.Field.path(FriendlyFez.path(for: \.$postCount), schema: FriendlyFez.schema))
+		}
+		/// @TODO this is where the search should go
+		if urlQuery.search != nil {
+			print("LOLOL SEARCHING")
 		}
 		async let fezCount = try query.count()
 		async let pivots = query.sort(FriendlyFez.self, \.$updatedAt, .descending).range(urlQuery.calcRange()).all()
