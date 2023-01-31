@@ -38,6 +38,7 @@ struct CreateKaraokeFavoriteSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		try await database.schema("karaoke+favorite")
 				.id()
+				.unique(on: "user", "song")
  				.field("user", .uuid, .required, .references("user", "id", onDelete: .cascade))
  				.field("song", .uuid, .required, .references("karaoke_song", "id", onDelete: .cascade))
 				.create()
