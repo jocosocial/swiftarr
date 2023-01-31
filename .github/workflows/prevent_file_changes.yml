@@ -3,6 +3,7 @@ on: pull_request
 
 jobs:
   run:
+    steps:
     - name: Lock Package.swift
       uses: xalvarez/prevent-file-change-action@v1
       with:
