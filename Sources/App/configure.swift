@@ -140,42 +140,18 @@ func configureBundle(_ app: Application) throws {
 		Logger(label: "app.swiftarr.configuration")
 				.warning("No config file detected for environment '\(app.environment.name)'. Defaulting to shell environment and code defaults.")
 	}
+  Logger(label: "app.swiftarr.configuration") .notice("Starting up in \"\(app.environment.name)\" mode.")
 }
 
 // Sets up the cruise start date, image file types supported on the local machine, and determines a few local file paths.
 // Note that other configuration methods rely on values set by this method.
 func configureBasicSettings(_ app: Application) throws {
 
-	// Set the cruise start date to a date that works with the Schedule.ics file that we have. Until we have
-	// a 2022 schedule, we're using the 2020 schedule. Development builds by default will date-shift the current date
-	// into a day of the cruise week (the time the schedule covers) for Events methods, because 'No Events Today' 
-	// makes testing schedule features difficult.
-
-	// We do not have the displayCalendar yet so we have to build our own. Since the departure port/timezone is
-	// well-known we can safely rely on it here. Perhaps someday make it an environment variable or some other
-	// method of configuration for app startup?
-	var portCalendar = Calendar(identifier: .gregorian)
-	let portTimeZone = TimeZone(identifier: "America/New_York")!
-	portCalendar.timeZone = portTimeZone
-	Settings.shared.portTimeZone = portTimeZone
-
-	if app.environment == .testing {
-		Logger(label: "app.swiftarr.configuration") .notice("Starting up in Testing mode.")
-		Settings.shared.cruiseStartDateComponents = DateComponents(year: 2022, month: 3, day: 5)
-	}
-	else if app.environment == .development {
-		Logger(label: "app.swiftarr.configuration") .notice("Starting up in Development mode.")
-		Settings.shared.cruiseStartDateComponents = DateComponents(year: 2022, month: 3, day: 5)
-	}
-	else if app.environment == .production {
-		Logger(label: "app.swiftarr.configuration") .notice("Starting up in Production mode.")
-		// Until we get a proper future schedule, we're using the current schedule for testing. 
-		Settings.shared.cruiseStartDateComponents = DateComponents(year: 2023, month: 3, day: 5)
-	}
-	else {
-		Logger(label: "app.swiftarr.configuration") .notice("Starting up in Custom \"\(app.environment.name)\" mode.")
-		Settings.shared.cruiseStartDateComponents = DateComponents(year: 2023, month: 3, day: 5)
-	}
+	// We do some shenanigans to date-shift the current date into a day of the cruise week (the time the schedule covers)
+	// for Events methods, because 'No Events Today' makes testing schedule features difficult.
+	Settings.shared.portTimeZone = TimeZone(identifier: "America/New_York")!
+	Settings.shared.cruiseStartDateComponents = DateComponents(year: 2023, month: 3, day: 5)
+	Settings.shared.cruiseStartDayOfWeek = 1
 	
 	// Ask the GD Image library what filetypes are available on the local machine.
 	// gd, gd2, xbm, xpm, wbmp, some other useless formats culled.
@@ -291,17 +267,17 @@ func configureHTTPServer(_ app: Application) throws {
 	// Enable HTTP response compression.
 	// app.http.server.configuration.responseCompression = .enabled
 	
-	// Each environment type has its own default hostname. The hostname controls which address we will accept new connections on.
-	// The default hostname for an environment may be overridden with the "SWIFTARR_HOSTNAME" environment variable,
-	// and the "--hostname <addr>" command line parameter overrides the environment var.
-	if let host = Environment.get("SWIFTARR_HOSTNAME") {
+	// Specify which interface Swiftarr should bind to. The default IP for an environment may be overridden 
+	// with the "SWIFTARR_IP" environment variable, and the "--hostname <addr>" command line parameter 
+	// overrides the environment var.
+	if let host = Environment.get("SWIFTARR_IP") {
 		app.http.server.configuration.hostname = host
+	}
+	else if app.environment == .production {
+		app.http.server.configuration.hostname = "0.0.0.0"
 	}
 	else if app.environment == .development {
 		app.http.server.configuration.hostname = "127.0.0.1"
-	}
-	else if app.environment == .production {
-		app.http.server.configuration.hostname = "joco.hollandamerica.com"
 	}
 	
 	// Make our chosen hostname a canonical hostname that Settings knows about

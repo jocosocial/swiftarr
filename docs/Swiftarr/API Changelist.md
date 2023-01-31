@@ -83,3 +83,12 @@ aren't currently available through the API.
 and 3 similar endpoints for use by those with the Shutternaut Manager role for managing the Shutternaut role.
 * The ForumListData type has 2 new optional fields, only non-null if the Forum Thread is for an Event. One field is the Date
 the event starts, the other is the TimeZone the boat will be in when the event starts.
+
+## Jan 29, 2023
+
+* The server settings endpoint at `GET /api/v3/admin/serversettings` is now available to twitarrteam. It was previously unavailable.
+* New endpoint for live reloading of the board games seed at `POST /api/v3/boardgames/reload`. Requires admin.
+* New endpoint for live reloading of the karaoke seed at `POST /api/v3/karaoke/reload`. Requires admin.
+* Forums now support muting (`GET /api/v3/forum/mutes`, `POST/DELETE /api/v3/forum/:ID/mute`, `POST /api/v3/forum/:ID/mute/remove`). A parameter `isMuted` has been added to the various `ForumData` structs reflecting this state.
+* Forum sort order is now influenced by the mute state. Muted forums sort to the end of the paginated results.
+* Forums associated with a schedule event now contain the event ID.
