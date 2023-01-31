@@ -1,43 +1,64 @@
 #extend("trunk"):
-    #export("body"):
-    	<div class="container-fluid">
-            <div class="row my-3">
-                <h4>Time Zone Check</h4>
+#export("body"):
+<div class="container-md ms-0 mt-2">
+    <div class="row my-3">
+        <h4>Time Zone Check</h4>
+    </div>
+    <div class="row">
+        <p>
+            JoCo Cruise will be making at least one time zone change this year. San Juan and Tortola are in Atlantic
+            Standard Time while the rest of our voyage will be in Eastern Standard Time. Be careful when scheduling
+            events
+            that you take note of the expected time zone.
+        </p>
+    </div>
+    <div class="row">
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Boat Time</h5>
+                    <p class="card-text">#(displayTime)</p>
+                    <p class="fw-light fst-italic">
+                        This should match clocks on the boat. But the Captain sets boat time, so if they don't match,
+                        boat clocks are right and Twitarr is wrong.
+                    </p>
+                </div>
             </div>
-            <div class="row">
-                <p>
-                    JoCo Cruise will be making at least one time zone change this year. San Juan and Tortola are in Atlantic Standard 
-                    Time while the rest of our voyage will be in Eastern Standard Time. Be careful when scheduling events 
-                    that you take note of the expected time zone. The server that Twitarr runs on will be in UTC (Coordinated 
-                    Universal Time, Greenwich Mean Time, Zero/Zulu time) for the duration of the cruise.
-                </p>
+        </div>
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Device Time</h5>
+                    <p class="card-text">
+                        <span id="browserTimeDisplay">Unknown</span>
+                    </p>
+                    <p class="fw-light fst-italic">
+                        Device time is the current time on the device you're holding in your hand.
+                    </p>
+                </div>
             </div>
-            <div class="row">
-				<div class="col">
-					<div class="alert alert-primary">This should match clocks on the boat. But the Captain sets boat time, so if they don't match, boat clocks are right and Twitarr is wrong.</div>
-				</div>
-                <p><b>Boat time: </b><span>#(displayTime)</span></p>
-				<div class="col">
-					<div class="alert alert-primary">Device time is the current time on the device you're holding in your hand.</div>
-				</div>
-                <p><b>Device time: </b><span id="browserTimeDisplay">Unknown</span></p>
-            </div>
-            <div class="row">
-                <p>If the <b>Display time</b> and <b>Device time</b> above are different, you should change the time zone on your device until they match. This should be in your settings somewhere. If you can't find it, ask a tech nerd. There's probably one nearby.</p>
-            </div>
-            <div class="row my-3">
-                <h5>Additional Time Information</h5>
-            </div>
-            <div class="row">
-                <p>
-                    This section is geared torward moderators and developers. If you are not one of these groups, don't 
-                    worry about it too much.
-                </p>
-            </div>
-            <div class="row">
-                <p><b>Server time: </b><span>#(serverTime)</span></p>
-                <p><b>Port time: </b><span>#(portTime)</span></p>
-            </div>
-		</div>
-    #endexport
+        </div>
+    </div>
+    <div class="row my-3">
+        <p>
+            If the <b>Boat Time</b> and <b>Device Time</b> above are different, you should change the time zone on your
+            device until they match. This should be in your settings somewhere. If you can't find it, ask a tech nerd.
+            There's probably one nearby.
+        </p>
+    </div>
+    <div class="row my-3">
+        <h5>Additional Time Information</h5>
+    </div>
+    <div class="row">
+        <p>
+            This section is geared torward moderators and developers. If you are not one of these groups, don't
+            worry about it too much. 
+        </p>
+    </div>
+    <div class="row">
+        <p><b>Server time: </b><span>#(serverTime)</span></p>
+        <p><b>Port time: </b><span>#(portTime)</span></p>
+    </div>
+</div>
+#endexport
 #endextend
