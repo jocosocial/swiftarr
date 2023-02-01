@@ -28,6 +28,7 @@ extension APIRouteCollection {
 	var boardgameIDParam: PathComponent { PathComponent(":boardgame_id") }
 	var songIDParam: PathComponent { PathComponent(":karaoke_song+id") }
 	var userRoleParam: PathComponent { PathComponent(":user_role") }
+	var phonecallParam: PathComponent { PathComponent(":phone_call") }
 
 
 	/// Transforms a string that might represent a date (either a `Double` or an ISO 8601
@@ -136,31 +137,10 @@ extension APIRouteCollection {
 					}
 				}
 				forwardToSockets = false
-			case .seamailUnreadMsg(let msgID):
-				// For seamail msgs with "moderator" or "TwitarrTeam" in the memberlist, add all team members to the
-				// notify list. This is so all team members have individual read counts.
-				if let mod = req.userCache.getUser(username: "moderator"), users.contains(mod.userID) {
-					let modList = req.userCache.allUsersWithAccessLevel(.moderator).map { $0.userID }
-					notifyUsers.append(contentsOf: modList)
-					for modUserID in modList {
-						group.addTask { try await req.redis.newUnreadMessage(msgID: msgID, userID: modUserID, inbox: .moderatorSeamail) }
-					}
-				}
-				if let ttUser = req.userCache.getUser(username: "TwitarrTeam"), users.contains(ttUser.userID) {
-					let ttList = req.userCache.allUsersWithAccessLevel(.twitarrteam).map { $0.userID }
-					notifyUsers.append(contentsOf: ttList)
-					for ttUserID in ttList {
-						group.addTask { try await req.redis.newUnreadMessage(msgID: msgID, userID: ttUserID, inbox: .twitarrTeamSeamail) }
-					}
-				}
-				// Users who aren't "moderator" and are in the thread see it as a normal thread.
-				for userID in users {
-					group.addTask { try await req.redis.newUnreadMessage(msgID: msgID, userID: userID, inbox: .seamail) }
-				}
+			case .seamailUnreadMsg(let msgID): 
+				notifyUsers = handleUnreadMessage(req: req, msgID: msgID, inbox: Request.Redis.MailInbox.seamail, users: notifyUsers, group: &group) 
 			case .fezUnreadMsg(let msgID):
-				for userID in users {
-					group.addTask { try await req.redis.newUnreadMessage(msgID: msgID, userID: userID, inbox: .lfgMessages) }
-				}
+				notifyUsers = handleUnreadMessage(req: req, msgID: msgID, inbox: Request.Redis.MailInbox.lfgMessages, users: notifyUsers, group: &group)
 			case .alertwordTwarrt(let alertword, _):
 				for userID in users {
 					group.addTask { try await req.redis.incrementAlertwordTwarrtInUserHash(word: alertword, userID: userID) }
@@ -183,7 +163,7 @@ extension APIRouteCollection {
 				// Send a message to all involved users with open websockets.
 				let socketeers = req.webSocketStore.getSockets(users)
 				if socketeers.count > 0 {
-	//				req.logger.log(level: .info, "Socket: Sending \(type) msg to \(socketeers.count) client.")
+					req.logger.log(level: .info, "Socket: Sending \(type) msg to \(socketeers.count) client.")
 					let msgStruct = SocketNotificationData(type, info: info, id: type.objectID())
 					if let jsonData = try? JSONEncoder().encode(msgStruct), let jsonDataStr = String(data: jsonData, encoding: .utf8) {
 						socketeers.forEach { userSocket in
@@ -200,6 +180,33 @@ extension APIRouteCollection {
 			for try await _ in group { }
 		}
 	}
+	
+	func handleUnreadMessage(req: Request, msgID: UUID, inbox: Request.Redis.MailInbox, users: [UUID], 
+			group: inout ThrowingTaskGroup<Void, Error>) -> [UUID] {
+		var notifyUsers = users
+		// For seamail msgs with "moderator" or "TwitarrTeam" in the memberlist, add all team members to the
+		// notify list. This is so all team members have individual read counts.
+		if let mod = req.userCache.getUser(username: "moderator"), users.contains(mod.userID) {
+			let modList = req.userCache.allUsersWithAccessLevel(.moderator).map { $0.userID }
+			notifyUsers.append(contentsOf: modList)
+			for modUserID in modList {
+				group.addTask { try await req.redis.newUnreadMessage(msgID: msgID, userID: modUserID, inbox: .moderatorSeamail) }
+			}
+		}
+		if let ttUser = req.userCache.getUser(username: "TwitarrTeam"), users.contains(ttUser.userID) {
+			let ttList = req.userCache.allUsersWithAccessLevel(.twitarrteam).map { $0.userID }
+			notifyUsers.append(contentsOf: ttList)
+			for ttUserID in ttList {
+				group.addTask { try await req.redis.newUnreadMessage(msgID: msgID, userID: ttUserID, inbox: .twitarrTeamSeamail) }
+			}
+		}
+		// Users who aren't "moderator" and are in the thread see it as a normal thread.
+		for userID in users {
+			group.addTask { try await req.redis.newUnreadMessage(msgID: msgID, userID: userID, inbox: inbox) }
+		}
+		return notifyUsers
+	}
+
 		
 	// When an event happens that could reduce notification counts for someone (e.g. a user deletes a Twarrt with an @mention) 
 	// call this method to do the notification bookkeeping. DON'T call this to mark notifications as "seen".

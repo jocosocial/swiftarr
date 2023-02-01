@@ -66,7 +66,7 @@ final class Settings : Encodable {
 	
 // MARK: Sections / Features / Apps
 
-	/// Each key-value pair is a feature that's tu
+	/// Each key-value pair identifies an application and a set of features disabled for that application. Either the app or the featureset may contain '.all'.
 	@StoredSettingsValue("disabledFeatures", defaultValue: DisabledFeaturesGroup(value: [:])) var disabledFeatures: DisabledFeaturesGroup
 
 	/// The name of the onboard Wifi network. Delivered to cients in the notification endpoint.

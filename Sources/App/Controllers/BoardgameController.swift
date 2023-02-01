@@ -9,7 +9,7 @@ struct BoardgameController: APIRouteCollection {
 	func registerRoutes(_ app: Application) throws {
 
 		// convenience route group for all /api/v3/boardgame endpoints
-		let boardgameRoutes = app.grouped("api", "v3", "boardgames")
+		let boardgameRoutes = app.grouped(DisabledAPISectionMiddleware(feature: .gameslist)).grouped("api", "v3", "boardgames")
 	
 		let flexAuthGroup = addFlexCacheAuthGroup(to: boardgameRoutes)
 		flexAuthGroup.get("", use: getBoardgames)
