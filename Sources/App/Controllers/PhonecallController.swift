@@ -3,6 +3,10 @@ import Crypto
 import FluentSQL
 import Fluent
 
+// Active phone calls the server is aware of. For calls where each client opens a WS to the server and the server 
+// forwards audio between sockets, the call object is opened when the caller initiates (tells us they're trying to start a call),
+// and ends when the call hangs up (by either party). For calls that send audio data phone-to-phone, the call object is released
+// when the callee either accepts or declines the call.
 actor ActivePhoneCalls {
 	static let shared = ActivePhoneCalls()
 	
@@ -10,30 +14,33 @@ actor ActivePhoneCalls {
 		var caller: UUID
 		var callee: UUID
 		var callID: UUID
-		var callerSocket: WebSocket
-		var calleeSocket: WebSocket?		
+		var callerSocket: WebSocket?
+		var calleeSocket: WebSocket?
+		var calleeNotificationSockets: [WebSocket]
 	}
 	var calls: [PhoneCall] = []
 	
-	func newPhoneCall(caller: UUID, callee: UUID, callID: UUID, callerSocket: WebSocket) throws {
-		guard currentCall(for: caller) == nil else {
+	func newPhoneCall(caller: UserHeader, callee: UserHeader, callID: UUID, callerSocket: WebSocket?, 
+			notifySockets: [WebSocket]) throws {
+		// Not sure about this--what if the user is on 2 devices?
+		guard currentCall(for: caller.userID) == nil else {
 			throw Abort(.badRequest, reason: "Caller already on a phone call.")
 		}
-		guard currentCall(for: callee) == nil else {
+		// This bit stays until we add multi-call management.
+		guard currentCall(for: callee.userID) == nil else {
 			throw Abort(.badRequest, reason: "User is unavailable.")
 		}
-		calls.append(PhoneCall(caller: caller, callee: callee, callID: callID, callerSocket: callerSocket, calleeSocket: nil))
+		calls.append(PhoneCall(caller: caller.userID, callee: callee.userID, callID: callID, callerSocket: callerSocket, 
+				calleeSocket: nil, calleeNotificationSockets: notifySockets))
+//		req.logger.info("Call \(callID) initiated by \(caller.username) calling \(callee.username)")
 	}
 	
-	@discardableResult func endPhoneCall(callID: UUID) -> Bool {
-		var closedSomething = false
+	func endPhoneCall(callID: UUID) {
 		if let call = calls.first(where: { $0.callID == callID }) {
-			_ = call.callerSocket.close()
+			_ = call.callerSocket?.close()
 			_ = call.calleeSocket?.close()
-			closedSomething = true
 		}
 		calls.removeAll{ $0.callID == callID }
-		return closedSomething
 	}
 	
 	func currentCall(for userID: UUID) -> PhoneCall? {
@@ -50,10 +57,20 @@ actor ActivePhoneCalls {
 	}
 }
 
-
-
 /// The collection of `/api/v3/phone/*` route endpoints and handler functions related to phone call management..
 struct PhonecallController: APIRouteCollection {
+	static let logger = Logger(label: "app.phonecall")
+
+	var encoder: JSONEncoder {
+		let enc = JSONEncoder()
+		let formatter = DateFormatter()
+		formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ"
+		formatter.calendar = Calendar(identifier: .iso8601)
+		formatter.timeZone = TimeZone(secondsFromGMT: 0)
+		formatter.locale = Locale(identifier: "en_US_POSIX")
+		enc.dateEncodingStrategy = .formatted(formatter)
+		return enc
+	}
 
 	/// Required. Registers routes to the incoming router.
 	func registerRoutes(_ app: Application) throws {
@@ -64,16 +81,80 @@ struct PhonecallController: APIRouteCollection {
 				
 		// endpoints available only when logged in
 		let tokenCacheAuthGroup = addTokenCacheAuthGroup(to: phoneRoutes)
-//		tokenCacheAuthGroup.get("initiate", userIDParam, use: initiateCallHandler)
 		tokenCacheAuthGroup.webSocket("socket", "initiate", phonecallParam, "to", userIDParam, 
 				shouldUpgrade: shouldCreatePhoneSocket, onUpgrade: createPhoneSocket)
 		tokenCacheAuthGroup.webSocket("socket", "answer", phonecallParam,
 				shouldUpgrade: shouldAnswerPhoneSocket, onUpgrade: answerPhoneSocket)
 				
+		tokenCacheAuthGroup.post("answer", phonecallParam, use: answerPhoneCall)
 		tokenCacheAuthGroup.post("decline", phonecallParam, use: declinePhoneCall)
+
+		// Routes only used for direct-connect phone sessions
+		let directPhoneAuthGroup = tokenCacheAuthGroup.grouped(DisabledAPISectionMiddleware(feature: .directphone))
+		directPhoneAuthGroup.post("initiate", phonecallParam, "to", userIDParam, use: initiateCallHandler)
 	}
 	
-	// GET /seamail/:seamail_ID/socket
+	/// `POST /api/v3/phone/initiate/:call_id/to/:user_id`
+	/// 
+	/// The requester is trying to start a phone call to the given user. Notify the target user of the incoming phone call via their notification socket and provide
+	/// the IP address(es) of the caller. The callee is then expected to open a socket to the caller for moving audio.
+	/// 
+	/// - Parameter callID: in URL path. Caller-provided UUID for this call. Callee needs to send this to caller to verify the socket is for the correct call.
+	/// - Parameter userID: The userID of the user to call.
+	/// - Throws: BadRequest if malformed. notFound if user can't be notified of call. 
+	/// - Returns: 200 OK on success
+	func initiateCallHandler(_ req: Request) async throws -> HTTPStatus {
+  		guard let calleeParam = req.parameters.get(userIDParam.paramString), let calleeID = UUID(uuidString: calleeParam),
+				let callParam = req.parameters.get(phonecallParam.paramString), let callID = UUID(uuidString: callParam) else {
+			throw Abort(.badRequest, reason: "Request parameter missing.")
+		}
+		let caller = try req.auth.require(UserCacheData.self)
+		guard let callee = req.userCache.getUser(calleeID) else {
+			throw Abort(.badRequest, reason: "Couldn't find user to call.")
+		}
+		if callee.getMutes().contains(caller.userID) || callee.getBlocks().contains(caller.userID) {
+			throw Abort(.badRequest, reason: "Cannot call this user.")
+		}
+		
+		let calleeNotificationSockets = req.webSocketStore.getSockets(calleeID)
+		guard !calleeNotificationSockets.isEmpty else {
+			req.logger.log(level: .notice, "Attempt to call user with no notification socket.")
+			throw Abort(.notFound, reason: "User unavailable.")
+		}
+		
+ 		let callerDeviceAddr = try ValidatingJSONDecoder().decode(PhoneSocketServerAddress.self, fromBodyOf: req)
+		guard callerDeviceAddr.ipV6Addr != nil || callerDeviceAddr.ipV4Addr != nil else {
+			throw Abort(.badRequest, reason: "Cannot call this user.")
+		}
+		
+		// Save the incoming call
+		let notificationSockets = calleeNotificationSockets.map { $0.socket }
+		try? await ActivePhoneCalls.shared.newPhoneCall(caller: caller.makeHeader(), callee: callee.makeHeader(), callID: callID, 
+				callerSocket: nil, notifySockets: notificationSockets)
+
+		// Send incoming call notification to all of the callee's devices
+		let msgStruct = SocketNotificationData(callID: callID, caller: caller.makeHeader(), callerAddr: callerDeviceAddr)
+		if let jsonData = try? encoder.encode(msgStruct), let jsonDataStr = String(data: jsonData, encoding: .utf8) {
+			calleeNotificationSockets.forEach { userSocket in
+				req.logger.log(level: .notice, "Sending incoming phonecall to callee.")
+				userSocket.socket.send(jsonDataStr)
+			}
+		}
+		return .ok
+	}
+	
+	/// `GET /api/v3/phone/socket/initiate/:call_id/to/:user_id`
+	/// 
+	/// The requester is trying to start a phone call to the given user. Notify the target user of the incoming phone call via their notification socket and save the 
+	/// caller socket. The callee should open a phone socket to the server using `answerPhoneSocket` at which point the server will start forwarding websocket
+	/// packets between the caller and callee sockets.
+	/// 
+	/// This is the server-mediated phone call path.
+	/// 
+	/// - Parameter callID: in URL path. Caller-provided UUID for this call. Callee needs to send this to caller to verify the socket is for the correct call.
+	/// - Parameter userID: The userID of the user to call.
+	/// - Throws: BadRequest if malformed. notFound if user can't be notified of call. 
+	/// - Returns: 200 OK on success
 	func shouldCreatePhoneSocket(_ req: Request) async throws -> HTTPHeaders? {
   		guard let paramVal = req.parameters.get(userIDParam.paramString), let calleeID = UUID(uuidString: paramVal) else {
 			throw Abort(.badRequest, reason: "Request parameter user_ID is missing.")
@@ -98,14 +179,24 @@ struct PhonecallController: APIRouteCollection {
 		return HTTPHeaders()
 	}
 	
-	// WS /api/v3/phone/socket/initiate/:call_ID/to/:user_ID
-	//
+	/// `WS /api/v3/phone/socket/initiate/:call_id/to/:user_id`
+	/// 
+	/// The requester is trying to start a phone call to the given user. Notify the target user of the incoming phone call via their notification socket and save the 
+	/// caller socket. The callee should open a phone socket to the server using `answerPhoneSocket` at which point the server will start forwarding websocket
+	/// packets between the caller and callee sockets.
+	/// 
+	/// This is the server-mediated phone call path.
+	/// 
+	/// - Parameter callID: in URL path. Caller-provided UUID for this call. Callee needs to send this to caller to verify the socket is for the correct call.
+	/// - Parameter userID: The userID of the user to call.
+	/// - Throws: BadRequest if malformed. notFound if user can't be notified of call. 
+	/// - Returns: 200 OK on success
 	func createPhoneSocket(_ req: Request, _ ws: WebSocket) async {
 		req.logger.log(level: .notice, "Creating phone socket.")
 		guard let caller = try? req.auth.require(UserCacheData.self), 
 				let callParam = req.parameters.get(phonecallParam.paramString), let callID = UUID(uuidString: callParam),
 				let userParam = req.parameters.get(userIDParam.paramString), let calleeID = UUID(uuidString: userParam),
-				let _ = try? req.userCache.getHeader(calleeID) else {
+				let callee = try? req.userCache.getHeader(calleeID) else {
 			try? await ws.close()
 			return 
 		}
@@ -119,8 +210,8 @@ struct PhonecallController: APIRouteCollection {
 		}
 		
 		// Send incoming call notification to all of the callee's devices
-		let msgStruct = SocketNotificationData(callID: callID, caller: caller.makeHeader())
-		if let jsonData = try? JSONEncoder().encode(msgStruct), let jsonDataStr = String(data: jsonData, encoding: .utf8) {
+		let msgStruct = SocketNotificationData(callID: callID, caller: caller.makeHeader(), callerAddr: nil)
+		if let jsonData = try? encoder.encode(msgStruct), let jsonDataStr = String(data: jsonData, encoding: .utf8) {
 			calleeNotificationSockets.forEach { userSocket in
 				req.logger.log(level: .notice, "Sending incoming phonecall to callee.")
 				userSocket.socket.send(jsonDataStr)
@@ -132,14 +223,10 @@ struct PhonecallController: APIRouteCollection {
 		}
 		
 		// Create a new call object
-		try? await ActivePhoneCalls.shared.newPhoneCall(caller: caller.userID, callee: calleeID, callID: callID, callerSocket: ws)
+		try? await ActivePhoneCalls.shared.newPhoneCall( caller: caller.makeHeader(), callee: callee, callID: callID, callerSocket: ws,
+				notifySockets: calleeNotificationSockets.map { $0.socket })
 		ws.onClose.whenComplete { result in
-			Task {
-				let callClosed = await ActivePhoneCalls.shared.endPhoneCall(callID: callID)
-				if callClosed {
-					req.logger.info("Phone call \(callID) ended.")
-				}
-			}
+			endPhoneCall(callID: callID)
 		}
 		ws.onBinary { ws, binary in
 			Task {
@@ -150,22 +237,40 @@ struct PhonecallController: APIRouteCollection {
 		}
 	}
 
-	// WS /api/v3/phone/socket/answer/:call_ID
-	//
+	/// `GET /api/v3/phone/socket/answer/:call_id`
+	/// 
+	/// The requester is trying to answer an incoming phone call.  This is the server-mediated phone call path.
+	/// 
+	/// - Parameter callID: in URL path. Caller-provided UUID for this call. Callee needs to send this to caller to verify the socket is for the correct call.
+	/// - Throws: BadRequest if malformed. NotFound if callID doesn't exist.
+	/// - Returns: 200 OK on success
 	func shouldAnswerPhoneSocket(_ req: Request) async throws -> HTTPHeaders? {
 		let callee = try req.auth.require(UserCacheData.self)
 		guard let callParam = req.parameters.get(phonecallParam.paramString), let callID = UUID(uuidString: callParam) else {
 			throw Abort(.badRequest, reason: "Request parameter call_ID is missing.")
 		}
 		guard let call = await ActivePhoneCalls.shared.getCall(withID: callID), call.callee == callee.userID else {
-			throw Abort(.badRequest, reason: "Couldn't find phone call.")
+			throw Abort(.notFound, reason: "Couldn't find phone call.")
 		}
-
+		
+		// Send 'already answered' to all the callee's devices, so they stop ringing 
+		let calleeNotificationSockets = req.webSocketStore.getSockets(call.callee)
+		let msgStruct = SocketNotificationData(forCallAnswered: call.callID)
+		if let jsonData = try? encoder.encode(msgStruct), let jsonDataStr = String(data: jsonData, encoding: .utf8) {
+			calleeNotificationSockets.forEach { notificationSocket in
+				notificationSocket.socket.send(jsonDataStr)
+			}
+		}
 		return HTTPHeaders()
 	}
 	
-	// WS /api/v3/phone/socket/initiate/:call_ID/to/:user_ID
-	//
+	/// `WS /api/v3/phone/socket/answer/:call_id`
+	/// 
+	/// The requester is trying to answer an incoming phone call.  This is the server-mediated phone call path.
+	/// 
+	/// - Parameter callID: in URL path. Caller-provided UUID for this call. Callee needs to send this to caller to verify the socket is for the correct call.
+	/// - Throws: BadRequest if malformed. NotFound if callID doesn't exist.
+	/// - Returns: 200 OK on success
 	func answerPhoneSocket(_ req: Request, _ ws: WebSocket) async {
 		guard let callee = try? req.auth.require(UserCacheData.self),
 				let callParam = req.parameters.get(phonecallParam.paramString), let callID = UUID(uuidString: callParam) else {
@@ -181,43 +286,100 @@ struct PhonecallController: APIRouteCollection {
 		
 		call.calleeSocket = ws
 		await ActivePhoneCalls.shared.save(call: call)
-		if let jsonData = try? JSONEncoder().encode(PhoneSocketStartData()) {
-			try? await call.callerSocket.send(raw: jsonData, opcode: .binary)
+		if let jsonData = try? encoder.encode(PhoneSocketStartData()) {
+			try? await call.callerSocket?.send(raw: jsonData, opcode: .binary)
 			try? await call.calleeSocket?.send(raw: jsonData, opcode: .binary)
 		}
 		
 		ws.onClose.whenComplete { result in
-			Task {
-				let callClosed = await ActivePhoneCalls.shared.endPhoneCall(callID: callID)
-				if callClosed {
-					req.logger.info("Phone call \(callID) ended.")
-				}
-			}
+			endPhoneCall(callID: callID)
 		}
 		
 		ws.onBinary { ws, binary in
 			Task {
 				if let call = await ActivePhoneCalls.shared.getCall(withID: callID) {
-					try? await call.callerSocket.send(Array<UInt8>(buffer: binary))
+					try? await call.callerSocket?.send(Array<UInt8>(buffer: binary))
 				}
 			}			
 		}
 	}
 	
-	// POST /api/v3/phone/socket/decline/:call_ID
-	//
-	func declinePhoneCall(_ req: Request) async throws -> HTTPStatus {
+	/// `POST /api/v3/phone/answer/:call_ID`
+	/// 
+	/// The answering party should call this when they answer the incoming call; this notifies other devices where that user is logged in to stop ringing. Only necessary
+	/// for the direct-socket path.
+	/// 
+	/// - Parameter callID: in URL path. UUID for this call.
+	/// - Throws: BadRequest if malformed. NotFound if callID doesn't exist.
+	/// - Returns: 200 OK on success
+	func answerPhoneCall(_ req: Request) async throws -> HTTPStatus {
 		guard let callee = try? req.auth.require(UserCacheData.self),
 				let callParam = req.parameters.get(phonecallParam.paramString), let callID = UUID(uuidString: callParam) else {
 			throw Abort(.badRequest, reason: "Request parameter call_ID is missing.")
 		}
-		guard let call = await ActivePhoneCalls.shared.getCall(withID: callID), call.callee == callee.userID else {
-			throw Abort(.badRequest, reason: "No active call with this ID.")
+		// Send 'call answered' to all the callee's devices, so they stop ringing 
+		let calleeNotificationSockets = req.webSocketStore.getSockets(callee.userID)
+		let msgStruct = SocketNotificationData(forCallAnswered: callID)
+		if let jsonData = try? encoder.encode(msgStruct), let jsonDataStr = String(data: jsonData, encoding: .utf8) {
+			calleeNotificationSockets.forEach { notificationSocket in
+				notificationSocket.socket.send(jsonDataStr)
+			}
 		}
-		let callClosed = await ActivePhoneCalls.shared.endPhoneCall(callID: callID)
-		if callClosed {
-			req.logger.info("Phone call \(callID) ended.")
+		if let call = await ActivePhoneCalls.shared.getCall(withID: callID), call.callerSocket == nil && call.calleeSocket == nil {
+			await ActivePhoneCalls.shared.endPhoneCall(callID: callID)
 		}
 		return .ok
+	}
+	
+	/// `POST /api/v3/phone/decline/:call_ID`
+	/// 
+	/// Either party may call this to end a server-mediated phone call. But, if you have an open socket for the call, it's easier to just close the socket--the server
+	/// will detect this and close the other socket and clean up. Requester must be a party to the call.
+	/// 
+	/// This route is for when a phone call needs to be ended and the client does not have a socket connection. May be used for both direct and server-mediated calls.
+	/// 
+	/// - Parameter callID: in URL path. Caller-provided UUID for this call. Callee needs to send this to caller to verify the socket is for the correct call.
+	/// - Throws: BadRequest if malformed. NotFound if callID doesn't exist.
+	/// - Returns: 200 OK on success
+	func declinePhoneCall(_ req: Request) async throws -> HTTPStatus {
+		guard let _ = try? req.auth.require(UserCacheData.self),
+				let callParam = req.parameters.get(phonecallParam.paramString), let callID = UUID(uuidString: callParam) else {
+			throw Abort(.badRequest, reason: "Request parameter call_ID is missing.")
+		}
+		// Tell the caller the call is declined. Only necessary for the direct-connect case.
+		if let call = await ActivePhoneCalls.shared.getCall(withID: callID) {
+			let callerSockets = req.webSocketStore.getSockets(call.caller)
+			let msgStruct = SocketNotificationData(forCallEnded: callID)
+			if let jsonData = try? encoder.encode(msgStruct), let jsonDataStr = String(data: jsonData, encoding: .utf8) {
+				callerSockets.forEach { notificationSocket in
+					notificationSocket.socket.send(jsonDataStr)
+				}
+			}
+		}
+		endPhoneCall(callID: callID)
+		return .ok
+	}
+	
+// MARK: Utilities
+
+	// Call this when a server-mediated phone call ends (either socket closes), or when a direct-connect phone call is declined. 
+	// Cleans up sockets, tells all callee devices the call is over (to ensure they leave the ringing state).
+	func endPhoneCall(callID: UUID) {
+		Task {
+			guard let call = await ActivePhoneCalls.shared.getCall(withID: callID) else {
+				return
+			}
+			// Send hangup to all the callee's devices, so they stop ringing 
+			let msgStruct = SocketNotificationData(forCallEnded: call.callID)
+			if let jsonData = try? encoder.encode(msgStruct), let jsonDataStr = String(data: jsonData, encoding: .utf8) {
+				call.calleeNotificationSockets.forEach { notificationSocket in
+					if !notificationSocket.isClosed {
+						notificationSocket.send(jsonDataStr)
+					}
+				}
+			}
+			// Remove the call object
+			await ActivePhoneCalls.shared.endPhoneCall(callID: callID)
+		}
 	}
 }

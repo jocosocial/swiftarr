@@ -42,6 +42,7 @@ public enum SwiftarrFeature: String, Content, CaseIterable {
 	case images
 	case users
 	case phone
+	case directphone
 	case all
 	
 	/// For clients use. Clients need to be prepared for additional values to be added serverside. Those new values get decoded as 'unknown'.
