@@ -149,9 +149,24 @@ func configureBasicSettings(_ app: Application) throws {
 
 	// We do some shenanigans to date-shift the current date into a day of the cruise week (the time the schedule covers)
 	// for Events methods, because 'No Events Today' makes testing schedule features difficult.
-	Settings.shared.portTimeZone = TimeZone(identifier: "America/New_York")!
-	Settings.shared.cruiseStartDateComponents = DateComponents(year: 2023, month: 3, day: 5)
-	Settings.shared.cruiseStartDayOfWeek = 1
+	if let portTimeZoneID = Environment.get("SWIFTARR_PORT_TIMEZONE"), portTimeZoneID != "" {
+		guard let portTimeZone = TimeZone(identifier: portTimeZoneID) else {
+			fatalError("Invalid time zone identifier specified in SWIFTARR_PORT_TIMEZONE.")
+		}
+		Settings.shared.portTimeZone = portTimeZone
+	}
+	if let cruiseStartDate = Environment.get("SWIFTARR_START_DATE"), cruiseStartDate != "" {
+		let startFormatter = DateFormatter()
+		startFormatter.dateFormat = "yyyy-MM-dd" // 2023-03-05
+		guard let date = startFormatter.date(from: cruiseStartDate) else {
+			fatalError("Must be able to produce a Date from SWIFTARR_START_DATE if it is set.")
+		}
+		Settings.shared.cruiseStartDateComponents = Calendar(identifier: .gregorian).dateComponents([.year, .month, .day, .weekday], from: date)
+		guard let cruiseStartDayOfWeek = Settings.shared.cruiseStartDateComponents.weekday else {
+			fatalError("Cannot determine day-of-week from SWIFTARR_START_DATE.")
+		}
+		Settings.shared.cruiseStartDayOfWeek = cruiseStartDayOfWeek
+	}
 	
 	// Ask the GD Image library what filetypes are available on the local machine.
 	// gd, gd2, xbm, xpm, wbmp, some other useless formats culled.
