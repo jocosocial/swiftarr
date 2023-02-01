@@ -632,6 +632,17 @@
             </ul>
           </li>
           <li class="nav-group-name">
+            <a class="nav-group-name-link" href="Other%20Actors.html">Other Actors</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Actors/ActivePhoneCalls.html">ActivePhoneCalls</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Actors/ActivePhoneCalls/PhoneCall.html">– PhoneCall</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
             <a class="nav-group-name-link" href="Other%20Classes.html">Other Classes</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
@@ -672,6 +683,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Classes/TimeZoneChange.html">TimeZoneChange</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Classes/UserFavorite.html">UserFavorite</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Classes/UserRole.html">UserRole</a>
@@ -932,6 +946,9 @@
                 <a class="nav-group-task-link" href="Structs/CreateTwarrtSchema.html">CreateTwarrtSchema</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/CreateUserFavoriteSchema.html">CreateUserFavoriteSchema</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/CreateUserNoteSchema.html">CreateUserNoteSchema</a>
               </li>
               <li class="nav-group-task">
@@ -1095,6 +1112,15 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/PaginatorContext/PageInfo.html">– PageInfo</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/PhoneSocketServerAddress.html">PhoneSocketServerAddress</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/PhoneSocketStartData.html">PhoneSocketStartData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="Structs/PhonecallController.html">PhonecallController</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="Structs/Point.html">Point</a>
@@ -1419,6 +1445,37 @@ Copied from <a href="https://github.com/mattgallagher/CwlUtils/blob/master/Sourc
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ImageController.swift#L257-L290">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App19PhonecallControllerV"></a>
+                    <a name="//apple_ref/swift/Struct/PhonecallController" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App19PhonecallControllerV">PhonecallController</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The collection of <code>/api/v3/phone/*</code> route endpoints and handler functions related to phone call management..</p>
+
+                        <a href="Structs/PhonecallController.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">PhonecallController</span> <span class="p">:</span> <span class="kt"><a href="Protocols/APIRouteCollection.html">APIRouteCollection</a></span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/PhonecallController.swift#L61-L385">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3032,7 +3089,70 @@ The string will be of the form, &ldquo;User @authorName wrote a forum post that 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/SocketStructs.swift#L76-L102">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/SocketStructs.swift#L76-L112">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App24PhoneSocketServerAddressV"></a>
+                    <a name="//apple_ref/swift/Struct/PhoneSocketServerAddress" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App24PhoneSocketServerAddressV">PhoneSocketServerAddress</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Notifies the recipient of a phone call the IP addr of the caller, so the recipient can open a direct-connect WebSocket
+to the caller (who must have started a WebSocket Server to receive the incoming connection).</p>
+
+                        <a href="Structs/PhoneSocketServerAddress.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">PhoneSocketServerAddress</span> <span class="p">:</span> <span class="kt">Codable</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/SocketStructs.swift#L154-L157">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App20PhoneSocketStartDataV"></a>
+                    <a name="//apple_ref/swift/Struct/PhoneSocketStartData" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App20PhoneSocketStartDataV">PhoneSocketStartData</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Sent at the start of a phone call. Used as a handshake.</p>
+
+                        <a href="Structs/PhoneSocketStartData.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">PhoneSocketStartData</span> <span class="p">:</span> <span class="kt">Codable</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/SocketStructs.swift#L160-L162">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3122,7 +3242,7 @@ The string will be of the form, &ldquo;User @authorName wrote a forum post that 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/DisabledSectionMiddleware.swift#L20-L43">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/DisabledSectionMiddleware.swift#L20-L44">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -4824,7 +4944,7 @@ will have more than one sailing&rsquo;s worth of timezone changes in it.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L231-L275">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L239-L283">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -5155,6 +5275,36 @@ will have more than one sailing&rsquo;s worth of timezone changes in it.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Pivots/TwarrtLikes.swift#L48-L63">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App24CreateUserFavoriteSchemaV"></a>
+                    <a name="//apple_ref/swift/Struct/CreateUserFavoriteSchema" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App24CreateUserFavoriteSchemaV">CreateUserFavoriteSchema</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        
+                        <a href="Structs/CreateUserFavoriteSchema.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">CreateUserFavoriteSchema</span> <span class="p">:</span> <span class="kt">AsyncMigration</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Pivots/UserFavorite.swift#L38-L51">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

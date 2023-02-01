@@ -632,6 +632,17 @@
             </ul>
           </li>
           <li class="nav-group-name">
+            <a class="nav-group-name-link" href="../Other%20Actors.html">Other Actors</a>
+            <ul class="nav-group-tasks">
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Actors/ActivePhoneCalls.html">ActivePhoneCalls</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Actors/ActivePhoneCalls/PhoneCall.html">– PhoneCall</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-group-name">
             <a class="nav-group-name-link" href="../Other%20Classes.html">Other Classes</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
@@ -672,6 +683,9 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/TimeZoneChange.html">TimeZoneChange</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Classes/UserFavorite.html">UserFavorite</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Classes/UserRole.html">UserRole</a>
@@ -932,6 +946,9 @@
                 <a class="nav-group-task-link" href="../Structs/CreateTwarrtSchema.html">CreateTwarrtSchema</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/CreateUserFavoriteSchema.html">CreateUserFavoriteSchema</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/CreateUserNoteSchema.html">CreateUserNoteSchema</a>
               </li>
               <li class="nav-group-task">
@@ -1095,6 +1112,15 @@
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/PaginatorContext/PageInfo.html">– PageInfo</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/PhoneSocketServerAddress.html">PhoneSocketServerAddress</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/PhoneSocketStartData.html">PhoneSocketStartData</a>
+              </li>
+              <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/PhonecallController.html">PhonecallController</a>
               </li>
               <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/Point.html">Point</a>
@@ -1405,7 +1431,7 @@ sub-accounts (if any) inherit these three credentials.</p>
  otherwise modified.</p>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L20-L229">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L20-L237">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -2888,6 +2914,38 @@ the login token.</p>
                     </section>
                   </div>
                 </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App4UserC9favoritesSayAA0B8FavoriteCGvp"></a>
+                    <a name="//apple_ref/swift/Property/favorites" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App4UserC9favoritesSayAA0B8FavoriteCGvp">favorites</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Pivots for users this user has favorited. 
+Technically <code>\UserFavorite.$favorites</code> could be used as well but we shouldn&rsquo;t need to be looking at who has favorited a particular user.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">@User</span>
+<span class="o">.</span><span class="kt">Children</span> <span class="k">var</span> <span class="nv">favorites</span><span class="p">:</span> <span class="p">[</span><span class="kt"><a href="../Classes/UserFavorite.html">UserFavorite</a></span><span class="p">]</span> <span class="p">{</span> <span class="k">get</span> <span class="k">set</span> <span class="p">}</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L183">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
               </ul>
             </div>
             <div class="task-group">
@@ -2925,7 +2983,7 @@ the login token.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L184">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L188">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3085,7 +3143,36 @@ epoch.</p>
                         </table>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L203-L228">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L207-L232">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App4UserC04makeB6HeaderAA0bD0VyKF"></a>
+                    <a name="//apple_ref/swift/Method/makeUserHeader()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App4UserC04makeB6HeaderAA0bD0VyKF">makeUserHeader()</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">makeUserHeader</span><span class="p">()</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/UserHeader.html">UserHeader</a></span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Models/User.swift#L234-L236">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
