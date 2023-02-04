@@ -92,3 +92,11 @@ the event starts, the other is the TimeZone the boat will be in when the event s
 * Forums now support muting (`GET /api/v3/forum/mutes`, `POST/DELETE /api/v3/forum/:ID/mute`, `POST /api/v3/forum/:ID/mute/remove`). A parameter `isMuted` has been added to the various `ForumData` structs reflecting this state.
 * Forum sort order is now influenced by the mute state. Muted forums sort to the end of the paginated results.
 * Forums associated with a schedule event now contain the event ID.
+
+## Feb 1, 2023
+
+* Added PhonecallController which adds several endpoints supporting phone calls between Twitarr clients. Currently only used by the Kraken.
+The new controller includes the addition of several phone-related notification packets which may be sent over the Notification Websockets.
+* Added UserFavorite endpoints, to get/add/remove favorites. Used by phonecall UI so user can call favorites without performing a search.
+But, this feature may have other users.
+
