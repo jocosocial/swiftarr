@@ -1,9 +1,5 @@
 name: Prevent File Changes
-on:
-  pull_request: null
-  push:
-    branches:
-      - master
+on: pull_request
 
 jobs:
   prevent_file_changes:
