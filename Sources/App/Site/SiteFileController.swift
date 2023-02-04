@@ -87,7 +87,7 @@ struct SiteFileController: SiteControllerUtils {
 		// stream the file, then add a "Cache-Control" header with a 24 hour freshness time.
 		let response = req.fileio.streamFile(at: filePath.path)
 		if response.status == .ok || response.status == .notModified {
-//			response.headers.cacheControl = .init(isPublic: true, maxAge: 3600 * 24)
+			response.headers.cacheControl = .init(isPublic: true, maxAge: 3600 * 24)
 		}
 		return response
 	}

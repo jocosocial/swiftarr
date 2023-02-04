@@ -9,8 +9,7 @@
 20220308T070000Z	AST	America/Puerto_Rico
 20220309T060000Z	EST	America/New_York
 20220313T070000Z	EDT	America/New_York
-# For Testing Only!
-20221106T060000Z	AST	America/Puerto_Rico
+20221106T060000Z	EST	America/New_York
 #
 # 2023 sailing, best guess
 20230305T070000Z	EST	America/New_York
