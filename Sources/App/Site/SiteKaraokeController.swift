@@ -24,7 +24,8 @@ struct SiteKaraokeController: SiteControllerUtils {
 	/// GET /karaoke
 	///
 	/// **URL Query Parameters**
-	/// * `?search=STRING` - returns song library results where the artist OR song title matches the given string.
+	/// * `?search=STRING` - returns song library results where the artist OR song title matches the given string. 
+	///   If a single letter or %23 is sent, it will return songs where the artist matches the letter, or starts with a number.
 	/// * `?favorite=TRUE` - Only return songs that have been favorited by current user. 
 	///	* `?start=INT` - Offset from start of results set
 	/// * `?limit=INT` - the maximum number of songs to retrieve: 1-200, default is 50. 
