@@ -1416,7 +1416,7 @@
             <p>Methods for accessing the list of boardgames available in the onboard Games Library.</p>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L6-L217">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L6-L233">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1482,10 +1482,11 @@ specify favorites=true.</p>
 <p><strong>URL Query Parameters</strong></p>
 
 <ul>
-<li><code>?search=STRING</code> - Only show songs whose artist or title contains the given string.</li>
+<li><code>?search=STRING</code> - Only show songs whose artist or title contains the given string.
+If a single letter or %23 is sent, it will return songs where the artist matches the letter, or starts with a number.</li>
 <li><code>?favorite=TRUE</code> - Only return songs that have been favorited by current user.</li>
 <li><code>?start=INT</code> - Offset from start of results set</li>
-<li><p><code>?limit=INT</code> - the maximum number of songs to retrieve: 1-200, default is 50. </p></li>
+<li><p><code>?limit=INT</code> - the maximum number of songs to retrieve: 1-200, default is 50.</p></li>
 </ul>
 
                         <a href="../Structs/KaraokeController/getKaraokeSongs%28_%3A%29.html" class="slightly-smaller">See more</a>
@@ -1503,7 +1504,7 @@ specify favorites=true.</p>
                         <p><a href="doc:KaraokeSongResponseData">doc:KaraokeSongResponseData</a></p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L45-L99">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L46-L115">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1542,7 +1543,7 @@ specify favorites=true.</p>
                         <p><a href="doc:KaraokeSongData">doc:KaraokeSongData</a></p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L106-L113">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L122-L129">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1585,7 +1586,7 @@ Can be called while not logged in; if logged in favorite information is returned
                         <p>An array of up to 10 <a href="doc:KaraokePerformedSongsData">doc:KaraokePerformedSongsData</a></p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L124-L129">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L140-L145">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1643,7 +1644,7 @@ Can be called while not logged in; if logged in favorite information is returned
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L137-L150">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L153-L166">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1702,7 +1703,7 @@ Can be called while not logged in; if logged in favorite information is returned
                         <p>204 No Content on success. 200 OK if song was already not favorited.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L159-L170">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L175-L186">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1741,7 +1742,7 @@ Can be called while not logged in; if logged in favorite information is returned
                         <p>200 OK</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L177-L180">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L193-L196">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1813,7 +1814,7 @@ but @mentions in the note field should be processed. </p>
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L191-L200">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L207-L216">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1857,7 +1858,7 @@ but @mentions in the note field should be processed. </p>
                         <p><code>HTTP 200 OK</code> if the settings were updated.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L208-L213">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L224-L229">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

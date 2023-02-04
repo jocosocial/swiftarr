@@ -1424,10 +1424,11 @@ specify favorites=true.</p>
 <p><strong>URL Query Parameters</strong></p>
 
 <ul>
-<li><code>?search=STRING</code> - Only show songs whose artist or title contains the given string.</li>
+<li><code>?search=STRING</code> - Only show songs whose artist or title contains the given string.
+If a single letter or %23 is sent, it will return songs where the artist matches the letter, or starts with a number.</li>
 <li><code>?favorite=TRUE</code> - Only return songs that have been favorited by current user.</li>
 <li><code>?start=INT</code> - Offset from start of results set</li>
-<li><p><code>?limit=INT</code> - the maximum number of songs to retrieve: 1-200, default is 50. </p></li>
+<li><p><code>?limit=INT</code> - the maximum number of songs to retrieve: 1-200, default is 50.</p></li>
 </ul>
 
               <div>
@@ -1435,7 +1436,7 @@ specify favorites=true.</p>
                 <p><a href="doc:KaraokeSongResponseData">doc:KaraokeSongResponseData</a></p>
               </div>
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L45-L99">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L46-L115">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1469,7 +1470,7 @@ specify favorites=true.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L46-L51">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L47-L52">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
