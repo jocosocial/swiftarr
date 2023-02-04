@@ -37,9 +37,10 @@ struct KaraokeController: APIRouteCollection {
 	/// 
 	/// **URL Query Parameters**
 	/// * `?search=STRING` - Only show songs whose artist or title contains the given string.
+	/// * `?letter=STRING` - Only show songs whose artist begins with a number (send %23) or a specific letter (send a single letter).
 	/// * `?favorite=TRUE` - Only return songs that have been favorited by current user. 
 	///	* `?start=INT` - Offset from start of results set
-	/// * `?limit=INT` - the maximum number of songs to retrieve: 1-200, default is 50. 
+	/// * `?limit=INT` - the maximum number of songs to retrieve: 1-200, default is 50.
 	/// 
 	/// - Returns: <doc:KaraokeSongResponseData>
 	func getKaraokeSongs(_ req: Request) async throws -> KaraokeSongResponseData {
@@ -54,6 +55,7 @@ struct KaraokeController: APIRouteCollection {
 		let start = filters.start ?? 0
 		let limit = (filters.limit ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
 		let songQuery = KaraokeSong.query(on: req.db).sort(\.$artist, .ascending).sort(\.$title, .ascending)
+		var filteringLetters = false
 		if let search = filters.search {
 			songQuery.group(.or) { (or) in 
 				or.fullTextFilter(\.$artist, search)
@@ -61,7 +63,19 @@ struct KaraokeController: APIRouteCollection {
 			}
 		}
 		else if let letter = filters.letter {
-			songQuery.filter(\.$artist =~ letter)
+			if letter.count == 1 {
+				filteringLetters = true
+
+				if letter == "#" {
+					songQuery.filter(\.$artist, .custom("~"), "^[0-9]")
+				}
+				else if let _ = letter.rangeOfCharacter(from: NSCharacterSet.letters) { 
+					songQuery.filter(\.$artist, .custom("ILIKE"), "\(letter)%")
+				}
+				else {
+					filteringLetters = false
+				}
+			}
 		}
 		var filteringFavorites = false
 		if let user = req.auth.get(UserCacheData.self) {
@@ -85,7 +99,7 @@ struct KaraokeController: APIRouteCollection {
 			}
 		}
 		let hasSearchString = filters.search?.count ?? 0 >= 3
-		guard filteringFavorites || hasSearchString else {
+		guard filteringFavorites || filteringLetters || hasSearchString else {
 			throw Abort(.badRequest, reason: "Search string must have at least 3 characters.")
 		}
 		
