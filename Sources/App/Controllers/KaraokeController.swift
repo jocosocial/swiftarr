@@ -48,6 +48,7 @@ struct KaraokeController: APIRouteCollection {
 			var favorite: String?
 			var start: Int?
 			var limit: Int?
+			var letter: String?
 		}
  		let filters = try req.query.decode(SongQueryOptions.self)
 		let start = filters.start ?? 0
@@ -58,6 +59,9 @@ struct KaraokeController: APIRouteCollection {
 				or.fullTextFilter(\.$artist, search)
 				or.fullTextFilter(\.$title, search)
 			}
+		}
+		else if let letter = filters.letter {
+			songQuery.filter(\.$artist =~ letter)
 		}
 		var filteringFavorites = false
 		if let user = req.auth.get(UserCacheData.self) {
