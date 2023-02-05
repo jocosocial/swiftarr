@@ -66,9 +66,9 @@ struct SiteKaraokeController: SiteControllerUtils {
 					//	favoriteBtnURL = searchStr.isEmpty ? "/karaoke?favorite=true" : "/karaoke?search=\(searchStr)&favorite=true"
 						favoriteBtnURL = "/karaoke?favorite=true"
 					}
-					let encodedSearch = searchStr.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)
+					let encodedSearch = searchStr.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) ?? ""
 					paginator = .init(start: songs.start, total: songs.totalSongs, limit: songs.limit) { pageIndex in
-						"/karaoke?search=\(encodedSearch ?? "")&start=\(pageIndex * songs.limit)&limit=\(songs.limit)"
+						"/karaoke?search=\(encodedSearch)&start=\(pageIndex * songs.limit)&limit=\(songs.limit)"
 					}
 				}
 			}
