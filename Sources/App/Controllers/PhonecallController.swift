@@ -119,7 +119,7 @@ struct PhonecallController: APIRouteCollection {
 		let calleeNotificationSockets = req.webSocketStore.getSockets(calleeID)
 		guard !calleeNotificationSockets.isEmpty else {
 			req.logger.log(level: .notice, "Attempt to call user with no notification socket.")
-			throw Abort(.notFound, reason: "User unavailable.")
+			throw Abort(.badRequest, reason: "User unavailable.")
 		}
 		
  		let callerDeviceAddr = try ValidatingJSONDecoder().decode(PhoneSocketServerAddress.self, fromBodyOf: req)
