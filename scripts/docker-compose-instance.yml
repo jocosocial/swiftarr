@@ -11,6 +11,8 @@ services:
       POSTGRES_PASSWORD: password
     ports:
       - 5432:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
   redis:
     image: docker.io/ubuntu/redis:6.0-22.04_beta
@@ -19,6 +21,8 @@ services:
       - 6379:6379
     environment:
       REDIS_PASSWORD: password
+    volumes:
+      - redis_data:/data
 
   prometheus:
     image: docker.io/ubuntu/prometheus:2.20-20.04_beta
@@ -40,3 +44,7 @@ services:
       - 9093:9093
     volumes:
       - ./Prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+
+volumes:
+  postgres_data:
+  redis_data:
