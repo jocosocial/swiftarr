@@ -102,7 +102,7 @@ struct UserController: APIRouteCollection {
 		tokenAuthGroup.post(userIDParam, "username", use: usernameHandler)
 		tokenAuthGroup.post("add", use: addHandler)
 	   
-		tokenAuthGroup.post("image", use: imageHandler)
+		tokenAuthGroup.on(.POST, "image", body: .collect(maxSize: "30mb"), use: imageHandler)
 		tokenAuthGroup.post("image", "remove", use: imageRemoveHandler)
 		tokenAuthGroup.delete("image", use: imageRemoveHandler)
 		tokenAuthGroup.delete(userIDParam, "image", use: imageRemoveHandler)

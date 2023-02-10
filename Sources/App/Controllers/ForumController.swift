@@ -25,7 +25,7 @@ struct ForumController: APIRouteCollection {
 		tokenCacheAuthGroup.get("categories", categoryIDParam, use: categoryForumsHandler)
 
 			// Forums - CRUD first, then actions on forums
-		tokenCacheAuthGroup.post("categories", categoryIDParam, "create", use: forumCreateHandler)
+		tokenCacheAuthGroup.on(.POST, "categories", categoryIDParam, "create", body: .collect(maxSize: "30mb"), use: forumCreateHandler)
 		tokenCacheAuthGroup.get(forumIDParam, use: forumThreadHandler)							// Returns a forum thread by ID
 		tokenCacheAuthGroup.get("post", postIDParam, "forum", use: postForumThreadHandler)		// Returns the forum a post is in.
 		tokenCacheAuthGroup.get("forevent", ":event_id", use: eventForumThreadHandler)			// Returns the forum for an event
@@ -52,9 +52,9 @@ struct ForumController: APIRouteCollection {
 		tokenCacheAuthGroup.get("recent", use: recentsHandler)
 
 			// Posts - CRUD first, then actions on posts
-		tokenCacheAuthGroup.post(forumIDParam, "create", use: postCreateHandler)
+		tokenCacheAuthGroup.on(.POST, forumIDParam, "create", body: .collect(maxSize: "30mb"), use: postCreateHandler)
 		tokenCacheAuthGroup.get("post", postIDParam, use: postHandler)
-		tokenCacheAuthGroup.post("post", postIDParam, "update", use: postUpdateHandler)
+		tokenCacheAuthGroup.on(.POST, "post", postIDParam, "update", body: .collect(maxSize: "30mb"), use: postUpdateHandler)
 		tokenCacheAuthGroup.post("post", postIDParam, "delete", use: postDeleteHandler)
 		tokenCacheAuthGroup.delete("post", postIDParam, use: postDeleteHandler)
 

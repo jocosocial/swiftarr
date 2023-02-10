@@ -145,10 +145,10 @@ struct TwitarrController: APIRouteCollection {
 		let tokenCacheAuthGroup = addTokenCacheAuthGroup(to: twitarrRoutes)
 		tokenCacheAuthGroup.get("", use: twarrtsHandler)
 		tokenCacheAuthGroup.get(twarrtIDParam, use: twarrtHandler)
-		tokenCacheAuthGroup.post("create", use: twarrtCreateHandler)
+		tokenCacheAuthGroup.on(.POST, "create", body: .collect(maxSize: "30mb"), use: twarrtCreateHandler)
 		tokenCacheAuthGroup.post(twarrtIDParam, "delete", use: twarrtDeleteHandler)
 		tokenCacheAuthGroup.delete(twarrtIDParam, use: twarrtDeleteHandler)
-		tokenCacheAuthGroup.post(twarrtIDParam, "reply", use: replyHandler)
+		tokenCacheAuthGroup.on(.POST, twarrtIDParam, "reply", body: .collect(maxSize: "30mb"), use: replyHandler)
 		
 		tokenCacheAuthGroup.post(twarrtIDParam, "laugh", use: twarrtLaughHandler)
 		tokenCacheAuthGroup.post(twarrtIDParam, "like", use: twarrtLikeHandler)
@@ -161,7 +161,7 @@ struct TwitarrController: APIRouteCollection {
 		tokenCacheAuthGroup.post(twarrtIDParam, "bookmark", use: bookmarkAddHandler)
 		tokenCacheAuthGroup.post(twarrtIDParam, "bookmark", "remove", use: bookmarkRemoveHandler)
 		tokenCacheAuthGroup.post(twarrtIDParam, "report", use: twarrtReportHandler)
-		tokenCacheAuthGroup.post(twarrtIDParam, "update", use: twarrtUpdateHandler)
+		tokenCacheAuthGroup.on(.POST, twarrtIDParam, "update", body: .collect(maxSize: "30mb"), use: twarrtUpdateHandler)
 	}
 	
 	// MARK: - tokenAuthGroup Handlers (logged in)

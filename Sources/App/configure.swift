@@ -277,6 +277,8 @@ func configureHTTPServer(_ app: Application) throws {
 	// run Web UI on port 8081 by default and set a 10MB hard limit on file size
     let port = Int(Environment.get("SWIFTARR_PORT") ?? "8081")!
 	app.http.server.configuration.port = port
+	
+	// Routes that upload images have a higher limit, applied to the route directly.
 	app.routes.defaultMaxBodySize = "10mb"
 	
 	// Enable HTTP response compression.
