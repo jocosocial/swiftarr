@@ -178,9 +178,16 @@ struct FezController: APIRouteCollection {
 					onlyNew ? DatabaseQuery.Filter.Method.lessThan : DatabaseQuery.Filter.Method.equal,
     				DatabaseQuery.Field.path(FriendlyFez.path(for: \.$postCount), schema: FriendlyFez.schema))
 		}
-		/// @TODO this is where the search should go
-		if urlQuery.search != nil {
-			print("LOLOL SEARCHING")
+		if var searchStr = urlQuery.search {
+			searchStr = searchStr.replacingOccurrences(of: "_", with: "\\_")
+					.replacingOccurrences(of: "%", with: "\\%")
+					.trimmingCharacters(in: .whitespacesAndNewlines)
+			query.join(FezPost.self, on: \FezPost.$fez.$id == \FriendlyFez.$id)
+			// @TODO Fix duplicate results
+			query.group(.or) { group in
+				group.filter(FezPost.self, \.$text, .custom("ILIKE"), "%\(searchStr)%")
+					 .filter(FriendlyFez.self, \.$title, .custom("ILIKE"), "%\(searchStr)%")
+			}
 		}
 		async let fezCount = try query.count()
 		async let pivots = query.sort(FriendlyFez.self, \.$updatedAt, .descending).range(urlQuery.calcRange()).all()
