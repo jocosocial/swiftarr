@@ -92,6 +92,12 @@ struct SocketNotificationData: Content {
 		/// An event the user is following is about to start. NOT CURRENTLY IMPLEMENTED. Plan is to add support for this as a bulk process that runs every 30 mins
 		/// at :25 and :55, giving all users following an event about to start a notification 5 mins before the event start time.
 		case followedEventStarting
+		/// Someone is trying to call this user via KrakenTalk.
+		case incomingPhoneCall
+		/// The callee answered the call, possibly on another device. 
+		case phoneCallAnswered
+		/// Caller hung up while phone was rining, or other party ended the call in progress, or callee declined
+		case phoneCallEnded
 	}
 	/// The type of event that happened. See <doc:SocketNotificationData.NotificationTypeData> for values.
 	var type: NotificationTypeData
@@ -99,6 +105,10 @@ struct SocketNotificationData: Content {
 	var info: String
 	/// An ID of an Announcement, Fez, Twarrt, ForumPost, or Event.
 	var contentID: String
+	/// For .incomingPhoneCall notifications, the caller.
+	var caller: UserHeader?
+	/// For .incomingPhoneCall notification,s the caller's IP addresses. May be nil, in which case the receiver opens a server socket instead.
+	var callerAddress: PhoneSocketServerAddress?
 }
 
 extension SocketNotificationData {
@@ -116,4 +126,37 @@ extension SocketNotificationData {
 		self.info = info
 		self.contentID = id
 	}
+	
+	// Creates an incoming phone call notification
+	init(callID: UUID, caller: UserHeader, callerAddr: PhoneSocketServerAddress?) {
+		self.type = .incomingPhoneCall
+		self.info = caller.username
+		self.contentID = callID.uuidString
+		self.caller = caller
+		self.callerAddress = callerAddr
+	}
+	
+	init(forCallEnded: UUID) {
+		type = .phoneCallEnded
+		contentID = forCallEnded.uuidString
+		info = ""
+	}
+	
+	init(forCallAnswered: UUID) {
+		type = .phoneCallAnswered
+		contentID = forCallAnswered.uuidString
+		info = ""
+	}
+}
+
+/// Notifies the recipient of a phone call the IP addr of the caller, so the recipient can open a direct-connect WebSocket
+/// to the caller (who must have started a WebSocket Server to receive the incoming connection).
+struct PhoneSocketServerAddress: Codable {
+	var ipV4Addr: String?
+	var ipV6Addr: String?
+}
+
+/// Sent at the start of a phone call. Used as a handshake.
+struct PhoneSocketStartData: Codable {
+	var phonecallStartTime: Date = Date()	
 }

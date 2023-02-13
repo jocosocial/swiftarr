@@ -44,11 +44,11 @@
 				</div>
 			#endif
 			#if(profile.header.userID != trunk.userID):
-				<form class="ajax" action="#(noteFormAction)" enctype="multipart/form-data" method="POST"">
+				<form class="ajax" action="#(noteFormAction)" enctype="multipart/form-data" method="POST">
 					<div class="row mx-1 pb-2 border">
 						<div class="col col-12 p-1">
 							<b>Your private note about @#(profile.header.username) (only visible to you):</b><br>
-							<textarea class="form-control" maxlength="2000" rows="5" name="noteText" id=noteText" placeholder="">#(profile.note)</textarea>
+							<textarea class="form-control" maxlength="2000" rows="5" name="noteText" id="noteText" placeholder="">#(profile.note)</textarea>
 						</div>				
 						<div class="col col-12">
 							<div class="alert alert-danger mt-3 d-none" role="alert">

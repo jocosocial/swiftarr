@@ -149,9 +149,24 @@ func configureBasicSettings(_ app: Application) throws {
 
 	// We do some shenanigans to date-shift the current date into a day of the cruise week (the time the schedule covers)
 	// for Events methods, because 'No Events Today' makes testing schedule features difficult.
-	Settings.shared.portTimeZone = TimeZone(identifier: "America/New_York")!
-	Settings.shared.cruiseStartDateComponents = DateComponents(year: 2023, month: 3, day: 5)
-	Settings.shared.cruiseStartDayOfWeek = 1
+	if let portTimeZoneID = Environment.get("SWIFTARR_PORT_TIMEZONE"), portTimeZoneID != "" {
+		guard let portTimeZone = TimeZone(identifier: portTimeZoneID) else {
+			fatalError("Invalid time zone identifier specified in SWIFTARR_PORT_TIMEZONE.")
+		}
+		Settings.shared.portTimeZone = portTimeZone
+	}
+	if let cruiseStartDate = Environment.get("SWIFTARR_START_DATE"), cruiseStartDate != "" {
+		let startFormatter = DateFormatter()
+		startFormatter.dateFormat = "yyyy-MM-dd" // 2023-03-05
+		guard let date = startFormatter.date(from: cruiseStartDate) else {
+			fatalError("Must be able to produce a Date from SWIFTARR_START_DATE if it is set.")
+		}
+		Settings.shared.cruiseStartDateComponents = Calendar(identifier: .gregorian).dateComponents([.year, .month, .day, .weekday], from: date)
+		guard let cruiseStartDayOfWeek = Settings.shared.cruiseStartDateComponents.weekday else {
+			fatalError("Cannot determine day-of-week from SWIFTARR_START_DATE.")
+		}
+		Settings.shared.cruiseStartDayOfWeek = cruiseStartDayOfWeek
+	}
 	
 	// Ask the GD Image library what filetypes are available on the local machine.
 	// gd, gd2, xbm, xpm, wbmp, some other useless formats culled.
@@ -262,6 +277,8 @@ func configureHTTPServer(_ app: Application) throws {
 	// run Web UI on port 8081 by default and set a 10MB hard limit on file size
     let port = Int(Environment.get("SWIFTARR_PORT") ?? "8081")!
 	app.http.server.configuration.port = port
+	
+	// Routes that upload images have a higher limit, applied to the route directly.
 	app.routes.defaultMaxBodySize = "10mb"
 	
 	// Enable HTTP response compression.
@@ -476,6 +493,8 @@ func configureMigrations(_ app: Application) throws {
 	// Sixth, migrations that operate on an already-set-up DB to bring it forward to a newer version 
 	app.migrations.add(CreateSearchIndexes(), to: .psql)
 	app.migrations.add(CreateCategoriesV2(), to: .psql)
+	app.migrations.add(CreatePerformanceIndexes(), to: .psql)
+	app.migrations.add(CreateUserFavoriteSchema(), to: .psql)
 }
   
 // Perform several sanity checks to verify that we can access the dbs and resource files that we need.

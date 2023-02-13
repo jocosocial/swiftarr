@@ -156,22 +156,57 @@ extension ContentFilterable {
 	}
 	
 	/// Fluent queries can filter for strings in text fields, but @mentions require more specific filtering.
-	/// This fn tests that the given username is @mentioned in the receiver's content. It's specifically looking for cases where one name is a substring of another.
-	/// Example: both @John and @John.Doe are users. Simple string search returns @John.Doe results in a search for @John.
-	/// Also, if a user is @mentioned at the end of a sentence, the period is a valid username char, but is not valid at the end of a username (must have a following alphanumeric).
+	/// This fn tests that the given username is @mentioned in the receiver's content. It's specifically looking
+	/// for cases where one name is a substring of another.
+	///
+	/// Example: both @John and @John.Doe are users. Simple string search returns @John.Doe results in a search 
+	/// for @John.
+	///
+	/// Also, if a user is @mentioned at the end of a sentence, the period is a valid username char, but is not
+	/// valid at the end of a username (must have a following alphanumeric).
+	/// 
+	/// - Parameter username: String of the username (including @) that we are attempting to match for.
+	/// - Returns: A ContentFilterable (such as ForumPost or FezPost) if the username is found, else nil.
+	///
+	/// @TODO consider: https://www.swiftbysundell.com/articles/string-parsing-in-swift/
+	///
 	func filterForMention(of username: String) -> Self? {
 		for contentString in contentTextStrings() {
 			var searchRange: Range<String.Index> = contentString.startIndex..<contentString.endIndex
 			while !searchRange.isEmpty, let foundRange = contentString.range(of: username, options: [.caseInsensitive], range: searchRange) { 
 				searchRange = foundRange.upperBound..<contentString.endIndex
 				var pastNameIndex = foundRange.upperBound
+				// This case checks if we matched the username at the end of the contentString.
+				// Heads up the .endIndex is "past-the-end" and so pastNameIndex can be too, leading
+				// to fun String index out of bounds exceptions. Since we've reset the searchRange
+				// to the remaining contentString (which in this case should be "") we can offer
+				// additional confirmation that we are at the end.
+				// Example: "End of line @John"
+				if pastNameIndex >= contentString.endIndex && contentString[searchRange] == "" {
+					return self
+				}
 				while pastNameIndex < contentString.endIndex {
+					// This case looks to see if the character after the foundRange string is not a valid username character.
+					// It shouldn't be, indicating the conclusion of a mention and we should probably be responding that the
+					// match was successful.
+					// Example: "@John whats up", the pastNameindex character is the " " after "@John".
 					if !CharacterSet.validUsernameChars.contains(contentString.unicodeScalars[pastNameIndex]) {
 						return self
 					}
+					// Deal with usernames that are substrings of another.
+					// Example: "@Johnothon whats up", the pastNameIndex character is the "o" after "@John" in "@Johnothon".
+					// If the contentString contains a username with a seperator (such as "@John.Doe") this code skips ahead
+					// to the contentString.formIndex() below which moves the pastNameIndex one character forward. In this example
+					// that would be the "D" in "@John.Doe". We then loop again but looking at that "D" which triggers this case
+					// via that next loop through. We break here because we have something resembling a match but need more
+					// information before considering returning success.
 					if CharacterSet.alphanumerics.contains(contentString.unicodeScalars[pastNameIndex]) {
 						break
 					}
+					// This case covers when the mention is at the end of a post sentence that ends in a period.
+					// .formIndex() implicitly updates the given index value, which at end of post means it should
+					// be a ".".
+					// Example: "This is with a dot @John."
 					contentString.formIndex(after: &pastNameIndex)
 					if pastNameIndex == contentString.endIndex {
 						return self
@@ -179,7 +214,6 @@ extension ContentFilterable {
 				}
 			}
 		}
-		
 		return nil
 	}
 }

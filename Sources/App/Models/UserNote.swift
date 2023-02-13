@@ -3,7 +3,7 @@ import Vapor
 import Fluent
 
 
-/// A `UserNote` is intended as a free-form test field that will appear on a `UserProfile`,
+/// A `UserNote` is intended as a free-form text field that will appear on a `UserProfile`,
 /// in which the viewing `User` can make notes about the profile's user.
 ///
 /// It is not visible to the profile's owner nor to any other user; it is for the viewing
@@ -57,6 +57,7 @@ struct CreateUserNoteSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		try await database.schema("usernote")
 				.id()
+				.unique(on: "author", "note_subject")
 				.field("note", .string, .required)
 				.field("created_at", .datetime)
 				.field("updated_at", .datetime)

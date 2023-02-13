@@ -9,7 +9,7 @@ struct KaraokeController: APIRouteCollection {
 	func registerRoutes(_ app: Application) throws {
 
 		// convenience route group for all /api/v3/karaoke endpoints
-		let baseRoute = app.grouped("api", "v3", "karaoke")
+		let baseRoute = app.grouped(DisabledAPISectionMiddleware(feature: .karaoke)).grouped("api", "v3", "karaoke")
 	
 		let flexAuthGroup = addFlexCacheAuthGroup(to: baseRoute)
 		flexAuthGroup.get("", use: getKaraokeSongs)
@@ -37,9 +37,10 @@ struct KaraokeController: APIRouteCollection {
 	/// 
 	/// **URL Query Parameters**
 	/// * `?search=STRING` - Only show songs whose artist or title contains the given string.
+	///   If a single letter or %23 is sent, it will return songs where the artist matches the letter, or starts with a number.
 	/// * `?favorite=TRUE` - Only return songs that have been favorited by current user. 
 	///	* `?start=INT` - Offset from start of results set
-	/// * `?limit=INT` - the maximum number of songs to retrieve: 1-200, default is 50. 
+	/// * `?limit=INT` - the maximum number of songs to retrieve: 1-200, default is 50.
 	/// 
 	/// - Returns: <doc:KaraokeSongResponseData>
 	func getKaraokeSongs(_ req: Request) async throws -> KaraokeSongResponseData {
@@ -53,10 +54,25 @@ struct KaraokeController: APIRouteCollection {
 		let start = filters.start ?? 0
 		let limit = (filters.limit ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
 		let songQuery = KaraokeSong.query(on: req.db).sort(\.$artist, .ascending).sort(\.$title, .ascending)
+		var filteringLetters = false
 		if let search = filters.search {
-			songQuery.group(.or) { (or) in 
-				or.fullTextFilter(\.$artist, search)
-				or.fullTextFilter(\.$title, search)
+			if search.count == 1 {
+				filteringLetters = true
+				if search == "#" {
+					songQuery.filter(\.$artist, .custom("~"), "^[0-9]")
+				}
+				else if let _ = search.rangeOfCharacter(from: NSCharacterSet.letters) { 
+					songQuery.filter(\.$artist, .custom("ILIKE"), "\(search)%")
+				}
+				else {
+					filteringLetters = false
+				}
+			}
+			else {
+				songQuery.group(.or) { (or) in 
+					or.fullTextFilter(\.$artist, search)
+					or.fullTextFilter(\.$title, search)
+				}
 			}
 		}
 		var filteringFavorites = false
@@ -81,8 +97,8 @@ struct KaraokeController: APIRouteCollection {
 			}
 		}
 		let hasSearchString = filters.search?.count ?? 0 >= 3
-		guard filteringFavorites || hasSearchString else {
-			throw Abort(.badRequest, reason: "Search string must have at least 3 characters.")
+		guard filteringFavorites || filteringLetters || hasSearchString else {
+			throw Abort(.badRequest, reason: "Search string must have at least 3 characters, or be a single letter, or be the character #.")
 		}
 		
 		let totalFoundSongs = try await songQuery.count()

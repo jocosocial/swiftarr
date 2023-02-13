@@ -27,31 +27,35 @@ struct UsersController: APIRouteCollection {
 		tokenCacheAuthGroup.get("match", "allnames", searchStringParam, use: matchAllNamesHandler)
 		tokenCacheAuthGroup.get("match", "username", searchStringParam, use: matchUsernameHandler)
 		tokenCacheAuthGroup.get(userIDParam, "profile", use: profileHandler)
-
-		tokenCacheAuthGroup.get("blocks", use: blocksHandler)
- 		tokenCacheAuthGroup.post(userIDParam, "block", use: blockHandler)
-		tokenCacheAuthGroup.post(userIDParam, "unblock", use: unblockHandler)
-		tokenCacheAuthGroup.get("mutes", use: mutesHandler)
-		tokenCacheAuthGroup.post(userIDParam, "mute", use: muteHandler)
-		tokenCacheAuthGroup.post(userIDParam, "unmute", use: unmuteHandler)
-
-		tokenCacheAuthGroup.post(userIDParam, "note", use: noteCreateHandler)
-		tokenCacheAuthGroup.post(userIDParam, "note", "delete", use: noteDeleteHandler)
-		tokenCacheAuthGroup.delete(userIDParam, "note", use: noteDeleteHandler)
-		tokenCacheAuthGroup.get(userIDParam, "note", use: noteHandler)
-		
 		tokenCacheAuthGroup.post(userIDParam, "report", use: reportHandler)
 
+		// Endpoints available only when logged in, and also can be disabled by server admin
+		let blockableAuthGroup = tokenCacheAuthGroup.grouped(DisabledAPISectionMiddleware(feature: .users))
+
+			// Notes on users
+		blockableAuthGroup.post(userIDParam, "note", use: noteCreateHandler)
+		blockableAuthGroup.post(userIDParam, "note", "delete", use: noteDeleteHandler)
+		blockableAuthGroup.delete(userIDParam, "note", use: noteDeleteHandler)
+		blockableAuthGroup.get(userIDParam, "note", use: noteHandler)
+
+			// Blocks, Mutes, Favorites
+		blockableAuthGroup.get("blocks", use: blocksHandler)
+ 		blockableAuthGroup.post(userIDParam, "block", use: blockHandler)
+		blockableAuthGroup.post(userIDParam, "unblock", use: unblockHandler)
+		blockableAuthGroup.get("mutes", use: mutesHandler)
+		blockableAuthGroup.post(userIDParam, "mute", use: muteHandler)
+		blockableAuthGroup.post(userIDParam, "unmute", use: unmuteHandler)
+		blockableAuthGroup.get("favorites", use: favoritesHandler)
+ 		blockableAuthGroup.post(userIDParam, "favorite", use: favoriteAddHandler)
+		blockableAuthGroup.post(userIDParam, "unfavorite", use: favoriteRemoveHandler)
+
 			// User Role Management for non-THO. Currently, this means the Shutternaut Manager managing the Shutternaut role
-		tokenCacheAuthGroup.get("userrole", userRoleParam, use: getUsersWithRole)
-		tokenCacheAuthGroup.post("userrole", userRoleParam, "addrole", userIDParam, use: addRoleForUser)
-		tokenCacheAuthGroup.post("userrole", userRoleParam, "removerole", userIDParam, use: removeRoleForUser)
+		blockableAuthGroup.get("userrole", userRoleParam, use: getUsersWithRole)
+		blockableAuthGroup.post("userrole", userRoleParam, "addrole", userIDParam, use: addRoleForUser)
+		blockableAuthGroup.post("userrole", userRoleParam, "removerole", userIDParam, use: removeRoleForUser)
 	}
 		
-	// MARK: - tokenAuthGroup Handlers (logged in)
-	// All handlers in this route group require a valid HTTP Bearer Authentication
-	// header in the request.
-	
+// MARK: - Finding Other Users	
 	/// `GET /api/v3/users/find/:username`
 	///
 	/// Retrieves a user's <doc:UserHeader> using either an ID (UUID string) or a username.
@@ -217,6 +221,7 @@ struct UsersController: APIRouteCollection {
 		return users.map { "@\($0.username)" }
 	}
 	
+// MARK: - Actions Taken on Other Users	
 	/// `POST /api/v3/users/ID/note`
 	///
 	/// Saves a `UserNote` associated with the specified user and the current user.
@@ -310,7 +315,7 @@ struct UsersController: APIRouteCollection {
 		return try await reportedUser.fileReport(submitter: submitter, submitterMessage: data.message, on: req)
 	}
 	
-// MARK: Blocks and Mutes	
+// MARK: - Blocks and Mutes	
 	/// `GET /api/v3/users/blocks`
 	///
 	/// Returns a list of the user's currently blocked users as an array of <doc:UserHeader> objects.
@@ -403,10 +408,10 @@ struct UsersController: APIRouteCollection {
 	
 	/// `GET /api/v3/users/mutes`
 	///
-	/// Returns a list of the user's currently muted users in `MutedUserData` format.
+	/// Returns a list of the user's currently muted users.
 	///
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: <doc:MutedUserData> containing the currently muted users as an array of <doc:SeaMonkey>.
+	/// - Returns: Array of <doc:UserHeader> containing the currently muted users.
 	func mutesHandler(_ req: Request) async throws -> [UserHeader] {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		guard let user = try await User.find(cacheUser.userID, on: req.db) else {
@@ -478,7 +483,66 @@ struct UsersController: APIRouteCollection {
 		return .noContent
 	}
 	
-// MARK: User Role Management
+	/// `GET /api/v3/users/favorites`
+	///
+	/// Returns a list of the user's currently favorited users.
+	///
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: An array of <doc:UserHeader> containing the currently favorited users.
+	func favoritesHandler(_ req: Request) async throws -> [UserHeader] {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let favoriteUsers = try await UserFavorite.query(on: req.db).filter(\.$user.$id == cacheUser.userID).all()
+		let favoriteUserIDs: [UUID] = favoriteUsers.map { $0.$favorite.id } 
+		return req.userCache.getHeaders(favoriteUserIDs).sorted { $0.username < $1.username }
+	}
+
+	/// `POST /api/v3/users/:user_ID/favorite`
+	///
+	/// Favorites the specified `User` for the current user. Favoriting is a way to short-list friends
+	/// for easy retrieval when using various Twitarr features.
+	///
+	/// - Parameter userID: in URL path. The userID to favorite.
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: 201 Created on success.
+	func favoriteAddHandler(_ req: Request) async throws -> HTTPStatus {
+		let requester = try req.auth.require(UserCacheData.self)
+		guard let parameter = req.parameters.get(userIDParam.paramString), let favoriteUserID = UUID(parameter) else {
+			throw Abort(.badRequest, reason: "No user ID in request.")
+		}
+		guard let _ = try await User.find(favoriteUserID, on: req.db) else {
+			throw Abort(.notFound, reason: "no user found for identifier '\(parameter)'")
+		}
+		if let _ = try await UserFavorite.query(on: req.db).filter(\.$user.$id == requester.userID)
+				.filter(\.$favorite.$id == favoriteUserID).first() {
+			return .created		
+		}
+		try await UserFavorite(userID: requester.userID, favoriteUserID: favoriteUserID).create(on: req.db)
+		return .created
+	}
+
+	/// `POST /api/v3/users/:user_ID/unfavorite`
+	///
+	/// Removes a favorite of the specified `User` by the current user.
+	///
+	/// - Parameter userID: in URL path. The user to unfavorite.
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: 204 No Content on success.
+	func favoriteRemoveHandler(_ req: Request) async  throws -> HTTPStatus {
+		let requester = try req.auth.require(UserCacheData.self)
+  		guard let parameter = req.parameters.get(userIDParam.paramString), let favoriteUserID = UUID(parameter) else {
+			throw Abort(.badRequest, reason: "No user ID in request.")
+		}
+		guard let _ = try await User.find(favoriteUserID, on: req.db) else {
+			throw Abort(.notFound, reason: "no user found for identifier '\(parameter)'")
+		}
+		if let userFavorite = try await UserFavorite.query(on: req.db).filter(\.$user.$id == requester.userID)
+				.filter(\.$favorite.$id == favoriteUserID).first() {
+			try await userFavorite.delete(on: req.db)
+		}
+		return .noContent
+	}
+	
+// MARK: - User Role Management
 	/// `GET /api/v3/forum/userrole/:user_role`
 	/// 
 	///  Returns a list of all users that have the given role. Currently, caller must have the `shutternautmanager` role to call this, and can only 
