@@ -85,7 +85,7 @@
 											</label>
 											<a class="btn btn-outline-primary" href="/boardgames/#(game.gameID)/createfez">Create LFG</a>
 										#endif
-										#if(game.isExpansion):
+										#if(game.isExpansion || game.hasExpansions):
 											<a class="btn btn-outline-primary" href="/boardgames/#(game.gameID)/expansions">Show Expansions</a>
 										#endif
 									</div>
