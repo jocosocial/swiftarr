@@ -146,6 +146,8 @@ public struct BoardgameData: Content {
 	/// TRUE if this entry is an expansion for another game. Weirdly, the games library may not actually have the base game.
 	/// At any rate, the base game is usually a requirement to play an expansion, and both must be checked out together.
 	var isExpansion: Bool
+	/// TRUE if this game has expansions that can be played with it.
+	var hasExpansions: Bool
 	/// TRUE if the user has favorited the game. FALSE if no one is logged in.
 	var isFavorite: Bool
 }
@@ -175,6 +177,7 @@ extension BoardgameData {
 		self.numCopies = game.numCopies
 
 		self.isExpansion = game.$expands.id != nil
+		self.hasExpansions = !game.expansions.isEmpty
 		self.isFavorite = isFavorite
 	}
 }
