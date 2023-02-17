@@ -150,6 +150,7 @@ struct FezController: APIRouteCollection {
 	/// - `?onlynew=TRUE` - Only return fezzes with unread messages.
 	/// - `?start=INT` - The offset to the first result to return in the filtered + sorted array of results.
 	/// - `?limit=INT` - The maximum number of fezzes to return; defaults to 50.
+	/// - `?search=STRING` - Only show fezzes whose title, info, or any post contains the given string. Currently only works for seamails.
 	/// 
 	/// Moderators and above can use the `foruser` query parameter to access pseudo-accounts:
 	/// 
