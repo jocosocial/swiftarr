@@ -188,6 +188,8 @@ struct FezController: APIRouteCollection {
 				group.filter(FezPost.self, \.$text, .custom("ILIKE"), "%\(searchStr)%")
 					 .filter(FriendlyFez.self, \.$title, .custom("ILIKE"), "%\(searchStr)%")
 			}
+			// We joined FezPost above, but we need to exclude its fields from the result set to prevent duplicates
+			query.fields(for: FezParticipant.self).fields(for: FriendlyFez.self).unique()
 		}
 		async let fezCount = try query.count()
 		async let pivots = query.sort(FriendlyFez.self, \.$updatedAt, .descending).range(urlQuery.calcRange()).all()
