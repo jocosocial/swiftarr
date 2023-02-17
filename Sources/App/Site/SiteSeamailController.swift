@@ -59,6 +59,7 @@ struct SiteSeamailController: SiteControllerUtils {
 			var paginator: PaginatorContext
 			var filterURL: String
 			var filterActive: Bool
+			var noSeamails: String
 			
 			init(_ req: Request, fezList: FezListData, fezzes: [FezData]) throws {
 				effectiveUser = req.query[String.self, at: "foruser"]
@@ -72,6 +73,7 @@ struct SiteSeamailController: SiteControllerUtils {
 				}
 				filterActive = req.query[String.self, at: "onlynew"]?.lowercased() == "true"
 				filterURL = filterActive ? "/seamail" : "/seamail?onlynew=true"
+				noSeamails = "You haven't received any Seamail messages yet, but you can create one by tapping \"New Seamail\""
 			}
 		}
 		let ctx = try SeamailRootPageContext(req, fezList: fezList, fezzes: allFezzes)
@@ -119,6 +121,7 @@ struct SiteSeamailController: SiteControllerUtils {
 			var filterURL: String
 			var filterActive: Bool
 			var filterEnable: Bool
+			var noSeamails: String
 			
 			init(_ req: Request, searchParams: SeamailQueryOptions, fezList: FezListData, fezzes: [FezData]) throws {
 				effectiveUser = req.query[String.self, at: "foruser"]
@@ -136,6 +139,7 @@ struct SiteSeamailController: SiteControllerUtils {
 				filterActive = false
 				filterURL = ""
 				filterEnable = false
+				noSeamails = "No search results found. Try another search, or start a new Seamail by tapping \"New Seamail\"."
 			}
 		}
 		let ctx = try SeamailRootPageContext(req, searchParams: searchParams, fezList: fezList, fezzes: fezList.fezzes)
