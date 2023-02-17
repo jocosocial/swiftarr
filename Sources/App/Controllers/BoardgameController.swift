@@ -49,7 +49,7 @@ struct BoardgameController: APIRouteCollection {
  		let filters = try req.query.decode(GameQueryOptions.self)
 		let start = filters.start ?? 0
 		let limit = (filters.limit ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
-		let query = Boardgame.query(on: req.db)
+		let query = Boardgame.query(on: req.db).with(\.$expansions)
 		if let search = filters.search {
 			query.fullTextFilter(\.$gameName, search)
 		}
@@ -71,7 +71,7 @@ struct BoardgameController: APIRouteCollection {
 	/// - Returns: <doc:BoardgameData>
 	func getBoardgame(_ req: Request) async throws -> BoardgameData {
 		let user = req.auth.get(UserCacheData.self)
-		let game = try await Boardgame.findFromParameter(boardgameIDParam, on: req)
+		let game = try await Boardgame.findFromParameter(boardgameIDParam, on: req) { $0.with(\.$expansions) }
 		let gamesArray = try await buildBoardgameData(for: user, games: [game], on: req.db)
 		return gamesArray[0]
 	}
@@ -85,9 +85,9 @@ struct BoardgameController: APIRouteCollection {
 	/// - Returns: An array of <doc:BoardgameData>. First item is the base game, other items are expansions.
 	func getExpansions(_ req: Request) async throws -> [BoardgameData] {
 		let user = req.auth.get(UserCacheData.self)
-		let targetGame = try await Boardgame.findFromParameter(boardgameIDParam, on: req)
+		let targetGame = try await Boardgame.findFromParameter(boardgameIDParam, on: req) { $0.with(\.$expansions) }
 		let basegameID = try targetGame.$expands.id ?? targetGame.requireID()
-		let games = try await Boardgame.query(on: req.db).group(.or) { group in
+		let games = try await Boardgame.query(on: req.db).with(\.$expansions).group(.or) { group in
 					group.filter(\.$id == basegameID).filter(\.$expands.$id == basegameID) }.all()
 		// Oddly, the list for the games library has at least one expansion for a game not in the library.
 		var baseGameFirst = games
@@ -160,7 +160,7 @@ struct BoardgameController: APIRouteCollection {
 		let data = try ValidatingJSONDecoder().decode(BoardgameRecommendationData.self, fromBodyOf: req)
 		let start = (req.query[Int.self, at: "start"] ?? 0)
 		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
-		let query = Boardgame.query(on: req.db).filter(\.$minPlayers <= data.numPlayers)
+		let query = Boardgame.query(on: req.db).with(\.$expansions).filter(\.$minPlayers <= data.numPlayers)
 				.filter(\.$maxPlayers >= data.numPlayers)
 				.filter(\.$avgPlayingTime <= data.timeToPlay)
 		if data.maxAge != 0 {
