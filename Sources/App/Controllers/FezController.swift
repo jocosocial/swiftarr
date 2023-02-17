@@ -186,6 +186,7 @@ struct FezController: APIRouteCollection {
 			query.group(.or) { group in
 				group.fullTextFilter(FezPost.self, \.$text, "%\(searchStr)%")
 					 .fullTextFilter(FriendlyFez.self, \.$title, "%\(searchStr)%")
+					 .fullTextFilter(FriendlyFez.self, \.$info, "%\(searchStr)%") // Currently this does nothing, but in the future it could extend to LFGs
 			}
 			// We joined FezPost above, but we need to exclude its fields from the result set to prevent duplicates
 			query.fields(for: FezParticipant.self).fields(for: FriendlyFez.self).unique()
