@@ -183,7 +183,6 @@ struct FezController: APIRouteCollection {
 					.replacingOccurrences(of: "%", with: "\\%")
 					.trimmingCharacters(in: .whitespacesAndNewlines)
 			query.join(FezPost.self, on: \FezPost.$fez.$id == \FriendlyFez.$id)
-			// @TODO Fix duplicate results
 			query.group(.or) { group in
 				group.filter(FezPost.self, \.$text, .custom("ILIKE"), "%\(searchStr)%")
 					 .filter(FriendlyFez.self, \.$title, .custom("ILIKE"), "%\(searchStr)%")
