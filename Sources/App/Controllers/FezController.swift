@@ -150,7 +150,7 @@ struct FezController: APIRouteCollection {
 	/// - `?onlynew=TRUE` - Only return fezzes with unread messages.
 	/// - `?start=INT` - The offset to the first result to return in the filtered + sorted array of results.
 	/// - `?limit=INT` - The maximum number of fezzes to return; defaults to 50.
-	/// - `?search=STRING` - Only show fezzes whose title, info, or any post contains the given string. Currently only works for seamails.
+	/// - `?search=STRING` - Only show fezzes whose title, info, or any post contains the given string.
 	/// 
 	/// Moderators and above can use the `foruser` query parameter to access pseudo-accounts:
 	/// 
@@ -187,7 +187,7 @@ struct FezController: APIRouteCollection {
 			query.group(.or) { group in
 				group.fullTextFilter(FezPost.self, \.$text, searchStr)
 					 .fullTextFilter(FriendlyFez.self, \.$title, searchStr)
-					 .fullTextFilter(FriendlyFez.self, \.$info, searchStr) // Currently this does nothing, but in the future it could extend to LFGs
+					 .fullTextFilter(FriendlyFez.self, \.$info, searchStr)
 			}
 			// We joined FezPost above, but we need to exclude its fields from the result set to prevent duplicates
 			query.fields(for: FezParticipant.self).fields(for: FriendlyFez.self).unique()
