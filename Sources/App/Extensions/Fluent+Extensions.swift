@@ -183,7 +183,7 @@ extension QueryBuilder {
 					.custom("@@"), DatabaseQuery.Value.custom("websearch_to_tsquery('english', \(bind: String(value)))" as SQLQueryString))
     	}
     	else {
-    		return filter(field, .custom("ILIKE"), value)
+    		return filter(field, .custom("ILIKE"), "%\(value)%")
     	}
     }
 
@@ -195,7 +195,7 @@ extension QueryBuilder {
 					.custom("@@"), DatabaseQuery.Value.custom("websearch_to_tsquery('english', \(bind: String(value)))" as SQLQueryString))
 		}
 		else {
-			return filter(joined, field, .custom("ILIKE"), value)
+			return filter(joined, field, .custom("ILIKE"), "%\(value)%")
 		}
 	}
 }
