@@ -53,7 +53,7 @@ struct UserController: APIRouteCollection {
 		"learn", "lettuce", "library", "light", "like", "liquid", "listen",
 		"lively", "lizard", "love", "love", "loving", "lunch", "magenta",
 		"magical", "magnificent", "mailbox", "majestic", "marvelous", "melodic",
-		"milk", "mint", "mitten", "monkey", "morning", "moustache", "mouth",
+		"milk", "mint", "mitten", "morning", "moustache", "mouth",
 		"mysterious", "neighborly", "nest", "nifty", "oatmeal", "obtainable",
 		"ocean", "orange", "pancake", "panoramic", "pants", "partner", "party",
 		"pastoral", "peaceful", "pencil", "perfect", "person", "pet", "pets",
