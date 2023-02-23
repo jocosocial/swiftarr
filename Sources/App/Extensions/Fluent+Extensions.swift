@@ -183,7 +183,19 @@ extension QueryBuilder {
 					.custom("@@"), DatabaseQuery.Value.custom("websearch_to_tsquery('english', \(bind: String(value)))" as SQLQueryString))
     	}
     	else {
-    		return filter(field, .custom("ILIKE"), value)
+    		return filter(field, .custom("ILIKE"), "%\(value)%")
     	}
     }
+
+	// Same as above, but for joined tables in a query
+	@discardableResult public func fullTextFilter<Joined, Field>(_ joined: Joined.Type, _ field: KeyPath<Joined, Field>, _ value: String) -> Self
+			where Joined: Schema, Field: QueryableProperty, Field.Model == Joined, Field.Value == String {
+		if database is SQLDatabase && Joined.self is any Searchable.Type {
+			return filter(.extendedPath([FieldKey(stringLiteral: "fulltext_search")], schema: Joined.schemaOrAlias, space: Joined.space),
+					.custom("@@"), DatabaseQuery.Value.custom("websearch_to_tsquery('english', \(bind: String(value)))" as SQLQueryString))
+		}
+		else {
+			return filter(joined, field, .custom("ILIKE"), "%\(value)%")
+		}
+	}
 }

@@ -181,6 +181,11 @@
 								</div>
 							</div>
 						</form>
+					#elseif(trunk.tab == "seamail"):
+						<form class="d-flex" action="/seamail/search">
+							<input class="form-control" type="search" name="search" value="#(trunk.searchString)" placeholder="#(trunk.searchPrompt)" aria-label="Search" autocapitalize="off" required>
+							<button class="btn btn-success ms-2" type="submit">Search</button>
+						</form>
 					#else:
 						<form class="d-flex">
 							<input class="form-control" type="search" name="search" value="#(trunk.searchString)" placeholder="#(trunk.searchPrompt)" aria-label="Search" autocapitalize="off" required>

@@ -100,3 +100,12 @@ The new controller includes the addition of several phone-related notification p
 * Added UserFavorite endpoints, to get/add/remove favorites. Used by phonecall UI so user can call favorites without performing a search.
 But, this feature may have other users.
 
+## Feb 13, 2023
+
+* The BoardgameData DTO has a new field: "hasExpansions" which is TRUE iff the boardgame is a base game for which there exist expansions
+in the game library. This means a game that has published expansions will still return FALSE for this field if the board game library
+doesn't have the expansions.
+
+## Feb 19, 2023
+
+* Fezzes now support a `search` parameter. This works just like all of the other searchable endpoints. Seamails and LFGs are now searchable in the API!
