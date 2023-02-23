@@ -386,9 +386,9 @@ public struct FezContentData: Content {
 	var endTime: Date?
 	/// The location for the fez.
 	var location: String?
-	/// The minimum number of seamonkeys needed for the fez.
+	/// The minimum number of users needed for the fez.
 	var minCapacity: Int
-	/// The maximum number of seamonkeys for the fez.
+	/// The maximum number of users for the fez.
 	var maxCapacity: Int
 	/// Users to add to the fez upon creation. The creator is always added as the first user.
 	var initialUsers: [UUID]
@@ -1057,11 +1057,11 @@ public struct PostDetailData: Content {
 	var isBookmarked: Bool
 	/// The current user's `LikeType` reaction on the post.
 	var userLike: LikeType?
-	/// The seamonkeys with "laugh" reactions on the post.
+	/// The users with "laugh" reactions on the post.
 	var laughs: [UserHeader]
-	/// The seamonkeys with "like" reactions on the post.
+	/// The users with "like" reactions on the post.
 	var likes: [UserHeader]
-	/// The seamonkeys with "love" reactions on the post.
+	/// The users with "love" reactions on the post.
 	var loves: [UserHeader]
 }
 
@@ -1301,11 +1301,11 @@ public struct TwarrtDetailData: Content {
 	var isBookmarked: Bool
 	/// The current user's `LikeType` reaction on the twarrt.
 	var userLike: LikeType?
-	/// The seamonkeys with "laugh" reactions on the post/twarrt.
+	/// The users with "laugh" reactions on the post/twarrt.
 	var laughs: [UserHeader]
-	/// The seamonkeys with "like" reactions on the post/twarrt.
+	/// The users with "like" reactions on the post/twarrt.
 	var likes: [UserHeader]
-	/// The seamonkeys with "love" reactions on the post/twarrt.
+	/// The users with "love" reactions on the post/twarrt.
 	var loves: [UserHeader]
 }
 
