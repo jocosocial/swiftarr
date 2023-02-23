@@ -20,7 +20,7 @@ import Fluent
 	- See Also: [FezContentData](FezContentData) the DTO for creating or editing Fezzes.
 	- See Also: [CreateFriendlyFezSchema](CreateFriendlyFezSchema) the Migration for creating the Fez table in the database.
 */
-final class FriendlyFez: Model {
+final class FriendlyFez: Model, Searchable  {
 	static let schema = "friendlyfez"
 	
 // MARK: Properties

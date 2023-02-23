@@ -19,6 +19,7 @@ struct FezController: APIRouteCollection {
 		var start: Int?
 		var limit: Int?
 		var cruiseDay: Int?
+		var search: String?
 		
 		func getTypes() throws -> [FezType]? {
 			let includeTypes = try type.map {  try FezType.fromAPIString($0) }
@@ -149,6 +150,7 @@ struct FezController: APIRouteCollection {
 	/// - `?onlynew=TRUE` - Only return fezzes with unread messages.
 	/// - `?start=INT` - The offset to the first result to return in the filtered + sorted array of results.
 	/// - `?limit=INT` - The maximum number of fezzes to return; defaults to 50.
+	/// - `?search=STRING` - Only show fezzes whose title, info, or any post contains the given string.
 	/// 
 	/// Moderators and above can use the `foruser` query parameter to access pseudo-accounts:
 	/// 
@@ -176,6 +178,19 @@ struct FezController: APIRouteCollection {
 			query.filter(DatabaseQuery.Field.custom("\(FezParticipant().$readCount.key) + \(FezParticipant().$hiddenCount.key)"),
 					onlyNew ? DatabaseQuery.Filter.Method.lessThan : DatabaseQuery.Filter.Method.equal,
     				DatabaseQuery.Field.path(FriendlyFez.path(for: \.$postCount), schema: FriendlyFez.schema))
+		}
+		if var searchStr = urlQuery.search {
+			searchStr = searchStr.replacingOccurrences(of: "_", with: "\\_")
+					.replacingOccurrences(of: "%", with: "\\%")
+					.trimmingCharacters(in: .whitespacesAndNewlines)
+			query.join(FezPost.self, on: \FezPost.$fez.$id == \FriendlyFez.$id, method: .left)
+			query.group(.or) { group in
+				group.fullTextFilter(FezPost.self, \.$text, searchStr)
+					 .fullTextFilter(FriendlyFez.self, \.$title, searchStr)
+					 .fullTextFilter(FriendlyFez.self, \.$info, searchStr)
+			}
+			// We joined FezPost above, but we need to exclude its fields from the result set to prevent duplicates
+			query.fields(for: FezParticipant.self).fields(for: FriendlyFez.self).unique()
 		}
 		async let fezCount = try query.count()
 		async let pivots = query.sort(FriendlyFez.self, \.$updatedAt, .descending).range(urlQuery.calcRange()).all()

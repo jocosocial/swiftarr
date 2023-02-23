@@ -22,6 +22,7 @@ struct SiteSeamailController: SiteControllerUtils {
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let privateRoutes = getPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .seamail))
+		privateRoutes.get("seamail", "search", use: seamailSearchHandler)
 		privateRoutes.get("seamail", "create", use: seamailCreatePageHandler)
 		privateRoutes.get("seamail", "usernames", "search", ":searchString", use: seamailUsernameAutocompleteHandler)
 		privateRoutes.post("seamail", "create", use: seamailCreatePostHandler)
@@ -58,11 +59,12 @@ struct SiteSeamailController: SiteControllerUtils {
 			var paginator: PaginatorContext
 			var filterURL: String
 			var filterActive: Bool
+			var noSeamails: String
 			
 			init(_ req: Request, fezList: FezListData, fezzes: [FezData]) throws {
 				effectiveUser = req.query[String.self, at: "foruser"]
 				let (title, tab) = titleAndTab(for: req)
-				trunk = .init(req, title: title, tab: tab)
+				trunk = .init(req, title: title, tab: tab, search: "Search Seamail")
 				self.fezList = fezList
 				self.fezzes = fezzes
 				let limit = fezList.paginator.limit
@@ -71,9 +73,76 @@ struct SiteSeamailController: SiteControllerUtils {
 				}
 				filterActive = req.query[String.self, at: "onlynew"]?.lowercased() == "true"
 				filterURL = filterActive ? "/seamail" : "/seamail?onlynew=true"
+				noSeamails = "You haven't received any Seamail messages yet, but you can create one by tapping \"New Seamail\""
 			}
 		}
 		let ctx = try SeamailRootPageContext(req, fezList: fezList, fezzes: allFezzes)
+		return try await req.view.render("Fez/seamails", ctx)
+	}
+
+	struct SeamailQueryOptions: Content {
+		var search: String?
+		var start: Int?
+		var limit: Int?
+		var onlynew: Bool? 
+
+		func buildQuery(baseURL: String, startOffset: Int?) -> String? {
+			guard var components = URLComponents(string: baseURL) else {
+				return nil
+			}
+			// We don't expose the type=open&type=closed paramters here because they could
+			// get overridden elsewhere.
+			var elements = [URLQueryItem]()
+			if let search = search { elements.append(URLQueryItem(name: "search", value: search)) }
+			let newOffset = max(startOffset ?? start ?? 0, 0)
+			if newOffset != 0 { elements.append(URLQueryItem(name: "start", value: String(newOffset))) }
+			if let limit = limit { elements.append(URLQueryItem(name: "limit", value: String(limit))) }
+			if let onlynew = onlynew { elements.append(URLQueryItem(name: "onlynew", value: String(onlynew))) }
+
+			components.queryItems = elements
+			return components.string
+		}
+	}
+
+	// GET /seamail/search
+	//
+	// Searches seamail
+	func seamailSearchHandler(_ req: Request) async throws -> View {
+		let searchParams = try req.query.decode(SeamailQueryOptions.self)
+
+		let response = try await apiQuery(req, endpoint: "/fez/joined?type=closed&type=open")
+		let fezList = try response.content.decode(FezListData.self)
+		struct SeamailRootPageContext : Encodable {
+			var trunk: TrunkContext
+			var fezList: FezListData
+			var fezzes: [FezData]
+			var effectiveUser: String?
+			var paginator: PaginatorContext
+			var filterURL: String
+			var filterActive: Bool
+			var filterEnable: Bool
+			var noSeamails: String
+			
+			init(_ req: Request, searchParams: SeamailQueryOptions, fezList: FezListData, fezzes: [FezData]) throws {
+				effectiveUser = req.query[String.self, at: "foruser"]
+				let (title, tab) = titleAndTab(for: req)
+				trunk = .init(req, title: title, tab: tab, search: "Search Seamail")
+				self.fezList = fezList
+				self.fezzes = fezzes
+				let limit = fezList.paginator.limit
+				paginator = .init(fezList.paginator) { pageIndex in
+					// "/seamail/search?start=\(pageIndex * limit)&limit=\(limit)"
+					return searchParams.buildQuery(baseURL: "/seamail/search", startOffset: pageIndex * limit) ?? "/seamail/search"
+				}
+				// filterActive = searchParams.onlynew ?? false
+				// filterURL = filterActive ? "/seamail" : "/seamail?onlynew=true"
+				filterActive = false
+				filterURL = ""
+				filterEnable = false
+				noSeamails = "No search results found. Try another search, or start a new Seamail by tapping \"New Seamail\"."
+			}
+		}
+		let ctx = try SeamailRootPageContext(req, searchParams: searchParams, fezList: fezList, fezzes: fezList.fezzes)
 		return try await req.view.render("Fez/seamails", ctx)
 	}
 	
@@ -96,7 +165,7 @@ struct SiteSeamailController: SiteControllerUtils {
 			var withUser: UserHeader?
 			
 			init(_ req: Request, withUser: UserHeader?) throws {
-				trunk = .init(req, title: "New Seamail", tab: .seamail)
+				trunk = .init(req, title: "New Seamail", tab: .seamail, search: "Search Seamail")
 				self.withUser = withUser
 				post = .init(forType: .seamail)
 			}
@@ -189,7 +258,7 @@ struct SiteSeamailController: SiteControllerUtils {
 						
 			init(_ req: Request, fez: FezData) throws {
 				let (title, tab) = titleAndTab(for: req)
-				trunk = .init(req, title: title, tab: tab)
+				trunk = .init(req, title: title, tab: tab, search: "Search Seamail")
 				self.fez = fez
 				oldPosts = []
 				newPosts = []
