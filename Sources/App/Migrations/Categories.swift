@@ -106,7 +106,7 @@ struct RenameWhereAndWhen: AsyncMigration {
 	func prepare(on database: Database) async throws {		
 		try await Category.query(on: database)
     		.set(\.$title, to: "Splashdot")
-			.set(\.$purpose, to: "News for cruise, stuff that matters.")
+			.set(\.$purpose, to: "News for cruise, stuff that matters. Official JoCo Cruise Daily Newsletter.")
     		.filter(\.$title == "Where and When")
     		.update()
 	}
