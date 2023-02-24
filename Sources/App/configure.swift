@@ -496,6 +496,7 @@ func configureMigrations(_ app: Application) throws {
 	app.migrations.add(CreatePerformanceIndexes(), to: .psql)
 	app.migrations.add(CreateUserFavoriteSchema(), to: .psql)
 	app.migrations.add(CreateSeamailSearchIndexes(), to: .psql)
+	app.migrations.add(RenameWhereAndWhen(), to: .psql)
 }
   
 // Perform several sanity checks to verify that we can access the dbs and resource files that we need.
