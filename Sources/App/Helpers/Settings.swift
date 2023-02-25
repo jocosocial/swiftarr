@@ -105,7 +105,7 @@ final class Settings : Encodable {
 	@SettingsValue var cruiseStartDateComponents: DateComponents = DateComponents(year: 2023, month: 3, day: 5)
 
 	/// The day of week when the cruise embarks, expressed as number as Calendar's .weekday uses them: Range 1...7, Sunday == 1.
-	@SettingsValue var cruiseStartDayOfWeek: Int = 7
+	@SettingsValue var cruiseStartDayOfWeek: Int = 1
 
 	/// The length in days of the cruise, includes partial days. A cruise that embarks on Saturday and returns the next Saturday should have a value of 8.
 	@SettingsValue var cruiseLengthInDays: Int = 8

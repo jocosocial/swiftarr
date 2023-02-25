@@ -97,3 +97,29 @@ struct CreateCategoriesV2: AsyncMigration {
 		try await Category.query(on: database).filter(\.$title == "Where and When").delete()
 	}
 }
+
+struct RenameWhereAndWhen: AsyncMigration {   
+	/// Required by `Migration` protocol. Renames the "Where and When" category to "Splashdot"
+	///
+	/// - Parameter database: A connection to the database, provided automatically.
+	/// - Returns: Void.
+	func prepare(on database: Database) async throws {		
+		try await Category.query(on: database)
+    		.set(\.$title, to: "Splashdot")
+			.set(\.$purpose, to: "News for cruise, stuff that matters - Official JoCo Cruise Daily Newsletter.")
+    		.filter(\.$title == "Where and When")
+    		.update()
+	}
+	
+	/// Undoes this migration, renaming the category back to "Where and When"
+	///
+	/// - Parameter conn: The database connection.
+	/// - Returns: Void.
+	func revert(on database: Database) async throws {
+		try await Category.query(on: database)
+    		.set(\.$title, to: "Where and When")
+			.set(\.$purpose, to: "Cruise News You Can Use")
+    		.filter(\.$title == "Splashdot")
+    		.update()
+	}
+}
