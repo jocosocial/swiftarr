@@ -1278,10 +1278,8 @@ extension ForumController {
 			let startPost = try await forum.$posts.query(on: req.db).sort(\.$createdAt, .ascending).range(start...start).first()
 			resolvedStartPostID = try startPost?.requireID()
 		}
-		// filter posts
+		// fetch and sort posts
 		var query = forum.$posts.query(on: req.db)
-				.filter(\.$author.$id !~ cacheUser.getBlocks())
-				.filter(\.$author.$id !~ cacheUser.getMutes())
 				.sort(\.$createdAt, .ascending)
 		if let resolvedStartPostID = resolvedStartPostID {
 			query = query.range(0..<limit).filter(\.$id >= resolvedStartPostID)
@@ -1302,7 +1300,8 @@ extension ForumController {
 			newReader.readCount = min(start + limit, postCount)
 			try await newReader.save(on: req.db)
 		}
-		let flattenedPosts = try await buildPostData(posts, userID: cacheUser.userID, on: req, mutewords: cacheUser.mutewords)
+		let hideAuthors = cacheUser.getBlocks().union(cacheUser.getMutes())
+		let flattenedPosts = try await buildPostData(posts, userID: cacheUser.userID, on: req, mutewords: cacheUser.mutewords, hideAuthors: hideAuthors)
 		let creatorHeader = try req.userCache.getHeader(forum.$creator.id)
 		let pager = Paginator(total: postCount, start: start, limit: limit)
 		// For event forums
@@ -1321,12 +1320,16 @@ extension ForumController {
 	// for the post, as well as the total count of likes. The optional parameters are for callers that
 	// only need some of the functionality, or for whom some of the values are known in advance e.g.
 	// the method that returns a user's bookmarked posts can assume all the posts it finds are in fact bookmarked.
-	func buildPostData(_ posts: [ForumPost], userID: UUID, on req: Request, mutewords: [String]? = nil, 
+	func buildPostData(_ posts: [ForumPost], userID: UUID, on req: Request, mutewords: [String]? = nil, hideAuthors: Set<UUID>? = nil,
 			assumeBookmarked: Bool? = nil, assumeLikeType: LikeType? = nil, matchHashtag: String? = nil) async throws -> [PostData] {
 		// remove muteword posts
 		var filteredPosts = posts
 		if let mutes = mutewords {
 			 filteredPosts = posts.compactMap { $0.filterOutStrings(using: mutes) }
+		}
+		// remove any posts by blocked/muted users
+		if let hideAuthors, !hideAuthors.isEmpty {
+			filteredPosts = posts.filter { !hideAuthors.contains($0.$author.id)}
 		}
 		// get exact hashtag if we're matching on hashtag
 		if let hashtag = matchHashtag {
