@@ -274,9 +274,11 @@ struct AdminController: APIRouteCollection {
 		let createduids = updateEventuids.subtracting(existingEventuids)
 		createduids.forEach { uid in
 			if let updated = updateEventDict[uid] {
+				// This eventData uses a throwaway UUID as the Event isn't in the db yet 
 				let eventData = EventData(eventID: UUID(), uid: updated.uid, title: updated.title, 
 						description: updated.description, startTime: updated.startTime, endTime: updated.endTime, timeZone: "", 
-						location: updated.location, eventType: updated.eventType.rawValue, forum: nil, isFavorite: false)
+						location: updated.location, eventType: updated.eventType.rawValue, lastUpdateTime: updated.updatedAt ?? Date(),
+						forum: nil, isFavorite: false)
 				responseData.createdEvents.append(eventData)
 			}
 		}
@@ -287,7 +289,8 @@ struct AdminController: APIRouteCollection {
 			if let existing = existingEventDict[uid], let updated = updateEventDict[uid] {
 				let eventData = EventData(eventID: UUID(), uid: updated.uid, title: updated.title, 
 						description: updated.description, startTime: updated.startTime, endTime: updated.endTime, timeZone: "", 
-						location: updated.location, eventType: updated.eventType.rawValue, forum: nil, isFavorite: false)
+						location: updated.location, eventType: updated.eventType.rawValue, lastUpdateTime: updated.updatedAt ?? Date(),
+						forum: nil, isFavorite: false)
 				if existing.startTime != updated.startTime || existing.endTime != updated.endTime {
 					responseData.timeChangeEvents.append(eventData)
 				}

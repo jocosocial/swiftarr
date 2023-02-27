@@ -340,6 +340,8 @@ public struct EventData: Content {
 	var location: String
 	/// The event category.
 	var eventType: String
+	/// The last time data for this event was modified. Used for change management.
+	var lastUpdateTime: Date
 	/// The event's associated `Forum`.
 	var forum: UUID?
 	/// Whether user has favorited event.
@@ -361,6 +363,7 @@ extension EventData {
 		self.timeZone = timeZoneChanges.abbrevAtTime(self.startTime)
 		location = event.location
 		eventType = event.eventType.label
+		lastUpdateTime = event.updatedAt ?? Date()
 		forum = event.$forum.id
 		self.isFavorite = isFavorite
 	}
