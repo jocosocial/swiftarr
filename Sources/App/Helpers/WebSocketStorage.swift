@@ -138,21 +138,23 @@ extension Request {
 		}
 
 // MARK: Logout
-		func handleUserLogout(_ userID: UUID) throws {
-			getSockets(userID).forEach { userSocket in
-				_ = userSocket.socket.close()
-				removeSocket(userSocket)
-			}
+		func handleUserLogout(_ userID: UUID) async throws {
+			var fezSocketsToClose: [UserSocket] = []
 			let cacheLock = request.application.locks.lock(for: Application.WebSocketStorageLockKey.self)
-			try cacheLock.withLock {
-				for socketArray in request.application.websocketStorage.fezSockets.values {
-					for userSocket in socketArray {
-						if userSocket.userID == userID {
-							_ = userSocket.socket.close()
-							try removeFezSocket(userSocket)
-						}
+			cacheLock.withLock {
+				fezSocketsToClose.append(contentsOf: request.application.websocketStorage.notificationSockets[userID] ?? [])
+				request.application.websocketStorage.notificationSockets[userID] = nil
+				for fezSockets in request.application.websocketStorage.fezSockets.values {
+					let userFezSockets = fezSockets.filter { $0.userID == userID }
+					if !userFezSockets.isEmpty, let fezID = userFezSockets[0].fezID {
+						fezSocketsToClose.append(contentsOf: userFezSockets)
+						let openSockets = fezSockets.filter { $0.userID != userID }
+						request.application.websocketStorage.fezSockets[fezID] = openSockets
 					}
 				}
+			}
+			for userFezSocket in fezSocketsToClose {
+				try await userFezSocket.socket.close().get()
 			}
 		}
 	}

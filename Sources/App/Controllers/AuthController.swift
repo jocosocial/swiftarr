@@ -263,7 +263,7 @@ struct AuthController: APIRouteCollection {
 	func logoutHandler(_ req: Request) async throws -> HTTPStatus {
 		let user = try req.auth.require(UserCacheData.self)
 		// Close any open sockets, keep going if we get an error.
-		try? req.webSocketStore.handleUserLogout(user.userID)
+		try? await req.webSocketStore.handleUserLogout(user.userID)
 		// revoke token
 		guard let token = try await Token.query(on: req.db).filter(\.$user.$id == user.userID).first() else {
 			throw Abort(.conflict, reason: "user is not logged in")

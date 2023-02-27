@@ -613,7 +613,7 @@ struct ModerationController: APIRouteCollection {
 			try await targetUserAccount.save(on: req.db)
 			// Close any open sockets, keep going if we get an error. Then, delete the user's login token
 			// and refresh the user cache.
-			try? req.webSocketStore.handleUserLogout(targetUserAccount.requireID())
+			try? await req.webSocketStore.handleUserLogout(targetUserAccount.requireID())
 			try await Token.query(on: req.db).filter(\.$user.$id == targetUserAccount.requireID()).delete()
 			try await req.userCache.updateUser(targetUserAccount.requireID())
 		}
