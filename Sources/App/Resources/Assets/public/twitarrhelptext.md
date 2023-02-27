@@ -42,6 +42,7 @@ The available custom emoji are:
 - :ship:
 - :towel-monkey:
 - :tropical-drink:
+- :wangwang:
 - :zombie:
 
 ## Can I follow users?

@@ -50,7 +50,7 @@ import Ink
 /// Usage: #addJocomoji(String) -> String
 struct AddJocomojiTag: UnsafeUnescapedLeafTag {
 	static let jocomoji = [ "buffet", "die-ship", "die", "hottub", "joco", "pirate", "ship-front",
-			"ship", "towel-monkey", "tropical-drink", "zombie" ]
+			"ship", "towel-monkey", "tropical-drink", "wangwang", "zombie" ]
 			
 	static func process(_ str: String) -> String {
 		var string = str
