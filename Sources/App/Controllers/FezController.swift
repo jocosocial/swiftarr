@@ -20,6 +20,7 @@ struct FezController: APIRouteCollection {
 		var limit: Int?
 		var cruiseDay: Int?
 		var search: String?
+		var hidePast: Bool?
 		
 		func getTypes() throws -> [FezType]? {
 			let includeTypes = try type.map {  try FezType.fromAPIString($0) }
@@ -104,18 +105,24 @@ struct FezController: APIRouteCollection {
 	/// * `?type=STRING` - Only return fezzes of this type, there STRING is a `FezType.fromAPIString()` string.
 	/// * `?start=INT` - The offset to the first result to return in the filtered + sorted array of results.
 	/// * `?limit=INT` - The maximum number of fezzes to return; defaults to 50.
+	/// - `?hidepast=BOOLEAN` - Show fezzes that started more than one hour in the past. For this endpoint, this defaults to TRUE.
 	///
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: An array of <doc:FezData> containing current fezzes with open slots.
 	func openHandler(_ req: Request) async throws -> FezListData {
 		let urlQuery = try req.query.decode(FezURLQueryStruct.self)
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		let searchStartTime = Settings.shared.timeZoneChanges.displayTimeToPortTime().addingTimeInterval(-3600)
+		
 		let fezQuery = FriendlyFez.query(on: req.db)
 				.filter(\.$fezType !~ [.closed, .open])
 				.filter(\.$owner.$id !~ cacheUser.getBlocks())
 				.filter(\.$cancelled == false)
-				.filter(\.$startTime > searchStartTime)
+			
+		if urlQuery.hidePast ?? true {
+			let searchStartTime = Settings.shared.timeZoneChanges.displayTimeToPortTime().addingTimeInterval(-3600)
+			fezQuery.filter(\.$startTime > searchStartTime)
+		}
+
 		if let typeFilter = try urlQuery.getTypes() {
 			fezQuery.filter(\.$fezType ~~ typeFilter)
 		}
@@ -145,12 +152,14 @@ struct FezController: APIRouteCollection {
 	/// Retrieve all the FriendlyFez chats that the user has joined. Results are sorted by descending fez update time.
 	/// 
 	/// **Query Parameters:**
+	/// * `?cruiseday=INT` - Only return fezzes occuring on this day of the cruise. Embarkation Day is day 0.
 	/// - `?type=STRING` - Only return fezzes of the given fezType. See `FezType` for a list.
 	/// - `?excludetype=STRING` - Don't return fezzes of the given type. See `FezType` for a list.
 	/// - `?onlynew=TRUE` - Only return fezzes with unread messages.
 	/// - `?start=INT` - The offset to the first result to return in the filtered + sorted array of results.
 	/// - `?limit=INT` - The maximum number of fezzes to return; defaults to 50.
 	/// - `?search=STRING` - Only show fezzes whose title, info, or any post contains the given string.
+	/// - `?hidepast=BOOLEAN` - Hide fezzes that started more than one hour in the past. For this endpoint, this defaults to FALSE.
 	/// 
 	/// Moderators and above can use the `foruser` query parameter to access pseudo-accounts:
 	/// 
@@ -172,6 +181,20 @@ struct FezController: APIRouteCollection {
 		else if let excludeTypes = try urlQuery.getExcludeTypes() {
 			query.filter(FriendlyFez.self, \.$fezType !~ excludeTypes)
 		}
+
+		if let dayFilter = req.query[Int.self, at: "cruiseday"] {
+			let portCalendar = Settings.shared.getPortCalendar()
+			let threeAMCutoff = portCalendar.date(byAdding: .hour, value: 3, to: Settings.shared.cruiseStartDate()) ?? Settings.shared.cruiseStartDate()
+			let dayStart = portCalendar.date(byAdding: .day, value: dayFilter, to: threeAMCutoff) ?? threeAMCutoff
+			let dayEnd = portCalendar.date(byAdding: .day, value: 1, to: dayStart) ?? Date()
+			query.filter(FriendlyFez.self, \.$startTime >= dayStart).filter(FriendlyFez.self, \.$startTime < dayEnd)
+		}
+
+		if urlQuery.hidePast ?? false {
+			let searchStartTime = Settings.shared.timeZoneChanges.displayTimeToPortTime().addingTimeInterval(-3600)
+			query.filter(FriendlyFez.self, \.$startTime > searchStartTime)
+		}
+
 		if let onlyNew = urlQuery.onlynew {
 			// Uses a custom filter to test "readCount + hiddenCount < FriendlyFez.postCount". If true, there's unread messages
 			// in this chat. Because it uses a custom filter for parameter 1, the other params use the weird long-form notation.
@@ -212,10 +235,12 @@ struct FezController: APIRouteCollection {
 	///   longer visible to the non-owning party.
 	///
 	/// **Query Parameters:**
+	/// * `?cruiseday=INT` - Only return fezzes occuring on this day of the cruise. Embarkation Day is day 0.
 	/// - `?type=STRING` - Only return fezzes of the given fezType. See `FezType` for a list.
 	/// - `?excludetype=STRING` - Don't return fezzes of the given type. See `FezType` for a list.
 	/// * `?start=INT` - The offset to the first result to return in the filtered + sorted array of results.
 	/// * `?limit=INT` - The maximum number of fezzes to return; defaults to 50.
+	/// - `?hidepast=BOOLEAN` - Hide fezzes that started more than one hour in the past. For this endpoint, this defaults to FALSE.
 	///
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: An array of <doc:FezData> containing all the fezzes created by the user.
@@ -233,6 +258,20 @@ struct FezController: APIRouteCollection {
 		else if let excludeTypes = try urlQuery.getExcludeTypes() {
 			query.filter(\.$fezType !~ excludeTypes)
 		}
+
+		if let dayFilter = req.query[Int.self, at: "cruiseday"] {
+			let portCalendar = Settings.shared.getPortCalendar()
+			let threeAMCutoff = portCalendar.date(byAdding: .hour, value: 3, to: Settings.shared.cruiseStartDate()) ?? Settings.shared.cruiseStartDate()
+			let dayStart = portCalendar.date(byAdding: .day, value: dayFilter, to: threeAMCutoff) ?? threeAMCutoff
+			let dayEnd = portCalendar.date(byAdding: .day, value: 1, to: dayStart) ?? Date()
+			query.filter(\.$startTime >= dayStart).filter(\.$startTime < dayEnd)
+		}
+
+		if urlQuery.hidePast ?? false {
+			let searchStartTime = Settings.shared.timeZoneChanges.displayTimeToPortTime().addingTimeInterval(-3600)
+			query.filter(\.$startTime > searchStartTime)
+		}
+
 		// get owned fezzes
 		async let fezCount = query.count()
 		async let fezzes = query.range(start..<(start + limit)).sort(\.$createdAt, .descending).all()

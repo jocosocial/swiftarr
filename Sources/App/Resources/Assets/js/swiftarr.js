@@ -24,13 +24,11 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 		case "eventFiltersChanged": btn.addEventListener("click", filterEvents); break;
 		case "filterEventType": btn.addEventListener("click", eventFilterDropdownTappedAction); break;
 		case "eventScrollToNow": btn.addEventListener("click", soonButtonTappedAction); break;
-		case "filterFezDay": 
-			dropdownButtonSetup(btn); 
-			btn.addEventListener("click", fezDayFilterDropdownTappedAction);
-			break;
+		case "filterFezDay":
 		case "filterFezType":
+		case "filterFezHidePast": 
 			dropdownButtonSetup(btn); 
-			btn.addEventListener("click", fezTypeFilterDropdownTappedAction);
+			btn.addEventListener("click", fezFilterDropdownTappedAction);
 			break;
 	}
 }
@@ -509,7 +507,7 @@ function scrollToCurrentEvent() {
 	return false;
 }
 
-function eventFilterDropdownTappedAction() {
+function eventFilterDropdownTappedAction(event) {
 	updateDropdownButton(event.target);
 	filterEvents();
 }
@@ -538,22 +536,19 @@ function filterEvents() {
 
 // MARK: - Fez Handlers
 
-function fezDayFilterDropdownTappedAction() {
-	updateDropdownButton(event.target);
-	applyFezSearchFilters();
-}
-
-function fezTypeFilterDropdownTappedAction() {
+function fezFilterDropdownTappedAction(event) {
 	updateDropdownButton(event.target);
 	applyFezSearchFilters();
 }
 
 function applyFezSearchFilters() {
-	let typeSelection = document.getElementById("fezTypeFilterMenu").dataset.selected;
 	let queryString = ""
+
+	let typeSelection = document.getElementById("fezTypeFilterMenu").dataset.selected;
 	if (typeSelection != "all") {
 		queryString = "?type=" + typeSelection;
 	}
+
 	let daySelection = document.getElementById("fezDayFilterMenu").dataset.selected;
 	if (daySelection != "all") {
 		if (queryString.length > 0) {
@@ -563,7 +558,17 @@ function applyFezSearchFilters() {
 			queryString = "?cruiseday=" + daySelection;
 		}
 	}
-	window.location.href = "/fez" + queryString;
+
+	let hidePastSelection = document.getElementById("fezHidePastFilterMenu").dataset.selected;
+	if (hidePastSelection != "default") {
+		if (queryString.length > 0) {
+			queryString = queryString + "&hidePast=" + hidePastSelection;
+		}
+		else {
+			queryString = "?hidePast=" + hidePastSelection;
+		}
+	}
+	window.location.href = window.location.href.split("?")[0] + queryString;
 }
 
 // Populates username completions for a partial username. 

@@ -2,50 +2,7 @@
     #export("body"):
     	<div class="container-md ms-0 mt-2">
 			#extend("Fez/fezNavbar")
-			<div class="row align-items-center justify-content-end mb-2">
-				<div class="col col-auto">
-					Filter by:
-				</div>
-				<div class="col col-auto">
-					<div class="dropdown">
-						<button class="btn btn-outline-primary dropdown-toggle btn-sm" type="button" id="fezDayFilterMenu" data-bs-toggle="dropdown" data-selected="all" aria-expanded="false">
-							All Days
-						</button>
-						<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="fezDayFilterMenu">
-							<li><button class="dropdown-item #if(daySelection == "all"):active#endif" type="button" data-action="filterFezDay" data-selection="all">All Days</button></li>
- 							<li><hr class="dropdown-divider"></li>
-							<li><h6 class="dropdown-header">Only show:</h6></li>
- 							<li><button class="dropdown-item #if(daySelection == "0"):active#endif" type="button" data-action="filterFezDay" data-selection="0">Sat</button></li>
-							<li><button class="dropdown-item #if(daySelection == "1"):active#endif" type="button" data-action="filterFezDay" data-selection="1">Sun</button></li>
-							<li><button class="dropdown-item #if(daySelection == "2"):active#endif" type="button" data-action="filterFezDay" data-selection="2">Mon</button></li>
-							<li><button class="dropdown-item #if(daySelection == "3"):active#endif" type="button" data-action="filterFezDay" data-selection="3">Tue</button></li>
-							<li><button class="dropdown-item #if(daySelection == "4"):active#endif" type="button" data-action="filterFezDay" data-selection="4">Wed</button></li>
-							<li><button class="dropdown-item #if(daySelection == "5"):active#endif" type="button" data-action="filterFezDay" data-selection="5">Thu</button></li>
-							<li><button class="dropdown-item #if(daySelection == "6"):active#endif" type="button" data-action="filterFezDay" data-selection="6">Fri</button></li>
-							<li><button class="dropdown-item #if(daySelection == "7"):active#endif" type="button" data-action="filterFezDay" data-selection="7">Second Sat</button></li>
-						</ul>
-					</div>
-				</div>
-				<div class="col col-auto">
-					<div class="dropdown">
-						<button class="btn btn-outline-primary dropdown-toggle btn-sm" type="button" id="fezTypeFilterMenu" data-bs-toggle="dropdown" data-selected="#(typeSelection)" aria-expanded="false">
-							All Types
-						</button>
-						<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="fezDayFilterMenu">
-							<li><button class="dropdown-item #if(typeSelection == "all"):active#endif" type="button" data-action="filterFezType" data-selection="all">All Types</button></li>
- 							<li><hr class="dropdown-divider"></li>
-							<li><h6 class="dropdown-header">Only show:</h6></li>
- 							<li><button class="dropdown-item #if(typeSelection == "activity"):active#endif" type="button" data-action="filterFezType" data-selection="activity">Activity</button></li>
-							<li><button class="dropdown-item #if(typeSelection == "dining"):active#endif" type="button" data-action="filterFezType" data-selection="dining">Dining</button></li>
-							<li><button class="dropdown-item #if(typeSelection == "gaming"):active#endif" type="button" data-action="filterFezType" data-selection="gaming">Gaming</button></li>
-							<li><button class="dropdown-item #if(typeSelection == "meetup"):active#endif" type="button" data-action="filterFezType" data-selection="meetup">Meetup</button></li>
-							<li><button class="dropdown-item #if(typeSelection == "music"):active#endif" type="button" data-action="filterFezType" data-selection="music">Music</button></li>
-							<li><button class="dropdown-item #if(typeSelection == "other"):active#endif" type="button" data-action="filterFezType" data-selection="other">Other</button></li>
-							<li><button class="dropdown-item #if(typeSelection == "shore"):active#endif" type="button" data-action="filterFezType" data-selection="shore">Shore</button></li>
-						</ul>
-					</div>
-				</div>
-			</div>
+			#extend("Fez/fezFilter")
 			#extend("paginator")
 			<div class="list-group">
 				#if(count(fezList.fezzes) == 0):
