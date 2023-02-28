@@ -205,15 +205,15 @@ struct AlertController: APIRouteCollection {
 
 	/// `POST /api/v3/announcement/create`
 	///
-	/// Create a new announcement. Requires THO access and above. When a new announcement is created the notification endpoints will start 
+	/// Create a new announcement. Requires TwitarrTeam access and above. When a new announcement is created the notification endpoints will start 
 	/// indicating the new announcement to all users.
 	/// 
 	/// - Parameter requestBody: <doc:AnnouncementCreateData>
 	/// - Returns: `HTTPStatus` 201 on success.
 	func createAnnouncement(_ req: Request) async throws -> HTTPStatus {
 		let user = try req.auth.require(UserCacheData.self)
-		guard user.accessLevel.hasAccess(.tho) else {
-			throw Abort(.forbidden, reason: "THO only")
+		guard user.accessLevel.hasAccess(.twitarrteam) else {
+			throw Abort(.forbidden, reason: "TwitarrTeam and THO only")
 		}
 		let announcementData = try ValidatingJSONDecoder().decode(AnnouncementCreateData.self, fromBodyOf: req)
 		let announcement = Announcement(authorID: user.userID, text: announcementData.text, displayUntil: announcementData.displayUntil)
@@ -230,19 +230,18 @@ struct AlertController: APIRouteCollection {
 	/// 
 	/// **URL Query Parameters**
 	/// 
-	/// - `?inactives=true` Also return expired and deleted announcements. THO and admins only. 
+	/// - `?inactives=true` Also return expired and deleted announcements. TwitarrTeam and above only. 
 	/// 		
-	/// The purpose if the inactives flag is to allow for finding an expired announcement and re-activating it by changing its expire time. Remember that doing so
-	/// doesn't re-alert users who have already read it.
+	/// The purpose of the inactives flag is to allow for finding an expired announcement and re-activating it by changing its expire time. Doing so
+	/// does not re-alert users who have already read it.
 	///
-	/// - Throws: 403 error if the user is not permitted to delete.
 	/// - Returns: Array of <doc:AnnouncementData>
 	func getAnnouncements(_ req: Request) async throws -> [AnnouncementData] {
 		let user = req.auth.get(UserCacheData.self)
-		// Prevent users with access levels below THO from loading inactive annoucnements
-		let includeInactives: Bool = (user?.accessLevel.hasAccess(.tho) ?? false) && req.query[String.self, at: "inactives"] == "true";
-
 		let query = Announcement.query(on: req.db).sort(\.$id, .descending)
+
+		// Prevent users with access levels below TwitarrTeam from loading inactive annoucnements
+		let includeInactives: Bool = (user?.accessLevel.hasAccess(.twitarrteam) ?? false) && req.query[String.self, at: "inactives"] == "true";
 		if includeInactives {
 			query.withDeleted()
 		}
@@ -265,19 +264,19 @@ struct AlertController: APIRouteCollection {
 	
 	/// `GET /api/v3/notification/announcement/ID`
 	///
-	/// Returns a single announcement, identified by its ID. THO and admins only. Others should just use `/api/v3/notification/announcements`.
+	/// Returns a single announcement, identified by its ID. TwitarrTeam and above only. Others should just use `/api/v3/notification/announcements`.
 	/// Will return AnnouncementData for deleted announcements.
 	/// 
 	/// Announcements shouldn't be large, and there shouldn't be many of them active at once (Less than 1KB each, if there's more than 5 active 
 	/// at once people likely won't read them). This endpoint really exists to support admins editing announcements.
 	/// 
 	/// - Parameter announcementID: The announcement to find
-	/// - Throws: 403 error if the user doesn't have THO-level access. 404 if no announcement with the given ID is found.
+	/// - Throws: 403 error if the user doesn't have TwitarrTeam or higher access. 404 if no announcement with the given ID is found.
 	/// - Returns: <doc:AnnouncementData>
 	func getSingleAnnouncement(_ req: Request) async throws -> AnnouncementData {
 		let user = try req.auth.require(UserCacheData.self)
-		guard user.accessLevel.hasAccess(.tho) else {
-			throw Abort(.forbidden, reason: "THO only")
+		guard user.accessLevel.hasAccess(.twitarrteam) else {
+			throw Abort(.forbidden, reason: "TwitarrTeam and THO only")
 		}
   		guard let paramVal = req.parameters.get(announcementIDParam.paramString), let announcementID = Int(paramVal) else {
 			throw Abort(.badRequest, reason: "Request parameter \(announcementIDParam.paramString) is missing.")
@@ -297,12 +296,12 @@ struct AlertController: APIRouteCollection {
 	///
 	/// - Parameter announcementID: The announcement to edit. Must exist.
 	/// - Parameter requestBody: <doc:AnnouncementCreateData>
-	/// - Throws: 403 error if the user is not permitted to delete.
+	/// - Throws: 403 error if the user is not permitted to edit.
 	/// - Returns: The updated <doc:AnnouncementCreateData>
 	func editAnnouncement(_ req: Request) async throws -> AnnouncementData {
 		let user = try req.auth.require(UserCacheData.self)
-		guard user.accessLevel.hasAccess(.tho) else {
-			throw Abort(.forbidden, reason: "THO only")
+		guard user.accessLevel.hasAccess(.twitarrteam) else {
+			throw Abort(.forbidden, reason: "TwitarrTeam and THO only")
 		}
 		let announcementData = try ValidatingJSONDecoder().decode(AnnouncementCreateData.self, fromBodyOf: req)
 		guard let announcementIDStr = req.parameters.get(announcementIDParam.paramString), let announcementID = Int(announcementIDStr) else {
@@ -310,7 +309,7 @@ struct AlertController: APIRouteCollection {
 		}
 		let announcement = try await Announcement.query(on: req.db).filter(\.$id == announcementID).withDeleted().first()
 		guard let announcement = announcement else {
-			throw Abort(.notFound, reason: "Announcement not found")
+			throw Abort(.notFound, reason: "Announcement not found.")
 		}
 		if let deleteTime = announcement.deletedAt, deleteTime < Date() {
 			try await announcement.restore(on: req.db)
@@ -325,15 +324,15 @@ struct AlertController: APIRouteCollection {
 	/// `POST /api/v3/notification/announcement/ID/delete`
 	/// `DELETE /api/v3/notification/announcement/ID`
 	///
-	/// Deletes an existing announcement. Editing a deleted announcement will un-delete it.
+	/// Deletes an existing announcement. Editing a deleted announcement will un-delete it TwitarrTeam and above only.
 	///
 	/// - Parameter announcementIDParam: The announcement to delete. 
 	/// - Throws: 403 error if the user is not permitted to delete.
 	/// - Returns: 204 NoContent on success.
 	func deleteAnnouncement(_ req: Request) async throws -> HTTPStatus {
 		let user = try req.auth.require(UserCacheData.self)
-		guard user.accessLevel.hasAccess(.tho) else {
-			throw Abort(.forbidden, reason: "THO only")
+		guard user.accessLevel.hasAccess(.twitarrteam) else {
+			throw Abort(.forbidden, reason: "TwitarrTeam and THO only")
 		}
 		let announcement = try await Announcement.findFromParameter(announcementIDParam, on: req)
 		try await announcement.delete(on: req.db)
