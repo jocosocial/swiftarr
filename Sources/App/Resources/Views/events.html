@@ -172,6 +172,16 @@
 			#endfor
 		#endif
 		</ul>
+		#if(trunk.userIsLoggedIn):
+			<div class="container-md ms-0 my-3">
+				<div class="row">
+					<div class="col">
+						<a class="btn btn-primary btn-sm" href="#(webcalURL)">Subscribe To Followed Events</a>
+					</div>								
+				</div>
+			</div>
+		#endif		
+		
 		<button class="btn btn-primary btn-sm position-fixed soon-button" type="button" data-action="eventScrollToNow">Soon™</button>
 		<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalTitle" aria-hidden="true">
 			<div class="modal-dialog">

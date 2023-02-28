@@ -132,12 +132,24 @@ struct EventController: APIRouteCollection {
 	
 	/// `GET /api/v3/events/ID`
 	///
-	/// Retrieve a single event from its ID.
+	/// Retrieve a single event from its database ID or event UID. UID is part of the ICS spec for calendar events (RFC 5545).
 	/// 
 	/// - Parameter eventID: in URL path
 	/// - Returns: <doc:EventData> containing  event info.
 	func singleEventHandler(_ req: Request) async throws -> EventData {
-		let event = try await Event.findFromParameter(eventIDParam, on: req)
+  		guard let paramVal = req.parameters.get(eventIDParam.paramString) else {
+			throw Abort(.badRequest, reason: "Request parameter identifying Event is missing.")
+		}
+		var event: Event?
+		if let paramUUID = UUID(paramVal) {
+			event = try await Event.query(on: req.db).filter(\._$id == paramUUID).first()
+		}
+		if event == nil {
+			event = try await Event.query(on: req.db).filter(\.$uid == paramVal).first()
+		}
+		guard let event = event else {
+			throw Abort(.badRequest, reason: "No event with this UID or database ID found.")
+		}
 		var isFavorite = false
 		if let user = req.auth.get(UserCacheData.self) {
 			isFavorite = try await EventFavorite.query(on: req.db).filter(\.$user.$id == user.userID)
