@@ -230,7 +230,7 @@ struct AlertController: APIRouteCollection {
 	/// 
 	/// **URL Query Parameters**
 	/// 
-	/// - `?inactives=true` Also return expired and deleted announcements. THO and admins only. 
+	/// - `?inactives=true` Also return expired and deleted announcements. TwitarrTeam, THO, and admins only. 
 	/// 		
 	/// The purpose if the inactives flag is to allow for finding an expired announcement and re-activating it by changing its expire time. Remember that doing so
 	/// doesn't re-alert users who have already read it.
@@ -240,7 +240,7 @@ struct AlertController: APIRouteCollection {
 	func getAnnouncements(_ req: Request) async throws -> [AnnouncementData] {
 		let user = req.auth.get(UserCacheData.self)
 		let includeInactives: Bool = req.query[String.self, at: "inactives"] == "true"
-		guard !includeInactives || (user?.accessLevel.hasAccess(.tho) ?? false) else {
+		guard !includeInactives || (user?.accessLevel.hasAccess(.twitarrteam) ?? false) else {
 			throw Abort(.forbidden, reason: "Inactive announcements are THO only")
 		}
 		let query = Announcement.query(on: req.db).sort(\.$id, .descending)
