@@ -394,9 +394,10 @@ struct ForumController: APIRouteCollection {
 	/// 3. The page of thread posts (with `limit` as pagesize) that contains the last post read by the user.
 	/// 4. The first post in the thread.
 	/// 
-	/// Start and Limit do not take blocks and mutes into account, matching the behavior of the totalPosts values. Instead, when asking for e.g. the first 50 posts in a thread,
-	/// you may only receive 46 posts, as 4 posts in that batch were blocked/muted. To continue reading the thread, ask to start with post 50 (not post 47)--you'll receive however
-	/// many posts are viewable by the user in the range 50...99 . Doing it this way makes Forum read counts invariant to blocks--if a user reads a forum, then blocks a user, then
+	/// Start and Limit may not take all of the forum post filters into account, meaning you may receive fewer posts than requested even if your response doesn't include the last post.
+	/// When asking for e.g. the first 50 posts in a thread you may only receive 46 posts, as 4 posts in that batch were filtered out after the database query. 
+	/// To continue reading the thread, ask to start with post 50 (not post 47)--you'll receive however many posts are viewable by the user in the range 50...99 . 
+	/// Doing it this way makes Forum read counts invariant to blocks--if a user reads a forum, then blocks a user, then
 	/// comes back to the forum, they should come back to the same place they were in previously.
 	///
 	/// - Parameter forumID: in URL path
@@ -1221,6 +1222,25 @@ extension ForumController {
 						builder.where("author", .notIn, Array(hideAuthors))
 					}
 				})
+		let readCounts = try await forums.childCountsPerModel(atPath: \.$posts, on: req.db,
+				fluentFilter: { builder in
+					// Deleted_at filter not required as Fluent will automatically filter soft-deleted posts.
+					builder.filter(\.$author.$id !~ user.getBlocks()).filter(\.$author.$id !~ user.getMutes())
+							.join(ForumReaders.self, on: \ForumPost.$forum.$id == \ForumReaders.$forum.$id)
+							.filter(ForumReaders.self, \.$user.$id == user.userID)
+							.filter(\ForumPost.$id < \ForumReaders.$lastPostReadID)
+				},
+				sqlFilter: { builder in
+					builder.join(ForumReaders.schema, on: SQLColumn("forum", table: "forumpost"), .equal,
+							SQLColumn("forum", table: "forum+readers"))
+					builder.where(SQLColumn("user", table: "forum+readers"), .equal, SQLLiteral.string(user.userID.uuidString))
+					builder.where(SQLColumn("deleted_at", table: "forumpost"), .is, SQLLiteral.null)
+					let hideAuthors = user.getBlocks().union(user.getMutes())
+					if !hideAuthors.isEmpty {
+						builder.where(SQLIdentifier(ForumPost().$author.$id.key.description), .notIn, Array(hideAuthors))
+					}
+					builder.where(SQLColumn("id", table: "forumpost"), .lessThanOrEqual, SQLColumn("last_post_read_id", table: "forum+readers"))
+				})
 		let readerPivots = try await ForumReaders.query(on: req.db).filter(\.$user.$id == user.userID).filter(\.$forum.$id ~~ forumIDs).all()
 		let lastPostsDict = try await forumListGetLastPosts(forums, on: req, user: user)
 		
@@ -1237,7 +1257,7 @@ extension ForumController {
 			let thisForumReaderPivot = readerPivotsDict[forumID]
 			let joinedEvent = try? forum.joined(Event.self)
 			return try ForumListData(forum: forum, creator: creatorHeader, postCount: postCounts[forumID] ?? 0,
-					readCount: thisForumReaderPivot?.readCount ?? 0,
+					readCount: readCounts[forumID] ?? 0,
 					lastPostAt: lastPostTime, lastPoster: lastPosterHeader,
 					isFavorite: forceIsFavorite ?? thisForumReaderPivot?.isFavorite ?? false,
 					isMuted: forceIsMuted ?? thisForumReaderPivot?.isMuted ?? false,
@@ -1250,57 +1270,41 @@ extension ForumController {
 	/// to return only a subset of the forums' posts (for forums where postCount > limit).
 	func buildForumData(_ forum: Forum, on req: Request, startPostID: Int? = nil) async throws -> ForumData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		let postCount = try await forum.$posts.query(on: req.db).count()
-		let readerPivot = try await forum.$readers.$pivots.query(on: req.db).filter(\.$user.$id == cacheUser.userID).first()
-		let clampedReadCount = min(readerPivot?.readCount ?? 0, postCount)
+		var readerPivot = try await forum.$readers.$pivots.query(on: req.db).filter(\.$user.$id == cacheUser.userID).first()
 		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 1...Settings.shared.maximumForumPosts)
-
-		//
-		var resolvedStartPostID: Int?
-		var start = 0
-		if let startParam = req.query[Int.self, at: "start"] {
-			start = max(startParam, 0)
-			// Get the 'start' post without filtering blocks and mutes
-			let startPost = try await forum.$posts.query(on: req.db).sort(\.$createdAt, .ascending).range(start...start).first()
-			resolvedStartPostID = try startPost?.requireID()
-		}
-		else if let startPostIDParam = req.query[Int.self, at: "startPost"] {
-			start = try await forum.$posts.query(on: req.db).filter(\.$id < startPostIDParam).count()
-			resolvedStartPostID = startPostIDParam
-		}
-		else if let directStartPostID = startPostID {
-			start = try await forum.$posts.query(on: req.db).filter(\.$id < directStartPostID).count()
-			resolvedStartPostID = directStartPostID
-		}
-		else {
-			start = max((clampedReadCount / limit) * limit, 0)
-			// Get the 'start' post without filtering blocks and mutes
-			let startPost = try await forum.$posts.query(on: req.db).sort(\.$createdAt, .ascending).range(start...start).first()
-			resolvedStartPostID = try startPost?.requireID()
-		}
-		// filter posts
-		var query = forum.$posts.query(on: req.db)
+		let query = forum.$posts.query(on: req.db)
 				.filter(\.$author.$id !~ cacheUser.getBlocks())
 				.filter(\.$author.$id !~ cacheUser.getMutes())
 				.sort(\.$createdAt, .ascending)
-		if let resolvedStartPostID = resolvedStartPostID {
-			query = query.range(0..<limit).filter(\.$id >= resolvedStartPostID)
+		let postCount = try await query.count()
+
+		// Determine the start offset into the posts array.
+		var start = 0
+		if let startParam = req.query[Int.self, at: "start"] {
+			start = max(startParam, 0)
 		}
-		else {
-			query = query.range(start...start + limit)
+		else if let startPostIDParam = req.query[Int.self, at: "startPost"] {
+			start = try await forum.$posts.query(on: req.db).filter(\.$id < startPostIDParam)
+					.filter(\.$author.$id !~ cacheUser.getBlocks()).filter(\.$author.$id !~ cacheUser.getMutes()).count()
 		}
-		let posts = try await query.all()
-		if let pivot = readerPivot {
-			let newReadCount = min(start + limit, postCount)
-			if newReadCount > pivot.readCount || pivot.readCount > postCount {
-				pivot.readCount = newReadCount
+		else if let directStartPostID = startPostID {
+			start = try await forum.$posts.query(on: req.db).filter(\.$id < directStartPostID)
+					.filter(\.$author.$id !~ cacheUser.getBlocks()).filter(\.$author.$id !~ cacheUser.getMutes()).count()
+		}
+		else if let lastReadPost = readerPivot?.lastPostReadID {
+			start = try await forum.$posts.query(on: req.db).filter(\.$id < lastReadPost)
+					.filter(\.$author.$id !~ cacheUser.getBlocks()).filter(\.$author.$id !~ cacheUser.getMutes()).count()
+			start = max((start / limit) * limit, 0)
+		}
+		let posts = try await query.range(start...start + max(limit - 1, 0)).all()
+		if let lastPostID = posts.last?.id {
+			if readerPivot == nil {
+				readerPivot = try ForumReaders(cacheUser.userID, forum)
+			}
+			if let pivot = readerPivot, lastPostID > (pivot.lastPostReadID ?? 0) {
+				pivot.lastPostReadID = lastPostID
 				try await pivot.save(on: req.db)
 			}
-		}
-		else {
-			let newReader = try ForumReaders(cacheUser.userID, forum)
-			newReader.readCount = min(start + limit, postCount)
-			try await newReader.save(on: req.db)
 		}
 		let flattenedPosts = try await buildPostData(posts, userID: cacheUser.userID, on: req, mutewords: cacheUser.mutewords)
 		let creatorHeader = try req.userCache.getHeader(forum.$creator.id)
@@ -1310,7 +1314,6 @@ extension ForumController {
 		if forum.category.isEventCategory {
 			event = try await forum.$scheduleEvent.query(on: req.db).first()
 		}
-
 		return try ForumData(forum: forum, creator: creatorHeader, 
 				isFavorite: readerPivot?.isFavorite ?? false,
 				isMuted: readerPivot?.isMuted ?? false,

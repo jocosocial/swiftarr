@@ -465,11 +465,15 @@ func configureMigrations(_ app: Application) throws {
 	app.migrations.add(CreateKaraokeFavoriteSchema(), to: .psql)
 	app.migrations.add(CreateTimeZoneChangeSchema(), to: .psql)
 
-	// Second-and-a-halfly, updates to the schema since we 
-	// started tracking them (Dec 2022-ish).
+	// Third, *updates* to the schema since we started tracking them (Dec 2022-ish).
+	// These migrations generally mutate schema created in Group 2, and should appear in the order the migrations were added.
 	app.migrations.add(UpdateForumReadersMuteSchema(), to: .psql)
+	app.migrations.add(CreateUserFavoriteSchema(), to: .psql)
+	app.migrations.add(UpdateForumReadersLastPostReadSchema(), to: .psql)
+	
+// At this point the db *schema* should be set, and the rest of these migrations operate on the db's *data*.
 
-	// Third, migrations that seed the db with initial data
+	// Fourth, migrations that seed the db with initial (static) data
 	app.migrations.add(CreateAdminUsers(), to: .psql)
 	app.migrations.add(CreateClientUsers(), to: .psql)
 	app.migrations.add(CreateCategories(), to: .psql)
@@ -479,22 +483,21 @@ func configureMigrations(_ app: Application) throws {
 		app.migrations.add(CreateTestData(), to: .psql)
 	}
 	
-	// Fourth, migrations that import data from /seeds
+	// Fifth, migrations that import data from /seeds
 	app.migrations.add(ImportRegistrationCodes(), to: .psql)
 	app.migrations.add(ImportTimeZoneChanges(), to: .psql)
 	app.migrations.add(ImportEvents(), to: .psql)
 	app.migrations.add(ImportBoardgames(), to: .psql)	
 	app.migrations.add(ImportKaraokeSongs(), to: .psql)	
 	
-	// Fifth, migrations that touch up initial state
+	// Sixth, migrations that touch up initial state
 	app.migrations.add(SetInitialEventForums(), to: .psql)
 	app.migrations.add(SetInitialCategoryForumCounts(), to: .psql)
 	
-	// Sixth, migrations that operate on an already-set-up DB to bring it forward to a newer version 
+	// Seventh, migrations that operate on an already-set-up DB to bring it forward to a newer version 
 	app.migrations.add(CreateSearchIndexes(), to: .psql)
 	app.migrations.add(CreateCategoriesV2(), to: .psql)
 	app.migrations.add(CreatePerformanceIndexes(), to: .psql)
-	app.migrations.add(CreateUserFavoriteSchema(), to: .psql)
 	app.migrations.add(CreateSeamailSearchIndexes(), to: .psql)
 	app.migrations.add(RenameWhereAndWhen(), to: .psql)
 }

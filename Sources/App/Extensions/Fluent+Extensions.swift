@@ -94,12 +94,10 @@ extension Array where Element: Model {
 				columnName = ChildModel()[keyPath: optional.appending(path: \.$id.key)].description
 		}
 		let elementIDArray = try self.map { try $0.requireID() }
-		let query = sql.select().columns(SQLColumn(columnName), SQLFunction("COUNT", args: SQLLiteral.all))
-				.from(ChildModel.schema).where(SQLIdentifier(columnName), .in, elementIDArray)
-				.groupBy(columnName)
-		if let filter = sqlFilter {
-			filter(query)
-		}
+		let query = sql.select().columns(SQLColumn(columnName, table: ChildModel.schema), SQLFunction("COUNT", args: SQLLiteral.all))
+				.from(ChildModel.schema).where(SQLColumn(columnName, table: ChildModel.schema), .in, SQLBind.group(elementIDArray))
+				.groupBy(SQLColumn(columnName, table: ChildModel.schema))
+		sqlFilter?(query)
 		
 		// DEBUG code to show the generated SQL
 //		var s = SQLSerializer(database: sql)

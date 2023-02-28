@@ -122,8 +122,9 @@ struct PaginatorContext: Codable {
 	/// - urlForPage: A closure that takes a page index and returns a relative URL that will load that page.
 	init(start: Int, total: Int, limit: Int, urlForPage: (Int) -> String) {
 		pageURLs = []
-		let currentPage = (start + limit - 1) / limit
-		let totalPages = (start + limit - 1) / limit + (total - start + limit - 1) / limit
+		let localLimit = max(limit, 1)
+		let currentPage = (start + localLimit - 1) / localLimit
+		let totalPages = (start + localLimit - 1) / localLimit + (total - start + localLimit - 1) / localLimit
 		
 		var minPage = max(currentPage - 3, 0)
 		var maxPage = min(minPage + 6, totalPages - 1)

@@ -301,7 +301,6 @@ struct CalendarSessionFixerMiddleware: AsyncMiddleware {
 				let username = user.username.addingPercentEncoding(withAllowedCharacters: CharacterSet.urlPathAllowed) {
 			sessionCookie.path = "/events/subscribe/\(username)"
 			response.cookies["swiftarr_session"] = sessionCookie
-			print(sessionCookie)
 		}
 		return response
     }
