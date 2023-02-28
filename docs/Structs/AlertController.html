@@ -1432,7 +1432,7 @@
     - getting notificaitons on incoming Fez messages.</p>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/AlertController.swift#L18-L359">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/AlertController.swift#L18-L357">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1767,7 +1767,7 @@ messages defined for this socket.</p>
                       <div class="abstract">
                         <p><code>POST /api/v3/announcement/create</code></p>
 
-<p>Create a new announcement. Requires THO access and above. When a new announcement is created the notification endpoints will start 
+<p>Create a new announcement. Requires TwitarrTeam access and above. When a new announcement is created the notification endpoints will start 
 indicating the new announcement to all users.</p>
 
                       </div>
@@ -1831,16 +1831,11 @@ indicating the new announcement to all users.</p>
 <p><strong>URL Query Parameters</strong></p>
 
 <ul>
-<li><code>?inactives=true</code> Also return expired and deleted announcements. THO and admins only.</li>
+<li><code>?inactives=true</code> Also return expired and deleted announcements. TwitarrTeam and above only.</li>
 </ul>
 
-<p>The purpose if the inactives flag is to allow for finding an expired announcement and re-activating it by changing its expire time. Remember that doing so
-doesn&rsquo;t re-alert users who have already read it.</p>
-<div class="aside aside-throws">
-    <p class="aside-title">Throws</p>
-    403 error if the user is not permitted to delete.
-
-</div>
+<p>The purpose of the inactives flag is to allow for finding an expired announcement and re-activating it by changing its expire time. Doing so
+does not re-alert users who have already read it.</p>
 
                       </div>
                       <div class="declaration">
@@ -1856,7 +1851,7 @@ doesn&rsquo;t re-alert users who have already read it.</p>
                         <p>Array of <a href="doc:AnnouncementData">doc:AnnouncementData</a></p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/AlertController.swift#L240-L265">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/AlertController.swift#L239-L263">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1879,14 +1874,14 @@ doesn&rsquo;t re-alert users who have already read it.</p>
                       <div class="abstract">
                         <p><code>GET /api/v3/notification/announcement/ID</code></p>
 
-<p>Returns a single announcement, identified by its ID. THO and admins only. Others should just use <code>/api/v3/notification/announcements</code>.
+<p>Returns a single announcement, identified by its ID. TwitarrTeam and above only. Others should just use <code>/api/v3/notification/announcements</code>.
 Will return AnnouncementData for deleted announcements.</p>
 
 <p>Announcements shouldn&rsquo;t be large, and there shouldn&rsquo;t be many of them active at once (Less than 1KB each, if there&rsquo;s more than 5 active 
 at once people likely won&rsquo;t read them). This endpoint really exists to support admins editing announcements.</p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
-    403 error if the user doesn&rsquo;t have THO-level access. 404 if no announcement with the given ID is found.
+    403 error if the user doesn&rsquo;t have TwitarrTeam or higher access. 404 if no announcement with the given ID is found.
 
 </div>
 
@@ -1923,7 +1918,7 @@ at once people likely won&rsquo;t read them). This endpoint really exists to sup
                         <p><a href="doc:AnnouncementData">doc:AnnouncementData</a></p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/AlertController.swift#L278-L292">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/AlertController.swift#L276-L290">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1950,7 +1945,7 @@ at once people likely won&rsquo;t read them). This endpoint really exists to sup
 announcement: if a user has seen the announcement already, editing it will not cause the user to be notified that they should read it again.</p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
-    403 error if the user is not permitted to delete.
+    403 error if the user is not permitted to edit.
 
 </div>
 
@@ -1999,7 +1994,7 @@ announcement: if a user has seen the announcement already, editing it will not c
                         <p>The updated <a href="doc:AnnouncementCreateData">doc:AnnouncementCreateData</a></p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/AlertController.swift#L303-L324">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/AlertController.swift#L301-L322">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2023,7 +2018,7 @@ announcement: if a user has seen the announcement already, editing it will not c
                         <p><code>POST /api/v3/notification/announcement/ID/delete</code>
 <code>DELETE /api/v3/notification/announcement/ID</code></p>
 
-<p>Deletes an existing announcement. Editing a deleted announcement will un-delete it.</p>
+<p>Deletes an existing announcement. Editing a deleted announcement will un-delete it TwitarrTeam and above only.</p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
     403 error if the user is not permitted to delete.
@@ -2063,7 +2058,7 @@ announcement: if a user has seen the announcement already, editing it will not c
                         <p>204 NoContent on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/AlertController.swift#L334-L345">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/AlertController.swift#L332-L343">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2120,7 +2115,7 @@ announcement: if a user has seen the announcement already, editing it will not c
                         <p>An array of <a href="doc:DailyThemeData">doc:DailyThemeData</a> on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/AlertController.swift#L355-L358">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/AlertController.swift#L353-L356">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
