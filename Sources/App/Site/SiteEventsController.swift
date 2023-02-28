@@ -245,7 +245,7 @@ struct SiteEventsController: SiteControllerUtils {
 		var resultICSString = """
 				BEGIN:VCALENDAR
 				VERSION:2.0
-				X-WR-CALNAME:JoCo Cruise 2023: \(username)
+				X-WR-CALNAME:JoCo Cruise \(cruiseYear): \(username)
 				X-WR-CALDESC:Event Calendar
 				METHOD:PUBLISH
 				CALSCALE:GREGORIAN
