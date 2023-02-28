@@ -239,11 +239,9 @@ struct AlertController: APIRouteCollection {
 	/// - Returns: Array of <doc:AnnouncementData>
 	func getAnnouncements(_ req: Request) async throws -> [AnnouncementData] {
 		let user = req.auth.get(UserCacheData.self)
-		var includeInactives: Bool = req.query[String.self, at: "inactives"] == "true"
 		// Prevent users with access levels below THO from loading inactive annoucnements
-		if !(user?.accessLevel.hasAccess(.tho) ?? false) {
-			includeInactives = false
-		}
+		let includeInactives: Bool = (user?.accessLevel.hasAccess(.tho) ?? false) && req.query[String.self, at: "inactives"] == "true";
+
 		let query = Announcement.query(on: req.db).sort(\.$id, .descending)
 		if includeInactives {
 			query.withDeleted()
