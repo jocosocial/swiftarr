@@ -13,8 +13,8 @@ final class ForumReaders: Model {
 	/// The ID of the pivot.
 	@ID(key: .id) var id: UUID?
 	
-	/// How many posts in this forum that this user has read.
-	@Field(key: "read_count") var readCount: Int
+	/// The highest postID that the user has read in the forum..
+	@Field(key: "last_post_read_id") var lastPostReadID: Int?
 	
 	/// TRUE if this forum is favorited by this user.
 	@Field(key: "favorite") var isFavorite: Bool
@@ -54,7 +54,7 @@ final class ForumReaders: Model {
 		self.$user.id = userID
 		self.$forum.id = try forum.requireID()
 		self.$forum.value = forum
-		self.readCount = 0
+		self.lastPostReadID = nil
 		self.isFavorite = false
 		self.isMuted = nil
 	}
@@ -92,6 +92,22 @@ struct UpdateForumReadersMuteSchema: AsyncMigration {
 	func revert(on database: Database) async throws {
 		try await database.schema("forum+readers")
 			.deleteField("mute")
+			.update()
+	}
+}
+
+struct UpdateForumReadersLastPostReadSchema: AsyncMigration {
+	func prepare(on database: Database) async throws {
+		try await database.schema("forum+readers")
+			.deleteField("read_count")
+			.field("last_post_read_id", .int)
+			.update()
+	}
+
+	func revert(on database: Database) async throws {
+		try await database.schema("forum+readers")
+			.deleteField("last_post_read_id")
+			.field("read_count", .int, .required)
 			.update()
 	}
 }
