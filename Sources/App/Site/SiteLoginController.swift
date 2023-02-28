@@ -357,7 +357,7 @@ struct SiteLoginController: SiteControllerUtils {
 	// make a new Authenticatable type (WebUser?) that isn't database-backed and is stored in the Session, and
 	// then the web client can Auth on that type instead of User. But, I want to be sure we *really* don't need 
 	// User before embarking on this.
-	func loginUser(with tokenResponse: TokenStringData, on req: Request) async throws {
+	func loginUser(with tokenResponse: TokenStringData, on req: Request, defaultDeviceType: String = "unknown device") async throws {
 		guard let user = req.userCache.getUser(tokenResponse.userID) else {
 			throw Abort(.unauthorized, reason: "User not found")
 		}
@@ -366,7 +366,7 @@ struct SiteLoginController: SiteControllerUtils {
 		req.session.data["token"] = tokenResponse.token
 		req.session.data["accessLevel"] = tokenResponse.accessLevel.rawValue
 		
-		var deviceType = "unknown device"
+		var deviceType = defaultDeviceType
 		if let userAgent = req.headers.first(name: "User-Agent") {
 			if let openParen = userAgent.firstIndex(of: "("), let semicolon = userAgent.firstIndex(of: ";"), semicolon > openParen {
 				let afterParen = userAgent.index(after: openParen)
