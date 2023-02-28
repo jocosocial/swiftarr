@@ -1339,6 +1339,9 @@
                 <a class="nav-group-task-link" href="../Structs/UTCTimeTag.html">UTCTimeTag</a>
               </li>
               <li class="nav-group-task">
+                <a class="nav-group-task-link" href="../Structs/UpdateForumReadersLastPostReadSchema.html">UpdateForumReadersLastPostReadSchema</a>
+              </li>
+              <li class="nav-group-task">
                 <a class="nav-group-task-link" href="../Structs/UpdateForumReadersMuteSchema.html">UpdateForumReadersMuteSchema</a>
               </li>
               <li class="nav-group-task">
@@ -1429,7 +1432,7 @@
 to forums.</p>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L9-L1118">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L9-L1119">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1924,9 +1927,10 @@ or containing user&rsquo;s muteWords, is not returned. Posts are always sorted b
 <li>The first post in the thread.</li>
 </ol>
 
-<p>Start and Limit do not take blocks and mutes into account, matching the behavior of the totalPosts values. Instead, when asking for e.g. the first 50 posts in a thread,
-you may only receive 46 posts, as 4 posts in that batch were blocked/muted. To continue reading the thread, ask to start with post 50 (not post 47)&ndash;you&rsquo;ll receive however
-many posts are viewable by the user in the range 50&hellip;99 . Doing it this way makes Forum read counts invariant to blocks&ndash;if a user reads a forum, then blocks a user, then
+<p>Start and Limit may not take all of the forum post filters into account, meaning you may receive fewer posts than requested even if your response doesn&rsquo;t include the last post.
+When asking for e.g. the first 50 posts in a thread you may only receive 46 posts, as 4 posts in that batch were filtered out after the database query. 
+To continue reading the thread, ask to start with post 50 (not post 47)&ndash;you&rsquo;ll receive however many posts are viewable by the user in the range 50&hellip;99 . 
+Doing it this way makes Forum read counts invariant to blocks&ndash;if a user reads a forum, then blocks a user, then
 comes back to the forum, they should come back to the same place they were in previously.</p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
@@ -1967,7 +1971,7 @@ comes back to the forum, they should come back to the same place they were in pr
                         <p><a href="doc:ForumData">doc:ForumData</a> containing the forum&rsquo;s metadata and posts.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L405-L412">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L406-L413">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2046,7 +2050,7 @@ comes back to the forum, they should come back to the same place they were in pr
                         <p><a href="doc:ForumData">doc:ForumData</a> containing the post&rsquo;s parent forum.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L434-L446">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L435-L447">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2116,7 +2120,7 @@ blocked or muted users, or containing user&rsquo;s muteWords, is not returned.</
                         <p><a href="doc:ForumData">doc:ForumData</a> containing the forum&rsquo;s metadata and all posts.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L460-L472">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L461-L473">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2179,7 +2183,7 @@ blocked or muted users, or containing user&rsquo;s muteWords, is not returned.</
                         <p><a href="doc:PostDetailData">doc:PostDetailData</a> containing the specified post.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L481-L517">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L482-L518">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2246,7 +2250,7 @@ and <code>mentionself</code> are mutually exclusive parameters.</p>
                         <p><a href="doc:PostSearchData">doc:PostSearchData</a> containing the search results..</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L544-L633">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L545-L634">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2322,7 +2326,7 @@ and <code>mentionself</code> are mutually exclusive parameters.</p>
                         <p>201 Created on success; 200 OK if already bookmarked.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L644-L657">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L645-L658">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2386,7 +2390,7 @@ and <code>mentionself</code> are mutually exclusive parameters.</p>
                         <p>204 NoContent on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L667-L679">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L668-L680">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2444,7 +2448,7 @@ and <code>mentionself</code> are mutually exclusive parameters.</p>
                         <p>201 Created on success; 200 OK if already favorited.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L687-L703">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L688-L704">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2508,7 +2512,7 @@ and <code>mentionself</code> are mutually exclusive parameters.</p>
                         <p>204 No Content on success; 200 OK if already not favorited.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L713-L725">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L714-L726">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2566,7 +2570,7 @@ and <code>mentionself</code> are mutually exclusive parameters.</p>
                         <p>201 Created on success; 200 OK if already muted.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L733-L749">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L734-L750">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2629,7 +2633,7 @@ and <code>mentionself</code> are mutually exclusive parameters.</p>
                         <p>204 No Content on success; 200 OK if already not muted.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L758-L770">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L759-L771">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2709,7 +2713,7 @@ the newly created forum. Creating a forum in a category requires a <code>userAcc
                         <p><a href="doc:ForumData">doc:ForumData</a> containing the new forum&rsquo;s contents.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L783-L815">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L784-L816">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2785,7 +2789,7 @@ if the forum ID is not valid.
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L826-L843">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L827-L844">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2864,7 +2868,7 @@ send an empty string in the <code>.message</code> field.</p>
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L858-L865">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L859-L866">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2932,7 +2936,7 @@ This means a regular user cannot delete a forum they created themselves.</p>
                         <p>204 No Content on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L879-L899">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L880-L900">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3010,7 +3014,7 @@ This behavior sets the sort order for forums in a category when using the <code>
                         <p><a href="doc:PostData">doc:PostData</a> containing the post&rsquo;s contents and metadata.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L912-L941">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L913-L942">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3076,7 +3080,7 @@ This behavior sets the sort order for forums in a category when using the <code>
                         <p>204 No Content on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L953-L966">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L954-L967">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3145,7 +3149,7 @@ send an empty string in the <code>.message</code> field.</p>
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L979-L989">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L980-L990">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3209,7 +3213,7 @@ reaction by the user, it is replaced.</p>
                         <p><a href="doc:PostData">doc:PostData</a> containing the updated like info.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L999-L1001">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1000-L1002">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3273,7 +3277,7 @@ reaction by the user, it is replaced.</p>
                         <p><a href="doc:PostData">doc:PostData</a> containing the updated like info.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1011-L1013">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1012-L1014">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3337,7 +3341,7 @@ reaction by the user, it is replaced.</p>
                         <p><a href="doc:PostData">doc:PostData</a> containing the updated like info.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1023-L1025">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1024-L1026">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3369,7 +3373,7 @@ reaction by the user, it is replaced.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1027-L1045">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1028-L1046">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3435,7 +3439,7 @@ reaction by the user, it is replaced.</p>
                         <p><a href="doc:PostData">doc:PostData</a> containing the updated like info.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1057-L1076">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1058-L1077">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3510,7 +3514,7 @@ reaction by the user, it is replaced.</p>
                         <p><a href="doc:PostData">doc:PostData</a> containing the post&rsquo;s contents and metadata.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1086-L1117">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1087-L1118">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3540,7 +3544,7 @@ reaction by the user, it is replaced.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1124-L1134">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1125-L1135">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3570,7 +3574,7 @@ reaction by the user, it is replaced.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1137-L1146">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1138-L1147">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3607,7 +3611,7 @@ uses SQLKit to make a more complicated query, returning answers for all forums i
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1153-L1199">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1154-L1200">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3642,7 +3646,7 @@ uses SQLKit to make a more complicated query, returning answers for all forums i
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1209-L1247">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1210-L1267">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3676,7 +3680,7 @@ to return only a subset of the forums&rsquo; posts (for forums where postCount &
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1251-L1318">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1271-L1321">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3709,7 +3713,7 @@ to return only a subset of the forums&rsquo; posts (for forums where postCount &
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1324-L1355">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1327-L1358">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3741,7 +3745,7 @@ to return only a subset of the forums&rsquo; posts (for forums where postCount &
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1359-L1430">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1362-L1433">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3773,7 +3777,7 @@ to return only a subset of the forums&rsquo; posts (for forums where postCount &
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1434-L1453">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1437-L1456">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

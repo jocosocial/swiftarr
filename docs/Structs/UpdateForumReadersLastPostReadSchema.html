@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>FezPostData Structure Reference</title>
+    <title>UpdateForumReadersLastPostReadSchema Structure Reference</title>
     <link rel="stylesheet" type="text/css" href="../css/jazzy.css" />
     <link rel="stylesheet" type="text/css" href="../css/highlight.css" />
     <meta charset="utf-8">
@@ -14,9 +14,9 @@
   </head>
   <body>
 
-    <a name="//apple_ref/swift/Struct/FezPostData" class="dashAnchor"></a>
+    <a name="//apple_ref/swift/Struct/UpdateForumReadersLastPostReadSchema" class="dashAnchor"></a>
 
-    <a title="FezPostData Structure Reference"></a>
+    <a title="UpdateForumReadersLastPostReadSchema Structure Reference"></a>
 
     <header class="header">
       <p class="header-col header-col--primary">
@@ -44,7 +44,7 @@
     <p class="breadcrumbs">
       <a class="breadcrumb" href="../index.html">Swiftarr Reference</a>
       <img class="carat" src="../img/carat.png" alt=""/>
-      FezPostData Structure Reference
+      UpdateForumReadersLastPostReadSchema Structure Reference
     </p>
 
     <div class="content-wrapper">
@@ -1420,29 +1420,17 @@
 
         <section class="section">
           <div class="section-content top-matter">
-            <h1>FezPostData</h1>
+            <h1>UpdateForumReadersLastPostReadSchema</h1>
               <div class="declaration">
                 <div class="language">
                   
-                  <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">FezPostData</span> <span class="p">:</span> <span class="kt">Content</span></code></pre>
+                  <pre class="highlight swift"><code><span class="kd">struct</span> <span class="kt">UpdateForumReadersLastPostReadSchema</span> <span class="p">:</span> <span class="kt">AsyncMigration</span></code></pre>
 
                 </div>
               </div>
-            <p>Used to return a <code><a href="../Classes/FezPost.html">FezPost</a></code>&lsquo;s data.</p>
-
-<p>Returned by:</p>
-
-<ul>
-<li><code>GET /api/v3/fez/ID</code></li>
-<li><code>POST /api/v3/fez/ID/post</code></li>
-<li><code>POST /api/v3/fez/ID/post/ID/delete</code></li>
-</ul>
-
-<p>See: <code><a href="../Structs/FezController.html#/s:3App13FezControllerV10fezHandleryAA0B4DataV5Vapor7RequestCYaKF">FezController.fezHandler(_:)</a></code>, <code>FezController.postAddHandler(_:data:)</code>,
-<code><a href="../Structs/FezController.html#/s:3App13FezControllerV17postDeleteHandlery8NIOHTTP118HTTPResponseStatusO5Vapor7RequestCYaKF">FezController.postDeleteHandler(_:)</a></code>.</p>
-
+            
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L535-L546">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Pivots/ForumReaders.swift#L99-L113">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1454,160 +1442,13 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:3App11FezPostDataV6postIDSivp"></a>
-                    <a name="//apple_ref/swift/Property/postID" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App11FezPostDataV6postIDSivp">postID</a>
+                    <a name="/s:3App36UpdateForumReadersLastPostReadSchemaV7prepare2ony9FluentKit8Database_p_tYaKF"></a>
+                    <a name="//apple_ref/swift/Method/prepare(on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App36UpdateForumReadersLastPostReadSchemaV7prepare2ony9FluentKit8Database_p_tYaKF">prepare(on:<wbr>)</a>
                     </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>The ID of the fez post.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">postID</span><span class="p">:</span> <span class="kt">Int</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L537">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App11FezPostDataV6authorAA10UserHeaderVvp"></a>
-                    <a name="//apple_ref/swift/Property/author" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App11FezPostDataV6authorAA10UserHeaderVvp">author</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>The fez post&rsquo;s author.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">author</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserHeader.html">UserHeader</a></span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L539">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App11FezPostDataV4textSSvp"></a>
-                    <a name="//apple_ref/swift/Property/text" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App11FezPostDataV4textSSvp">text</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>The text content of the fez post.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">text</span><span class="p">:</span> <span class="kt">String</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L541">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App11FezPostDataV9timestamp10Foundation4DateVvp"></a>
-                    <a name="//apple_ref/swift/Property/timestamp" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App11FezPostDataV9timestamp10Foundation4DateVvp">timestamp</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>The time the post was submitted.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">timestamp</span><span class="p">:</span> <span class="kt">Date</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L543">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App11FezPostDataV5imageSSSgvp"></a>
-                    <a name="//apple_ref/swift/Property/image" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App11FezPostDataV5imageSSSgvp">image</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>The image content of the fez post.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">var</span> <span class="nv">image</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span></code></pre>
-
-                        </div>
-                      </div>
-                      <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L545">Show on GitHub</a>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:3App11FezPostDataV4post6author18overrideQuarantineAcA0bC0C_AA10UserHeaderVSbtKcfc"></a>
-                    <a name="//apple_ref/swift/Method/init(post:author:overrideQuarantine:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:3App11FezPostDataV4post6author18overrideQuarantineAcA0bC0C_AA10UserHeaderVSbtKcfc">init(post:<wbr>author:<wbr>overrideQuarantine:<wbr>)</a>
-                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
                   </div>
                   <div class="height-container">
                     <div class="pointer-container"></div>
@@ -1620,12 +1461,44 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="nf">init</span><span class="p">(</span><span class="nv">post</span><span class="p">:</span> <span class="kt"><a href="../Classes/FezPost.html">FezPost</a></span><span class="p">,</span> <span class="nv">author</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserHeader.html">UserHeader</a></span><span class="p">,</span> <span class="nv">overrideQuarantine</span><span class="p">:</span> <span class="kt">Bool</span> <span class="o">=</span> <span class="kc">false</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">prepare</span><span class="p">(</span><span class="n">on</span> <span class="nv">database</span><span class="p">:</span> <span class="kt">Database</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L549-L558">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Pivots/ForumReaders.swift#L100-L105">Show on GitHub</a>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:3App36UpdateForumReadersLastPostReadSchemaV6revert2ony9FluentKit8Database_p_tYaKF"></a>
+                    <a name="//apple_ref/swift/Method/revert(on:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:3App36UpdateForumReadersLastPostReadSchemaV6revert2ony9FluentKit8Database_p_tYaKF">revert(on:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">revert</span><span class="p">(</span><span class="n">on</span> <span class="nv">database</span><span class="p">:</span> <span class="kt">Database</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                      <div class="slightly-smaller">
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Pivots/ForumReaders.swift#L107-L112">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
