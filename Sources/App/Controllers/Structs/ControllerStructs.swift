@@ -1028,11 +1028,12 @@ extension PostData {
 public struct PostSearchData: Content {
 	/// The search query used to create these results. 
 	var queryString: String
-	/// The total number of posts in the result set.
+	/// The total number of posts in the result set. The actual # of results returned may be fewer than this, even if we return 'complete' results. This is due to additional filtering that
+	/// is done after the database query. See notes on `ContentFilterable.filterForMention(of:)`
 	var totalPosts: Int
-	/// The index number of the first post in the `posts` array. 0 is the index of the first post in the forum. This number is usually  a multiple of `limit` and indicates the page of results.
+	/// The index into totalPosts of the first post in the `posts` array. 0 is the index of the first result. This number is usually  a multiple of `limit` and indicates the page of results.
 	var start: Int
-	/// The number of posts the server attempted to gather. posts.count may be less than this number if posts were filtered out by blocks/mutes, or if start + limit > totalPosts.
+	/// The number of posts the server attempted to gather. posts.count may be less than this number if posts were filtered out by post-query filtering, or if start + limit > totalPosts.
 	var limit: Int
 	/// The posts in the forum.
 	var posts: [PostData]

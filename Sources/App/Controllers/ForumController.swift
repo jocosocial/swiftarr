@@ -617,8 +617,10 @@ struct ForumController: APIRouteCollection {
 			query.filter(\.$author.$id == cacheUser.userID)
 		}
 		
-		let constQuery = query
-		async let posts = constQuery.range(start..<(start + limit)).all()
+		let countQuery = query.copy()
+		let rangeQuery = query.copy()
+		async let totalPostsFound = try countQuery.count()
+		async let posts = rangeQuery.range(start..<(start + limit)).all()
 		// The filter() for mentions will include usernames that are prefixes for other usernames and other false positives.
 		// This filters those out after the query. 
 		var postFilteredPosts = try await posts
@@ -628,9 +630,8 @@ struct ForumController: APIRouteCollection {
 				try await markNotificationViewed(user: cacheUser, type: .forumMention(0), on: req)
 			}
 		}
-		let totalPosts = postFilteredPosts.count
 		let postData = try await buildPostData(postFilteredPosts, userID: cacheUser.userID, on: req, mutewords: cacheUser.mutewords)
-		return PostSearchData(queryString: req.url.query ?? "", totalPosts: totalPosts, start: start, limit: limit, posts: postData)
+		return try await PostSearchData(queryString: req.url.query ?? "", totalPosts: totalPostsFound, start: start, limit: limit, posts: postData)
 	}
 	
 	// MARK: POST and DELETE actions
