@@ -225,6 +225,24 @@ struct SiteForumController: SiteControllerUtils {
 		globalRoutes.get("forum", forumIDParam, use: forumThreadPageHandler)
 		globalRoutes.get("forum", "containingpost", postIDParam, use: forumThreadFromPostPageHandler)
 
+		// Routes for non-shareable GET requests. We don't allow token auth, but do allow login redirects.
+		let semiPrivateRoutes = getSemiPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .forums))
+		semiPrivateRoutes.get("forums", categoryIDParam, "createForum", use: forumCreateViewHandler)
+		semiPrivateRoutes.get("forum", forumIDParam, "edit", use: forumEditViewHandler)
+		semiPrivateRoutes.get("forum", "report", forumIDParam, use: forumReportPageHandler)
+		semiPrivateRoutes.get("forum", "search", use: forumSearchPageHandler)
+		semiPrivateRoutes.get("forum", "favorites", use: forumFavoritesPageHandler)
+		semiPrivateRoutes.get("forum", "mutes", use: forumMutesPageHandler)
+		semiPrivateRoutes.get("forum", "owned", use: forumsByUserPageHandler)
+		semiPrivateRoutes.get("forum", "recent", use: forumRecentsPageHandler)
+		semiPrivateRoutes.get("forumpost", "edit", postIDParam, use: forumPostEditPageHandler)
+		semiPrivateRoutes.get("forumpost", "report", postIDParam, use: forumPostReportPageHandler)
+		semiPrivateRoutes.get("forumpost", postIDParam, "details", use: forumGetPostDetails)
+		semiPrivateRoutes.get("forumpost", "mentions", use: userMentionsViewHandler)
+		semiPrivateRoutes.get("forumpost", "favorite", use: favoritePostsViewHandler)
+		semiPrivateRoutes.get("forumpost", "owned", use: forumPostsByUserViewHandler)
+		semiPrivateRoutes.get("forumpost", "search", use: forumPostSearchPageHandler)
+
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let privateRoutes = getPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .forums))
 		privateRoutes.post("forumpost", postIDParam, "like", use: forumPostLikeActionHandler)
@@ -235,39 +253,24 @@ struct SiteForumController: SiteControllerUtils {
 		privateRoutes.delete("forumpost", postIDParam, "laugh", use: forumPostUnreactActionHandler)
 		privateRoutes.delete("forumpost", postIDParam, "love", use: forumPostUnreactActionHandler)
 
-		privateRoutes.get("forums", categoryIDParam, "createForum", use: forumCreateViewHandler)
 		privateRoutes.post("forums", categoryIDParam, "createForum", use: forumCreateForumPostHandler)
 
 		privateRoutes.post("forum", forumIDParam, "create", use: forumPostPostHandler)
-		privateRoutes.get("forum", forumIDParam, "edit", use: forumEditViewHandler)
 		privateRoutes.post("forum", forumIDParam, "edit", use: forumEditTitlePostHandler)
 		privateRoutes.post("forum", forumIDParam, "delete", use: forumDeleteHandler)
 		
-		privateRoutes.get("forum", "report", forumIDParam, use: forumReportPageHandler)
 		privateRoutes.post("forum", "report", forumIDParam, use: forumReportPostHandler)
 		
-		privateRoutes.get("forum", "search", use: forumSearchPageHandler)
-		privateRoutes.get("forum", "favorites", use: forumFavoritesPageHandler)
 		privateRoutes.post("forum", "favorite", forumIDParam, use: forumAddFavoritePostHandler)
 		privateRoutes.delete("forum", "favorite", forumIDParam, use: forumRemoveFavoritePostHandler)
-		privateRoutes.get("forum", "mutes", use: forumMutesPageHandler)
 		privateRoutes.post("forum", "mute", forumIDParam, use: forumAddMutePostHandler)
 		privateRoutes.delete("forum", "mute", forumIDParam, use: forumRemoveMutePostHandler)
-		privateRoutes.get("forum", "owned", use: forumsByUserPageHandler)
-		privateRoutes.get("forum", "recent", use: forumRecentsPageHandler)
 
-		privateRoutes.get("forumpost", "edit", postIDParam, use: forumPostEditPageHandler)
 		privateRoutes.post("forumpost", "edit", postIDParam, use: forumPostEditPostHandler)
 		privateRoutes.post("forumpost", postIDParam, "delete", use: forumPostDeleteHandler)
-		privateRoutes.get("forumpost", "report", postIDParam, use: forumPostReportPageHandler)
 		privateRoutes.post("forumpost", "report", postIDParam, use: forumPostReportPostHandler)
-		privateRoutes.get("forumpost", postIDParam, "details", use: forumGetPostDetails)
-		privateRoutes.get("forumpost", "mentions", use: userMentionsViewHandler)
-		privateRoutes.get("forumpost", "favorite", use: favoritePostsViewHandler)
-		privateRoutes.get("forumpost", "owned", use: forumPostsByUserViewHandler)
 		privateRoutes.post("forumpost", "favorite", postIDParam, use: forumPostAddBookmarkPostHandler)
 		privateRoutes.delete("forumpost", "favorite", postIDParam, use: forumPostRemoveBookmarkPostHandler)
-		privateRoutes.get("forumpost", "search", use: forumPostSearchPageHandler)
 	}
 
 // Note: These groupings are roughly based on what type of URL parameters each method takes to identify its target:
