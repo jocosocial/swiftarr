@@ -38,7 +38,7 @@ struct SiteModController: SiteControllerUtils {
 		// redirect-chained through /login and back.	
 		//
 		// In this case, modRoutes are still Moderator-only. But, one mod could send another a link to one of these pages and it'd work.	
-		let modRoutes = getGlobalRoutes(app).grouped(SiteRequireModeratorMiddleware())
+		let modRoutes = getSemiPrivateRoutes(app).grouped(SiteRequireModeratorMiddleware())
 		modRoutes.get("moderator", use: moderatorRootPageHandler)
 		modRoutes.get("reports", use: reportsPageHandler)
 		modRoutes.get("reports", "closed", use: closedReportsPageHandler)
