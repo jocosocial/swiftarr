@@ -20,13 +20,17 @@ struct SiteSeamailController: SiteControllerUtils {
 		let globalRoutes = getGlobalRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .seamail))
 		globalRoutes.get("seamail", use: seamailRootPageHandler)
 
+		// Routes for non-shareable GET requests. We don't allow token auth, but do allow login redirects.
+		let semiPrivateRoutes = getSemiPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .seamail))
+		semiPrivateRoutes.get("seamail", "search", use: seamailSearchHandler)
+		semiPrivateRoutes.get("seamail", "create", use: seamailCreatePageHandler)
+		semiPrivateRoutes.get("seamail", "usernames", "search", ":searchString", use: seamailUsernameAutocompleteHandler)
+		semiPrivateRoutes.get("seamail", fezIDParam, use: seamailViewPageHandler)
+
+
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let privateRoutes = getPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .seamail))
-		privateRoutes.get("seamail", "search", use: seamailSearchHandler)
-		privateRoutes.get("seamail", "create", use: seamailCreatePageHandler)
-		privateRoutes.get("seamail", "usernames", "search", ":searchString", use: seamailUsernameAutocompleteHandler)
 		privateRoutes.post("seamail", "create", use: seamailCreatePostHandler)
-		privateRoutes.get("seamail", fezIDParam, use: seamailViewPageHandler)
 		privateRoutes.post("seamail", fezIDParam, use: seamailViewPageHandler)
 		privateRoutes.post("seamail", fezIDParam, "post", use: seamailThreadPostHandler)
 		privateRoutes.webSocket("seamail", fezIDParam, "socket", shouldUpgrade: shouldCreateMsgSocket, onUpgrade: createMsgSocket) 
