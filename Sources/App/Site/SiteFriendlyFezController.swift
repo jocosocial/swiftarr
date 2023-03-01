@@ -137,8 +137,9 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 			var fezList: FezListData
 			var paginator: PaginatorContext
 			var tab: FezTab
-			var typeSelection: String
+			var typeSelection: String?
 			var daySelection: Int?
+			var hidePastSelection: Bool?
 			
 			init(_ req: Request, fezList: FezListData) throws {
 				trunk = .init(req, title: "Looking For Group", tab: .lfg)
@@ -146,6 +147,8 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 				tab = .find
 				typeSelection = req.query[String.self, at: "type"] ?? "all"
 				daySelection = req.query[Int.self, at: "cruiseday"]
+				let hidePastQuery = req.query[String.self, at: "hidePast"]
+				hidePastSelection = hidePastQuery == nil ? nil : hidePastQuery?.lowercased() == "true"
 				let limit = fezList.paginator.limit
 				paginator = .init(fezList.paginator) { pageIndex in
 					"/fez?start=\(pageIndex * limit)&limit=\(limit)"
@@ -184,11 +187,18 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 			var fezList: FezListData
 			var paginator: PaginatorContext
 			var tab: FezTab
+			var typeSelection: String?
+			var daySelection: Int?
+			var hidePastSelection: Bool?
 			
 			init(_ req: Request, fezList: FezListData) throws {
 				trunk = .init(req, title: "LFG Joined Groups", tab: .lfg)
 				self.fezList = fezList
 				tab = .joined
+				typeSelection = req.query[String.self, at: "type"] ?? "all"
+				daySelection = req.query[Int.self, at: "cruiseday"]
+				let hidePastQuery = req.query[String.self, at: "hidePast"]
+				hidePastSelection = hidePastQuery == nil ? nil : hidePastQuery?.lowercased() == "true"
 				let limit = fezList.paginator.limit
 				paginator = .init(fezList.paginator) { pageIndex in
 					"/fez/joined?start=\(pageIndex * limit)&limit=\(limit)"
@@ -210,11 +220,18 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 			var fezList: FezListData
 			var paginator: PaginatorContext
 			var tab: FezTab
+			var typeSelection: String?
+			var daySelection: Int?
+			var hidePastSelection: Bool?
 			
 			init(_ req: Request, fezList: FezListData) throws {
 				trunk = .init(req, title: "LFGs Created By You", tab: .lfg)
 				self.fezList = fezList
 				tab = .owned
+				typeSelection = req.query[String.self, at: "type"] ?? "all"
+				daySelection = req.query[Int.self, at: "cruiseday"]
+				let hidePastQuery = req.query[String.self, at: "hidePast"]
+				hidePastSelection = hidePastQuery == nil ? nil : hidePastQuery?.lowercased() == "true"
 				let limit = fezList.paginator.limit
 				paginator = .init(fezList.paginator) { pageIndex in
 					"/fez/joined?start=\(pageIndex * limit)&limit=\(limit)"

@@ -115,7 +115,7 @@ final class FriendlyFez: Model, Searchable  {
 		startTime: Date?,
 		endTime: Date?,
 		minCapacity: Int = 0,
-		maxCapacity: Int
+		maxCapacity: Int = 0
 	) {
 		self.$owner.id = owner
 		self.fezType = fezType
