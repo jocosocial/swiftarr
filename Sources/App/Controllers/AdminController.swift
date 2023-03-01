@@ -458,6 +458,12 @@ struct AdminController: APIRouteCollection {
 					}
 				}
 			}
+			// Update the cached counts of how many forums are in each category
+			let categories = try await Category.query(on: database).with(\.$forums).all()
+			for cat in categories {
+				cat.forumCount = Int32(cat.forums.count)
+				try await cat.save(on: database)
+			}
 		}
 		// End database transaction
 		return .ok	
