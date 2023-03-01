@@ -170,9 +170,15 @@ struct SiteTwitarrController: SiteControllerUtils {
 		globalRoutes.get("tweets", use: tweetsPageHandler)
 		globalRoutes.get("tweets", twarrtIDParam, use: tweetReplyPageHandler)
 
+		// Routes for non-shareable GET requests. We don't allow token auth, but do allow login redirects.
+		let semiPrivateRoutes = getSemiPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .tweets))
+		semiPrivateRoutes.get("tweets", twarrtIDParam, "details", use: tweetGetDetailHandler)
+		semiPrivateRoutes.get("tweets", "edit", twarrtIDParam, use: tweetEditPageHandler)
+		semiPrivateRoutes.get("tweets", "report", twarrtIDParam, use: tweetReportPageHandler)
+
+
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let privateRoutes = getPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .tweets))
-		privateRoutes.get("tweets", twarrtIDParam, "details", use: tweetGetDetailHandler)
 		privateRoutes.post("tweets", twarrtIDParam, "like", use: tweetLikeActionHandler)
 		privateRoutes.post("tweets", twarrtIDParam, "laugh", use: tweetLaughActionHandler)
 		privateRoutes.post("tweets", twarrtIDParam, "love", use: tweetLoveActionHandler)
@@ -183,12 +189,10 @@ struct SiteTwitarrController: SiteControllerUtils {
 		privateRoutes.post("tweets", twarrtIDParam, "bookmark", use: tweetBookmarkActionHandler)
 		privateRoutes.delete("tweets", twarrtIDParam, "bookmark", use: tweetUnBookmarkActionHandler)
 		privateRoutes.post("tweets", twarrtIDParam, "delete", use: tweetPostDeleteHandler)
-		privateRoutes.get("tweets", "edit", twarrtIDParam, use: tweetEditPageHandler)
 		privateRoutes.post("tweets", "edit", twarrtIDParam, use: tweetEditPostHandler)
 		privateRoutes.post("tweets", "create", use: tweetCreatePostHandler)
 		privateRoutes.post("tweets", "reply", twarrtIDParam, use: tweetReplyPostHandler)
 		
-		privateRoutes.get("tweets", "report", twarrtIDParam, use: tweetReportPageHandler)
 		privateRoutes.post("tweets", "report", twarrtIDParam, use: tweetReportPostHandler)
 	}
 	
