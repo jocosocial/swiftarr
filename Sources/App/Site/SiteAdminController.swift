@@ -10,58 +10,61 @@ struct SiteAdminController: SiteControllerUtils {
 	func registerRoutes(_ app: Application) throws {
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let privateTTRoutes = getPrivateRoutes(app).grouped(SiteRequireTwitarrTeamMiddleware()).grouped("admin")
+		// Routes for non-shareable GET requests. We don't allow token auth, but do allow login redirects.
+		let semiPrivateTTRoutes = getSemiPrivateRoutes(app).grouped(SiteRequireTwitarrTeamMiddleware()).grouped("admin")
 		
-		privateTTRoutes.get("", use: adminRootPageHandler)
+		semiPrivateTTRoutes.get("", use: adminRootPageHandler)
 
-		privateTTRoutes.get("announcements", use: announcementsAdminPageHandler)
-		privateTTRoutes.get("announcement", "create", use: announcementCreatePageHandler)
+		semiPrivateTTRoutes.get("announcements", use: announcementsAdminPageHandler)
+		semiPrivateTTRoutes.get("announcement", "create", use: announcementCreatePageHandler)
 		privateTTRoutes.post("announcement", "create", use: announcementCreatePostHandler)
-		privateTTRoutes.get("announcement", announcementIDParam, "edit", use: announcementEditPageHandler)
+		semiPrivateTTRoutes.get("announcement", announcementIDParam, "edit", use: announcementEditPageHandler)
 		privateTTRoutes.post("announcement", announcementIDParam, "edit", use: announcementEditPostHandler)
 		privateTTRoutes.post("announcement", announcementIDParam, "delete", use: announcementDeletePostHandler)
 
-		privateTTRoutes.get("dailythemes", use: dailyThemesViewHandler)
-		privateTTRoutes.get("dailytheme", "create", use: dailyThemeCreateViewHandler)
+		semiPrivateTTRoutes.get("dailythemes", use: dailyThemesViewHandler)
+		semiPrivateTTRoutes.get("dailytheme", "create", use: dailyThemeCreateViewHandler)
 		privateTTRoutes.post("dailytheme", "create", use: dailyThemeCreatePostHandler)
-		privateTTRoutes.get("dailytheme", dailyThemeParam, "edit", use: dailyThemeEditViewHandler)
+		semiPrivateTTRoutes.get("dailytheme", dailyThemeParam, "edit", use: dailyThemeEditViewHandler)
 		privateTTRoutes.post("dailytheme", dailyThemeParam, "edit", use: dailyThemeEditPostHandler)
 		privateTTRoutes.post("dailytheme", dailyThemeParam, "delete", use: dailyThemeDeletePostHandler)
 		privateTTRoutes.delete("dailytheme", dailyThemeParam, use: dailyThemeDeletePostHandler)
 		
-		privateTTRoutes.get("serversettings", use: settingsViewHandler)
+		semiPrivateTTRoutes.get("serversettings", use: settingsViewHandler)
 		privateTTRoutes.post("serversettings", use: settingsPostHandler)
 
-		privateTTRoutes.get("timezonechanges", use: timeZonesViewHandler)
+		semiPrivateTTRoutes.get("timezonechanges", use: timeZonesViewHandler)
 		privateTTRoutes.post("serversettings", "reloadtzfile", use: settingsReloadTZFilePostHandler)
 
-		privateTTRoutes.get("scheduleupload", use: scheduleUploadViewHandler)
+		semiPrivateTTRoutes.get("scheduleupload", use: scheduleUploadViewHandler)
 		privateTTRoutes.post("scheduleupload", use: scheduleUploadPostHandler)
-		privateTTRoutes.get("scheduleverify", use: scheduleVerifyViewHandler)
+		semiPrivateTTRoutes.get("scheduleverify", use: scheduleVerifyViewHandler)
 		privateTTRoutes.post("scheduleverify", use: scheduleVerifyPostHandler)
 		privateTTRoutes.get("scheduleupload", "complete", use: scheduleUpdateCompleteViewtHandler)
 
-		privateTTRoutes.get("regcodes", use: getRegCodeHandler)
-		privateTTRoutes.get("regcodes", "showuser", userIDParam, use: getRegCodeForUserHandler)
+		semiPrivateTTRoutes.get("regcodes", use: getRegCodeHandler)
+		semiPrivateTTRoutes.get("regcodes", "showuser", userIDParam, use: getRegCodeForUserHandler)
 		
-		privateTTRoutes.get("userroles", use: getUserRoleManagementHandler)
-		privateTTRoutes.get("userroles", userRoleParam,  use: getUserRoleManagementHandler)
+		semiPrivateTTRoutes.get("userroles", use: getUserRoleManagementHandler)
+		semiPrivateTTRoutes.get("userroles", userRoleParam,  use: getUserRoleManagementHandler)
 		privateTTRoutes.post("userroles", userRoleParam, "addrole", userIDParam, use: addRoleToUser)
 		privateTTRoutes.post("userroles", userRoleParam, "removerole", userIDParam, use: removeRoleFromUser)
 
-		// Mods, TwitarrTeam, and THO levels can all be promoted to, but they all demote back to Verified.
 		let privateTHORoutes = getPrivateRoutes(app).grouped(SiteRequireTHOMiddleware()).grouped("admin")
-		privateTHORoutes.get("mods", use: getModsHandler)
-		privateTHORoutes.get("twitarrteam", use: getTwitarrTeamHandler)
-		privateTHORoutes.get("tho", use: getTHOHandler)
+		let semiPrivateTHORoutes = getSemiPrivateRoutes(app).grouped(SiteRequireTHOMiddleware()).grouped("admin")
+		semiPrivateTHORoutes.get("mods", use: getModsHandler)
+		semiPrivateTHORoutes.get("twitarrteam", use: getTwitarrTeamHandler)
+		semiPrivateTHORoutes.get("tho", use: getTHOHandler)
 		privateTHORoutes.post("user", userIDParam, "moderator", "promote", use: promoteUserLevel)
 		privateTHORoutes.post("user", userIDParam, "twitarrteam", "promote", use: promoteUserLevel)
 		privateTHORoutes.post("user", userIDParam, "verified", "demote", use: demoteToVerified)
 		
 		let privateAdminRoutes = getPrivateRoutes(app).grouped(SiteRequireAdminMiddleware()).grouped("admin")
+		let semiPrivateAdminRoutes = getSemiPrivateRoutes(app).grouped(SiteRequireAdminMiddleware()).grouped("admin")
 		privateAdminRoutes.post("user", userIDParam, "tho", "promote", use: promoteUserLevel)
-		privateAdminRoutes.get("karaoke", use: karaokeHandler)
+		semiPrivateAdminRoutes.get("karaoke", use: karaokeHandler)
 		privateAdminRoutes.post("karaoke", "reload", use: karaokePostHandler)
-		privateAdminRoutes.get("boardgames", use: boardGamesHandler)
+		semiPrivateAdminRoutes.get("boardgames", use: boardGamesHandler)
 		privateAdminRoutes.post("boardgames", "reload", use: boardGamesPostHandler)
 	}
 	
