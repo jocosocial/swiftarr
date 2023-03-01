@@ -631,8 +631,28 @@ extension SiteControllerUtils {
 				redirectMiddleware
 		])
 	}
+
+	// Private routes with login redirects.
+	//
+	// Private site routes should not allow token auth. Token auth is for apps that want to open a webpage with their
+	// token. They can initiate a web flow with a token, get a session back, and use that to complete the flow. However,
+	// we don't want apps to be able to jump to private web pages.
+	func getSemiPrivateRoutes(_ app: Application) -> RoutesBuilder {
+		// This middleware redirects to "/login" when accessing a global page that requires auth while not logged in.
+		// It saves the page the user was attempting to view in the session, so we can return there post-login.
+		let redirectMiddleware = UserCacheData.redirectMiddleware { (req) -> String in
+			req.session.data["returnAfterLogin"] = req.url.string
+			return "/login"
+		}
+
+		return app.grouped( [ 
+				app.sessions.middleware, 
+				UserCacheData.SessionAuth(),
+				redirectMiddleware
+		])
+	}
 		
-	// Routes for non-shareable content. If you're not logged in we failscreen. Most POST actions go here.
+	// Routes without login redirects. If you're not logged in we failscreen. Most POST actions go here.
 	//
 	// Private site routes should not allow token auth. Token auth is for apps that want to open a webpage with their
 	// token. They can initiate a web flow with a token, get a session back, and use that to complete the flow. However,
