@@ -91,27 +91,29 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		globalRoutes.get(fezIDParam, use: singleFezPageHandler)
 		globalRoutes.get("faq", use: fezFAQHandler)
 
+		// Routes for non-shareable GET requests. We don't allow token auth, but do allow login redirects.
+		let semiPrivateRoutes = getSemiPrivateRoutes(app).grouped("fez").grouped(DisabledSiteSectionMiddleware(feature: .friendlyfez))
+		semiPrivateRoutes.get("create", use: fezCreatePageHandler)
+		semiPrivateRoutes.get(fezIDParam, "update", use: fezUpdatePageHandler)
+		semiPrivateRoutes.get(fezIDParam, "edit", use: fezUpdatePageHandler)
+		semiPrivateRoutes.get(fezIDParam, "members", use: fezMembersPageHandler)
+		semiPrivateRoutes.get("report", fezIDParam, use: fezReportPageHandler)
+		semiPrivateRoutes.get("post", "report", postIDParam, use: fezPostReportPageHandler)
+
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let privateRoutes = getPrivateRoutes(app).grouped("fez").grouped(DisabledSiteSectionMiddleware(feature: .friendlyfez))
-		privateRoutes.get("create", use: fezCreatePageHandler)
-		privateRoutes.get(fezIDParam, "update", use: fezUpdatePageHandler)
-		privateRoutes.get(fezIDParam, "edit", use: fezUpdatePageHandler)
 		privateRoutes.post("create", use: fezCreateOrUpdatePostHandler)
 		privateRoutes.post(fezIDParam, "update", use: fezCreateOrUpdatePostHandler)
-		
 		privateRoutes.post(fezIDParam, "join", use: fezJoinPostHandler)
 		privateRoutes.post(fezIDParam, "leave", use: fezLeavePostHandler)
 		privateRoutes.post(fezIDParam, "post", use: fezThreadPostHandler)
 		privateRoutes.post("post", postIDParam, "delete", use: fezPostDeleteHandler)
 		privateRoutes.delete("post", postIDParam, use: fezPostDeleteHandler)
 		privateRoutes.post(fezIDParam, "cancel", use: fezCancelPostHandler)
-		privateRoutes.get(fezIDParam, "members", use: fezMembersPageHandler)
 		privateRoutes.post(fezIDParam, "members", "add", userIDParam, use: fezAddUserPostHandler)
 		privateRoutes.post(fezIDParam, "members", "remove", userIDParam, use: fezRemoveUserPostHandler)
 		
-		privateRoutes.get("report", fezIDParam, use: fezReportPageHandler)
 		privateRoutes.post("report", fezIDParam, use: fezReportPostHandler)
-		privateRoutes.get("post", "report", postIDParam, use: fezPostReportPageHandler)
 		privateRoutes.post("post", "report", postIDParam, use: fezPostReportPostHandler)
 
 		privateRoutes.webSocket(fezIDParam, "socket", shouldUpgrade: shouldCreateFezSocket, onUpgrade: createFezSocket) 
