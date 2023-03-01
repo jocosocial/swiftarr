@@ -12,10 +12,13 @@ struct SiteKaraokeController: SiteControllerUtils {
 		// Routes that the user does not need to be logged in to access.
 		let openRoutes = getOpenRoutes(app).grouped("karaoke").grouped(DisabledSiteSectionMiddleware(feature: .karaoke))
 		openRoutes.get("", use: karaokePageHandler)
+
+		// Routes for non-shareable GET requests. We don't allow token auth, but do allow login redirects.
+		let semiPrivateRoutes = getSemiPrivateRoutes(app).grouped("karaoke").grouped(DisabledSiteSectionMiddleware(feature: .karaoke))
+		semiPrivateRoutes.get("logperformance", songIDParam, use: songPerformanceLogEntryPageHandler)
 		
 		// Routes that the user needs to be logged in to access.
 		let privateRoutes = getPrivateRoutes(app).grouped("karaoke").grouped(DisabledSiteSectionMiddleware(feature: .karaoke))
-		privateRoutes.get("logperformance", songIDParam, use: songPerformanceLogEntryPageHandler)
 		privateRoutes.post("logperformance", songIDParam, use: songPerformanceLogEntryPostHandler)
 		privateRoutes.post(songIDParam, "favorite", use: addFavoriteSong)
 		privateRoutes.delete(songIDParam, "favorite", use: removeFavoriteSong)
