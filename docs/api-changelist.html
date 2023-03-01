@@ -1549,6 +1549,12 @@ doesn&rsquo;t have the expansions.</li>
 <ul>
 <li>Fezzes now support a <code>search</code> parameter. This works just like all of the other searchable endpoints. Seamails and LFGs are now searchable in the API!</li>
 </ul>
+<h2 id='feb-27-2023' class='heading'>Feb 27, 2023</h2>
+
+<ul>
+<li>Fez <code>open</code>, <code>joined</code>, and <code>owned</code> queries now support a <code>hidePast</code> parameter. When <code>true</code>, fezzes with a start date more than 1 hour in the past will be hidden. These queries use default values that match query behavior prior to the addition of this parameter, so clients which do not support it will see no change in list behavior.</li>
+<li>Fez <code>joined</code> and <code>owned</code> queries now allow the <code>cruiseday</code> parameter. It functions identically to the <code>cruiseday</code> parameter on <code>open</code> fezzes.</li>
+</ul>
 
           </div>
         </section>

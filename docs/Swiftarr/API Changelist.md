@@ -109,3 +109,8 @@ doesn't have the expansions.
 ## Feb 19, 2023
 
 * Fezzes now support a `search` parameter. This works just like all of the other searchable endpoints. Seamails and LFGs are now searchable in the API!
+
+## Feb 27, 2023
+
+* Fez `open`, `joined`, and `owned` queries now support a `hidePast` parameter. When `true`, fezzes with a start date more than 1 hour in the past will be hidden. These queries use default values that match query behavior prior to the addition of this parameter, so clients which do not support it will see no change in list behavior.
+* Fez `joined` and `owned` queries now allow the `cruiseday` parameter. It functions identically to the `cruiseday` parameter on `open` fezzes.
