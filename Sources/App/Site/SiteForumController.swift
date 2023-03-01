@@ -225,7 +225,7 @@ struct SiteForumController: SiteControllerUtils {
 		globalRoutes.get("forum", forumIDParam, use: forumThreadPageHandler)
 		globalRoutes.get("forum", "containingpost", postIDParam, use: forumThreadFromPostPageHandler)
 
-		// Routes for non-shareable content. If you're not logged in we failscreen.
+		// Routes for non-shareable content.
 		let privateRoutes = getPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .forums))
 		privateRoutes.post("forumpost", postIDParam, "like", use: forumPostLikeActionHandler)
 		privateRoutes.post("forumpost", postIDParam, "laugh", use: forumPostLaughActionHandler)

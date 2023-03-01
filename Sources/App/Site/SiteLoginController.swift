@@ -17,7 +17,7 @@ struct SiteLoginController: SiteControllerUtils {
 		openRoutes.post("recoverPassword", use: recoverPasswordPostHandler)		// Change pw while not logged in
 		openRoutes.get("codeOfConduct", use: codeOfConductViewHandler)
 				
-		// Routes for non-shareable content. If you're not logged in we failscreen.
+		// Routes for non-shareable content.
 		let privateRoutes = getPrivateRoutes(app)
 		privateRoutes.get("logout", use: loginPageViewHandler)
 		privateRoutes.post("logout", use: loginPageLogoutHandler)

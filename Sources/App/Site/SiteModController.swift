@@ -54,7 +54,7 @@ struct SiteModController: SiteControllerUtils {
 		modRoutes.get("moderate", "userprofile", userIDParam, use: moderateUserProfileContentPageHandler)
 		modRoutes.get("moderate", "user", userIDParam, use: moderateUserContentPageHandler)
 
-		// Routes for non-shareable content. If you're not logged in we failscreen.
+		// Routes for non-shareable content.
 		let modPrivateRoutes = getPrivateRoutes(app).grouped(SiteRequireModeratorMiddleware())
 		modPrivateRoutes.get("archivedimage", imageIDParam, use: archivedImageHandler)
 

@@ -79,7 +79,7 @@ struct SiteUserController: SiteControllerUtils {
 		globalRoutes.get("username", ":username", use: usernameProfilePageHandler)
 		globalRoutes.get("profile", ":username", use: usernameProfilePageHandler)
 
-		// Routes for non-shareable content. If you're not logged in we failscreen.
+		// Routes for non-shareable content.
 		let privateRoutes = getPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .users))
 		privateRoutes.get("profile", use: selfProfilePageHandler)
 		privateRoutes.get("profile", "edit", use: selfProfileEditPageHandler)

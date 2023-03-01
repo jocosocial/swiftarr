@@ -20,7 +20,7 @@ struct SiteSeamailController: SiteControllerUtils {
 		let globalRoutes = getGlobalRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .seamail))
 		globalRoutes.get("seamail", use: seamailRootPageHandler)
 
-		// Routes for non-shareable content. If you're not logged in we failscreen.
+		// Routes for non-shareable content.
 		let privateRoutes = getPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .seamail))
 		privateRoutes.get("seamail", "search", use: seamailSearchHandler)
 		privateRoutes.get("seamail", "create", use: seamailCreatePageHandler)

@@ -91,7 +91,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		globalRoutes.get(fezIDParam, use: singleFezPageHandler)
 		globalRoutes.get("faq", use: fezFAQHandler)
 
-		// Routes for non-shareable content. If you're not logged in we failscreen.
+		// Routes for non-shareable content.
 		let privateRoutes = getPrivateRoutes(app).grouped("fez").grouped(DisabledSiteSectionMiddleware(feature: .friendlyfez))
 		privateRoutes.get("create", use: fezCreatePageHandler)
 		privateRoutes.get(fezIDParam, "update", use: fezUpdatePageHandler)

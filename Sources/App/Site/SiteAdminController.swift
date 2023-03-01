@@ -8,7 +8,7 @@ struct SiteAdminController: SiteControllerUtils {
 	var userRoleParam = PathComponent(":user_role")
 
 	func registerRoutes(_ app: Application) throws {
-		// Routes for non-shareable content. If you're not logged in we failscreen.
+		// Routes for non-shareable content.
 		let privateTTRoutes = getPrivateRoutes(app).grouped(SiteRequireTwitarrTeamMiddleware()).grouped("admin")
 		
 		privateTTRoutes.get("", use: adminRootPageHandler)

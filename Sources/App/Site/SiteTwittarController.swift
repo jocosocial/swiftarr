@@ -170,7 +170,7 @@ struct SiteTwitarrController: SiteControllerUtils {
 		globalRoutes.get("tweets", use: tweetsPageHandler)
 		globalRoutes.get("tweets", twarrtIDParam, use: tweetReplyPageHandler)
 
-		// Routes for non-shareable content. If you're not logged in we failscreen.
+		// Routes for non-shareable content.
 		let privateRoutes = getPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .tweets))
 		privateRoutes.get("tweets", twarrtIDParam, "details", use: tweetGetDetailHandler)
 		privateRoutes.post("tweets", twarrtIDParam, "like", use: tweetLikeActionHandler)

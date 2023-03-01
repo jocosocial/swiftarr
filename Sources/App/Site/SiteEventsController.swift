@@ -60,7 +60,7 @@ struct SiteEventsController: SiteControllerUtils {
 		openRoutes.get("events", eventIDParam, use: eventGetPageHandler)
 		openRoutes.get("events", eventIDParam, "calendarevent.ics", use: eventsDownloadICSHandler)
 
-		// Routes for non-shareable content. If you're not logged in we failscreen.
+		// Routes for non-shareable content.
 		let privateRoutes = getPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .schedule))
 		privateRoutes.post("events", eventIDParam, "favorite", use: eventsAddRemoveFavoriteHandler)
 		privateRoutes.delete("events", eventIDParam, "favorite", use: eventsAddRemoveFavoriteHandler)
