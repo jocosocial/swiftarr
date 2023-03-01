@@ -1434,7 +1434,7 @@ However, this gives the results of a search for posts across all the forums.</p>
 <p>Returned by: <code>GET /api/v3/forum/post/search</code></p>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1028-L1039">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1028-L1040">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1486,7 +1486,8 @@ However, this gives the results of a search for posts across all the forums.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>The total number of posts in the result set.</p>
+                        <p>The total number of posts in the result set. The actual # of results returned may be fewer than this, even if we return &lsquo;complete&rsquo; results. This is due to additional filtering that
+is done after the database query. See notes on <code><a href="../Protocols/ContentFilterable.html#/s:3App17ContentFilterablePAAE16filterForMention2ofxSgSS_tF">ContentFilterable.filterForMention(of:)</a></code></p>
 
                       </div>
                       <div class="declaration">
@@ -1498,7 +1499,7 @@ However, this gives the results of a search for posts across all the forums.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1032">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1033">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1516,7 +1517,7 @@ However, this gives the results of a search for posts across all the forums.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>The index number of the first post in the <code><a href="../Structs/PostSearchData.html#/s:3App14PostSearchDataV5postsSayAA0bD0VGvp">posts</a></code> array. 0 is the index of the first post in the forum. This number is usually  a multiple of <code><a href="../Structs/PostSearchData.html#/s:3App14PostSearchDataV5limitSivp">limit</a></code> and indicates the page of results.</p>
+                        <p>The index into totalPosts of the first post in the <code><a href="../Structs/PostSearchData.html#/s:3App14PostSearchDataV5postsSayAA0bD0VGvp">posts</a></code> array. 0 is the index of the first result. This number is usually  a multiple of <code><a href="../Structs/PostSearchData.html#/s:3App14PostSearchDataV5limitSivp">limit</a></code> and indicates the page of results.</p>
 
                       </div>
                       <div class="declaration">
@@ -1528,7 +1529,7 @@ However, this gives the results of a search for posts across all the forums.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1034">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1035">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1546,7 +1547,7 @@ However, this gives the results of a search for posts across all the forums.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>The number of posts the server attempted to gather. posts.count may be less than this number if posts were filtered out by blocks/mutes, or if start + limit &gt; totalPosts.</p>
+                        <p>The number of posts the server attempted to gather. posts.count may be less than this number if posts were filtered out by post-query filtering, or if start + limit &gt; totalPosts.</p>
 
                       </div>
                       <div class="declaration">
@@ -1558,7 +1559,7 @@ However, this gives the results of a search for posts across all the forums.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1036">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1037">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1588,7 +1589,7 @@ However, this gives the results of a search for posts across all the forums.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1038">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1039">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
