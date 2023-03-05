@@ -3,6 +3,7 @@ import Vapor
 import Fluent
 import Redis
 import NIO
+import NIOConcurrencyHelpers
 import PostgresNIO
 
 // With ~2000 users at an average of ~1K per UserCacheData, an in-memory cache of all users would take
@@ -164,16 +165,24 @@ extension UserCacheData {
 }
 
 extension Application {
+	fileprivate static var ucs: UserCacheStorage?
+	private static var ucsLock: NIOLock = NIOLock()
+
  	/// This is where UserCache stores its in-memory cache.
-	var userCacheStorage: UserCacheStorage {
+	static var userCacheStorage: UserCacheStorage {
 		get {
-			guard let result = self.storage[UserCacheStorageKey.self] else {
-				return UserCacheStorage()
+			let result = ucsLock.withLock {
+				guard let result = ucs else {
+					return UserCacheStorage()
+				}
+				return result
 			}
 			return result
 		}
  		set {
-			self.storage[UserCacheStorageKey.self] = newValue
+			ucsLock.withLock {
+				ucs = newValue
+			}
 		}   
 	}
 
@@ -230,7 +239,7 @@ extension Application {
 				let cacheData = UserCacheData(userID: userID, user: user, blocks: blocks, mutewords: mutewords)
 				initialStorage.cacheUser(cacheData)
 			}
-			app.userCacheStorage = initialStorage
+			Application.ucs = initialStorage
 //		}
 	}	
 }
@@ -256,7 +265,7 @@ extension Request {
 		func getHeader(_ username: String) -> UserHeader? {
 			let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
 			if let user = cacheLock.withLock({
-				request.application.userCacheStorage.usersByName[username.lowercased()]
+				Application.userCacheStorage.usersByName[username.lowercased()]
 			}) {
 				return UserHeader(userID: user.userID, username: user.username, 
 						displayName: user.displayName, userImage: user.userImage)
@@ -268,7 +277,7 @@ extension Request {
 			let userBlocks = try getBlocks(forUser)
 			let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
 			let users = cacheLock.withLock({
-				request.application.userCacheStorage.usersByID.filter { cachedUser in
+				Application.userCacheStorage.usersByID.filter { cachedUser in
 					cachedUser.value.profileUpdateTime >= fromDate && !userBlocks.contains(cachedUser.key)
 				}
 			})
@@ -307,7 +316,7 @@ extension Request {
 		public func getUser(_ userUUID: UUID) -> UserCacheData? {
 			let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
 			let cacheResult = cacheLock.withLock {
-				request.application.userCacheStorage.usersByID[userUUID]
+				Application.userCacheStorage.usersByID[userUUID]
 			}
 			return cacheResult
 		}
@@ -315,7 +324,7 @@ extension Request {
 		public func getUser(username: String) -> UserCacheData? {
 			let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
 			let cacheResult = cacheLock.withLock {
-				request.application.userCacheStorage.usersByName[username.lowercased()]
+				Application.userCacheStorage.usersByName[username.lowercased()]
 			}
 			return cacheResult
 		}
@@ -323,7 +332,7 @@ extension Request {
 		public func getUser(token: String) -> UserCacheData? {
 			let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
 			let cacheResult = cacheLock.withLock {
-				request.application.userCacheStorage.usersByToken[token]
+				Application.userCacheStorage.usersByToken[token]
 			}
 			return cacheResult
 		}
@@ -331,7 +340,7 @@ extension Request {
 		func getUsers<IDs: Collection>(_ userIDs: IDs) -> [UserCacheData] where IDs.Element == UUID {
 			let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
 			let users = cacheLock.withLock({
-				userIDs.compactMap { request.application.userCacheStorage.usersByID[$0] }
+				userIDs.compactMap { Application.userCacheStorage.usersByID[$0] }
 			})
 			return users
 		}
@@ -339,7 +348,7 @@ extension Request {
 		func getUsers<Names: Collection>(usernames: Names) -> [UserCacheData] where Names.Element == String {
 			let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
 			let users = cacheLock.withLock({
-				usernames.compactMap { request.application.userCacheStorage.usersByName[$0.lowercased()] }
+				usernames.compactMap { Application.userCacheStorage.usersByName[$0.lowercased()] }
 			})
 			return users
 		}
@@ -347,7 +356,7 @@ extension Request {
 		func allUsersWithAccessLevel(_ level: UserAccessLevel) -> [UserCacheData] {
 			let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
 			let users = cacheLock.withLock({
-				request.application.userCacheStorage.usersByID.compactMap { $0.value.accessLevel >= level ? $0.value : nil }
+				Application.userCacheStorage.usersByID.compactMap { $0.value.accessLevel >= level ? $0.value : nil }
 			})
 			return users
 		}
@@ -360,7 +369,7 @@ extension Request {
 			// It's possible another thread could add this cache entry while this thread is
 			// building it. That's okay.
 			cacheLock.withLock {
-				request.application.userCacheStorage.cacheUser(cacheData)
+				Application.userCacheStorage.cacheUser(cacheData)
 			}
 			return cacheData
 		}
@@ -380,7 +389,7 @@ extension Request {
 			let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
 			cacheLock.withLock {
 				cacheData.forEach { userCacheData in
-					request.application.userCacheStorage.cacheUser(userCacheData)
+					Application.userCacheStorage.cacheUser(userCacheData)
 				}
 			}
 		}
