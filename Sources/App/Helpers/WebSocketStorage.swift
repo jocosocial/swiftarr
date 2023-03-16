@@ -61,8 +61,12 @@ extension Request {
 		.init(request: self)
 	}
 	
-	public struct WebSocketStorage {
-		let request: Request
+	public class WebSocketStorage {
+		private var request: Request
+
+		public init(request: Request) {
+			self.request = request;
+		}
 		
 // MARK: Notification Sockets
 		func getSockets(_ userID: UUID) -> [UserSocket] {
