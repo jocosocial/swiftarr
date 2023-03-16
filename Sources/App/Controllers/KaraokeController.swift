@@ -42,7 +42,7 @@ struct KaraokeController: APIRouteCollection {
 	///	* `?start=INT` - Offset from start of results set
 	/// * `?limit=INT` - the maximum number of songs to retrieve: 1-200, default is 50.
 	/// 
-	/// - Returns: <doc:KaraokeSongResponseData>
+	/// - Returns: `KaraokeSongResponseData`
 	func getKaraokeSongs(_ req: Request) async throws -> KaraokeSongResponseData {
 		struct SongQueryOptions: Decodable {
 			var search: String?
@@ -118,7 +118,7 @@ struct KaraokeController: APIRouteCollection {
 	/// 
 	/// Returns a single karaoke song. Can be called while not logged in; if logged in favorite information is returned.
 	/// 
-	/// - Returns: <doc:KaraokeSongData>
+	/// - Returns: `KaraokeSongData`
 	func getKaraokeSong(_ req: Request) async throws -> KaraokeSongData {
 		let song = try await KaraokeSong.findFromParameter(songIDParam, on: req)
 		var favorite: KaraokeFavorite?
@@ -136,7 +136,7 @@ struct KaraokeController: APIRouteCollection {
 	/// Intent of this call is to let people see what's been happening recently in the karaoke lounge without making a complete index of 
 	/// `who sang what song when` available.
 	/// 
-	/// - Returns: An array of up to 10 <doc:KaraokePerformedSongsData>
+	/// - Returns: An array of up to 10 `KaraokePerformedSongsData`
 	func getLatestPerformedSongs(_ req: Request) async throws -> [KaraokePerformedSongsData] {
 		let recentSongs = try await KaraokePlayedSong.query(on: req.db).sort(\.$createdAt, .descending).range(0..<10).with(\.$song).all()
 		return recentSongs.map { 
@@ -202,7 +202,7 @@ struct KaraokeController: APIRouteCollection {
 	/// but @mentions in the note field should be processed. 
 	///
 	/// - Parameter songID: in URL path
-	/// - Parameter note: <doc:NoteCreateData> in request body
+	/// - Parameter note: `NoteCreateData` in request body
 	/// - Returns: 201 Created on success.
 	func logSongPerformance(_ req: Request) async throws -> HTTPStatus {
 		let user = try req.auth.require(UserCacheData.self)

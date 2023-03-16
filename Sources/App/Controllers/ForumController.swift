@@ -87,7 +87,7 @@ struct ForumController: APIRouteCollection {
 	/// **URL Query Parameters:**
 	/// - `?cat=UUID` Only return information about the given category. Will still return an array of `CategoryData`.
 	///
-	/// - Returns: An array of <doc:CategoryData> containing all category IDs and titles. Or just the one, if you use the ?cat parameter.
+	/// - Returns: An array of `CategoryData` containing all category IDs and titles. Or just the one, if you use the ?cat parameter.
 	func categoriesHandler(_ req: Request)  async throws -> [CategoryData] {
 		var effectiveAccessLevel: UserAccessLevel = .unverified
 		let user = req.auth.get(UserCacheData.self)
@@ -146,7 +146,7 @@ struct ForumController: APIRouteCollection {
 	/// latest updates. 
 	///
 	/// - Throws: 404 error if the category ID is not valid.
-	/// - Returns: <doc:CategoryData> containing category forums.
+	/// - Returns: `CategoryData` containing category forums.
 	func categoryForumsHandler(_ req: Request) async throws -> CategoryData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let start = (req.query[Int.self, at: "start"] ?? 0)
@@ -216,7 +216,7 @@ struct ForumController: APIRouteCollection {
 	/// * `?creatorid=STRING` - Matches forums created by the given userID.
 	///
 	/// - Parameter searchString: In the URL path.
-	/// - Returns: A <doc:ForumSearchData> containing all matching forums.
+	/// - Returns: A `ForumSearchData` containing all matching forums.
 	func forumSearchHandler(_ req: Request) async throws -> ForumSearchData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let start = (req.query[Int.self, at: "start"] ?? 0)
@@ -260,7 +260,7 @@ struct ForumController: APIRouteCollection {
 	/// * `?start=INT` - The index into the array of forums to start returning results. 0 for first forum.
 	/// * `?limit=INT` - The max # of entries to return. Defaults to 50. Clamped to a max value set in Settings.
 	///
-	/// - Returns: A <doc:ForumSearchData> containing all forums created by the user.
+	/// - Returns: A `ForumSearchData` containing all forums created by the user.
 	func ownerHandler(_ req: Request) async throws-> ForumSearchData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let start = (req.query[Int.self, at: "start"] ?? 0)
@@ -292,7 +292,7 @@ struct ForumController: APIRouteCollection {
 	/// * `?start=INT` - The index into the sorted list of forums to start returning results. 0 for first item, which is the default.
 	/// * `?limit=INT` - The max # of entries to return. Defaults to 50
 	///
-	/// - Returns: A <doc:ForumSearchData> containing the user's favorited forums.
+	/// - Returns: A `ForumSearchData` containing the user's favorited forums.
 	func favoritesHandler(_ req: Request) async throws -> ForumSearchData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let start = (req.query[Int.self, at: "start"] ?? 0)
@@ -327,7 +327,7 @@ struct ForumController: APIRouteCollection {
 	/// * `?start=INT` - The index into the sorted list of forums to start returning results. 0 for first item, which is the default.
 	/// * `?limit=INT` - The max # of entries to return. Defaults to 50
 	///
-	/// - Returns: A <doc:ForumSearchData> containing the user's muted forums.
+	/// - Returns: A `ForumSearchData` containing the user's muted forums.
 	func mutesHandler(_ req: Request) async throws -> ForumSearchData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let start = (req.query[Int.self, at: "start"] ?? 0)
@@ -360,7 +360,7 @@ struct ForumController: APIRouteCollection {
 	/// * `?start=INT` - The index into the sorted list of forums to start returning results. 0 for first item, which is the default.
 	/// * `?limit=INT` - The max # of entries to return. Defaults to 50
 	///
-	/// - Returns: A <doc:ForumSearchData> containing the user's favorited forums.
+	/// - Returns: A `ForumSearchData` containing the user's favorited forums.
 	func recentsHandler(_ req: Request) async throws -> ForumSearchData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let start = (req.query[Int.self, at: "start"] ?? 0)
@@ -402,7 +402,7 @@ struct ForumController: APIRouteCollection {
 	///
 	/// - Parameter forumID: in URL path
 	/// - Throws: 404 error if the forum is not available.
-	/// - Returns: <doc:ForumData> containing the forum's metadata and posts.
+	/// - Returns: `ForumData` containing the forum's metadata and posts.
 	func forumThreadHandler(_ req: Request) async throws -> ForumData {
 		let user = try req.auth.require(UserCacheData.self)
 		let forum = try await Forum.findFromParameter(forumIDParam, on: req) { query in
@@ -431,7 +431,7 @@ struct ForumController: APIRouteCollection {
 	///
 	/// - Parameter postID: In the URL path.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: <doc:ForumData> containing the post's parent forum.
+	/// - Returns: `ForumData` containing the post's parent forum.
 	func postForumThreadHandler(_ req: Request) async throws -> ForumData {
 		let user = try req.auth.require(UserCacheData.self)
 		let post = try await ForumPost.findFromParameter(postIDParam, on: req) { query in
@@ -457,7 +457,7 @@ struct ForumController: APIRouteCollection {
 	/// 
 	/// - Parameter eventID: In the URL path.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: <doc:ForumData> containing the forum's metadata and all posts.
+	/// - Returns: `ForumData` containing the forum's metadata and all posts.
 	func eventForumThreadHandler(_ req: Request) async throws -> ForumData {
 		let user = try req.auth.require(UserCacheData.self)
 		let event = try await Event.findFromParameter("event_id", on: req) { query in
@@ -478,7 +478,7 @@ struct ForumController: APIRouteCollection {
 	///
 	/// - Parameter postID: In the URL path.
 	/// - Throws: 404 error if the post is not available.
-	/// - Returns: <doc:PostDetailData> containing the specified post.
+	/// - Returns: `PostDetailData` containing the specified post.
 	func postHandler(_ req: Request) async throws -> PostDetailData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let post = try await ForumPost.findFromParameter(postIDParam, on: req) { query in
@@ -541,7 +541,7 @@ struct ForumController: APIRouteCollection {
 	/// * `?start=INT` - The index into the sorted list of forums to start returning results. 0 for first item, which is the default.
 	/// * `?limit=INT` - The max # of entries to return. Defaults to 50
 	/// 
-	/// - Returns: <doc:PostSearchData> containing the search results..
+	/// - Returns: `PostSearchData` containing the search results..
 	func postSearchHandler(_ req: Request) async throws -> PostSearchData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		var postFilterMentions: String? = nil
@@ -779,9 +779,9 @@ struct ForumController: APIRouteCollection {
 	/// - Note: Users may be able to add posts to existing forum threads in categories where they don't have access to create new threads.
 	///
 	/// - Parameter categoryID: in URL path
-	/// - Parameter requestBody: <doc:ForumCreateData> payload in the HTTP body.
+	/// - Parameter requestBody: `ForumCreateData` payload in the HTTP body.
 	/// - Throws: 403 error if the user is not authorized to create a forum.
-	/// - Returns: <doc:ForumData> containing the new forum's contents.
+	/// - Returns: `ForumData` containing the new forum's contents.
 	func forumCreateHandler(_ req: Request) async throws -> ForumData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		// see `ForumCreateData.validations()`
@@ -855,7 +855,7 @@ struct ForumController: APIRouteCollection {
 	///   send an empty string in the `.message` field.
 	///
 	/// - Parameter forumID: in URL path
-	/// - Parameter requestBody: <doc:ReportData> payload in the HTTP body.
+	/// - Parameter requestBody: `ReportData` payload in the HTTP body.
 	/// - Returns: 201 Created on success.
 	func forumReportHandler(_ req: Request) async throws -> HTTPStatus {
 		let cacheUser = try req.auth.require(UserCacheData.self)
@@ -908,9 +908,9 @@ struct ForumController: APIRouteCollection {
 	/// This behavior sets the sort order for forums in a category when using the `update` sort order.
 	///
 	/// - Parameter forumID: in URL path
-	/// - Parameter requestBody: <doc:PostContentData>
+	/// - Parameter requestBody: `PostContentData`
 	/// - Throws: 403 error if the forum is locked or user is blocked.
-	/// - Returns: <doc:PostData> containing the post's contents and metadata.
+	/// - Returns: `PostData` containing the post's contents and metadata.
 	func postCreateHandler(_ req: Request) async throws -> Response {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		// see `PostContentData.validations()`
@@ -975,7 +975,7 @@ struct ForumController: APIRouteCollection {
 	///   but the `ReportData` is mandatory in order to allow one. If there is no message,
 	///   send an empty string in the `.message` field.
 	///
-	/// - Parameter requestBody:<doc:ReportData`> 
+	/// - Parameter requestBody:`ReportData`` 
 	/// - Throws: 409 error if user has already reported the post.
 	/// - Returns: 201 Created on success.
 	func postReportHandler(_ req: Request) async throws -> HTTPStatus {
@@ -997,7 +997,7 @@ struct ForumController: APIRouteCollection {
 	///
 	/// - Parameter postID: in URL path
 	/// - Throws: 403 error if user is the post's creator.
-	/// - Returns: <doc:PostData> containing the updated like info.
+	/// - Returns: `PostData` containing the updated like info.
 	func postLaughHandler(_ req: Request) async throws -> PostData {
 		return try await postReactHandler(req, likeType: .laugh)
 	}
@@ -1009,7 +1009,7 @@ struct ForumController: APIRouteCollection {
 	///
 	/// - Parameter postID: in URL path
 	/// - Throws: 403 error if user is the post's creator.
-	/// - Returns: <doc:PostData> containing the updated like info.
+	/// - Returns: `PostData` containing the updated like info.
 	func postLikeHandler(_ req: Request) async throws -> PostData {
 		return try await  postReactHandler(req, likeType: .like)
 	}
@@ -1021,7 +1021,7 @@ struct ForumController: APIRouteCollection {
 	///
 	/// - Parameter postID: in URL path
 	/// - Throws: 403 error if user is the post's creator.
-	/// - Returns: <doc:PostData> containing the updated like info.
+	/// - Returns: `PostData` containing the updated like info.
 	func postLoveHandler(_ req: Request) async throws -> PostData {
 		return try await postReactHandler(req, likeType: .love)
 	}
@@ -1055,7 +1055,7 @@ struct ForumController: APIRouteCollection {
 	///
 	/// - Parameter postID: in URL path
 	/// - Throws: 403 error if user is the post's creator.
-	/// - Returns: <doc:PostData> containing the updated like info.
+	/// - Returns: `PostData` containing the updated like info.
 	func postUnreactHandler(_ req: Request) async throws -> PostData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		// get post and forum
@@ -1082,9 +1082,9 @@ struct ForumController: APIRouteCollection {
 	/// Update the specified `ForumPost`.
 	///
 	/// - Parameter postID: in URL path
-	/// - Parameter requestBody: <doc:PostContentData> 
+	/// - Parameter requestBody: `PostContentData` 
 	/// - Throws: 403 error if user is not post owner or has read-only access.
-	/// - Returns: <doc:PostData> containing the post's contents and metadata.
+	/// - Returns: `PostData` containing the post's contents and metadata.
 	func postUpdateHandler(_ req: Request) async throws -> PostData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		// see `PostContentData.validations()`

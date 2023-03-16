@@ -37,7 +37,7 @@ struct BoardgameController: APIRouteCollection {
 	///	* `?start=INT` - Offset from start of results set
 	/// * `?limit=INT` - the maximum number of games to retrieve: 1-200, default is 50. 
 	/// 
-	/// - Returns: <doc:BoardgameResponseData>
+	/// - Returns: `BoardgameResponseData`
 	func getBoardgames(_ req: Request) async throws -> BoardgameResponseData {
 		struct GameQueryOptions: Decodable {
 			var search: String?
@@ -68,7 +68,7 @@ struct BoardgameController: APIRouteCollection {
 	/// Gets a single boardgame referenced by ID. Can be called while not logged in; if logged in favorite information is returned.
 	/// 
 	/// - Parameter boardgameID: in URL path
-	/// - Returns: <doc:BoardgameData>
+	/// - Returns: `BoardgameData`
 	func getBoardgame(_ req: Request) async throws -> BoardgameData {
 		let user = req.auth.get(UserCacheData.self)
 		let game = try await Boardgame.findFromParameter(boardgameIDParam, on: req) { $0.with(\.$expansions) }
@@ -82,7 +82,7 @@ struct BoardgameController: APIRouteCollection {
 	/// 
 	/// - Parameter boardgameID: in URL path
 	/// - Throws: 400 error if the event was not favorited.
-	/// - Returns: An array of <doc:BoardgameData>. First item is the base game, other items are expansions.
+	/// - Returns: An array of `BoardgameData`. First item is the base game, other items are expansions.
 	func getExpansions(_ req: Request) async throws -> [BoardgameData] {
 		let user = req.auth.get(UserCacheData.self)
 		let targetGame = try await Boardgame.findFromParameter(boardgameIDParam, on: req) { $0.with(\.$expansions) }
@@ -154,7 +154,7 @@ struct BoardgameController: APIRouteCollection {
 	///	* `?start=INT` - Offset from start of results set
 	/// * `?limit=INT` - the maximum number of games to retrieve: 1-200, default is 50. 
 	/// 
-	/// - Returns: <doc:BoardgameResponseData>
+	/// - Returns: `BoardgameResponseData`
 	func recommendGames(_ req: Request) async throws -> BoardgameResponseData {
 		let user = req.auth.get(UserCacheData.self)
 		let data = try ValidatingJSONDecoder().decode(BoardgameRecommendationData.self, fromBodyOf: req)
