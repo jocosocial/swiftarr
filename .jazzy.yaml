@@ -110,6 +110,7 @@ custom_categories:
     - SwiftarrClientApp
     - SwiftarrFeature
     - UserAccessLevel
+    - UserRoleType
 
   - name: Request Structs
     children:
@@ -168,32 +169,79 @@ custom_categories:
     - JSONEncoder
     - Model
     - PathComponent
+    - QueryBuilder
     - RedisClient
     - Request
     - SiblingsProperty
     - String
+    - Substring
     - UUID
     
   - name: Migrations
     children:
       - CreateAdminUsers
+      - CreateAlertWordPivotSchema
+      - CreateAlertWordSchema
+      - CreateAnnouncementSchema
+      - CreateBoardgameFavoriteSchema
+      - CreateBoardgameSchema
       - CreateCategories
-      - SetInitialCategoryForumCounts
+      - CreateCategorySchema
       - CreateClientUsers
+      - CreateCustomEnums
+      - CreateDailyThemeSchema
+      - CreateEventFavoriteSchema
+      - CreateEventSchema
+      - CreateFezParticipantSchema
+      - CreateFezPostSchema
+      - CreateForumEditSchema
+      - CreateForumPostEditSchema
+      - CreateForumPostSchema
+      - CreateForumReadersSchema
+      - CreateForums
+      - CreateForumSchema
+      - CreateFriendlyFezEditSchema
+      - CreateFriendlyFezSchema
+      - CreateKaraokeFavoriteSchema
+      - CreateKaraokePlayedSongSchema
+      - CreateKaraokeSongSchema
+      - CreateModeratorActionSchema
+      - CreateMuteWordSchema
+      - CreatePostLikesSchema
+      - CreateProfileEditSchema
+      - CreateRegistrationCodeSchema
+      - CreateReportSchema
+      - CreateTestData
+      - CreateTestUsers
+      - CreateTimeZoneChangeSchema
+      - CreateTokenSchema
+      - CreateTwarrtEditSchema
+      - CreateTwarrtLikesSchema
+      - CreateTwarrtSchema
+      - CreateUserFavoriteSchema
+      - CreateUserNoteSchema
+      - CreateUserRoleSchema
+      - CreateUserSchema
       - ImportBoardgames
-      - SetInitialEventForums
-      - ImportRegistrationCodes
       - ImportEvents
       - ImportKaraokeSongs
-      - CreateForums
-      - CreateCustomEnums
-      - CreateTestUsers
-      - CreateTestData
+      - ImportRegistrationCodes
+      - SetInitialCategoryForumCounts
+      - SetInitialEventForums
+      - UpdateForumReadersLastPostReadSchema
+      - UpdateForumReadersMuteSchema
 
   - name: Pivots
     children:
+    - AlertWordPivot
+    - BoardgameFavorite
+    - EventFavorite
+    - FezParticipant
+    - ForumReaders
+    - KaraokeFavorite
     - PostLikes
     - TwarrtLikes
+    - UserFavorite
     
   - name: Protocols
     children:
@@ -207,6 +255,7 @@ custom_categories:
     - LibGdParametrizableExportFormatter
     - RCFValidatable
     - Reportable
+    - Searchable
     - SiteControllerUtils
     - StoredSetting
     
@@ -214,4 +263,38 @@ custom_categories:
     children:
     - EventParser
     - Settings
-    
+
+  - name: Site Controllers
+    children:
+      - SiteAdminController
+      - SiteBoardgameController
+      - SiteController
+      - SiteEventsController
+      - SiteFileController
+      - SiteForumController
+      - SiteFriendlyFezController
+      - SiteKaraokeController
+      - SiteLoginController
+      - SiteModController
+      - SiteSeamailController
+      - SiteTwitarrController
+      - SiteUserController
+
+  - name: Middleware
+    children:
+      - SwiftarrErrorMiddleware
+      - CalendarSessionFixerMiddleware
+      - DisabledAPISectionMiddleware
+      - DisabledSiteSectionMiddleware
+      - NotificationsMiddleware
+      - RequireAdminMiddleware
+      - RequireModeratorMiddleware
+      - RequireTHOMiddleware
+      - RequireTwitarrTeamMiddleware
+      - RequireVerifiedMiddleware
+      - SiteErrorMiddleware
+      - SiteRequireAdminMiddleware
+      - SiteRequireModeratorMiddleware
+      - SiteRequireTHOMiddleware
+      - SiteRequireTwitarrTeamMiddleware
+      - SiteRequireVerifiedMiddleware
