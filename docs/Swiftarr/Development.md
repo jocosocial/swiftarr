@@ -47,7 +47,7 @@ xcodebuild -project "swiftarr.xcodeproj" -scheme "Migrate"
 You'll be asked to approve a bunch of migrations; these mostly create database tables. 
 
 9. Set the scheme to "Run/My Mac" in Xcode, hit Run, and `swiftarr` should shortly be available at http://localhost:8081.
-To shut down the Docker containers, `./scripts/instance.sh stop`.
+To shut down the Docker containers, `scripts/instance.sh stop`.
 
 Yes, that's a bunch the first time through and it does take some time. From here on out though, it's just a matter of
 pulling the latest updates from the repository and regenerating the .xcodeproj file.
@@ -102,3 +102,4 @@ Docker containers. You can omit the `postgres redis` portion of the command to g
 5. Build the codebase using VSCode or in a terminal with `swift build`. This could take a while if it's the first time.
 6. Create your own `development.env` in `Sources/App/seeds/Private Swiftarr Config`. See [Configuration](configuration.html) for details.
 7. Perform an initial database migration. This only needs to be done once or whenever there are additional migrations to apply. `swift run Run migrate [--yes]`. Note the two run's with differing case.
+8. Start the app with `swift run Run serve` and you should be greeted with a line akin to `Server starting on http://127.0.0.1:8081`.

@@ -1,9 +1,6 @@
 Linux Installation
 ==================
 
-This guide was written based on Fedora 34 (Red Hat). Some adjustments 
-will need to be made for other distros (such as Ubuntu/Debian/etc).
-
 Prerequisites
 -------------
 
@@ -15,46 +12,35 @@ Prerequisites
 02. Several packages and libraries are required. Install these with your 
     package manager.
     ```
-    sudo dnf install -y gd-devel libjpeg-turbo-devel swift-lang
+    Fedora: gd-devel libjpeg-turbo-devel swift-lang
+    Ubuntu: libgd-dev libjpeg-dev swiftlang (requires 3rd party repo)
     ```
 
-03. This project uses the [Vapor](https://docs.vapor.codes/) web framework for Swift.
-    While Linux is a supported platform there are no packages available for the Toolbox
-    so it must be built. Follow the instructions at https://docs.vapor.codes/4.0/install/linux/
-    To summarize:
-    ```
-    git clone https://github.com/vapor/toolbox
-    cd toolbox
-    git checkout 18.3.3 # This was the latest at the time of writing.
-    sudo make install
-    ```
-
-Build
------
+Build & Configure
+-----------------
 
 01. From the root of this repo:
     ```
-    vapor build
-    # or
     swift build
     ```
+
+02. Create your own `development.env` in `Sources/App/seeds/Private Swiftarr Config`. See [Configuration](configuration.html) for details.
 
 Run
 ---
 
 01. Ensure that the prereqs from above are running.
     ```
-    ~ # scripts/instance.sh up -d            
+    ~ # scripts/instance.sh up -d postgres redis
     Creating network "swiftarr_default" with the default driver
-    Creating swiftarr_postgres_1 ... done
-    Creating swiftarr_redis_1    ... done
+    Creating swiftarr_instance_postgres_1 ... done
+    Creating swiftarr_instance_redis_1    ... done
     ```
 
 02. If you are populating a fresh database then you'll need to run a migration.
     to get some data. See the [Vapor docs](https://docs.vapor.codes/4.0/fluent/overview/#migrate) for details.
     ```
-    # Note there is no `swift` eqivalent here. You need the vapor CLI.
-    vapor run migrate --yes
+    swift run Run migrate --yes
     ```
     Example output:
     ```
@@ -76,8 +62,6 @@ Run
 
 03. Run the server!
     ```
-    vapor run
-    # or
     swift run
     ```
     You should see a line akin to `Server starting on http://127.0.0.1:8081`

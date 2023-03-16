@@ -2,6 +2,7 @@ MacOS Installation
 ==================
 
 Installing Swiftarr on Your Computer\*
+
 \* If your computer is a Macintosh
 
 ## Basics
@@ -20,7 +21,7 @@ You can also use Docker to install and run the database services. Docker is kind
 
 These install steps assume you have git and Xcode already, and are installing with the intent of doing at least some work on the server. 
 
-1. Clone the Swiftarr repo with Git. [Get it here.](https://github.com/challfry/swiftarr/)
+1. Clone the Swiftarr repo with Git. [Get it here.](https://github.com/jocosocial/swiftarr/)
 2. You’ll need to either run `swift package update` or “Update to latest package versions” within Xcode.
 
 ### Using Homebrew
@@ -32,25 +33,25 @@ These install steps assume you have git and Xcode already, and are installing wi
 
 ### Using Docker
 
-1. Install Docker [Link](https://www.docker.com/).
-2. Run ./scripts/instance.sh up from the swiftarr directory to create and launch postgres and redis Docker containers.
+1. Install [Docker](https://www.docker.com/).
+2. Run `scripts/instance.sh up -d postgres redis` from the swiftarr directory to create and launch postgres and redis Docker containers.
 3. Be sure to get libgd and libjpeg installed.
 
 ## Part 2: Configure, Build and Run
 
-If this is a publicly accessible install, you should make a copy of the `Template.env` Environment setup file in `Sources/App/Run/Private Swiftarr Config` folder, name it with the name of your environment and fill in passwords and such with private values.
+If this is a publicly accessible install, you should make a copy of the `Template.env` Environment setup file in `Sources/App/seeds/Private Swiftarr Config` folder, name it with the name of your environment and fill in passwords and such with private values. See [Configuration](configuration.html) for details.
 
 ### Building with Xcode
 
 1. Build and run the Migrate scheme in Xcode. Hit y in the Debug area when it asks you if you want to do a bunch of migrations.
-2. Once migrate completes successfully, switch to the 'Run' scheme and run it. If it works, it'll tell you "Server starting on http://192.168.0.1:8081"
+2. Once migrate completes successfully, switch to the 'Run' scheme and run it. If it works, it'll tell you "Server starting on http://127.0.0.1:8081"
 
 ### Building from the Command Line
 
 If you have a particular environment, add `--env <your-environment-name>`.
 
-1. `vapor run migrate`, you should see a list of migrations that'll be run--hit `y`.
-2. `vapor run serve` If you don't have an environment file that defines the hostname to serve from, add the `--hostname` parameter.
+1. `swift run Run migrate`, you should see a list of migrations that'll be run--hit `y`.
+2. `swift run Run serve` If you don't have an environment file that defines the hostname to serve from, add the `--hostname` parameter.
 
 ## More Info on Postgres
 
@@ -66,11 +67,11 @@ If you install redis locally you'll need to run `redis-server` from the command 
 
 When launching Swiftarr from the command line, use:
 
-`vapor run --env production`
+`swift run Run serve --env production`
 
-with the environment you want to use. `development` is the default; if you're only doing development builds you probably don't need to make a development.env file. If this is a publicly accessible install, you should make a copy of the `Template.env` Environment setup file in `Sources/App/Run/Private Swiftarr Config` folder, name it with the name of your environment and fill in passwords and such with private values.
+with the environment you want to use. `development` is the default; if you're only doing development builds you probably don't need to make a development.env file. If this is a publicly accessible install, you should make a copy of the `Template.env` Environment setup file in `Sources/App/seeds/Private Swiftarr Config` folder, name it with the name of your environment and fill in passwords and such with private values.
 
-The git repo is configured to ignore all files in the `Sources/App/Run/Private Swiftarr Config` directory other than the Template.env file. This is on purpose; don't check in your custom .env files.
+The git repo is configured to ignore all files in the `Sources/App/seeds/Private Swiftarr Config` directory other than the Template.env file. This is on purpose; don't check in your custom .env files.
 
 There are several predefined environments:
 - `development` is the default

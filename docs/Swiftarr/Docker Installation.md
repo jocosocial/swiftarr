@@ -4,33 +4,20 @@ Docker Installation
 This assumes you already have Docker or an equivalent OCI-compatible runtime
 available to you. And `docker-compose` (or equivalent).
 
+Warning: Very little testing has been done with the Docker Compose plugin rather than the docker-compose script. Your mileage may vary when using the plugin.
+
 Prerequisites
 -------------
 
-01. You need to decide on your runtime configuration:
-   
-    | Configuration | Description                                                         |
-    |---------------|---------------------------------------------------------------------|
-    | Instance      | Service dependencies only.                                          |
-    | Stack         | Service dependencies and production-ready web server image.         |
-   
-    Each configuration has a corresponding shell script located in `/scripts` that is a 
-    wrapper around `docker-compose` which will aid in getting up and running.
-   
-    If you are considering doing a Stack deployment you need to decide what environment you
-    wish to run. Generally this is `development` or `production`. There isn't a ton of
-    difference between the two other than initial database seeding and logging. Regardless,
-    you'll need to create config files in `/Sources/App/seeds/Private Swiftarr Config` based on
-    the `Docker-Template.env`. See [Installation Notes](https://github.com/challfry/swiftarr/wiki/Installation-Notes#more-info-on-environment-files)
-    for more details on what this does.
-   
-02. Docker-Compose < 1.26.0 has a bug that causes `env_file` processing to not escape values correctly. 
+01. Docker-Compose < 1.26.0 has a bug that causes `env_file` processing to not escape values correctly. 
     If you see strange behavior like timeouts or bad database configuration check your version. 1.25.6 
     is broken and 1.28.6 works.
 
-03. I assume that your user is a part of the `docker` group and can run `docker` commands without issue. 
+02. I assume that your user is a part of the `docker` group and can run `docker` commands without issue. 
     If this is a problem see the Docker instructions for adding that group to the system and getting 
     yourself to be a part of it. While everything could probably work under `sudo` it has not been tested.
+
+03. Create your own `production.env` in `Sources/App/seeds/Private Swiftarr Config`. See [Configuration](configuration.html) for details.
 
 Build
 -----
@@ -42,11 +29,11 @@ This only applies to the Stack configurations.
     ```
     scripts/stack.sh -e production build [--no-cache]
     ```
-
+terminate
 Run
 ---
 
-01. `docker-compose` will similarly handle creating the whole stack.\
+01. `docker-compose` will similarly handle creating the whole stack.
     ```
     scripts/stack.sh -e production up [-d]
     ```
