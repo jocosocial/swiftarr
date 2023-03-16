@@ -56,6 +56,7 @@ custom_categories:
     - ImageController
     - KaraokeController
     - ModerationController
+    - PhonecallController
     - TestController
     - TwitarrController
     - UserController
@@ -83,10 +84,12 @@ custom_categories:
     - ProfileEdit
     - RegistrationCode
     - Report
+    - TimeZoneChange
     - Token
     - TwarrtEdit
     - Twarrt
     - UserNote
+    - UserRole
     - User
     
   - name: Enumerations
