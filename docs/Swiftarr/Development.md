@@ -3,6 +3,11 @@ Development
 
 These are the tools you'll need to get started building Swiftarr for yourself.
 
+Swift
+-----
+Swift runs on MacOS or Linux. If you are unfamiliar with the language we suggest the [Codecademy Learn Swift](https://www.codecademy.com/learn/learn-swift) course.
+It's free and pretty quick for those who have experience with languages such as Java or C.
+
 MacOS
 -----
 
