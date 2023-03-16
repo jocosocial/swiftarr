@@ -8,7 +8,7 @@ Generating Documentation
 This requires [Jazzy](https://github.com/realm/jazzy/) and [Sourcekitten](https://github.com/jpsim/SourceKitten) to be installed. A helper script exists to simplify generating the HTML-based documentation from the source code on your local machine.
 
 ```
-scripts/generatedocs.sh
+scripts/generatedocs.sh [-c]
 ```
 
 Note: Linux hosts can see strange errors reading files part way through the generation
