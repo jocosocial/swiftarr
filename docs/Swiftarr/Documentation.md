@@ -8,12 +8,13 @@ Generating Documentation
 This requires [Jazzy](https://github.com/realm/jazzy/) and [Sourcekitten](https://github.com/jpsim/SourceKitten) to be installed. A helper script exists to simplify generating the HTML-based documentation from the source code on your local machine.
 
 ```
-scripts/generatedocs.sh [-c]
+scripts/generatedocs.sh [-c] [-o /path/to/output/directory]
 ```
 
 Note: Linux hosts can see strange errors reading files part way through the generation
 process. This likely means you need to increase the limit of open files using `ulimit -n 4000`. This number was
-randomly selected to be much higher than the 1024 default the system had. You can run `ulimit -n` to see the current limit. Consult your distribution documentation to make this change permanent.
+randomly selected to be much higher than the 1024 default the system had. You can run `ulimit -n` 
+to see the current limit. Consult your distribution documentation to make this change permanent.
 
 Swift Code Docs
 ---------------
