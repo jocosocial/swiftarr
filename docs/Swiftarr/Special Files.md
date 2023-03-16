@@ -22,7 +22,7 @@ So I made this.
 - `locustfile.py`: Locust is a load testing package for servers, written in Python. You'll need to install [Locust](http://locust.io) to use it. This particular file is set up to repeatedly make requests to ~100 of the most commonly used Swiftarr endpoints. The file does not validate the results; it's purpose is to load up the server with calls until all the CPUs are pegged.
 - `Package.resolved`: This is where the Swift Package Manager keeps its list of all the dependent Swift packages (mostly parts of Vapor), and the versions it's currently building with.
 - `Package.swift`: This is SPM's package manifest file. All the top-level dependencies Swiftarr needs to compile are listed, along with other parts that need to go into the app. [Swift.org](http://www.swift.org) has more about this. Importantly, SPM has a full toolchain on Mac, Linux and Windows.
-- `Procfile`: [Heroku](http://heroku.com) uses this file to figure out how to launch your app. For us, it's just a Run command, making sure to set the environment to `heroku`. Nobody else uses this.
+- `Procfile`: [Heroku](http://heroku.com) uses this file to figure out how to launch your app. For us, it's just a Run command, making sure to set the environment to `heroku`. Nobody else uses this. Deprecated.
 - `Prometheus`: [Prometheus](https://prometheus.io) is a server metrics platform. You can run the `prometheus` command line tool and then view metrics data in a browser. This can be used to monitor server health, track down bugs (e.g. bugs that only come from a specific client), and find routes whose response times are slow.
 - `swiftarr.xcodeproj`: For the last 50 years, software engineers have been attempting to design a replacement for Makefiles that was less terrible. Xcode project files have succeeded in this regard, but it's a low bar. Their big failing (IMHO) is that it's almost impossible to do a manual git-merge with them. Sometimes auto-merge works and everything's fine, sometimes your project won't open anymore. But, if you have to look at the merge conflicts and try to resolve them -- it's best to reset your changes, take updates, and reapply the changes in Xcode.
 
@@ -35,7 +35,7 @@ So I made this.
 - `generatedocs.sh`: Shell script that uses swift doc to generate documentation files for the API from inline header comments.
 - `instance.sh`: Shell script for staring/stopping/resetting the databases in on a Mac.
 
-## Inside `/Sources/Run/Private Swiftarr Config`
+## Inside `/Sources/App/seeds/Private Swiftarr Config`
 
 - `Template.env`: This is the template for setting up environment files for Swiftarr, when running Swiftarr as a local process. Environment files contain server and DB passwords, and shouldn't be checked into Git. Set up an environment by copying this file and filling in the various fields as appropriate.
 - `Docker-Template.env`: Same idea as `Template.env`, but for running Swiftarr inside a Docker container.

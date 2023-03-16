@@ -19,5 +19,14 @@ __pycache__/
 !/Sources/App/seeds/Private Swiftarr Config/Template.env
 !/Sources/App/seeds/Private Swiftarr Config/Docker-Template.env
 /[Ii]mages/
+
+# Auto-generated Documentation
 doc.json
 docs/docsets/
+docs/*.json
+docs/*.html
+docs/**/*.html
+docs/js
+docs/css
+docs/img
+docs/badge*
