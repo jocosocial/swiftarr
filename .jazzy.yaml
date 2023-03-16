@@ -22,11 +22,11 @@ min_acl: private
 custom_categories:
   - name: Overview
     children:
+      - Documentation
       - Contributing
       - Development
       - Roadmap
       - Special Files
-      - Documentation
 
   - name: Operations
     children:

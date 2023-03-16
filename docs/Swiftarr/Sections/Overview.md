@@ -1,4 +1,1 @@
-Overview Title
-==============
-
-Lorem ipsum dotor shit
+High level information on the project and it's goals.

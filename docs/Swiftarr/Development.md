@@ -75,15 +75,28 @@ reload the page, and see the changes.
 Linux
 -----
 
+### Requirements
+
 You will need to install the Swift compiler and runtime. This is probably available as a package
 via your system packager (`swift-lang`) or via https://www.swift.org/download/
 
-After that you will need the following tools:
-* https://github.com/vapor/toolbox
+After that you will likely want the following tools:
 * https://github.com/apple/swift-format
 * https://github.com/jpsim/SourceKitten
 * https://github.com/realm/jazzy/
 
 Consult their READMEs for installation.
 
-More SoonTM
+### Quickstart - Linux
+If running on Linux with VSCode or in a terminal, the easiest way to get an instance up and running is via
+[Docker](https://www.docker.com/products/docker-desktop).
+
+1. Install Docker.
+2. Install the various binary dependencies.
+    * Fedora: gd-devel libjpeg-turbo-devel
+    * Ubuntu: libgd-dev libjpeg-dev
+3. Download or clone the `switarr` [repository](https://github.com/jocosocial/swiftarr).
+4. Run `scripts/instance.sh up -d postgres redis` from the repo directory to create and launch Postgres and Redis
+Docker containers. You can omit the `postgres redis` portion of the command to get additional instance containers.
+5. Build the codebase using VSCode or in a terminal with `swift build`. This could take a while if it's the first time.
+6. Perform an initial database migration. This only needs to be done once or whenever there are additional migrations to apply. `swift run Run migrate [--yes]`. Note the two run's with differing case.
