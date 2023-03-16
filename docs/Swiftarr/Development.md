@@ -33,10 +33,11 @@ If running on macOS with Xcode installed, the easiest way to get an instance up 
 for just running an instance, and have no way to easily test that at the moment, but it *might* be needed to get the
 correct SSL library and shimming for SwiftNIO.)
 4. Download or clone the `switarr` [repository](https://github.com/jocosocial/swiftarr).
-5. Run `./scripts/instance.sh up` from the `swiftarr` directory to create and launch postgres and redis
+5. Run `scripts/instance.sh up -d redis postgres` from the `swiftarr` directory to create and launch postgres and redis
 Docker containers.
-6. Open the swiftarr.xcodeproj file.
-7. Run the "Migrate" scheme to configure the databses, or
+6. Create your own `development.env` in `Sources/App/seeds/Private Swiftarr Config`. See [Configuration](configuration.html) for details.
+7. Open the swiftarr.xcodeproj file.
+8. Run the "Migrate" scheme to configure the databses, or
 
 ```shell
 xcodebuild -project "swiftarr.xcodeproj" -scheme "Migrate"
@@ -45,7 +46,7 @@ xcodebuild -project "swiftarr.xcodeproj" -scheme "Migrate"
 
 You'll be asked to approve a bunch of migrations; these mostly create database tables. 
 
-8. Set the scheme to "Run/My Mac" in Xcode, hit Run, and `swiftarr` should shortly be available at http://localhost:8081.
+9. Set the scheme to "Run/My Mac" in Xcode, hit Run, and `swiftarr` should shortly be available at http://localhost:8081.
 To shut down the Docker containers, `./scripts/instance.sh stop`.
 
 Yes, that's a bunch the first time through and it does take some time. From here on out though, it's just a matter of
@@ -99,4 +100,5 @@ If running on Linux with VSCode or in a terminal, the easiest way to get an inst
 4. Run `scripts/instance.sh up -d postgres redis` from the repo directory to create and launch Postgres and Redis
 Docker containers. You can omit the `postgres redis` portion of the command to get additional instance containers.
 5. Build the codebase using VSCode or in a terminal with `swift build`. This could take a while if it's the first time.
-6. Perform an initial database migration. This only needs to be done once or whenever there are additional migrations to apply. `swift run Run migrate [--yes]`. Note the two run's with differing case.
+6. Create your own `development.env` in `Sources/App/seeds/Private Swiftarr Config`. See [Configuration](configuration.html) for details.
+7. Perform an initial database migration. This only needs to be done once or whenever there are additional migrations to apply. `swift run Run migrate [--yes]`. Note the two run's with differing case.
