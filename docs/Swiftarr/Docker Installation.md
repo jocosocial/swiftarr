@@ -17,7 +17,11 @@ Prerequisites
     If this is a problem see the Docker instructions for adding that group to the system and getting 
     yourself to be a part of it. While everything could probably work under `sudo` it has not been tested.
 
-03. Create your own `production.env` in `Sources/App/seeds/Private Swiftarr Config`. See [Configuration](configuration.html) for details.
+Configure
+---------
+
+01. Create your own `production.env` in `Sources/App/seeds/Private Swiftarr Config`. 
+    See [Configuration](configuration.html) for details.
 
 Build
 -----
@@ -29,7 +33,7 @@ This only applies to the Stack configurations.
     ```
     scripts/stack.sh -e production build [--no-cache]
     ```
-terminate
+
 Run
 ---
 

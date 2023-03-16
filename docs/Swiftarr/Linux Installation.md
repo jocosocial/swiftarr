@@ -16,15 +16,19 @@ Prerequisites
     Ubuntu: libgd-dev libjpeg-dev swiftlang (requires 3rd party repo)
     ```
 
-Build & Configure
------------------
+Configure
+---------
+
+01. Create your own `development.env` in `Sources/App/seeds/Private Swiftarr Config`. 
+    See [Configuration](configuration.html) for details.
+
+Build
+-----
 
 01. From the root of this repo:
     ```
     swift build
     ```
-
-02. Create your own `development.env` in `Sources/App/seeds/Private Swiftarr Config`. See [Configuration](configuration.html) for details.
 
 Run
 ---

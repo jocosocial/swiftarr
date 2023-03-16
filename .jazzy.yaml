@@ -35,7 +35,6 @@ custom_categories:
       - Linux Installation
       - Docker Installation
       - Database Migration
-      - Deployment
 
   - name: Twitarr API
     children:
