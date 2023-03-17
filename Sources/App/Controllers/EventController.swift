@@ -48,9 +48,9 @@ struct EventController: APIRouteCollection {
 	/// The day and date parameters actually return events from 3AM local time on the given day until 3AM the next day--some events start after midnight and tend to get lost by those
 	/// looking at daily schedules.
 	/// 
-	/// All the above parameters filter the set of <doc:EventData> objects that get returned. Onlly one of [cruiseday, day, date, time] may be used.  
+	/// All the above parameters filter the set of `EventData` objects that get returned. Onlly one of [cruiseday, day, date, time] may be used.  
 	///
-	/// - Returns: An array of  <doc:EventData> containing filtered events.
+	/// - Returns: An array of  `EventData` containing filtered events.
 	func eventsHandler(_ req: Request) async throws -> [EventData] {
 		struct QueryOptions: Content {
 			var cruiseday: Int?
@@ -135,7 +135,7 @@ struct EventController: APIRouteCollection {
 	/// Retrieve a single event from its database ID or event UID. UID is part of the ICS spec for calendar events (RFC 5545).
 	/// 
 	/// - Parameter eventID: in URL path
-	/// - Returns: <doc:EventData> containing  event info.
+	/// - Returns: `EventData` containing  event info.
 	func singleEventHandler(_ req: Request) async throws -> EventData {
   		guard let paramVal = req.parameters.get(eventIDParam.paramString) else {
 			throw Abort(.badRequest, reason: "Request parameter identifying Event is missing.")
@@ -208,7 +208,7 @@ struct EventController: APIRouteCollection {
 	///
 	/// Retrieve the `Event`s the user has favorited, sorted by `.startTime`.
 	///
-	/// - Returns: An array of  <doc:EventData> containing the user's favorite events.
+	/// - Returns: An array of  `EventData` containing the user's favorite events.
 	func favoritesHandler(_ req: Request) async throws -> [EventData] {
 		let user = try req.auth.require(UserCacheData.self)
 		let events = try await Event.query(on: req.db).join(EventFavorite.self, on: \Event.$id == \EventFavorite.$event.$id)

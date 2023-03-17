@@ -46,7 +46,7 @@ struct ClientController: APIRouteCollection {
 	/// - Requires: `x-swiftarr-user` header in the request.
 	/// - Throws: 400 error if no valid date string provided. 401 error if the required header
 	///   is missing or invalid. 403 error if user is not a registered client.
-	/// - Returns: An array of  <doc:UserSearch> containing the ID and `.userSearch` string values
+	/// - Returns: An array of  `UserSearch` containing the ID and `.userSearch` string values
 	///   of all users, sorted by username.
 	func userSearchHandler(_ req: Request) async throws -> [UserSearch] {
 		let client = try req.auth.require(UserCacheData.self)
@@ -90,7 +90,7 @@ struct ClientController: APIRouteCollection {
 	/// - Parameter Date: in URL path. See above for formats.
 	/// - Throws: 400 error if no valid date string provided. 401 error if the required header
 	///   is missing or invalid. 403 error if user is not a registered client.
-	/// - Returns: An array of <doc:UserHeader> containing all updated users.
+	/// - Returns: An array of `UserHeader` containing all updated users.
 	func userUpdatesHandler(_ req: Request) async throws -> [UserHeader] {
 		let client = try req.auth.require(UserCacheData.self)
 		// must be registered client

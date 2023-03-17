@@ -19,6 +19,11 @@ abstract: docs/Swiftarr/Sections/*.md
 
 min_acl: private
 
+# @TODO should we exclude some stuff?
+#exclude:
+#  - "Sources/App/Site*"
+#  - "Sources/App/Migrations*"
+
 custom_categories:
   - name: Overview
     children:

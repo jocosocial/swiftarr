@@ -76,7 +76,7 @@ struct AlertController: APIRouteCollection {
 	/// Retrieve info on the number of each type of notification supported by Swiftarr. 
 	/// 
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: <doc:UserNotificationData>
+	/// - Returns: `UserNotificationData`
 	func globalNotificationHandler(_ req: Request) async throws -> UserNotificationData {
 		guard let user = req.auth.get(UserCacheData.self) else {
 			let activeAnnouncementIDs = try await getActiveAnnouncementIDs(on: req)
@@ -183,10 +183,10 @@ struct AlertController: APIRouteCollection {
 	
 	/// `WS /api/v3/notification/socket`
 	/// 
-	/// Creates a notification socket for the user. The client of this socket will receive <doc:SocketNotificationData> updates,
-	/// generally when an event happens that would change a value in the user's <doc:UserNotificationData> struct.
+	/// Creates a notification socket for the user. The client of this socket will receive `SocketNotificationData` updates,
+	/// generally when an event happens that would change a value in the user's `UserNotificationData` struct.
 	/// 
-	/// This socket only sends <doc:SocketNotificationData> messages from the server to the client; there are no client-initiated
+	/// This socket only sends `SocketNotificationData` messages from the server to the client; there are no client-initiated
 	/// messages defined for this socket.
 	func createNotificationSocket(_ req: Request, _ ws: WebSocket) {
 		guard let user = try? req.auth.require(UserCacheData.self) else {
@@ -208,7 +208,7 @@ struct AlertController: APIRouteCollection {
 	/// Create a new announcement. Requires TwitarrTeam access and above. When a new announcement is created the notification endpoints will start 
 	/// indicating the new announcement to all users.
 	/// 
-	/// - Parameter requestBody: <doc:AnnouncementCreateData>
+	/// - Parameter requestBody: `AnnouncementCreateData`
 	/// - Returns: `HTTPStatus` 201 on success.
 	func createAnnouncement(_ req: Request) async throws -> HTTPStatus {
 		let user = try req.auth.require(UserCacheData.self)
@@ -235,7 +235,7 @@ struct AlertController: APIRouteCollection {
 	/// The purpose of the inactives flag is to allow for finding an expired announcement and re-activating it by changing its expire time. Doing so
 	/// does not re-alert users who have already read it.
 	///
-	/// - Returns: Array of <doc:AnnouncementData>
+	/// - Returns: Array of `AnnouncementData`
 	func getAnnouncements(_ req: Request) async throws -> [AnnouncementData] {
 		let user = req.auth.get(UserCacheData.self)
 		let query = Announcement.query(on: req.db).sort(\.$id, .descending)
@@ -272,7 +272,7 @@ struct AlertController: APIRouteCollection {
 	/// 
 	/// - Parameter announcementID: The announcement to find
 	/// - Throws: 403 error if the user doesn't have TwitarrTeam or higher access. 404 if no announcement with the given ID is found.
-	/// - Returns: <doc:AnnouncementData>
+	/// - Returns: `AnnouncementData`
 	func getSingleAnnouncement(_ req: Request) async throws -> AnnouncementData {
 		let user = try req.auth.require(UserCacheData.self)
 		guard user.accessLevel.hasAccess(.twitarrteam) else {
@@ -295,9 +295,9 @@ struct AlertController: APIRouteCollection {
 	/// announcement: if a user has seen the announcement already, editing it will not cause the user to be notified that they should read it again.
 	///
 	/// - Parameter announcementID: The announcement to edit. Must exist.
-	/// - Parameter requestBody: <doc:AnnouncementCreateData>
+	/// - Parameter requestBody: `AnnouncementCreateData`
 	/// - Throws: 403 error if the user is not permitted to edit.
-	/// - Returns: The updated <doc:AnnouncementCreateData>
+	/// - Returns: The updated `AnnouncementCreateData`
 	func editAnnouncement(_ req: Request) async throws -> AnnouncementData {
 		let user = try req.auth.require(UserCacheData.self)
 		guard user.accessLevel.hasAccess(.twitarrteam) else {
@@ -349,7 +349,7 @@ struct AlertController: APIRouteCollection {
 	///  Returns information about all the daily themes currently registered.
 	///
 	/// - Throws: 403 error if the user is not permitted to delete.
-	/// - Returns: An array of <doc:DailyThemeData> on success.
+	/// - Returns: An array of `DailyThemeData` on success.
 	func getDailyThemes(_ req: Request) async throws -> [DailyThemeData] {
 		let themes = try await DailyTheme.query(on: req.db).sort(\.$cruiseDay, .ascending).all()
 		return try themes.map { try DailyThemeData($0) }

@@ -63,7 +63,7 @@ struct AdminController: APIRouteCollection {
 	/// Creates a new daily theme for a day of the cruise (or some other day). The 'day' field is unique, so attempts to create a new record
 	/// with the same day as an existing record will fail--instead, you probably want to edit the existing DailyTheme for that day. 
 	/// 
-	/// - Parameter requestBody: <doc:DailyThemeUploadData>
+	/// - Parameter requestBody: `DailyThemeUploadData`
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: `HTTP 201 Created` if the theme was added successfully.
 	func addDailyThemeHandler(_ req: Request) async throws -> HTTPStatus {
@@ -84,7 +84,7 @@ struct AdminController: APIRouteCollection {
 	/// you can't set the day to equal a day that already has a theme record. This means it'll take extra steps if you want to swap days for 2 themes.
 	/// 
 	/// - Parameter dailyThemeID: in URL path
-	/// - Parameter requestBody: <doc:DailyThemeUploadData>
+	/// - Parameter requestBody: `DailyThemeUploadData`
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: `HTTP 201 Created` if the theme was added successfully.
 	func editDailyThemeHandler(_ req: Request) async throws -> HTTPStatus {
@@ -123,7 +123,7 @@ struct AdminController: APIRouteCollection {
 	///  Returns the current state of the server's Settings structure.
 	/// 
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: <doc:SettingsAdminData>
+	/// - Returns: `SettingsAdminData`
 	func settingsHandler(_ req: Request) throws -> SettingsAdminData {
 		return SettingsAdminData(Settings.shared)
 	}
@@ -132,7 +132,7 @@ struct AdminController: APIRouteCollection {
 	///
 	///  Updates a bunch of settings in the Settings.shared object.
 	/// 
-	/// - Parameter requestBody: <doc:SettingsUpdateData>
+	/// - Parameter requestBody: `SettingsUpdateData`
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: `HTTP 200 OK` if the settings were updated.
 	func settingsUpdateHandler(_ req: Request) async throws -> HTTPStatus {
@@ -196,7 +196,7 @@ struct AdminController: APIRouteCollection {
 	/// Returns information about the declared time zone changes happening during the cruise.
 	/// 
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: <doc:TimeZoneChangeData>
+	/// - Returns: `TimeZoneChangeData`
 	func timeZoneChangeHandler(_ req: Request) async throws -> TimeZoneChangeData {
 		let tzChangeSet = try await TimeZoneChangeSet(req.db)
 		let result = TimeZoneChangeData(tzChangeSet)
@@ -223,7 +223,7 @@ struct AdminController: APIRouteCollection {
 	///  admin account was attempting to apply its contents will cause errors. Once uploaded, an events file should be safe to verify and 
 	///  apply multiple times in parallel.
 	///
-	/// - Parameter requestBody: <doc:EventsUpdateData> which is really one big String (the .ics file) wrapped in JSON.
+	/// - Parameter requestBody: `EventsUpdateData` which is really one big String (the .ics file) wrapped in JSON.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: `HTTP 200 OK`
 	func scheduleUploadPostHandler(_ req: Request) async throws -> HTTPStatus {
@@ -246,7 +246,7 @@ struct AdminController: APIRouteCollection {
 	///  update can be idempotent. Once an update is uploaded, you can call the validate and apply endpoints repeatedly if necessary. 
 	///  
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: <doc:EventUpdateDifferenceData>
+	/// - Returns: `EventUpdateDifferenceData`
 	func scheduleChangeVerificationHandler(_ req: Request) async throws -> EventUpdateDifferenceData {
 		let filepath = try uploadSchedulePath()
 		let buffer = try await req.fileio.collectFile(at: filepath.path)
@@ -475,7 +475,7 @@ struct AdminController: APIRouteCollection {
 	///  In the future, we may add a capability for admins to create and issue replacement codes to users (or pull codes from a pre-allocated
 	///  'replacement' list, or something). This returns stats on those theoretical codes too, but the numbers are all 0.
 	///  
-	/// - Returns: <doc:RegistrationCodeStatsData> 
+	/// - Returns: `RegistrationCodeStatsData` 
 	func regCodeStatsHandler(_ req: Request) async throws -> RegistrationCodeStatsData {
 		let codeCount = try await RegistrationCode.query(on: req.db).count()
 		let usedCodes = try await RegistrationCode.query(on: req.db).filter(\.$user.$id != nil).count()
@@ -531,7 +531,7 @@ struct AdminController: APIRouteCollection {
 	/// 
 	///  Returns a list of all site moderators. Only THO and above may call this method.
 	///  
-	/// - Returns: Array of <doc:UserHeader>.
+	/// - Returns: Array of `UserHeader`.
 	func getModeratorsHandler(_ req: Request) async throws -> [UserHeader] {
 		let mods = try await User.query(on: req.db).filter(\.$accessLevel == .moderator).all()
 		return try mods.map { try UserHeader(user: $0) }
@@ -592,7 +592,7 @@ struct AdminController: APIRouteCollection {
 	/// 
 	///  Returns a list of all TwitarrTeam members. Only THO and above may call this method.
 	///  
-	/// - Returns: Array of <doc:UserHeader>.
+	/// - Returns: Array of `UserHeader`.
 	func getTwitarrTeamHandler(_ req: Request) async throws -> [UserHeader] {
 		let twitarrTeam = try await User.query(on: req.db).filter(\.$accessLevel == .twitarrteam).all()
 		return try twitarrTeam.map { try UserHeader(user: $0) }
@@ -635,7 +635,7 @@ struct AdminController: APIRouteCollection {
 	///  THO access level lets users promote other users to Modaerator and TwitarrTeam access, and demote to Banned status. THO users can also post notifications
 	///  and set daily themes.
 	///  
-	/// - Returns: Array of <doc:UserHeader>.
+	/// - Returns: Array of `UserHeader`.
 	func getTHOHandler(_ req: Request) async throws -> [UserHeader] {
 		let tho = try await User.query(on: req.db).filter(\.$accessLevel == .tho).all()
 		return try tho.map { try UserHeader(user: $0) }
@@ -675,7 +675,7 @@ struct AdminController: APIRouteCollection {
 	/// 
 	///  Returns a list of all users that have the given role.
 	///  
-	/// - Returns: Array of <doc:UserHeader>.
+	/// - Returns: Array of `UserHeader`.
 	func getUsersWithRole(_ req: Request) async throws -> [UserHeader] {
 		guard let parameter = req.parameters.get(userRoleParam.paramString) else {
 			throw Abort(.badRequest, reason: "No UserRoleType found in request.")
