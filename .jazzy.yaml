@@ -47,6 +47,7 @@ custom_categories:
       - API Overview
       - Canonical Links
       - API Changelist
+      - Example
 
   - name: Controllers
     children:
