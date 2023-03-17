@@ -1500,7 +1500,7 @@ entirely.</p>
                       <div class="abstract">
                         <p><code>GET /api/v3/users/find/:username</code></p>
 
-<p>Retrieves a user&rsquo;s <a href="doc:UserHeader">doc:UserHeader</a> using either an ID (UUID string) or a username.</p>
+<p>Retrieves a user&rsquo;s <code><a href="../Structs/UserHeader.html">UserHeader</a></code> using either an ID (UUID string) or a username.</p>
 
 <p>This endpoint is of limited utility, but is included for the case of obtaining a
 user&rsquo;s ID from a username. If you have an ID and want the associated username, use
@@ -1547,7 +1547,7 @@ exist.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><a href="doc:UserHeader">doc:UserHeader</a> containing the user&rsquo;s ID, username, displayName and userImage.</p>
+                        <p><code><a href="../Structs/UserHeader.html">UserHeader</a></code> containing the user&rsquo;s ID, username, displayName and userImage.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L74-L91">Show on GitHub</a>
@@ -1570,7 +1570,7 @@ exist.</p>
                       <div class="abstract">
                         <p><code>GET /api/v3/users/:userID</code></p>
 
-<p>Retrieves the specified user&rsquo;s <a href="doc:UserHeader">doc:UserHeader</a> info.</p>
+<p>Retrieves the specified user&rsquo;s <code><a href="../Structs/UserHeader.html">UserHeader</a></code> info.</p>
 
 <p>This endpoint provides one-off retrieval of the user information appropriate for
 a header on posted content – the user&rsquo;s ID, current generated <code>.displayedName</code>, and
@@ -1613,7 +1613,7 @@ filename of their current profile image.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><a href="doc:UserHeader">doc:UserHeader</a> containing the user&rsquo;s ID, <code>.displayedName</code> and profile image filename.</p>
+                        <p><code><a href="../Structs/UserHeader.html">UserHeader</a></code> containing the user&rsquo;s ID, <code>.displayedName</code> and profile image filename.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L106-L116">Show on GitHub</a>
@@ -1639,7 +1639,7 @@ filename of their current profile image.</p>
                       <div class="abstract">
                         <p><code>GET /api/v3/users/ID/profile</code></p>
 
-<p>Retrieves the specified user&rsquo;s profile, as a <a href="doc:ProfilePublicData">doc:ProfilePublicData</a> object.</p>
+<p>Retrieves the specified user&rsquo;s profile, as a <code><a href="../Structs/ProfilePublicData.html">ProfilePublicData</a></code> object.</p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
     404 error if the profile is not available. A 5xx response should be reported
@@ -1677,7 +1677,7 @@ as a likely bug, please and thank you.
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><a href="doc:ProfilePublicData">doc:ProfilePublicData</a> containing the displayable properties of the specified
+                        <p><code><a href="../Structs/ProfilePublicData.html">ProfilePublicData</a></code> containing the displayable properties of the specified
 user&rsquo;s profile.</p>
                       </div>
                       <div class="slightly-smaller">
@@ -1758,7 +1758,7 @@ username harvesting.
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>An array of <a href="doc:UserHeader">doc:UserHeader</a> values of all matching users.</p>
+                        <p>An array of <code><a href="../Structs/UserHeader.html">UserHeader</a></code> values of all matching users.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L169-L193">Show on GitHub</a>
@@ -1905,7 +1905,7 @@ thank you.
                               </td>
                               <td>
                                 <div>
-                                  <p><a href="doc:NoteCreateData">doc:NoteCreateData</a> struct containing the text of the note.</p>
+                                  <p><code><a href="../Structs/NoteCreateData.html">NoteCreateData</a></code> struct containing the text of the note.</p>
                                 </div>
                               </td>
                             </tr>
@@ -1914,7 +1914,7 @@ thank you.
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><a href="doc:NoteData">doc:NoteData</a> containing the newly created note.</p>
+                        <p><code><a href="../Structs/NoteData.html">NoteData</a></code> containing the newly created note.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L234-L251">Show on GitHub</a>
@@ -2053,7 +2053,7 @@ be reported as a likely bug, please and thank you.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><a href="doc:NoteEditData">doc:NoteEditData</a> containing the note&rsquo;s ID and text.</p>
+                        <p><code>NoteEditData</code> containing the note&rsquo;s ID and text.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L289-L299">Show on GitHub</a>
@@ -2109,7 +2109,7 @@ send an empty string in the <code>.message</code> field.</p>
                               </td>
                               <td>
                                 <div>
-                                  <p><a href="doc:ReportData">doc:ReportData</a> containing an optional accompanying message</p>
+                                  <p><code><a href="../Structs/ReportData.html">ReportData</a></code> containing an optional accompanying message</p>
                                 </div>
                               </td>
                             </tr>
@@ -2157,7 +2157,7 @@ send an empty string in the <code>.message</code> field.</p>
                       <div class="abstract">
                         <p><code>GET /api/v3/users/blocks</code></p>
 
-<p>Returns a list of the user&rsquo;s currently blocked users as an array of <a href="doc:UserHeader">doc:UserHeader</a> objects.
+<p>Returns a list of the user&rsquo;s currently blocked users as an array of <code><a href="../Structs/UserHeader.html">UserHeader</a></code> objects.
 If the user is a sub-account, the parent user&rsquo;s blocks are returned.</p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
@@ -2176,7 +2176,7 @@ If the user is a sub-account, the parent user&rsquo;s blocks are returned.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>Array of <a href="doc:UserHeader">doc:UserHeader</a> containing the currently blocked users.</p>
+                        <p>Array of <code><a href="../Structs/UserHeader.html">UserHeader</a></code> containing the currently blocked users.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L326-L334">Show on GitHub</a>
@@ -2362,7 +2362,7 @@ should be reported as a likely bug, please and thank you.
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>Array of <a href="doc:UserHeader">doc:UserHeader</a> containing the currently muted users.</p>
+                        <p>Array of <code><a href="../Structs/UserHeader.html">UserHeader</a></code> containing the currently muted users.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L415-L421">Show on GitHub</a>
@@ -2543,7 +2543,7 @@ be reported as a likely bug, please and thank you.
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>An array of <a href="doc:UserHeader">doc:UserHeader</a> containing the currently favorited users.</p>
+                        <p>An array of <code><a href="../Structs/UserHeader.html">UserHeader</a></code> containing the currently favorited users.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L492-L497">Show on GitHub</a>
@@ -2728,7 +2728,7 @@ for easy retrieval when using various Twitarr features.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>Array of <a href="doc:UserHeader">doc:UserHeader</a>. Array may be empty if nobody has this role yet.</p>
+                        <p>Array of <code><a href="../Structs/UserHeader.html">UserHeader</a></code>. Array may be empty if nobody has this role yet.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UsersController.swift#L553-L568">Show on GitHub</a>
@@ -3021,7 +3021,7 @@ and vice versa.</p>
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2023 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2023-03-16)</p>
+      <p>&copy; 2023 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2023-03-17)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
     </section>
   </body>

@@ -1528,7 +1528,7 @@ methods multiple times per second.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>An array of <a href="doc:Report">doc:Report</a> objects</p>
+                        <p>An array of <code><a href="../Classes/Report.html">Report</a></code> objects</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L72-L79">Show on GitHub</a>
@@ -1716,7 +1716,7 @@ concerning the same post, this will close all of them.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>An array of <a href="doc:ModeratorActionLogData">doc:ModeratorActionLogData</a> records.</p>
+                        <p>An array of <code><a href="../Structs/ModeratorActionLogData.html">ModeratorActionLogData</a></code> records.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L155-L161">Show on GitHub</a>
@@ -1745,7 +1745,7 @@ concerning the same post, this will close all of them.</p>
 <p>Moderator only. Returns info admins and moderators need to review a twarrt. Works if twarrt has been deleted. Shows
 twarrt&rsquo;s quarantine and reviewed states.</p>
 
-<p>The <a href="doc:TwarrtModerationData">doc:TwarrtModerationData</a> contains:</p>
+<p>The <code><a href="../Structs/TwarrtModerationData.html">TwarrtModerationData</a></code> contains:</p>
 
 <ul>
 <li>The current twarrt contents, even if its deleted</li>
@@ -1788,7 +1788,7 @@ twarrt&rsquo;s quarantine and reviewed states.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><a href="doc:TwarrtModerationData">doc:TwarrtModerationData</a> containing a bunch of data pertinient to moderating the twarrt.</p>
+                        <p><code><a href="../Structs/TwarrtModerationData.html">TwarrtModerationData</a></code> containing a bunch of data pertinient to moderating the twarrt.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L177-L198">Show on GitHub</a>
@@ -1814,7 +1814,7 @@ twarrt&rsquo;s quarantine and reviewed states.</p>
                       <div class="abstract">
                         <p><code>POST /api/v3/mod/twarrt/ID/setstate/STRING</code></p>
 
-<p>Moderator only. Sets the moderation state enum on the twarrt identified by ID to the <a href="doc:ContentModerationStatus">doc:ContentModerationStatus</a> in STRING.
+<p>Moderator only. Sets the moderation state enum on the twarrt identified by ID to the <code><a href="../Enums/ContentModerationStatus.html">ContentModerationStatus</a></code> in STRING.
 Logs the action to the moderator log unless the user owns the twarrt. </p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
@@ -1855,7 +1855,7 @@ Logs the action to the moderator log unless the user owns the twarrt. </p>
                               </td>
                               <td>
                                 <div>
-                                  <p>in URL path. Value must match a <a href="doc:ContentModerationStatus">doc:ContentModerationStatus</a> rawValue.</p>
+                                  <p>in URL path. Value must match a <code><a href="../Enums/ContentModerationStatus.html">ContentModerationStatus</a></code> rawValue.</p>
                                 </div>
                               </td>
                             </tr>
@@ -1893,7 +1893,7 @@ Logs the action to the moderator log unless the user owns the twarrt. </p>
 <p>Moderator only. Returns info admins and moderators need to review a forumPost. Works if forumPost has been deleted. Shows
 forumPost&rsquo;s quarantine and reviewed states.</p>
 
-<p>The <a href="doc:ForumPostModerationData">doc:ForumPostModerationData</a> contains:</p>
+<p>The <code><a href="../Structs/ForumPostModerationData.html">ForumPostModerationData</a></code> contains:</p>
 
 <ul>
 <li>The current post contents, even if its deleted</li>
@@ -1936,7 +1936,7 @@ forumPost&rsquo;s quarantine and reviewed states.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><a href="doc:ForumPostModerationData">doc:ForumPostModerationData</a> containing a bunch of data pertinient to moderating the post.</p>
+                        <p><code><a href="../Structs/ForumPostModerationData.html">ForumPostModerationData</a></code> containing a bunch of data pertinient to moderating the post.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L235-L257">Show on GitHub</a>
@@ -1962,7 +1962,7 @@ forumPost&rsquo;s quarantine and reviewed states.</p>
                       <div class="abstract">
                         <p><code>POST /api/v3/mod/forumpost/ID/setstate/STRING</code></p>
 
-<p>Moderator only. Sets the moderation state enum on the post idententified by ID to the <a href="doc:ContentModerationStatus">doc:ContentModerationStatus</a> in STRING.
+<p>Moderator only. Sets the moderation state enum on the post idententified by ID to the <code><a href="../Enums/ContentModerationStatus.html">ContentModerationStatus</a></code> in STRING.
 Logs the action to the moderator log unless the user owns the post. </p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
@@ -2003,7 +2003,7 @@ Logs the action to the moderator log unless the user owns the post. </p>
                               </td>
                               <td>
                                 <div>
-                                  <p>in URL path. Value must match a <a href="doc:ContentModerationStatus">doc:ContentModerationStatus</a> rawValue.</p>
+                                  <p>in URL path. Value must match a <code><a href="../Enums/ContentModerationStatus.html">ContentModerationStatus</a></code> rawValue.</p>
                                 </div>
                               </td>
                             </tr>
@@ -2042,7 +2042,7 @@ Logs the action to the moderator log unless the user owns the post. </p>
 forum&rsquo;s quarantine and reviewed states. Reports against forums should be reserved for reporting problems with the forum&rsquo;s title.
 Likely, they&rsquo;ll also get used to report problems with individual posts.</p>
 
-<p>The <a href="doc:ForumModerationData">doc:ForumModerationData</a> contains:</p>
+<p>The <code><a href="../Structs/ForumModerationData.html">ForumModerationData</a></code> contains:</p>
 
 <ul>
 <li>The current forum contents, even if its deleted</li>
@@ -2085,7 +2085,7 @@ Likely, they&rsquo;ll also get used to report problems with individual posts.</p
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><a href="doc:ForumModerationData">doc:ForumModerationData</a>  containing a bunch of data pertinient to moderating the forum.</p>
+                        <p><code><a href="../Structs/ForumModerationData.html">ForumModerationData</a></code>  containing a bunch of data pertinient to moderating the forum.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L295-L313">Show on GitHub</a>
@@ -2111,7 +2111,7 @@ Likely, they&rsquo;ll also get used to report problems with individual posts.</p
                       <div class="abstract">
                         <p><code>POST /api/v3/mod/forum/ID/setstate/STRING</code></p>
 
-<p>Moderator only. Sets the moderation state enum on the forum idententified by ID to the <a href="doc:ContentModerationStatus">doc:ContentModerationStatus</a> in STRING.
+<p>Moderator only. Sets the moderation state enum on the forum idententified by ID to the <code><a href="../Enums/ContentModerationStatus.html">ContentModerationStatus</a></code> in STRING.
 Logs the action to the moderator log unless the current user owns the forum. </p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
@@ -2152,7 +2152,7 @@ Logs the action to the moderator log unless the current user owns the forum. </p
                               </td>
                               <td>
                                 <div>
-                                  <p>in URL path. Value must match a <a href="doc:ContentModerationStatus">doc:ContentModerationStatus</a> rawValue.</p>
+                                  <p>in URL path. Value must match a <code><a href="../Enums/ContentModerationStatus.html">ContentModerationStatus</a></code> rawValue.</p>
                                 </div>
                               </td>
                             </tr>
@@ -2225,7 +2225,7 @@ Logs the action to the moderator log unless the current user owns the forum. </p
 <p>Moderator only. Returns info admins and moderators need to review a Fez. Works if fez has been deleted. Shows
 fez&rsquo;s quarantine and reviewed states.</p>
 
-<p>The <a href="doc:FezModerationData">doc:FezModerationData</a> contains:</p>
+<p>The <code><a href="../Structs/FezModerationData.html">FezModerationData</a></code> contains:</p>
 
 <ul>
 <li>The current fez contents, even if its deleted</li>
@@ -2268,7 +2268,7 @@ fez&rsquo;s quarantine and reviewed states.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><a href="doc:FezModerationData">doc:FezModerationData</a> containing a bunch of data pertinient to moderating the forum.</p>
+                        <p><code><a href="../Structs/FezModerationData.html">FezModerationData</a></code> containing a bunch of data pertinient to moderating the forum.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L376-L397">Show on GitHub</a>
@@ -2294,7 +2294,7 @@ fez&rsquo;s quarantine and reviewed states.</p>
                       <div class="abstract">
                         <p><code>POST /api/v3/mod/fez/ID/setstate/STRING</code></p>
 
-<p>Moderator only. Sets the moderation state enum on the fez identified by ID to the <a href="doc:ContentModerationStatus">doc:ContentModerationStatus</a> in STRING.
+<p>Moderator only. Sets the moderation state enum on the fez identified by ID to the <code><a href="../Enums/ContentModerationStatus.html">ContentModerationStatus</a></code> in STRING.
 Logs the action to the moderator log unless the current user owns the fez. </p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
@@ -2335,7 +2335,7 @@ Logs the action to the moderator log unless the current user owns the fez. </p>
                               </td>
                               <td>
                                 <div>
-                                  <p>in URL path. Value must match a <a href="doc:ContentModerationStatus">doc:ContentModerationStatus</a> rawValue.</p>
+                                  <p>in URL path. Value must match a <code><a href="../Enums/ContentModerationStatus.html">ContentModerationStatus</a></code> rawValue.</p>
                                 </div>
                               </td>
                             </tr>
@@ -2373,7 +2373,7 @@ Logs the action to the moderator log unless the current user owns the fez. </p>
 <p>Moderator only. Returns info admins and moderators need to review a Fez post. Works if post has been deleted. Shows
 fez&rsquo;s quarantine and reviewed states.  Unlike most other content types, Fez Posts cannot be edited (although they may be deleted).</p>
 
-<p>The <a href="doc:FezPostModerationData">doc:FezPostModerationData</a> contains:</p>
+<p>The <code><a href="../Structs/FezPostModerationData.html">FezPostModerationData</a></code> contains:</p>
 
 <ul>
 <li>The current post contents, even if its deleted</li>
@@ -2415,7 +2415,7 @@ fez&rsquo;s quarantine and reviewed states.  Unlike most other content types, Fe
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><a href="doc:FezPostModerationData">doc:FezPostModerationData</a> containing a bunch of data pertinient to moderating the forum.</p>
+                        <p><code><a href="../Structs/FezPostModerationData.html">FezPostModerationData</a></code> containing a bunch of data pertinient to moderating the forum.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L433-L450">Show on GitHub</a>
@@ -2441,7 +2441,7 @@ fez&rsquo;s quarantine and reviewed states.  Unlike most other content types, Fe
                       <div class="abstract">
                         <p><code>POST /api/v3/mod/fezpost/:post_id/setstate/STRING</code></p>
 
-<p>Moderator only. Sets the moderation state enum on the fez post identified by ID to the <a href="doc:ContentModerationStatus">doc:ContentModerationStatus</a> in STRING.
+<p>Moderator only. Sets the moderation state enum on the fez post identified by ID to the <code><a href="../Enums/ContentModerationStatus.html">ContentModerationStatus</a></code> in STRING.
 Logs the action to the moderator log unless the current user authored the post.</p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
@@ -2482,7 +2482,7 @@ Logs the action to the moderator log unless the current user authored the post.<
                               </td>
                               <td>
                                 <div>
-                                  <p>in URL path. Value must match a <a href="doc:ContentModerationStatus">doc:ContentModerationStatus</a> rawValue.</p>
+                                  <p>in URL path. Value must match a <code><a href="../Enums/ContentModerationStatus.html">ContentModerationStatus</a></code> rawValue.</p>
                                 </div>
                               </td>
                             </tr>
@@ -2520,7 +2520,7 @@ Logs the action to the moderator log unless the current user authored the post.<
 <p>Moderator only. Returns info admins and moderators need to review a User Profile. The returned info pertains to the user&rsquo;s profile and avatar image &ndash;
 for example, the web site puts the button allowing mods to edit a user&rsquo;s profile fields on this page.</p>
 
-<p>The <a href="doc:ProfileModerationData">doc:ProfileModerationData</a> contains:</p>
+<p>The <code><a href="../Structs/ProfileModerationData.html">ProfileModerationData</a></code> contains:</p>
 
 <ul>
 <li>The user&rsquo;s profile info and avatar</li>
@@ -2563,7 +2563,7 @@ for example, the web site puts the button allowing mods to edit a user&rsquo;s p
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><a href="doc:ProfileModerationData">doc:ProfileModerationData</a> containing a bunch of data pertinient to moderating the user&rsquo;s profile.</p>
+                        <p><code><a href="../Structs/ProfileModerationData.html">ProfileModerationData</a></code> containing a bunch of data pertinient to moderating the user&rsquo;s profile.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L487-L507">Show on GitHub</a>
@@ -2589,7 +2589,7 @@ for example, the web site puts the button allowing mods to edit a user&rsquo;s p
                       <div class="abstract">
                         <p><code>POST /api/v3/mod/profile/ID/setstate/STRING</code></p>
 
-<p>Moderator only. Sets the moderation state enum on the profile idententified by userID to the <a href="doc:ContentModerationStatus">doc:ContentModerationStatus</a> in STRING.
+<p>Moderator only. Sets the moderation state enum on the profile idententified by userID to the <code><a href="../Enums/ContentModerationStatus.html">ContentModerationStatus</a></code> in STRING.
 Logs the action to the moderator log unless the moderator is changing state on their own profile.. </p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
@@ -2630,7 +2630,7 @@ Logs the action to the moderator log unless the moderator is changing state on t
                               </td>
                               <td>
                                 <div>
-                                  <p>in URL path. Value must match a <a href="doc:ContentModerationStatus">doc:ContentModerationStatus</a> rawValue.</p>
+                                  <p>in URL path. Value must match a <code><a href="../Enums/ContentModerationStatus.html">ContentModerationStatus</a></code> rawValue.</p>
                                 </div>
                               </td>
                             </tr>
@@ -2668,7 +2668,7 @@ Logs the action to the moderator log unless the moderator is changing state on t
 <p>Moderator only. Returns info admins and moderators need to review a User. User moderation in this context means actions taken against the User account
 itself,  such as banning and temp-quarantining. These actions don&rsquo;t edit or remove content but prevent the user from creating any more content.</p>
 
-<p>The <a href="doc:UserModerationData">doc:UserModerationData</a> contains:</p>
+<p>The <code><a href="../Structs/UserModerationData.html">UserModerationData</a></code> contains:</p>
 
 <ul>
 <li>UserHeaders for the User&rsquo;s primary account and any sub-accounts.</li>
@@ -2711,7 +2711,7 @@ itself,  such as banning and temp-quarantining. These actions don&rsquo;t edit o
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><a href="doc:UserModerationData">doc:UserModerationData</a> containing a bunch of data pertinient to moderating the forum.</p>
+                        <p><code><a href="../Structs/UserModerationData.html">UserModerationData</a></code> containing a bunch of data pertinient to moderating the forum.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L544-L552">Show on GitHub</a>
@@ -2737,7 +2737,7 @@ itself,  such as banning and temp-quarantining. These actions don&rsquo;t edit o
                       <div class="abstract">
                         <p><code>POST /api/v3/mod/user/ID/setaccesslevel/STRING</code></p>
 
-<p>Moderator only. Sets the accessLevel enum on the user idententified by userID to the <a href="doc:UserAccessLevel">doc:UserAccessLevel</a> in STRING.
+<p>Moderator only. Sets the accessLevel enum on the user idententified by userID to the <code><a href="../Enums/UserAccessLevel.html">UserAccessLevel</a></code> in STRING.
 Moderators (and above) cannot use this method to change the access level of other mods (and above). Nor can they use this to
 reduce their own access level to non-moderator status.</p>
 
@@ -2784,7 +2784,7 @@ be either a primary or sub-account.</p>
                               </td>
                               <td>
                                 <div>
-                                  <p>in URL path. Value must match a <a href="doc:UserAccessLevel">doc:UserAccessLevel</a> rawValue.</p>
+                                  <p>in URL path. Value must match a <code><a href="../Enums/UserAccessLevel.html">UserAccessLevel</a></code> rawValue.</p>
                                 </div>
                               </td>
                             </tr>
@@ -2888,7 +2888,7 @@ be either a primary or sub-account.</p>
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2023 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2023-03-16)</p>
+      <p>&copy; 2023 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2023-03-17)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
     </section>
   </body>

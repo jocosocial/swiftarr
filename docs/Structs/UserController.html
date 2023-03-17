@@ -1544,7 +1544,7 @@ entirely.</p>
 
 <p>Creates a new <code><a href="../Classes/User.html">User</a></code> account. Does not log the new user in. Route is open access.</p>
 
-<p>A  <a href="doc:CreatedUserData">doc:CreatedUserData</a> structure is returned on success, containing the new user&rsquo;s ID,
+<p>A  <code><a href="../Structs/CreatedUserData.html">CreatedUserData</a></code> structure is returned on success, containing the new user&rsquo;s ID,
 username and a generated recovery key.</p>
 <div class="aside aside-note">
     <p class="aside-title">Note</p>
@@ -1583,7 +1583,7 @@ not available.</p>
                               </td>
                               <td>
                                 <div>
-                                  <p><a href="doc:UserCreateData">doc:UserCreateData</a></p>
+                                  <p><code><a href="../Structs/UserCreateData.html">UserCreateData</a></code></p>
                                 </div>
                               </td>
                             </tr>
@@ -1592,7 +1592,7 @@ not available.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><a href="doc:CreatedUserData">doc:CreatedUserData</a> containing the newly created user&rsquo;s ID, username, and a
+                        <p><code><a href="../Structs/CreatedUserData.html">CreatedUserData</a></code> containing the newly created user&rsquo;s ID, username, and a
 recovery key string.</p>
                       </div>
                       <div class="slightly-smaller">
@@ -1666,7 +1666,7 @@ another user.
                               </td>
                               <td>
                                 <div>
-                                  <p><a href="doc:UserVerifyData">doc:UserVerifyData</a></p>
+                                  <p><code><a href="../Structs/UserVerifyData.html">UserVerifyData</a></code></p>
                                 </div>
                               </td>
                             </tr>
@@ -1707,7 +1707,7 @@ on a sub account, but the new account is an sub of the primary account&ndash;the
 <p>This method does not log in the newly created user. Users are limited to <code>Settings.shared.maxAlternateAccounts</code> 
 alts, which is 6 by default.</p>
 
-<p>An <a href="doc:AddedUserData">doc:AddedUserData</a> structure is returned on success, containing the new user&rsquo;s ID
+<p>An <code><a href="../Structs/AddedUserData.html">AddedUserData</a></code> structure is returned on success, containing the new user&rsquo;s ID
 and username.</p>
 <div class="aside aside-note">
     <p class="aside-title">Note</p>
@@ -1746,7 +1746,7 @@ the username is not available.</p>
                               </td>
                               <td>
                                 <div>
-                                  <p><a href="doc:UserCreateData">doc:UserCreateData</a></p>
+                                  <p><code><a href="../Structs/UserCreateData.html">UserCreateData</a></code></p>
                                 </div>
                               </td>
                             </tr>
@@ -1755,7 +1755,7 @@ the username is not available.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><a href="doc:AddedUserData">doc:AddedUserData</a> containing the newly created user&rsquo;s ID and username.</p>
+                        <p><code><a href="../Structs/AddedUserData.html">AddedUserData</a></code> containing the newly created user&rsquo;s ID and username.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L260-L295">Show on GitHub</a>
@@ -1791,7 +1791,7 @@ the username is not available.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><a href="doc:CurrentUserData">doc:CurrentUserData</a> containing the current user&rsquo;s ID, username and logged in status.</p>
+                        <p><code><a href="../Structs/CurrentUserData.html">CurrentUserData</a></code> containing the current user&rsquo;s ID, username and logged in status.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L302-L308">Show on GitHub</a>
@@ -1846,7 +1846,7 @@ if the user is a <code>.client</code>.
                               </td>
                               <td>
                                 <div>
-                                  <p><a href="doc:UserPasswordData">doc:UserPasswordData</a> struct containing the user&rsquo;s desired password.</p>
+                                  <p><code><a href="../Structs/UserPasswordData.html">UserPasswordData</a></code> struct containing the user&rsquo;s desired password.</p>
                                 </div>
                               </td>
                             </tr>
@@ -1913,7 +1913,7 @@ while <code>/api/v3/user/:userID/username</code> allows moderators to change the
                               </td>
                               <td>
                                 <div>
-                                  <p><a href="doc:UserUsernameData">doc:UserUsernameData</a> containing the user&rsquo;s desired new username.</p>
+                                  <p><code><a href="../Structs/UserUsernameData.html">UserUsernameData</a></code> containing the user&rsquo;s desired new username.</p>
                                 </div>
                               </td>
                             </tr>
@@ -1961,11 +1961,11 @@ while <code>/api/v3/user/:userID/username</code> allows moderators to change the
                       <div class="abstract">
                         <p><code>POST /api/v3/user/image</code></p>
 
-<p>Sets the user&rsquo;s profile image to the <a href="doc:ImageUploadData">doc:ImageUploadData</a> uploaded in the HTTP body. </p>
+<p>Sets the user&rsquo;s profile image to the <code><a href="../Structs/ImageUploadData.html">ImageUploadData</a></code> uploaded in the HTTP body. </p>
 
 <ul>
-<li>If the <a href="doc:ImageUploadData">doc:ImageUploadData</a> contains image data in the <code>image</code> member, that data is processed, saved, and set to user&rsquo;s new image</li>
-<li>If the <a href="doc:ImageUploadData">doc:ImageUploadData</a> contains a filename in the <code>filename</code> member, the user&rsquo;s avatar is set to that image file on the server. 
+<li>If the <code><a href="../Structs/ImageUploadData.html">ImageUploadData</a></code> contains image data in the <code>image</code> member, that data is processed, saved, and set to user&rsquo;s new image</li>
+<li>If the <code><a href="../Structs/ImageUploadData.html">ImageUploadData</a></code> contains a filename in the <code>filename</code> member, the user&rsquo;s avatar is set to that image file on the server. 
 We don&rsquo;t check whether the file exists.</li>
 <li><p>If both members are nil, the user&rsquo;s avatar image is set to nil, which will cause the default image be returned.</p></li>
 </ul><div class="aside aside-throws">
@@ -1995,7 +1995,7 @@ We don&rsquo;t check whether the file exists.</li>
                               </td>
                               <td>
                                 <div>
-                                  <p><a href="doc:ImageUploadData">doc:ImageUploadData</a> payload in the HTTP body.</p>
+                                  <p><code><a href="../Structs/ImageUploadData.html">ImageUploadData</a></code> payload in the HTTP body.</p>
                                 </div>
                               </td>
                             </tr>
@@ -2004,7 +2004,7 @@ We don&rsquo;t check whether the file exists.</li>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><a href="doc:UserHeader">doc:UserHeader</a> containing the generated image identifier string.</p>
+                        <p><code><a href="../Structs/UserHeader.html">UserHeader</a></code> containing the generated image identifier string.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L410-L432">Show on GitHub</a>
@@ -2097,7 +2097,7 @@ We don&rsquo;t check whether the file exists.</li>
                       <div class="abstract">
                         <p><code>GET /api/v3/user/profile</code></p>
 
-<p>Retrieves the user&rsquo;s own profile data for editing, as a <a href="doc:ProfilePublicData">doc:ProfilePublicData</a> object.</p>
+<p>Retrieves the user&rsquo;s own profile data for editing, as a <code><a href="../Structs/ProfilePublicData.html">ProfilePublicData</a></code> object.</p>
 <div class="aside aside-note">
     <p class="aside-title">Note</p>
     <p>The <code>.header.username</code> and <code>.header.displayName</code> properties of the returned object
@@ -2122,7 +2122,7 @@ bug, please and thank you.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><a href="doc:ProfilePublicData">doc:ProfilePublicData</a> containing the editable properties of the profile.</p>
+                        <p><code><a href="../Structs/ProfilePublicData.html">ProfilePublicData</a></code> containing the editable properties of the profile.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L486-L489">Show on GitHub</a>
@@ -2152,7 +2152,7 @@ bug, please and thank you.</p>
 <p>Updates the user&rsquo;s profile.</p>
 <div class="aside aside-note">
     <p class="aside-title">Note</p>
-    <p>All fields of the <a href="doc:UserProfileUploadData">doc:UserProfileUploadData</a> structure being submitted <strong>must</strong> be
+    <p>All fields of the <code><a href="../Structs/UserProfileUploadData.html">UserProfileUploadData</a></code> structure being submitted <strong>must</strong> be
 present. While the properties of the profile itself are optional, the
 submitted values all <em>replace</em> the existing propety values. Submitting a value of <code>&quot;&quot;</code>
 resets its respective profile property to <code>nil</code>.</p>
@@ -2196,7 +2196,7 @@ resets its respective profile property to <code>nil</code>.</p>
                               </td>
                               <td>
                                 <div>
-                                  <p><a href="doc:UserProfileUploadData">doc:UserProfileUploadData</a></p>
+                                  <p><code><a href="../Structs/UserProfileUploadData.html">UserProfileUploadData</a></code></p>
                                 </div>
                               </td>
                             </tr>
@@ -2205,7 +2205,7 @@ resets its respective profile property to <code>nil</code>.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><a href="doc:ProfilePublicData">doc:ProfilePublicData</a> containing the updated editable properties of the profile.</p>
+                        <p><code><a href="../Structs/ProfilePublicData.html">ProfilePublicData</a></code> containing the updated editable properties of the profile.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L505-L539">Show on GitHub</a>
@@ -2281,7 +2281,7 @@ resets its respective profile property to <code>nil</code>.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><a href="doc:AlertKeywordData">doc:AlertKeywordData</a> containing the updated contents of the barrel.</p>
+                        <p><code>AlertKeywordData</code> containing the updated contents of the barrel.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L549-L567">Show on GitHub</a>
@@ -2307,7 +2307,7 @@ resets its respective profile property to <code>nil</code>.</p>
                       <div class="abstract">
                         <p><code>GET /api/v3/user/alertwords</code></p>
 
-<p>Returns a list of the user&rsquo;s current alert keywords in <a href="doc:AlertKeywordData">doc:AlertKeywordData</a> barrel format.</p>
+<p>Returns a list of the user&rsquo;s current alert keywords in <code>AlertKeywordData</code> barrel format.</p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
     A 5xx response should be reported as a likely bug, please and thank you.
@@ -2325,7 +2325,7 @@ resets its respective profile property to <code>nil</code>.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><a href="doc:AlertKeywordData">doc:AlertKeywordData</a> containing the current alert keywords as an array of strings.</p>
+                        <p><code>AlertKeywordData</code> containing the current alert keywords as an array of strings.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L575-L580">Show on GitHub</a>
@@ -2388,7 +2388,7 @@ resets its respective profile property to <code>nil</code>.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><a href="doc:AlertKeywordData">doc:AlertKeywordData</a> containing the updated contents of the barrel.</p>
+                        <p><code>AlertKeywordData</code> containing the updated contents of the barrel.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L589-L606">Show on GitHub</a>
@@ -2464,7 +2464,7 @@ resets its respective profile property to <code>nil</code>.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><a href="doc:MuteKeywordData">doc:MuteKeywordData</a> containing the updated contents of the barrel.</p>
+                        <p><code>MuteKeywordData</code> containing the updated contents of the barrel.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L618-L641">Show on GitHub</a>
@@ -2490,7 +2490,7 @@ resets its respective profile property to <code>nil</code>.</p>
                       <div class="abstract">
                         <p><code>GET /api/v3/user/mutewords</code></p>
 
-<p>Returns a list of the user&rsquo;s currently muted keywords in named-list  <a href="doc:MuteKeywordData">doc:MuteKeywordData</a> format.</p>
+<p>Returns a list of the user&rsquo;s currently muted keywords in named-list  <code>MuteKeywordData</code> format.</p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
     A 5xx response should be reported as a likely bug, please and thank you.
@@ -2508,7 +2508,7 @@ resets its respective profile property to <code>nil</code>.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><a href="doc:MuteKeywordData">doc:MuteKeywordData</a> containing the current muting keywords as an array of  strings.</p>
+                        <p><code>MuteKeywordData</code> containing the current muting keywords as an array of  strings.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L649-L654">Show on GitHub</a>
@@ -2571,7 +2571,7 @@ resets its respective profile property to <code>nil</code>.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p><a href="doc:MuteKeywordData">doc:MuteKeywordData</a> containing the updated contents of the barrel.</p>
+                        <p><code>MuteKeywordData</code> containing the updated contents of the barrel.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L663-L682">Show on GitHub</a>
@@ -2597,9 +2597,9 @@ resets its respective profile property to <code>nil</code>.</p>
                       <div class="abstract">
                         <p><code>GET /api/v3/user/notes</code></p>
 
-<p>Retrieves all <a href="doc:UserNote">doc:UserNote</a>s owned by the current user, as an array of <a href="doc:NoteData">doc:NoteData</a> objects.</p>
+<p>Retrieves all <code>UserNote&gt;s owned by the current user, as an array of</code>NoteData` objects.</p>
 
-<p>The <a href="doc:NoteData">doc:NoteData</a> object is intended to be display friendly, including fields for
+<p>The <code><a href="../Structs/NoteData.html">NoteData</a></code> object is intended to be display friendly, including fields for
 potential sorting, the ID of the profile which can be linked to, and the profile&rsquo;s user
 in the familiar .displayedName format. The .noteID is included as well to support
 editing of notes outside of a profile-viewing context.</p>
@@ -2620,7 +2620,7 @@ editing of notes outside of a profile-viewing context.</p>
                       </div>
                       <div>
                         <h4>Return Value</h4>
-                        <p>An array of  <a href="doc:NoteData">doc:NoteData</a> containing all of the user&rsquo;s notes.</p>
+                        <p>An array of  <code><a href="../Structs/NoteData.html">NoteData</a></code> containing all of the user&rsquo;s notes.</p>
                       </div>
                       <div class="slightly-smaller">
                         <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L695-L705">Show on GitHub</a>
@@ -2707,7 +2707,7 @@ editing of notes outside of a profile-viewing context.</p>
       </article>
     </div>
     <section class="footer">
-      <p>&copy; 2023 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2023-03-16)</p>
+      <p>&copy; 2023 <a class="link" href="" target="_blank" rel="external noopener">The Twitarr Team</a>. All rights reserved. (Last updated: 2023-03-17)</p>
       <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
     </section>
   </body>
