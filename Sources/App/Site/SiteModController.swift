@@ -329,7 +329,7 @@ struct SiteModController: SiteControllerUtils {
 		guard let modState = req.parameters.get(modStateParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
-		let response = try await apiQuery(req, endpoint: "/mod/forumPost/\(postID)/setstate/\(modState)", method: .POST)
+		let response = try await apiQuery(req, endpoint: "/mod/forumpost/\(postID)/setstate/\(modState)", method: .POST)
 		return response.status
 	}
 	
