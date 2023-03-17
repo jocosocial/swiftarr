@@ -108,7 +108,7 @@ struct FezController: APIRouteCollection {
 	/// - `?hidepast=BOOLEAN` - Show fezzes that started more than one hour in the past. For this endpoint, this defaults to TRUE.
 	///
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: An array of <doc:FezData> containing current fezzes with open slots.
+	/// - Returns: An array of `FezData` containing current fezzes with open slots.
 	func openHandler(_ req: Request) async throws -> FezListData {
 		let urlQuery = try req.query.decode(FezURLQueryStruct.self)
 		let cacheUser = try req.auth.require(UserCacheData.self)
@@ -168,7 +168,7 @@ struct FezController: APIRouteCollection {
 	/// `/GET /api/v3/fez/types` is  the canonical way to get the list of acceptable values. Type and excludetype are exclusive options, obv.
 	///
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: An array of <doc:FezData> containing all the fezzes joined by the user.
+	/// - Returns: An array of `FezData` containing all the fezzes joined by the user.
 	func joinedHandler(_ req: Request) async throws -> FezListData {
 		let urlQuery = try req.query.decode(FezURLQueryStruct.self)
 		let cacheUser = try req.auth.require(UserCacheData.self)
@@ -243,7 +243,7 @@ struct FezController: APIRouteCollection {
 	/// - `?hidepast=BOOLEAN` - Hide fezzes that started more than one hour in the past. For this endpoint, this defaults to FALSE.
 	///
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: An array of <doc:FezData> containing all the fezzes created by the user.
+	/// - Returns: An array of `FezData` containing all the fezzes created by the user.
 	func ownerHandler(_ req: Request) async throws -> FezListData {
 		let urlQuery = try req.query.decode(FezURLQueryStruct.self)
 		let user = try req.auth.require(UserCacheData.self)
@@ -312,7 +312,7 @@ struct FezController: APIRouteCollection {
 	/// - Parameter fezID: in the URL path.
 	/// - Throws: 404 error if a block between the user and fez owner applies. A 5xx response
 	///   should be reported as a likely bug, please and thank you.
-	/// - Returns: <doc:FezData> with fez info and all discussion posts.
+	/// - Returns: `FezData` with fez info and all discussion posts.
 	func fezHandler(_ req: Request) async throws -> FezData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
@@ -346,7 +346,7 @@ struct FezController: APIRouteCollection {
 	/// - Throws: 400 error if the supplied ID is not a fez barrel or user is already in fez.
 	///   404 error if a block between the user and fez owner applies. A 5xx response should be
 	///   reported as a likely bug, please and thank you.
-	/// - Returns: <doc:FezData> containing the updated fez data.
+	/// - Returns: `FezData` containing the updated fez data.
 	func joinHandler(_ req: Request) async throws -> Response {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
@@ -388,7 +388,7 @@ struct FezController: APIRouteCollection {
 	/// - Parameter fezID: in the URL path.
 	/// - Throws: 400 error if the supplied ID is not a fez barrel. A 5xx response should be
 	///   reported as a likely bug, please and thank you.
-	/// - Returns: <doc:FezData> containing the updated fez data.
+	/// - Returns: `FezData` containing the updated fez data.
 	func unjoinHandler(_ req: Request) async throws -> FezData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
@@ -415,10 +415,10 @@ struct FezController: APIRouteCollection {
 	/// Open fez types are only permitted to have 1 image per post. Private fezzes (aka Seamail) cannot have any images.
 	///
 	/// - Parameter fezID: in URL path
-	/// - Parameter requestBody: <doc:PostContentData> 
+	/// - Parameter requestBody: `PostContentData` 
 	/// - Throws: 404 error if the fez is not available. A 5xx response should be reported
 	///   as a likely bug, please and thank you.
-	/// - Returns: <doc:FezPostData> containing the user's new post.
+	/// - Returns: `FezPostData` containing the user's new post.
 	func postAddHandler(_ req: Request) async throws -> FezPostData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		try cacheUser.guardCanCreateContent()
@@ -545,7 +545,7 @@ struct FezController: APIRouteCollection {
 	///   send an empty string in the `.message` field.
 	///
 	/// - Parameter postID: in URL path, the ID of the post being reported.
-	/// - Parameter requestBody: <doc:ReportData> payload in the HTTP body.
+	/// - Parameter requestBody: `ReportData` payload in the HTTP body.
 	/// - Throws: 400 error if the post is private.
 	/// - Throws: 404 error if the parent fez of the post could not be found.
 	/// - Returns: 201 Created on success.
@@ -580,9 +580,9 @@ struct FezController: APIRouteCollection {
 	/// A value of 0 in either the `.minCapacity` or `.maxCapacity` fields indicates an undefined
 	/// limit: "there is no minimum", "there is no maximum".
 	///
-	/// - Parameter requestBody: <doc:FezContentData> payload in the HTTP body.
+	/// - Parameter requestBody: `FezContentData` payload in the HTTP body.
 	/// - Throws: 400 error if the supplied data does not validate.
-	/// - Returns: 201 Created; <doc:FezData> containing the newly created fez.
+	/// - Returns: 201 Created; `FezData` containing the newly created fez.
 	func createHandler(_ req: Request) async throws -> Response {
 		let user = try req.auth.require(UserCacheData.self)
 		try user.guardCanCreateContent(customErrorString: "User cannot create LFGs/Seamails.")
@@ -644,7 +644,7 @@ struct FezController: APIRouteCollection {
 	/// - Parameter fezID: in URL path.
 	/// - Throws: 403 error if user is not the fez owner. A 5xx response should be
 	///   reported as a likely bug, please and thank you.
-	/// - Returns: <doc:FezData> with the updated fez info.
+	/// - Returns: `FezData` with the updated fez info.
 	func cancelHandler(_ req: Request) async throws -> FezData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
@@ -692,10 +692,10 @@ struct FezController: APIRouteCollection {
 	///   endpoints instead of this single monolith can be considered.
 	///
 	/// - Parameter fezID: in URL path.
-	/// - Parameter requestBody: <doc:FezContentData> payload in the HTTP body.
+	/// - Parameter requestBody: `FezContentData` payload in the HTTP body.
 	/// - Throws: 400 error if the data is not valid. 403 error if user is not fez owner.
 	///   A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: <doc:FezData> containing the updated fez info.
+	/// - Returns: `FezData` containing the updated fez info.
 	func updateHandler(_ req: Request) async throws -> FezData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		// see FezContentData.validations()
@@ -736,7 +736,7 @@ struct FezController: APIRouteCollection {
 	/// - Parameter userID: in URL path.
 	/// - Throws: 400 error if user is already in barrel. 403 error if requester is not fez
 	///   owner. A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: <doc:FezData> containing the updated fez info.
+	/// - Returns: `FezData` containing the updated fez info.
 	func userAddHandler(_ req: Request) async throws -> FezData {
 		let requester = try req.auth.require(UserCacheData.self)
 		// get fez and user to add
@@ -778,7 +778,7 @@ struct FezController: APIRouteCollection {
 	/// - Parameter userID: in URL path.
 	/// - Throws: 400 error if user is not in the barrel. 403 error if requester is not fez
 	///   owner. A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: <doc:FezData> containing the updated fez info.
+	/// - Returns: `FezData` containing the updated fez info.
 	func userRemoveHandler(_ req: Request) async throws -> FezData {
 		let requester = try req.auth.require(UserCacheData.self)
 		// get fez and user to remove
@@ -815,7 +815,7 @@ struct FezController: APIRouteCollection {
 	///   send an empty string in the `.message` field.
 	///
 	/// - Parameter fezID: in URL path, the Fez ID to report.
-	/// - Parameter requestBody: <doc:ReportData>
+	/// - Parameter requestBody: `ReportData`
 	/// - Returns: 201 Created on success.
 	func reportFezHandler(_ req: Request) async throws -> HTTPStatus {
 		let submitter = try req.auth.require(UserCacheData.self)
@@ -832,8 +832,8 @@ struct FezController: APIRouteCollection {
 	/// `WS /api/v3/fez/:fezID/socket`
 	/// 
 	/// Opens a websocket to receive updates on the given fez. At the moment there's only 2 messages that the client may receive:
-	/// - <doc:SocketFezPostData> - sent when a post is added to the fez.
-	/// - <doc:SocketMemberChangeData> - sent when a member joins/leaves the fez.
+	/// - `SocketFezPostData` - sent when a post is added to the fez.
+	/// - `SocketMemberChangeData` - sent when a member joins/leaves the fez.
 	/// 
 	/// Note that there's a bunch of other state change that can happen with a fez; I haven't built out code to send socket updates for them.
 	/// The socket returned by this call is only intended for receiving updates; there are no client-initiated messages defined for this socket.

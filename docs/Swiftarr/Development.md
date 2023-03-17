@@ -3,6 +3,11 @@ Development
 
 These are the tools you'll need to get started building Swiftarr for yourself.
 
+Swift
+-----
+Swift runs on MacOS or Linux. If you are unfamiliar with the language we suggest the [Codecademy Learn Swift](https://www.codecademy.com/learn/learn-swift) course.
+It's free and pretty quick for those who have experience with languages such as Java or C.
+
 MacOS
 -----
 
@@ -33,10 +38,11 @@ If running on macOS with Xcode installed, the easiest way to get an instance up 
 for just running an instance, and have no way to easily test that at the moment, but it *might* be needed to get the
 correct SSL library and shimming for SwiftNIO.)
 4. Download or clone the `switarr` [repository](https://github.com/jocosocial/swiftarr).
-5. Run `./scripts/instance.sh up` from the `swiftarr` directory to create and launch postgres and redis
+5. Run `scripts/instance.sh up -d redis postgres` from the `swiftarr` directory to create and launch postgres and redis
 Docker containers.
-6. Open the swiftarr.xcodeproj file.
-7. Run the "Migrate" scheme to configure the databses, or
+6. Create your own `development.env` in `Sources/App/seeds/Private Swiftarr Config`. See [Configuration](configuration.html) for details.
+7. Open the swiftarr.xcodeproj file.
+8. Run the "Migrate" scheme to configure the databses, or
 
 ```shell
 xcodebuild -project "swiftarr.xcodeproj" -scheme "Migrate"
@@ -45,8 +51,8 @@ xcodebuild -project "swiftarr.xcodeproj" -scheme "Migrate"
 
 You'll be asked to approve a bunch of migrations; these mostly create database tables. 
 
-8. Set the scheme to "Run/My Mac" in Xcode, hit Run, and `swiftarr` should shortly be available at http://localhost:8081.
-To shut down the Docker containers, `./scripts/instance.sh stop`.
+9. Set the scheme to "Run/My Mac" in Xcode, hit Run, and `swiftarr` should shortly be available at http://localhost:8081.
+To shut down the Docker containers, `scripts/instance.sh stop`.
 
 Yes, that's a bunch the first time through and it does take some time. From here on out though, it's just a matter of
 pulling the latest updates from the repository and regenerating the .xcodeproj file.
@@ -75,15 +81,30 @@ reload the page, and see the changes.
 Linux
 -----
 
+### Requirements
+
 You will need to install the Swift compiler and runtime. This is probably available as a package
 via your system packager (`swift-lang`) or via https://www.swift.org/download/
 
-After that you will need the following tools:
-* https://github.com/vapor/toolbox
+After that you will likely want the following tools:
 * https://github.com/apple/swift-format
 * https://github.com/jpsim/SourceKitten
 * https://github.com/realm/jazzy/
 
 Consult their READMEs for installation.
 
-More SoonTM
+### Quickstart - Linux
+If running on Linux with VSCode or in a terminal, the easiest way to get an instance up and running is via
+[Docker](https://www.docker.com/products/docker-desktop).
+
+1. Install Docker.
+2. Install the various binary dependencies.
+    * Fedora: gd-devel libjpeg-turbo-devel
+    * Ubuntu: libgd-dev libjpeg-dev
+3. Download or clone the `switarr` [repository](https://github.com/jocosocial/swiftarr).
+4. Run `scripts/instance.sh up -d postgres redis` from the repo directory to create and launch Postgres and Redis
+Docker containers. You can omit the `postgres redis` portion of the command to get additional instance containers.
+5. Build the codebase using VSCode or in a terminal with `swift build`. This could take a while if it's the first time.
+6. Create your own `development.env` in `Sources/App/seeds/Private Swiftarr Config`. See [Configuration](configuration.html) for details.
+7. Perform an initial database migration. This only needs to be done once or whenever there are additional migrations to apply. `swift run Run migrate [--yes]`. Note the two run's with differing case.
+8. Start the app with `swift run Run serve` and you should be greeted with a line akin to `Server starting on http://127.0.0.1:8081`.

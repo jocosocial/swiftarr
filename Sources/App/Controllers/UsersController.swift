@@ -58,7 +58,7 @@ struct UsersController: APIRouteCollection {
 // MARK: - Finding Other Users	
 	/// `GET /api/v3/users/find/:username`
 	///
-	/// Retrieves a user's <doc:UserHeader> using either an ID (UUID string) or a username.
+	/// Retrieves a user's `UserHeader` using either an ID (UUID string) or a username.
 	///
 	/// This endpoint is of limited utility, but is included for the case of obtaining a
 	/// user's ID from a username. If you have an ID and want the associated username, use
@@ -70,7 +70,7 @@ struct UsersController: APIRouteCollection {
 	///
 	/// - Parameter STRING: in URL path. The userID or username to search for.
 	/// - Throws: 404 error if no match is found.
-	/// - Returns: <doc:UserHeader> containing the user's ID, username, displayName and userImage.
+	/// - Returns: `UserHeader` containing the user's ID, username, displayName and userImage.
 	func findHandler(_ req: Request) throws -> UserHeader {
 		let requester = try req.auth.require(UserCacheData.self)
 		guard let parameter = req.parameters.get("userSearchString") else {
@@ -92,7 +92,7 @@ struct UsersController: APIRouteCollection {
 			
 	/// `GET /api/v3/users/:userID`
 	///
-	/// Retrieves the specified user's <doc:UserHeader> info.
+	/// Retrieves the specified user's `UserHeader` info.
 	///
 	/// This endpoint provides one-off retrieval of the user information appropriate for
 	/// a header on posted content – the user's ID, current generated `.displayedName`, and
@@ -102,7 +102,7 @@ struct UsersController: APIRouteCollection {
 	///
 	/// - Parameter userID: in URL path. The userID to search for.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: <doc:UserHeader> containing the user's ID, `.displayedName` and profile image filename.
+	/// - Returns: `UserHeader` containing the user's ID, `.displayedName` and profile image filename.
 	func headerHandler(_ req: Request) throws -> UserHeader {
 		let requester = try req.auth.require(UserCacheData.self)
 		guard let parameter = req.parameters.get(userIDParam.paramString, as: UUID.self) else {
@@ -117,12 +117,12 @@ struct UsersController: APIRouteCollection {
 	
 	/// `GET /api/v3/users/ID/profile`
 	///
-	/// Retrieves the specified user's profile, as a <doc:ProfilePublicData> object.
+	/// Retrieves the specified user's profile, as a `ProfilePublicData` object.
 	///
 	/// - Parameter userID: in URL path. The userID to search for.
 	/// - Throws: 404 error if the profile is not available. A 5xx response should be reported
 	///   as a likely bug, please and thank you.
-	/// - Returns: <doc:ProfilePublicData> containing the displayable properties of the specified
+	/// - Returns: `ProfilePublicData` containing the displayable properties of the specified
 	///   user's profile.
 	func profileHandler(_ req: Request) async throws -> ProfilePublicData {
 		let requester = try req.auth.require(UserCacheData.self)
@@ -165,7 +165,7 @@ struct UsersController: APIRouteCollection {
 	///
 	/// - Parameter STRING: in URL path. The search string to use. Must be at least 2 characters long.
 	/// - Throws: 403 error if the search term is not permitted.
-	/// - Returns: An array of <doc:UserHeader> values of all matching users.
+	/// - Returns: An array of `UserHeader` values of all matching users.
 	func matchAllNamesHandler(_ req: Request) async throws -> [UserHeader] {
 		let requester = try req.auth.require(UserCacheData.self)
 		guard var search = req.parameters.get(searchStringParam.paramString) else {
@@ -227,10 +227,10 @@ struct UsersController: APIRouteCollection {
 	/// Saves a `UserNote` associated with the specified user and the current user.
 	///
 	/// - Parameter userID: in URL path. The user to associate with the note.
-	/// - Parameter requestBody: <doc:NoteCreateData> struct containing the text of the note.
+	/// - Parameter requestBody: `NoteCreateData` struct containing the text of the note.
 	/// - Throws: 400 error if the profile is a banned user's. A 5xx response should be reported as a likely bug, please and
 	///   thank you.
-	/// - Returns: <doc:NoteData> containing the newly created note.
+	/// - Returns: `NoteData` containing the newly created note.
 	func noteCreateHandler(_ req: Request) async throws -> Response {
 		let requester = try req.auth.require(UserCacheData.self)
 		let data = try ValidatingJSONDecoder().decode(NoteCreateData.self, fromBodyOf: req)
@@ -285,7 +285,7 @@ struct UsersController: APIRouteCollection {
 	/// - Parameter userID: in URL path. The user the note is attached to.
 	/// - Throws: 400 error if there is no existing note on the profile. A 5xx response should
 	///   be reported as a likely bug, please and thank you.
-	/// - Returns: <doc:NoteEditData> containing the note's ID and text.
+	/// - Returns: `NoteEditData` containing the note's ID and text.
 	func noteHandler(_ req: Request) async throws -> NoteData {
 		let requester = try req.auth.require(UserCacheData.self)
 		guard let parameter = req.parameters.get(userIDParam.paramString), let targetUserID = UUID(parameter) else {
@@ -306,7 +306,7 @@ struct UsersController: APIRouteCollection {
 	///   but the `ReportData` is mandatory in order to allow one. If there is no message,
 	///   send an empty string in the `.message` field.
 	///
-	/// - Parameter requestBody: <doc:ReportData> containing an optional accompanying message
+	/// - Parameter requestBody: `ReportData` containing an optional accompanying message
 	/// - Returns: 201 Created on success.
 	func reportHandler(_ req: Request) async throws -> HTTPStatus {
 		let submitter = try req.auth.require(UserCacheData.self)
@@ -318,11 +318,11 @@ struct UsersController: APIRouteCollection {
 // MARK: - Blocks and Mutes	
 	/// `GET /api/v3/users/blocks`
 	///
-	/// Returns a list of the user's currently blocked users as an array of <doc:UserHeader> objects.
+	/// Returns a list of the user's currently blocked users as an array of `UserHeader` objects.
 	/// If the user is a sub-account, the parent user's blocks are returned.
 	///
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: Array of <doc:UserHeader> containing the currently blocked users.
+	/// - Returns: Array of `UserHeader` containing the currently blocked users.
 	func blocksHandler(_ req: Request) async throws -> [UserHeader] {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		// if sub-account, we want parent's blocks
@@ -411,7 +411,7 @@ struct UsersController: APIRouteCollection {
 	/// Returns a list of the user's currently muted users.
 	///
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: Array of <doc:UserHeader> containing the currently muted users.
+	/// - Returns: Array of `UserHeader` containing the currently muted users.
 	func mutesHandler(_ req: Request) async throws -> [UserHeader] {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		guard let user = try await User.find(cacheUser.userID, on: req.db) else {
@@ -488,7 +488,7 @@ struct UsersController: APIRouteCollection {
 	/// Returns a list of the user's currently favorited users.
 	///
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: An array of <doc:UserHeader> containing the currently favorited users.
+	/// - Returns: An array of `UserHeader` containing the currently favorited users.
 	func favoritesHandler(_ req: Request) async throws -> [UserHeader] {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let favoriteUsers = try await UserFavorite.query(on: req.db).filter(\.$user.$id == cacheUser.userID).all()
@@ -549,7 +549,7 @@ struct UsersController: APIRouteCollection {
 	///  query the `shutternaut` role.
 	///  
 	/// - Throws: badRequest if the caller isn't a shutternaut manager, or the user role param isn't `shutternaut`.
-	/// - Returns: Array of <doc:UserHeader>. Array may be empty if nobody has this role yet.
+	/// - Returns: Array of `UserHeader`. Array may be empty if nobody has this role yet.
 	func getUsersWithRole(_ req: Request) async throws -> [UserHeader] {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		guard cacheUser.userRoles.contains(.shutternautmanager) else {

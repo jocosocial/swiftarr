@@ -1,7 +1,7 @@
 import Vapor
 import Redis
 
-/// A type of event that can change the value of the global notification handler's <doc:UserNotificationData> result.
+/// A type of event that can change the value of the global notification handler's `UserNotificationData` result.
 /// 
 /// When certain database-mutating events occur, the notification bookkeeping methods need to be called to keep our 
 /// cached notification counts up to date. The notification counts themselves are database-denormalizing, but they're a cache

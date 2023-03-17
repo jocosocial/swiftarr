@@ -92,11 +92,11 @@ struct AuthController: APIRouteCollection {
 	/// - Note: To prevent brute-force malicious attempts, there is a limit on successive
 	///   failed recovery attempts, currently hard-coded to 5.
 	///
-	/// - Parameter requestBody: <doc:UserRecoveryData>
+	/// - Parameter requestBody: `UserRecoveryData`
 	/// - Throws: 400 error if the recovery fails. 403 error if the maximum number of successive
 	///   failed recovery attempts has been reached. A 5xx response should be reported as a
 	///   likely bug, please and thank you.
-	/// - Returns: <doc:TokenStringData> containing an authentication token (string) that should
+	/// - Returns: `TokenStringData` containing an authentication token (string) that should
 	///   be used for all subsequent HTTP requests, until expiry or revocation.
 	func recoveryHandler(_ req: Request) async throws -> TokenStringData {
 		// see `UserRecoveryData.validations()`
@@ -218,7 +218,7 @@ struct AuthController: APIRouteCollection {
 	/// - Requires: HTTP Basic Auth in `Authorization` header. 
 	/// - Throws: 401 error if the Basic authentication fails. 403 error if the user is
 	///   banned. A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: <doc:TokenStringData> containing an authentication token (string) that should
+	/// - Returns: `TokenStringData` containing an authentication token (string) that should
 	///   be used for all subsequent HTTP requests, until expiry or revocation.
 	func loginHandler(_ req: Request) async throws -> TokenStringData {
 		// By the time we get here, basic auth has *already happened* via middleware that runs before the route handler.

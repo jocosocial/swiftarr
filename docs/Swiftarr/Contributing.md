@@ -1,9 +1,11 @@
 Contributing
 ============
 
+Please keep the [JoCo Cruise Code of Conduct](https://jococruise.com/faq/#the-joco-cruise-code-of-conduct) in mind and be excellent to each other.
+
 ### Community
 Anybody should feel free to open or comment on an [issue](https://github.com/jocosocial/swiftarr/issues)! This is
-the preferred place to consolidate discussion related specifically to the Swiftarr API backend. Questions,
+the preferred place to consolidate discussion related specifically to the Swiftarr API backend or website. Questions,
 general feedback, suggestions, feature requests, bug reports, and proposed changes are all fair game.
 
 While it *is* the preferred location, a (free) GitHub account is required to participate there directly. The Twit-arr
@@ -25,4 +27,4 @@ Contributions to Swiftarr are absolutely welcome! Some general guidelines:
 ### Test Environment
 
 A demo/test instance is usually available at https://beta.twitarr.com. Contact the Twitarr Team via Discord
-for access (or try various default credentials).
+for access.

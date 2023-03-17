@@ -128,7 +128,7 @@ struct UserController: APIRouteCollection {
 	///
 	/// Creates a new `User` account. Does not log the new user in. Route is open access.
 	///
-	/// A  <doc:CreatedUserData> structure is returned on success, containing the new user's ID,
+	/// A  `CreatedUserData` structure is returned on success, containing the new user's ID,
 	/// username and a generated recovery key.
 	///
 	/// - Note: The `CreatedUserData.recoveryKey` is a random phrase used to recover an account
@@ -138,10 +138,10 @@ struct UserController: APIRouteCollection {
 	///   creation, and the user is *encouraged to take a screenshot or write it down before
 	///   proceeding*.
 	///
-	/// - Parameter requestBody: <doc:UserCreateData>
+	/// - Parameter requestBody: `UserCreateData`
 	/// - Throws: 400 error if the username is an invalid format. 409 errpr if the username is
 	///   not available.
-	/// - Returns: <doc:CreatedUserData> containing the newly created user's ID, username, and a
+	/// - Returns: `CreatedUserData` containing the newly created user's ID, username, and a
 	///   recovery key string.
 	func createHandler(_ req: Request) async throws -> Response {
 		// see `UserCreateData.validations()`
@@ -200,7 +200,7 @@ struct UserController: APIRouteCollection {
 	/// NOTE: previously it was possible to create an account and NOT provide a Registration Code, creating an account with an access level of .unverified. We 
 	/// now require a registration code to create an account and all accounts are therefore already verified at creation time, meaning this method is not currently useful.
 	///
-	/// - Parameter requestBody: <doc:UserVerifyData>
+	/// - Parameter requestBody: `UserVerifyData`
 	/// - Throws: 400 error if the user is already verified or the registration code is not
 	///   a valid one. 409 error if the registration code has already been allocated to
 	///   another user.
@@ -243,7 +243,7 @@ struct UserController: APIRouteCollection {
 	/// This method does not log in the newly created user. Users are limited to `Settings.shared.maxAlternateAccounts` 
 	/// alts, which is 6 by default.
 	///
-	/// An <doc:AddedUserData> structure is returned on success, containing the new user's ID
+	/// An `AddedUserData` structure is returned on success, containing the new user's ID
 	/// and username.
 	///
 	/// - Note: API v3 supports a sub-account model, rather than the creation of individual
@@ -252,11 +252,11 @@ struct UserController: APIRouteCollection {
 	///   requires use of its own Bearer Authentication token and must log in individually;
 	///   multiple accounts can all be simultaneously logged in.
 	///
-	/// - Parameter requestBody: <doc:UserCreateData>
+	/// - Parameter requestBody: `UserCreateData`
 	/// - Throws: 400 error if the username is an invalid format or password is not at least
 	///   6 characters. 403 error if the user is banned or currently quarantined. 409 errpr if
 	///   the username is not available.
-	/// - Returns: <doc:AddedUserData> containing the newly created user's ID and username.
+	/// - Returns: `AddedUserData` containing the newly created user's ID and username.
 	func addHandler(_ req: Request) async throws -> Response {
 		let user = try await req.auth.require(UserCacheData.self).getUser(on: req.db)
 		// see `UserCreateData.validations()`
@@ -298,7 +298,7 @@ struct UserController: APIRouteCollection {
 	///
 	/// Returns the current user's `.id`, `.username` and whether they're currently logged in.
 	///
-	/// - Returns: <doc:CurrentUserData> containing the current user's ID, username and logged in status.
+	/// - Returns: `CurrentUserData` containing the current user's ID, username and logged in status.
 	func whoamiHandler(_ req: Request) throws -> CurrentUserData {
 		let user = try req.auth.require(UserCacheData.self)
 		let currentUserData = CurrentUserData(userID: user.userID, username: user.username,
@@ -311,7 +311,7 @@ struct UserController: APIRouteCollection {
 	///
 	/// Updates a user's password to the supplied value, encrypted.
 	///
-	/// - Parameter requestBody: <doc:UserPasswordData> struct containing the user's desired password.
+	/// - Parameter requestBody: `UserPasswordData` struct containing the user's desired password.
 	/// - Throws: 400 error if the supplied password is not at least 6 characters. 403 error
 	///   if the user is a `.client`.
 	/// - Returns: 201 Created on success.
@@ -339,7 +339,7 @@ struct UserController: APIRouteCollection {
 	/// Changes a user's username to the supplied value, if possible. `/api/v3/user/username` allows a user to change their own username,
 	/// while `/api/v3/user/:userID/username` allows moderators to change the username of the indicated user.
 	///
-	/// - Parameter requestBody: <doc:UserUsernameData> containing the user's desired new username.
+	/// - Parameter requestBody: `UserUsernameData` containing the user's desired new username.
 	/// - Throws: 400 error if the username is an invalid format.
 	///   403 error if you change username more than once per 20 hours (to prevent abuse). Or if the user is a `.client`.
 	///   409 error if the username is not available.
@@ -397,16 +397,16 @@ struct UserController: APIRouteCollection {
 // MARK: - Profile
 	/// `POST /api/v3/user/image`
 	///
-	/// Sets the user's profile image to the <doc:ImageUploadData> uploaded in the HTTP body. 
+	/// Sets the user's profile image to the `ImageUploadData` uploaded in the HTTP body. 
 	/// 
-	/// - If the <doc:ImageUploadData> contains image data in the `image` member, that data is processed, saved, and set to user's new image
-	/// - If the <doc:ImageUploadData> contains a filename in the `filename` member, the user's avatar is set to that image file on the server. 
+	/// - If the `ImageUploadData` contains image data in the `image` member, that data is processed, saved, and set to user's new image
+	/// - If the `ImageUploadData` contains a filename in the `filename` member, the user's avatar is set to that image file on the server. 
 	/// We don't check whether the file exists.
 	/// - If both members are nil, the user's avatar image is set to nil, which will cause the default image be returned.
 	///
-	/// - Parameter requestBody: <doc:ImageUploadData> payload in the HTTP body.
+	/// - Parameter requestBody: `ImageUploadData` payload in the HTTP body.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: <doc:UserHeader> containing the generated image identifier string.
+	/// - Returns: `UserHeader` containing the generated image identifier string.
 	func imageHandler(_ req: Request) async throws -> UserHeader {
 		let user = try await req.auth.require(UserCacheData.self).getUser(on: req.db)
 		try user.guardCanEditProfile()
@@ -474,7 +474,7 @@ struct UserController: APIRouteCollection {
 	
 	/// `GET /api/v3/user/profile`
 	///
-	/// Retrieves the user's own profile data for editing, as a <doc:ProfilePublicData> object.
+	/// Retrieves the user's own profile data for editing, as a `ProfilePublicData` object.
 	///
 	/// - Note: The `.header.username` and `.header.displayName` properties of the returned object
 	///   are for display convenience only. A username must be changed using the
@@ -482,7 +482,7 @@ struct UserController: APIRouteCollection {
 	///
 	/// - Throws: 403 error if the user is banned. A 5xx response should be reported as a likely
 	///   bug, please and thank you.
-	/// - Returns: <doc:ProfilePublicData> containing the editable properties of the profile.
+	/// - Returns: `ProfilePublicData` containing the editable properties of the profile.
 	func profileHandler(_ req: Request) async throws -> ProfilePublicData {
 		let user = try await req.auth.require(UserCacheData.self).getUser(on: req.db)
 		return try ProfilePublicData(user: user, note: nil, requesterAccessLevel: user.accessLevel)
@@ -493,15 +493,15 @@ struct UserController: APIRouteCollection {
 	///
 	/// Updates the user's profile.
 	///
-	/// - Note: All fields of the <doc:UserProfileUploadData> structure being submitted **must** be
+	/// - Note: All fields of the `UserProfileUploadData` structure being submitted **must** be
 	///   present. While the properties of the profile itself are optional, the
 	///   submitted values all *replace* the existing propety values. Submitting a value of `""`
 	///   resets its respective profile property to `nil`.
 	///
 	/// - Parameter userID: in URL path. Only for the second form of the URL path, which is moderator-only.
-	/// - Parameter requestBody: <doc:UserProfileUploadData>
+	/// - Parameter requestBody: `UserProfileUploadData`
 	/// - Throws: 403 error if the user is banned.
-	/// - Returns: <doc:ProfilePublicData> containing the updated editable properties of the profile.
+	/// - Returns: `ProfilePublicData` containing the updated editable properties of the profile.
 	func profileUpdateHandler(_ req: Request) async throws -> ProfilePublicData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let user = try await cacheUser.getUser(on: req.db)
@@ -545,7 +545,7 @@ struct UserController: APIRouteCollection {
 	///
 	/// - Parameter STRING: In URL path. The alert word to watch for.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: <doc:AlertKeywordData> containing the updated contents of the barrel.
+	/// - Returns: `AlertKeywordData` containing the updated contents of the barrel.
 	func alertwordsAddHandler(_ req: Request) async throws -> KeywordData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		guard let parameter = req.parameters.get(alertwordParam.paramString)?.lowercased() else {
@@ -568,10 +568,10 @@ struct UserController: APIRouteCollection {
 	
 	/// `GET /api/v3/user/alertwords`
 	///
-	/// Returns a list of the user's current alert keywords in <doc:AlertKeywordData> barrel format.
+	/// Returns a list of the user's current alert keywords in `AlertKeywordData` barrel format.
 	///
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: <doc:AlertKeywordData> containing the current alert keywords as an array of strings.
+	/// - Returns: `AlertKeywordData` containing the current alert keywords as an array of strings.
 	func alertwordsHandler(_ req: Request) async throws -> KeywordData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let keywordPivots = try await AlertWordPivot.query(on: req.db).filter(\.$user.$id == cacheUser.userID).with(\.$alertword).all()
@@ -585,7 +585,7 @@ struct UserController: APIRouteCollection {
 	///
 	/// - Parameter STRING: In URL path. The alert word to remove from the alertword list.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: <doc:AlertKeywordData> containing the updated contents of the barrel.
+	/// - Returns: `AlertKeywordData` containing the updated contents of the barrel.
 	func alertwordsRemoveHandler(_ req: Request) async throws -> KeywordData {
 		let user = try req.auth.require(UserCacheData.self)
 		guard let parameter = req.parameters.get(alertwordParam.paramString)?.lowercased() else {
@@ -614,7 +614,7 @@ struct UserController: APIRouteCollection {
 	///
 	/// - Parameter STRING: In URL path. The muteword to add.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: <doc:MuteKeywordData> containing the updated contents of the barrel.
+	/// - Returns: `MuteKeywordData` containing the updated contents of the barrel.
 	func mutewordsAddHandler(_ req: Request) async throws -> KeywordData {
 		let user = try req.auth.require(UserCacheData.self)
 		guard let parameter = req.parameters.get(mutewordParam.paramString)?.lowercased() else {
@@ -642,10 +642,10 @@ struct UserController: APIRouteCollection {
 	
 	/// `GET /api/v3/user/mutewords`
 	///
-	/// Returns a list of the user's currently muted keywords in named-list  <doc:MuteKeywordData> format.
+	/// Returns a list of the user's currently muted keywords in named-list  `MuteKeywordData` format.
 	///
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: <doc:MuteKeywordData> containing the current muting keywords as an array of  strings.
+	/// - Returns: `MuteKeywordData` containing the current muting keywords as an array of  strings.
 	func mutewordsHandler(_ req: Request) async throws -> KeywordData {
 		let user = try req.auth.require(UserCacheData.self)
 		let mutewordRecords = try await MuteWord.query(on: req.db).filter(\.$user.$id == user.userID).all()
@@ -659,7 +659,7 @@ struct UserController: APIRouteCollection {
 	///
 	/// - Parameter STRING: In URL path. The muteword to remove.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: <doc:MuteKeywordData> containing the updated contents of the barrel.
+	/// - Returns: `MuteKeywordData` containing the updated contents of the barrel.
 	func mutewordsRemoveHandler(_ req: Request) async throws -> KeywordData {
 		let user = try req.auth.require(UserCacheData.self)
 		guard let parameter = req.parameters.get(mutewordParam.paramString)?.lowercased() else {
@@ -683,15 +683,15 @@ struct UserController: APIRouteCollection {
 		
 	/// `GET /api/v3/user/notes`
 	///
-	/// Retrieves all <doc:UserNote>s owned by the current user, as an array of <doc:NoteData> objects.
+	/// Retrieves all `UserNote>s owned by the current user, as an array of `NoteData` objects.
 	///
-	/// The <doc:NoteData> object is intended to be display friendly, including fields for
+	/// The `NoteData` object is intended to be display friendly, including fields for
 	/// potential sorting, the ID of the profile which can be linked to, and the profile's user
 	/// in the familiar .displayedName format. The .noteID is included as well to support
 	/// editing of notes outside of a profile-viewing context.
 	///
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: An array of  <doc:NoteData> containing all of the user's notes.
+	/// - Returns: An array of  `NoteData` containing all of the user's notes.
 	func notesHandler(_ req: Request) async throws -> [NoteData] {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		// get all notes, and for each note, the user the note's written about.

@@ -99,7 +99,7 @@ struct SocketNotificationData: Content {
 		/// Caller hung up while phone was rining, or other party ended the call in progress, or callee declined
 		case phoneCallEnded
 	}
-	/// The type of event that happened. See <doc:SocketNotificationData.NotificationTypeData> for values.
+	/// The type of event that happened. See `SocketNotificationData.NotificationTypeData` for values.
 	var type: NotificationTypeData
 	/// A string describing what happened, suitable for adding to a notification alert.
 	var info: String

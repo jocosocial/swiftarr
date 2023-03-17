@@ -6,7 +6,6 @@ Database Migration
     to get some data.
     See the [Vapor docs](https://docs.vapor.codes/4.0/fluent/overview/#migrate) for details.
     ```
-    # Note there is no `swift` eqivalent here. You need the vapor CLI.
     swift run Run migrate [--yes]
     ```
     Example output:

@@ -171,11 +171,11 @@ struct TwitarrController: APIRouteCollection {
 /**
 	`GET /api/v3/twitarr/ID`
 
-	Retrieve the specified `Twarrt` with full user <doc:LikeType> data.
+	Retrieve the specified `Twarrt` with full user `LikeType` data.
 
 	- Parameter twarrtID: in URL path
 	- Throws: 404 error if the twarrt is not available.
-	- Returns: <doc:TwarrtDetailData> containing the specified twarrt.
+	- Returns: `TwarrtDetailData` containing the specified twarrt.
 */
 	func twarrtHandler(_ req: Request) async throws -> TwarrtDetailData {
 		let cachedUser = try req.auth.require(UserCacheData.self)
@@ -276,7 +276,7 @@ struct TwitarrController: APIRouteCollection {
 	involves users or twarrts the user has previously interacted with (`inBarrel`, `likeType`, `bookmarked`) or matches users by name (`byuser`).
 
 	- Throws: 400 error if a date parameter was supplied and is in an unknown format.
-	- Returns: An array of <doc:TwarrtData> containing the requested twarrts.
+	- Returns: An array of `TwarrtData` containing the requested twarrts.
 */
 	func twarrtsHandler(_ req: Request) async throws -> [TwarrtData] {
 		let cachedUser = try req.auth.require(UserCacheData.self)
@@ -454,9 +454,9 @@ struct TwitarrController: APIRouteCollection {
 	/// One feature of this system for replies is that `TwarrtData.replyGroupID` can be used to discern whether a twarrt is part of a reply-group or not.
 	///
 	/// - Parameter twarrtID: in URL path. The twarrt to reply to.
-	/// - Parameter requestBody: <doc:PostContentData>
+	/// - Parameter requestBody: `PostContentData`
 	/// - Throws: 400 error if the replyTo twarrt is in quarantine.
-	/// - Returns: A <doc:TwarrtData> containing the twarrt's contents and metadata. HTTP 201 status if successful.
+	/// - Returns: A `TwarrtData` containing the twarrt's contents and metadata. HTTP 201 status if successful.
 	func replyHandler(_ req: Request) async throws -> Response {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		try cacheUser.guardCanCreateContent(customErrorString: "user cannot post twarrts")
@@ -490,8 +490,8 @@ struct TwitarrController: APIRouteCollection {
 	///
 	/// Create a new `Twarrt` in the twitarr stream.
 	///
-	/// - Parameter requestBody: <doc:PostContentData>
-	/// - Returns: <doc:TwarrtData> containing the twarrt's contents and metadata. HTTP 201 status if successful.
+	/// - Parameter requestBody: `PostContentData`
+	/// - Returns: `TwarrtData` containing the twarrt's contents and metadata. HTTP 201 status if successful.
 	func twarrtCreateHandler(_ req: Request) async throws -> Response {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		try cacheUser.guardCanCreateContent(customErrorString: "user cannot post twarrts")
@@ -539,7 +539,7 @@ struct TwitarrController: APIRouteCollection {
 	///   sent an empty string in the `.message` field.
 	///
 	/// - Parameter twarrtID: in URL path. The twarrt to report.
-	/// - Parameter requestBody: <doc:ReportData>
+	/// - Parameter requestBody: `ReportData`
 	/// - Throws: 400 error if user has already submitted report.
 	/// - Returns: 201 Created on success.
 	func twarrtReportHandler(_ req: Request) async throws -> HTTPStatus {
@@ -555,7 +555,7 @@ struct TwitarrController: APIRouteCollection {
 	///
 	/// - Parameter twarrtID: in URL path.
 	/// - Throws: 403 error if user is the twarrt's creator.
-	/// - Returns: <doc:TwarrtData> containing the updated like info.
+	/// - Returns: `TwarrtData` containing the updated like info.
 	func twarrtLaughHandler(_ req: Request) async throws -> TwarrtData {
 		return try await twarrtReactHandler(req, likeType: .laugh)
 	}
@@ -566,7 +566,7 @@ struct TwitarrController: APIRouteCollection {
 	///
 	/// - Parameter twarrtID: in URL path.
 	/// - Throws: 403 error if user is the twarrt's creator.
-	/// - Returns: <doc:TwarrtData> containing the updated like info.
+	/// - Returns: `TwarrtData` containing the updated like info.
 	func twarrtLikeHandler(_ req: Request) async throws -> TwarrtData {
 		return try await twarrtReactHandler(req, likeType: .like)
 	}
@@ -577,7 +577,7 @@ struct TwitarrController: APIRouteCollection {
 	///
 	/// - Parameter twarrtID: in URL path.
 	/// - Throws: 403 error if user is the twarrt's creator.
-	/// - Returns: <doc:TwarrtData> containing the updated like info.
+	/// - Returns: `TwarrtData` containing the updated like info.
 	func twarrtLoveHandler(_ req: Request) async throws -> TwarrtData {
 		return try await twarrtReactHandler(req, likeType: .love)
 	}
@@ -588,7 +588,7 @@ struct TwitarrController: APIRouteCollection {
 	/// - Parameter req: The incoming `Request`, provided automatically.
 	/// - Parameter likeType:  The type of reaction being set.
 	/// - Throws: 403 error if user is the twarrt's creator.
-	/// - Returns: <doc:TwarrtData> containing the updated like info.
+	/// - Returns: `TwarrtData` containing the updated like info.
 	func twarrtReactHandler(_ req: Request, likeType: LikeType) async throws -> TwarrtData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		// get twarrt
@@ -611,7 +611,7 @@ struct TwitarrController: APIRouteCollection {
 	///
 	/// - Parameter twarrtID: in URL path.
 	/// - Throws: 403 error if user is is the twarrt's creator. 404 if no twarrt with the ID is found. 
-	/// - Returns: <doc:TwarrtData> containing the updated like info.
+	/// - Returns: `TwarrtData` containing the updated like info.
 	func twarrtUnreactHandler(_ req: Request) async throws -> TwarrtData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		// get twarrt
@@ -632,9 +632,9 @@ struct TwitarrController: APIRouteCollection {
 	/// Update the specified `Twarrt`.
 	///
 	/// - Parameter twarrtID: in URL path.
-	/// - Parameter requestBody: <doc:PostContentData>
+	/// - Parameter requestBody: `PostContentData`
 	/// - Throws: 403 error if user is not twarrt owner or has read-only access.
-	/// - Returns: <doc:TwarrtData> containing the twarrt's contents and metadata.
+	/// - Returns: `TwarrtData` containing the twarrt's contents and metadata.
 	func twarrtUpdateHandler(_ req: Request) async throws -> TwarrtData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let data = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
