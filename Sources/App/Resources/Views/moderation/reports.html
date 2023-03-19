@@ -1,62 +1,63 @@
 #extend("trunk"):
-    #export("body"):
-    	<div class="container-md ms-0 mt-2">
-    		<div class="row justify-content-between align-items-center my-1">
-    			<div class="col">
-					<nav aria-label="breadcrumb">
-						<ol class="breadcrumb">
-							<li class="breadcrumb-item"><a href="/moderator">Moderator</a></li>
-							<li class="breadcrumb-item active" aria-current="page">Reports</li>
-						</ol>
-					</nav>
-				</div>
-			</div>
-    		<div class="row align-items-end">
-    			<div class="col col-auto">
-			    	<h6><b>Reports Grouped by Reported Content</b></h6>
-				</div>
-			</div>
-			<div class="list-group">
-			#for(report in reports):
-				<a class="list-group-item list-group-item-action" href="#(report.contentURL)">
-					<div class="container-fluid">
-						<div class="row">
-							<div class="col">
-								@#(report.reportedUser.username)'s #(report.reportType)
-							</div>
-							<div class="col col-auto">
-								<span title="#localTime(report.firstReport.creationTime)">reported #relativeTime(report.firstReport.creationTime)</span>
-							</div>
-						</div>
-						<div class="row">
-							<div class="col">
-								#if(count(report.reports) == 1):
-									#if(report.handledBy):
-										#if(report.openCount == 0):
-											Closed by #userByline(report.handledBy, "nolink")
-										#else:
-											Being Handled by #userByline(report.handledBy, "nolink")
-										#endif
-									#else:
-										#if(report.openCount == 0):
-											1 Closed Report
-										#else:
-											1 Open Report by #for(user in report.reports):@#(user.author.username)#endfor
-										#endif
-									#endif
-								#else:
-									#if(report.openCount == 0):
-										#count(report.reports) closed reports
-									#else:
-										#count(report.reports) reports, #(report.openCount) open
-									#endif
-								#endif
-							</div>
-						</div>
-					</div>
-				</a>
-			#endfor
-			</div>
+#export("body"):
+<div class="container-md ms-0 mt-2">
+	<div class="row justify-content-between align-items-center my-1">
+		<div class="col">
+			<nav aria-label="breadcrumb">
+				<ol class="breadcrumb">
+					<li class="breadcrumb-item"><a href="/moderator">Moderator</a></li>
+					<li class="breadcrumb-item active" aria-current="page">Reports</li>
+				</ol>
+			</nav>
 		</div>
-    #endexport
+	</div>
+	<div class="row align-items-end">
+		<div class="col col-auto">
+			<h6><b>Reports Grouped by Reported Content</b></h6>
+		</div>
+	</div>
+	<div class="list-group">
+		#for(report in reports):
+		<a class="list-group-item list-group-item-action" href="#(report.contentURL)">
+			<div class="container-fluid">
+				<div class="row">
+					<div class="col">
+						@#(report.reportedUser.username)'s #(report.reportType)
+					</div>
+					<div class="col col-auto">
+						<span title="#localTime(report.firstReport.creationTime)">reported
+							#relativeTime(report.firstReport.creationTime)</span>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col">
+						#if(count(report.reports) == 1):
+						#if(report.handledBy):
+						#if(report.openCount == 0):
+						Closed by #userByline(report.handledBy, "nolink")
+						#else:
+						Being Handled by #userByline(report.handledBy, "nolink")
+						#endif
+						#else:
+						#if(report.openCount == 0):
+						1 Closed Report
+						#else:
+						1 Open Report by #for(user in report.reports):@#(user.author.username)#endfor
+						#endif
+						#endif
+						#else:
+						#if(report.openCount == 0):
+						#count(report.reports) closed reports
+						#else:
+						#count(report.reports) reports, #(report.openCount) open
+						#endif
+						#endif
+					</div>
+				</div>
+			</div>
+		</a>
+		#endfor
+	</div>
+</div>
+#endexport
 #endextend

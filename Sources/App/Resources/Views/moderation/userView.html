@@ -1,131 +1,140 @@
 #extend("trunk"):
-    #export("body"):
-    	<div class="container-md ms-0 mt-2">
-    		<div class="row align-items-end">
-    			<div class="col col-auto">
-			    	<h6><b>Moderate Primary User @#(modData.header.username)</b></h6>
-				</div>
-			</div>
-			<div class="row mb-3">
-				<div class="col">
-					<span class="dropdown">
-						<button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="accessLevelMenuBtn" data-bs-toggle="dropdown" aria-expanded="false">
-							Set Access Level
-						</button>
-						<ul class="dropdown-menu" aria-labelledby="accessLevelMenuBtn" data-userid="#(modData.header.userID)">
-							<li><button class="dropdown-item" type="button" data-action="setAccessLevel" data-newstate="unverified" #if(!trunk.userIsTHO): disabled#endif>Unverified</button></li>
-							<li><button class="dropdown-item" type="button" data-action="setAccessLevel" data-newstate="banned"#if(!trunk.userIsTHO): disabled#endif>Banned</button></li>
-							<li><button class="dropdown-item" type="button" data-action="setAccessLevel" data-newstate="quarantined">Quarantined</button></li>
-							<li><button class="dropdown-item" type="button" data-action="setAccessLevel" data-newstate="verified">Verified</button></li>
-						</ul>
-					</span>
-					Current State: #(accessLevelString)			
-				</div>
-			</div>
-			<form class="ajax" action="/moderate/user/#(modData.header.userID)/tempquarantine" enctype="multipart/form-data" method="POST" data-successurl="/moderate/user/#(modData.header.userID)" id="tempBanForm">
-				#if(modData.tempQuarantineEndTime):
-					<div class="row mb-3">
-						<div class="col">
-							User is currently quarantined until #staticTime(modData.tempQuarantineEndTime)
-						</div>
-					</div>
-				#endif
-				<div class="row mb-3">
-					<div class="col">
-						Quarantine user for <input class="form-control d-inline" type="number" id="tempBanNumberInput" name="banlength" max=200 style="width:80px"> hours
-					</div>
-				</div>
-				<div class="row mb-3">
-					<div class="col">
-						<button type="submit" class="btn btn-primary btn-sm">Start Quarantine</button>
-						#if(modData.tempQuarantineEndTime):
-							<button type="button" class="btn btn-primary btn-sm" data-action="clearTempBan" data-path="/moderate/user/#(modData.header.userID)/tempquarantine/delete">Cancel Quarantine</button>
-						#endif
-					</div>
-				</div>
-				<div class="alert alert-danger mt-3 d-none" role="alert" id="ModerateContentErrorAlert">
-				</div>				
-			</form>
-			
-			#if(count(modData.subAccounts) == 0):
-				<h6><b>User has no sub-accounts.</b></h6>
-			#else:
-				<h6><b>Alt Accounts for this user</b></h6>
-				<div class="list-group mb-1">
-					#for(subAcct in modData.subAccounts):
-						#userByline(subAcct, "list-group-item")
-					#endfor
-				</div>
-				<p class="mb-3"><i>Access Level/Temp Quarantine changes affect all alt accounts of this user.</i></p>
-			#endif
-			
-			#if(count(reportGroups) == 0):
-				<h6><b>No reports on this user or their alt accounts.</b></h6>
-			#else:				
-				<div class="row mt-3">
-					<h6><b>#count(modData.reports) reports on this user's accounts:</b></h6>
-				</div>
-				<div class="list-group">
-					#for(reportGroup in reportGroups):
-						<li class="list-group-item has-action-bar" href="#reportGroup.contentURL">
-							<div class="row">
-								<div class="col">
-									@#(reportGroup.firstReport.reportedUser.username)'s #(reportGroup.reportType)
-								</div>
-								<div class="col col-auto">
-									<span title="#localTime(reportGroup.firstReport.creationTime)">#relativeTime(reportGroup.firstReport.creationTime)</span>
-								</div>
-							</div>
-							<div class="row">
-								<div class="col col-auto text-end">
-									#if(count(reportGroup.reports) == 1):
-										#if(reportGroup.reports.handledBy):
-											#if(reportGroup.isClosed):
-												Closed by #userByline(reportGroup.firstReport.handledBy)
-											#else:
-												Being Handled by #userByline(reportGroup.handledBy)
-											#endif
-										#else:
-											#if(reportGroup.report.isClosed):
-												1 Closed Report
-											#else:
-												1 Open Report 
-											#endif
-										#endif
-									#else:
-										#count(reportGroup.reports) reports, #(reportGroup.openCount) open
-									#endif
-								</div>
-							</div>
-							<div class="collapse" data-label="actionbar">
-								<div class="row">
-									<table class="table">
-										<thead>
-											<th scope="col">Submitter</th>
-											<th scope="col">Comment</th>
-										</thead>
-										<tbody>
-											#for(report in reportGroup.reports):
-												<tr>
-													<td>#(report.author.username)</td>
-													<td>#(report.submitterMessage)</td>
-												</tr>
-											#endfor
-										</tbody>
-									</table>
-								</div>
-								<div class="row">
-									<div class="col">
-										<a class="btn btn-primary btn-sm" href="#(reportGroup.contentURL)">View</a>
-									</div>
-								</div>
-							</div>
-						</li>
-					#endfor
-				</div>
-			#endif
+#export("body"):
+<div class="container-md ms-0 mt-2">
+	<div class="row align-items-end">
+		<div class="col col-auto">
+			<h6><b>Moderate Primary User @#(modData.header.username)</b></h6>
 		</div>
+	</div>
+	<div class="row mb-3">
+		<div class="col">
+			<span class="dropdown">
+				<button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="accessLevelMenuBtn"
+					data-bs-toggle="dropdown" aria-expanded="false">
+					Set Access Level
+				</button>
+				<ul class="dropdown-menu" aria-labelledby="accessLevelMenuBtn" data-userid="#(modData.header.userID)">
+					<li><button class="dropdown-item" type="button" data-action="setAccessLevel"
+							data-newstate="unverified" #if(!trunk.userIsTHO): disabled#endif>Unverified</button></li>
+					<li><button class="dropdown-item" type="button" data-action="setAccessLevel" data-newstate="banned"
+							#if(!trunk.userIsTHO): disabled#endif>Banned</button></li>
+					<li><button class="dropdown-item" type="button" data-action="setAccessLevel"
+							data-newstate="quarantined">Quarantined</button></li>
+					<li><button class="dropdown-item" type="button" data-action="setAccessLevel"
+							data-newstate="verified">Verified</button></li>
+				</ul>
+			</span>
+			Current State: #(accessLevelString)
+		</div>
+	</div>
+	<form class="ajax" action="/moderate/user/#(modData.header.userID)/tempquarantine" enctype="multipart/form-data"
+		method="POST" data-successurl="/moderate/user/#(modData.header.userID)" id="tempBanForm">
+		#if(modData.tempQuarantineEndTime):
+		<div class="row mb-3">
+			<div class="col">
+				User is currently quarantined until #staticTime(modData.tempQuarantineEndTime)
+			</div>
+		</div>
+		#endif
+		<div class="row mb-3">
+			<div class="col">
+				Quarantine user for <input class="form-control d-inline" type="number" id="tempBanNumberInput"
+					name="banlength" max=200 style="width:80px"> hours
+			</div>
+		</div>
+		<div class="row mb-3">
+			<div class="col">
+				<button type="submit" class="btn btn-primary btn-sm">Start Quarantine</button>
+				#if(modData.tempQuarantineEndTime):
+				<button type="button" class="btn btn-primary btn-sm" data-action="clearTempBan"
+					data-path="/moderate/user/#(modData.header.userID)/tempquarantine/delete">Cancel Quarantine</button>
+				#endif
+			</div>
+		</div>
+		<div class="alert alert-danger mt-3 d-none" role="alert" id="ModerateContentErrorAlert">
+		</div>
+	</form>
 
-		<script src="/js/swiftarrModeration.js"></script>
-    #endexport
+	#if(count(modData.subAccounts) == 0):
+	<h6><b>User has no sub-accounts.</b></h6>
+	#else:
+	<h6><b>Alt Accounts for this user</b></h6>
+	<div class="list-group mb-1">
+		#for(subAcct in modData.subAccounts):
+		#userByline(subAcct, "list-group-item")
+		#endfor
+	</div>
+	<p class="mb-3"><i>Access Level/Temp Quarantine changes affect all alt accounts of this user.</i></p>
+	#endif
+
+	#if(count(reportGroups) == 0):
+	<h6><b>No reports on this user or their alt accounts.</b></h6>
+	#else:
+	<div class="row mt-3">
+		<h6><b>#count(modData.reports) reports on this user's accounts:</b></h6>
+	</div>
+	<div class="list-group">
+		#for(reportGroup in reportGroups):
+		<li class="list-group-item has-action-bar" href="#reportGroup.contentURL">
+			<div class="row">
+				<div class="col">
+					@#(reportGroup.firstReport.reportedUser.username)'s #(reportGroup.reportType)
+				</div>
+				<div class="col col-auto">
+					<span
+						title="#localTime(reportGroup.firstReport.creationTime)">#relativeTime(reportGroup.firstReport.creationTime)</span>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col col-auto text-end">
+					#if(count(reportGroup.reports) == 1):
+					#if(reportGroup.reports.handledBy):
+					#if(reportGroup.isClosed):
+					Closed by #userByline(reportGroup.firstReport.handledBy)
+					#else:
+					Being Handled by #userByline(reportGroup.handledBy)
+					#endif
+					#else:
+					#if(reportGroup.report.isClosed):
+					1 Closed Report
+					#else:
+					1 Open Report
+					#endif
+					#endif
+					#else:
+					#count(reportGroup.reports) reports, #(reportGroup.openCount) open
+					#endif
+				</div>
+			</div>
+			<div class="collapse" data-label="actionbar">
+				<div class="row">
+					<table class="table">
+						<thead>
+							<th scope="col">Submitter</th>
+							<th scope="col">Comment</th>
+						</thead>
+						<tbody>
+							#for(report in reportGroup.reports):
+							<tr>
+								<td>#(report.author.username)</td>
+								<td>#(report.submitterMessage)</td>
+							</tr>
+							#endfor
+						</tbody>
+					</table>
+				</div>
+				<div class="row">
+					<div class="col">
+						<a class="btn btn-primary btn-sm" href="#(reportGroup.contentURL)">View</a>
+					</div>
+				</div>
+			</div>
+		</li>
+		#endfor
+	</div>
+	#endif
+</div>
+
+<script src="/js/swiftarrModeration.js"></script>
+#endexport
 #endextend

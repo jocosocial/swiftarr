@@ -1,55 +1,60 @@
 #extend("trunk"):
-    #export("body"):
-		<form class="ajax" action="#(formAction)" enctype="multipart/form-data" method="POST" data-successurl="#(postSuccessURL)">
-			<div class="container-md ms-0 mt-2">
-				<div class="row mb-2">
-					<div class="col">
-						Edit Username for: #userByline(profile.header)
-					</div>
-				</div>
-				#if(isModEdit):
-					<div class="row mx-1 mb-3">
-						<div class="col">
-							<p><b>NOTE:</b> If you change a user's username and don't tell them, they can't log in. Sending a seamail
-							informing them of their new username is ineffective as they can't read it.</p>
-							<p>If the user's standing next to you at the Help Desk, you can use this form to change the user's username.</p>
-							<p>If the user's name is sorta offensive, it may be best to quarantine them and send them a seamail saying they
-							need to change their username to get un-quarantined.</p>
-							<p>If the user's name is really offensive to where they get banned, you can use this form to change their name
-							which will update all their posts with their new (non-offensive) name.</p>
-						</div>
-					</div>
-				#else:
-					<div class="row mx-1 mb-3">
-						<div class="col">
-							To prevent abuse, you're only allowed to change your username once per day. So--choose wisely!
-						</div>
-					</div>
-				#endif
+#export("body"):
+<form class="ajax" action="#(formAction)" enctype="multipart/form-data" method="POST"
+	data-successurl="#(postSuccessURL)">
+	<div class="container-md ms-0 mt-2">
+		<div class="row mb-2">
+			<div class="col">
+				Edit Username for: #userByline(profile.header)
+			</div>
+		</div>
+		#if(isModEdit):
+		<div class="row mx-1 mb-3">
+			<div class="col">
+				<p><b>NOTE:</b> If you change a user's username and don't tell them, they can't log in. Sending a
+					seamail
+					informing them of their new username is ineffective as they can't read it.</p>
+				<p>If the user's standing next to you at the Help Desk, you can use this form to change the user's
+					username.</p>
+				<p>If the user's name is sorta offensive, it may be best to quarantine them and send them a seamail
+					saying they
+					need to change their username to get un-quarantined.</p>
+				<p>If the user's name is really offensive to where they get banned, you can use this form to change
+					their name
+					which will update all their posts with their new (non-offensive) name.</p>
+			</div>
+		</div>
+		#else:
+		<div class="row mx-1 mb-3">
+			<div class="col">
+				To prevent abuse, you're only allowed to change your username once per day. So--choose wisely!
+			</div>
+		</div>
+		#endif
 
-				<div class="row mx-1 mb-3 align-items-center">
-					<div class="col col-12 col-sm-4">
-						<label for="username" class="text-start text-sm-end d-block">New Username:</label>
-					</div>
-					<div class="col col-12 col-sm-8">
-						<input type="text" class="form-control" id="username" name="username" placeholder="name" value="#(profile.header.username)" spellcheck="false" autocapitalize="none">
-					</div>
-				</div>
+		<div class="row mx-1 mb-3 align-items-center">
+			<div class="col col-12 col-sm-4">
+				<label for="username" class="text-start text-sm-end d-block">New Username:</label>
+			</div>
+			<div class="col col-12 col-sm-8">
+				<input type="text" class="form-control" id="username" name="username" placeholder="name"
+					value="#(profile.header.username)" spellcheck="false" autocapitalize="none">
+			</div>
+		</div>
 
-				<div class="row">
-					<div class="col">
-						<div class="alert alert-danger mt-3 d-none" role="alert">
-						</div>				
-					</div>				
-				</div>				
-
-				<div class="row justify-content-end mb-5">
-					<div class="col col-auto me-3">
-						<button type="submit" class="btn btn-primary btn-sm">Save</button>
-					</div>
+		<div class="row">
+			<div class="col">
+				<div class="alert alert-danger mt-3 d-none" role="alert">
 				</div>
 			</div>
-		</form>
-    #endexport
-#endextend
+		</div>
 
+		<div class="row justify-content-end mb-5">
+			<div class="col col-auto me-3">
+				<button type="submit" class="btn btn-primary btn-sm">Save</button>
+			</div>
+		</div>
+	</div>
+</form>
+#endexport
+#endextend

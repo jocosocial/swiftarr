@@ -1,137 +1,148 @@
 #extend("trunk"):
-    #export("body"):
-    	<div class="container-md ms-0 mt-2">
-    		<div class="row align-items-end">
-    			<div class="col col-auto">
-			    	<h6><b>Moderate User Profile For @#(modData.profile.header.username)</b></h6>
-				</div>
-			</div>
-			<div class="row mb-3">
-				<div class="col" data-reportabletype="userprofile" data-reportableid="#(modData.profile.header.userID)">
-					<a class="btn btn-outline-primary btn-sm" href="/profile/edit/#(modData.profile.header.userID)">Edit Profile</a>
-					<a class="btn btn-outline-primary btn-sm" href="/profile/username/edit/#(modData.profile.header.userID)">Edit Username</a>
-					<span class="dropdown">
-						<button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
-							Set State
-						</button>
-						<ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
-							<li><button class="dropdown-item" type="button" data-action="setModState" data-newstate="normal">Normal</button></li>
-							<li><button class="dropdown-item disabled" type="button">Auto Quarantined</button></li>
-							<li><button class="dropdown-item" type="button" data-action="setModState" data-newstate="quarantined">Quarantined</button></li>
-							<li><button class="dropdown-item" type="button" data-action="setModState" data-newstate="reviewed">Moderator Reviewed (looks good as is)</button></li>
-							<li><button class="dropdown-item" type="button" data-action="setModState" data-newstate="locked">Locked</button></li>
-						</ul>
-					</span>
-					Current State: #(modData.moderationStatus)			
-				</div>
-			</div>
-			<div class="alert alert-danger mt-3 d-none" role="alert" id="ModerateContentErrorAlert">
-			</div>				
-    		<div class="row">
-    			<div class="col col-auto">
-					<a class="btn btn-outline-primary btn-sm" href="/moderate/user/#(modData.profile.header.userID)">Mod User</a>
-				</div>
-			</div>
-    		<div class="row">
-				<h6><b>As it currently exists:</b></h6>
-			</div>
-    		<div class="row align-items-center">
-    			<div class="col col-12 col-sm-4 text-center">
-    				#if(modData.profile.header.userImage):
-    					<img class="img-for-upload p-1 border" src="/api/v3/image/thumb/#(modData.profile.header.userImage)" height=150 width=150>
-    				#else:
-    					<i>No Custom Image</i>
-    				#endif
-    			</div>
-    			<div class="col col-12 col-sm-8">
-					<ul class="container-md mx-0 px-0 list-group">
-						<li class="list-group-item bg-transparent"><b>Username:</b> #(modData.profile.header.username)</li>
-						<li class="list-group-item bg-transparent"><b>Display Name:</b> #(modData.profile.displayName)</li>
-						<li class="list-group-item bg-transparent"><b>Real Name:</b> #(modData.profile.realName)</li>
-						<li class="list-group-item bg-transparent"><b>Email:</b> #(modData.profile.email)</li>
-						<li class="list-group-item bg-transparent"><b>Home Location:</b> #(modData.profile.homeLocation)</li>
-						<li class="list-group-item bg-transparent"><b>Pronouns:</b> #(modData.profile.preferredPronoun)</li>
-						<li class="list-group-item bg-transparent"><b>Room Number:</b> #(modData.profile.roomNumber)</li>
-						<li class="list-group-item bg-transparent"><b>About:</b> #(modData.profile.about)</li>
-						<li class="list-group-item bg-transparent"><b>Message:</b> #(modData.profile.message)</li>
-					</ul>
-				</div>
-			</div>
-			#if(finalEditAuthor):
-				<div class="row">
-					<div class="col">
-						<i>Last edit by #userByline(finalEditAuthor)
-						</i>
-					</div>
-				</div>
-			#endif
-			<div class="row my-3">
-				<div class="col">
-					<a class="btn btn-primary btn-sm" href="/user/#(modData.profile.header.userID)">View in Context</a>
-				</div>
-			</div>
-
-			#if(count(modData.edits) == 0):
-				<div class="row mb-3">
-					<div class="col">
-						<h6><b>No previous edits to this profile.</b></h6>
-					</div>
-				</div>
+#export("body"):
+<div class="container-md ms-0 mt-2">
+	<div class="row align-items-end">
+		<div class="col col-auto">
+			<h6><b>Moderate User Profile For @#(modData.profile.header.username)</b></h6>
+		</div>
+	</div>
+	<div class="row mb-3">
+		<div class="col" data-reportabletype="userprofile" data-reportableid="#(modData.profile.header.userID)">
+			<a class="btn btn-outline-primary btn-sm" href="/profile/edit/#(modData.profile.header.userID)">Edit
+				Profile</a>
+			<a class="btn btn-outline-primary btn-sm"
+				href="/profile/username/edit/#(modData.profile.header.userID)">Edit Username</a>
+			<span class="dropdown">
+				<button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton1"
+					data-bs-toggle="dropdown" aria-expanded="false">
+					Set State
+				</button>
+				<ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+					<li><button class="dropdown-item" type="button" data-action="setModState"
+							data-newstate="normal">Normal</button></li>
+					<li><button class="dropdown-item disabled" type="button">Auto Quarantined</button></li>
+					<li><button class="dropdown-item" type="button" data-action="setModState"
+							data-newstate="quarantined">Quarantined</button></li>
+					<li><button class="dropdown-item" type="button" data-action="setModState"
+							data-newstate="reviewed">Moderator Reviewed (looks good as is)</button></li>
+					<li><button class="dropdown-item" type="button" data-action="setModState"
+							data-newstate="locked">Locked</button></li>
+				</ul>
+			</span>
+			Current State: #(modData.moderationStatus)
+		</div>
+	</div>
+	<div class="alert alert-danger mt-3 d-none" role="alert" id="ModerateContentErrorAlert">
+	</div>
+	<div class="row">
+		<div class="col col-auto">
+			<a class="btn btn-outline-primary btn-sm" href="/moderate/user/#(modData.profile.header.userID)">Mod
+				User</a>
+		</div>
+	</div>
+	<div class="row">
+		<h6><b>As it currently exists:</b></h6>
+	</div>
+	<div class="row align-items-center">
+		<div class="col col-12 col-sm-4 text-center">
+			#if(modData.profile.header.userImage):
+			<img class="img-for-upload p-1 border" src="/api/v3/image/thumb/#(modData.profile.header.userImage)"
+				height=150 width=150>
 			#else:
-				<div class="row">
-					<h6><b>#count(modData.edits) previous edits:</b></h6>
-				</div>
-				#for(edit in modData.edits):
-					<div class="row">
-						<div class="col">
-							<span class="text-muted">#staticTime(edit.createdAt) :</span>
-						</div>
-					</div>
-					<div class="row align-items-center mb-2">
-						<div class="col col-12 col-sm-4 text-center">
-							#if(edit.profileImage):
-								<img class="" src="/archivedimage/#(edit.profileImage)" height=150 width=150>
-							#else:
-								<i>Image Unchanged</i>
-							#endif
-						</div>
-						<div class="col col-12 col-sm-8">
-							<ul class="container-md mx-0 px-0 list-group">
-								<li class="list-group-item bg-transparent"><b>Username:</b> #(edit.profileData.header.username)</li>
-								<li class="list-group-item bg-transparent"><b>Display Name:</b> #(edit.profileData.displayName)</li>
-								<li class="list-group-item bg-transparent"><b>Real Name:</b> #(edit.profileData.realName)</li>
-								<li class="list-group-item bg-transparent"><b>Email:</b> #(edit.profileData.email)</li>
-								<li class="list-group-item bg-transparent"><b>Home Location:</b> #(edit.profileData.homeLocation)</li>
-								<li class="list-group-item bg-transparent"><b>Pronouns:</b> #(edit.profileData.preferredPronoun)</li>
-								<li class="list-group-item bg-transparent"><b>Room Number:</b> #(edit.profileData.roomNumber)</li>
-								<li class="list-group-item bg-transparent"><b>About:</b> #(edit.profileData.about)</li>
-								<li class="list-group-item bg-transparent"><b>Message:</b> #(edit.profileData.message)</li>
-							</ul>
-						</div>
-					</div>
-				#endfor
-			#endif
-			
-			#if(count(modData.reports) == 0):
-				<h6><b>No reports on this user profile.</b></h6>
-			#else:				
-				<div class="row mt-3">
-					<h6><b>#count(modData.reports) reports on this user profile:</b></h6>
-				</div>
-				<div class="row mb-3">
-					<div class="col">
-						<button type="button" class="btn btn-primary btn-sm" data-action="handleReports" data-reportid="#(firstReport.id)">Start Handling All</button>
-						<button type="button" class="btn btn-primary btn-sm" data-action="closeReports" data-reportid="#(firstReport.id)">Close All</button>
-					</div>
-				</div>
-				<div class="list-group">
-					#for(report in modData.reports):
-						#extend("moderation/reportListItem")
-					#endfor
-				</div>
+			<i>No Custom Image</i>
 			#endif
 		</div>
+		<div class="col col-12 col-sm-8">
+			<ul class="container-md mx-0 px-0 list-group">
+				<li class="list-group-item bg-transparent"><b>Username:</b> #(modData.profile.header.username)</li>
+				<li class="list-group-item bg-transparent"><b>Display Name:</b> #(modData.profile.displayName)</li>
+				<li class="list-group-item bg-transparent"><b>Real Name:</b> #(modData.profile.realName)</li>
+				<li class="list-group-item bg-transparent"><b>Email:</b> #(modData.profile.email)</li>
+				<li class="list-group-item bg-transparent"><b>Home Location:</b> #(modData.profile.homeLocation)</li>
+				<li class="list-group-item bg-transparent"><b>Pronouns:</b> #(modData.profile.preferredPronoun)</li>
+				<li class="list-group-item bg-transparent"><b>Room Number:</b> #(modData.profile.roomNumber)</li>
+				<li class="list-group-item bg-transparent"><b>About:</b> #(modData.profile.about)</li>
+				<li class="list-group-item bg-transparent"><b>Message:</b> #(modData.profile.message)</li>
+			</ul>
+		</div>
+	</div>
+	#if(finalEditAuthor):
+	<div class="row">
+		<div class="col">
+			<i>Last edit by #userByline(finalEditAuthor)
+			</i>
+		</div>
+	</div>
+	#endif
+	<div class="row my-3">
+		<div class="col">
+			<a class="btn btn-primary btn-sm" href="/user/#(modData.profile.header.userID)">View in Context</a>
+		</div>
+	</div>
 
-		<script src="/js/swiftarrModeration.js"></script>
-    #endexport
+	#if(count(modData.edits) == 0):
+	<div class="row mb-3">
+		<div class="col">
+			<h6><b>No previous edits to this profile.</b></h6>
+		</div>
+	</div>
+	#else:
+	<div class="row">
+		<h6><b>#count(modData.edits) previous edits:</b></h6>
+	</div>
+	#for(edit in modData.edits):
+	<div class="row">
+		<div class="col">
+			<span class="text-muted">#staticTime(edit.createdAt) :</span>
+		</div>
+	</div>
+	<div class="row align-items-center mb-2">
+		<div class="col col-12 col-sm-4 text-center">
+			#if(edit.profileImage):
+			<img class="" src="/archivedimage/#(edit.profileImage)" height=150 width=150>
+			#else:
+			<i>Image Unchanged</i>
+			#endif
+		</div>
+		<div class="col col-12 col-sm-8">
+			<ul class="container-md mx-0 px-0 list-group">
+				<li class="list-group-item bg-transparent"><b>Username:</b> #(edit.profileData.header.username)</li>
+				<li class="list-group-item bg-transparent"><b>Display Name:</b> #(edit.profileData.displayName)</li>
+				<li class="list-group-item bg-transparent"><b>Real Name:</b> #(edit.profileData.realName)</li>
+				<li class="list-group-item bg-transparent"><b>Email:</b> #(edit.profileData.email)</li>
+				<li class="list-group-item bg-transparent"><b>Home Location:</b> #(edit.profileData.homeLocation)</li>
+				<li class="list-group-item bg-transparent"><b>Pronouns:</b> #(edit.profileData.preferredPronoun)</li>
+				<li class="list-group-item bg-transparent"><b>Room Number:</b> #(edit.profileData.roomNumber)</li>
+				<li class="list-group-item bg-transparent"><b>About:</b> #(edit.profileData.about)</li>
+				<li class="list-group-item bg-transparent"><b>Message:</b> #(edit.profileData.message)</li>
+			</ul>
+		</div>
+	</div>
+	#endfor
+	#endif
+
+	#if(count(modData.reports) == 0):
+	<h6><b>No reports on this user profile.</b></h6>
+	#else:
+	<div class="row mt-3">
+		<h6><b>#count(modData.reports) reports on this user profile:</b></h6>
+	</div>
+	<div class="row mb-3">
+		<div class="col">
+			<button type="button" class="btn btn-primary btn-sm" data-action="handleReports"
+				data-reportid="#(firstReport.id)">Start Handling All</button>
+			<button type="button" class="btn btn-primary btn-sm" data-action="closeReports"
+				data-reportid="#(firstReport.id)">Close All</button>
+		</div>
+	</div>
+	<div class="list-group">
+		#for(report in modData.reports):
+		#extend("moderation/reportListItem")
+		#endfor
+	</div>
+	#endif
+</div>
+
+<script src="/js/swiftarrModeration.js"></script>
+#endexport
 #endextend

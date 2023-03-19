@@ -1,40 +1,42 @@
 #extend("trunk"):
-    #export("body"):
-    	<div class="container-md ms-0 my-1">
-			<div class="row">
-    			<div class="col">
-					<nav aria-label="breadcrumb">
-						<ol class="breadcrumb">
-							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
-							<li class="breadcrumb-item active" aria-current="page">Karaoke</li>
-						</ol>
-					</nav>
-				</div>
+#export("body"):
+<div class="container-md ms-0 my-1">
+	<div class="row">
+		<div class="col">
+			<nav aria-label="breadcrumb">
+				<ol class="breadcrumb">
+					<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+					<li class="breadcrumb-item active" aria-current="page">Karaoke</li>
+				</ol>
+			</nav>
+		</div>
+	</div>
+	<div class="row my-1">
+		<div class="col">
+			Reloads the "JoCoKaraokeSongCatalog.txt" file, found in /seeds.
+		</div>
+	</div>
+	<div class="row my-1">
+		<div class="col">
+			<div class="alert alert-warning" role="alert">
+				Heads up! This deletes then inserts. If the latter fails, the dataset will be empty until a successful
+				reload.
+				<br>
+				Also, any user favorites of this type will be lost on reload.
 			</div>
-			<div class="row my-1">
-				<div class="col">
-					Reloads the "JoCoKaraokeSongCatalog.txt" file, found in /seeds.
-				</div>
+		</div>
+	</div>
+	<form class="ajax" action="/admin/karaoke/reload" enctype="multipart/form-data" method="POST"
+		data-successurl="reset" id="reloadKaraokeForm">
+		<div class="row mb-2">
+			<div class="col col-auto">
+				<button type="submit" class="btn btn-primary">Reload Karaoke File</button>
 			</div>
-			<div class="row my-1">
-				<div class="col">
-					<div class="alert alert-warning" role="alert">
-						Heads up! This deletes then inserts. If the latter fails, the dataset will be empty until a successful reload.
-						<br>
-						Also, any user favorites of this type will be lost on reload.
-					</div>
-				</div>
-			</div>
-			<form class="ajax" action="/admin/karaoke/reload" enctype="multipart/form-data" method="POST" data-successurl="reset" id="reloadKaraokeForm">
-				<div class="row mb-2">
-					<div class="col col-auto">
-						<button type="submit" class="btn btn-primary">Reload Karaoke File</button>
-					</div>
-				</div>
-				<div class="alert alert-danger mt-3 d-none" role="alert">
-				</div>				
-				<div class="alert alert-success mt-3 d-none" role="alert">Success.</div>				
-			</form>
-    	</div>
-	#endexport
+		</div>
+		<div class="alert alert-danger mt-3 d-none" role="alert">
+		</div>
+		<div class="alert alert-success mt-3 d-none" role="alert">Success.</div>
+	</form>
+</div>
+#endexport
 #endextend

@@ -1,20 +1,19 @@
 #extend("trunk"):
-    #export("body"):
-    	<div class="container-md ms-0 mt-2">
-			#extend("Fez/fezNavbar")
-			#extend("Fez/fezFilter")
-			#extend("paginator")
-			<div class="list-group">
-				#if(count(fezList.fezzes) == 0):
-					<li class="list-group-item">No LFG posts match the current filters.</li>
-				#else:
-					#for(fez in fezList.fezzes):
-						#extend("Fez/fezListItem")
-					#endfor
-				#endif
-			</div>
-			#extend("paginator")
-		</div>
-    #endexport
+#export("body"):
+<div class="container-md ms-0 mt-2">
+	#extend("Fez/fezNavbar")
+	#extend("Fez/fezFilter")
+	#extend("paginator")
+	<div class="list-group">
+		#if(count(fezList.fezzes) == 0):
+		<li class="list-group-item">No LFG posts match the current filters.</li>
+		#else:
+		#for(fez in fezList.fezzes):
+		#extend("Fez/fezListItem")
+		#endfor
+		#endif
+	</div>
+	#extend("paginator")
+</div>
+#endexport
 #endextend
-

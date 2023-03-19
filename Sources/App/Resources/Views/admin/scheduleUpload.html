@@ -1,39 +1,40 @@
 #extend("trunk"):
-    #export("body"):
-    	<div class="container-md ms-0 my-1">
-			<div class="row">
-    			<div class="col">
-					<nav aria-label="breadcrumb">
-						<ol class="breadcrumb">
-							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
-							<li class="breadcrumb-item active" aria-current="page">Upload Schedule</li>
-						</ol>
-					</nav>
-				</div>
-			</div>
-			<div class="row mb-2">
-				<div class="col">
-					<b>Select Schedule File to Upload</b>
-				</div>
-			</div>
-			<ul class="container-md mx-0 px-0 list-group">
-				<li class="list-group-item bg-transparent mb-3">				
-					<form class="ajax" action="/admin/scheduleupload" enctype="multipart/form-data" method="POST" data-successurl="/admin/scheduleverify" id="scheduleuploadform">
-						<div class="container-fluid">
-							<div class="row mb-2"> 
-								<input type="file" accept=".ics" name="schedule" required>
-							</div>
-							<div class="alert alert-danger mt-3 d-none" role="alert">
-							</div>		
-							<div class="row mb-2">
-								<div class="col col-auto gx-0">
-									<button type="submit" class="btn btn-primary">Upload</button>
-								</div>
-							</div>
+#export("body"):
+<div class="container-md ms-0 my-1">
+	<div class="row">
+		<div class="col">
+			<nav aria-label="breadcrumb">
+				<ol class="breadcrumb">
+					<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+					<li class="breadcrumb-item active" aria-current="page">Upload Schedule</li>
+				</ol>
+			</nav>
+		</div>
+	</div>
+	<div class="row mb-2">
+		<div class="col">
+			<b>Select Schedule File to Upload</b>
+		</div>
+	</div>
+	<ul class="container-md mx-0 px-0 list-group">
+		<li class="list-group-item bg-transparent mb-3">
+			<form class="ajax" action="/admin/scheduleupload" enctype="multipart/form-data" method="POST"
+				data-successurl="/admin/scheduleverify" id="scheduleuploadform">
+				<div class="container-fluid">
+					<div class="row mb-2">
+						<input type="file" accept=".ics" name="schedule" required>
+					</div>
+					<div class="alert alert-danger mt-3 d-none" role="alert">
+					</div>
+					<div class="row mb-2">
+						<div class="col col-auto gx-0">
+							<button type="submit" class="btn btn-primary">Upload</button>
 						</div>
-					</form>
-				</li>
-			</ul>
-    	</div>
-	#endexport
+					</div>
+				</div>
+			</form>
+		</li>
+	</ul>
+</div>
+#endexport
 #endextend

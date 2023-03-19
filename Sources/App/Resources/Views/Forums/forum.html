@@ -1,251 +1,251 @@
 #extend("trunk"):
-    #export("body"):
-    	<div class="container-md ms-0 mt-2">
-    		<div class="row align-items-center justify-content-between mb-2">
-    			<div class="col col-12">
-					<nav aria-label="breadcrumb">
-						<span class="swiftarr-breadcrumb-item"><a href="/forums">Forums</a></span>
-						<span class="swiftarr-breadcrumb-item"><a href="/forums/#(category.categoryID)">#(category.title)</a></span>
-						<span class="swiftarr-breadcrumb-item active" aria-current="page"><a href="/forum/#(forum.forumID)">#(forum.title)</a></span>
-					</nav>
+#export("body"):
+<div class="container-md ms-0 mt-2">
+	<div class="row align-items-center justify-content-between mb-2">
+		<div class="col col-12">
+			<nav aria-label="breadcrumb">
+				<span class="swiftarr-breadcrumb-item"><a href="/forums">Forums</a></span>
+				<span class="swiftarr-breadcrumb-item"><a
+						href="/forums/#(category.categoryID)">#(category.title)</a></span>
+				<span class="swiftarr-breadcrumb-item active" aria-current="page"><a
+						href="/forum/#(forum.forumID)">#(forum.title)</a></span>
+			</nav>
+		</div>
+	</div>
+	<div class="row mb-2">
+		<div class="col col-12">
+			<i>created by</i> #userByline(forum.creator)
+		</div>
+	</div>
+	<div class="row align-items-center justify-content-between mb-2">
+		<div class="col text-end">
+			<div class="btn-group btn-group-sm">
+				<div class="col col-auto ps-2">
+					<button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal"
+						data-bs-target="\#helpModal">?</a>
 				</div>
 			</div>
-    		<div class="row mb-2">
-    			<div class="col col-12">
-    				<i>created by</i> #userByline(forum.creator)
-				</div>
+			<div class="btn-group btn-group-sm" role="group" aria-label="Forum Actions">
+				#if(forum.eventID):
+				<a class="btn btn-outline-primary" href="/events/#(forum.eventID)">Event</a>
+				#endif
+				<input type="checkbox" class="btn-check" autocomplete="off" data-action="favorite"
+					data-actionpath="/forum/favorite/#(forum.forumID)" data-istoggle="true"
+					data-errordiv="favorite_errorDisplay" id="#(forum.forumID)_favorite"
+					#if(forum.isFavorite):checked#endif>
+				<label class="btn btn-outline-primary" for="#(forum.forumID)_favorite">
+					Favorite<span class="laughtext"></span>
+					<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+					<span class="visually-hidden">Loading...</span>
+				</label>
+				<input type="checkbox" class="btn-check" autocomplete="off" data-action="muteForum"
+					data-actionpath="/forum/mute/#(forum.forumID)" data-istoggle="true"
+					data-errordiv="mute_errorDisplay" id="#(forum.forumID)_mute" #if(forum.isMuted):checked#endif>
+				<label class="btn btn-outline-primary" for="#(forum.forumID)_mute">
+					Mute<span class="laughtext"></span>
+					<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+					<span class="visually-hidden">Loading...</span>
+				</label>
+				#if(forum.creator.userID == trunk.userID):
+				<a class="btn btn-outline-primary btn-sm" href="/forum/#(forum.forumID)/edit">Edit</a>
+				#else:
+				<a class="btn btn-outline-primary btn-sm" href="/forum/report/#(forum.forumID)">Report Forum</a>
+				#endif
+				#if(trunk.userIsMod):
+				<a class="btn btn-outline-primary btn-sm" href="/moderate/forum/#(forum.forumID)">Mod</a>
+				#endif
 			</div>
-    		<div class="row align-items-center justify-content-between mb-2">
-				<div class="col text-end">
-					<div class="btn-group btn-group-sm">
-						<div class="col col-auto ps-2">
-							<button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="\#helpModal">?</a>
-						</div>
+		</div>
+		<div class="col col-12 text-end text-danger d-none" id="favorite_errorDisplay">
+			Could not add/remove favorite: <span class="errortext"></span>
+		</div>
+		<div class="col col-12 text-end text-danger d-none" id="mute_errorDisplay">
+			Could not add/remove mute: <span class="errortext"></span>
+		</div>
+	</div>
+	#extend("paginator")
+	<ul class="container-md mx-0 px-0 list-group" data-listtype="forumpost">
+		#for(forumPost in forum.posts):
+		<li class="list-group-item bg-transparent has-action-bar" data-postid="#(forumPost.postID)">
+			<div class="container-fluid">
+				<div class="row align-items-start justify-content-start">
+					<div class="col g-0" style="flex: 0 0 40px;">
+						<a href="/user/#(forumPost.author.userID)">
+							#avatar(forumPost.author)
+						</a>
 					</div>
-					<div class="btn-group btn-group-sm" role="group" aria-label="Forum Actions">
-						#if(forum.eventID):
-						<a class="btn btn-outline-primary" href="/events/#(forum.eventID)">Event</a>
+					<div class="col">
+						<div class="row">
+							<div class="col">
+								#userByline(forumPost.author)
+							</div>
+							<div class="col-auto">
+								<span title="#localTime(forumPost.createdAt)"
+									class="text-muted">#relativeTime(forumPost.createdAt)</span>
+							</div>
+						</div>
+						<div class="row">
+							<div class="col">
+								#formatPostText(forumPost.text)
+							</div>
+						</div>
+						#if(forumPost.images):
+						<div class="row">
+							#for(image in forumPost.images):
+							<div class="col col-auto flex-grow-0 flex-shrink-1">
+								<button type="button" class="btn p-0 border-0" data-bs-toggle="modal"
+									data-bs-target="\#imageCarouselModal">
+									<img src="/api/v3/image/thumb/#(image)" class="swiftarr-post-image"
+										alt="Post Image">
+								</button>
+							</div>
+							#endfor
+						</div>
 						#endif
-						<input type="checkbox" class="btn-check" autocomplete="off" data-action="favorite" 
-								data-actionpath="/forum/favorite/#(forum.forumID)"
-								data-istoggle="true"
-								data-errordiv="favorite_errorDisplay"
-								id="#(forum.forumID)_favorite"
-							#if(forum.isFavorite):checked#endif>
-						<label class="btn btn-outline-primary" for="#(forum.forumID)_favorite">
-							Favorite<span class="laughtext"></span>
-							<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+					</div>
+				</div>
+				<div class="row mt-1 justify-content-end row-cols-auto collapse" data-label="actionbar">
+					<div class="col btn-group btn-group-sm" role="group" aria-label="Post actions">
+						<input type="checkbox" class="btn-check" autocomplete="off" data-action="favorite"
+							data-actionpath="/forumpost/favorite/#(forumPost.postID)" data-istoggle="true"
+							data-errordiv="#(forumPost.postID)_errorDisplay" id="#(forumPost.postID)_favorite"
+							#if(forumPost.isBookmarked):checked#endif>
+						<label class="btn btn-outline-primary" for="#(forumPost.postID)_favorite">
+							Favorite
+							<span class="spinner-border spinner-border-sm d-none" role="status"
+								aria-hidden="true"></span>
 							<span class="visually-hidden">Loading...</span>
 						</label>
-						<input type="checkbox" class="btn-check" autocomplete="off" data-action="muteForum" 
-								data-actionpath="/forum/mute/#(forum.forumID)"
-								data-istoggle="true"
-								data-errordiv="mute_errorDisplay"
-								id="#(forum.forumID)_mute"
-							#if(forum.isMuted):checked#endif>
-						<label class="btn btn-outline-primary" for="#(forum.forumID)_mute">
-							Mute<span class="laughtext"></span>
-							<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-							<span class="visually-hidden">Loading...</span>
-						</label>
-						#if(forum.creator.userID == trunk.userID):
-							<a class="btn btn-outline-primary btn-sm" href="/forum/#(forum.forumID)/edit">Edit</a>
+						#if(forumPost.author.userID == trunk.userID):
+						<a class="btn btn-outline-primary" href="/forumpost/edit/#(forumPost.postID)">Edit</a>
+						<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal"
+							data-bs-target="\#deleteModal">Delete</button>
 						#else:
-							<a class="btn btn-outline-primary btn-sm" href="/forum/report/#(forum.forumID)">Report Forum</a>
+						<a class="btn btn-outline-primary" href="/forumpost/report/#(forumPost.postID)">Report</a>
 						#endif
 						#if(trunk.userIsMod):
-							<a class="btn btn-outline-primary btn-sm" href="/moderate/forum/#(forum.forumID)">Mod</a>
+						<a class="btn btn-outline-primary" href="/moderate/forumpost/#(forumPost.postID)">Mod</a>
 						#endif
 					</div>
+					#if(forumPost.author.userID != trunk.userID):
+					<div class="col btn-group btn-group-sm" role="group" data-state="#(forumPost.userLike)"
+						aria-label="Reactions">
+						<input type="checkbox" class="btn-check" autocomplete="off" data-action="laugh"
+							data-actionpath="/forumpost/#(forumPost.postID)/laugh" data-istoggle="true"
+							data-errordiv="#(forumPost.postID)_reactErrorDisplay" id="#(forumPost.postID)_laugh"
+							#if(forumPost.userLike=="laugh" ):checked#endif>
+						<label class="btn btn-outline-primary" for="#(forumPost.postID)_laugh">
+							😆 <span class="laughtext"></span>
+							<span class="spinner-border spinner-border-sm d-none" role="status"
+								aria-hidden="true"></span>
+							<span class="visually-hidden">Loading...</span>
+						</label>
+						<input type="checkbox" class="btn-check" autocomplete="off" data-action="like"
+							data-actionpath="/forumpost/#(forumPost.postID)/like" data-istoggle="true"
+							data-errordiv="#(forumPost.postID)_reactErrorDisplay" id="#(forumPost.postID)_like"
+							#if(forumPost.userLike=="like" ):checked#endif>
+						<label class="btn btn-outline-primary" for="#(forumPost.postID)_like">
+							👍 <span class="liketext"></span>
+							<span class="spinner-border spinner-border-sm d-none" role="status"
+								aria-hidden="true"></span>
+							<span class="visually-hidden">Loading...</span>
+						</label>
+						<input type="checkbox" class="btn-check" autocomplete="off" data-action="love"
+							data-actionpath="/forumpost/#(forumPost.postID)/love" data-istoggle="true"
+							data-errordiv="#(forumPost.postID)_reactErrorDisplay" id="#(forumPost.postID)_love"
+							#if(forumPost.userLike=="love" ):checked#endif>
+						<label class="btn btn-outline-primary" for="#(forumPost.postID)_love">
+							❤️ <span class="lovetext"></span>
+							<span class="spinner-border spinner-border-sm d-none" role="status"
+								aria-hidden="true"></span>
+							<span class="visually-hidden">Loading...</span>
+						</label>
+					</div>
+					#else:
+					<div class="px-0 d-flex align-items-center">
+						😆 <span class="px-1 small text-primary laughtext"></span>
+						👍 <span class="px-1 small text-primary liketext"></span>
+						❤️ <span class="px-1 small text-primary lovetext"></span>
+					</div>
+					#endif
 				</div>
-				<div class="col col-12 text-end text-danger d-none" id="favorite_errorDisplay">
-					Could not add/remove favorite: <span class="errortext"></span>
+				<div class="row">
+					<div class="col text-end text-danger d-none" id="#(forumPost.postID)_errorDisplay">
+						Could not add/remove favorite: <span class="errortext"></span>
+					</div>
 				</div>
-				<div class="col col-12 text-end text-danger d-none" id="mute_errorDisplay">
-					Could not add/remove mute: <span class="errortext"></span>
+				<div class="row">
+					<div class="col text-end text-danger d-none" id="#(forumPost.postID)_reactErrorDisplay">
+						Could not apply reaction to post: <span class="errortext"></span>
+					</div>
 				</div>
 			</div>
-			#extend("paginator")
-			<ul class="container-md mx-0 px-0 list-group" data-listtype="forumpost">
-				#for(forumPost in forum.posts):
-					<li class="list-group-item bg-transparent has-action-bar" data-postid="#(forumPost.postID)">				
-						<div class="container-fluid">
-							<div class="row align-items-start justify-content-start">	
-								<div class="col g-0" style="flex: 0 0 40px;">
-									<a href="/user/#(forumPost.author.userID)">
-										#avatar(forumPost.author)
-									</a>
-								</div>
-								<div class="col">
-									<div class="row">	
-										<div class="col">
-											#userByline(forumPost.author)
-										</div>
-										<div class="col-auto">
-											<span title="#localTime(forumPost.createdAt)" class="text-muted">#relativeTime(forumPost.createdAt)</span>
-										</div>
-									</div>
-									<div class="row">	
-										<div class="col">
-											#formatPostText(forumPost.text)
-										</div>
-									</div>
-									#if(forumPost.images):
-										<div class="row">	
-											#for(image in forumPost.images):
-												<div class="col col-auto flex-grow-0 flex-shrink-1">
-													<button type="button" class="btn p-0 border-0" data-bs-toggle="modal" data-bs-target="\#imageCarouselModal">
-														<img src="/api/v3/image/thumb/#(image)" class="swiftarr-post-image" alt="Post Image">
-													</button>
-												</div>
-											#endfor
-										</div>
-									#endif
-								</div>
-							</div>
-							<div class="row mt-1 justify-content-end row-cols-auto collapse" data-label="actionbar">	
-								<div class="col btn-group btn-group-sm" role="group" aria-label="Post actions">
-									<input type="checkbox" class="btn-check" autocomplete="off" data-action="favorite" 
-											data-actionpath="/forumpost/favorite/#(forumPost.postID)"
-											data-istoggle="true"
-											data-errordiv="#(forumPost.postID)_errorDisplay"
-											id="#(forumPost.postID)_favorite"
-											#if(forumPost.isBookmarked):checked#endif>
-									<label class="btn btn-outline-primary" for="#(forumPost.postID)_favorite">
-										Favorite
-										<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-										<span class="visually-hidden">Loading...</span>
-									</label>
-									#if(forumPost.author.userID == trunk.userID):
-										<a class="btn btn-outline-primary" href="/forumpost/edit/#(forumPost.postID)">Edit</a>
-										<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="\#deleteModal">Delete</button>
-									#else:
-										<a class="btn btn-outline-primary" href="/forumpost/report/#(forumPost.postID)">Report</a>
-									#endif
-									#if(trunk.userIsMod):
-										<a class="btn btn-outline-primary" href="/moderate/forumpost/#(forumPost.postID)">Mod</a>
-									#endif
-								</div>								
-								#if(forumPost.author.userID != trunk.userID):
-									<div class="col btn-group btn-group-sm" role="group" data-state="#(forumPost.userLike)" aria-label="Reactions">
-										<input type="checkbox" class="btn-check" autocomplete="off" data-action="laugh" 
-												data-actionpath="/forumpost/#(forumPost.postID)/laugh"
-												data-istoggle="true"
-												data-errordiv="#(forumPost.postID)_reactErrorDisplay"
-												id="#(forumPost.postID)_laugh"
-												#if(forumPost.userLike == "laugh"):checked#endif>
-										<label class="btn btn-outline-primary" for="#(forumPost.postID)_laugh">
-											😆 <span class="laughtext"></span>
-											<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-											<span class="visually-hidden">Loading...</span>
-										</label>
-										<input type="checkbox" class="btn-check" autocomplete="off" data-action="like" 
-												data-actionpath="/forumpost/#(forumPost.postID)/like"
-												data-istoggle="true"
-												data-errordiv="#(forumPost.postID)_reactErrorDisplay"
-												id="#(forumPost.postID)_like"
-												#if(forumPost.userLike == "like"):checked#endif>
-										<label class="btn btn-outline-primary" for="#(forumPost.postID)_like">
-											👍 <span class="liketext"></span>
-											<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-											<span class="visually-hidden">Loading...</span>
-										</label>
-										<input type="checkbox" class="btn-check" autocomplete="off" data-action="love" 
-												data-actionpath="/forumpost/#(forumPost.postID)/love"
-												data-istoggle="true"
-												data-errordiv="#(forumPost.postID)_reactErrorDisplay"
-												id="#(forumPost.postID)_love"
-												#if(forumPost.userLike == "love"):checked#endif>
-										<label class="btn btn-outline-primary" for="#(forumPost.postID)_love">
-											❤️ <span class="lovetext"></span>
-											<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-											<span class="visually-hidden">Loading...</span>
-										</label>
-									</div>
-								#else:
-									<div class="px-0 d-flex align-items-center">
-										😆 <span class="px-1 small text-primary laughtext"></span>
-										👍 <span class="px-1 small text-primary liketext"></span>
-										❤️ <span class="px-1 small text-primary lovetext"></span>
-									</div>
-								#endif
-							</div>
-							<div class="row">
-								<div class="col text-end text-danger d-none" id="#(forumPost.postID)_errorDisplay">
-									Could not add/remove favorite: <span class="errortext"></span>
-								</div>
-							</div>	
-							<div class="row">
-								<div class="col text-end text-danger d-none" id="#(forumPost.postID)_reactErrorDisplay">
-									Could not apply reaction to post: <span class="errortext"></span>
-								</div>
-							</div>	
-						</div>
-					</li>
-				#endfor
-			</ul>				
-		</div>
+		</li>
+		#endfor
+	</ul>
+</div>
 
-		#extend("paginator")
+#extend("paginator")
 
-		#if(!paginator.nextPageURL):
-			#if(!forum.isLocked || trunk.userIsMod):
-				<div class="container-md ms-0 mt-2">
-					<div class="row">
-						<div class="col">
-							Post a new message:
-						</div>
-					</div>
-					#extend("messagePostForm")
-				</div>
-			#endif
-			#if(forum.isLocked):
-				<div class="container-md ms-0 mt-2">
-					<div class="row">
-						<div class="col">
-							<i class="text-secondary">Forum Locked</i>
-						</div>
-					</div>
-				</div>
-			#endif
-		#endif
-		<div class="modal fade modal-with-error" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalTitle" aria-hidden="true">
-			<div class="modal-dialog">
-				<div class="modal-content">
-					<div class="modal-header">
-						<h5 class="modal-title" id="deleteModalTitle">Delete Confirmation</h5>
-						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-					</div>
-					<div class="modal-body">
-						Are you sure you want to delete this post?
-					</div>
-					<div class="modal-footer">
-						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-						<button type="button" class="btn btn-primary" data-action="delete" data-delete-type="forumpost" data-delete-postid="">Delete</button>
-					</div>
-					<div class="mx-3 pb-1 text-end text-danger error-display d-none">
-						Could not delete forum post: <span class="errortext"></span>
-					</div>
-				</div>
+#if(!paginator.nextPageURL):
+#if(!forum.isLocked || trunk.userIsMod):
+<div class="container-md ms-0 mt-2">
+	<div class="row">
+		<div class="col">
+			Post a new message:
+		</div>
+	</div>
+	#extend("messagePostForm")
+</div>
+#endif
+#if(forum.isLocked):
+<div class="container-md ms-0 mt-2">
+	<div class="row">
+		<div class="col">
+			<i class="text-secondary">Forum Locked</i>
+		</div>
+	</div>
+</div>
+#endif
+#endif
+<div class="modal fade modal-with-error" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalTitle"
+	aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="deleteModalTitle">Delete Confirmation</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+			<div class="modal-body">
+				Are you sure you want to delete this post?
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+				<button type="button" class="btn btn-primary" data-action="delete" data-delete-type="forumpost"
+					data-delete-postid="">Delete</button>
+			</div>
+			<div class="mx-3 pb-1 text-end text-danger error-display d-none">
+				Could not delete forum post: <span class="errortext"></span>
 			</div>
 		</div>
-		<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalTitle" aria-hidden="true">
-			<div class="modal-dialog">
-				<div class="modal-content">
-					<div class="modal-header">
-						<h5 class="modal-title" id="helpModalTitle">Help</h5>
-						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-					</div>
-					<div class="modal-body">
-						<p>Click/tap on a post to favorite, edit, or add a reaction.</p>
-					</div>
-					<div class="modal-footer">
-						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-					</div>
-				</div>
+	</div>
+</div>
+<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalTitle" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="helpModalTitle">Help</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+			<div class="modal-body">
+				<p>Click/tap on a post to favorite, edit, or add a reaction.</p>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
 			</div>
 		</div>
-		#extend("imageOverlay")
-	#endexport
+	</div>
+</div>
+#extend("imageOverlay")
+#endexport
 #endextend
-

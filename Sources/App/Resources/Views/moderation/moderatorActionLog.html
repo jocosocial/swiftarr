@@ -1,63 +1,63 @@
 #extend("trunk"):
-    #export("body"):
-    	<div class="container-md ms-0 mt-2">
-    		<div class="row justify-content-between align-items-center my-1">
-    			<div class="col">
-					<nav aria-label="breadcrumb">
-						<ol class="breadcrumb">
-							<li class="breadcrumb-item"><a href="/moderator">Moderator</a></li>
-							<li class="breadcrumb-item active" aria-current="page">Log</li>
-						</ol>
-					</nav>
-				</div>
-			</div>
-    		<div class="row align-items-end">
-    			<div class="col col-auto">
-			    	<h6><b>Moderator Actions</b></h6>
-				</div>
-			</div>
-    		<div class="row">
-    			<div class="col px-0">
-					<table class="table table-striped table-sm">
-						<thead>
-							<tr>
-								<th scope="col">Mod</th>
-								<th scope="col">Action</th>
-								<th scope="col">Content</th>
-								<th scope="col">Target</th>
-								<th scope="col">Time</th>
-							</tr>
-						</thead>
-						<tbody>
-						#for(report in log):
-							<tr>
-								<td>#userByline(report.moderator, "short")</td>
-								<td>#(report.actionType)</td>
-								<td>
-									#if(report.contentType == "twarrt"):
-										<a href="/moderate/twarrt/#(report.contentID)">twarrt</a>
-									#elseif(report.contentType == "forum"):
-										<a href="/moderate/forum/#(report.contentID)">forum</a>
-									#elseif(report.contentType == "forumPost"):
-										<a href="/moderate/forumpost/#(report.contentID)">forumPost</a>
-									#elseif(report.contentType == "fez"):
-										<a href="/moderate/fez/#(report.contentID)">LFG</a>
-									#elseif(report.contentType == "fezPost"):
-										<a href="/moderate/fezpost/#(report.contentID)">LFGPost</a>
-									#elseif(report.contentType == "userProfile"):
-										<a href="/moderate/userprofile/#(report.contentID)">profile</a>
-									#else:
-										#(report.contentType)
-									#endif	
-								</td>
-								<td>#userByline(report.targetUser, "short")</td>
-								<td>#staticTime(report.timestamp)</td>
-							</tr>
-						#endfor
-						</tbody>
-					</table>
-				</div>
-			</div>
+#export("body"):
+<div class="container-md ms-0 mt-2">
+	<div class="row justify-content-between align-items-center my-1">
+		<div class="col">
+			<nav aria-label="breadcrumb">
+				<ol class="breadcrumb">
+					<li class="breadcrumb-item"><a href="/moderator">Moderator</a></li>
+					<li class="breadcrumb-item active" aria-current="page">Log</li>
+				</ol>
+			</nav>
 		</div>
-    #endexport
+	</div>
+	<div class="row align-items-end">
+		<div class="col col-auto">
+			<h6><b>Moderator Actions</b></h6>
+		</div>
+	</div>
+	<div class="row">
+		<div class="col px-0">
+			<table class="table table-striped table-sm">
+				<thead>
+					<tr>
+						<th scope="col">Mod</th>
+						<th scope="col">Action</th>
+						<th scope="col">Content</th>
+						<th scope="col">Target</th>
+						<th scope="col">Time</th>
+					</tr>
+				</thead>
+				<tbody>
+					#for(report in log):
+					<tr>
+						<td>#userByline(report.moderator, "short")</td>
+						<td>#(report.actionType)</td>
+						<td>
+							#if(report.contentType == "twarrt"):
+							<a href="/moderate/twarrt/#(report.contentID)">twarrt</a>
+							#elseif(report.contentType == "forum"):
+							<a href="/moderate/forum/#(report.contentID)">forum</a>
+							#elseif(report.contentType == "forumPost"):
+							<a href="/moderate/forumpost/#(report.contentID)">forumPost</a>
+							#elseif(report.contentType == "fez"):
+							<a href="/moderate/fez/#(report.contentID)">LFG</a>
+							#elseif(report.contentType == "fezPost"):
+							<a href="/moderate/fezpost/#(report.contentID)">LFGPost</a>
+							#elseif(report.contentType == "userProfile"):
+							<a href="/moderate/userprofile/#(report.contentID)">profile</a>
+							#else:
+							#(report.contentType)
+							#endif
+						</td>
+						<td>#userByline(report.targetUser, "short")</td>
+						<td>#staticTime(report.timestamp)</td>
+					</tr>
+					#endfor
+				</tbody>
+			</table>
+		</div>
+	</div>
+</div>
+#endexport
 #endextend

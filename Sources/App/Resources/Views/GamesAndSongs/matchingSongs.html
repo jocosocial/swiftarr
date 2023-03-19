@@ -1,86 +1,87 @@
 #extend("trunk"):
-    #export("body"):
-    	<div class="container-md ms-0 my-1">
-    		<div class="row align-items-center">
-    			<div class="col">
-    				#if(showingFavorites):
-				    	<b>Favorite Songs</b>
-    				#else:
-				    	<b>Matching Songs From Karaoke Library</b>
-					#endif
+#export("body"):
+<div class="container-md ms-0 my-1">
+	<div class="row align-items-center">
+		<div class="col">
+			#if(showingFavorites):
+			<b>Favorite Songs</b>
+			#else:
+			<b>Matching Songs From Karaoke Library</b>
+			#endif
+		</div>
+		<div class="col col-auto" aria-label="Favorites Filter">
+			<a class="btn #if(showingFavorites):btn-primary#else:btn-outline-primary#endif #if(!trunk.userIsLoggedIn):d-none#endif"
+				href="#(favoriteBtnURL)">
+				Favorites
+			</a>
+		</div>
+	</div>
+	<form class="d-flex my-1">
+		<input class="form-control" type="search" name="search" placeholder="Search Song Library" value="#(searchText)"
+			aria-label="Search" autocapitalize="off" spellcheck="false"" required>
+				<a class=" btn btn-primary ms-2" href="/karaoke">Clear</a>
+		<button class="btn btn-primary ms-2" type="submit">Search</button>
+	</form>
+	#extend("paginator")
+	<ul class="container-md mx-0 px-0 list-group">
+		#if(count(songs.songs) == 0):
+		<li class="list-group-item bg-transparent">
+			#if(showingFavorites):
+			You don't have any favorites yet.
+			#else:
+			No matching songs.
+			#endif
+		</li>
+		#else:
+		#for(song in songs.songs):
+		<li class="list-group-item bg-transparent has-action-bar px-0">
+			<div class="container-fluid">
+				<div class="row">
+					<div class="col col-auto">
+						<b>#(song.artist)</b>
+					</div>
+					<div class="col text-end">
+						#(song.songName)
+					</div>
 				</div>
-				<div class="col col-auto" aria-label="Favorites Filter">
-					<a class="btn #if(showingFavorites):btn-primary#else:btn-outline-primary#endif #if(!trunk.userIsLoggedIn):d-none#endif"
-							href="#(favoriteBtnURL)">
-						Favorites
-					</a>
-				</div>								
+				#for(performance in song.performances):
+				<div class="alert alert-info mb-0" role="alert">
+					#formatPostText(performance.performers) performed this song on: #staticTime(performance.time)
+				</div>
+				#endfor
+				<div class="collapse" data-label="actionbar">
+					<div class="row justify-content-end">
+						<div class="col col-auto btn-group btn-group-sm">
+							#if(trunk.userIsLoggedIn):
+							<input type="checkbox" class="btn-check" autocomplete="off" data-action="favorite"
+								data-actionpath="/karaoke/#(song.songID)/favorite" data-istoggle="true"
+								data-errordiv="#(song.songID)_errorDisplay" id="#(song.songID)_favorite"
+								#if(song.isFavorite):checked#endif>
+							<label class="btn btn-outline-primary" for="#(song.songID)_favorite">
+								Favorite
+								<span class="spinner-border spinner-border-sm d-none" role="status"
+									aria-hidden="true"></span>
+								<span class="visually-hidden">Loading...</span>
+							</label>
+							#endif
+							#if(userIsKaraokeMgr):
+							<a class="btn btn-outline-primary" href="/karaoke/logperformance/#(song.songID)">Log
+								Performance</a>
+							#endif
+						</div>
+					</div>
+					<div class="row">
+						<div class="col text-end text-danger d-none" id="#(song.songID)_errorDisplay">
+							Could not set favorite on song: <span class="errortext"></span>
+						</div>
+					</div>
+				</div>
 			</div>
-			<form class="d-flex my-1">
-				<input class="form-control" type="search" name="search" placeholder="Search Song Library" value="#(searchText)" aria-label="Search" autocapitalize="off" spellcheck="false"" required>
-				<a class="btn btn-primary ms-2" href="/karaoke">Clear</a>
-				<button class="btn btn-primary ms-2" type="submit">Search</button>
-			</form>
-			#extend("paginator")
-			<ul class="container-md mx-0 px-0 list-group">
-				#if(count(songs.songs) == 0):
-					<li class="list-group-item bg-transparent">
-						#if(showingFavorites):
-							You don't have any favorites yet.
-						#else:
-							No matching songs.
-						#endif
-					</li>	
-				#else:
-					#for(song in songs.songs):
-						<li class="list-group-item bg-transparent has-action-bar px-0">				
-							<div class="container-fluid">
-								<div class="row">	
-									<div class="col col-auto">
-										<b>#(song.artist)</b>
-									</div>
-									<div class="col text-end">
-										#(song.songName)
-									</div>
-								</div>
-								#for(performance in song.performances):
-										<div class="alert alert-info mb-0" role="alert">
-											#formatPostText(performance.performers) performed this song on: #staticTime(performance.time)
-										</div>
-								#endfor
-								<div class="collapse" data-label="actionbar">	
-									<div class="row justify-content-end">
-										<div class="col col-auto btn-group btn-group-sm">
-											#if(trunk.userIsLoggedIn):
-												<input type="checkbox" class="btn-check" autocomplete="off" data-action="favorite" 
-														data-actionpath="/karaoke/#(song.songID)/favorite"
-														data-istoggle="true"
-														data-errordiv="#(song.songID)_errorDisplay"
-														id="#(song.songID)_favorite"
-														#if(song.isFavorite):checked#endif>
-												<label class="btn btn-outline-primary" for="#(song.songID)_favorite">
-													Favorite
-													<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-													<span class="visually-hidden">Loading...</span>
-												</label>
-											#endif
-											#if(userIsKaraokeMgr):
-												<a class="btn btn-outline-primary" href="/karaoke/logperformance/#(song.songID)">Log Performance</a>
-											#endif
-										</div>
-									</div>
-									<div class="row">
-										<div class="col text-end text-danger d-none" id="#(song.songID)_errorDisplay">
-											Could not set favorite on song: <span class="errortext"></span>
-										</div>
-									</div>
-								</div>
-							</div>
-						</li>
-					#endfor
-				#endif
-			</ul>
-			#extend("paginator")
-    	</div>
-	#endexport
+		</li>
+		#endfor
+		#endif
+	</ul>
+	#extend("paginator")
+</div>
+#endexport
 #endextend

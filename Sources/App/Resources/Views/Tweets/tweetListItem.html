@@ -1,119 +1,114 @@
-<li class="list-group-item bg-transparent has-action-bar px-1" data-postid="#(tweet.twarrtID)">				
+<li class="list-group-item bg-transparent has-action-bar px-1" data-postid="#(tweet.twarrtID)">
 	<div class="container-fluid">
-		<div class="row align-items-start justify-content-start">	
+		<div class="row align-items-start justify-content-start">
 			<div class="col g-0" style="flex: 0 0 40px;">
 				<a href="/user/#(tweet.author.userID)">
 					#avatar(tweet.author)
 				</a>
 			</div>
 			<div class="col">
-				<div class="row">	
+				<div class="row">
 					<div class="col">
 						#userByline(tweet.author)
 					</div>
 					#if(tweet.replyGroupID != nil):
 					<div class="col-auto px-0">
 						#if(tweet.replyGroupID == tweet.twarrtID):
-							🧵
+						🧵
 						#else:
-							🪡
+						🪡
 						#endif
 					</div>
 					#endif
 					<div class="col-auto">
-						<span title="#localTime(tweet.createdAt)" class="text-muted">#relativeTime(tweet.createdAt)</span>
+						<span title="#localTime(tweet.createdAt)"
+							class="text-muted">#relativeTime(tweet.createdAt)</span>
 					</div>
 				</div>
-				<div class="row">	
+				<div class="row">
 					<div class="col">
 						#formatTwarrtText(tweet.text)
 					</div>
 				</div>
 				#if(tweet.images):
-					<div class="row align-items-center justify-content-start flex-nowrap gx-1">	
-						#for(image in tweet.images):
-							<div class="col col-auto flex-grow-0 flex-shrink-1">
-								<button type="button" class="btn p-0 border-0" data-bs-toggle="modal" data-bs-target="\#imageCarouselModal">
-									<img src="/api/v3/image/thumb/#(image)" class="swiftarr-post-image" alt="Post Image">
-								</button>
-							</div>
-						#endfor
+				<div class="row align-items-center justify-content-start flex-nowrap gx-1">
+					#for(image in tweet.images):
+					<div class="col col-auto flex-grow-0 flex-shrink-1">
+						<button type="button" class="btn p-0 border-0" data-bs-toggle="modal"
+							data-bs-target="\#imageCarouselModal">
+							<img src="/api/v3/image/thumb/#(image)" class="swiftarr-post-image" alt="Post Image">
+						</button>
 					</div>
+					#endfor
+				</div>
 				#endif
 			</div>
 		</div>
-		<div class="row mt-1 justify-content-end row-cols-auto collapse" data-label="actionbar">	
+		<div class="row mt-1 justify-content-end row-cols-auto collapse" data-label="actionbar">
 			<div class="col btn-group btn-group-sm" role="group" aria-label="Post actions">
-				<input type="checkbox" class="btn-check" data-action="favorite" 
-						data-actionpath="/tweets/#(tweet.twarrtID)/bookmark"
-						data-istoggle="true"
-						data-errordiv="#(tweet.twarrtID)_favoriteErrorDisplay"
-						id="#(tweet.twarrtID)_favorite"
-						#if(tweet.isBookmarked):checked#endif>
+				<input type="checkbox" class="btn-check" data-action="favorite"
+					data-actionpath="/tweets/#(tweet.twarrtID)/bookmark" data-istoggle="true"
+					data-errordiv="#(tweet.twarrtID)_favoriteErrorDisplay" id="#(tweet.twarrtID)_favorite"
+					#if(tweet.isBookmarked):checked#endif>
 				<label class="btn btn-outline-primary" for="#(tweet.twarrtID)_favorite">
 					Fav
 					<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
 					<span class="visually-hidden">Loading...</span>
 				</label>
 				#if(!isReplyGroup):
-					#if(tweet.replyGroupID):
-						<a class="btn btn-outline-primary" href="/tweets?replyGroup=#(tweet.replyGroupID)">View Thread</a>
-					#else:
-						<a class="btn btn-outline-primary" href="/tweets?replyGroup=#(tweet.twarrtID)">Reply</a>
-					#endif
+				#if(tweet.replyGroupID):
+				<a class="btn btn-outline-primary" href="/tweets?replyGroup=#(tweet.replyGroupID)">View Thread</a>
+				#else:
+				<a class="btn btn-outline-primary" href="/tweets?replyGroup=#(tweet.twarrtID)">Reply</a>
+				#endif
 				#endif
 				#if(tweet.author.userID == trunk.userID):
-					<a class="btn btn-outline-primary" href="/tweets/edit/#(tweet.twarrtID)">Edit</a>
-					<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="\#deleteModal">Delete</button>
+				<a class="btn btn-outline-primary" href="/tweets/edit/#(tweet.twarrtID)">Edit</a>
+				<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal"
+					data-bs-target="\#deleteModal">Delete</button>
 				#else:
-					<a class="btn btn-outline-primary" href="/tweets/report/#(tweet.twarrtID)">Report</a>
+				<a class="btn btn-outline-primary" href="/tweets/report/#(tweet.twarrtID)">Report</a>
 				#endif
 				#if(trunk.userIsMod):
-					<a class="btn btn-outline-primary" href="/moderate/twarrt/#(tweet.twarrtID)">Mod</a>
+				<a class="btn btn-outline-primary" href="/moderate/twarrt/#(tweet.twarrtID)">Mod</a>
 				#endif
-			</div>								
+			</div>
 			#if(tweet.author.userID != trunk.userID):
-				<div class="col btn-group btn-group-sm" role="group" data-state="#(tweet.userLike)" aria-label="Reactions">
-					<input type="checkbox" class="btn-check" autocomplete="off" data-action="laugh" 
-							data-actionpath="/tweets/#(tweet.twarrtID)/laugh"
-							data-istoggle="true"
-							data-errordiv="#(tweet.twarrtID)_reactErrorDisplay"
-							id="#(tweet.twarrtID)_laugh"
-							#if(tweet.userLike == "laugh"):checked#endif>
-					<label class="btn btn-outline-primary" for="#(tweet.twarrtID)_laugh">
-						😆 <span class="laughtext"></span>
-						<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-						<span class="visually-hidden">Loading...</span>
-					</label>
-					<input type="checkbox" class="btn-check" autocomplete="off" data-action="like" 
-							data-actionpath="/tweets/#(tweet.twarrtID)/like"
-							data-istoggle="true"
-							data-errordiv="#(tweet.twarrtID)_reactErrorDisplay"
-							id="#(tweet.twarrtID)_like"
-							#if(tweet.userLike == "like"):checked#endif>
-					<label class="btn btn-outline-primary" for="#(tweet.twarrtID)_like">
-						👍 <span class="liketext"></span>
-						<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-						<span class="visually-hidden">Loading...</span>
-					</label>
-					<input type="checkbox" class="btn-check" autocomplete="off" data-action="love" 
-							data-actionpath="/tweets/#(tweet.twarrtID)/love"
-							data-istoggle="true"
-							data-errordiv="#(tweet.twarrtID)_reactErrorDisplay"
-							id="#(tweet.twarrtID)_love"
-							#if(tweet.userLike == "love"):checked#endif>
-					<label class="btn btn-outline-primary" for="#(tweet.twarrtID)_love">
-						❤️ <span class="lovetext"></span>
-						<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-						<span class="visually-hidden">Loading...</span>
-					</label>
-				</div>
+			<div class="col btn-group btn-group-sm" role="group" data-state="#(tweet.userLike)" aria-label="Reactions">
+				<input type="checkbox" class="btn-check" autocomplete="off" data-action="laugh"
+					data-actionpath="/tweets/#(tweet.twarrtID)/laugh" data-istoggle="true"
+					data-errordiv="#(tweet.twarrtID)_reactErrorDisplay" id="#(tweet.twarrtID)_laugh"
+					#if(tweet.userLike=="laugh" ):checked#endif>
+				<label class="btn btn-outline-primary" for="#(tweet.twarrtID)_laugh">
+					😆 <span class="laughtext"></span>
+					<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+					<span class="visually-hidden">Loading...</span>
+				</label>
+				<input type="checkbox" class="btn-check" autocomplete="off" data-action="like"
+					data-actionpath="/tweets/#(tweet.twarrtID)/like" data-istoggle="true"
+					data-errordiv="#(tweet.twarrtID)_reactErrorDisplay" id="#(tweet.twarrtID)_like"
+					#if(tweet.userLike=="like" ):checked#endif>
+				<label class="btn btn-outline-primary" for="#(tweet.twarrtID)_like">
+					👍 <span class="liketext"></span>
+					<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+					<span class="visually-hidden">Loading...</span>
+				</label>
+				<input type="checkbox" class="btn-check" autocomplete="off" data-action="love"
+					data-actionpath="/tweets/#(tweet.twarrtID)/love" data-istoggle="true"
+					data-errordiv="#(tweet.twarrtID)_reactErrorDisplay" id="#(tweet.twarrtID)_love"
+					#if(tweet.userLike=="love" ):checked#endif>
+				<label class="btn btn-outline-primary" for="#(tweet.twarrtID)_love">
+					❤️ <span class="lovetext"></span>
+					<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+					<span class="visually-hidden">Loading...</span>
+				</label>
+			</div>
 			#else:
-				<div class="px-0 d-flex align-items-center">
-					😆 <span class="px-1 small text-primary laughtext"></span>
-					👍 <span class="px-1 small text-primary liketext"></span>
-					❤️ <span class="px-1 small text-primary lovetext"></span>
-				</div>
+			<div class="px-0 d-flex align-items-center">
+				😆 <span class="px-1 small text-primary laughtext"></span>
+				👍 <span class="px-1 small text-primary liketext"></span>
+				❤️ <span class="px-1 small text-primary lovetext"></span>
+			</div>
 			#endif
 		</div>
 		<div class="row">
@@ -123,6 +118,6 @@
 			<div class="col text-end text-danger d-none" id="#(tweet.twarrtID)_favoriteErrorDisplay">
 				Could not favorite/unfavorite twarrt: <span class="errortext"></span>
 			</div>
-		</div>	
+		</div>
 	</div>
 </li>

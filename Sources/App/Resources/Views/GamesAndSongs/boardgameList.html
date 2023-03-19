@@ -1,92 +1,88 @@
 #extend("trunk"):
-    #export("body"):
-    	<div class="container-md ms-0 my-1">
-    		<div class="row align-items-center">
-    			<div class="col">
-			    	<b>Board Games</b>
+#export("body"):
+<div class="container-md ms-0 my-1">
+	<div class="row align-items-center">
+		<div class="col">
+			<b>Board Games</b>
+		</div>
+		<div class="col col-auto ps-2">
+			<button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal"
+				data-bs-target="\#helpModal">?</a>
+		</div>
+		<div class="col col-auto" aria-label="Favorites Filter">
+			<a class="btn #if(showingFavorites):btn-primary#else:btn-outline-primary#endif #if(!trunk.userIsLoggedIn):d-none#endif"
+				href="#(favoriteBtnURL)">
+				Favorites
+			</a>
+		</div>
+	</div>
+	<form class="d-flex my-1">
+		<input class="form-control" type="search" name="search" placeholder="Search Games" value="#(searchText)"
+			aria-label="Search" autocapitalize="off" required>
+		<a class="btn btn-primary ms-2" href="/boardgames">Clear</a>
+		<button class="btn btn-primary ms-2" type="submit">Search</button>
+	</form>
+	<div class="row">
+		<div class="col col-12" aria-label="Recommend">
+			<a class="col-12 btn btn-outline-primary" href="/boardgames/guide">
+				Find a Game with Game Guide
+			</a>
+		</div>
+	</div>
+	#extend("paginator")
+	<ul class="container-md mx-0 px-0 list-group">
+		#for(game in games.gameArray):
+		<li class="list-group-item bg-transparent has-action-bar px-0">
+			<div class="container-fluid">
+				<div class="row">
+					<div class="col">
+						<b>#(game.gameName)</b>
+					</div>
+					<div class="col col-auto">
+						#(game.yearPublished)
+					</div>
 				</div>
-				<div class="col col-auto ps-2">
-					<button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="\#helpModal">?</a>
-				</div>
-				<div class="col col-auto" aria-label="Favorites Filter">
-					<a class="btn #if(showingFavorites):btn-primary#else:btn-outline-primary#endif #if(!trunk.userIsLoggedIn):d-none#endif"
-							href="#(favoriteBtnURL)">
-						Favorites
-					</a>
-				</div>								
-			</div>
-			<form class="d-flex my-1">
-				<input class="form-control" type="search" name="search" placeholder="Search Games" value="#(searchText)" aria-label="Search" autocapitalize="off" required>
-				<a class="btn btn-primary ms-2" href="/boardgames">Clear</a>
-				<button class="btn btn-primary ms-2" type="submit">Search</button>
-			</form>
-			<div class="row">
-				<div class="col col-12" aria-label="Recommend">
-					<a class="col-12 btn btn-outline-primary" href="/boardgames/guide">
-						Find a Game with Game Guide 
-					</a>
-				</div>	
-			</div>
-			#extend("paginator")
-			<ul class="container-md mx-0 px-0 list-group">
-				#for(game in games.gameArray):
-					<li class="list-group-item bg-transparent has-action-bar px-0">				
-						<div class="container-fluid">
-							<div class="row">	
-								<div class="col">
-									<b>#(game.gameName)</b>
-								</div>
-								<div class="col col-auto">
-									#(game.yearPublished)
-								</div>
+				<div class="row">
+					<div class="col">
+						#if(game.minPlayers && game.maxPlayers):
+						#if(game.minPlayers < game.maxPlayers): #(game.minPlayers)-#(game.maxPlayers) players #else:
+							#(game.minPlayers) players #endif #endif </div>
+							<div class="col col-auto">
+								#if(game.minPlayingTime && game.maxPlayingTime):
+								#if(game.minPlayingTime < game.maxPlayingTime):
+									#(game.minPlayingTime)-#(game.maxPlayingTime) minutes to play #else:
+									#(game.minPlayingTime) minutes to play #endif #endif </div>
 							</div>
-							<div class="row">
-								<div class="col">
-									#if(game.minPlayers && game.maxPlayers):
-										#if(game.minPlayers < game.maxPlayers):
-											#(game.minPlayers)-#(game.maxPlayers) players
-										#else:
-											#(game.minPlayers) players
-										#endif
-									#endif
-								</div>
-								<div class="col col-auto">
-									#if(game.minPlayingTime && game.maxPlayingTime):
-										#if(game.minPlayingTime < game.maxPlayingTime):
-											#(game.minPlayingTime)-#(game.maxPlayingTime) minutes to play
-										#else:
-											#(game.minPlayingTime) minutes to play
-										#endif
-									#endif
-								</div>
-							</div>
-							<div class="collapse" data-label="actionbar">	
+							<div class="collapse" data-label="actionbar">
 								<div class="row">
 									<div class="col">
-										#if(game.avgRating && game.avgRating > 0):Rating: #gameRating(game.avgRating)#endif
+										#if(game.avgRating && game.avgRating > 0):Rating:
+										#gameRating(game.avgRating)#endif
 									</div>
 									<div class="col col-auto">
-										#if(game.complexity && game.complexitiy != 0):Complexity (1-5): #gameRating(game.complexity)#endif
+										#if(game.complexity && game.complexitiy != 0):Complexity (1-5):
+										#gameRating(game.complexity)#endif
 									</div>
 								</div>
 								<div class="row justify-content-center">
 									<div class="col col-auto btn-group btn-group-sm">
 										#if(trunk.userIsLoggedIn):
-											<input type="checkbox" class="btn-check" autocomplete="off" data-action="favorite" 
-													data-actionpath="/boardgames/#(game.gameID)/favorite"
-													data-istoggle="true"
-													data-errordiv="#(game.gameID)_errorDisplay"
-													id="#(game.gameID)_favorite"
-													#if(game.isFavorite):checked#endif>
-											<label class="btn btn-outline-primary" for="#(game.gameID)_favorite">
-												Favorite
-												<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-												<span class="visually-hidden">Loading...</span>
-											</label>
-											<a class="btn btn-outline-primary" href="/boardgames/#(game.gameID)/createfez">Create LFG</a>
+										<input type="checkbox" class="btn-check" autocomplete="off"
+											data-action="favorite" data-actionpath="/boardgames/#(game.gameID)/favorite"
+											data-istoggle="true" data-errordiv="#(game.gameID)_errorDisplay"
+											id="#(game.gameID)_favorite" #if(game.isFavorite):checked#endif>
+										<label class="btn btn-outline-primary" for="#(game.gameID)_favorite">
+											Favorite
+											<span class="spinner-border spinner-border-sm d-none" role="status"
+												aria-hidden="true"></span>
+											<span class="visually-hidden">Loading...</span>
+										</label>
+										<a class="btn btn-outline-primary"
+											href="/boardgames/#(game.gameID)/createfez">Create LFG</a>
 										#endif
 										#if(game.isExpansion || game.hasExpansions):
-											<a class="btn btn-outline-primary" href="/boardgames/#(game.gameID)/expansions">Show Expansions</a>
+										<a class="btn btn-outline-primary"
+											href="/boardgames/#(game.gameID)/expansions">Show Expansions</a>
 										#endif
 									</div>
 								</div>
@@ -98,32 +94,33 @@
 								<div class="row mt-2">
 									<div class="col">
 										#if(game.gameDescription):
-											#unsafeHTML(game.gameDescription)
-										#endif											
+										#unsafeHTML(game.gameDescription)
+										#endif
 									</div>
 								</div>
 							</div>
-						</div>
-					</li>
-				#endfor
-			</ul>
-			#extend("paginator")
-    	</div>
-		<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalTitle" aria-hidden="true">
-			<div class="modal-dialog">
-				<div class="modal-content">
-					<div class="modal-header">
-						<h5 class="modal-title" id="helpModalTitle">Help</h5>
-						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 					</div>
-					<div class="modal-body">
-						<p>Play time is the manufacturers specification. JoCo Cruise recommends adding 20-30 minutes if your party has not played before.</p>
-					</div>
-					<div class="modal-footer">
-						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-					</div>
-				</div>
+		</li>
+		#endfor
+	</ul>
+	#extend("paginator")
+</div>
+<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalTitle" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="helpModalTitle">Help</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+			<div class="modal-body">
+				<p>Play time is the manufacturers specification. JoCo Cruise recommends adding 20-30 minutes if your
+					party has not played before.</p>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
 			</div>
 		</div>
-	#endexport
+	</div>
+</div>
+#endexport
 #endextend

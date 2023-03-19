@@ -1,60 +1,61 @@
 #extend("trunk"):
-    #export("body"):
-    	<div class="container-md ms-0 mt-2">
-    		<div class="row mb-2 align-items-end">
-    			<div class="col">
-    				<h6><b>Moderator Seamail</b></h6>
-				</div>
-    			<div class="col col-auto align-self-end">
-			    	<a class="btn btn-primary btn-sm" role="button" href="/seamail/create">New Seamail</a>
-				</div>
-			</div>
-			#extend("paginator")
-			<div class="list-group">
-				#if(count(fezzes) == 0):
-					<div class="row">
-						<div class="col">
-							<li class="list-group-item">No Seamails to @moderator yet.</li>
-						</div>
-					</div>
-				#else:
-					#for(fez in fezzes):
-						<a href="/seamail/#(fez.fezID)" class="list-group-item list-group-item-action">		
-							<div class="row">
-								<div class="col">
-									#(fez.title)
-								</div>
-								<div class="col col-auto">
-									<span title="#localTime(fez.lastModificationTime)" class="text-muted">#relativeTime(fez.lastModificationTime)</span>
-								</div>
-							</div>
-							<div class="row">
-								#for(participant in fez.members.participants):
-									#if(participant.userID != trunk.userID):
-										<div class="col col-auto border">
-											#avatar(participant)
-											<span>#(participant.username)</span>
-										</div>	
-									#endif			
-								#endfor
-							</div>
-							<div class="row">
-								<div class="col">
-									<span title="#localTime(fez.lastModificationTime)" class="text-muted">#relativeTime(fez.lastModificationTime)</span>
-								</div>
-								<div class="col col-auto">
-									<span class="badge rounded-pill bg-light text-dark">#(fez.members.postCount) posts</span>
-									#if(fez.members.readCount < fez.members.postCount):
-										<span class="badge rounded-pill bg-danger">#(fez.members.postCount - fez.members.readCount) new</span>
-									#endif
-								</div>
-							</div>
-						</a>
-					#endfor
-				#endif
-			</div>
-			#extend("paginator")
+#export("body"):
+<div class="container-md ms-0 mt-2">
+	<div class="row mb-2 align-items-end">
+		<div class="col">
+			<h6><b>Moderator Seamail</b></h6>
 		</div>
-    #endexport
+		<div class="col col-auto align-self-end">
+			<a class="btn btn-primary btn-sm" role="button" href="/seamail/create">New Seamail</a>
+		</div>
+	</div>
+	#extend("paginator")
+	<div class="list-group">
+		#if(count(fezzes) == 0):
+		<div class="row">
+			<div class="col">
+				<li class="list-group-item">No Seamails to @moderator yet.</li>
+			</div>
+		</div>
+		#else:
+		#for(fez in fezzes):
+		<a href="/seamail/#(fez.fezID)" class="list-group-item list-group-item-action">
+			<div class="row">
+				<div class="col">
+					#(fez.title)
+				</div>
+				<div class="col col-auto">
+					<span title="#localTime(fez.lastModificationTime)"
+						class="text-muted">#relativeTime(fez.lastModificationTime)</span>
+				</div>
+			</div>
+			<div class="row">
+				#for(participant in fez.members.participants):
+				#if(participant.userID != trunk.userID):
+				<div class="col col-auto border">
+					#avatar(participant)
+					<span>#(participant.username)</span>
+				</div>
+				#endif
+				#endfor
+			</div>
+			<div class="row">
+				<div class="col">
+					<span title="#localTime(fez.lastModificationTime)"
+						class="text-muted">#relativeTime(fez.lastModificationTime)</span>
+				</div>
+				<div class="col col-auto">
+					<span class="badge rounded-pill bg-light text-dark">#(fez.members.postCount) posts</span>
+					#if(fez.members.readCount < fez.members.postCount): <span class="badge rounded-pill bg-danger">
+						#(fez.members.postCount - fez.members.readCount) new</span>
+						#endif
+				</div>
+			</div>
+		</a>
+		#endfor
+		#endif
+	</div>
+	#extend("paginator")
+</div>
+#endexport
 #endextend
-

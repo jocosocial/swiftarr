@@ -1,66 +1,76 @@
 #extend("trunk"):
-    #export("body"):
-		<div class="container-fluid">
-			#if(operationSuccess):
-				<div class="alert alert-primary mt-3" role="alert">
-					<div class="d-flex align-items-center">
-						<b>#(operationName) successful. Redirecting...</b>
-						<div class="spinner-border ms-2" role="status">
-							<span class="visually-hidden">Loading...</span>
-						</div>
-					</div>
-				</div>
-			#else:	
-					
-				<div class="container-fluid mt-3">
-					<div class="row">
-						<h5>About Alt Accounts</h5>
-						<p>An alt account lets you post as someone else, while still being yourself. If, for example, you run a certain type of Shadow Event, you might make an alt account named after the event you run. You can then post about your event in a way that makes it clear you're the one running it, and still switch back to your main account when chatting with your friends.</p>
-						<p>Remember that all your accounts are subject to the Code of Conduct, and are all jointly subject to the rulings of the moderators.</p>
-					</div>
-					<form action="/createAltAccount" method="POST">
-						<div class="row mb-3 mx-2">
-							<div class="col">
-								<label for="username" class="form-label" id="username-label">Username</label>
-								<input type="text" class="form-control swiftarr-textfield #if(error.fieldErrors.username):is-invalid#endif" id="username" 
-										name="username" value="#(prevUsername)" spellcheck="false" autocapitalize="none" autocomplete="off"
-										aria-describedby="username-feedback username-label">
-								<div class="invalid-feedback" id="username-feedback">
-									#(error.fieldErrors.username)
-								</div>
-							</div>
-						</div>
-						<div class="row">
-							<p>Due to technical restrictions, the security available on the ship is akin to <b>writing your password on a post-it and placing the post-it on your forehead.</b> At least, it is to anyone skilled and motivated to do such things.</p>
-							<p><b>DO NOT USE the same password that you have used for ANYTHING ELSE.</b></p>
-							<p>Really not kidding here. Please don't do it. If you do, you are risking the security of any account that uses the same password.</p>
-						</div>
-						<div class="row mb-3 mx-2">
-							<div class="col">
-								<label for="password" class="form-label" id="password-label">Password</label>
-								<input type="password" class="form-control swiftarr-textfield #if(error.fieldErrors.password):is-invalid#endif" id="password" 
-										name="password" autocomplete="new-password" aria-describedby="password-feedback password-label">
-								<div class="invalid-feedback" id="password-feedback">
-									#(error.fieldErrors.password)
-								</div>
-							</div>
-						</div>
-						<div class="row mb-3 mx-2">
-							<div class="col">
-								<label for="passwordConfirm" class="form-label" id="confirm-password-label">Confirm Password</label>
-								<input type="password" class="form-control swiftarr-textfield" id="passwordConfirm" name="passwordConfirm" 
-										autocomplete="new-password" aria-describedby="confirm-password-label">
-							</div>
-						</div>
-						#if(error):
-							<div class="alert alert-danger mt-3" role="alert">
-								<b>Error:</b> #(error.reason)
-							</div>
-						#endif
-						<button type="submit" class="btn btn-primary">Create Account</button>
-					</form>
-				</div>
-			#endif
+#export("body"):
+<div class="container-fluid">
+	#if(operationSuccess):
+	<div class="alert alert-primary mt-3" role="alert">
+		<div class="d-flex align-items-center">
+			<b>#(operationName) successful. Redirecting...</b>
+			<div class="spinner-border ms-2" role="status">
+				<span class="visually-hidden">Loading...</span>
+			</div>
 		</div>
-	#endexport
+	</div>
+	#else:
+
+	<div class="container-fluid mt-3">
+		<div class="row">
+			<h5>About Alt Accounts</h5>
+			<p>An alt account lets you post as someone else, while still being yourself. If, for example, you run a
+				certain type of Shadow Event, you might make an alt account named after the event you run. You can then
+				post about your event in a way that makes it clear you're the one running it, and still switch back to
+				your main account when chatting with your friends.</p>
+			<p>Remember that all your accounts are subject to the Code of Conduct, and are all jointly subject to the
+				rulings of the moderators.</p>
+		</div>
+		<form action="/createAltAccount" method="POST">
+			<div class="row mb-3 mx-2">
+				<div class="col">
+					<label for="username" class="form-label" id="username-label">Username</label>
+					<input type="text"
+						class="form-control swiftarr-textfield #if(error.fieldErrors.username):is-invalid#endif"
+						id="username" name="username" value="#(prevUsername)" spellcheck="false" autocapitalize="none"
+						autocomplete="off" aria-describedby="username-feedback username-label">
+					<div class="invalid-feedback" id="username-feedback">
+						#(error.fieldErrors.username)
+					</div>
+				</div>
+			</div>
+			<div class="row">
+				<p>Due to technical restrictions, the security available on the ship is akin to <b>writing your password
+						on a post-it and placing the post-it on your forehead.</b> At least, it is to anyone skilled and
+					motivated to do such things.</p>
+				<p><b>DO NOT USE the same password that you have used for ANYTHING ELSE.</b></p>
+				<p>Really not kidding here. Please don't do it. If you do, you are risking the security of any account
+					that uses the same password.</p>
+			</div>
+			<div class="row mb-3 mx-2">
+				<div class="col">
+					<label for="password" class="form-label" id="password-label">Password</label>
+					<input type="password"
+						class="form-control swiftarr-textfield #if(error.fieldErrors.password):is-invalid#endif"
+						id="password" name="password" autocomplete="new-password"
+						aria-describedby="password-feedback password-label">
+					<div class="invalid-feedback" id="password-feedback">
+						#(error.fieldErrors.password)
+					</div>
+				</div>
+			</div>
+			<div class="row mb-3 mx-2">
+				<div class="col">
+					<label for="passwordConfirm" class="form-label" id="confirm-password-label">Confirm Password</label>
+					<input type="password" class="form-control swiftarr-textfield" id="passwordConfirm"
+						name="passwordConfirm" autocomplete="new-password" aria-describedby="confirm-password-label">
+				</div>
+			</div>
+			#if(error):
+			<div class="alert alert-danger mt-3" role="alert">
+				<b>Error:</b> #(error.reason)
+			</div>
+			#endif
+			<button type="submit" class="btn btn-primary">Create Account</button>
+		</form>
+	</div>
+	#endif
+</div>
+#endexport
 #endextend

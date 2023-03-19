@@ -1,65 +1,65 @@
 #extend("trunk"):
-    #export("body"):
-    	<div class="container-md ms-0 my-1">
-			<div class="row">
-    			<div class="col">
-					<nav aria-label="breadcrumb">
-						<ol class="breadcrumb">
-							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
-							<li class="breadcrumb-item"><a href="/admin/announcements">Announcements</a></li>
-							<li class="breadcrumb-item active" aria-current="page">Create/Edit</li>
-						</ol>
-					</nav>
-				</div>
-				<div class="col col-auto">
-					<b>#if(post.isEdit):Edit#else:Create#endif Announcement</b>
-				</div>
-			</div>
-			<ul class="container-md mx-0 px-0 list-group">
-				<li class="list-group-item bg-transparent mb-3">				
-					<form class="ajax" action="#(post.formAction)" enctype="multipart/form-data" method="POST" data-successurl="#(post.postSuccessURL)" id="messagePostForm">
-						<div class="container-fluid">
-							<div class="row"> 
-								<textarea 
-										class="form-control" 
-										maxlength="2000" 
-										data-lengthlabel="announcementLimitsLabel" 
-										rows="5" 
-										name="postText" 
-										id="postText" 
-										placeholder="Announcement Text">#(post.messageText)</textarea>
-							</div>
-							<div class="row justify-content-end mb-3">
-								<div class="col col-auto input-group-text input-group-sm py-0" id="announcementLimitsLabel"></div>
-							</div>
-							<div class="row mb-2">
-								<div class="col">
-									Display Until: <input type="datetime-local" name="displayUntil" #if(post.displayUntil != ""):value="#localTime(post.displayUntil)"#endif>
-								</div>
-							</div>
-							<div class="alert alert-danger mt-3 d-none" role="alert">
-							</div>		
-							<div class="row mb-2">
-								<div class="col col-auto gx-0">
-									<button type="submit" class="btn btn-primary">Post</button>
-								</div>
-							</div>
+#export("body"):
+<div class="container-md ms-0 my-1">
+	<div class="row">
+		<div class="col">
+			<nav aria-label="breadcrumb">
+				<ol class="breadcrumb">
+					<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+					<li class="breadcrumb-item"><a href="/admin/announcements">Announcements</a></li>
+					<li class="breadcrumb-item active" aria-current="page">Create/Edit</li>
+				</ol>
+			</nav>
+		</div>
+		<div class="col col-auto">
+			<b>#if(post.isEdit):Edit#else:Create#endif Announcement</b>
+		</div>
+	</div>
+	<ul class="container-md mx-0 px-0 list-group">
+		<li class="list-group-item bg-transparent mb-3">
+			<form class="ajax" action="#(post.formAction)" enctype="multipart/form-data" method="POST"
+				data-successurl="#(post.postSuccessURL)" id="messagePostForm">
+				<div class="container-fluid">
+					<div class="row">
+						<textarea class="form-control" maxlength="2000" data-lengthlabel="announcementLimitsLabel"
+							rows="5" name="postText" id="postText"
+							placeholder="Announcement Text">#(post.messageText)</textarea>
+					</div>
+					<div class="row justify-content-end mb-3">
+						<div class="col col-auto input-group-text input-group-sm py-0" id="announcementLimitsLabel">
 						</div>
-					</form>
-				</li>
-			</ul>
-			#if(post.isEdit):
-				<div class="row">
-					<div class="col col-12">
-						<p>Remember: Editing an announcement will not change its alert status for users--so, a user that has seen
-						the unedited announcement already won't be alerted again about the edit. This means that edits are appropiate
-						for fixing typos or changing the display-until time, but substantial changes to an announcement's meaning
-						should probably be done with a new announcement.</p>
-						<p>Editing a deleted announcement <b>will</b> undelete it, also you can edit an expired announcement and 
-						bump the display-until time to the future again and it will reappear for people.</p>
+					</div>
+					<div class="row mb-2">
+						<div class="col">
+							Display Until: <input type="datetime-local" name="displayUntil" #if(post.displayUntil !=""
+								):value="#localTime(post.displayUntil)" #endif>
+						</div>
+					</div>
+					<div class="alert alert-danger mt-3 d-none" role="alert">
+					</div>
+					<div class="row mb-2">
+						<div class="col col-auto gx-0">
+							<button type="submit" class="btn btn-primary">Post</button>
+						</div>
 					</div>
 				</div>
-			#endif
-    	</div>
-	#endexport
+			</form>
+		</li>
+	</ul>
+	#if(post.isEdit):
+	<div class="row">
+		<div class="col col-12">
+			<p>Remember: Editing an announcement will not change its alert status for users--so, a user that has seen
+				the unedited announcement already won't be alerted again about the edit. This means that edits are
+				appropiate
+				for fixing typos or changing the display-until time, but substantial changes to an announcement's
+				meaning
+				should probably be done with a new announcement.</p>
+			<p>Editing a deleted announcement <b>will</b> undelete it, also you can edit an expired announcement and
+				bump the display-until time to the future again and it will reappear for people.</p>
+		</div>
+	</div>
+	#endif
+</div>
+#endexport
 #endextend

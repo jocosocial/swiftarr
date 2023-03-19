@@ -1,107 +1,112 @@
 #extend("trunk"):
-    #export("body"):
-    	<div class="container-md ms-0 my-1">
-			<div class="row">
-    			<div class="col">
-					<nav aria-label="breadcrumb">
-						<ol class="breadcrumb">
-							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
-							<li class="breadcrumb-item active" aria-current="page">User Roles</li>
-						</ol>
-					</nav>
-				</div>
-			</div>
-			<div class="col col-auto">
-				<div class="dropdown">
-					<button class="btn btn-outline-primary dropdown-toggle btn-sm" type="button" id="roleChooserMenu" data-bs-toggle="dropdown" data-selected="" aria-expanded="false">
-						Choose Role To Manage
-					</button>
-					<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="roleChooserMenu">
-						<li><a class="dropdown-item #if(role == "karaokemanager"):active#endif" href="/admin/userroles/karaokemanager">Karaoke Manager</a></li>
-						<li><a class="dropdown-item #if(role == "shutternautmanager"):active#endif" href="/admin/userroles/shutternautmanager">Shutternaut Manager</a></li>
-						<li><a class="dropdown-item #if(role == "shutternaut"):active#endif" href="/admin/userroles/shutternaut">Shutternaut</a></li>
-					</ul>
-				</div>
-			</div>
-			#if(role != nil):
-				<div class="row my-2">
-					<div class="col">
-						<b>Search for Users to Promote To #(rolename)</b>
-					</div>
-				</div>
-				<div class="row my-2">
-					<form class="d-flex my-1">
-						<input class="form-control" type="search" name="search" placeholder="Search Users" value="#(userSearch)" aria-label="Search" autocapitalize="off" required>
-						<button class="btn btn-primary ms-2" type="submit">Search</button>
-					</form>
-				</div>
-				#if(searchResults):
-					<div class="row my-2">
-						<div class="col">
-							<b>Search Results:</b>
-						</div>
-					</div>
-					<ul class="list-group">
-						#for(user in searchResults):
-							<li class="list-group-item list-group-item-action" data-postid="#(ann.id)">		
-								<div class="row justify-content-between align-items-center">
-									<div class="col">
-										#avatar(user) #userByline(user)
-									</div>
-									<div class="col col-auto">
-										<button type="button" class="btn btn-sm btn-primary" autocomplete="off" data-action="reload" 
-												data-actionpath="/admin/userroles/#(role)/addrole/#(user.userID)"
-												data-errordiv="#(user.userID)_errorDisplay">
-											Promote
-											<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-											<span class="visually-hidden">Loading...</span>
-										</button>
-									</div>
-								</div>
-								<div class="text-end text-danger d-none" id="#(user.userID)_errorDisplay">
-									Could not promote to #(rolename): <span class="errortext"></span>
-								</div>
-							</li>
-						#endfor
-					</ul>
-				#endif
-				<div class="row my-2">
-					<div class="col">
-						<b>Current #(rolename)s:</b>
-					</div>
-				</div>
-				<ul class="list-group">
-					#if(count(currentMgrs) == 0):
-						<li class="list-group-item bg-transparent text-center">
-							No users have been promoted to #(rolename) yet.
-						</li>
-					#else:
-						#for(mgr in currentMgrs):
-							<li class="list-group-item list-group-item-action" data-postid="#(ann.id)">		
-								<div class="row justify-content-between align-items-center">
-									<div class="col">
-										#avatar(mgr) #userByline(mgr)
-									</div>
-									<div class="col col-auto">
-										<button type="button" class="btn btn-sm btn-primary" autocomplete="off" data-action="reload" 
-												data-actionpath="/admin/userroles/#(role)/removerole/#(mgr.userID)"
-												data-errordiv="#(mgr.userID)_mgrErrorDisplay">
-											Demote
-											<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-											<span class="visually-hidden">Loading...</span>
-										</button>
-									</div>
-								</div>
-								<div class="row">
-									<div class="col text-end text-danger d-none" id="#(mgr.userID)_mgrErrorDisplay">
-										Could not remove user role: <span class="errortext"></span>
-									</div>
-								</div>
-							</li>
-						#endfor
-					#endif
-				</ul>
-			#endif
+#export("body"):
+<div class="container-md ms-0 my-1">
+	<div class="row">
+		<div class="col">
+			<nav aria-label="breadcrumb">
+				<ol class="breadcrumb">
+					<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+					<li class="breadcrumb-item active" aria-current="page">User Roles</li>
+				</ol>
+			</nav>
 		</div>
-    #endexport
+	</div>
+	<div class="col col-auto">
+		<div class="dropdown">
+			<button class="btn btn-outline-primary dropdown-toggle btn-sm" type="button" id="roleChooserMenu"
+				data-bs-toggle="dropdown" data-selected="" aria-expanded="false">
+				Choose Role To Manage
+			</button>
+			<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="roleChooserMenu">
+				<li><a class="dropdown-item #if(role == " karaokemanager"):active#endif"
+						href="/admin/userroles/karaokemanager">Karaoke Manager</a></li>
+				<li><a class="dropdown-item #if(role == " shutternautmanager"):active#endif"
+						href="/admin/userroles/shutternautmanager">Shutternaut Manager</a></li>
+				<li><a class="dropdown-item #if(role == " shutternaut"):active#endif"
+						href="/admin/userroles/shutternaut">Shutternaut</a></li>
+			</ul>
+		</div>
+	</div>
+	#if(role != nil):
+	<div class="row my-2">
+		<div class="col">
+			<b>Search for Users to Promote To #(rolename)</b>
+		</div>
+	</div>
+	<div class="row my-2">
+		<form class="d-flex my-1">
+			<input class="form-control" type="search" name="search" placeholder="Search Users" value="#(userSearch)"
+				aria-label="Search" autocapitalize="off" required>
+			<button class="btn btn-primary ms-2" type="submit">Search</button>
+		</form>
+	</div>
+	#if(searchResults):
+	<div class="row my-2">
+		<div class="col">
+			<b>Search Results:</b>
+		</div>
+	</div>
+	<ul class="list-group">
+		#for(user in searchResults):
+		<li class="list-group-item list-group-item-action" data-postid="#(ann.id)">
+			<div class="row justify-content-between align-items-center">
+				<div class="col">
+					#avatar(user) #userByline(user)
+				</div>
+				<div class="col col-auto">
+					<button type="button" class="btn btn-sm btn-primary" autocomplete="off" data-action="reload"
+						data-actionpath="/admin/userroles/#(role)/addrole/#(user.userID)"
+						data-errordiv="#(user.userID)_errorDisplay">
+						Promote
+						<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+						<span class="visually-hidden">Loading...</span>
+					</button>
+				</div>
+			</div>
+			<div class="text-end text-danger d-none" id="#(user.userID)_errorDisplay">
+				Could not promote to #(rolename): <span class="errortext"></span>
+			</div>
+		</li>
+		#endfor
+	</ul>
+	#endif
+	<div class="row my-2">
+		<div class="col">
+			<b>Current #(rolename)s:</b>
+		</div>
+	</div>
+	<ul class="list-group">
+		#if(count(currentMgrs) == 0):
+		<li class="list-group-item bg-transparent text-center">
+			No users have been promoted to #(rolename) yet.
+		</li>
+		#else:
+		#for(mgr in currentMgrs):
+		<li class="list-group-item list-group-item-action" data-postid="#(ann.id)">
+			<div class="row justify-content-between align-items-center">
+				<div class="col">
+					#avatar(mgr) #userByline(mgr)
+				</div>
+				<div class="col col-auto">
+					<button type="button" class="btn btn-sm btn-primary" autocomplete="off" data-action="reload"
+						data-actionpath="/admin/userroles/#(role)/removerole/#(mgr.userID)"
+						data-errordiv="#(mgr.userID)_mgrErrorDisplay">
+						Demote
+						<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+						<span class="visually-hidden">Loading...</span>
+					</button>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col text-end text-danger d-none" id="#(mgr.userID)_mgrErrorDisplay">
+					Could not remove user role: <span class="errortext"></span>
+				</div>
+			</div>
+		</li>
+		#endfor
+		#endif
+	</ul>
+	#endif
+</div>
+#endexport
 #endextend
