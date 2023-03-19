@@ -1,22 +1,21 @@
 <li class="list-group-item list-group-item-action">
 	<div class="row " data-reportid="#(report.id)">
 		<div class="col">
-			<span title="#localTime(report.creationTime)"><b>Reported by
-					#userByline(report.author)<br>#relativeTime(report.creationTime)</b></span>
+			<span title="#localTime(report.creationTime)"><b>Reported by #userByline(report.author)<br>#relativeTime(report.creationTime)</b></span>
 		</div>
 		<div class="col col-auto text-end">
 			#if(report.handledBy):
-			#if(report.isClosed):
-			Closed<br>by #userByline(report.handledBy)
+				#if(report.isClosed):
+					Closed<br>by #userByline(report.handledBy)
+				#else:
+					Being Handled<br>by #userByline(report.handledBy)
+				#endif
 			#else:
-			Being Handled<br>by #userByline(report.handledBy)
-			#endif
-			#else:
-			#if(report.isClosed):
-			Closed
-			#else:
-			Open
-			#endif
+				#if(report.isClosed):
+					Closed 
+				#else:
+					Open
+				#endif
 			#endif
 		</div>
 	</div>
@@ -26,10 +25,10 @@
 		</div>
 	</div>
 	#if(report.moderatorMemo):
-	<div class="row">
-		<div class="col col-auto">
-			<b>Moderator Memo:</b> #(report.moderatorMemo)
+		<div class="row">
+			<div class="col col-auto">
+				<b>Moderator Memo:</b> #(report.moderatorMemo)
+			</div>
 		</div>
-	</div>
 	#endif
 </li>

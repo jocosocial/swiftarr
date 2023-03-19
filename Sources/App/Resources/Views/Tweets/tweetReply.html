@@ -1,60 +1,59 @@
 #extend("trunk"):
-#export("body"):
-<div class="container-md ms-0 my-2">
-	<div class="row">
-		<h6><b>In reply to this post:</b></h6>
-	</div>
-	<div class="row">
-		<div class="col">
-			<ul class="container-md mx-0 px-0 list-group">
-				<li class="list-group-item bg-transparent" data-twarrtid="#(replyToTweet.twarrtID)">
-					<div class="container-fluid">
-						<div class="row align-items-start justify-content-start">
-							<div class="col g-0" style="flex: 0 0 40px;">
-								<a href="/user/#(replyToTweet.author.userID)">
-									#avatar(replyToTweet.author)
-								</a>
+    #export("body"):
+    	<div class="container-md ms-0 my-2">
+    		<div class="row">
+				<h6><b>In reply to this post:</b></h6>
+			</div>
+    		<div class="row">
+    			<div class="col">
+					<ul class="container-md mx-0 px-0 list-group">
+						<li class="list-group-item bg-transparent" data-twarrtid="#(replyToTweet.twarrtID)">				
+							<div class="container-fluid">
+								<div class="row align-items-start justify-content-start">	
+									<div class="col g-0" style="flex: 0 0 40px;">
+										<a href="/user/#(replyToTweet.author.userID)">		
+											#avatar(replyToTweet.author)
+										</a>
+									</div>
+									<div class="col">
+										<div class="row">	
+											<div class="col">
+												#userByline(replyToTweet.author)
+											</div>
+											<div class="col-auto">
+												<span title="#localTime(replyToTweet.createdAt)" class="text-muted">#relativeTime(replyToTweet.createdAt)</span>
+											</div>
+										</div>
+										<div class="row">	
+											<div class="col">
+												#formatTwarrtText(replyToTweet.text)
+											</div>
+										</div>
+										#if(replyToTweet.images):
+											<div class="row">	
+												#for(image in replyToTweet.images):
+													<div class="col">
+														<img src="/api/v3/image/full/#(image)" height=200 alt="Post Image">
+													</div>
+												#endfor
+											</div>
+										#endif
+									</div>
+								</div>
 							</div>
-							<div class="col">
-								<div class="row">
-									<div class="col">
-										#userByline(replyToTweet.author)
-									</div>
-									<div class="col-auto">
-										<span title="#localTime(replyToTweet.createdAt)"
-											class="text-muted">#relativeTime(replyToTweet.createdAt)</span>
-									</div>
-								</div>
-								<div class="row">
-									<div class="col">
-										#formatTwarrtText(replyToTweet.text)
-									</div>
-								</div>
-								#if(replyToTweet.images):
-								<div class="row">
-									#for(image in replyToTweet.images):
-									<div class="col">
-										<img src="/api/v3/image/full/#(image)" height=200 alt="Post Image">
-									</div>
-									#endfor
-								</div>
-								#endif
-							</div>
-						</div>
-					</div>
-				</li>
-			</ul>
+						</li>
+					</ul>
+				</div>
+			</div>
 		</div>
-	</div>
-</div>
 
-<div class="container-md ms-0 my-1">
-	<div class="row">
-		<div class="col col-auto">
-			<h6><b>What do you want to say?</b></h6>
-		</div>
-	</div>
-	#extend("messagePostForm")
-</div>
-#endexport
+    	<div class="container-md ms-0 my-1">
+    		<div class="row">
+    			<div class="col col-auto">
+			    	<h6><b>What do you want to say?</b></h6>
+				</div>
+			</div>
+			#extend("messagePostForm")
+    	</div>
+	#endexport
 #endextend

@@ -1,16 +1,16 @@
 #extend("trunk"):
-#export("body"):
-<div class="container-md ms-0 my-1">
-	<div class="col col-auto">
-		<nav aria-label="breadcrumb">
-			<ol class="breadcrumb">
-				<li class="breadcrumb-item" aria-current="page"><a href="/forums">Forums</a></li>
-				<li class="breadcrumb-item"><a href="/forums/#(category.categoryID)">#(category.title)</a></li>
-				<li class="breadcrumb-item active" aria-current="page">Create New Forum</li>
-			</ol>
-		</nav>
-	</div>
-	#extend("messagePostForm")
-</div>
-#endexport
+    #export("body"):
+    	<div class="container-md ms-0 my-1">
+			<div class="col col-auto">
+				<nav aria-label="breadcrumb">
+					<ol class="breadcrumb">
+						<li class="breadcrumb-item" aria-current="page"><a href="/forums">Forums</a></li>
+						<li class="breadcrumb-item"><a href="/forums/#(category.categoryID)">#(category.title)</a></li>
+						<li class="breadcrumb-item active" aria-current="page">Create New Forum</li>
+					</ol>
+				</nav>
+			</div>
+			#extend("messagePostForm")
+    	</div>
+	#endexport
 #endextend

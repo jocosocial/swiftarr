@@ -1,177 +1,165 @@
 #extend("trunk"):
-#export("body"):
-<div class="container-md ms-0 mt-2">
-	<div class="row">
-		<nav aria-label="breadcrumb">
-			<ol class="breadcrumb">
-				#if(fez.fezType == "open"):
-				<li class="breadcrumb-item"><a href="/seamail">Seamail</a></li>
-				<li class="breadcrumb-item"><a href="/seamail/#(fez.fezID)">#(fez.title)</a></li>
+    #export("body"):
+    	<div class="container-md ms-0 mt-2">
+    		<div class="row">
+				<nav aria-label="breadcrumb">
+				  <ol class="breadcrumb">
+					#if(fez.fezType == "open"):
+						<li class="breadcrumb-item"><a href="/seamail">Seamail</a></li>
+						<li class="breadcrumb-item"><a href="/seamail/#(fez.fezID)">#(fez.title)</a></li>
+					#else:
+						<li class="breadcrumb-item"><a href="/fez">LFG</a></li>
+						<li class="breadcrumb-item"><a href="/fez/#(fez.fezID)">#(fez.title)</a></li>
+					#endif
+					<li class="breadcrumb-item" aria-current="page">Manage Members</li>
+				  </ol>
+				</nav>
+			</div>
+			#if(fez.fezType != "open"):
+				<div class="row justify-content-end">
+					<div class="col col-auto">
+						<button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="\#responsibilitiesModal">About User Management</button>
+					</div>
+				</div>
+			#endif
+			<div class="row">
+				<div class="col"><h6>Current Participants (#(count(fez.members.participants))#if(maxPeople != 0):/#(maxPeople)#endif)</h6></div>
+			</div>				
+			<ol class="container-md mx-0 px-0 mb-2 list-group list-group-numbered">
+				#for(user in fez.members.participants):
+					<li class="list-group-item justify-content-between align-items-baseline d-flex">
+						<div class="ms-2 me-auto">
+							#avatar(user) #userByline(user)
+						</div>
+						#if(user.userID != trunk.userID):
+							<div>
+								<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload" 
+										data-actionpath="/fez/#(fez.fezID)/members/remove/#(user.userID)"
+										data-errordiv="#(user.userID)_participanterror"
+										id="#(user.userID)_remove">
+								<label class="btn btn-sm btn-primary" for="#(user.userID)_remove">
+									Remove
+									<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+									<span class="visually-hidden">Loading...</span>
+								</label>
+							</div>
+						#endif
+						<div class="text-end text-danger d-none" id="#(user.userID)_participanterror">
+							Could not remove user: <span class="errortext"></span>
+						</div>
+					</li>
+				#endfor
+			</ol>				
+			
+			#if(fez.fezType != "open"):
+				#if(count(fez.members.waitingList) == 0):
+					<div class="row">
+						<div class="col"><h6>Waitlist</h6></div>
+					</div>
+					<ul class="container-md mx-0 px-0 list-group">
+						<li class="list-group-item justify-content-between align-items-baseline d-flex">
+							No users on waitlist
+						</li>
+					</ul>
 				#else:
-				<li class="breadcrumb-item"><a href="/fez">LFG</a></li>
-				<li class="breadcrumb-item"><a href="/fez/#(fez.fezID)">#(fez.title)</a></li>
+					<div class="row">
+						<div class="col"><h6>Waitlist (#count(fez.members.waitingList))</h6></div>
+					</div>				
+					<ol class="container-md mx-0 px-0 list-group list-group-numbered">
+						#for(user in fez.members.waitingList):
+							<li class="list-group-item justify-content-between align-items-baseline d-flex">
+								<div class="ms-2 me-auto">
+									#avatar(user) #userByline(user)
+								</div>
+								#if(user.userID != trunk.userID):
+									<div class="">
+										<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload" 
+											data-actionpath="/fez/#(fez.fezID)/members/remove/#(user.userID)"
+											data-errordiv="#(user.userID)_waitlisterror"
+											id="#(user.userID)_remove">
+										<label class="btn btn-sm btn-primary" for="#(user.userID)_remove">
+											Remove
+											<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+											<span class="visually-hidden">Loading...</span>
+										</label>
+									</div>
+								#endif
+								<div class="text-end text-danger d-none" id="#(user.userID)_waitlisterror">
+									Could not remove user: <span class="errortext"></span>
+								</div>
+							</li>
+						#endfor
+					</ul>
 				#endif
-				<li class="breadcrumb-item" aria-current="page">Manage Members</li>
-			</ol>
-		</nav>
-	</div>
-	#if(fez.fezType != "open"):
-	<div class="row justify-content-end">
-		<div class="col col-auto">
-			<button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal"
-				data-bs-target="\#responsibilitiesModal">About User Management</button>
-		</div>
-	</div>
-	#endif
-	<div class="row">
-		<div class="col">
-			<h6>Current Participants (#(count(fez.members.participants))#if(maxPeople != 0):/#(maxPeople)#endif)</h6>
-		</div>
-	</div>
-	<ol class="container-md mx-0 px-0 mb-2 list-group list-group-numbered">
-		#for(user in fez.members.participants):
-		<li class="list-group-item justify-content-between align-items-baseline d-flex">
-			<div class="ms-2 me-auto">
-				#avatar(user) #userByline(user)
-			</div>
-			#if(user.userID != trunk.userID):
-			<div>
-				<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload"
-					data-actionpath="/fez/#(fez.fezID)/members/remove/#(user.userID)"
-					data-errordiv="#(user.userID)_participanterror" id="#(user.userID)_remove">
-				<label class="btn btn-sm btn-primary" for="#(user.userID)_remove">
-					Remove
-					<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-					<span class="visually-hidden">Loading...</span>
-				</label>
-			</div>
 			#endif
-			<div class="text-end text-danger d-none" id="#(user.userID)_participanterror">
-				Could not remove user: <span class="errortext"></span>
+			
+			<div class="row mt-4">
+				<div class="col"><h6>Add Participants:</h6></div>
 			</div>
-		</li>
-		#endfor
-	</ol>
-
-	#if(fez.fezType != "open"):
-	#if(count(fez.members.waitingList) == 0):
-	<div class="row">
-		<div class="col">
-			<h6>Waitlist</h6>
-		</div>
-	</div>
-	<ul class="container-md mx-0 px-0 list-group">
-		<li class="list-group-item justify-content-between align-items-baseline d-flex">
-			No users on waitlist
-		</li>
-	</ul>
-	#else:
-	<div class="row">
-		<div class="col">
-			<h6>Waitlist (#count(fez.members.waitingList))</h6>
-		</div>
-	</div>
-	<ol class="container-md mx-0 px-0 list-group list-group-numbered">
-		#for(user in fez.members.waitingList):
-		<li class="list-group-item justify-content-between align-items-baseline d-flex">
-			<div class="ms-2 me-auto">
-				#avatar(user) #userByline(user)
-			</div>
-			#if(user.userID != trunk.userID):
-			<div class="">
-				<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload"
-					data-actionpath="/fez/#(fez.fezID)/members/remove/#(user.userID)"
-					data-errordiv="#(user.userID)_waitlisterror" id="#(user.userID)_remove">
-				<label class="btn btn-sm btn-primary" for="#(user.userID)_remove">
-					Remove
-					<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-					<span class="visually-hidden">Loading...</span>
-				</label>
-			</div>
-			#endif
-			<div class="text-end text-danger d-none" id="#(user.userID)_waitlisterror">
-				Could not remove user: <span class="errortext"></span>
-			</div>
-		</li>
-		#endfor
-		</ul>
-		#endif
-		#endif
-
-		<div class="row mt-4">
-			<div class="col">
-				<h6>Add Participants:</h6>
-			</div>
-		</div>
-		<div class="row">
-			<div class="col">
-				<input type="hidden" name="participants" id="participants_hidden" value="">
-				<div class="row mb-3">
-					<div class="input-group">
-						<span class="input-group-text" id="basic-addon1">@</span>
-						<input type="text" class="form-control user-autocomplete" autofocus="true"
-							placeholder="Search for users to add" aria-label="participants"
-							aria-describedby="basic-addon1" autocapitalize="off" autocomplete="off">
+			<div class="row">
+    			<div class="col">
+					<input type="hidden" name="participants" id="participants_hidden" value="">
+					<div class="row mb-3">
+						<div class="input-group">
+							<span class="input-group-text" id="basic-addon1">@</span>
+							<input type="text" class="form-control user-autocomplete" autofocus="true" placeholder="Search for users to add" aria-label="participants" aria-describedby="basic-addon1" autocapitalize="off" autocomplete="off">
+						</div>
 					</div>
-				</div>
-				<div class="row">
-					<div class="col"><i>Enter partial username above, then tap search matches below to add to the
+					<div class="row">
+						<div class="col"><i>Enter partial username above, then tap search matches below to add to the 
 							#if(fez.fezType == "open"):chat#else:LFG#endif.</i>
+						</div>
+					</div>
+					<ul class="row list-group mb-2 mx-0" id="name_suggestions">
+					</ul>
+				</div>
+			</div>
+		</div>
+		
+		<div class="modal fade " id="responsibilitiesModal" tabindex="-1" aria-labelledby="responsibilitiesModalTitle" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="responsibilitiesModalTitle">About User Management</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<ol>
+							<li>Don't just add random people to your LFG. It's not nice.</li>
+							<li>If you add people to your LFG, those people should already expect to be added.</li>
+							<li>Same idea with removing people: those removed should know why. Don't remove people who signed up just to bump your friend off the waitlist.</li>
+							<li>If you schedule a "Drink Like a Pirate" LFG and someone joins and asks if they can come as a ninja instead,
+							you may tell them it's more of a pirate thing and you may need to remove them to make room for more pirate participants.</li>
+						</ol>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-primary" data-bs-dismiss="modal">Alrrright</button>
 					</div>
 				</div>
-				<ul class="row list-group mb-2 mx-0" id="name_suggestions">
-				</ul>
 			</div>
 		</div>
-</div>
 
-<div class="modal fade " id="responsibilitiesModal" tabindex="-1" aria-labelledby="responsibilitiesModalTitle"
-	aria-hidden="true">
-	<div class="modal-dialog">
-		<div class="modal-content">
-			<div class="modal-header">
-				<h5 class="modal-title" id="responsibilitiesModalTitle">About User Management</h5>
-				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-			</div>
-			<div class="modal-body">
-				<ol>
-					<li>Don't just add random people to your LFG. It's not nice.</li>
-					<li>If you add people to your LFG, those people should already expect to be added.</li>
-					<li>Same idea with removing people: those removed should know why. Don't remove people who signed up
-						just to bump your friend off the waitlist.</li>
-					<li>If you schedule a "Drink Like a Pirate" LFG and someone joins and asks if they can come as a
-						ninja instead,
-						you may tell them it's more of a pirate thing and you may need to remove them to make room for
-						more pirate participants.</li>
-				</ol>
-			</div>
-			<div class="modal-footer">
-				<button type="button" class="btn btn-primary" data-bs-dismiss="modal">Alrrright</button>
-			</div>
-		</div>
-	</div>
-</div>
-
-
-<template id="potentialMemberTemplate">
-	<li class="list-group-item list-group-item-action">
-		<div class="row justify-content-between align-items-baseline">
-			<div class="col col-auto username-here"></div>
-			<label class="col col-auto btn btn-sm btn-primary px-3 me-2">
-				<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload"
-					data-actionpath="/fez/#(fez.fezID)/members/add/">
-				<span class="button-title-here">Add</span>
-				<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-				<span class="visually-hidden">Loading...</span>
-			</label>
-		</div>
-		<div class="row text-end text-danger error-display d-none">
-			<div class="col">
-				Could not add user: <span class="errortext"></span>
-			</div>
-		</div>
-	</li>
-</template>
-
-#endexport
+			
+		<template id="potentialMemberTemplate">
+			<li class="list-group-item list-group-item-action">
+				<div class="row justify-content-between align-items-baseline">
+					<div class="col col-auto username-here"></div>
+					<label class="col col-auto btn btn-sm btn-primary px-3 me-2">
+						<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload"
+								data-actionpath="/fez/#(fez.fezID)/members/add/">
+						<span class="button-title-here">Add</span>
+						<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+						<span class="visually-hidden">Loading...</span>
+					</label>
+				</div>
+				<div class="row text-end text-danger error-display d-none">
+					<div class="col">
+						Could not add user: <span class="errortext"></span>
+					</div>
+				</div>
+			</li>
+		</template>
+				
+    #endexport
 #endextend
+

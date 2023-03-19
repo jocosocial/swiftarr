@@ -1,4 +1,4 @@
-<a class="list-group-item list-group-item-action" href="/fez/#(fez.fezID)">
+<a class="list-group-item list-group-item-action" href="/fez/#(fez.fezID)">		
 	<div class="row">
 		<div class="col">
 			#if(fez.cancelled):<span class="text-danger"><b>Cancelled</b></span>#endif <b>#(fez.title)</b>
@@ -14,11 +14,11 @@
 		</div>
 		<div class="col col-auto">
 			#if(fez.maxParticipants == 0):
-			#(fez.participantCount) attendee#if(fez.participantCount != 1):s#endif
+				#(fez.participantCount) attendee#if(fez.participantCount != 1):s#endif
 			#elseif(fez.participantCount > fez.maxParticipants):
-			Full; #(fez.participantCount - fez.maxParticipants) waitlisted
+				Full; #(fez.participantCount - fez.maxParticipants) waitlisted
 			#else:
-			#(fez.participantCount)/#(fez.maxParticipants) attendees
+				#(fez.participantCount)/#(fez.maxParticipants) attendees
 			#endif
 		</div>
 	</div>
@@ -28,15 +28,15 @@
 			#(fez.fezType)
 		</div>
 		#if(fez.members):
-		<div class="col col-auto">
-			<span class="badge rounded-pill bg-light text-dark">#(fez.members.postCount) posts</span>
-			#if(fez.members.readCount < fez.members.postCount): <span class="badge rounded-pill bg-danger">
-				#(fez.members.postCount - fez.members.readCount) new</span>
+			<div class="col col-auto">
+				<span class="badge rounded-pill bg-light text-dark">#(fez.members.postCount) posts</span>
+				#if(fez.members.readCount < fez.members.postCount):
+					<span class="badge rounded-pill bg-danger">#(fez.members.postCount - fez.members.readCount) new</span>
 				#endif
-		</div>
+			</div>
 		#endif
 	</div>
-
+	
 	<div class="row d-none">
 		<div class="col">
 			#(fez.location)

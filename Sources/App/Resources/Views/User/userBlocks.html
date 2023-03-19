@@ -1,74 +1,75 @@
 #extend("trunk"):
-#export("body"):
-<div class="container-md ms-0 mt-2">
-	<div class="row">
-		<div class="col text-center">
-			<h6>Manage Blocked and Muted Users</h6>
-		</div>
-	</div>
-	<div class="row">
-		<div class="col col-auto">
-			<b>Blocked Users</b>
-		</div>
-	</div>
-	<ul class="container-md mx-0 px-0 list-group">
-		#if(count(blocks) == 0):
-		<li class="list-group-item">No Blocked Users</li>
-		#else:
-		#for(blockedUser in blocks):
-		<li class="list-group-item">
-			<div class="row justify-content-between align-items-baseline">
-				<div class="col col-auto">
-					#userByline(blockedUser, "nolink")
-				</div>
-				<div class="col col-auto">
-					<button type="button" class="btn btn-sm btn-primary" autocomplete="off" data-action="unblock"
-						data-actionpath="/user/#(blockedUser.userID)/unblock"
-						data-errordiv="#(blockedUser.userID)_errorDisplay">
-						Unblock
-						<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-						<span class="visually-hidden">Loading...</span>
-					</button>
+    #export("body"):
+    	<div class="container-md ms-0 mt-2">
+    		<div class="row">
+    			<div class="col text-center">
+					<h6>Manage Blocked and Muted Users</h6>
 				</div>
 			</div>
-			<div class="text-end text-danger d-none" id="#(blockedUser.userID)_errorDisplay">
-				Could not unblock user: <span class="errortext"></span>
-			</div>
-		</li>
-		#endfor
-		#endif
-	</ul>
-	<div class="row mt-3">
-		<div class="col col-auto">
-			<b>Muted Users</b>
-		</div>
-	</div>
-	<ul class="container-md mx-0 px-0 list-group">
-		#if(count(mutes) == 0):
-		<li class="list-group-item">No Muted Users</li>
-		#else:
-		#for(mutedUser in mutes):
-		<li class="list-group-item">
-			<div class="row justify-content-between align-items-baseline">
-				<div class="col col-auto">
-					#userByline(mutedUser, "nolink")
-				</div>
-				<div class="col col-auto">
-					<button type="button" class="btn btn-sm btn-primary" autocomplete="off" data-action="unmute"
-						data-actionpath="/user/#(mutedUser.userID)/unmute"
-						data-errordiv="#(mutedUser.userID)_muteErrorDisplay">
-						Unmute
-						<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-						<span class="visually-hidden">Loading...</span>
-						</label>
+    		<div class="row">
+    			<div class="col col-auto">
+					<b>Blocked Users</b>
 				</div>
 			</div>
-			<div class="text-end text-danger d-none" id="#(mutedUser.userID)_muteErrorDisplay">
-				Could not unmute user: <span class="errortext"></span>
+			<ul class="container-md mx-0 px-0 list-group">
+				#if(count(blocks) == 0):
+					<li class="list-group-item">No Blocked Users</li>
+				#else:
+					#for(blockedUser in blocks):
+						<li class="list-group-item">
+							<div class="row justify-content-between align-items-baseline">
+								<div class="col col-auto">
+									#userByline(blockedUser, "nolink")
+								</div>
+								<div class="col col-auto">
+									<button type="button" class="btn btn-sm btn-primary" autocomplete="off" data-action="unblock" 
+											data-actionpath="/user/#(blockedUser.userID)/unblock"
+											data-errordiv="#(blockedUser.userID)_errorDisplay">
+										Unblock
+										<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+										<span class="visually-hidden">Loading...</span>
+									</button>
+								</div>
+							</div>
+							<div class="text-end text-danger d-none" id="#(blockedUser.userID)_errorDisplay">
+								Could not unblock user: <span class="errortext"></span>
+							</div>
+						</li>
+					#endfor
+				#endif
+			</ul>				
+    		<div class="row mt-3">
+    			<div class="col col-auto">
+					<b>Muted Users</b>
+				</div>
 			</div>
-		</li>
-		#endfor
-		#endif
-	</ul>
-	#endexport
-	#endextend
+			<ul class="container-md mx-0 px-0 list-group">
+				#if(count(mutes) == 0):
+					<li class="list-group-item">No Muted Users</li>
+				#else:
+					#for(mutedUser in mutes):
+						<li class="list-group-item">
+							<div class="row justify-content-between align-items-baseline">
+								<div class="col col-auto">
+									#userByline(mutedUser, "nolink")
+								</div>
+								<div class="col col-auto">
+									<button type="button" class="btn btn-sm btn-primary" autocomplete="off" data-action="unmute" 
+											data-actionpath="/user/#(mutedUser.userID)/unmute"
+											data-errordiv="#(mutedUser.userID)_muteErrorDisplay">
+										Unmute
+										<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+										<span class="visually-hidden">Loading...</span>
+									</label>
+								</div>
+							</div>
+							<div class="text-end text-danger d-none" id="#(mutedUser.userID)_muteErrorDisplay">
+								Could not unmute user: <span class="errortext"></span>
+							</div>
+						</li>
+					#endfor
+				#endif
+			</ul>				
+    #endexport
+#endextend
+

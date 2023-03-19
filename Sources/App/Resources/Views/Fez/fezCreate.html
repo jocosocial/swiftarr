@@ -1,158 +1,149 @@
 #extend("trunk"):
-#export("body"):
-<div class="container-md ms-0 mt-2">
-	<div class="row">
-		<div class="col col-auto">
-			<b>#(pageTitle)</b>
-		</div>
-	</div>
-	#if(fez):
-	#if(fez.cancelled):
-	<div class="row mb-3">
-		<div class="col text-danger text-center">
-			<b>This LFG has been cancelled. Updating the LFG will un-cancel it.</b>
-		</div>
-	</div>
-	#endif
-	#endif
+    #export("body"):
+    	<div class="container-md ms-0 mt-2">
+    		<div class="row">
+    			<div class="col col-auto">
+    				<b>#(pageTitle)</b>
+				</div>
+			</div>
+			#if(fez):
+				#if(fez.cancelled):
+					<div class="row mb-3">
+						<div class="col text-danger text-center">
+							<b>This LFG has been cancelled. Updating the LFG will un-cancel it.</b>
+						</div>
+					</div>
+				#endif
+			#endif
 
-	<div class="row">
-		<div class="col">
-			<ul class="container-md mx-0 px-0 list-group">
-				<li class="list-group-item bg-transparent mb-3">
-					<form class="ajax" action="#(formAction)" enctype="multipart/form-data" method="POST"
-						data-successurl="/fez">
-						<div class="row mb-3">
-							<div class="input-group">
-								<input type="text" class="form-control" placeholder="Title" name="subject"
-									aria-label="Title" value="#(fezTitle)">
-							</div>
-						</div>
-						<div class="row mb-3">
-							<div class="input-group">
-								<input type="text" class="form-control" list="locationOptions" placeholder="Location"
-									name="location" aria-label="Location" value="#(fezLocation)">
-								<datalist id="locationOptions">
-									<option value="Atrium, Deck 1, Midship">
-									<option value="B.B. King's, Deck 2, Midship">
-									<option value="Billboard Onboard, Deck 2, Forward">
-									<option value="Pinnacle Bar, Deck 2, Midship">
-									<option value="Explorer's Lounge, Deck 2, Aft">
-									<option value="Lower Main Dining Room, Deck 2, Aft">
-									<option value="Ocean Bar, Deck 3, Midship">
-									<option value="Upper Main Dining Room, Deck 3, Aft">
-									<option value="Lido Bar (Midship), Deck 9, Midship">
-									<option value="Sea View Bar, Deck 9, Midship">
-									<option value="Lido Pool Area, Deck 9, Midship">
-									<option value="Lido Market, Deck 9, Aft">
-									<option value="Sea View Pool Area, Deck 9, Aft">
-									<option value="Crow's Nest (Ten Forward), Deck 10, Forward">
-									<option value="Shuffleboard Court, Deck 10, Midship">
-									<option value="EXC, Deck 10, Forward">
-									<option value="Sports Deck, Deck 11, Forward">
-								</datalist>
-							</div>
-						</div>
-						<div class="row mb-3 justify-content-end">
-							<div class="col col-auto">
-								<button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal"
-									data-bs-target="\#locationModal">Note on Locations</button>
-							</div>
-						</div>
-						<div class="row mb-3">
-							<div class="col">
-								Type of event:
-								<select class="form-select" aria-label="Event type" name="eventtype">
-									<option value="activity" #if(fezType=="activity" ): selected#endif>Activity</option>
-									<option value="dining" #if(fezType=="dining" ): selected#endif>Dining</option>
-									<option value="gaming" #if(fezType=="gaming" ): selected#endif>Gaming</option>
-									<option value="meetup" #if(fezType=="meetup" ): selected#endif>Meetup</option>
-									<option value="music" #if(fezType=="music" ): selected#endif>Music</option>
-									<option value="ashore" #if(fezType=="shore" ): selected#endif>Ashore</option>
-									<option value="other" #if(fezType=="other" ): selected#endif>Other</option>
-								</select>
-							</div>
-						</div>
-						<div class="row mb-2">
-							<div class="col">
-								Start Time: <input type="datetime-local" name="starttime" id="datetime"
-									#if(startTime):value="#localTime(startTime)" #endif>
-							</div>
-						</div>
-						<div class="row mb-2">
-							<label for="duration" class="col-form-label col-auto d-flex">Duration:</label>
-							<select class="duration-select" aria-label="Duration" id="duration" name="duration">
-								<option value="30" #if(minutes < 45): selected#endif>30 Mins</option>
-								<option value="60" #if(minutes>= 45 && minutes < 75): selected#endif>1 Hr</option>
-								<option value="90" #if(minutes>= 75 && minutes < 105): selected#endif>1:30</option>
-								<option value="120" #if(minutes>= 105 && minutes < 150): selected#endif>2 Hrs</option>
-								<option value="180" #if(minutes>= 150 && minutes < 210): selected#endif>3 Hrs</option>
-								<option value="240" #if(minutes>= 210): selected#endif>4 Hrs</option>
-							</select>
-						</div>
-						<div class="row mb-2">
-							<div class="col">
-								Needs at least <input type="number" name="minimum" min="0" step="1"
-									value="#(minPeople)">
-								and at most <input type="number" name="maximum" min="0" step="1" value="#(maxPeople)">
-								attendees (use 0 for unlimited)
-							</div>
-						</div>
-						<div class="row">
-							<div class="col">
-								<textarea class="form-control" maxlength="2000" data-lengthlabel="fezTextLimitsLabel"
-									rows="4" placeholder="Event Info" name="postText">#(info)</textarea>
-							</div>
-						</div>
-						<div class="row justify-content-end mb-2">
-							<div class="col col-auto">
-								<div class="input-group-text input-group-sm py-0" id="fezTextLimitsLabel"></div>
-							</div>
-						</div>
-						<div class="alert alert-danger mt-3 d-none" role="alert">
-						</div>
-						<div class="row mb-2">
-							<div class="col">
-								<small>Please remember to abide by the <a href="/codeOfConduct">Code of
-										Conduct</a></small>
-							</div>
-							<div class="col col-auto">
-								<button type="submit" class="btn btn-primary">#(submitButtonTitle)</button>
-							</div>
-						</div>
-					</form>
-				</li>
-			</ul>
-		</div>
-	</div>
-</div>
-<div class="modal fade" id="locationModal" tabindex="-1" aria-labelledby="locationModalTitle" aria-hidden="true">
-	<div class="modal-dialog">
-		<div class="modal-content">
-			<div class="modal-header">
-				<h5 class="modal-title" id="locationModalTitle">About LFG Locations</h5>
-				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-			</div>
-			<div class="modal-body">
-				<ol>
-					<li>LFGs are not a reservation system. You can't claim a room or even a table by scheduling an LFG
-						there.</li>
-					<li>Don't set up an LFG in a room used for Official or Shadow Events.</li>
-					<li>Don't try to get around Item 2 by scheduling your LFG in an Event room at a time when the
-						Official Schedule
-						doesn't list anything happening there. Event rooms are often used for official things even when
-						not running a listed event.</li>
-					<li>Sometimes places fill up; have backup plans. If you schedule a "Drink Like a Pirate" LFG at a
-						bar
-						onboard, and that bar's full at the appointed time, you can message the LFG members to relocate.
-					</li>
-				</ol>
-			</div>
-			<div class="modal-footer">
-				<button type="button" class="btn btn-primary" data-bs-dismiss="modal">Alrrright</button>
+			<div class="row">
+    			<div class="col">
+					<ul class="container-md mx-0 px-0 list-group">
+						<li class="list-group-item bg-transparent mb-3">				
+							<form class="ajax" action="#(formAction)" enctype="multipart/form-data" method="POST" data-successurl="/fez">
+								<div class="row mb-3">
+									<div class="input-group">
+										<input type="text" class="form-control" placeholder="Title" name="subject" aria-label="Title" value="#(fezTitle)">
+									</div>
+								</div>
+								<div class="row mb-3">
+									<div class="input-group">
+										<input type="text" class="form-control" list="locationOptions" placeholder="Location" name="location" aria-label="Location" value="#(fezLocation)">
+										<datalist id="locationOptions">
+											<option value="Atrium, Deck 1, Midship">
+											<option value="B.B. King's, Deck 2, Midship">
+											<option value="Billboard Onboard, Deck 2, Forward">
+											<option value="Pinnacle Bar, Deck 2, Midship">
+											<option value="Explorer's Lounge, Deck 2, Aft">
+											<option value="Lower Main Dining Room, Deck 2, Aft">
+											<option value="Ocean Bar, Deck 3, Midship">
+											<option value="Upper Main Dining Room, Deck 3, Aft">
+											<option value="Lido Bar (Midship), Deck 9, Midship">
+											<option value="Sea View Bar, Deck 9, Midship">
+											<option value="Lido Pool Area, Deck 9, Midship">
+											<option value="Lido Market, Deck 9, Aft">
+											<option value="Sea View Pool Area, Deck 9, Aft">
+											<option value="Crow's Nest (Ten Forward), Deck 10, Forward">
+											<option value="Shuffleboard Court, Deck 10, Midship">
+											<option value="EXC, Deck 10, Forward">
+											<option value="Sports Deck, Deck 11, Forward">							
+										</datalist>	
+									</div>
+								</div>
+								<div class="row mb-3 justify-content-end">
+									<div class="col col-auto">
+										<button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="\#locationModal">Note on Locations</button>
+									</div>
+								</div>
+								<div class="row mb-3">
+									<div class="col">
+										Type of event:
+										<select class="form-select" aria-label="Event type" name="eventtype">
+											<option value="activity" #if(fezType == "activity"): selected#endif>Activity</option>
+											<option value="dining" #if(fezType == "dining"): selected#endif>Dining</option>
+											<option value="gaming"#if(fezType == "gaming"): selected#endif>Gaming</option>
+											<option value="meetup"#if(fezType == "meetup"): selected#endif>Meetup</option>
+											<option value="music"#if(fezType == "music"): selected#endif>Music</option>
+											<option value="ashore"#if(fezType == "shore"): selected#endif>Ashore</option>
+											<option value="other"#if(fezType == "other"): selected#endif>Other</option>
+										</select>
+									</div>
+								</div>
+								<div class="row mb-2">
+									<div class="col">
+										Start Time: <input type="datetime-local" name="starttime" id="datetime" #if(startTime):value="#localTime(startTime)"#endif>
+									</div>
+								</div>
+								<div class="row mb-2">
+									<label for="duration" class="col-form-label col-auto d-flex">Duration:</label>
+									<select class="duration-select" aria-label="Duration" id="duration" name="duration">
+										<option value="30"#if(minutes < 45): selected#endif>30 Mins</option>
+										<option value="60"#if(minutes >= 45 && minutes < 75): selected#endif>1 Hr</option>
+										<option value="90"#if(minutes >= 75 && minutes < 105): selected#endif>1:30</option>
+										<option value="120"#if(minutes >= 105 && minutes < 150): selected#endif>2 Hrs</option>
+										<option value="180"#if(minutes >= 150 && minutes < 210): selected#endif>3 Hrs</option>
+										<option value="240"#if(minutes >= 210): selected#endif>4 Hrs</option>
+									</select>
+								</div>
+								<div class="row mb-2">
+									<div class="col">
+										Needs at least <input type="number" name="minimum" min="0" step="1" value="#(minPeople)"> 
+										and at most <input type="number" name="maximum" min="0" step="1" value="#(maxPeople)"> attendees (use 0 for unlimited)
+									</div>
+								</div>
+								<div class="row">
+									<div class="col">
+										<textarea class="form-control" 
+												maxlength="2000" 
+												data-lengthlabel="fezTextLimitsLabel" 
+												rows="4" 
+												placeholder="Event Info" 
+												name="postText">#(info)</textarea>
+									</div>
+								</div>
+								<div class="row justify-content-end mb-2">
+									<div class="col col-auto">
+										<div class="input-group-text input-group-sm py-0" id="fezTextLimitsLabel"></div>
+									</div>
+								</div>
+								<div class="alert alert-danger mt-3 d-none" role="alert">
+								</div>				
+								<div class="row mb-2">
+									<div class="col">
+										<small>Please remember to abide by the <a href="/codeOfConduct">Code of Conduct</a></small>
+									</div>
+									<div class="col col-auto">
+										<button type="submit" class="btn btn-primary">#(submitButtonTitle)</button>
+									</div>
+								</div>
+							</form>
+						</li>
+					</ul>
+    			</div>
 			</div>
 		</div>
-	</div>
-</div>
-#endexport
+		<div class="modal fade" id="locationModal" tabindex="-1" aria-labelledby="locationModalTitle" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="locationModalTitle">About LFG Locations</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<ol>
+							<li>LFGs are not a reservation system. You can't claim a room or even a table by scheduling an LFG there.</li>
+							<li>Don't set up an LFG in a room used for Official or Shadow Events.</li>
+							<li>Don't try to get around Item 2 by scheduling your LFG in an Event room at a time when the Official Schedule 
+								doesn't list anything happening there. Event rooms are often used for official things even when not running a listed event.</li>
+							<li>Sometimes places fill up; have backup plans. If you schedule a "Drink Like a Pirate" LFG at a bar
+								onboard, and that bar's full at the appointed time, you can message the LFG members to relocate.</li>
+						</ol>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-primary" data-bs-dismiss="modal">Alrrright</button>
+					</div>
+				</div>
+			</div>
+		</div>
+    #endexport
 #endextend

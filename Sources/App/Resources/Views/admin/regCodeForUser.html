@@ -1,46 +1,46 @@
 #extend("trunk"):
-#export("body"):
-<div class="container-md ms-0 my-1">
-	<div class="row">
-		<div class="col">
-			<nav aria-label="breadcrumb">
-				<ol class="breadcrumb">
-					<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
-					<li class="breadcrumb-item"><a href="/admin/regcodes">Registration Codes</a></li>
-					<li class="breadcrumb-item active" aria-current="page">Code For User</li>
-				</ol>
-			</nav>
+    #export("body"):
+    	<div class="container-md ms-0 my-1">
+			<div class="row">
+    			<div class="col">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+							<li class="breadcrumb-item"><a href="/admin/regcodes">Registration Codes</a></li>
+							<li class="breadcrumb-item active" aria-current="page">Code For User</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+			<div class="row my-2">
+				<div class="col">
+					<b>Registered using code:</b> #(regCode)
+				</div>
+			</div>
+			<div class="row my-2">
+				<div class="col">
+					<b>Primary User</b>
+				</div>
+			</div>
+			<div class="row mb-2 mx-0">
+				<div class="col col-auto border">
+					#avatar(primaryUser)
+					#userByline(primaryUser)
+				</div>				
+			</div>
+			<div class="row my-2">
+				<div class="col">
+					<b>Alternate Users</b>
+				</div>
+			</div>
+			#for(altUser in altUsers):
+				<div class="row mb-2 mx-0">
+					<div class="col col-auto border">
+						#avatar(altUser)
+						#userByline(altUser)
+					</div>				
+				</div>
+			#endfor
 		</div>
-	</div>
-	<div class="row my-2">
-		<div class="col">
-			<b>Registered using code:</b> #(regCode)
-		</div>
-	</div>
-	<div class="row my-2">
-		<div class="col">
-			<b>Primary User</b>
-		</div>
-	</div>
-	<div class="row mb-2 mx-0">
-		<div class="col col-auto border">
-			#avatar(primaryUser)
-			#userByline(primaryUser)
-		</div>
-	</div>
-	<div class="row my-2">
-		<div class="col">
-			<b>Alternate Users</b>
-		</div>
-	</div>
-	#for(altUser in altUsers):
-	<div class="row mb-2 mx-0">
-		<div class="col col-auto border">
-			#avatar(altUser)
-			#userByline(altUser)
-		</div>
-	</div>
-	#endfor
-</div>
-#endexport
+    #endexport
 #endextend

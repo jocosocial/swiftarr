@@ -1,89 +1,88 @@
 #extend("trunk"):
-#export("body"):
-<div class="container-fluid">
-	#if(operationSuccess):
-	<div class="alert alert-primary mt-3" role="alert">
-		<div class="d-flex align-items-center">
-			<b>#(operationName) Successful. Redirecting...</b>
-			<div class="spinner-border ms-2" role="status">
-				<span class="visually-hidden">Loading...</span>
-			</div>
-		</div>
-	</div>
-	#elseif(trunk.userIsLoggedIn):
-	<div class="container-fluid mt-3">
-		<div class="row">
-			<h6>Click the button below to log out. You are currently logged in as user "#(trunk.username)".</h6>
-		</div>
-		<form action="/logout" method="POST">
-			#if(count(sessions) > 1):
-			<div class="row">
-				<div class="col">
-					You're currently logged in on #count(sessions) devices:
+    #export("body"):
+	  <div class="container-fluid">
+		#if(operationSuccess):
+			<div class="alert alert-primary mt-3" role="alert">
+				<div class="d-flex align-items-center">
+					<b>#(operationName) Successful. Redirecting...</b>
+					<div class="spinner-border ms-2" role="status">
+						<span class="visually-hidden">Loading...</span>
+					</div>
 				</div>
 			</div>
-			<ul class="list-group">
-				#for(session in sessions):
-				<li class="list-group-item">#(session)</li>
-				#endfor
-			</ul>
-			<div class="row mt-2">
-				<div class="col">
-					<input type="checkbox" class="form-check-input" value="true" id="allaccounts" name="allaccounts">
-					<label class="form-check-label" for="allaccounts">Logout all of these devices</label>
+		#elseif(trunk.userIsLoggedIn):
+			<div class="container-fluid mt-3">
+				<div class="row">
+					<h6>Click the button below to log out. You are currently logged in as user "#(trunk.username)".</h6>
 				</div>
+				<form action="/logout" method="POST">
+					#if(count(sessions) > 1):
+						<div class="row">
+							<div class="col">
+								You're currently logged in on #count(sessions) devices:
+							</div>
+						</div>
+						<ul class="list-group">
+							#for(session in sessions):
+								<li class="list-group-item">#(session)</li>
+							#endfor
+						</ul>
+						<div class="row mt-2">
+							<div class="col">
+								<input type="checkbox" class="form-check-input" value="true" id="allaccounts" name="allaccounts">
+								<label class="form-check-label" for="allaccounts">Logout all of these devices</label>
+							</div>
+						</div>
+					#endif
+					<div class="row mt-2">
+						<div class="col">
+							<button class="btn btn-primary" type="submit">Logout</button>
+						</div>
+					</div>
+				</form>
+			</div>
+		#else:			
+			<div class="container-fluid mt-3">
+				<div class="row">
+					<div class="col">
+						<h5>Welcome to Twit-arr! Please log in.</h5>
+					</div>
+				</div>
+				<form action="/login" method="POST">
+					<div class="row mb-2">
+						<div class="col">
+							<label for="username" class="form-label">Username</label>
+							<input type="text" class="form-control swiftarr-textfield" id="username" name="username" value="#(prevUsername)" 
+									spellcheck="off" autocapitalize="none" autocomplete="username">
+						</div>
+					</div>
+					<div class="row mb-2">
+						<div class="col">
+							<label for="password" class="form-label">Password</label>
+							<input type="password" class="form-control swiftarr-textfield" id="password" name="password" autocomplete="current-password">
+						</div>
+					</div>
+					<button type="submit" class="btn btn-primary">Login</button>
+				</form>
+			</div>
+			
+			#if(error):
+			<div class="alert alert-danger mt-3" role="alert">
+				<b>Error:</b> #(error.reason)
 			</div>
 			#endif
-			<div class="row mt-2">
-				<div class="col">
-					<button class="btn btn-primary" type="submit">Logout</button>
+			<div class="container-fluid mt-3">
+				<div class="row nav-item">
+					<a class="nav-link" href="/createAccount">I want to create an account</a>
+				</div>
+				<div class="row nav-item">
+					<a class="nav-link" href="/resetPassword">I forgot my password!</a>
+				</div>
+				<div class="row nav-item">
+					<a class="nav-link" href="/codeOfConduct">I want to read the Code of Conduct and Twit-arr Rules!</a>
 				</div>
 			</div>
-		</form>
-	</div>
-	#else:
-	<div class="container-fluid mt-3">
-		<div class="row">
-			<div class="col">
-				<h5>Welcome to Twit-arr! Please log in.</h5>
-			</div>
-		</div>
-		<form action="/login" method="POST">
-			<div class="row mb-2">
-				<div class="col">
-					<label for="username" class="form-label">Username</label>
-					<input type="text" class="form-control swiftarr-textfield" id="username" name="username"
-						value="#(prevUsername)" spellcheck="off" autocapitalize="none" autocomplete="username">
-				</div>
-			</div>
-			<div class="row mb-2">
-				<div class="col">
-					<label for="password" class="form-label">Password</label>
-					<input type="password" class="form-control swiftarr-textfield" id="password" name="password"
-						autocomplete="current-password">
-				</div>
-			</div>
-			<button type="submit" class="btn btn-primary">Login</button>
-		</form>
-	</div>
-
-	#if(error):
-	<div class="alert alert-danger mt-3" role="alert">
-		<b>Error:</b> #(error.reason)
-	</div>
-	#endif
-	<div class="container-fluid mt-3">
-		<div class="row nav-item">
-			<a class="nav-link" href="/createAccount">I want to create an account</a>
-		</div>
-		<div class="row nav-item">
-			<a class="nav-link" href="/resetPassword">I forgot my password!</a>
-		</div>
-		<div class="row nav-item">
-			<a class="nav-link" href="/codeOfConduct">I want to read the Code of Conduct and Twit-arr Rules!</a>
-		</div>
-	</div>
-	#endif
-</div>
-#endexport
+		#endif
+	  </div>
+    #endexport
 #endextend

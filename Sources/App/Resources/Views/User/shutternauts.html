@@ -1,94 +1,93 @@
 #extend("trunk"):
-#export("body"):
-<div class="container-md ms-0 my-1">
-	<div class="row">
-		<div class="col">
-			<nav aria-label="breadcrumb">
-				<ol class="breadcrumb">
-					<li class="breadcrumb-item"><a href="/forums">Forums</a></li>
-					<li class="breadcrumb-item active" aria-current="page">User Roles</li>
-				</ol>
-			</nav>
-		</div>
-	</div>
-	<div class="row my-2">
-		<div class="col">
-			<b>Search for Users to Promote To Shutternaut</b>
-		</div>
-	</div>
-	<div class="row my-2">
-		<form class="d-flex my-1">
-			<input class="form-control" type="search" name="search" placeholder="Search Users" value="#(userSearch)"
-				aria-label="Search" autocapitalize="off" required>
-			<button class="btn btn-primary ms-2" type="submit">Search</button>
-		</form>
-	</div>
-	#if(searchResults):
-	<div class="row my-2">
-		<div class="col">
-			<b>Search Results:</b>
-		</div>
-	</div>
-	<ul class="list-group">
-		#for(user in searchResults):
-		<li class="list-group-item list-group-item-action" data-postid="#(ann.id)">
-			<div class="row justify-content-between align-items-center">
-				<div class="col">
-					#avatar(user) #userByline(user)
-				</div>
-				<div class="col col-auto">
-					<button type="button" class="btn btn-sm btn-primary" autocomplete="off" data-action="reload"
-						data-actionpath="/userrole/shutternaut/add/#(user.userID)"
-						data-errordiv="#(user.userID)_errorDisplay">
-						Promote
-						<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-						<span class="visually-hidden">Loading...</span>
-					</button>
-				</div>
-			</div>
-			<div class="text-end text-danger d-none" id="#(user.userID)_errorDisplay">
-				Could not promote to Shutternaut: <span class="errortext"></span>
-			</div>
-		</li>
-		#endfor
-	</ul>
-	#endif
-	<div class="row my-2">
-		<div class="col">
-			<b>Current Shutternauts:</b>
-		</div>
-	</div>
-	<ul class="list-group">
-		#if(count(currentMgrs) == 0):
-		<li class="list-group-item bg-transparent text-center">
-			No users have been promoted to Shutternaut yet.
-		</li>
-		#else:
-		#for(mgr in currentMgrs):
-		<li class="list-group-item list-group-item-action" data-postid="#(ann.id)">
-			<div class="row justify-content-between align-items-center">
-				<div class="col">
-					#avatar(mgr) #userByline(mgr)
-				</div>
-				<div class="col col-auto">
-					<button type="button" class="btn btn-sm btn-primary" autocomplete="off" data-action="reload"
-						data-actionpath="/userrole/shutternaut/remove/#(mgr.userID)"
-						data-errordiv="#(mgr.userID)_mgrErrorDisplay">
-						Demote
-						<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-						<span class="visually-hidden">Loading...</span>
-					</button>
-				</div>
-			</div>
+    #export("body"):
+    	<div class="container-md ms-0 my-1">
 			<div class="row">
-				<div class="col text-end text-danger d-none" id="#(mgr.userID)_mgrErrorDisplay">
-					Could not remove user role: <span class="errortext"></span>
+    			<div class="col">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/forums">Forums</a></li>
+							<li class="breadcrumb-item active" aria-current="page">User Roles</li>
+						</ol>
+					</nav>
 				</div>
 			</div>
-		</li>
-		#endfor
-		#endif
-	</ul>
-</div>
-#endexport
+			<div class="row my-2">
+				<div class="col">
+					<b>Search for Users to Promote To Shutternaut</b>
+				</div>
+			</div>
+			<div class="row my-2">
+				<form class="d-flex my-1">
+					<input class="form-control" type="search" name="search" placeholder="Search Users" value="#(userSearch)" aria-label="Search" autocapitalize="off" required>
+					<button class="btn btn-primary ms-2" type="submit">Search</button>
+				</form>
+			</div>
+			#if(searchResults):
+				<div class="row my-2">
+					<div class="col">
+						<b>Search Results:</b>
+					</div>
+				</div>
+				<ul class="list-group">
+					#for(user in searchResults):
+						<li class="list-group-item list-group-item-action" data-postid="#(ann.id)">		
+							<div class="row justify-content-between align-items-center">
+								<div class="col">
+									#avatar(user) #userByline(user)
+								</div>
+								<div class="col col-auto">
+									<button type="button" class="btn btn-sm btn-primary" autocomplete="off" data-action="reload" 
+											data-actionpath="/userrole/shutternaut/add/#(user.userID)"
+											data-errordiv="#(user.userID)_errorDisplay">
+										Promote
+										<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+										<span class="visually-hidden">Loading...</span>
+									</button>
+								</div>
+							</div>
+							<div class="text-end text-danger d-none" id="#(user.userID)_errorDisplay">
+								Could not promote to Shutternaut: <span class="errortext"></span>
+							</div>
+						</li>
+					#endfor
+				</ul>
+			#endif
+			<div class="row my-2">
+				<div class="col">
+					<b>Current Shutternauts:</b>
+				</div>
+			</div>
+			<ul class="list-group">
+				#if(count(currentMgrs) == 0):
+					<li class="list-group-item bg-transparent text-center">
+						No users have been promoted to Shutternaut yet.
+					</li>
+				#else:
+					#for(mgr in currentMgrs):
+						<li class="list-group-item list-group-item-action" data-postid="#(ann.id)">		
+							<div class="row justify-content-between align-items-center">
+								<div class="col">
+									#avatar(mgr) #userByline(mgr)
+								</div>
+								<div class="col col-auto">
+									<button type="button" class="btn btn-sm btn-primary" autocomplete="off" data-action="reload" 
+											data-actionpath="/userrole/shutternaut/remove/#(mgr.userID)"
+											data-errordiv="#(mgr.userID)_mgrErrorDisplay">
+										Demote
+										<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+										<span class="visually-hidden">Loading...</span>
+									</button>
+								</div>
+							</div>
+							<div class="row">
+								<div class="col text-end text-danger d-none" id="#(mgr.userID)_mgrErrorDisplay">
+									Could not remove user role: <span class="errortext"></span>
+								</div>
+							</div>
+						</li>
+					#endfor
+				#endif
+			</ul>
+		</div>
+    #endexport
 #endextend

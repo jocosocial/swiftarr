@@ -1,123 +1,110 @@
 #extend("trunk"):
-#export("body"):
-<div class="container-md ms-0">
-	<div class="row align-items-center my-1">
-		<div class="col col-12">
-			<nav aria-label="breadcrumb">
-				<ol class="breadcrumb mb-0">
-					<li class="breadcrumb-item" aria-current="page"><a href="/forums">Forums</a></li>
-					<li class="breadcrumb-item active" aria-current="page">#(forums.title)</li>
-				</ol>
-			</nav>
-		</div>
-	</div>
-	<div class="row align-items-center justify-content-between mb-2">
-		<div class="col text-end">
-			<div class="btn-group btn-group-sm">
-				<div class="col col-auto ps-2">
-					<button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal"
-						data-bs-target="\#helpModal">?</a>
+    #export("body"):
+    	<div class="container-md ms-0">
+    		<div class="row align-items-center my-1">
+    			<div class="col col-12">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb mb-0">
+							<li class="breadcrumb-item" aria-current="page"><a href="/forums">Forums</a></li>
+							<li class="breadcrumb-item active" aria-current="page">#(forums.title)</li>
+						</ol>
+					</nav>
 				</div>
+			</div>
+			<div class="row align-items-center justify-content-between mb-2">
+				<div class="col text-end">
+					<div class="btn-group btn-group-sm">
+						<div class="col col-auto ps-2">
+							<button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="\#helpModal">?</a>
+						</div>
 
-				<div class="col col-auto ps-2">
-					<div class="dropdown">
-						<button class="btn btn-outline-primary dropdown-toggle btn-sm" type="button" id="forumSortMenu"
-							data-bs-toggle="dropdown" data-selected="all" aria-expanded="false">
-							Sort
-						</button>
-						<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="forumSortMenu">
-							#for(sortOrder in sortOrders):
-							<li><a class="dropdown-item #if(sortOrder.active):active#endif"
-									href="#(sortOrder.url)">#(sortOrder.name)</a></li>
-							#endfor
-							<li>
-								<hr class="dropdown-divider">
-							</li>
-							<li>
-								<h6 class="dropdown-header">Only show:</h6>
-							</li>
-							<li><a class="dropdown-item" href="/forum/favorites?cat=#(forums.categoryID)">Favorites</a>
-							</li>
-							<li><a class="dropdown-item" href="/forum/owned">Forums You Created</a></li>
-							<li><a class="dropdown-item" href="/forum/mutes?cat=#(forums.categoryID)">Muted</a></li>
-						</ul>
+						<div class="col col-auto ps-2">
+							<div class="dropdown">
+								<button class="btn btn-outline-primary dropdown-toggle btn-sm" type="button" id="forumSortMenu" data-bs-toggle="dropdown" data-selected="all" aria-expanded="false">
+									Sort
+								</button>
+								<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="forumSortMenu">
+									#for(sortOrder in sortOrders):
+										<li><a class="dropdown-item #if(sortOrder.active):active#endif" href="#(sortOrder.url)">#(sortOrder.name)</a></li>
+									#endfor
+									<li><hr class="dropdown-divider"></li>
+									<li><h6 class="dropdown-header">Only show:</h6></li>
+									<li><a class="dropdown-item" href="/forum/favorites?cat=#(forums.categoryID)">Favorites</a></li>
+									<li><a class="dropdown-item" href="/forum/owned">Forums You Created</a></li>
+									<li><a class="dropdown-item" href="/forum/mutes?cat=#(forums.categoryID)">Muted</a></li>
+								</ul>
+							</div>
+						</div>
+
+						#if(!forums.isRestricted):
+							<div class="col col-auto ps-2">
+								<a class="btn btn-primary btn-sm" href="/forums/#(forums.categoryID)/createForum">New Thread</a>
+							</div>
+						#endif
 					</div>
 				</div>
-
-				#if(!forums.isRestricted):
-				<div class="col col-auto ps-2">
-					<a class="btn btn-primary btn-sm" href="/forums/#(forums.categoryID)/createForum">New Thread</a>
-				</div>
+			</div>
+			<div class="list-group">
+				#if(count(forums.forumThreads) > 0):
+					#for(forum in forums.forumThreads):
+						<a href="/forum/#(forum.forumID)" class="list-group-item list-group-item-action">		
+							<div class="row">
+								<div class="col #if(forum.isMuted):text-muted#endif">
+									#if(forum.isMuted):🔇#elseif(forum.isFavorite):⭐#endif #(forum.title)
+								</div>
+								<div class="col col-auto">
+									#if(forum.lastPostAt != nil):
+										<span title="#localTime(forum.lastPostAt)" class="text-muted d-none #if(!forum.isMuted):d-sm-flex#endif">by&nbsp;#userByline(forum.creator, "nolink"), #relativeTime(forum.lastPostAt)</span>
+										<span title="#localTime(forum.lastPostAt)" class="text-muted #if(forum.isMuted):d-none#else:d-sm-none#endif">#relativeTime(forum.lastPostAt)</span>
+									#endif
+								</div>
+							</div>
+							#if(forum.eventTime != nil):
+								<div class="row">
+									<div class="col">
+										<span class="text-primary">#staticTime(forum.eventTime)</span>
+									</div>
+								</div>
+							#endif
+							<div class="row">
+								<div class="col #if(forum.isMuted):text-muted#endif">
+									#(forum.postCount) post#if(forum.postCount != 1):s#endif#if(forum.readCount < forum.postCount && !forum.isMuted):, <span class="text-danger #if(forum.isMuted):d-none#endif">#(forum.postCount - forum.readCount) new</span>#endif
+								</div>
+								<div class="col col-auto">
+									#if(forum.lastPoster != nil):
+										<span class="text-muted #if(forum.isMuted):d-none#endif">Last post: @#(forum.lastPoster.username)</span>
+									#else:
+										<span class="text-muted #if(forum.isMuted):d-none#endif">No Posts</span>
+									#endif
+								</div>
+							</div>
+						</a>
+					#endfor
+				#else:
+					<div class="list-group-item"> 
+						There aren't any forums in this category yet.
+					</div>
 				#endif
 			</div>
 		</div>
-	</div>
-	<div class="list-group">
-		#if(count(forums.forumThreads) > 0):
-		#for(forum in forums.forumThreads):
-		<a href="/forum/#(forum.forumID)" class="list-group-item list-group-item-action">
-			<div class="row">
-				<div class="col #if(forum.isMuted):text-muted#endif">
-					#if(forum.isMuted):🔇#elseif(forum.isFavorite):⭐#endif #(forum.title)
+		<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalTitle" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="helpModalTitle">Help</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<p>Muted forums appear at the end of this list.</p>
+						<p>Favorited forums appear in the sort order, which by default is Most Recent Post first.</p>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+					</div>
 				</div>
-				<div class="col col-auto">
-					#if(forum.lastPostAt != nil):
-					<span title="#localTime(forum.lastPostAt)"
-						class="text-muted d-none #if(!forum.isMuted):d-sm-flex#endif">by&nbsp;#userByline(forum.creator,
-						"nolink"), #relativeTime(forum.lastPostAt)</span>
-					<span title="#localTime(forum.lastPostAt)"
-						class="text-muted #if(forum.isMuted):d-none#else:d-sm-none#endif">#relativeTime(forum.lastPostAt)</span>
-					#endif
-				</div>
-			</div>
-			#if(forum.eventTime != nil):
-			<div class="row">
-				<div class="col">
-					<span class="text-primary">#staticTime(forum.eventTime)</span>
-				</div>
-			</div>
-			#endif
-			<div class="row">
-				<div class="col #if(forum.isMuted):text-muted#endif">
-					#(forum.postCount) post#if(forum.postCount != 1):s#endif#if(forum.readCount < forum.postCount &&
-						!forum.isMuted):, <span class="text-danger #if(forum.isMuted):d-none#endif">#(forum.postCount -
-						forum.readCount) new</span>#endif
-				</div>
-				<div class="col col-auto">
-					#if(forum.lastPoster != nil):
-					<span class="text-muted #if(forum.isMuted):d-none#endif">Last post:
-						@#(forum.lastPoster.username)</span>
-					#else:
-					<span class="text-muted #if(forum.isMuted):d-none#endif">No Posts</span>
-					#endif
-				</div>
-			</div>
-		</a>
-		#endfor
-		#else:
-		<div class="list-group-item">
-			There aren't any forums in this category yet.
-		</div>
-		#endif
-	</div>
-</div>
-<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalTitle" aria-hidden="true">
-	<div class="modal-dialog">
-		<div class="modal-content">
-			<div class="modal-header">
-				<h5 class="modal-title" id="helpModalTitle">Help</h5>
-				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-			</div>
-			<div class="modal-body">
-				<p>Muted forums appear at the end of this list.</p>
-				<p>Favorited forums appear in the sort order, which by default is Most Recent Post first.</p>
-			</div>
-			<div class="modal-footer">
-				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
 			</div>
 		</div>
-	</div>
-</div>
-#extend("paginator")
-#endexport
+		#extend("paginator")
+    #endexport
 #endextend
+

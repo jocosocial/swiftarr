@@ -1,77 +1,62 @@
 <!doctype html>
 <html lang="en">
-
 <head>
 	<meta charset="utf-8">
-	<meta http-equiv="Content-Security-Policy"
-		content="default-src 'none'; script-src 'self' 'unsafe-inline'; connect-src *; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'">
+	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; connect-src *; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link href="/css/bootstrap.css" rel="stylesheet">
 	<link href="/css/swiftarr.css" rel="stylesheet">
 	<link rel="icon" type="image/vnd.microsoft.icon" href="/img/favicon.ico">
 	#if(trunk.metaRedirectURL):
-	<meta http-equiv="refresh" content="2;URL='#(trunk.metaRedirectURL)'" />
+		<meta http-equiv="refresh" content="2;URL='#(trunk.metaRedirectURL)'" /> 
 	#endif
 
 	<title>#(trunk.title)</title>
 </head>
-
 <body style="background-image: url('/img/background.png'); background-size: 100%;">
 
-	<nav class="navbar navbar-dark bg-light pt-3 mb-2 sticky-top"
-		style="background-image: url('/img/header-waves.png'); background-repeat: repeat-x;">
+	<nav class="navbar navbar-dark bg-light pt-3 mb-2 sticky-top" style="background-image: url('/img/header-waves.png'); background-repeat: repeat-x;">
 		<div class="container-fluid px-0">
 			<div class="row justify-content-between w-100 ms-3 me-2">
-				<div class="col-auto px-0 mt-1 me-1">
-					<span
-						class="link-light navbar-brand me-0 #if(trunk.alertCounts.newAnnouncementCount > 0):border-bottom border-danger#endif"
-						data-bs-toggle="collapse" data-bs-target="\#navbarSupportedContent"
-						aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+				<div class="col-auto px-0 mt-1 me-1">	  
+					<span class="link-light navbar-brand me-0 #if(trunk.alertCounts.newAnnouncementCount > 0):border-bottom border-danger#endif" data-bs-toggle="collapse" data-bs-target="\#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
 						#if(trunk.inTwitarrSubmenu):
-						<img src="/img/menuIconBold.png" width=24 height=24 alt="Twit-arr">
+							<img src="/img/menuIconBold.png" width=24 height=24 alt="Twit-arr">
 						#else:
-						<img src="/img/menuIcon.png" width=24 height=24 alt="Twit-arr">
+							<img src="/img/menuIcon.png" width=24 height=24 alt="Twit-arr">
 						#endif
 					</span>
 				</div>
-				<div class="col-auto px-0">
-					<a class="nav-item nav-link link-light px-1 #if(trunk.tab == " twarrts"):active#endif"
-						#if(trunk.tab=="twarrts" ):aria-current="page" #endif href="/tweets">
-						<span
-							class="#if(trunk.alertCounts.newTwarrtMentionCount > 0 || trunk.newTweetAlertwords):border-bottom border-danger#endif">
-							Tweets
+				<div class="col-auto px-0">	  
+					<a class="nav-item nav-link link-light px-1 #if(trunk.tab == "twarrts"):active#endif" #if(trunk.tab == "twarrts"):aria-current="page"#endif href="/tweets">
+						<span class="#if(trunk.alertCounts.newTwarrtMentionCount > 0 || trunk.newTweetAlertwords):border-bottom border-danger#endif">
+							Tweets			
 						</span>
 					</a>
 				</div>
-				<div class="col-auto px-0">
-					<a class="nav-item nav-link link-light px-1#if(trunk.tab == " forums"): active#endif"
-						#if(trunk.tab=="forums" ):aria-current="page" #endif href="/forums">
-						<span
-							class="#if(trunk.alertCounts.newForumMentionCount > 0 || trunk.newForumAlertwords):border-bottom border-danger#endif">
+				<div class="col-auto px-0">	  
+					<a class="nav-item nav-link link-light px-1#if(trunk.tab == "forums"): active#endif" #if(trunk.tab == "forums"):aria-current="page"#endif href="/forums">
+						<span class="#if(trunk.alertCounts.newForumMentionCount > 0 || trunk.newForumAlertwords):border-bottom border-danger#endif">
 							Forums
 						</span>
 					</a>
 				</div>
-				<div class="col-auto px-0">
-					<a class="nav-item nav-link link-light px-1#if(trunk.tab == " seamail"): active#endif"
-						#if(trunk.tab=="seamail" ):aria-current="page" #endif href="/seamail">
-						<span #if(trunk.alertCounts.newSeamailMessageCount> 0):class="border-bottom
-							border-danger"#endif>
+				<div class="col-auto px-0">	  
+					<a class="nav-item nav-link link-light px-1#if(trunk.tab == "seamail"): active#endif" #if(trunk.tab == "seamail"):aria-current="page"#endif href="/seamail">
+						<span #if(trunk.alertCounts.newSeamailMessageCount > 0):class="border-bottom border-danger"#endif>
 							Chat
 						</span>
 					</a>
 				</div>
-				<div class="col-auto px-0">
-					<a class="nav-item nav-link link-light px-1 #if(trunk.tab == " events"): active#endif"
-						#if(trunk.tab=="events" ):aria-current="page" #endif href="/events">
-						<span #if(trunk.eventStartingSoon==true):class="border-bottom border-danger" #endif>
+				<div class="col-auto px-0">	  
+					<a class="nav-item nav-link link-light px-1 #if(trunk.tab == "events"): active#endif" #if(trunk.tab == "events"):aria-current="page"#endif href="/events">
+						<span #if(trunk.eventStartingSoon == true):class="border-bottom border-danger"#endif>
 							Schedule
 						</span>
 					</a>
 				</div>
-				<div class="col-auto px-0">
-					<a class="nav-item nav-link link-light px-1 #if(trunk.tab == " lfg"): active#endif"
-						#if(trunk.tab=="lfg" ):aria-current="page" #endif href="/fez">
+				<div class="col-auto px-0">	  
+					<a class="nav-item nav-link link-light px-1 #if(trunk.tab == "lfg"): active#endif" #if(trunk.tab == "lfg"):aria-current="page"#endif href="/fez">
 						<span class="#if(trunk.alertCounts.newFezMessageCount > 0):border-bottom border-danger#endif">
 							LFG
 						</span>
@@ -79,157 +64,135 @@
 				</div>
 				<div class="col px-0"></div>
 				#if(trunk.searchPrompt):
-				<div class="col-auto px-0 mt-1">
-					<span class="link-light navbar-brand me-0" data-bs-toggle="collapse" data-bs-target="\#searchBar"
-						aria-controls="searchBar" aria-expanded="false" aria-label="Toggle Search Bar">
-						<img src="/img/searchIcon.png" width=24 height=24 alt="Search Bar">
-					</span>
-				</div>
+					<div class="col-auto px-0 mt-1">	  
+						<span class="link-light navbar-brand me-0" data-bs-toggle="collapse" data-bs-target="\#searchBar" aria-controls="searchBar" aria-expanded="false" aria-label="Toggle Search Bar">
+							<img src="/img/searchIcon.png" width=24 height=24 alt="Search Bar">
+						</span>
+					</div>
 				#endif
 			</div>
 			<div class="collapse navbar-collapse px-3" id="navbarSupportedContent">
 				<ul class="navbar-nav navbar-dark bg-transparent mb-3">
 					<li class="nav-item d-flex align-items-center">
-						<a class="nav-link #if(trunk.tab == " home"): active#endif" href="/">
-							<span
-								class="#if(trunk.alertCounts.newAnnouncementCount > 0):border-bottom border-danger#endif">Home</span>
-						</a>
+						<a class="nav-link #if(trunk.tab == "home"): active#endif" href="/">
+							<span class="#if(trunk.alertCounts.newAnnouncementCount > 0):border-bottom border-danger#endif">Home</span>
+						</a> 
 						#if(trunk.alertCounts.newAnnouncementCount > 1):
-						<span class="text-muted"><i>#(trunk.alertCounts.newAnnouncementCount) New
-								Announcements</i></span>
+							<span class="text-muted"><i>#(trunk.alertCounts.newAnnouncementCount) New Announcements</i></span>
 						#elseif(trunk.alertCounts.newAnnouncementCount == 1):
-						<span class="text-muted"><i>1 New Announcement</i></span>
+							<span class="text-muted"><i>1 New Announcement</i></span>
 						#elseif(count(trunk.alertCounts.activeAnnouncementIDs) > 1):
-						<span class="text-muted"><i>#(count(trunk.alertCounts.activeAnnouncementIDs))
-								Announcements</i></span>
+							<span class="text-muted"><i>#(count(trunk.alertCounts.activeAnnouncementIDs)) Announcements</i></span>
 						#elseif(count(trunk.alertCounts.activeAnnouncementIDs) == 1):
-						<span class="text-muted"><i>1 Announcement</i></span>
+							<span class="text-muted"><i>1 Announcement</i></span>
 						#endif
 					</li>
 					<li class="nav-item">
-						<a class="nav-link #if(trunk.tab == " lfg"): active#endif" href="/fez">
-							<span
-								class="#if(trunk.alertCounts.newFezMessageCount > 0):border-bottom border-danger#endif">Looking
-								For Group</span>
+						<a class="nav-link #if(trunk.tab == "lfg"): active#endif" href="/fez">
+							<span class="#if(trunk.alertCounts.newFezMessageCount > 0):border-bottom border-danger#endif">Looking For Group</span>
 						</a>
 						#if(trunk.alertCounts.newFezMessageCount > 0):
-						<span class="text-muted"><i>#(trunk.alertCounts.newFezMessageCount)
-								Msg#if(trunk.alertCounts.newFezMessageCount > 1):s#endif</i></span>
+							<span class="text-muted"><i>#(trunk.alertCounts.newFezMessageCount) Msg#if(trunk.alertCounts.newFezMessageCount > 1):s#endif</i></span>
 						#endif
 					</li>
 					<li class="nav-item">
-						<a class="nav-link #if(trunk.tab == " games"): active#endif" href="/boardgames">Games</a>
+						<a class="nav-link #if(trunk.tab == "games"): active#endif" href="/boardgames">Games</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link #if(trunk.tab == " karaoke"): active#endif" href="/karaoke">Karaoke</a>
+						<a class="nav-link #if(trunk.tab == "karaoke"): active#endif" href="/karaoke">Karaoke</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link #if(trunk.tab == " time"): active#endif" href="/time">Time Zone Check</a>
+						<a class="nav-link #if(trunk.tab == "time"): active#endif" href="/time">Time Zone Check</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link #if(trunk.tab == " map"): active#endif" href="/map">Ship Map</a>
+						<a class="nav-link #if(trunk.tab == "map"): active#endif" href="/map">Ship Map</a>
 					</li>
 					#if(trunk.userIsShutternautManager):
-					<li>
-						<hr class="main-menu-divider">
-					</li>
-					<li class="nav-item d-flex align-items-center">
-						<a class="nav-link #if(trunk.tab == " moderator"): active#endif"
-							href="/userrole/shutternaut/manage">
-							Manage Shutternauts
-						</a>
-					</li>
+						<li>
+							<hr class="main-menu-divider">
+						</li>
+						<li class="nav-item d-flex align-items-center">
+							<a class="nav-link #if(trunk.tab == "moderator"): active#endif" href="/userrole/shutternaut/manage">
+								Manage Shutternauts
+							</a>
+						</li>
 					#endif
 					#if(trunk.userIsMod):
-					<li>
-						<hr class="main-menu-divider">
-					</li>
-					<li class="nav-item d-flex align-items-center">
-						<a class="nav-link #if(trunk.tab == " moderator"): active#endif" href="/moderator">
-							<span
-								class="#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 0 || trunk.alertCounts.moderatorData.openReportCount):border-bottom border-danger#endif">Moderator
-								Pages</span>
-						</a>
-						#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 1):
-						<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount)
-								Msgs</i></span>
-						#elseif(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount == 1):
-						<span class="text-muted"><i>1 Msg</i></span>
-						#endif
-						#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 0 &&
-						trunk.alertCounts.moderatorData.openReportCount > 0):
-						<span class="text-muted"><i>,&nbsp;</i></span>
-						#endif
-						#if(trunk.alertCounts.moderatorData.openReportCount > 1):
-						<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.openReportCount)
-								Reports</i></span>
-						#elseif(trunk.alertCounts.moderatorData.openReportCount == 1):
-						<span class="text-muted"><i>1 Report</i></span>
-						#endif
-					</li>
+						<li>
+							<hr class="main-menu-divider">
+						</li>
+						<li class="nav-item d-flex align-items-center">
+							<a class="nav-link #if(trunk.tab == "moderator"): active#endif" href="/moderator">
+								<span class="#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 0 || trunk.alertCounts.moderatorData.openReportCount):border-bottom border-danger#endif">Moderator Pages</span>
+							</a>
+							#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 1):
+								<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount) Msgs</i></span>
+							#elseif(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount == 1):
+								<span class="text-muted"><i>1 Msg</i></span>
+							#endif
+							#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 0 && trunk.alertCounts.moderatorData.openReportCount > 0):
+								<span class="text-muted"><i>,&nbsp;</i></span>
+							#endif
+							#if(trunk.alertCounts.moderatorData.openReportCount > 1):
+								<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.openReportCount) Reports</i></span>
+							#elseif(trunk.alertCounts.moderatorData.openReportCount == 1):
+								<span class="text-muted"><i>1 Report</i></span>
+							#endif
+						</li>
 					#endif
 					#if(trunk.userIsTwitarrTeam):
-					<li class="nav-item d-flex align-items-center">
-						<a class="nav-link#if(trunk.tab == " admin"): active#endif" href="/admin">
-							<span
-								class="#if(trunk.alertCounts.moderatorData.newTTSeamailMessageCount > 0):border-bottom border-danger#endif">Admin
-								Pages</span>
-						</a>
-						#if(trunk.alertCounts.moderatorData.newTTSeamailMessageCount > 0):
-						<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newTTSeamailMessageCount)
-								Msg#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount >
-								1):s#endif</i></span>
-						#endif
-					</li>
+						<li class="nav-item d-flex align-items-center">
+							<a class="nav-link#if(trunk.tab == "admin"): active#endif" href="/admin">
+								<span class="#if(trunk.alertCounts.moderatorData.newTTSeamailMessageCount > 0):border-bottom border-danger#endif">Admin Pages</span>
+							</a>
+							#if(trunk.alertCounts.moderatorData.newTTSeamailMessageCount > 0):
+								<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newTTSeamailMessageCount) Msg#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 1):s#endif</i></span>
+							#endif
+						</li>
 					#endif
 					<li>
 						<hr class="main-menu-divider">
 					</li>
 					<li class="nav-item">
-						#if(trunk.userIsLoggedIn):
+					#if(trunk.userIsLoggedIn):
 						<a class="nav-link" href="/logout">Logout #(trunk.username)</a>
-						#else:
+					#else:
 						<a class="nav-link" href="/login">Login</a>
-						#endif
+					#endif
 					</li>
 				</ul>
 			</div>
 			#if(trunk.searchPrompt):
-			<div class="container-fluid collapse swiftarr-searchbar#if(trunk.searchString): show#endif" id="searchBar">
-				#if(trunk.tab == "forums"):
-				<form action="/forum/search">
-					<div class="btn-group w-100 mb-1" role="group" aria-label="Toggle for searching Forums or Posts">
-						<input type="radio" class="btn-check" name="searchType" value="forums" id="forumsButton"
-							autocomplete="off" #if(trunk.searchPosts==false):checked#endif>
-						<label class="btn btn-outline-success flex-grow-0 col-6 ms-0" for="forumsButton">Forums</label>
-						<input type="radio" class="btn-check" name="searchType" value="posts" id="postsButton"
-							autocomplete="off" #if(trunk.searchPosts==true):checked#endif>
-						<label class="btn btn-outline-success flex-grow-0 col-6 ms-0" for="postsButton">Posts</label>
-					</div>
-					<div class="row justify-content-between">
-						<div class="col flex-grow-1 pe-0">
-							<input class="form-control" type="search" name="search" value="#(trunk.searchString)"
-								placeholder="#(trunk.searchPrompt)" aria-label="Search" autocapitalize="off" required>
-						</div>
-						<div class="col col-auto ps-0">
+				<div class="container-fluid collapse swiftarr-searchbar#if(trunk.searchString): show#endif" id="searchBar">
+					#if(trunk.tab == "forums"):
+						<form action="/forum/search">
+							<div class="btn-group w-100 mb-1" role="group" aria-label="Toggle for searching Forums or Posts">
+									<input type="radio" class="btn-check" name="searchType" value="forums" id="forumsButton" autocomplete="off" #if(trunk.searchPosts == false):checked#endif>
+									<label class="btn btn-outline-success flex-grow-0 col-6 ms-0" for="forumsButton">Forums</label>
+									<input type="radio" class="btn-check" name="searchType" value="posts" id="postsButton" autocomplete="off" #if(trunk.searchPosts == true):checked#endif>
+									<label class="btn btn-outline-success flex-grow-0 col-6 ms-0" for="postsButton">Posts</label>
+							</div>
+							<div class="row justify-content-between">
+								<div class="col flex-grow-1 pe-0">
+									<input class="form-control" type="search" name="search" value="#(trunk.searchString)" placeholder="#(trunk.searchPrompt)" aria-label="Search" autocapitalize="off" required>
+								</div>
+								<div class="col col-auto ps-0">
+									<button class="btn btn-success ms-2" type="submit">Search</button>
+								</div>
+							</div>
+						</form>
+					#elseif(trunk.tab == "seamail"):
+						<form class="d-flex" action="/seamail/search">
+							<input class="form-control" type="search" name="search" value="#(trunk.searchString)" placeholder="#(trunk.searchPrompt)" aria-label="Search" autocapitalize="off" required>
 							<button class="btn btn-success ms-2" type="submit">Search</button>
-						</div>
-					</div>
-				</form>
-				#elseif(trunk.tab == "seamail"):
-				<form class="d-flex" action="/seamail/search">
-					<input class="form-control" type="search" name="search" value="#(trunk.searchString)"
-						placeholder="#(trunk.searchPrompt)" aria-label="Search" autocapitalize="off" required>
-					<button class="btn btn-success ms-2" type="submit">Search</button>
-				</form>
-				#else:
-				<form class="d-flex">
-					<input class="form-control" type="search" name="search" value="#(trunk.searchString)"
-						placeholder="#(trunk.searchPrompt)" aria-label="Search" autocapitalize="off" required>
-					<button class="btn btn-success ms-2" type="submit">Search</button>
-				</form>
-				#endif
-			</div>
+						</form>
+					#else:
+						<form class="d-flex">
+							<input class="form-control" type="search" name="search" value="#(trunk.searchString)" placeholder="#(trunk.searchPrompt)" aria-label="Search" autocapitalize="off" required>
+							<button class="btn btn-success ms-2" type="submit">Search</button>
+						</form>
+					#endif
+				</div>
 			#endif
 		</div>
 	</nav>
@@ -240,5 +203,4 @@
 	</div>
 	<script src="/js/swiftarr.js"></script>
 </body>
-
 </html>
