@@ -1,7 +1,7 @@
-import Vapor
 import Crypto
-import FluentSQL
 import Fluent
+import FluentSQL
+import Vapor
 
 /// The collection of `/api/v3/user/*` route endpoints and handler functions related
 /// to a user's own data.
@@ -13,7 +13,7 @@ import Fluent
 struct UserController: APIRouteCollection {
 
 	// MARK: Properties
-		
+
 	/// An array of words used to generate random phrases.
 	static let words: [String] = [
 		"aboriginal", "accept", "account", "acoustic", "adaptable", "adorable",
@@ -81,18 +81,18 @@ struct UserController: APIRouteCollection {
 		"weather", "week", "welcome", "whimsical", "whirl", "whispering",
 		"white", "witty", "wolves", "wonder", "wonderful", "word", "writing",
 		"yarn", "year", "yellow", "yummy", "zealous", "zebra", "zesty", "zippy",
-		"zombie"
+		"zombie",
 	]
-		
+
 	/// Required. Registers routes to the incoming router.
 	func registerRoutes(_ app: Application) throws {
-		
+
 		// convenience route group for all /api/v3/user endpoints
 		let userRoutes = app.grouped("api", "v3", "user")
-		
+
 		// open access endpoints
 		userRoutes.post("create", use: createHandler)
-		
+
 		// endpoints available only when logged in
 		let tokenAuthGroup = addTokenCacheAuthGroup(to: userRoutes)
 		tokenAuthGroup.get("whoami", use: whoamiHandler)
@@ -101,29 +101,29 @@ struct UserController: APIRouteCollection {
 		tokenAuthGroup.post("username", use: usernameHandler)
 		tokenAuthGroup.post(userIDParam, "username", use: usernameHandler)
 		tokenAuthGroup.post("add", use: addHandler)
-	   
+
 		tokenAuthGroup.on(.POST, "image", body: .collect(maxSize: "30mb"), use: imageHandler)
 		tokenAuthGroup.post("image", "remove", use: imageRemoveHandler)
 		tokenAuthGroup.delete("image", use: imageRemoveHandler)
 		tokenAuthGroup.delete(userIDParam, "image", use: imageRemoveHandler)
-		
+
 		tokenAuthGroup.get("profile", use: profileHandler)
 		tokenAuthGroup.post("profile", use: profileUpdateHandler)
 		tokenAuthGroup.post(userIDParam, "profile", use: profileUpdateHandler)
-		
+
 		tokenAuthGroup.get("alertwords", use: alertwordsHandler)
 		tokenAuthGroup.post("alertwords", "add", alertwordParam, use: alertwordsAddHandler)
 		tokenAuthGroup.post("alertwords", "remove", alertwordParam, use: alertwordsRemoveHandler)
-	
+
 		tokenAuthGroup.get("mutewords", use: mutewordsHandler)
 		tokenAuthGroup.post("mutewords", "add", mutewordParam, use: mutewordsAddHandler)
 		tokenAuthGroup.post("mutewords", "remove", mutewordParam, use: mutewordsRemoveHandler)
 
 		tokenAuthGroup.get("notes", use: notesHandler)
 	}
-	
+
 	// MARK: - Open Access Handlers
-	
+
 	/// `POST /api/v3/user/create`
 	///
 	/// Creates a new `User` account. Does not log the new user in. Route is open access.
@@ -151,29 +151,44 @@ struct UserController: APIRouteCollection {
 		if let _ = try await User.query(on: req.db).filter(\.$username, .custom("ilike"), data.username).first() {
 			throw Abort(.conflict, reason: "username '\(data.username)' is not available")
 		}
-		
+
 		// Reg Codes may be delivered in user's emails as "ABC DEF", but the normalized form is lowercase, no spaces.
 		// Note: We don't check the reg code against the table until we're inside the transaction
 		guard let normalizedRegCode = data.verification?.lowercased().replacingOccurrences(of: " ", with: ""),
-				normalizedRegCode.rangeOfCharacter(from: CharacterSet.alphanumerics.inverted) == nil, normalizedRegCode.count == 6 else {
-			throw Abort(.badRequest, reason: "Malformed verification code. Verification code must be 6 alphanumeric letters; spaces optional.")
+			normalizedRegCode.rangeOfCharacter(from: CharacterSet.alphanumerics.inverted) == nil,
+			normalizedRegCode.count == 6
+		else {
+			throw Abort(
+				.badRequest,
+				reason:
+					"Malformed verification code. Verification code must be 6 alphanumeric letters; spaces optional."
+			)
 		}
-						
+
 		// create user
 		let recoveryKey = try UserController.generateRecoveryKey(on: req)
 		let normalizedKey = recoveryKey.lowercased().replacingOccurrences(of: " ", with: "")
 		let recoveryHash = try Bcrypt.hash(normalizedKey)
 		let passwordHash = try req.password.hash(data.password)
-		let user = User(username: data.username, password: passwordHash, recoveryKey: recoveryHash,
-				verification: nil, parent: nil, accessLevel: .verified)
-						
+		let user = User(
+			username: data.username,
+			password: passwordHash,
+			recoveryKey: recoveryHash,
+			verification: nil,
+			parent: nil,
+			accessLevel: .verified
+		)
+
 		// wrap in a transaction to ensure each user connects to a unique reg code
 		try await req.db.transaction { database in
-			guard let dbRegCode = try await RegistrationCode.query(on: database).filter(\.$code == normalizedRegCode).first() else {
+			guard
+				let dbRegCode = try await RegistrationCode.query(on: database).filter(\.$code == normalizedRegCode)
+					.first()
+			else {
 				throw Abort(.badRequest, reason: "No match for registration code")
 			}
 			guard dbRegCode.user == nil else {
-			   throw Abort(.conflict, reason: "registration code has already been used")
+				throw Abort(.conflict, reason: "registration code has already been used")
 			}
 			user.verification = dbRegCode.code
 			try await user.save(on: database)
@@ -182,22 +197,26 @@ struct UserController: APIRouteCollection {
 		}
 		try await req.userCache.updateUser(user.requireID())
 		// return user data as .created
-		let createdUserData = try CreatedUserData(userID: user.requireID(), username: user.username, recoveryKey: recoveryKey)
+		let createdUserData = try CreatedUserData(
+			userID: user.requireID(),
+			username: user.username,
+			recoveryKey: recoveryKey
+		)
 		let response = Response(status: .created)
 		try response.content.encode(createdUserData)
 		return response
 	}
-	
+
 	// MARK: - tokenAuthGroup Handlers (logged in)
 	// All handlers in this route group require a valid HTTP Bearer Authentication
 	// header in the request.
-		
+
 	/// `POST /api/v3/user/verify`
 	///
 	/// Changes a `User.accessLevel` from `.unverified` to `.verified` on successful submission
-	/// of a registration code. User must be logged in. 
-	/// 
-	/// NOTE: previously it was possible to create an account and NOT provide a Registration Code, creating an account with an access level of .unverified. We 
+	/// of a registration code. User must be logged in.
+	///
+	/// NOTE: previously it was possible to create an account and NOT provide a Registration Code, creating an account with an access level of .unverified. We
 	/// now require a registration code to create an account and all accounts are therefore already verified at creation time, meaning this method is not currently useful.
 	///
 	/// - Parameter requestBody: `UserVerifyData`
@@ -217,12 +236,13 @@ struct UserController: APIRouteCollection {
 				throw Abort(.badRequest, reason: "user is already verified")
 			}
 			// see `UserVerifyData.validations()`
-			guard let dbRegCode = try await RegistrationCode.query(on: req.db).filter(\.$code == normalizedCode).first() else {
+			guard let dbRegCode = try await RegistrationCode.query(on: req.db).filter(\.$code == normalizedCode).first()
+			else {
 				throw Abort(.badRequest, reason: "registration code not found")
 			}
 			// abort if code is already used
 			guard dbRegCode.user == nil else {
-			   throw Abort(.conflict, reason: "registration code has already been used")
+				throw Abort(.conflict, reason: "registration code has already been used")
 			}
 			// update registrationCode
 			dbRegCode.$user.id = cacheUser.userID
@@ -234,13 +254,13 @@ struct UserController: APIRouteCollection {
 		}
 		return .ok
 	}
-	
+
 	/// `POST /api/v3/user/add`
 	///
-	/// Adds a new `User` sub-account to the current user's primary account. You can create a new sub account while logged in 
+	/// Adds a new `User` sub-account to the current user's primary account. You can create a new sub account while logged in
 	/// on a sub account, but the new account is an sub of the primary account--there's no nesting or tree structure.
-	/// 
-	/// This method does not log in the newly created user. Users are limited to `Settings.shared.maxAlternateAccounts` 
+	///
+	/// This method does not log in the newly created user. Users are limited to `Settings.shared.maxAlternateAccounts`
 	/// alts, which is 6 by default.
 	///
 	/// An `AddedUserData` structure is returned on success, containing the new user's ID
@@ -278,12 +298,13 @@ struct UserController: APIRouteCollection {
 		let passwordHash = try Bcrypt.hash(data.password)
 		// sub-account inherits .accessLevel, .recoveryKey and .verification
 		let subAccount = User(
-				username: data.username,
-				password: passwordHash,
-				recoveryKey: user.recoveryKey,
-				verification: user.verification,
-				parent: parentAccount,
-				accessLevel: user.accessLevel)
+			username: data.username,
+			password: passwordHash,
+			recoveryKey: user.recoveryKey,
+			verification: user.verification,
+			parent: parentAccount,
+			accessLevel: user.accessLevel
+		)
 		try await subAccount.save(on: req.db)
 		let subAccountID = try subAccount.requireID()
 		try await req.userCache.updateUser(subAccountID)
@@ -293,7 +314,7 @@ struct UserController: APIRouteCollection {
 		try response.content.encode(addedUserData)
 		return response
 	}
-	
+
 	/// `GET /api/v3/user/whoami`
 	///
 	/// Returns the current user's `.id`, `.username` and whether they're currently logged in.
@@ -301,12 +322,15 @@ struct UserController: APIRouteCollection {
 	/// - Returns: `CurrentUserData` containing the current user's ID, username and logged in status.
 	func whoamiHandler(_ req: Request) throws -> CurrentUserData {
 		let user = try req.auth.require(UserCacheData.self)
-		let currentUserData = CurrentUserData(userID: user.userID, username: user.username,
-				// if there's a BasicAuthorization header, not logged in
-				isLoggedIn: req.headers.basicAuthorization != nil ? false : true)
+		let currentUserData = CurrentUserData(
+			userID: user.userID,
+			username: user.username,
+			// if there's a BasicAuthorization header, not logged in
+			isLoggedIn: req.headers.basicAuthorization != nil ? false : true
+		)
 		return currentUserData
 	}
-	
+
 	/// `POST /api/v3/user/password`
 	///
 	/// Updates a user's password to the supplied value, encrypted.
@@ -332,7 +356,7 @@ struct UserController: APIRouteCollection {
 		try await user.save(on: req.db)
 		return .created
 	}
-	
+
 	/// `POST /api/v3/user/username`
 	/// `POST /api/v3/user/:userID/username`				-- moderator use
 	///
@@ -368,14 +392,15 @@ struct UserController: APIRouteCollection {
 		// see `UserUsernameData.validations()`
 		let data = try ValidatingJSONDecoder().decode(UserUsernameData.self, fromBodyOf: req)
 		// check for existing username
-		guard try await User.query(on: req.db).filter(\.$username, .custom("ilike"), data.username).first() == nil else {
+		guard try await User.query(on: req.db).filter(\.$username, .custom("ilike"), data.username).first() == nil
+		else {
 			throw Abort(.conflict, reason: "username '\(data.username)' is not available")
 		}
 		// Check for recent name change; throw if the user has a profileEdit in the last 20 hours where the username doesn't match.
 		if targetUser.id == user.id {
 			let twentyHoursAgo = Date() - 3600.0 * 20.0
 			let profileEdits = try await ProfileEdit.query(on: req.db).filter(\.$user.$id == targetUser.requireID())
-					.filter(\.$createdAt > twentyHoursAgo).all()
+				.filter(\.$createdAt > twentyHoursAgo).all()
 			for edit in profileEdits {
 				if edit.profileData?.header?.username != targetUser.username {
 					throw Abort(.forbidden, reason: "Only one name change allowed per day.")
@@ -392,15 +417,14 @@ struct UserController: APIRouteCollection {
 		await targetUser.logIfModeratorAction(.edit, user: cacheUser, on: req)
 		return .created
 	}
-	
 
-// MARK: - Profile
+	// MARK: - Profile
 	/// `POST /api/v3/user/image`
 	///
-	/// Sets the user's profile image to the `ImageUploadData` uploaded in the HTTP body. 
-	/// 
+	/// Sets the user's profile image to the `ImageUploadData` uploaded in the HTTP body.
+	///
 	/// - If the `ImageUploadData` contains image data in the `image` member, that data is processed, saved, and set to user's new image
-	/// - If the `ImageUploadData` contains a filename in the `filename` member, the user's avatar is set to that image file on the server. 
+	/// - If the `ImageUploadData` contains a filename in the `filename` member, the user's avatar is set to that image file on the server.
 	/// We don't check whether the file exists.
 	/// - If both members are nil, the user's avatar image is set to nil, which will cause the default image be returned.
 	///
@@ -418,9 +442,10 @@ struct UserController: APIRouteCollection {
 			// create ProfileEdit record
 			let profileEdit = try ProfileEdit(target: user, editor: user)
 			// archive thumbnail
-			DispatchQueue.global(qos: .background).async {
-				self.archiveImage(existingImage, on: req)
-			}
+			DispatchQueue.global(qos: .background)
+				.async {
+					self.archiveImage(existingImage, on: req)
+				}
 			try await profileEdit.save(on: req.db)
 		}
 		// Set new image
@@ -430,13 +455,13 @@ struct UserController: APIRouteCollection {
 		let userCacheData = try await req.userCache.updateUser(user.requireID())
 		return userCacheData.makeHeader()
 	}
-	
+
 	/// `POST /api/v3/user/image/remove`
 	/// `DELETE /api/v3/user/image`
-	/// `DELETE /api/v3/user/:userID/image`				 
+	/// `DELETE /api/v3/user/:userID/image`
 	///
-	/// Removes the user's profile image from their `User` object. This generally reverts their user avatar image to a default or auto-generated image. 
-	/// 
+	/// Removes the user's profile image from their `User` object. This generally reverts their user avatar image to a default or auto-generated image.
+	///
 	/// The third form, that takes a userID in the URL path, is for moderators only.
 	///
 	/// - Parameter userID: in URL path. Only for the third form of the URL path, which is moderator-only.
@@ -447,8 +472,9 @@ struct UserController: APIRouteCollection {
 		let user = try await cacheUser.getUser(on: req.db)
 		var targetUser = user
 		if let targetUserIDString = req.parameters.get(userIDParam.paramString) {
-			guard let targetUserID = UUID(uuidString: targetUserIDString), 
-					let foundUser = try await User.find(targetUserID, on: req.db) else {
+			guard let targetUserID = UUID(uuidString: targetUserIDString),
+				let foundUser = try await User.find(targetUserID, on: req.db)
+			else {
 				throw Abort(.badRequest, reason: "Could not find user with userID \(targetUserIDString)")
 			}
 			targetUser = foundUser
@@ -458,9 +484,10 @@ struct UserController: APIRouteCollection {
 			// create ProfileEdit record
 			let profileEdit = try ProfileEdit(target: targetUser, editor: user)
 			// archive thumbnail
-			DispatchQueue.global(qos: .background).async {
-				return self.archiveImage(existingImage, on: req)
-			}
+			DispatchQueue.global(qos: .background)
+				.async {
+					return self.archiveImage(existingImage, on: req)
+				}
 			try await profileEdit.save(on: req.db)
 			// remove image from profile
 			targetUser.userImage = nil
@@ -471,14 +498,14 @@ struct UserController: APIRouteCollection {
 		}
 		return .noContent
 	}
-	
+
 	/// `GET /api/v3/user/profile`
 	///
 	/// Retrieves the user's own profile data for editing, as a `ProfilePublicData` object.
 	///
 	/// - Note: The `.header.username` and `.header.displayName` properties of the returned object
 	///   are for display convenience only. A username must be changed using the
-	///   `POST /api/v3/user/username` endpoint. 
+	///   `POST /api/v3/user/username` endpoint.
 	///
 	/// - Throws: 403 error if the user is banned. A 5xx response should be reported as a likely
 	///   bug, please and thank you.
@@ -487,7 +514,7 @@ struct UserController: APIRouteCollection {
 		let user = try await req.auth.require(UserCacheData.self).getUser(on: req.db)
 		return try ProfilePublicData(user: user, note: nil, requesterAccessLevel: user.accessLevel)
 	}
-	
+
 	/// `POST /api/v3/user/profile`
 	/// `POST /api/v3/user/:userID/profile` 				- for moderator use
 	///
@@ -507,8 +534,9 @@ struct UserController: APIRouteCollection {
 		let user = try await cacheUser.getUser(on: req.db)
 		var targetUser = user
 		if let targetUserIDString = req.parameters.get(userIDParam.paramString) {
-			guard let targetUserID = UUID(uuidString: targetUserIDString), 
-					let foundUser = try await User.find(targetUserID, on: req.db) else {
+			guard let targetUserID = UUID(uuidString: targetUserIDString),
+				let foundUser = try await User.find(targetUserID, on: req.db)
+			else {
 				throw Abort(.badRequest, reason: "Could not find user with userID \(targetUserIDString)")
 			}
 			targetUser = foundUser
@@ -518,7 +546,7 @@ struct UserController: APIRouteCollection {
 		// record update for accountability
 		let oldProfileEdit = try ProfileEdit(target: targetUser, editor: user)
 		try await oldProfileEdit.save(on: req.db)
-		
+
 		// update fields, nil if no value supplied
 		targetUser.about = data.about?.isEmpty == true ? nil : data.about
 		targetUser.displayName = data.displayName?.isEmpty == true ? nil : data.displayName
@@ -528,17 +556,17 @@ struct UserController: APIRouteCollection {
 		targetUser.preferredPronoun = data.preferredPronoun?.isEmpty == true ? nil : data.preferredPronoun
 		targetUser.realName = data.realName?.isEmpty == true ? nil : data.realName
 		targetUser.roomNumber = data.roomNumber?.isEmpty == true ? nil : data.roomNumber
-			
+
 		// build .userSearch value
 		targetUser.buildUserSearchString()
-			
+
 		try await targetUser.save(on: req.db)
 		try await req.userCache.updateUser(targetUser.requireID())
 		await targetUser.logIfModeratorAction(.edit, user: cacheUser, on: req)
 		return try ProfilePublicData(user: targetUser, note: nil, requesterAccessLevel: user.accessLevel)
 	}
 
-// MARK: - Alertwords   
+	// MARK: - Alertwords
 	/// `POST /api/v3/user/alertwords/add/:alertword_string`
 	///
 	/// Adds a string to the user's "Alert Keywords" barrel. The string is lowercased and stripped of punctuation before being added.
@@ -558,14 +586,16 @@ struct UserController: APIRouteCollection {
 		guard let cleanParam = cleanedParams.first, cleanParam.count > 3 else {
 			throw Abort(.badRequest, reason: "Cannot set alerts on very short or very common words")
 		}
-		let  alertword = try await AlertWord.query(on: req.db).filter(\.$word == cleanParam).first() ?? AlertWord(cleanParam)
+		let alertword =
+			try await AlertWord.query(on: req.db).filter(\.$word == cleanParam).first() ?? AlertWord(cleanParam)
 		try await alertword.save(on: req.db)
 		try await AlertWordPivot(alertword: alertword, userID: cacheUser.userID).save(on: req.db)
-		let keywordPivots = try await AlertWordPivot.query(on: req.db).filter(\.$user.$id == cacheUser.userID).with(\.$alertword).all()
+		let keywordPivots = try await AlertWordPivot.query(on: req.db).filter(\.$user.$id == cacheUser.userID)
+			.with(\.$alertword).all()
 		let keywords = keywordPivots.map { $0.alertword.word }
 		return KeywordData(keywords: keywords.sorted())
 	}
-	
+
 	/// `GET /api/v3/user/alertwords`
 	///
 	/// Returns a list of the user's current alert keywords in `AlertKeywordData` barrel format.
@@ -574,11 +604,12 @@ struct UserController: APIRouteCollection {
 	/// - Returns: `AlertKeywordData` containing the current alert keywords as an array of strings.
 	func alertwordsHandler(_ req: Request) async throws -> KeywordData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		let keywordPivots = try await AlertWordPivot.query(on: req.db).filter(\.$user.$id == cacheUser.userID).with(\.$alertword).all()
+		let keywordPivots = try await AlertWordPivot.query(on: req.db).filter(\.$user.$id == cacheUser.userID)
+			.with(\.$alertword).all()
 		let keywords = keywordPivots.map { $0.alertword.word }
 		return KeywordData(keywords: keywords)
 	}
-	
+
 	/// `POST /api/v3/user/alertwords/remove/STRING`
 	///
 	/// Removes a string from the user's "Alert Keywords" barrel.
@@ -591,7 +622,8 @@ struct UserController: APIRouteCollection {
 		guard let parameter = req.parameters.get(alertwordParam.paramString)?.lowercased() else {
 			throw Abort(.badRequest, reason: "No alert word to remove found in request.")
 		}
-		var pivots = try await AlertWordPivot.query(on: req.db).filter(\.$user.$id == user.userID).with(\.$alertword).all()
+		var pivots = try await AlertWordPivot.query(on: req.db).filter(\.$user.$id == user.userID).with(\.$alertword)
+			.all()
 		if let removePivot = pivots.first(where: { $0.alertword.word == parameter }) {
 			let alertWord = removePivot.alertword
 			try await removePivot.delete(on: req.db)
@@ -605,9 +637,9 @@ struct UserController: APIRouteCollection {
 		return KeywordData(keywords: keywords.sorted())
 	}
 
-// MARK: - Blocks
-// MARK: - Muted Users
-// MARK: - Mutewords
+	// MARK: - Blocks
+	// MARK: - Muted Users
+	// MARK: - Mutewords
 	/// `POST /api/v3/user/mutewords/add/STRING`
 	///
 	/// Adds a string to the user's "Muted Keywords" barrel.
@@ -639,7 +671,7 @@ struct UserController: APIRouteCollection {
 		let muteKeywordData = KeywordData(keywords: mutewords.sorted())
 		return muteKeywordData
 	}
-	
+
 	/// `GET /api/v3/user/mutewords`
 	///
 	/// Returns a list of the user's currently muted keywords in named-list  `MuteKeywordData` format.
@@ -652,7 +684,7 @@ struct UserController: APIRouteCollection {
 		let mutewords = mutewordRecords.map { $0.word }
 		return KeywordData(keywords: mutewords.sorted())
 	}
-	
+
 	/// `POST /api/v3/user/mutewords/remove/STRING`
 	///
 	/// Removes a string from the user's "Muted Keywords" barrel.
@@ -679,8 +711,8 @@ struct UserController: APIRouteCollection {
 		let mutewords = mutewordRecords.map { $0.word }
 		let muteKeywordData = KeywordData(keywords: mutewords.sorted())
 		return muteKeywordData
-	}		
-		
+	}
+
 	/// `GET /api/v3/user/notes`
 	///
 	/// Retrieves all `UserNote>s owned by the current user, as an array of `NoteData` objects.
@@ -703,9 +735,9 @@ struct UserController: APIRouteCollection {
 		let notesData: [NoteData] = try notes.map { try NoteData(note: $0, targetUser: $0.noteSubject) }
 		return notesData
 	}
-	
+
 	// MARK: - Helper Functions
-		
+
 	/// Generates a recovery key of 3 words randomly chosen from `words` array.
 	///
 	/// - Parameter req: The incoming `Request`, provided automatically.
@@ -714,8 +746,9 @@ struct UserController: APIRouteCollection {
 	static func generateRecoveryKey(on req: Request) throws -> String {
 		guard let word1 = words.randomElement(),
 			let word2 = words.randomElement(),
-			let word3 = words.randomElement() else {
-				throw Abort(.internalServerError, reason: "could not generate recovery key")
+			let word3 = words.randomElement()
+		else {
+			throw Abort(.internalServerError, reason: "could not generate recovery key")
 		}
 		let recoveryKey = word1 + " " + word2 + " " + word3
 		return recoveryKey

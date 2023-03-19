@@ -12,10 +12,10 @@ public struct AddedUserData: Content {
 	let username: String
 }
 
-/// An announcement to display to all users. 
-/// 
+/// An announcement to display to all users.
+///
 /// - Note: Admins can modify Announcements, but should only do so to correct typos or change the displayUntil time. Therefore if a user has seen an announcement,
-/// they need not be notified again if the announcement is edited. Any material change to the content of an announcement should be done via a **new** announcement, 
+/// they need not be notified again if the announcement is edited. Any material change to the content of an announcement should be done via a **new** announcement,
 /// so that user notifications work correctly.
 ///
 /// Returned by:
@@ -52,11 +52,11 @@ extension AnnouncementData {
 	}
 }
 
-/// Parameters for the game recommender engine. Pass these values in, get back a `BoardgameResponseData` with a 
+/// Parameters for the game recommender engine. Pass these values in, get back a `BoardgameResponseData` with a
 /// list of games filtered to match the criteria, and sorted based on how well they match the criteria. The sort takes into account each games'
-/// overall rating from BGG, the recommended number of players (not just min and max allowed players), the average playtime, 
+/// overall rating from BGG, the recommended number of players (not just min and max allowed players), the average playtime,
 /// and the complexity score of the game.
-/// 
+///
 /// Sent to these methods as the JSON  request body:
 /// * `GET /api/v3/boardgames/recommend`
 public struct BoardgameRecommendationData: Content {
@@ -68,21 +68,20 @@ public struct BoardgameRecommendationData: Content {
 	/// request games appropriate for 14 years olds, games appropriate for ages 18 and older will be filtered out, but games appropriate
 	/// for ages 1 and up won't be ranked any lower than games rated for 14 year olds.
 	var maxAge: Int
-	/// If nonzero, filter OUT games with a minAge lower than this age. Useful for filtering out games intended for young children. Does not factor into the sort criteria. 
+	/// If nonzero, filter OUT games with a minAge lower than this age. Useful for filtering out games intended for young children. Does not factor into the sort criteria.
 	var minAge: Int
 	/// Desired complexity in the range [1...5], or zero to not consider complexity in rankings.
 	var complexity: Int
 }
 
-
 /// Wraps an array of `BoardgameData` with info needed to paginate the result set.
-/// 
+///
 /// Returned by:
 /// * `GET /api/v3/boardgames`
 public struct BoardgameResponseData: Content {
 	/// How many games are in the result set. If the request included a filter, this value will contain the total number of games that match the filter.
 	var totalGames: Int
-	/// The initial offset into the resultSet array. 0 based. 
+	/// The initial offset into the resultSet array. 0 based.
 	var start: Int
 	/// How many results are to be returned.
 	var limit: Int
@@ -90,11 +89,11 @@ public struct BoardgameResponseData: Content {
 	var gameArray: [BoardgameData]
 }
 
-/// Used to obtain a list of board games. 
-/// 
+/// Used to obtain a list of board games.
+///
 /// Each year there's a list of boardgames published that'll be brought onboard for the games library. The board game data is produced
 /// by running a script that pulls game data from `http://boardgamegeek.com`'s API and merging it with the games library table.
-/// 
+///
 /// Games in the library may not match anything in BGG's database (or we can't find a match), so all the BGG fields are optional.
 ///
 /// Returned by:
@@ -136,13 +135,13 @@ public struct BoardgameData: Content {
 
 	/// From BGG's API. Suggested min player age in years. Min age could be determined by complexity or content.
 	var minAge: Int?
-	/// From BGG's API. How many BGG reviewers submitted ratings. 
+	/// From BGG's API. How many BGG reviewers submitted ratings.
 	var numRatings: Int?
 	/// From BGG's API. Average game rating. Members can rate games with scores in the range 1...10
 	var avgRating: Float?
 	/// From BGG's API. Members can score a games' complexity on a scale of 1...5, where 1 is Light and 5 is Heavy.
 	var complexity: Float?
-	
+
 	/// TRUE if this entry is an expansion for another game. Weirdly, the games library may not actually have the base game.
 	/// At any rate, the base game is usually a requirement to play an expansion, and both must be checked out together.
 	var isExpansion: Bool
@@ -158,20 +157,20 @@ extension BoardgameData {
 		self.gameName = game.gameName
 		self.yearPublished = game.yearPublished
 		self.gameDescription = game.gameDescription
-		
+
 		self.minPlayers = game.minPlayers
 		self.maxPlayers = game.maxPlayers
 		self.suggestedPlayers = game.suggestedPlayers
-		
+
 		self.minPlayingTime = game.minPlayingTime
 		self.maxPlayingTime = game.maxPlayingTime
 		self.avgPlayingTime = game.avgPlayingTime
-		
+
 		self.minAge = game.minAge
 		self.numRatings = game.numRatings
 		self.avgRating = game.avgRating
 		self.complexity = game.complexity
-		
+
 		self.donatedBy = game.donatedBy
 		self.notes = game.notes
 		self.numCopies = game.numCopies
@@ -182,8 +181,7 @@ extension BoardgameData {
 	}
 }
 
-
-/// Used to return the ID and title of a `Category`. 
+/// Used to return the ID and title of a `Category`.
 ///
 /// Returned by:
 /// * `GET /api/v3/forum/categories`
@@ -261,7 +259,7 @@ public struct DailyThemeData: Content {
 	/// An image that relates to the theme.
 	var image: String?
 	/// Day of cruise, counted from `Settings.shared.cruiseStartDate`. 0 is embarkation day. Values could be negative (e.g. Day -1 is "Anticipation Day")
-	var cruiseDay: Int32				
+	var cruiseDay: Int32
 }
 
 extension DailyThemeData {
@@ -274,44 +272,44 @@ extension DailyThemeData {
 	}
 }
 
-/// A feature that has been turned off by the server. If the `appName` is `all`, the indicated `featureName` is disabled at the API level for 
+/// A feature that has been turned off by the server. If the `appName` is `all`, the indicated `featureName` is disabled at the API level for
 /// this feature and all relevant endpoints will return errors. For any other value of appName, the API still works, but the indicated client apps should
 /// not allow the feature to be accessed. The goal is to be able to disable code that is impacting server stability or performance without shutting down
-/// the server entirely or disallowing specific clients entirely. 
+/// the server entirely or disallowing specific clients entirely.
 ///
 /// Used in `UserNotificationData`.
 public struct DisabledFeature: Content {
 	/// AppName and featureName act as a grid, allowing a specific feature to be disabled only in a specific app. If the appName is `all`, the server
 	/// code for the feature may be causing the issue, requiring the feature be disabled for all clients.
 	var appName: SwiftarrClientApp
-	/// The feature to disable. Features roughly match API controller groups. 
+	/// The feature to disable. Features roughly match API controller groups.
 	var featureName: SwiftarrFeature
 }
 
 /// All errors returned in HTTP responses use this structure.
-/// 
-/// Some server errors (such as 404s) may not have any payload in the response body, but for any HTTP error response that has a payload, the 
+///
+/// Some server errors (such as 404s) may not have any payload in the response body, but for any HTTP error response that has a payload, the
 /// payload will have this strcture.
-/// 
+///
 ///`error` is always true, `reason` concatenates all errors into a single string, and `fieldErrors` breaks errors up by field name
 /// of the request's body content, if available. Only content validation errors actaully use `fieldErrors`.
 /// Field-specific validation errors are keyed by the path to the field that caused the error. Validation errors that aren't specific to an input field
 /// (e.g. an error indicating that one of two fields may be empty, but not both) are all concatenated and placed into a `general` key in `fieldErrors`.
-/// This means that all field errors are both in `error` (concatenated into a single string), and also in `fieldErrors` (split into fields). 
-/// 
+/// This means that all field errors are both in `error` (concatenated into a single string), and also in `fieldErrors` (split into fields).
+///
 /// - Note: If the request body has validation errors, the error response should list all validation errors at once. However, other errors that may prevent a successful
 /// action will not be included. For instance, a user might try creating a Forum with empty fields. The error response will indicate that both Title and Text fields need values.
 /// After fixing those issues, the user could still get an error becuase they are quarantined and not authorized to create posts.
 public struct ErrorResponse: Codable, Error {
 	/// Always `true` to indicate this is a non-typical JSON response.
 	var error: Bool
-	/// The HTTP status code. 
+	/// The HTTP status code.
 	var status: UInt
 	/// The reason for the error. Displayable to the user.
 	var reason: String
 	/// Optional dictionary of field errors; mostly used for input JSON validation failures. A request with JSON content that fails validation may have field-level errors here,
-	/// keyed by the keypath to the fields that failed validation. 
-	var fieldErrors: [String : String]?
+	/// keyed by the keypath to the fields that failed validation.
+	var fieldErrors: [String: String]?
 }
 
 /// Used to obtain an event's details.
@@ -350,8 +348,8 @@ public struct EventData: Content {
 
 extension EventData {
 	/// Makes an eventData.
-	/// 
-	/// The startTime, endTime, and timeZone are the corrected Date values for the event, given the time zone the ship was/will be in at the event start time. 
+	///
+	/// The startTime, endTime, and timeZone are the corrected Date values for the event, given the time zone the ship was/will be in at the event start time.
 	init(_ event: Event, isFavorite: Bool = false) throws {
 		let timeZoneChanges = Settings.shared.timeZoneChanges
 		eventID = try event.requireID()
@@ -408,19 +406,23 @@ extension FezContentData: RCFValidatable {
 		tester.validate(title.count <= 100, forKey: .title, or: "title field has a 100 character limit")
 		if ![.closed, .open].contains(fezType) {
 			tester.validate(info.count >= 2, forKey: .info, or: "info field has a 2 character minimum")
-			tester.validate(info.count <= 2048, forKey: .info, or: "info field length of \(info.count) is over the 2048 character limit")
+			tester.validate(
+				info.count <= 2048,
+				forKey: .info,
+				or: "info field length of \(info.count) is over the 2048 character limit"
+			)
 			if let loc = location {
-				tester.validate(loc.count >= 3, forKey: .location, or: "location field has a 3 character minimum") 
+				tester.validate(loc.count >= 3, forKey: .location, or: "location field has a 3 character minimum")
 			}
 		}
-		
-		// TODO: validations for startTime and endTime  	
+
+		// TODO: validations for startTime and endTime
 	}
 }
 
 /// Used to return data on a group of `FriendlyFez` objects.
-/// 
-/// 
+///
+///
 public struct FezListData: Content {
 	/// Pagination into the results set..
 	var paginator: Paginator
@@ -439,7 +441,7 @@ public struct FezListData: Content {
 /// * `POST /api/v3/fez/ID/user/ID/add`
 /// * `POST /api/v3/fez/ID/user/ID/remove`
 /// * `POST /api/v3/fez/ID/cancel`
-/// 
+///
 /// Returned by these  methods, with `members` populated.
 /// * `GET /api/v3/fez/ID`
 /// * `POST /api/v3/fez/create`
@@ -466,7 +468,7 @@ public struct FezData: Content, ResponseEncodable {
 	var startTime: Date?
 	/// The ending time of the fez.
 	var endTime: Date?
-	/// The 3 letter abbreviation for the active time zone at the time and place where the fez is happening. 
+	/// The 3 letter abbreviation for the active time zone at the time and place where the fez is happening.
 	var timeZone: String?
 	/// The location for the fez.
 	var location: String?
@@ -478,19 +480,19 @@ public struct FezData: Content, ResponseEncodable {
 	var maxParticipants: Int
 	/// TRUE if the fez has been cancelled by the owner. Cancelled fezzes should display CANCELLED so users know not to show up, but cancelled fezzes are not deleted.
 	var cancelled: Bool
-	/// The most recent of: Creation time for the fez, time of the last post (may not exactly match post time), user add/remove, or update to fezzes' fields. 
+	/// The most recent of: Creation time for the fez, time of the last post (may not exactly match post time), user add/remove, or update to fezzes' fields.
 	var lastModificationTime: Date
-	
-	/// FezData.MembersOnlyData returns data only available to participants in a Fez. 
+
+	/// FezData.MembersOnlyData returns data only available to participants in a Fez.
 	public struct MembersOnlyData: Content, ResponseEncodable {
 		/// The users participating in the fez.
 		var participants: [UserHeader]
 		/// The users on a waiting list for the fez.
 		var waitingList: [UserHeader]
-		/// How many posts the user can see in the fez. The count is returned even for calls that don't return the actual posts, but is not returned for 
+		/// How many posts the user can see in the fez. The count is returned even for calls that don't return the actual posts, but is not returned for
 		/// fezzes where the user is not a member. PostCount does not include posts from blocked/muted users.
 		var postCount: Int
-		/// How many posts the user has read. If postCount > readCount, there's posts to be read. UI can also use readCount to set the initial view 
+		/// How many posts the user has read. If postCount > readCount, there's posts to be read. UI can also use readCount to set the initial view
 		/// to the first unread message.ReadCount does not include posts from blocked/muted users.
 		var readCount: Int
 		/// Paginates the array in posts--gives the start and limit of the returned posts array relative to all the posts in the thread.
@@ -498,7 +500,7 @@ public struct FezData: Content, ResponseEncodable {
 		/// The FezPosts in the fez discussion. Methods that return arrays of Fezzes, or that add or remove users, do not populate this field (it will be nil).
 		var posts: [FezPostData]?
 	}
-	
+
 	/// Will be nil if user is not a member of the fez (in the participant or waiting lists).
 	var members: MembersOnlyData?
 }
@@ -510,10 +512,12 @@ extension FezData {
 		self.fezType = fez.fezType
 		self.title = fez.moderationStatus.showsContent() ? fez.title : "Fez Title is under moderator review"
 		self.info = fez.moderationStatus.showsContent() ? fez.info : "Fez Information field is under moderator review"
-		self.startTime = fez.startTime == nil ? nil : Settings.shared.timeZoneChanges.portTimeToDisplayTime(fez.startTime)
+		self.startTime =
+			fez.startTime == nil ? nil : Settings.shared.timeZoneChanges.portTimeToDisplayTime(fez.startTime)
 		self.endTime = fez.endTime == nil ? nil : Settings.shared.timeZoneChanges.portTimeToDisplayTime(fez.endTime)
-		self.timeZone = self.startTime == nil ? nil :  Settings.shared.timeZoneChanges.abbrevAtTime(self.startTime)
-		self.location = fez.moderationStatus.showsContent() ? fez.location : "Fez Location field is under moderator review"
+		self.timeZone = self.startTime == nil ? nil : Settings.shared.timeZoneChanges.abbrevAtTime(self.startTime)
+		self.location =
+			fez.moderationStatus.showsContent() ? fez.location : "Fez Location field is under moderator review"
 		self.lastModificationTime = fez.updatedAt ?? Date()
 		self.participantCount = fez.participantArray.count
 		self.minParticipants = fez.minCapacity
@@ -545,14 +549,15 @@ public struct FezPostData: Content {
 	var image: String?
 }
 
-extension FezPostData {	
+extension FezPostData {
 	init(post: FezPost, author: UserHeader, overrideQuarantine: Bool = false) throws {
 		guard author.userID == post.$author.id else {
 			throw Abort(.internalServerError, reason: "Internal server error--Post's author does not match.")
 		}
 		self.postID = try post.requireID()
 		self.author = author
-		self.text = post.moderationStatus.showsContent() || overrideQuarantine ? post.text : "Post is under moderator review."
+		self.text =
+			post.moderationStatus.showsContent() || overrideQuarantine ? post.text : "Post is under moderator review."
 		self.timestamp = post.createdAt ?? post.updatedAt ?? Date()
 		self.image = post.moderationStatus.showsContent() || overrideQuarantine ? post.image : nil
 	}
@@ -566,7 +571,7 @@ extension FezPostData {
 public struct ForumCreateData: Content {
 	/// The forum's title.
 	var title: String
-	/// The first post in the forum. 
+	/// The first post in the forum.
 	var firstPost: PostContentData
 }
 
@@ -611,7 +616,15 @@ public struct ForumData: Content {
 }
 
 extension ForumData {
-	init(forum: Forum, creator: UserHeader, isFavorite: Bool, isMuted: Bool, posts: [PostData], pager: Paginator, event: Event? = nil) throws {
+	init(
+		forum: Forum,
+		creator: UserHeader,
+		isFavorite: Bool,
+		isMuted: Bool,
+		posts: [PostData],
+		pager: Paginator,
+		event: Event? = nil
+	) throws {
 		guard creator.userID == forum.$creator.id else {
 			throw Abort(.internalServerError, reason: "Internal server error--Forum's creator does not match.")
 		}
@@ -647,7 +660,7 @@ public struct ForumListData: Content {
 	var creator: UserHeader
 	/// The forum's title.
 	var title: String
-	/// The number of posts in the forum. 
+	/// The number of posts in the forum.
 	var postCount: Int
 	/// The number of posts the user has read.  Specifically, this will be the number of posts the forum contained the last time the user called a fn that returned a `ForumData`.
 	/// Blocked and muted posts are included in this number, but not returned in the array of posts.
@@ -673,9 +686,17 @@ public struct ForumListData: Content {
 }
 
 extension ForumListData {
-	init(forum: Forum, creator: UserHeader, postCount: Int, readCount: Int, 
-			lastPostAt: Date?, lastPoster: UserHeader?, isFavorite: Bool,
-			isMuted: Bool, event: Event?) throws {
+	init(
+		forum: Forum,
+		creator: UserHeader,
+		postCount: Int,
+		readCount: Int,
+		lastPostAt: Date?,
+		lastPoster: UserHeader?,
+		isFavorite: Bool,
+		isMuted: Bool,
+		event: Event?
+	) throws {
 		guard creator.userID == forum.$creator.id else {
 			throw Abort(.internalServerError, reason: "Internal server error--Forum's creator does not match.")
 		}
@@ -699,7 +720,7 @@ extension ForumListData {
 	}
 }
 
-/// Used to return a (partial) list of forums along with the number of forums in the found set. Similar to CategoryData, but the 
+/// Used to return a (partial) list of forums along with the number of forums in the found set. Similar to CategoryData, but the
 /// forums need not be from the same category. Instead, this returns forums that match a common attribute acoss all categores.
 ///
 /// Returned by:
@@ -715,10 +736,9 @@ public struct ForumSearchData: Content {
 	var forumThreads: [ForumListData]
 }
 
-
-/// Used to upload an image file or refer to an already-uploaded image. Either `filename` or `image` should always be set. 
+/// Used to upload an image file or refer to an already-uploaded image. Either `filename` or `image` should always be set.
 /// If both are set, `filename` is ignored and `image` is processed and saved with a new name. A more Swift-y way to do this
-/// would be an Enum with associated values, except Codable support becomes a pain and makes it difficult to understand 
+/// would be an Enum with associated values, except Codable support becomes a pain and makes it difficult to understand
 /// what the equivalent JSON struct will look like.
 ///
 /// Required by: `POST /api/v3/user/image`
@@ -728,7 +748,7 @@ public struct ForumSearchData: Content {
 public struct ImageUploadData: Content {
 	/// The filename of an existing image previously uploaded to the server. Ignored if image is set.
 	var filename: String?
-	/// The image in `Data` format. 
+	/// The image in `Data` format.
 	var image: Data?
 }
 
@@ -749,7 +769,7 @@ extension ImageUploadData {
 
 /// Wraps an array of `KaraokeSongData` with information for pagination.
 /// `KaraokeSongData` returns data about a single song.
-/// 
+///
 /// Returned by: `GET /api/v3/karaoke`
 /// See `KaraokeController.getKaraokeSongs()`.
 public struct KaraokeSongResponseData: Content {
@@ -759,12 +779,12 @@ public struct KaraokeSongResponseData: Content {
 	var start: Int
 	/// How many results to return.
 	var limit: Int
-	/// The array of songs that match 
+	/// The array of songs that match
 	var songs: [KaraokeSongData]
 }
 
 /// Returns information about a song in the Karaoke Song Library.
-/// 
+///
 /// Returned by: `GET /api/v3/karaoke/:song_id`
 /// Incorporated into: `KaraokeSongResponseData`
 public struct KaraokeSongData: Content {
@@ -776,7 +796,7 @@ public struct KaraokeSongData: Content {
 	var songName: String
 	/// If TRUE, this song is a MIDI track.
 	var isMidi: Bool
-	/// If TRUE, this track is the regular released version of the song, post-processed with voice removal software. 
+	/// If TRUE, this track is the regular released version of the song, post-processed with voice removal software.
 	/// If FALSE, the track is (assumedly) the karaoke mix of the track.
 	var isVoiceReduced: Bool
 	/// TRUE if this user has favorited this song. Always FALSE if not logged in.
@@ -795,16 +815,20 @@ extension KaraokeSongData {
 		self.isFavorite = isFavorite
 		performances = []
 		if song.$sungBy.value != nil {
-			performances = song.sungBy.map { 
-				KaraokePerformedSongsData(artist: song.artist, songName: song.title, performers: $0.performers, 
-						time: $0.createdAt ?? Date()) 
+			performances = song.sungBy.map {
+				KaraokePerformedSongsData(
+					artist: song.artist,
+					songName: song.title,
+					performers: $0.performers,
+					time: $0.createdAt ?? Date()
+				)
 			}
 		}
 	}
 }
 
 /// Returns information about songs that have been performed in the Karaoke Lounge onboard.
-/// 
+///
 /// Returned by: `GET /api/v3/karaoke/performance`
 /// Incorporated into: `KaraokeSongData`, which itself is incorporated into `KaraokeSongResponseData
 public struct KaraokePerformedSongsData: Content {
@@ -837,7 +861,7 @@ public struct KeywordData: Content {
 
 /// Used to create a `UserNote` when viewing a user's profile. Also used to create a Karaoke song log entry.
 ///
-/// Required by: 
+/// Required by:
 /// * `/api/v3/users/:userID/note`
 /// * `/api/v3/karaoke/:songID/logperformance`
 ///
@@ -851,7 +875,11 @@ extension NoteCreateData: RCFValidatable {
 	func runValidations(using decoder: ValidatingDecoder) throws {
 		let tester = try decoder.validator(keyedBy: CodingKeys.self)
 		tester.validate(note.count > 0, forKey: .note, or: "post text cannot be empty.")
-		tester.validate(note.count < 1000, forKey: .note, or: "post length of \(note.count) is over the 1000 character limit")
+		tester.validate(
+			note.count < 1000,
+			forKey: .note,
+			or: "post length of \(note.count) is over the 1000 character limit"
+		)
 		let lines = note.replacingOccurrences(of: "\r\n", with: "\r").components(separatedBy: .newlines).count
 		tester.validate(lines <= 25, forKey: .note, or: "posts are limited to 25 lines of text")
 	}
@@ -886,9 +914,9 @@ extension NoteData {
 }
 
 /// Composes into other structs to add pagination.
-/// 
+///
 /// Generally this will be added to a top-level struct along with an array of some result type, like this:
-/// 
+///
 /// ```
 /// 	struct SomeCollectionData: Content {
 /// 		var paginator: Paginator
@@ -898,7 +926,7 @@ extension NoteData {
 /// The Paginator lets you page through results, showing the total number of pages and the current page.
 /// The outer-level struct should document the sort ordering for the returned collection; the first element
 /// in the sorted collection is returned in the first result element when start = 0.
-/// 
+///
 /// In many cases the size of the returned array will be smaller than limit, and not only at the end of the results.
 /// In several cases the results may be filtered after the database query returns. The next 'page' of results should
 /// be calculated with `start + limit`, not with `start + collection.count`.
@@ -911,7 +939,7 @@ public struct Paginator: Content {
 	var limit: Int
 }
 
-/// Used to create or update a `ForumPost`, `Twarrt`, or `FezPost`. 
+/// Used to create or update a `ForumPost`, `Twarrt`, or `FezPost`.
 ///
 /// Required by:
 /// * `POST /api/v3/forum/ID/create`
@@ -926,8 +954,8 @@ public struct Paginator: Content {
 public struct PostContentData: Content {
 	/// The new text of the forum post.
 	var text: String
-	/// An array of up to 4 images (1 when used in a Fez post). Each image can specify either new image data or an existing image filename. 
-	/// For new posts, images will generally contain all new image data. When editing existing posts, images may contain a mix of new and existing images. 
+	/// An array of up to 4 images (1 when used in a Fez post). Each image can specify either new image data or an existing image filename.
+	/// For new posts, images will generally contain all new image data. When editing existing posts, images may contain a mix of new and existing images.
 	/// Reorder ImageUploadDatas to change presentation order. Set images to [] to remove images attached to post when editing.
 	var images: [ImageUploadData]
 	/// If the poster has moderator privileges and this field is TRUE, this post will be authored by 'moderator' instead of the author.
@@ -942,7 +970,11 @@ extension PostContentData: RCFValidatable {
 	func runValidations(using decoder: ValidatingDecoder) throws {
 		let tester = try decoder.validator(keyedBy: CodingKeys.self)
 		tester.validate(text.count > 0, forKey: .text, or: "post text cannot be empty.")
-		tester.validate(text.count < 2048, forKey: .text, or: "post length of \(text.count) is over the 2048 character limit")
+		tester.validate(
+			text.count < 2048,
+			forKey: .text,
+			or: "post length of \(text.count) is over the 2048 character limit"
+		)
 		tester.validate(images.count < 5, forKey: .images, or: "posts are limited to 4 image attachments")
 		let lines = text.replacingOccurrences(of: "\r\n", with: "\r").components(separatedBy: .newlines).count
 		tester.validate(lines <= 25, forKey: .text, or: "posts are limited to 25 lines of text")
@@ -995,8 +1027,15 @@ public struct PostData: Content {
 	var likeCount: Int
 }
 
-extension PostData {	
-	init(post: ForumPost, author: UserHeader, bookmarked: Bool, userLike: LikeType?, likeCount: Int, overrideQuarantine: Bool = false) throws {
+extension PostData {
+	init(
+		post: ForumPost,
+		author: UserHeader,
+		bookmarked: Bool,
+		userLike: LikeType?,
+		likeCount: Int,
+		overrideQuarantine: Bool = false
+	) throws {
 		postID = try post.requireID()
 		createdAt = post.createdAt ?? Date()
 		self.author = author
@@ -1006,7 +1045,7 @@ extension PostData {
 		self.userLike = userLike
 		self.likeCount = likeCount
 	}
-	
+
 	// For newly created posts
 	init(post: ForumPost, author: UserHeader) throws {
 		postID = try post.requireID()
@@ -1024,9 +1063,9 @@ extension PostData {
 /// However, this gives the results of a search for posts across all the forums.
 ///
 /// Returned by: `GET /api/v3/forum/post/search`
-/// 
+///
 public struct PostSearchData: Content {
-	/// The search query used to create these results. 
+	/// The search query used to create these results.
 	var queryString: String
 	/// The total number of posts in the result set. The actual # of results returned may be fewer than this, even if we return 'complete' results. This is due to additional filtering that
 	/// is done after the database query. See notes on `ContentFilterable.filterForMention(of:)`
@@ -1116,9 +1155,9 @@ public struct ProfilePublicData: Content {
 extension ProfilePublicData {
 	init(user: User, note: String?, requesterAccessLevel: UserAccessLevel) throws {
 		self.header = try UserHeader(user: user)
-		if !user.moderationStatus.showsContent() && !requesterAccessLevel.hasAccess(.moderator) { 
+		if !user.moderationStatus.showsContent() && !requesterAccessLevel.hasAccess(.moderator) {
 			self.header.displayName = nil
-			self.header.userImage = nil 
+			self.header.userImage = nil
 			self.about = ""
 			self.email = ""
 			self.homeLocation = ""
@@ -1165,7 +1204,7 @@ public struct ReportData: Content {
 }
 
 /// Used to return a token string for use in HTTP Bearer Authentication.
-/// 
+///
 /// Clients can use the `userID` field  to validate the user that logged in matches the user they *thiought* was logging in.
 /// This guards against a situation where one user changes their username to the previous username value
 /// of another user. A client using `/client/user/updates/since` could end up associating a login with the wrong
@@ -1178,32 +1217,35 @@ public struct ReportData: Content {
 ///
 /// See `AuthController.loginHandler(_:)` and `AuthController.recoveryHandler(_:data:)`.
 public struct TokenStringData: Content {
-	/// The user ID of the newly logged in user. 
+	/// The user ID of the newly logged in user.
 	var userID: UUID
 	/// The user's access level.
 	var accessLevel: UserAccessLevel
 	/// The token string.
 	let token: String
 
-	/// Creates a `TokenStringData` from a `UserAccessLevel` and a `Token`. The Token must be associated with a `User`, 
+	/// Creates a `TokenStringData` from a `UserAccessLevel` and a `Token`. The Token must be associated with a `User`,
 	/// but the User object does not need to be attached.
 	init(accessLevel: UserAccessLevel, token: Token) {
 		self.userID = token.$user.id
 		self.accessLevel = accessLevel
 		self.token = token.token
 	}
-	
-	/// Creates a `TokenStringData` from a `User` and a `Token`. The Token must be associated with  the user, 
+
+	/// Creates a `TokenStringData` from a `User` and a `Token`. The Token must be associated with  the user,
 	/// but the User object does not need to be attached.
 	init(user: User, token: Token) throws {
 		guard try token.$user.id == user.requireID() else {
-			throw Abort(.internalServerError, reason: "Attempt to create TokenStringData for token not assigned to User")
+			throw Abort(
+				.internalServerError,
+				reason: "Attempt to create TokenStringData for token not assigned to User"
+			)
 		}
 		self.userID = token.$user.id
 		self.accessLevel = user.accessLevel
 		self.token = token.token
 	}
-	
+
 	init?(cacheUser: UserCacheData) {
 		guard let tokenString = cacheUser.token else {
 			return nil
@@ -1267,7 +1309,14 @@ public struct TwarrtData: Content {
 }
 
 extension TwarrtData {
-	init(twarrt: Twarrt, creator: UserHeader, isBookmarked: Bool, userLike: LikeType?, likeCount: Int, overrideQuarantine: Bool = false) throws {
+	init(
+		twarrt: Twarrt,
+		creator: UserHeader,
+		isBookmarked: Bool,
+		userLike: LikeType?,
+		likeCount: Int,
+		overrideQuarantine: Bool = false
+	) throws {
 		guard creator.userID == twarrt.$author.id else {
 			throw Abort(.internalServerError, reason: "Internal server error--Twarrt's creator does not match.")
 		}
@@ -1346,14 +1395,22 @@ extension UserCreateData: RCFValidatable {
 		let tester = try decoder.validator(keyedBy: CodingKeys.self)
 		tester.validate(password.count >= 6, forKey: .password, or: "password has a 6 character minimum")
 		tester.validate(password.count <= 50, forKey: .password, or: "password has a 50 character limit")
-		usernameValidations(username: username).forEach {
-			tester.addValidationError(forKey: .username, errorString: $0)
-		}
+		usernameValidations(username: username)
+			.forEach {
+				tester.addValidationError(forKey: .username, errorString: $0)
+			}
 		// Registration code can be nil, but if it isn't, it must be a properly formed code.
-		if let normalizedCode = verification?.lowercased().replacingOccurrences(of: " ", with: ""), normalizedCode.count > 0 {
-			if normalizedCode.rangeOfCharacter(from: CharacterSet.alphanumerics.inverted) != nil || normalizedCode.count != 6  {
-				tester.addValidationError(forKey: .verification, errorString: "Malformed registration code. Registration code " +
-						"must be 6 alphanumeric letters; spaces optional")
+		if let normalizedCode = verification?.lowercased().replacingOccurrences(of: " ", with: ""),
+			normalizedCode.count > 0
+		{
+			if normalizedCode.rangeOfCharacter(from: CharacterSet.alphanumerics.inverted) != nil
+				|| normalizedCode.count != 6
+			{
+				tester.addValidationError(
+					forKey: .verification,
+					errorString: "Malformed registration code. Registration code "
+						+ "must be 6 alphanumeric letters; spaces optional"
+				)
 			}
 		}
 	}
@@ -1384,9 +1441,15 @@ extension UserHeader {
 		self.displayName = user.displayName
 		self.userImage = user.userImage
 	}
-	
-	static var Blocked: UserHeader { .init(userID: Settings.shared.blockedUserID, username: "BlockedUser", 
-			displayName: "BlockedUser", userImage: "") }
+
+	static var Blocked: UserHeader {
+		.init(
+			userID: Settings.shared.blockedUserID,
+			username: "BlockedUser",
+			displayName: "BlockedUser",
+			userImage: ""
+		)
+	}
 }
 
 /// Returns status about a single Alertword, for either Twarrts of ForumPost hits on that word.
@@ -1397,8 +1460,8 @@ public struct UserNotificationAlertwordData: Content {
 	/// The total number of twarrts that include this word since the first time anyone added this alertword. We record alert word hits in
 	/// a single global list that unions all users' alert word lists. A search for this alertword may return more hits than this number indicates.
 	var twarrtMentionCount: Int
-	/// The number of twarrts that include this alertword that the user has not yet seen. Calls to view twarrts with a "?search=" parameter that matches the 
-	/// alertword will mark all twarrts containing this alertword as viewed. 
+	/// The number of twarrts that include this alertword that the user has not yet seen. Calls to view twarrts with a "?search=" parameter that matches the
+	/// alertword will mark all twarrts containing this alertword as viewed.
 	var newTwarrtMentionCount: Int
 	/// The total number of forum posts that include this word since the first time anyone added this alertword.
 	var forumMentionCount: Int
@@ -1416,9 +1479,9 @@ extension UserNotificationAlertwordData {
 	}
 }
 
-/// Provides updates about server global state and the logged in user's notifications. 
+/// Provides updates about server global state and the logged in user's notifications.
 /// `userNotificationHandler()` is intended to be called frequently by clients (I mean, don't call it once a second).
-/// 
+///
 /// Returned by AlertController.userNotificationHandler()
 public struct UserNotificationData: Content {
 	/// Always an ISO 8601 date in UTC, like "2020-03-07T12:00:00Z"
@@ -1429,66 +1492,72 @@ public struct UserNotificationData: Content {
 	var serverTimeZone: String
 	/// Features that are turned off by the server. If the `appName` for a feature is `all`, the feature is disabled at the API layer.
 	/// For all other appName values, the disable is just a notification that the client should not show the feature to users.
-	/// If the list is empty, no features have been disabled. 
+	/// If the list is empty, no features have been disabled.
 	var disabledFeatures: [DisabledFeature]
 	/// The name of the shipboard Wifi network
 	var shipWifiSSID: String?
 
-	/// IDs of all active announcements 
+	/// IDs of all active announcements
 	var activeAnnouncementIDs: [Int]
-	
-/// All fields below this line will be 0 or null if called when not logged in.
-	
+
+	/// All fields below this line will be 0 or null if called when not logged in.
+
 	/// Count of announcements the user has not yet seen. 0 if not logged in.
 	var newAnnouncementCount: Int
-	
+
 	/// Number of twarrts that @mention the user. 0 if not logged in.
 	var twarrtMentionCount: Int
 	/// Number of twarrt @mentions that the user has not read (by visiting the twarrt mentions endpoint; reading twarrts in the regular feed doesn't count). 0 if not logged in.
 	var newTwarrtMentionCount: Int
-	
+
 	/// Number of forum posts that @mention the user. 0 if not logged in.
 	var forumMentionCount: Int
 	/// Number of forum post @mentions the user has not read. 0 if not logged in.
 	var newForumMentionCount: Int
-	
+
 	/// Count of # of Seamail threads with new messages. NOT total # of new messages-a single seamail thread with 10 new messages counts as 1. 0 if not logged in.
 	var newSeamailMessageCount: Int
 	/// Count of # of Fezzes with new messages. 0 if not logged in.
 	var newFezMessageCount: Int
-	
+
 	/// The start time of the earliest event that the user has followed with a start time > now. nil if not logged in or no matching event.
 	var nextFollowedEventTime: Date?
-	
+
 	/// The event ID of the the next future event the user has followed. This event's start time should always be == nextFollowedEventTime.
 	/// If the user has favorited multiple events that start at the same time, this will be random among them.
 	var nextFollowedEventID: UUID?
-	
+
 	/// For each alertword the user has, this returns data on hit counts for that word.
 	var alertWords: [UserNotificationAlertwordData]
-	
+
 	/// Notification counts that are only relevant for Moderators (and TwitarrTeam).
 	public struct ModeratorNotificationData: Content {
-		/// The total number of open user reports. Does not count in-process reports (reports being 'handled' by a mod already). 
-		/// This value counts multiple reports on the same piece of content as separate reports. 
+		/// The total number of open user reports. Does not count in-process reports (reports being 'handled' by a mod already).
+		/// This value counts multiple reports on the same piece of content as separate reports.
 		var openReportCount: Int
-		
+
 		/// The number of Seamails to @moderator (more precisely, ones where @moderator is a participant) that have new messages.
 		/// This value is very similar to `newSeamailMessageCount`, but for any moderator it gives the number of new seamails for @moderator.
 		var newModeratorSeamailMessageCount: Int
 
-		/// The number of Seamails to @TwitarrTeam. Nil if user isn't a member of TwitarrTeam. This is in the Moderator struct because I didn't 
+		/// The number of Seamails to @TwitarrTeam. Nil if user isn't a member of TwitarrTeam. This is in the Moderator struct because I didn't
 		/// want to make *another* sub-struct for TwitarrTeam, just to hold one value.
 		var newTTSeamailMessageCount: Int?
 	}
-	
+
 	/// Will be nil for non-moderator accounts.
 	var moderatorData: ModeratorNotificationData?
 }
 
-extension UserNotificationData	{
-	init(newFezCount: Int, newSeamailCount: Int, activeAnnouncementIDs: [Int], newAnnouncementCount: Int, 
-			nextEventTime: Date?, nextEvent: UUID?) {
+extension UserNotificationData {
+	init(
+		newFezCount: Int,
+		newSeamailCount: Int,
+		activeAnnouncementIDs: [Int],
+		newAnnouncementCount: Int,
+		nextEventTime: Date?,
+		nextEvent: UUID?
+	) {
 		serverTime = ISO8601DateFormatter().string(from: Date())
 		serverTimeOffset = Settings.shared.timeZoneChanges.tzAtTime().secondsFromGMT(for: Date())
 		serverTimeZone = Settings.shared.timeZoneChanges.abbrevAtTime()
@@ -1506,7 +1575,7 @@ extension UserNotificationData	{
 		self.nextFollowedEventID = nextEvent
 		self.alertWords = []
 	}
-	
+
 	// Initializes an dummy struct, for when there's no user logged in.
 	init() {
 		serverTime = ISO8601DateFormatter().string(from: Date())
@@ -1549,7 +1618,7 @@ extension UserPasswordData: RCFValidatable {
 
 /// Used to edit the current user's profile contents. For profile data on users, see `ProfilePublicData`.
 ///
-/// Required by: 
+/// Required by:
 /// * `POST /api/v3/user/profile`
 ///
 /// Returned by:
@@ -1572,9 +1641,9 @@ public struct UserProfileUploadData: Content {
 	var roomNumber: String?
 	/// An optional email address.
 	var email: String?
-	 /// An optional short greeting/message to visitors of the profile.
+	/// An optional short greeting/message to visitors of the profile.
 	var message: String?
-   /// An optional blurb about the user.
+	/// An optional blurb about the user.
 	var about: String?
 }
 
@@ -1597,7 +1666,13 @@ extension UserProfileUploadData: RCFValidatable {
 		let tester = try decoder.validator(keyedBy: CodingKeys.self)
 		tester.validateStrLenOptional(displayName, min: 2, max: 50, forKey: .displayName, fieldName: "display name")
 		tester.validateStrLenOptional(realName, min: 2, max: 50, forKey: .realName, fieldName: "real name")
-		tester.validateStrLenOptional(preferredPronoun, min: 2, max: 50, forKey: .preferredPronoun, fieldName: "pronouns field")
+		tester.validateStrLenOptional(
+			preferredPronoun,
+			min: 2,
+			max: 50,
+			forKey: .preferredPronoun,
+			fieldName: "pronouns field"
+		)
 		tester.validateStrLenOptional(homeLocation, min: 2, max: 50, forKey: .homeLocation, fieldName: "home location")
 		tester.validateStrLenOptional(roomNumber, min: 4, max: 20, forKey: .roomNumber, fieldName: "cabin number")
 		tester.validateStrLenOptional(email, min: 4, max: 50, forKey: .email, fieldName: "email address")
@@ -1605,7 +1680,6 @@ extension UserProfileUploadData: RCFValidatable {
 		tester.validateStrLenOptional(about, min: 4, max: 400, forKey: .about, fieldName: "about field")
 	}
 }
-
 
 /// Used to attempt to recover an account in a forgotten-password type scenario.
 ///
@@ -1624,10 +1698,15 @@ public struct UserRecoveryData: Content {
 extension UserRecoveryData: RCFValidatable {
 	func runValidations(using decoder: ValidatingDecoder) throws {
 		let tester = try decoder.validator(keyedBy: CodingKeys.self)
-		tester.validate(recoveryKey.count >= 6, forKey: .recoveryKey, or: "password/recovery code has a 6 character minimum")
-		usernameValidations(username: username).forEach {
-			tester.addValidationError(forKey: .username, errorString: $0)
-		}
+		tester.validate(
+			recoveryKey.count >= 6,
+			forKey: .recoveryKey,
+			or: "password/recovery code has a 6 character minimum"
+		)
+		usernameValidations(username: username)
+			.forEach {
+				tester.addValidationError(forKey: .username, errorString: $0)
+			}
 		tester.validate(newPassword.count >= 6, forKey: .newPassword, or: "password has a 6 character minimum length")
 		tester.validate(newPassword.count <= 50, forKey: .newPassword, or: "password has a 50 character limit")
 	}
@@ -1660,9 +1739,10 @@ public struct UserUsernameData: Content {
 extension UserUsernameData: RCFValidatable {
 	func runValidations(using decoder: ValidatingDecoder) throws {
 		let tester = try decoder.validator(keyedBy: CodingKeys.self)
-		usernameValidations(username: username).forEach {
-			tester.addValidationError(forKey: .username, errorString: $0)
-		}
+		usernameValidations(username: username)
+			.forEach {
+				tester.addValidationError(forKey: .username, errorString: $0)
+			}
 	}
 }
 
@@ -1679,8 +1759,11 @@ public struct UserVerifyData: Content {
 extension UserVerifyData: RCFValidatable {
 	func runValidations(using decoder: ValidatingDecoder) throws {
 		let tester = try decoder.validator(keyedBy: CodingKeys.self)
-		tester.validate(verification.count >= 6 && verification.count <= 7, forKey: .verification, 
-				or: "verification code is 6 letters long (with an optional space in the middle)")
+		tester.validate(
+			verification.count >= 6 && verification.count <= 7,
+			forKey: .verification,
+			or: "verification code is 6 letters long (with an optional space in the middle)"
+		)
 	}
 }
 
@@ -1688,7 +1771,7 @@ extension UserVerifyData: RCFValidatable {
 
 /// Three differernt POST structs contain username fields; this fn exists to ensure they all validate the username the same way. This fn is designed to return a list
 /// of validation failure strings--if it returns an empty array the username is valid.
-fileprivate func usernameValidations(username: String) -> [String] {
+private func usernameValidations(username: String) -> [String] {
 	var errorStrings: [String] = []
 	if username.count < 2 { errorStrings.append("username has a 2 character minimum") }
 	if username.count > 50 { errorStrings.append("username has a 50 character limit") }
@@ -1699,7 +1782,9 @@ fileprivate func usernameValidations(username: String) -> [String] {
 		errorStrings.append("username must start with a letter or number")
 	}
 	if let lastChar = username.unicodeScalars.last, CharacterSet.usernameSeparators.contains(lastChar) {
-		errorStrings.append("Username separator chars (\(usernameSeparatorString)) can only be in the middle of a username string.")
+		errorStrings.append(
+			"Username separator chars (\(usernameSeparatorString)) can only be in the middle of a username string."
+		)
 	}
 	return errorStrings
 }
@@ -1712,9 +1797,9 @@ public struct AlertmanagerAlert: Content {
 	// them I'm disinclined to overcomplicate it.
 	var status: String
 	// List of labels (key: value). Labels can be used for filtering in Prometheus/Alertmanager.
-	var labels: [String:String]
+	var labels: [String: String]
 	// List of annotations (key: value). Annotations are human metadata in Prometheus/Alertmanager.
-	var annotations: [String:String]
+	var annotations: [String: String]
 	// Date at which the alert was generated.
 	var startsAt: Date
 	// @TODO This is rendering as something like "0001-01-01T00:00:00Z" which to me implies its a time
@@ -1755,11 +1840,11 @@ public struct AlertmanagerWebhookPayload: Content {
 	// Name of the Alertmanager receiver object.
 	var receiver: String
 	// List of labels (key: value) for the alert group. Labels can be used for filtering in Prometheus/Alertmanager.
-	var groupLabels: [String:String]
+	var groupLabels: [String: String]
 	// List of labels (key: value) common to all alerts in this group. Labels can be used for filtering in Prometheus/Alertmanager.
-	var commonLabels: [String:String]
+	var commonLabels: [String: String]
 	// List of annotations (key: value) common to all alerts in this group. Annotations are human metadata in Prometheus/Alertmanager.
-	var commonAnnotations: [String:String]
+	var commonAnnotations: [String: String]
 	/// backlink to the Alertmanager.
 	var externalURL: String
 	// List of AlertmanagerAlert objects that are within this group/update.

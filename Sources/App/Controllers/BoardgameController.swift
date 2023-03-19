@@ -1,6 +1,6 @@
-import Vapor
 import Fluent
 import PostgresNIO
+import Vapor
 
 /// Methods for accessing the list of boardgames available in the onboard Games Library.
 struct BoardgameController: APIRouteCollection {
@@ -9,8 +9,9 @@ struct BoardgameController: APIRouteCollection {
 	func registerRoutes(_ app: Application) throws {
 
 		// convenience route group for all /api/v3/boardgame endpoints
-		let boardgameRoutes = app.grouped(DisabledAPISectionMiddleware(feature: .gameslist)).grouped("api", "v3", "boardgames")
-	
+		let boardgameRoutes = app.grouped(DisabledAPISectionMiddleware(feature: .gameslist))
+			.grouped("api", "v3", "boardgames")
+
 		let flexAuthGroup = addFlexCacheAuthGroup(to: boardgameRoutes)
 		flexAuthGroup.get("", use: getBoardgames)
 		flexAuthGroup.get(boardgameIDParam, use: getBoardgame)
@@ -22,21 +23,21 @@ struct BoardgameController: APIRouteCollection {
 		tokenAuthGroup.post(boardgameIDParam, "favorite", "remove", use: removeFavorite)
 		tokenAuthGroup.delete(boardgameIDParam, "favorite", use: removeFavorite)
 
-		let adminAuthGroup = addTokenCacheAuthGroup(to: boardgameRoutes).grouped([RequireAdminMiddleware()])		
+		let adminAuthGroup = addTokenCacheAuthGroup(to: boardgameRoutes).grouped([RequireAdminMiddleware()])
 		adminAuthGroup.post("reload", use: reloadBoardGamesData)
 	}
-	
+
 	/// `GET /api/v3/boardgames`
-	/// 
-	/// Returns an array of boardgames in a structure designed to support pagination. Can be called while not logged in; 
+	///
+	/// Returns an array of boardgames in a structure designed to support pagination. Can be called while not logged in;
 	/// if logged in favorite information is returned.
-	/// 
+	///
 	/// **URL Query Parameters**
 	/// * `?search=STRING` - Only show boardgames whose title contains the given string.
-	/// * `?favorite=TRUE` - Only return boardgames that have been favorited by current user. 
+	/// * `?favorite=TRUE` - Only return boardgames that have been favorited by current user.
 	///	* `?start=INT` - Offset from start of results set
-	/// * `?limit=INT` - the maximum number of games to retrieve: 1-200, default is 50. 
-	/// 
+	/// * `?limit=INT` - the maximum number of games to retrieve: 1-200, default is 50.
+	///
 	/// - Returns: `BoardgameResponseData`
 	func getBoardgames(_ req: Request) async throws -> BoardgameResponseData {
 		struct GameQueryOptions: Decodable {
@@ -46,7 +47,7 @@ struct BoardgameController: APIRouteCollection {
 			var limit: Int?
 		}
 		let user = req.auth.get(UserCacheData.self)
- 		let filters = try req.query.decode(GameQueryOptions.self)
+		let filters = try req.query.decode(GameQueryOptions.self)
 		let start = filters.start ?? 0
 		let limit = (filters.limit ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
 		let query = Boardgame.query(on: req.db).with(\.$expansions)
@@ -55,18 +56,23 @@ struct BoardgameController: APIRouteCollection {
 		}
 		if let fav = filters.favorite, fav.lowercased() == "true", let user = user {
 			query.join(BoardgameFavorite.self, on: \Boardgame.$id == \BoardgameFavorite.$boardgame.$id)
-					.filter(BoardgameFavorite.self, \.$user.$id == user.userID)
+				.filter(BoardgameFavorite.self, \.$user.$id == user.userID)
 		}
 		async let totalGames = query.copy().count()
 		async let games = query.sort(\.$gameName, .ascending).range(start..<(start + limit)).all()
 		let gamesArray = try await buildBoardgameData(for: user, games: games, on: req.db)
-		return try await BoardgameResponseData(totalGames: totalGames, start: start, limit: limit, gameArray: gamesArray)
+		return try await BoardgameResponseData(
+			totalGames: totalGames,
+			start: start,
+			limit: limit,
+			gameArray: gamesArray
+		)
 	}
 
 	/// `GET /api/v3/boardgames/:boardgameID
-	/// 
+	///
 	/// Gets a single boardgame referenced by ID. Can be called while not logged in; if logged in favorite information is returned.
-	/// 
+	///
 	/// - Parameter boardgameID: in URL path
 	/// - Returns: `BoardgameData`
 	func getBoardgame(_ req: Request) async throws -> BoardgameData {
@@ -77,9 +83,9 @@ struct BoardgameController: APIRouteCollection {
 	}
 
 	/// `GET /api/v3/boardgames/expansions/:boardgameID`
-	/// 
+	///
 	/// Given a boardgameID for either a base game or an expansion, returns the base game and all expansions.
-	/// 
+	///
 	/// - Parameter boardgameID: in URL path
 	/// - Throws: 400 error if the event was not favorited.
 	/// - Returns: An array of `BoardgameData`. First item is the base game, other items are expansions.
@@ -87,8 +93,11 @@ struct BoardgameController: APIRouteCollection {
 		let user = req.auth.get(UserCacheData.self)
 		let targetGame = try await Boardgame.findFromParameter(boardgameIDParam, on: req) { $0.with(\.$expansions) }
 		let basegameID = try targetGame.$expands.id ?? targetGame.requireID()
-		let games = try await Boardgame.query(on: req.db).with(\.$expansions).group(.or) { group in
-					group.filter(\.$id == basegameID).filter(\.$expands.$id == basegameID) }.all()
+		let games = try await Boardgame.query(on: req.db).with(\.$expansions)
+			.group(.or) { group in
+				group.filter(\.$id == basegameID).filter(\.$expands.$id == basegameID)
+			}
+			.all()
 		// Oddly, the list for the games library has at least one expansion for a game not in the library.
 		var baseGameFirst = games
 		if let baseGameIndex = baseGameFirst.firstIndex(where: { $0.expands == nil }) {
@@ -97,7 +106,7 @@ struct BoardgameController: APIRouteCollection {
 		}
 		return try await buildBoardgameData(for: user, games: baseGameFirst, on: req.db)
 	}
-	
+
 	/// `POST /api/v3/boardgames/:boardgameID/favorite`
 	///
 	/// Add the specified `Boardgame` to the user's favorite boardgame list. Must be logged in
@@ -114,12 +123,12 @@ struct BoardgameController: APIRouteCollection {
 		}
 		catch let sqlError as PostgresError {
 			if sqlError.code == .uniqueViolation {
-					return .ok
+				return .ok
 			}
 			throw sqlError
-		} 
+		}
 	}
-	
+
 	/// `POST /api/v3/boardgames/:boardgameID/favorite/remove`
 	/// `DELETE /api/v3/boardgames/:boardgameID/favorite`
 	///
@@ -132,28 +141,30 @@ struct BoardgameController: APIRouteCollection {
 		guard let boardgameID = req.parameters.get(boardgameIDParam.paramString, as: UUID.self) else {
 			throw Abort(.badRequest, reason: "Could not make UUID out of boardgame parameter")
 		}
-		guard let pivot = try await BoardgameFavorite.query(on: req.db).filter(\.$user.$id == user.userID)
-				.filter(\.$boardgame.$id == boardgameID).first() else {
+		guard
+			let pivot = try await BoardgameFavorite.query(on: req.db).filter(\.$user.$id == user.userID)
+				.filter(\.$boardgame.$id == boardgameID).first()
+		else {
 			return .ok
 		}
 		try await pivot.delete(on: req.db)
 		return .noContent
 	}
-	
+
 	/// `GET /api/v3/boardgames/recommend`
-	/// 
-	/// Returns an array of boardgames in a structure designed to support pagination. The returned array of board games will be sorted 
+	///
+	/// Returns an array of boardgames in a structure designed to support pagination. The returned array of board games will be sorted
 	/// in decreasing order of how closely each games matches the criteria in the `BoardgameRecommendationData` JSON content.
 	/// Can be called while not logged in; if logged in favorite information is returned.
-	/// 
-	/// The recommendation algorithom filters out games that don't match the given criteria, i.e. if you ask for games for 6 players, games for 1-4 players 
-	/// will not be returned. Then, games are assigned a score taking each games' `suggestedNumPlayers`, `avgPlayingTime`, `avgRating`, 
+	///
+	/// The recommendation algorithom filters out games that don't match the given criteria, i.e. if you ask for games for 6 players, games for 1-4 players
+	/// will not be returned. Then, games are assigned a score taking each games' `suggestedNumPlayers`, `avgPlayingTime`, `avgRating`,
 	/// and `gameComplexity` into account.
-	/// 
+	///
 	/// **URL Query Parameters**
 	///	* `?start=INT` - Offset from start of results set
-	/// * `?limit=INT` - the maximum number of games to retrieve: 1-200, default is 50. 
-	/// 
+	/// * `?limit=INT` - the maximum number of games to retrieve: 1-200, default is 50.
+	///
 	/// - Returns: `BoardgameResponseData`
 	func recommendGames(_ req: Request) async throws -> BoardgameResponseData {
 		let user = req.auth.get(UserCacheData.self)
@@ -161,8 +172,8 @@ struct BoardgameController: APIRouteCollection {
 		let start = (req.query[Int.self, at: "start"] ?? 0)
 		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
 		let query = Boardgame.query(on: req.db).with(\.$expansions).filter(\.$minPlayers <= data.numPlayers)
-				.filter(\.$maxPlayers >= data.numPlayers)
-				.filter(\.$avgPlayingTime <= data.timeToPlay)
+			.filter(\.$maxPlayers >= data.numPlayers)
+			.filter(\.$avgPlayingTime <= data.timeToPlay)
 		if data.maxAge != 0 {
 			query.filter(\.$minAge <= data.maxAge)
 		}
@@ -176,20 +187,23 @@ struct BoardgameController: APIRouteCollection {
 		}
 		// In raw SQL it'd be possible to do the sort as part of the query; but the ORM layer is too restrictive for complex
 		// sorts like this, going down to the SQLKit layer is a pain, and it's not *that* bad to get all the games and sort locally.
-		let orderedGames = games.compactMap { game -> GameScore? in 
-			guard game.canUseForRecommendations() else {
-				return nil
-			}			
-			var score: Float = 100.0 + game.getAvgRating() 
-			score -= Float(abs(data.numPlayers - game.getSuggestedPlayers())) * 2.0
-			score -= Float(abs(data.timeToPlay - game.getAvgPlayingTime())) / 15.0
-			if data.complexity != 0 {
-				score -= abs(Float(data.complexity.clamped(to: 1...5)) - game.getComplexity()) * 1.5
+		let orderedGames =
+			games.compactMap { game -> GameScore? in
+				guard game.canUseForRecommendations() else {
+					return nil
+				}
+				var score: Float = 100.0 + game.getAvgRating()
+				score -= Float(abs(data.numPlayers - game.getSuggestedPlayers())) * 2.0
+				score -= Float(abs(data.timeToPlay - game.getAvgPlayingTime())) / 15.0
+				if data.complexity != 0 {
+					score -= abs(Float(data.complexity.clamped(to: 1...5)) - game.getComplexity()) * 1.5
+				}
+				return GameScore(game: game, score: score)
 			}
-			return GameScore(game: game, score: score)
-		}.sorted { $0.score > $1.score }
-		
-		let orderedPageOfGames = orderedGames.enumerated().compactMap { (start...(start + limit)).contains($0.0) ? $0.1.game : nil } 
+			.sorted { $0.score > $1.score }
+
+		let orderedPageOfGames = orderedGames.enumerated()
+			.compactMap { (start...(start + limit)).contains($0.0) ? $0.1.game : nil }
 		let gamesArray = try await buildBoardgameData(for: user, games: orderedPageOfGames, on: req.db)
 		return BoardgameResponseData(totalGames: orderedGames.count, start: start, limit: limit, gameArray: gamesArray)
 	}
@@ -197,7 +211,7 @@ struct BoardgameController: APIRouteCollection {
 	/// `POST /api/v3/boardgames/reload`
 	///
 	///  Reloads the board game data from the seed file. Removes all previous entries.
-	/// 
+	///
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: `HTTP 200 OK` if the settings were updated.
 	func reloadBoardGamesData(_ req: Request) async throws -> HTTPStatus {
@@ -206,16 +220,18 @@ struct BoardgameController: APIRouteCollection {
 		try await migrator.prepare(on: req.db)
 		return .ok
 	}
-	
-// MARK: - Utilities
+
+	// MARK: - Utilities
 
 	// Builds a BoardgameData array from an array of Bardgame Model objects. Mostly, this fn figures out whether the game
 	// is a favorite of the given user.
-	func buildBoardgameData(for user: UserCacheData?, games: [Boardgame], on db: Database) async throws -> [BoardgameData] {
+	func buildBoardgameData(for user: UserCacheData?, games: [Boardgame], on db: Database) async throws
+		-> [BoardgameData]
+	{
 		if let user = user {
 			let gameIDs = games.compactMap { $0.id }
 			let favorites = try await BoardgameFavorite.query(on: db).filter(\.$boardgame.$id ~~ gameIDs)
-					.filter(\.$user.$id == user.userID).all()
+				.filter(\.$user.$id == user.userID).all()
 			let favGameIDs = Set(favorites.compactMap { $0.$boardgame.id })
 			return try games.map { try BoardgameData(game: $0, isFavorite: favGameIDs.contains($0.requireID())) }
 		}

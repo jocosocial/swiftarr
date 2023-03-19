@@ -4,7 +4,7 @@ import Vapor
 ///
 ///	Included in:
 ///	* `FezModerationData`
-///	
+///
 /// Returned by:
 /// * `GET /api/v3/mod/fez/ID`
 public struct FezEditLogData: Content {
@@ -37,11 +37,11 @@ extension FezEditLogData {
 	}
 }
 
-/// Used to return data a moderator needs to moderate a fez. 
-///	
+/// Used to return data a moderator needs to moderate a fez.
+///
 /// Returned by:
 /// * `GET /api/v3/mod/fez/:fez_id`
-/// 
+///
 /// Note that FezPosts can't be edited and don't have an edit log.
 ///
 /// See `ModerationController.fezModerationHandler(_:)`
@@ -54,7 +54,7 @@ public struct FezModerationData: Content {
 }
 
 /// Used to return data a moderator needs to moderate a fez post.
-///	
+///
 /// Returned by:
 /// * `GET /api/v3/mod/fezpost/:post_id`
 ///
@@ -71,7 +71,7 @@ public struct FezPostModerationData: Content {
 ///
 ///	Included in:
 ///	* `ForumModerationData`
-///	
+///
 /// Returned by:
 /// * `GET /api/v3/mod/forum/id`
 public struct ForumEditLogData: Content {
@@ -101,8 +101,8 @@ extension ForumEditLogData {
 	}
 }
 
-/// Used to return data a moderator needs to moderate a forum. 
-///	
+/// Used to return data a moderator needs to moderate a forum.
+///
 /// Returned by:
 /// * `GET /api/v3/mod/forum/id`
 ///
@@ -145,8 +145,8 @@ extension ForumModerationData {
 	}
 }
 
-/// Used to return data a moderator needs to moderate a twarrt. 
-///	
+/// Used to return data a moderator needs to moderate a twarrt.
+///
 /// Returned by:
 /// * `GET /api/v3/mod/forumPost/id`
 ///
@@ -200,7 +200,7 @@ extension ModeratorActionLogData {
 ///	Included in:
 ///	* `ForumPostModerationData`
 ///	* `TwarrtModerationData`
-///	
+///
 /// Returned by:
 /// * `GET /api/v3/mod/twarrt/id`
 public struct PostEditLogData: Content {
@@ -226,20 +226,20 @@ extension PostEditLogData {
 		createdAt = edit.createdAt ?? Date()
 		author = editor
 		text = edit.text
-		images = edit.images		
+		images = edit.images
 	}
-	
+
 	init(edit: ForumPostEdit, editor: UserHeader) throws {
 		postID = edit.$post.id
 		editID = try edit.requireID()
 		createdAt = edit.createdAt ?? Date()
 		author = editor
 		text = edit.postText
-		images = edit.images		
+		images = edit.images
 	}
 }
 
-/// Used to return data moderators need to view previous edits a user made to their profile. 
+/// Used to return data moderators need to view previous edits a user made to their profile.
 /// This structure will have either the `profileData` or `profileImage` field populated.
 /// An array of these stucts is placed inside `ProfileModerationData`.
 public struct ProfileEditLogData: Content {
@@ -286,7 +286,7 @@ public struct ReportModerationData: Content {
 	var submitterMessage: String?
 	/// The user that submitted the report--NOT the user whose content is being reported.
 	var author: UserHeader
-	/// The mod who handled (or closed) the report. 
+	/// The mod who handled (or closed) the report.
 	var handledBy: UserHeader?
 	/// TRUE if the report has been closed by moderators.
 	var isClosed: Bool
@@ -313,8 +313,8 @@ extension ReportModerationData {
 	}
 }
 
-/// Used to return data a moderator needs to moderate a twarrt. 
-///	
+/// Used to return data a moderator needs to moderate a twarrt.
+///
 /// Returned by:
 /// * `GET /api/v3/mod/twarrt/id`
 ///
@@ -327,8 +327,8 @@ public struct TwarrtModerationData: Content {
 	var reports: [ReportModerationData]
 }
 
-/// Used to return data a moderator needs to moderate a user. 
-///	
+/// Used to return data a moderator needs to moderate a user.
+///
 /// Returned by:
 /// * `GET /api/v3/mod/user/id`
 ///
@@ -336,12 +336,12 @@ public struct TwarrtModerationData: Content {
 public struct UserModerationData: Content {
 	/// 'Main' account for this user
 	var header: UserHeader
-	/// Sub-accounts that this user has created.			
+	/// Sub-accounts that this user has created.
 	var subAccounts: [UserHeader]
 	/// This user's access level. Main user and all sub accounts share an access level.
 	var accessLevel: UserAccessLevel
 	/// If this user is temporarily quarantined, this will contain the end time for the quarantine. While quarantined, the user can log in and read content as normal
-	/// but cannot create content in any public area (posts, edit posts, create forums, participate in FriendlyFezzes, or edit their profile). 
+	/// but cannot create content in any public area (posts, edit posts, create forums, participate in FriendlyFezzes, or edit their profile).
 	var tempQuarantineEndTime: Date?
 	/// All reports against any user account this user controls.
 	var reports: [ReportModerationData]
@@ -351,7 +351,7 @@ extension UserModerationData {
 	init(user: User, subAccounts: [User], reports: [ReportModerationData]) throws {
 		header = try UserHeader(user: user)
 		accessLevel = user.accessLevel
-		tempQuarantineEndTime =  nil
+		tempQuarantineEndTime = nil
 		if let endTime = user.tempQuarantineUntil, endTime > Date() {
 			tempQuarantineEndTime = user.tempQuarantineUntil
 		}

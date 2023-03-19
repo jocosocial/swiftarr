@@ -16,7 +16,11 @@ extension AnnouncementCreateData: RCFValidatable {
 		let tester = try decoder.validator(keyedBy: CodingKeys.self)
 		tester.validate(!text.isEmpty, forKey: .text, or: "Text cannot be empty")
 		tester.validate(text.count < 2000, forKey: .text, or: "Announcement text has a 2000 char limit")
-		tester.validate(displayUntil > Date(), forKey: .displayUntil, or: "Announcement DisplayUntil date must be in the future.")
+		tester.validate(
+			displayUntil > Date(),
+			forKey: .displayUntil,
+			or: "Announcement DisplayUntil date must be in the future."
+		)
 	}
 }
 
@@ -29,7 +33,7 @@ public struct DailyThemeUploadData: Content {
 	/// An optional image that relates to the theme.
 	var image: ImageUploadData?
 	/// Day of cruise, counted from `Settings.shared.cruiseStartDate`. 0 is embarkation day. Values could be negative (e.g. Day -1 is "Anticipation Day")
-	var cruiseDay: Int32				
+	var cruiseDay: Int32
 }
 
 /// Used to update the `Event` database.
@@ -42,11 +46,11 @@ public struct EventsUpdateData: Content {
 	var schedule: String
 }
 
-/// Used to validate changes to the `Event` database. This public struct shows the differrences between the current schedule and the 
+/// Used to validate changes to the `Event` database. This public struct shows the differrences between the current schedule and the
 /// (already uploaded but not processed) updated schedule. Event identity is based on the `uid` field--two events with the same
 /// `uid` are the same event, and if they show different times, we conclude the event's time changed. Two events with different `uid`s
 /// are different events, even if all other fields are exactly the same.
-/// 
+///
 /// Events that are added or deleted will only appear in deleted or created event arrays. Modified events could appear in any or all of the 3 modification arrays.
 /// Deleted events take their contents from the database. All other arrays take content from the update.
 ///
@@ -56,7 +60,7 @@ public struct EventsUpdateData: Content {
 public struct EventUpdateDifferenceData: Content {
 	/// Events in db but not in update. EventData is based on the current db values.
 	var deletedEvents: [EventData] = []
-	/// Events in update but not in db. 
+	/// Events in update but not in db.
 	var createdEvents: [EventData] = []
 	/// Events that will change their time as part of the update. Items here can also show up in `locationChangeEvents` and `minorChangeEvents`.
 	var timeChangeEvents: [EventData] = []
@@ -66,14 +70,14 @@ public struct EventUpdateDifferenceData: Content {
 
 /// Returns the registration code associated with a user. Not all users have registration codes; e.g. asking for the reg code for 'admin' will return an error.
 public struct RegistrationCodeUserData: Content {
-	// User accounts associated with the reg code. First item in the array is the primary account. 
+	// User accounts associated with the reg code. First item in the array is the primary account.
 	var users: [UserHeader]
 	/// The registration code associated with this account. If this account doesn't have an associated regcode, will be the empty string.
 	var regCode: String
 }
 
 /// Returns general info about registration codes.
-/// 
+///
 /// Each passenger gets sent an email with a unique registration code; the reg code allows them to create verified accounts.
 /// This struct lets the admins quickly view some basic stats on account usage.
 public struct RegistrationCodeStatsData: Content {
@@ -83,7 +87,7 @@ public struct RegistrationCodeStatsData: Content {
 	var usedCodes: Int
 	/// How many codes have not yet been used.
 	var unusedCodes: Int
-	/// This exists so that if admins create new reg codes for people who lost theirs, we can track it. 
+	/// This exists so that if admins create new reg codes for people who lost theirs, we can track it.
 	/// There isn't yet any API for admins to do this; the number will be 0.
 	var adminCodes: Int
 }
@@ -100,7 +104,7 @@ public struct SettingsAppFeaturePair: Content {
 	var feature: String
 }
 
-/// Used to return the current `Settings` values. Doesn't update everything--some values aren't meant to be updated live, and others are 
+/// Used to return the current `Settings` values. Doesn't update everything--some values aren't meant to be updated live, and others are
 ///
 /// Required by: `POST /api/v3/events/update`
 ///
@@ -110,7 +114,7 @@ public struct SettingsAdminData: Content {
 	var maximumTwarrts: Int
 	var maximumForums: Int
 	var maximumForumPosts: Int
-	/// Max Image size in bytes. Images larger than this are rejected. The server separately enforces maximum x and y image dimensions, downsizing the 
+	/// Max Image size in bytes. Images larger than this are rejected. The server separately enforces maximum x and y image dimensions, downsizing the
 	/// image if possible. Mostly this option is designed to reject very large gif images.
 	var maxImageSize: Int
 	var forumAutoQuarantineThreshold: Int
@@ -169,7 +173,7 @@ public struct SettingsUpdateData: Content {
 }
 
 /// Used to return information about the time zone changes scheduled to occur during the cruise.
-/// 
+///
 /// Returned by: `GET /api/v3/admin/timezonechanges`
 public struct TimeZoneChangeData: Content {
 	public struct Record: Content {
@@ -181,7 +185,7 @@ public struct TimeZoneChangeData: Content {
 		/// There is a list of all Foundation TimeZone names at `seeds/TimeZoneNames.txt`
 		var timeZoneID: String
 	}
-	
+
 	/// All the timezone changes that will occur during the cruise, sorted by activeDate.
 	var records: [Record]
 	/// The 3 letter abbreviation for the timezone the ship is currently observing.
@@ -194,8 +198,8 @@ public struct TimeZoneChangeData: Content {
 
 extension TimeZoneChangeData {
 	init(_ changeSet: TimeZoneChangeSet) {
-		records = changeSet.changePoints.map { 
-			Record(activeDate: $0.startTime, timeZoneAbbrev: $0.timeZoneName, timeZoneID: $0.timeZoneID) 
+		records = changeSet.changePoints.map {
+			Record(activeDate: $0.startTime, timeZoneAbbrev: $0.timeZoneName, timeZoneID: $0.timeZoneID)
 		}
 		let current = changeSet.tzAtTime(Date())
 		currentTimeZoneAbbrev = current.abbreviation(for: Date()) ?? "EST"
