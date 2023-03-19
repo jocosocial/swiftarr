@@ -17,7 +17,7 @@ public enum ReportType: String, Codable {
 	case fezPost
 }
 
-/// Moderation status of a piece of reportable content. 
+/// Moderation status of a piece of reportable content.
 /// This enum is used both in Models and in data transfer objects in the API. Be very careful about renaming enum cases or customizing case strings.
 enum ContentModerationStatus: String, Codable {
 	/// The initial state for all content.
@@ -33,18 +33,19 @@ enum ContentModerationStatus: String, Codable {
 	case modReviewed
 	/// Mods can set this status on content. Locked content is not modifiable by non-mods, but has normal visibility. Locked content is immune to auto-quarantine.
 	case locked
-	
+
 	// Maps URL path parameter strings to moderation status states. Used by route handlers that set moderation status.
 	mutating func setFromParameterString(_ param: String) throws {
 		switch param {
-			case "normal": self = .normal
-			case "quarantined": self = .quarantined
-			case "reviewed": self = .modReviewed
-			case "locked": self = .locked
-			default: throw Abort(.badRequest, reason: "Request parameter `Moderation_State` isn't one of the allowed values.") 
+		case "normal": self = .normal
+		case "quarantined": self = .quarantined
+		case "reviewed": self = .modReviewed
+		case "locked": self = .locked
+		default:
+			throw Abort(.badRequest, reason: "Request parameter `Moderation_State` isn't one of the allowed values.")
 		}
 	}
-	
+
 	// FALSE if the mod state is one where the content should be hidden from non-moderator users.
 	func showsContent() -> Bool {
 		if self == .autoQuarantined || self == .quarantined {
