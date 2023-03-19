@@ -1,24 +1,22 @@
-import Vapor
 import Fluent
+import Vapor
 
-/**
-*/
 final class AlertWordPivot: Model {
 	static let schema = "alertword+user"
-	
+
 	// MARK: Properties
-	
+
 	/// The pivot's ID.
 	@ID(key: .id) var id: UUID?
-		
-	/// The number of Twarrts that this user has viewed 
+
+	/// The number of Twarrts that this user has viewed
 	@Field(key: "twarrt_count") var twarrtCount: Int
-	
+
 	/// The number of ForumPosts containing this alertword that this user has viewed
 	@Field(key: "post_count") var postCount: Int
-					
+
 	// MARK: Relations
-	
+
 	/// The associated `User` who added this alertword.
 	@Parent(key: "user") var user: User
 
@@ -26,10 +24,10 @@ final class AlertWordPivot: Model {
 	@Parent(key: "alertword") var alertword: AlertWord
 
 	// MARK: Initialization
-	
+
 	/// Used by Fluent
- 	init() { }
- 	
+	init() {}
+
 	/// Initializes a new AlertWord object.
 	///
 	/// - Parameters:
@@ -45,17 +43,16 @@ final class AlertWordPivot: Model {
 struct CreateAlertWordPivotSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		try await database.schema("alertword+user")
-				.id()
-				.field("twarrt_count", .int, .required)
-				.field("post_count", .int, .required)
- 				.field("user", .uuid, .required, .references("user", "id", onDelete: .cascade))
- 				.field("alertword", .int, .required, .references("alertword", "id", onDelete: .cascade))
-				.unique(on: "user", "alertword")
-				.create()
+			.id()
+			.field("twarrt_count", .int, .required)
+			.field("post_count", .int, .required)
+			.field("user", .uuid, .required, .references("user", "id", onDelete: .cascade))
+			.field("alertword", .int, .required, .references("alertword", "id", onDelete: .cascade))
+			.unique(on: "user", "alertword")
+			.create()
 	}
-	
+
 	func revert(on database: Database) async throws {
 		try await database.schema("alertword+user").delete()
 	}
 }
-
