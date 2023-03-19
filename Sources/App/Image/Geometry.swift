@@ -1,4 +1,3 @@
-
 /// Represents errors that can be thrown within the SwiftGD module.
 ///
 /// - invalidFormat: Image raster format mismatch on import/export
@@ -7,11 +6,10 @@
 /// - invalidMaxColors: Asserts sane values for creating indexed Images
 public enum GDError: Swift.Error {
 	case invalidFormat
-	case invalidImage(reason: String) // The reason this error was thrown
-	case invalidColor(reason: String) // The reason this error was thrown.
+	case invalidImage(reason: String)  // The reason this error was thrown
+	case invalidColor(reason: String)  // The reason this error was thrown.
 	case invalidMaxColors(reason: String)
 }
-
 
 /// A structure that represents a geometric angle.
 public struct Angle {
@@ -135,12 +133,13 @@ extension Color {
 		let max = Double(Color.maxHex)
 		let first = Double((color >> 24) & Color.maxHex) / max
 		let secnd = Double((color >> 16) & Color.maxHex) / max
-		let third = Double((color >>  8) & Color.maxHex) / max
-		let forth = Double((color >>  0) & Color.maxHex) / max
+		let third = Double((color >> 8) & Color.maxHex) / max
+		let forth = Double((color >> 0) & Color.maxHex) / max
 		if leadingAlpha {
-			self.init(red: secnd, green: third, blue: forth, alpha: first) // ARGB
-		} else {
-			self.init(red: first, green: secnd, blue: third, alpha: forth) // RGBA
+			self.init(red: secnd, green: third, blue: forth, alpha: first)  // ARGB
+		}
+		else {
+			self.init(red: first, green: secnd, blue: third, alpha: forth)  // RGBA
 		}
 	}
 
@@ -165,10 +164,10 @@ extension Color {
 
 		// Evaluate if fully fledged code w/wo alpha (e.g. `ffaabb` or `ffaabb44`), otherwise throw error
 		switch string.count {
-		case 6: // Hex color code without alpha (e.g. ffeeaa)
-			let alpha = String(Color.maxHex, radix: 16) // 0xff (opaque)
+		case 6:  // Hex color code without alpha (e.g. ffeeaa)
+			let alpha = String(Color.maxHex, radix: 16)  // 0xff (opaque)
 			return leadingAlpha ? alpha + string : string + alpha
-		case 8: // Fully fledged hex color including alpha (e.g. eebbaa44)
+		case 8:  // Fully fledged hex color including alpha (e.g. eebbaa44)
 			return string
 		default:
 			throw GDError.invalidColor(reason: "0x\(string) has invalid hex color string length")

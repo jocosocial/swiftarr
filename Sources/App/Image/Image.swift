@@ -1,11 +1,11 @@
-#if os(Linux)
-import Glibc
-#else
-import Darwin
-#endif
-
 import Foundation
 import gd
+
+#if os(Linux)
+	import Glibc
+#else
+	import Darwin
+#endif
 
 // In case you were wondering: it's a class rather than a struct because we need
 // deinit to free the internal GD pointer, and that's only available to classes.
@@ -26,7 +26,7 @@ public class GDImage {
 			gdImageAlphaBlending(internalImage, transparent ? 0 : 1)
 		}
 	}
-	
+
 	public enum ImageType {
 		case palette
 		case truecolor
@@ -34,14 +34,14 @@ public class GDImage {
 
 	public init?(width: Int, height: Int, type: ImageType = .truecolor) {
 		switch type {
-			case .truecolor: internalImage = gdImageCreateTrueColor(Int32(width), Int32(height))
-			case .palette: internalImage = gdImageCreate(Int32(width), Int32(height))
+		case .truecolor: internalImage = gdImageCreateTrueColor(Int32(width), Int32(height))
+		case .palette: internalImage = gdImageCreate(Int32(width), Int32(height))
 		}
 		guard let _ = internalImage else {
 			return nil
 		}
 	}
-	
+
 	public init(gdImage: gdImagePtr) {
 		self.internalImage = gdImage
 	}
@@ -60,7 +60,9 @@ public class GDImage {
 
 		applyInterpolation(enabled: applySmoothing, currentSize: currentSize, newSize: newSize)
 
-		guard let output = gdImageScale(internalImage, UInt32(newSize.width), UInt32(newSize.height)) else { return nil }
+		guard let output = gdImageScale(internalImage, UInt32(newSize.width), UInt32(newSize.height)) else {
+			return nil
+		}
 		return GDImage(gdImage: output)
 	}
 
@@ -76,7 +78,12 @@ public class GDImage {
 	}
 
 	public func cropped(to rect: Rectangle) -> GDImage? {
-		var rect = gdRect(x: Int32(rect.point.x), y: Int32(rect.point.y), width: Int32(rect.size.width), height: Int32(rect.size.height))
+		var rect = gdRect(
+			x: Int32(rect.point.x),
+			y: Int32(rect.point.y),
+			width: Int32(rect.size.width),
+			height: Int32(rect.size.height)
+		)
 
 		guard let output = gdImageCrop(internalImage, &rect) else { return nil }
 		return GDImage(gdImage: output)
@@ -90,9 +97,11 @@ public class GDImage {
 
 		if currentSize > newSize {
 			gdImageSetInterpolationMethod(internalImage, GD_SINC)
-		} else if currentSize < newSize {
+		}
+		else if currentSize < newSize {
 			gdImageSetInterpolationMethod(internalImage, GD_MITCHELL)
-		} else {
+		}
+		else {
 			gdImageSetInterpolationMethod(internalImage, GD_NEAREST_NEIGHBOUR)
 		}
 	}
@@ -127,17 +136,23 @@ public class GDImage {
 	///   text).
 	@discardableResult
 	public func renderText(
-		_ text: String, from: Point, fontList: [String], color: Color, size: Double, angle: Angle = .zero
+		_ text: String,
+		from: Point,
+		fontList: [String],
+		color: Color,
+		size: Double,
+		angle: Angle = .zero
 	) -> (upperLeft: Point, upperRight: Point, lowerRight: Point, lowerLeft: Point) {
 		/// Notes on `gdImageStringFT`:
 		/// - it returns an Tuple of empty `Point`s if there is nothing to render or no valid fonts
 		/// - `gdImageStringFT` accepts a semicolon delimited list of fonts.
 		/// - `gdImageStringFT` expects pointers to `text` and `fontList` values
 		guard !text.isEmpty,
-			  !fontList.isEmpty,
-			  var textCChar = text.cString(using: .utf8),
-			  var joinedFonts = fontList.joined(separator: ";").cString(using: .utf8) else {
-				  return (upperLeft: .zero, upperRight: .zero, lowerRight: .zero, lowerLeft: .zero)
+			!fontList.isEmpty,
+			var textCChar = text.cString(using: .utf8),
+			var joinedFonts = fontList.joined(separator: ";").cString(using: .utf8)
+		else {
+			return (upperLeft: .zero, upperRight: .zero, lowerRight: .zero, lowerLeft: .zero)
 		}
 		let red = Int32(color.redComponent * 255.0)
 		let green = Int32(color.greenComponent * 255.0)
@@ -150,7 +165,17 @@ public class GDImage {
 		// points in the following order:
 		// upper left, upper right, lower right, and lower left corner.
 		var boundingBox: [Int32] = .init(repeating: .zero, count: 8)
-		gdImageStringFT(internalImage, &boundingBox, internalColor, &joinedFonts, size, -angle.radians, Int32(from.x), Int32(from.y), &textCChar)
+		gdImageStringFT(
+			internalImage,
+			&boundingBox,
+			internalColor,
+			&joinedFonts,
+			size,
+			-angle.radians,
+			Int32(from.x),
+			Int32(from.y),
+			&textCChar
+		)
 
 		let lowerLeft = Point(x: boundingBox[0], y: boundingBox[1])
 		let lowerRight = Point(x: boundingBox[2], y: boundingBox[3])
@@ -210,7 +235,14 @@ public class GDImage {
 		let internalColor = gdImageColorAllocateAlpha(internalImage, red, green, blue, alpha)
 		defer { gdImageColorDeallocate(internalImage, internalColor) }
 
-		gdImageEllipse(internalImage, Int32(center.x), Int32(center.y), Int32(size.width), Int32(size.height), internalColor)
+		gdImageEllipse(
+			internalImage,
+			Int32(center.x),
+			Int32(center.y),
+			Int32(size.width),
+			Int32(size.height),
+			internalColor
+		)
 	}
 
 	public func fillEllipse(center: Point, size: Size, color: Color) {
@@ -221,7 +253,14 @@ public class GDImage {
 		let internalColor = gdImageColorAllocateAlpha(internalImage, red, green, blue, alpha)
 		defer { gdImageColorDeallocate(internalImage, internalColor) }
 
-		gdImageFilledEllipse(internalImage, Int32(center.x), Int32(center.y), Int32(size.width), Int32(size.height), internalColor)
+		gdImageFilledEllipse(
+			internalImage,
+			Int32(center.x),
+			Int32(center.y),
+			Int32(size.width),
+			Int32(size.height),
+			internalColor
+		)
 	}
 
 	public func strokeRectangle(topLeft: Point, bottomRight: Point, color: Color) {
@@ -232,7 +271,14 @@ public class GDImage {
 		let internalColor = gdImageColorAllocateAlpha(internalImage, red, green, blue, alpha)
 		defer { gdImageColorDeallocate(internalImage, internalColor) }
 
-		gdImageRectangle(internalImage, Int32(topLeft.x), Int32(topLeft.y), Int32(bottomRight.x), Int32(bottomRight.y), internalColor)
+		gdImageRectangle(
+			internalImage,
+			Int32(topLeft.x),
+			Int32(topLeft.y),
+			Int32(bottomRight.x),
+			Int32(bottomRight.y),
+			internalColor
+		)
 	}
 
 	public func fillRectangle(topLeft: Point, bottomRight: Point, color: Color) {
@@ -243,7 +289,14 @@ public class GDImage {
 		let internalColor = gdImageColorAllocateAlpha(internalImage, red, green, blue, alpha)
 		defer { gdImageColorDeallocate(internalImage, internalColor) }
 
-		gdImageFilledRectangle(internalImage, Int32(topLeft.x), Int32(topLeft.y), Int32(bottomRight.x), Int32(bottomRight.y), internalColor)
+		gdImageFilledRectangle(
+			internalImage,
+			Int32(topLeft.x),
+			Int32(topLeft.y),
+			Int32(bottomRight.x),
+			Int32(bottomRight.y),
+			internalColor
+		)
 	}
 
 	public func flip(_ mode: FlipMode) {
@@ -311,9 +364,11 @@ extension GDImage {
 
 		if url.lastPathComponent.lowercased().hasSuffix("jpg") || url.lastPathComponent.lowercased().hasSuffix("jpeg") {
 			loadedImage = gdImageCreateFromJpeg(inputFile)
-		} else if url.lastPathComponent.lowercased().hasSuffix("png") {
+		}
+		else if url.lastPathComponent.lowercased().hasSuffix("png") {
 			loadedImage = gdImageCreateFromPng(inputFile)
-		} else {
+		}
+		else {
 			return nil
 		}
 
