@@ -1,7 +1,6 @@
+import Fluent
 import Foundation
 import Vapor
-import Fluent
-
 
 /// A `UserNote` is intended as a free-form test field that will appear on a `UserProfile`,
 /// in which the viewing `User` can make notes about the profile's user.
@@ -14,23 +13,23 @@ final class UserRole: Model {
 	static let schema = "user_role"
 
 	// MARK: Properties
-	
+
 	/// The role's ID, provisioned automatically.
 	@ID(key: .id) var id: UUID?
-	
+
 	/// Each UserRole object specifies a user and a role, indicating that user has that role.
 	@Field(key: "role") var role: UserRoleType
-		
+
 	// MARK: Relations
 
 	/// The `User` that has the role.
 	@Parent(key: "user") var user: User
-		
+
 	// MARK: Initialization
-	
+
 	// Used by Fluent
- 	init() { }
- 	
+	init() {}
+
 	/// Creates a new UserRole.
 	///
 	/// - Parameters:
@@ -46,13 +45,13 @@ final class UserRole: Model {
 struct CreateUserRoleSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		try await database.schema("user_role")
-				.id()
-				.field("role", .string, .required)
- 				.field("user", .uuid, .required, .references("user", "id"))
- 				.unique(on: "role", "user")
-				.create()
+			.id()
+			.field("role", .string, .required)
+			.field("user", .uuid, .required, .references("user", "id"))
+			.unique(on: "role", "user")
+			.create()
 	}
-	
+
 	func revert(on database: Database) async throws {
 		try await database.schema("user_role").delete()
 	}
