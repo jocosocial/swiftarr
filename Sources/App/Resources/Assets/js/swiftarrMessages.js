@@ -6,7 +6,7 @@ function startLiveMessageStream() {
 		wsProtocol = "wss://"
 	}
 	ws = new WebSocket(wsProtocol + window.location.host + socketURL)
- 
+
 	ws.onopen = () => {
 		let statusDiv = document.getElementById("socket-status")
 		statusDiv.innerText = "live messaging: active"
