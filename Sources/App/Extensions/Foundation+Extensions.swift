@@ -10,7 +10,7 @@ extension CharacterSet {
 		separatorChars.insert(charactersIn: usernameSeparatorString)
 		return separatorChars
 	}
-	
+
 	static var validUsernameChars: CharacterSet {
 		var usernameChars: CharacterSet = .init()
 		usernameChars.insert(charactersIn: usernameSeparatorString)
@@ -73,7 +73,8 @@ extension JSONDecoder.DateDecodingStrategy {
 		guard let date = Formatter.iso8601ms.date(from: string) else {
 			throw DecodingError.dataCorruptedError(
 				in: container,
-				debugDescription: "invalid format: " + string)
+				debugDescription: "invalid format: " + string
+			)
 		}
 		return date
 	}
@@ -109,7 +110,7 @@ extension Comparable {
 	}
 }
 
-// Another thing Foundation ought to have. String(substring) requires a non-optional substring. 
+// Another thing Foundation ought to have. String(substring) requires a non-optional substring.
 // let x: String? = substring?.string -- uses chaining to allow an optional substring to be converted into an optional String.
 extension Substring {
 	var string: String {

@@ -1,5 +1,5 @@
-import Vapor
 import Fluent
+import Vapor
 
 // MARK: - Functions
 
@@ -14,8 +14,8 @@ extension Twarrt: ContentFilterable {
 extension Twarrt: Reportable {
 	/// The type for `Twarrt` reports.
 	var reportType: ReportType { .twarrt }
-	
+
 	var authorUUID: UUID { $author.id }
-	
+
 	var autoQuarantineThreshold: Int { Settings.shared.postAutoQuarantineThreshold }
 }
