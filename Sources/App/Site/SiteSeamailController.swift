@@ -1,13 +1,13 @@
-import Vapor
 import Crypto
 import FluentSQL
+import Vapor
 
 struct SiteSeamailController: SiteControllerUtils {
 
-	struct SeamailCreateFormContent : Content {
+	struct SeamailCreateFormContent: Content {
 		var subject: String
 		var postText: String
-		var participants: String			// Comma separated list of participant usernames
+		var participants: String  // Comma separated list of participant usernames
 		var openchat: String?
 		var postAsModerator: String?
 		var postAsTwitarrTeam: String?
@@ -16,7 +16,7 @@ struct SiteSeamailController: SiteControllerUtils {
 	func registerRoutes(_ app: Application) throws {
 		// Routes that require login but are generally 'global' -- Two logged-in users could share this URL and both see the content
 		// Not for Seamails, pages for posting new content, mod pages, etc. Logged-out users given one of these links should get
-		// redirect-chained through /login and back.		
+		// redirect-chained through /login and back.
 		let globalRoutes = getGlobalRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .seamail))
 		globalRoutes.get("seamail", use: seamailRootPageHandler)
 
@@ -29,10 +29,16 @@ struct SiteSeamailController: SiteControllerUtils {
 		privateRoutes.get("seamail", fezIDParam, use: seamailViewPageHandler)
 		privateRoutes.post("seamail", fezIDParam, use: seamailViewPageHandler)
 		privateRoutes.post("seamail", fezIDParam, "post", use: seamailThreadPostHandler)
-		privateRoutes.webSocket("seamail", fezIDParam, "socket", shouldUpgrade: shouldCreateMsgSocket, onUpgrade: createMsgSocket) 
+		privateRoutes.webSocket(
+			"seamail",
+			fezIDParam,
+			"socket",
+			shouldUpgrade: shouldCreateMsgSocket,
+			onUpgrade: createMsgSocket
+		)
 	}
-	
-// MARK: - Seamail
+
+	// MARK: - Seamail
 	// GET /seamail
 	//
 	// Shows the root Seamail page, with a list of all conversations.
@@ -51,7 +57,7 @@ struct SiteSeamailController: SiteControllerUtils {
 			}
 		}
 		let allFezzes = newMsgFezzes + noNewMsgFezzes
-		struct SeamailRootPageContext : Encodable {
+		struct SeamailRootPageContext: Encodable {
 			var trunk: TrunkContext
 			var fezList: FezListData
 			var fezzes: [FezData]
@@ -60,7 +66,7 @@ struct SiteSeamailController: SiteControllerUtils {
 			var filterURL: String
 			var filterActive: Bool
 			var noSeamails: String
-			
+
 			init(_ req: Request, fezList: FezListData, fezzes: [FezData]) throws {
 				effectiveUser = req.query[String.self, at: "foruser"]
 				let (title, tab) = titleAndTab(for: req)
@@ -73,7 +79,8 @@ struct SiteSeamailController: SiteControllerUtils {
 				}
 				filterActive = req.query[String.self, at: "onlynew"]?.lowercased() == "true"
 				filterURL = filterActive ? "/seamail" : "/seamail?onlynew=true"
-				noSeamails = "You haven't received any Seamail messages yet, but you can create one by tapping \"New Seamail\""
+				noSeamails =
+					"You haven't received any Seamail messages yet, but you can create one by tapping \"New Seamail\""
 			}
 		}
 		let ctx = try SeamailRootPageContext(req, fezList: fezList, fezzes: allFezzes)
@@ -84,7 +91,7 @@ struct SiteSeamailController: SiteControllerUtils {
 		var search: String?
 		var start: Int?
 		var limit: Int?
-		var onlynew: Bool? 
+		var onlynew: Bool?
 
 		func buildQuery(baseURL: String, startOffset: Int?) -> String? {
 			guard var components = URLComponents(string: baseURL) else {
@@ -112,7 +119,7 @@ struct SiteSeamailController: SiteControllerUtils {
 
 		let response = try await apiQuery(req, endpoint: "/fez/joined?type=closed&type=open")
 		let fezList = try response.content.decode(FezListData.self)
-		struct SeamailRootPageContext : Encodable {
+		struct SeamailRootPageContext: Encodable {
 			var trunk: TrunkContext
 			var fezList: FezListData
 			var fezzes: [FezData]
@@ -122,7 +129,7 @@ struct SiteSeamailController: SiteControllerUtils {
 			var filterActive: Bool
 			var filterEnable: Bool
 			var noSeamails: String
-			
+
 			init(_ req: Request, searchParams: SeamailQueryOptions, fezList: FezListData, fezzes: [FezData]) throws {
 				effectiveUser = req.query[String.self, at: "foruser"]
 				let (title, tab) = titleAndTab(for: req)
@@ -132,20 +139,22 @@ struct SiteSeamailController: SiteControllerUtils {
 				let limit = fezList.paginator.limit
 				paginator = .init(fezList.paginator) { pageIndex in
 					// "/seamail/search?start=\(pageIndex * limit)&limit=\(limit)"
-					return searchParams.buildQuery(baseURL: "/seamail/search", startOffset: pageIndex * limit) ?? "/seamail/search"
+					return searchParams.buildQuery(baseURL: "/seamail/search", startOffset: pageIndex * limit)
+						?? "/seamail/search"
 				}
 				// filterActive = searchParams.onlynew ?? false
 				// filterURL = filterActive ? "/seamail" : "/seamail?onlynew=true"
 				filterActive = false
 				filterURL = ""
 				filterEnable = false
-				noSeamails = "No search results found. Try another search, or start a new Seamail by tapping \"New Seamail\"."
+				noSeamails =
+					"No search results found. Try another search, or start a new Seamail by tapping \"New Seamail\"."
 			}
 		}
 		let ctx = try SeamailRootPageContext(req, searchParams: searchParams, fezList: fezList, fezzes: fezList.fezzes)
 		return try await req.view.render("Fez/seamails", ctx)
 	}
-	
+
 	// GET /seamail/create
 	//
 	// Query Parameters:
@@ -158,12 +167,12 @@ struct SiteSeamailController: SiteControllerUtils {
 			let response = try await apiQuery(req, endpoint: "/users/\(initialUser)")
 			withUser = try response.content.decode(UserHeader.self)
 		}
-		
-		struct SeamaiCreatePageContext : Encodable {
+
+		struct SeamaiCreatePageContext: Encodable {
 			var trunk: TrunkContext
 			var post: MessagePostContext
 			var withUser: UserHeader?
-			
+
 			init(_ req: Request, withUser: UserHeader?) throws {
 				trunk = .init(req, title: "New Seamail", tab: .seamail, search: "Search Seamail")
 				self.withUser = withUser
@@ -173,7 +182,7 @@ struct SiteSeamailController: SiteControllerUtils {
 		let ctx = try SeamaiCreatePageContext(req, withUser: withUser)
 		return try await req.view.render("Fez/seamailCreate", ctx)
 	}
-	
+
 	// GET /seamail/usernames/search/STRING
 	//
 	// Called by JS when searching for usernames to add to a seamail.
@@ -184,7 +193,7 @@ struct SiteSeamailController: SiteControllerUtils {
 		let response = try await apiQuery(req, endpoint: "/users/match/allnames/\(searchString)")
 		return try await response.encodeResponse(for: req)
 	}
-	
+
 	// POST /seamail/create
 	//
 	// POSTs a seamail creation request.
@@ -199,7 +208,8 @@ struct SiteSeamailController: SiteControllerUtils {
 		guard formContent.postText.count > 0 else {
 			throw Abort(.badRequest, reason: "First message cannot be empty.")
 		}
-		let lines = formContent.postText.replacingOccurrences(of: "\r\n", with: "\r").components(separatedBy: .newlines).count
+		let lines = formContent.postText.replacingOccurrences(of: "\r\n", with: "\r").components(separatedBy: .newlines)
+			.count
 		guard lines <= 25 else {
 			throw Abort(.badRequest, reason: "Messages are limited to 25 lines of text.")
 		}
@@ -209,17 +219,36 @@ struct SiteSeamailController: SiteControllerUtils {
 		guard allUsers.count >= 2 else {
 			throw Abort(.badRequest, reason: "Seamail conversations require at least 2 users.")
 		}
-		
+
 		let fezType = formContent.openchat == nil ? FezType.closed : FezType.open
-		let fezContent = FezContentData(fezType: fezType, title: formContent.subject, info: "", startTime: nil, endTime: nil,
-				location: nil, minCapacity: 0, maxCapacity: 0, initialUsers: participants, createdByModerator: formContent.postAsModerator != nil, 
-				createdByTwitarrTeam: formContent.postAsTwitarrTeam != nil)
+		let fezContent = FezContentData(
+			fezType: fezType,
+			title: formContent.subject,
+			info: "",
+			startTime: nil,
+			endTime: nil,
+			location: nil,
+			minCapacity: 0,
+			maxCapacity: 0,
+			initialUsers: participants,
+			createdByModerator: formContent.postAsModerator != nil,
+			createdByTwitarrTeam: formContent.postAsTwitarrTeam != nil
+		)
 		let createResponse = try await apiQuery(req, endpoint: "/fez/create", method: .POST, encodeContent: fezContent)
 		let fezData = try createResponse.content.decode(FezData.self)
 		do {
-			let postContentData = PostContentData(text: formContent.postText, images: [], postAsModerator: formContent.postAsModerator != nil, 
-					postAsTwitarrTeam: formContent.postAsTwitarrTeam != nil)
-			let response = try await apiQuery(req, endpoint: "/fez/\(fezData.fezID)/post", method: .POST, encodeContent: postContentData)
+			let postContentData = PostContentData(
+				text: formContent.postText,
+				images: [],
+				postAsModerator: formContent.postAsModerator != nil,
+				postAsTwitarrTeam: formContent.postAsTwitarrTeam != nil
+			)
+			let response = try await apiQuery(
+				req,
+				endpoint: "/fez/\(fezData.fezID)/post",
+				method: .POST,
+				encodeContent: postContentData
+			)
 			return try await response.encodeResponse(for: req)
 		}
 		catch {
@@ -229,12 +258,12 @@ struct SiteSeamailController: SiteControllerUtils {
 			return response
 		}
 	}
-	
+
 	// GET /seamail/:seamail_ID
 	// POST /seamail/:seamail_ID 		-- only used for cases where we create a chat but then the initial post fails
 	//
 	// Paginated.
-	// 
+	//
 	// Shows a seamail thread. Participants up top, then a list of messages, then a form for composing.
 	func seamailViewPageHandler(_ req: Request) async throws -> View {
 		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
@@ -245,7 +274,7 @@ struct SiteSeamailController: SiteControllerUtils {
 		guard fez.members != nil else {
 			throw Abort(.forbidden, reason: "You are not a member of this seamail.")
 		}
-		struct SeamailThreadPageContext : Encodable {
+		struct SeamailThreadPageContext: Encodable {
 			var trunk: TrunkContext
 			var fez: FezData
 			var oldPosts: [SocketFezPostData]
@@ -255,7 +284,7 @@ struct SiteSeamailController: SiteControllerUtils {
 			var socketURL: String
 			var breadcrumbURL: String
 			var paginator: PaginatorContext
-						
+
 			init(_ req: Request, fez: FezData) throws {
 				let (title, tab) = titleAndTab(for: req)
 				trunk = .init(req, title: title, tab: tab, search: "Search Seamail")
@@ -270,7 +299,9 @@ struct SiteSeamailController: SiteControllerUtils {
 				}
 				socketURL = "/fez/\(fez.fezID)/socket"
 				breadcrumbURL = "/seamail"
-				if let foruser = req.query[String.self, at: "foruser"], var comp = URLComponents(string: post.postSuccessURL) {
+				if let foruser = req.query[String.self, at: "foruser"],
+					var comp = URLComponents(string: post.postSuccessURL)
+				{
 					comp.query = "foruser=\(foruser)"
 					if let newstr = comp.string {
 						post.postSuccessURL = newstr
@@ -278,9 +309,14 @@ struct SiteSeamailController: SiteControllerUtils {
 					socketURL.append("?foruser=\(foruser)")
 					breadcrumbURL.append("?foruser=\(foruser)")
 				}
-				paginator = PaginatorContext(start: 0, total: 40, limit: 50, urlForPage: { pageIndex in
-					"/seamail/\(fez.fezID)?start=\(pageIndex * 50)&limit=50"
-				})
+				paginator = PaginatorContext(
+					start: 0,
+					total: 40,
+					limit: 50,
+					urlForPage: { pageIndex in
+						"/seamail/\(fez.fezID)?start=\(pageIndex * 50)&limit=50"
+					}
+				)
 				if let members = fez.members, let posts = members.posts, let paginator = members.paginator {
 					for index in 0..<posts.count {
 						let post = posts[index]
@@ -290,7 +326,7 @@ struct SiteSeamailController: SiteControllerUtils {
 						else {
 							newPosts.append(SocketFezPostData(post: post))
 						}
-					} 
+					}
 					self.showDivider = oldPosts.count > 0 && newPosts.count > 0
 					let limit = paginator.limit
 					self.paginator = PaginatorContext(paginator) { pageIndex in
@@ -302,10 +338,11 @@ struct SiteSeamailController: SiteControllerUtils {
 		let ctx = try SeamailThreadPageContext(req, fez: fez)
 		return try await req.view.render("Fez/seamailThread", ctx)
 	}
-	
+
 	// GET /seamail/:seamail_ID/socket
 	func shouldCreateMsgSocket(_ req: Request) async throws -> HTTPHeaders? {
-  		guard let paramVal = req.parameters.get(fezIDParam.paramString), let seamailID = UUID(uuidString: paramVal) else {
+		guard let paramVal = req.parameters.get(fezIDParam.paramString), let seamailID = UUID(uuidString: paramVal)
+		else {
 			throw Abort(.badRequest, reason: "Request parameter lfg_ID is missing.")
 		}
 		let response = try await apiQuery(req, endpoint: "/fez/\(seamailID)")
@@ -316,7 +353,7 @@ struct SiteSeamailController: SiteControllerUtils {
 		}
 		return HTTPHeaders()
 	}
-	
+
 	// WS /seamail/:seamail_ID/socket
 	//
 	// Takes the `foruser` parameter which is forwarded to `/api/v3/fez/:fez_ID`
@@ -327,9 +364,11 @@ struct SiteSeamailController: SiteControllerUtils {
 	// There are no messages intended to be sent from the client of this socket. Although this socket sends HTML for
 	// new posts to the client, new posts *created* by the client should use the regular POST method.
 	func createMsgSocket(_ req: Request, _ ws: WebSocket) async {
-		guard let user = try? req.auth.require(UserCacheData.self), let lfgID = req.parameters.get(fezIDParam.paramString, as: UUID.self) else {
+		guard let user = try? req.auth.require(UserCacheData.self),
+			let lfgID = req.parameters.get(fezIDParam.paramString, as: UUID.self)
+		else {
 			try? await ws.close()
-			return 
+			return
 		}
 		let userSocket = UserSocket(userID: user.userID, socket: ws, fezID: lfgID, htmlOutput: true)
 		try? req.webSocketStore.storeFezSocket(userSocket)
@@ -353,23 +392,22 @@ struct SiteSeamailController: SiteControllerUtils {
 	}
 }
 
-	
 // Returns the correct page title and tab name for the effective user.
 // Fileprivate (instead of in an extension) because struct initializers can't access their containing object.
-fileprivate func titleAndTab(for req: Request) -> (String, TrunkContext.Tab) {
+private func titleAndTab(for req: Request) -> (String, TrunkContext.Tab) {
 	let effectiveUser = req.query[String.self, at: "foruser"]
 	var title: String
 	var tab: TrunkContext.Tab
 	switch effectiveUser?.lowercased() {
-		case "twitarrteam": 
-			title = "TwitarrTeam Seamail"
-			tab = .admin
-		case "moderator": 
-			title = "Moderator Seamail"
-			tab = .moderator
-		default: 
-			title = "Seamail"
-			tab = .seamail
+	case "twitarrteam":
+		title = "TwitarrTeam Seamail"
+		tab = .admin
+	case "moderator":
+		title = "Moderator Seamail"
+		tab = .moderator
+	default:
+		title = "Seamail"
+		tab = .seamail
 	}
 	return (title, tab)
 }

@@ -1,6 +1,6 @@
-import Vapor
 import Crypto
 import FluentSQL
+import Vapor
 
 struct SiteLoginController: SiteControllerUtils {
 
@@ -13,10 +13,10 @@ struct SiteLoginController: SiteControllerUtils {
 		openRoutes.get("createAccount", use: createAccountPageHandler)
 		openRoutes.post("createAccount", use: createAccountPostHandler)
 		openRoutes.get("resetPassword", use: resetPasswordViewHandler)
-		openRoutes.post("resetPassword", use: resetPasswordPostHandler)			// Change pw while logged in
-		openRoutes.post("recoverPassword", use: recoverPasswordPostHandler)		// Change pw while not logged in
+		openRoutes.post("resetPassword", use: resetPasswordPostHandler)  // Change pw while logged in
+		openRoutes.post("recoverPassword", use: recoverPasswordPostHandler)  // Change pw while not logged in
 		openRoutes.get("codeOfConduct", use: codeOfConductViewHandler)
-				
+
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let privateRoutes = getPrivateRoutes(app)
 		privateRoutes.get("logout", use: loginPageViewHandler)
@@ -25,9 +25,9 @@ struct SiteLoginController: SiteControllerUtils {
 		privateRoutes.get("createAltAccount", use: createAltAccountViewHandler)
 		privateRoutes.post("createAltAccount", use: createAltAccountPostHandler)
 	}
-		
-// MARK: - Login
-	struct LoginPageContext : Encodable {
+
+	// MARK: - Login
+	struct LoginPageContext: Encodable {
 		var trunk: TrunkContext
 		var error: ErrorResponse?
 		var operationSuccess: Bool
@@ -36,7 +36,7 @@ struct SiteLoginController: SiteControllerUtils {
 		var prevRegcode: String?
 		var prevUsername: String?
 		var prevDisplayName: String?
-		
+
 		init(_ req: Request, error: Error? = nil) async throws {
 			trunk = .init(req, title: "Login", tab: .none)
 			operationSuccess = false
@@ -68,8 +68,8 @@ struct SiteLoginController: SiteControllerUtils {
 			}
 		}
 	}
-	
-	struct UserCreatedContext : Encodable {
+
+	struct UserCreatedContext: Encodable {
 		var trunk: TrunkContext
 		var username: String
 		var recoveryKey: String
@@ -81,7 +81,7 @@ struct SiteLoginController: SiteControllerUtils {
 			self.recoveryKey = recoveryKey
 		}
 	}
-	
+
 	/// `GET /login`
 	/// `GET /logout`
 	///
@@ -89,11 +89,11 @@ struct SiteLoginController: SiteControllerUtils {
 	func loginPageViewHandler(_ req: Request) async throws -> View {
 		return try await req.view.render("Login/login", LoginPageContext(req))
 	}
-		
+
 	/// `POST /login`
 	///
 	func loginPagePostHandler(_ req: Request) async throws -> View {
-		struct PostStruct : Codable {
+		struct PostStruct: Codable {
 			var username: String
 			var password: String
 		}
@@ -108,8 +108,8 @@ struct SiteLoginController: SiteControllerUtils {
 			loginContext.trunk.metaRedirectURL = req.session.data["returnAfterLogin"] ?? "/tweets"
 			loginContext.operationSuccess = true
 			return try await req.view.render("Login/login", loginContext)
-		} catch
-		{
+		}
+		catch {
 			var ctx = try await LoginPageContext(req, error: error)
 			if let postStruct = try? req.content.decode(PostStruct.self) {
 				ctx.prevUsername = postStruct.username
@@ -117,27 +117,27 @@ struct SiteLoginController: SiteControllerUtils {
 			return try await req.view.render("Login/login", ctx)
 		}
 	}
-		
+
 	/// `POST /logout`
-	/// 
+	///
 	/// ** Form Submission Parameters**
 	/// * `allaccounts=true` - Logs the user out of all sessions by removing the user's auth token.
 	///
 	/// There's a single URL for login/logout; it shows you the right page depending on your current login status.
 	/// The logout form shows the user who they're logged in as, and has a single 'Logout' button.
 	func loginPageLogoutHandler(_ req: Request) async throws -> View {
-		struct PostStruct : Codable {
+		struct PostStruct: Codable {
 			var allaccounts: String?
 		}
 		let postStruct = try? req.content.decode(PostStruct.self)
 		if postStruct?.allaccounts?.lowercased() == "true" {
 			try await apiQuery(req, endpoint: "/auth/logout", method: .POST)
 			if let user = req.auth.get(UserCacheData.self) {
-				try await req.redis.clearAllSessionMarkers(forUserID: user.userID) 
+				try await req.redis.clearAllSessionMarkers(forUserID: user.userID)
 			}
 		}
 		else if let user = req.auth.get(UserCacheData.self) {
-			try await req.redis.clearSessionMarker(req.session.id, forUserID: user.userID) 
+			try await req.redis.clearSessionMarker(req.session.id, forUserID: user.userID)
 		}
 		req.session.destroy()
 		req.auth.logout(UserCacheData.self)
@@ -148,19 +148,19 @@ struct SiteLoginController: SiteControllerUtils {
 		loginContext.operationName = "Logout"
 		return try await req.view.render("Login/login", loginContext)
 	}
-	
+
 	/// `GET /createAccount`
 	///
 	/// Shows the Account Creation form if not logged in. For logged-in users this shows the Logout form.
 	func createAccountPageHandler(_ req: Request) async throws -> View {
 		return try await req.view.render("Login/createAccount", LoginPageContext(req))
 	}
-	
+
 	/// `POST /createAccount`
 	///
 	/// Called when the Create Account form is POSTed.
 	func createAccountPostHandler(_ req: Request) async throws -> View {
-		struct PostStruct : Codable {
+		struct PostStruct: Codable {
 			var regcode: String
 			var username: String
 			var displayname: String?
@@ -173,48 +173,91 @@ struct SiteLoginController: SiteControllerUtils {
 			let postStruct = try req.content.decode(PostStruct.self)
 			var validationError = ValidationError()
 			if postStruct.password != postStruct.passwordConfirm {
-				validationError.validationFailures.append(ValidationFailure(path: "", field: "password", errorString: "Password fields do not match"))
+				validationError.validationFailures.append(
+					ValidationFailure(path: "", field: "password", errorString: "Password fields do not match")
+				)
 			}
 			if let displayName = postStruct.displayname, !displayName.isEmpty {
 				if displayName.count < 2 || displayName.count > 50 {
-					validationError.validationFailures.append(ValidationFailure(path: "", field: "displayname", 
-							errorString: "Display Name must be between 2 and 50 characters"))
+					validationError.validationFailures.append(
+						ValidationFailure(
+							path: "",
+							field: "displayname",
+							errorString: "Display Name must be between 2 and 50 characters"
+						)
+					)
 				}
 			}
-			let createData = UserCreateData(username: postStruct.username, password: postStruct.password, verification: postStruct.regcode)
-			if let decoderErrors = try ValidatingJSONDecoder().validate(UserCreateData.self, from: JSONEncoder().encode(createData)) {
+			let createData = UserCreateData(
+				username: postStruct.username,
+				password: postStruct.password,
+				verification: postStruct.regcode
+			)
+			if let decoderErrors = try ValidatingJSONDecoder()
+				.validate(UserCreateData.self, from: JSONEncoder().encode(createData))
+			{
 				validationError.validationFailures.append(contentsOf: decoderErrors.validationFailures)
 			}
 			if !validationError.validationFailures.isEmpty {
-				throw ErrorResponse(error: true, status: 403, reason: validationError.collectReasonString(), fieldErrors: validationError.collectFieldErrors())
+				throw ErrorResponse(
+					error: true,
+					status: 403,
+					reason: validationError.collectReasonString(),
+					fieldErrors: validationError.collectFieldErrors()
+				)
 			}
-			let createResponse = try await apiQuery(req, endpoint: "/user/create", method: .POST, encodeContent: createData)
+			let createResponse = try await apiQuery(
+				req,
+				endpoint: "/user/create",
+				method: .POST,
+				encodeContent: createData
+			)
 			let createUserResponse = try createResponse.content.decode(CreatedUserData.self)
 			do {
-				// Try to login immediately after account creation, but if login fails, still show the 
+				// Try to login immediately after account creation, but if login fails, still show the
 				// AccountCreated page with the Recovery Key. The user can login manually later.
-				let credentials = "\(postStruct.username):\(postStruct.password)".data(using: .utf8)!.base64EncodedString()
+				let credentials = "\(postStruct.username):\(postStruct.password)".data(using: .utf8)!
+					.base64EncodedString()
 				let headers = HTTPHeaders([("Authorization", "Basic \(credentials)")])
-				let loginResponse = try await apiQuery(req, endpoint: "/auth/login", method: .POST, defaultHeaders: headers)
+				let loginResponse = try await apiQuery(
+					req,
+					endpoint: "/auth/login",
+					method: .POST,
+					defaultHeaders: headers
+				)
 				let token = try loginResponse.content.decode(TokenStringData.self)
 				try await loginUser(with: token, on: req)
 				if let displayname = postStruct.displayname {
-					// Set displayname; ignore result. We *could* direct errors here to show an alert in the 
+					// Set displayname; ignore result. We *could* direct errors here to show an alert in the
 					// accountCreated webpage, but don't allow failures at this point to prevent showing the page.
-					let profileData = UserProfileUploadData(header: nil, displayName: displayname, realName: nil,
-							preferredPronoun: nil, homeLocation: nil, roomNumber: nil, 
-							email: nil, message: nil, about: nil)
+					let profileData = UserProfileUploadData(
+						header: nil,
+						displayName: displayname,
+						realName: nil,
+						preferredPronoun: nil,
+						homeLocation: nil,
+						roomNumber: nil,
+						email: nil,
+						message: nil,
+						about: nil
+					)
 					try await apiQuery(req, endpoint: "/user/profile", method: .POST, encodeContent: profileData)
 				}
-				var userCreatedContext = UserCreatedContext(req, username: createUserResponse.username, 
-						recoveryKey: createUserResponse.recoveryKey)
+				var userCreatedContext = UserCreatedContext(
+					req,
+					username: createUserResponse.username,
+					recoveryKey: createUserResponse.recoveryKey
+				)
 				userCreatedContext.redirectURL = req.session.data["returnAfterLogin"]
 				return try await req.view.render("Login/accountCreated", userCreatedContext)
 			}
 			catch {
 				// We created the account, but couldn't log them in.
-				var userCreatedContext = UserCreatedContext(req, username: createUserResponse.username, 
-						recoveryKey: createUserResponse.recoveryKey)
+				var userCreatedContext = UserCreatedContext(
+					req,
+					username: createUserResponse.username,
+					recoveryKey: createUserResponse.recoveryKey
+				)
 				userCreatedContext.redirectURL = req.session.data["returnAfterLogin"]
 				return try await req.view.render("Login/accountCreated", userCreatedContext)
 			}
@@ -228,9 +271,9 @@ struct SiteLoginController: SiteControllerUtils {
 				ctx.prevDisplayName = postStruct.displayname
 			}
 			return try await req.view.render("Login/createAccount", ctx)
-		} 
+		}
 	}
-	
+
 	/// `GET /resetPassword`
 	///
 	/// Shows the Reset Password page.
@@ -243,7 +286,7 @@ struct SiteLoginController: SiteControllerUtils {
 	///
 	// Change password for logged-in user
 	func resetPasswordPostHandler(_ req: Request) async throws -> View {
-		struct PostStruct : Codable {
+		struct PostStruct: Codable {
 			var currentPassword: String
 			var password: String
 			var confirmPassword: String
@@ -251,10 +294,17 @@ struct SiteLoginController: SiteControllerUtils {
 		do {
 			let postStruct = try req.content.decode(PostStruct.self)
 			guard postStruct.password == postStruct.confirmPassword else {
-				throw ErrorResponse(error: true, status: 500, reason: "Password fields do not match", 
-						fieldErrors: ["password" : "Password fields do not match"])
+				throw ErrorResponse(
+					error: true,
+					status: 500,
+					reason: "Password fields do not match",
+					fieldErrors: ["password": "Password fields do not match"]
+				)
 			}
-			let userPwData = UserPasswordData(currentPassword: postStruct.currentPassword, newPassword: postStruct.password)
+			let userPwData = UserPasswordData(
+				currentPassword: postStruct.currentPassword,
+				newPassword: postStruct.password
+			)
 			try await apiQuery(req, endpoint: "/user/password", method: .POST, encodeContent: userPwData)
 			var context = try await LoginPageContext(req)
 			context.operationName = "Change Password"
@@ -266,12 +316,12 @@ struct SiteLoginController: SiteControllerUtils {
 			return try await req.view.render("Login/resetPassword", LoginPageContext(req, error: error))
 		}
 	}
-	
+
 	/// `POST /recoverPassword`
 	///
 	/// Change password for logged-out user, using regcode, current password, or recovery code.
 	func recoverPasswordPostHandler(_ req: Request) async throws -> View {
-		struct PostStruct : Codable {
+		struct PostStruct: Codable {
 			var username: String
 			var regCode: String
 			var password: String
@@ -280,11 +330,24 @@ struct SiteLoginController: SiteControllerUtils {
 		do {
 			let postStruct = try req.content.decode(PostStruct.self)
 			guard postStruct.password == postStruct.passwordConfirm else {
-				throw ErrorResponse(error: true, status: 500, reason: "Password fields do not match", 
-						fieldErrors: ["password" : "Password fields do not match"])
+				throw ErrorResponse(
+					error: true,
+					status: 500,
+					reason: "Password fields do not match",
+					fieldErrors: ["password": "Password fields do not match"]
+				)
 			}
-			let recoveryData = UserRecoveryData(username: postStruct.username, recoveryKey: postStruct.regCode, newPassword: postStruct.password)
-			let apiResponse = try await apiQuery(req, endpoint: "/auth/recovery", method: .POST, encodeContent: recoveryData)
+			let recoveryData = UserRecoveryData(
+				username: postStruct.username,
+				recoveryKey: postStruct.regCode,
+				newPassword: postStruct.password
+			)
+			let apiResponse = try await apiQuery(
+				req,
+				endpoint: "/auth/recovery",
+				method: .POST,
+				encodeContent: recoveryData
+			)
 			let tokenResponse = try apiResponse.content.decode(TokenStringData.self)
 			try await loginUser(with: tokenResponse, on: req)
 			var loginContext = try await LoginPageContext(req)
@@ -302,13 +365,13 @@ struct SiteLoginController: SiteControllerUtils {
 			return try await req.view.render("Login/resetPassword", ctx)
 		}
 	}
-	
+
 	/// `GET /codeOfConduct`
 	///
 	func codeOfConductViewHandler(_ req: Request) async throws -> View {
 		return try await req.view.render("codeOfConduct", LoginPageContext(req))
 	}
-	
+
 	/// `GET /createAltAccount`
 	///
 	/// Must be logged in, although you can be logged in as an alt account, in which case this method creates another alt as a child
@@ -320,7 +383,7 @@ struct SiteLoginController: SiteControllerUtils {
 	/// `POST /createAltAccount`
 	///
 	func createAltAccountPostHandler(_ req: Request) async throws -> View {
-		struct PostStruct : Codable {
+		struct PostStruct: Codable {
 			var username: String
 			var password: String
 			var passwordConfirm: String
@@ -328,12 +391,20 @@ struct SiteLoginController: SiteControllerUtils {
 		do {
 			let postStruct = try req.content.decode(PostStruct.self)
 			guard postStruct.password == postStruct.passwordConfirm else {
-				throw ErrorResponse(error: true, status: 500, reason: "Password fields do not match", 
-						fieldErrors: ["password" : "Password fields do not match"])
+				throw ErrorResponse(
+					error: true,
+					status: 500,
+					reason: "Password fields do not match",
+					fieldErrors: ["password": "Password fields do not match"]
+				)
 			}
-			let createData = UserCreateData(username: postStruct.username, password: postStruct.password, verification: "")
+			let createData = UserCreateData(
+				username: postStruct.username,
+				password: postStruct.password,
+				verification: ""
+			)
 			try await apiQuery(req, endpoint: "/user/add", method: .POST, encodeContent: createData)
-	//		let createUserResponse = try apiResponse.content.decode(AddedUserData.self)
+			//		let createUserResponse = try apiResponse.content.decode(AddedUserData.self)
 			var loginContext = try await LoginPageContext(req)
 			loginContext.trunk.metaRedirectURL = "/"
 			loginContext.operationSuccess = true
@@ -348,27 +419,30 @@ struct SiteLoginController: SiteControllerUtils {
 			return try await req.view.render("Login/createAltAccount", ctx)
 		}
 	}
-	
 
-// MARK: - Utilities
+	// MARK: - Utilities
 
 	// Currently we do a direct DB lookup on login so that we can call auth.login() on the User that logged in.
 	// This breaks the idea of the web client only relying on the API. I believe a better solution will be to
 	// make a new Authenticatable type (WebUser?) that isn't database-backed and is stored in the Session, and
-	// then the web client can Auth on that type instead of User. But, I want to be sure we *really* don't need 
+	// then the web client can Auth on that type instead of User. But, I want to be sure we *really* don't need
 	// User before embarking on this.
-	func loginUser(with tokenResponse: TokenStringData, on req: Request, defaultDeviceType: String = "unknown device") async throws {
+	func loginUser(with tokenResponse: TokenStringData, on req: Request, defaultDeviceType: String = "unknown device")
+		async throws
+	{
 		guard let user = req.userCache.getUser(tokenResponse.userID) else {
 			throw Abort(.unauthorized, reason: "User not found")
 		}
-		// auth.login just logs the user in for the duration of this request. 
+		// auth.login just logs the user in for the duration of this request.
 		req.auth.login(user)
 		req.session.data["token"] = tokenResponse.token
 		req.session.data["accessLevel"] = tokenResponse.accessLevel.rawValue
-		
+
 		var deviceType = defaultDeviceType
 		if let userAgent = req.headers.first(name: "User-Agent") {
-			if let openParen = userAgent.firstIndex(of: "("), let semicolon = userAgent.firstIndex(of: ";"), semicolon > openParen {
+			if let openParen = userAgent.firstIndex(of: "("), let semicolon = userAgent.firstIndex(of: ";"),
+				semicolon > openParen
+			{
 				let afterParen = userAgent.index(after: openParen)
 				deviceType = String(userAgent[afterParen..<semicolon])
 			}

@@ -1,5 +1,5 @@
-import Vapor
 import Fluent
+import Vapor
 
 /// Serves static files used bye the Web UI front end. Since these files are UI-level and not API-level entities, we serve
 /// these files directly from here--there's no need to forward calls through the API. This means if you're an API client, you
@@ -75,8 +75,8 @@ struct SiteFileController: SiteControllerUtils {
 
 		// create absolute file path
 		let filePath = Settings.shared.staticFilesRootPath
-				.appendingPathComponent("Resources/Assets/\(basePath)")
-				.appendingPathComponent(path)
+			.appendingPathComponent("Resources/Assets/\(basePath)")
+			.appendingPathComponent(path)
 
 		// check if file exists and is not a directory
 		var isDir: ObjCBool = false
