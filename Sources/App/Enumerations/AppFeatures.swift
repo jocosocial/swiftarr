@@ -11,6 +11,8 @@ public enum SwiftarrClientApp: String, Content, CaseIterable {
 	case cruisemonkey
 	case rainbowmonkey
 	case kraken
+	case tricordarr
+	case tacobarr
 
 	/// A feature disabled for `all` will be turned off at the API layer , meaning that calls to that area of the API will return errors. Clients should still attempt
 	/// to use disabledFeatures to indicate the cause, rather than just displaying HTTP status errors.
