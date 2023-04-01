@@ -1,5 +1,5 @@
-import Vapor
 import Fluent
+import Vapor
 
 // MARK: - BearerAuthenticatable Conformance
 
@@ -26,4 +26,3 @@ extension Token {
 		return try Token(token: random, user: user)
 	}
 }
-

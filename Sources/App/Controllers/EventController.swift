@@ -1,7 +1,7 @@
-import Vapor
 import Crypto
-import FluentSQL
 import Fluent
+import FluentSQL
+import Vapor
 
 /// The collection of `/api/v3/events/*` route endpoints and handler functions related
 /// to the event schedule.
@@ -10,15 +10,15 @@ struct EventController: APIRouteCollection {
 
 	/// Required. Registers routes to the incoming router.
 	func registerRoutes(_ app: Application) throws {
-		
+
 		// convenience route group for all /api/v3/users endpoints
 		let eventRoutes = app.grouped(DisabledAPISectionMiddleware(feature: .schedule)).grouped("api", "v3", "events")
-		
+
 		// Flexible access endpoints that behave differently for logged-in users
 		let optionalAuthGroup = addFlexCacheAuthGroup(to: eventRoutes)
 		optionalAuthGroup.get(use: eventsHandler)
 		optionalAuthGroup.get(eventIDParam, use: singleEventHandler)
-		
+
 		// endpoints available only when logged in
 		let tokenAuthGroup = addTokenCacheAuthGroup(to: eventRoutes)
 		tokenAuthGroup.post(eventIDParam, "favorite", use: favoriteAddHandler)
@@ -26,7 +26,7 @@ struct EventController: APIRouteCollection {
 		tokenAuthGroup.delete(eventIDParam, "favorite", use: favoriteRemoveHandler)
 		tokenAuthGroup.get("favorites", use: favoritesHandler)
 	}
-	
+
 	// MARK: - Open Access Handlers
 	// The handlers in this route group do not require Authorization, but can take advantage
 	// of Authorization headers if they are present.
@@ -34,21 +34,21 @@ struct EventController: APIRouteCollection {
 	/// `GET /api/v3/events`
 	///
 	/// Retrieve a list of scheduled events. By default, this retrieves the entire event schedule.
-	/// 
+	///
 	/// **URL Query Parameters:**
 	/// - cruiseday=INT		Embarkation day is day 1, value should be  less than or equal to `Settings.shared.cruiseLengthInDays`, which will be 8 for the 2022 cruise.
-	/// - day=STRING			3 letter day of week abbreviation e.g. "TUE" .Returns events for that day *of the cruise in 2022* "SAT" returns events for embarkation day while 
+	/// - day=STRING			3 letter day of week abbreviation e.g. "TUE" .Returns events for that day *of the cruise in 2022* "SAT" returns events for embarkation day while
 	/// 					the current date is earlier than embarkation day, then it returns events for disembarkation day.
 	/// - ?date=DATE			Returns events occurring on the given day. Empty list if there are no cruise events on that day.
 	/// - ?time=DATE			Returns events whose startTime is earlier (or equal) to DATE and endTime is later than DATE. Note that this will often include 'all day' events.
-	/// - ?type=[official, shadow]	Only returns events matching the selected type. 
+	/// - ?type=[official, shadow]	Only returns events matching the selected type.
 	/// - ?search=STRING		Returns events whose title or description contain the given string.
-	/// 
+	///
 	/// The `?day=STRING` query parameter is intended to make it easy to get schedule events returned even when the cruise is not occurring, for ease of testing.
 	/// The day and date parameters actually return events from 3AM local time on the given day until 3AM the next day--some events start after midnight and tend to get lost by those
 	/// looking at daily schedules.
-	/// 
-	/// All the above parameters filter the set of `EventData` objects that get returned. Onlly one of [cruiseday, day, date, time] may be used.  
+	///
+	/// All the above parameters filter the set of `EventData` objects that get returned. Onlly one of [cruiseday, day, date, time] may be used.
 	///
 	/// - Returns: An array of  `EventData` containing filtered events.
 	func eventsHandler(_ req: Request) async throws -> [EventData] {
@@ -84,23 +84,24 @@ struct EventController: APIRouteCollection {
 		// should do the right thing, even when the dates are then adjusted to the current TZ for delivery.
 		let portCalendar = Settings.shared.getPortCalendar()
 		// For the purpose of events, 'days' start and end at 3 AM in the Port timezone.
-		let cruiseStartDate = portCalendar.date(byAdding: .hour, value: 3, to: Settings.shared.cruiseStartDate()) ??
-				Settings.shared.cruiseStartDate()
+		let cruiseStartDate =
+			portCalendar.date(byAdding: .hour, value: 3, to: Settings.shared.cruiseStartDate())
+			?? Settings.shared.cruiseStartDate()
 		var searchStartTime: Date?
 		var searchEndTime: Date?
 		if let day = options.day {
 			var cruiseDayIndex: Int
 			switch day.prefix(3).lowercased() {
-				case "sat": cruiseDayIndex = Date() < cruiseStartDate ? 0 : 7
-				case "1sa": cruiseDayIndex = 0
-				case "2sa": cruiseDayIndex = 7
-				case "sun": cruiseDayIndex = 1
-				case "mon": cruiseDayIndex = 2 
-				case "tue": cruiseDayIndex = 3
-				case "wed": cruiseDayIndex = 4
-				case "thu": cruiseDayIndex = 5
-				case "fri": cruiseDayIndex = 6
-				default: cruiseDayIndex = 0
+			case "sat": cruiseDayIndex = Date() < cruiseStartDate ? 0 : 7
+			case "1sa": cruiseDayIndex = 0
+			case "2sa": cruiseDayIndex = 7
+			case "sun": cruiseDayIndex = 1
+			case "mon": cruiseDayIndex = 2
+			case "tue": cruiseDayIndex = 3
+			case "wed": cruiseDayIndex = 4
+			case "thu": cruiseDayIndex = 5
+			case "fri": cruiseDayIndex = 6
+			default: cruiseDayIndex = 0
 			}
 			searchStartTime = portCalendar.date(byAdding: .day, value: cruiseDayIndex, to: cruiseStartDate)
 			searchEndTime = portCalendar.date(byAdding: .day, value: cruiseDayIndex + 1, to: cruiseStartDate)
@@ -111,7 +112,7 @@ struct EventController: APIRouteCollection {
 		}
 		else if let date = options.date {
 			searchStartTime = portCalendar.date(byAdding: .hour, value: 3, to: portCalendar.startOfDay(for: date))
-			searchEndTime = portCalendar.date(byAdding: .day, value: 1, to: searchStartTime ?? cruiseStartDate) 
+			searchEndTime = portCalendar.date(byAdding: .day, value: 1, to: searchStartTime ?? cruiseStartDate)
 		}
 		else if let time = options.time {
 			query.filter(\.$startTime <= time).filter(\.$endTime > time)
@@ -124,20 +125,20 @@ struct EventController: APIRouteCollection {
 		if let user = req.auth.get(UserCacheData.self) {
 			let eventIDs = try events.map { try $0.requireID() }
 			favoriteEventIDs = try await EventFavorite.query(on: req.db).filter(\.$user.$id == user.userID)
-					.filter(\.$event.$id ~~ eventIDs).all().map { $0.$event.id }
+				.filter(\.$event.$id ~~ eventIDs).all().map { $0.$event.id }
 		}
 		let result = try events.map { try EventData($0, isFavorite: favoriteEventIDs.contains($0.requireID())) }
 		return result
 	}
-	
+
 	/// `GET /api/v3/events/ID`
 	///
 	/// Retrieve a single event from its database ID or event UID. UID is part of the ICS spec for calendar events (RFC 5545).
-	/// 
+	///
 	/// - Parameter eventID: in URL path
 	/// - Returns: `EventData` containing  event info.
 	func singleEventHandler(_ req: Request) async throws -> EventData {
-  		guard let paramVal = req.parameters.get(eventIDParam.paramString) else {
+		guard let paramVal = req.parameters.get(eventIDParam.paramString) else {
 			throw Abort(.badRequest, reason: "Request parameter identifying Event is missing.")
 		}
 		var event: Event?
@@ -152,8 +153,9 @@ struct EventController: APIRouteCollection {
 		}
 		var isFavorite = false
 		if let user = req.auth.get(UserCacheData.self) {
-			isFavorite = try await EventFavorite.query(on: req.db).filter(\.$user.$id == user.userID)
-					.filter(\.$event.$id == event.requireID()).first() != nil
+			isFavorite =
+				try await EventFavorite.query(on: req.db).filter(\.$user.$id == user.userID)
+				.filter(\.$event.$id == event.requireID()).first() != nil
 		}
 		return try EventData(event, isFavorite: isFavorite)
 	}
@@ -161,7 +163,7 @@ struct EventController: APIRouteCollection {
 	// MARK: - tokenAuthGroup Handlers (logged in)
 	// All handlers in this route group require a valid HTTP Bearer Authentication
 	// header in the request.
-		
+
 	/// `POST /api/v3/events/ID/favorite`
 	///
 	/// Add the specified `Event` to the user's tagged events list.
@@ -172,7 +174,7 @@ struct EventController: APIRouteCollection {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		guard let user = try await User.find(cacheUser.userID, on: req.db) else {
 			throw Abort(.internalServerError, reason: "User in cache but not found in User table")
-		}	
+		}
 		let event = try await Event.findFromParameter(eventIDParam, on: req)
 		if try await event.$favorites.isAttached(to: user, on: req.db) {
 			return .ok
@@ -181,7 +183,7 @@ struct EventController: APIRouteCollection {
 		_ = try await storeNextFollowedEvent(userID: cacheUser.userID, on: req)
 		return .created
 	}
-	
+
 	/// `POST /api/v3/events/ID/favorite/remove`
 	/// `DELETE /api/v3/events/ID/favorite`
 	///
@@ -196,14 +198,15 @@ struct EventController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "Invalid event ID parameter")
 		}
 		if let favoriteEvent = try await EventFavorite.query(on: req.db).filter(\.$user.$id == cacheUser.userID)
-				.filter(\.$event.$id == eventID).first() {
+			.filter(\.$event.$id == eventID).first()
+		{
 			try await favoriteEvent.delete(on: req.db)
 			_ = try await storeNextFollowedEvent(userID: cacheUser.userID, on: req)
 			return .noContent
 		}
 		return .ok
 	}
-	
+
 	/// `GET /api/v3/events/favorites`
 	///
 	/// Retrieve the `Event`s the user has favorited, sorted by `.startTime`.
@@ -211,11 +214,12 @@ struct EventController: APIRouteCollection {
 	/// - Returns: An array of  `EventData` containing the user's favorite events.
 	func favoritesHandler(_ req: Request) async throws -> [EventData] {
 		let user = try req.auth.require(UserCacheData.self)
-		let events = try await Event.query(on: req.db).join(EventFavorite.self, on: \Event.$id == \EventFavorite.$event.$id)
-				.filter(EventFavorite.self, \.$user.$id == user.userID).sort(\.$startTime, .ascending).all()
+		let events = try await Event.query(on: req.db)
+			.join(EventFavorite.self, on: \Event.$id == \EventFavorite.$event.$id)
+			.filter(EventFavorite.self, \.$user.$id == user.userID).sort(\.$startTime, .ascending).all()
 		return try events.map { try EventData($0, isFavorite: true) }
 	}
-	
-// MARK: Utilities
+
+	// MARK: Utilities
 
 }

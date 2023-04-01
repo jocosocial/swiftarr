@@ -22,11 +22,11 @@ public final class SiteErrorMiddleware: AsyncMiddleware {
 				throw error
 			}
 		}
-	
+
 		// variables to determine
 		let status: HTTPResponseStatus
 		let reason: String
-		var fieldErrors: [String : String]?
+		var fieldErrors: [String: String]?
 
 		// inspect the error type
 		switch error {
@@ -52,7 +52,7 @@ public final class SiteErrorMiddleware: AsyncMiddleware {
 
 		// Report the error to logger.
 		req.logger.report(error: error)
-		
+
 		// Append field errors onto the error string
 		var errorStr = reason
 		if let fieldErrors = fieldErrors {
@@ -60,12 +60,12 @@ public final class SiteErrorMiddleware: AsyncMiddleware {
 				errorStr.append("<br>\(field): \(err)")
 			}
 		}
-		
-		struct ErrorPageContext : Encodable {
+
+		struct ErrorPageContext: Encodable {
 			var trunk: TrunkContext
 			var status: String
 			var errorString: String
-			
+
 			init(_ req: Request, status: HTTPResponseStatus, errorStr: String) {
 				trunk = .init(req, title: "Error", tab: .none)
 				self.status = "\(status.code) \(status.reasonPhrase)"
@@ -75,19 +75,19 @@ public final class SiteErrorMiddleware: AsyncMiddleware {
 		let ctx = ErrorPageContext(req, status: status, errorStr: errorStr)
 		return try await req.view.render("error", ctx).encodeResponse(status: status, for: req)
 	}
-	
+
 	init(environment: Environment) {
 		isReleaseMode = environment.isRelease
 	}
 
 	/// See `Middleware`.
-	public func respond(to request: Request, chainingTo next:  AsyncResponder) async throws -> Response {
+	public func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
 		do {
 			let response = try await next.respond(to: request)
 			return response
 		}
 		catch {
-			// handleError inspects the route and only returns the 'error' HTML page if the route would have 
+			// handleError inspects the route and only returns the 'error' HTML page if the route would have
 			// returned HTML. This middleware could be optimized to only be attached to routes that return HTML,
 			// but there's no easy way to that.
 			return try await handleError(req: request, error: error)

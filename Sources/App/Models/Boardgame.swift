@@ -1,20 +1,20 @@
-import Vapor
 import Fluent
+import Vapor
 
-/// A boardgame in the Games Library. 
+/// A boardgame in the Games Library.
 final class Boardgame: Model, Searchable {
 	static let schema = "boardgame"
-	
+
 	// MARK: Properties
-	
+
 	/// The game's ID.
 	@ID(key: .id) var id: UUID?
-	
+
 	/// The game's title.
 	@Field(key: "gameName") var gameName: String
 	/// How many copies the Games Library has of this game.
 	@Field(key: "numCopies") var numCopies: Int
-	
+
 	/// If the game was donated (or perhaps loaned) by a cruisegoer, the person that donated it.
 	@OptionalField(key: "donatedBy") var donatedBy: String?
 	/// Any notes on the game, e.g.box condition, missing pieces.
@@ -23,7 +23,7 @@ final class Boardgame: Model, Searchable {
 	/// The rest of these properties are pulled from BoardGameGeek's API, and may not exactly match the game in the library.
 	/// Some games get re-released with slightly different versions, and the script guesses which one the Library most likely has.
 	/// All these properties are optional because we may not find a match on BGG
-	
+
 	/// BoardGameGeek sometimes has a slightly different title for a game. This is the exact BGG title.
 	@OptionalField(key: "bggGameName") var bggGameName: String?
 	@OptionalField(key: "yearPublished") var yearPublished: String?
@@ -45,26 +45,26 @@ final class Boardgame: Model, Searchable {
 	@OptionalField(key: "avgRating") var avgRating: Float?
 	/// Roughly, how complex the rules are for this game. Scale is 1...5. 1 is "tic-tac-toe", 5 is "Roll 3d100 on Table 38/b to find out which sub-table to roll on"
 	@OptionalField(key: "complexity") var complexity: Float?
-	
+
 	/// Timestamp of the model's creation, set automatically.
 	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
-	 
+
 	// MARK: Relations
-		
+
 	/// If this is an expansion set, the base game that it expands
 	@OptionalParent(key: "expands") var expands: Boardgame?
 
 	/// For games that have expansions, the set of expansions for this base game.
 	@Children(for: \.$expands) var expansions: [Boardgame]
-		
+
 	/// The users that have favorited this game.
 	@Siblings(through: BoardgameFavorite.self, from: \.$boardgame, to: \.$user) var favorites: [User]
 
 	// MARK: Initialization
-	
+
 	/// Used by Fluent
- 	init() { }
- 	
+	init() {}
+
 	/// Initializes a new Boardgame from the JSON games file data.
 	///
 	/// - Parameters:
@@ -74,29 +74,29 @@ final class Boardgame: Model, Searchable {
 		self.bggGameName = jsonGame.bggGameName
 		self.yearPublished = jsonGame.yearPublished
 		self.gameDescription = jsonGame.gameDescription
-		
+
 		self.minPlayers = jsonGame.minPlayers
 		self.maxPlayers = jsonGame.maxPlayers
 		self.suggestedPlayers = jsonGame.suggestedPlayers
-		
+
 		self.minPlayingTime = jsonGame.minPlayingTime
 		self.maxPlayingTime = jsonGame.maxPlayingTime
 		self.avgPlayingTime = jsonGame.avgPlayingTime
-		
+
 		self.minAge = jsonGame.minAge
 		self.numRatings = jsonGame.numRatings
 		self.avgRating = jsonGame.avgRating
 		self.complexity = jsonGame.complexity
-		
+
 		self.donatedBy = jsonGame.donatedBy
 		self.notes = jsonGame.notes
 		self.numCopies = jsonGame.numCopies
 	}
-	
+
 	/// Determines whether a game has enough information to be used by the recommendation engine.
-	/// 
+	///
 	/// BoardGameGeek's data is user-provided and is not complete for all games in their database. If a
-	/// game is missing one of these fields, we can still create a reasonable score for how well the game 
+	/// game is missing one of these fields, we can still create a reasonable score for how well the game
 	/// matches a set of criteria. If it's missing a bunch of these fields, scoring the game would be meaningless.
 	func canUseForRecommendations() -> Bool {
 		var invalidCount = 0
@@ -120,7 +120,7 @@ final class Boardgame: Model, Searchable {
 		}
 		return invalidCount <= 1
 	}
-	
+
 	func getSuggestedPlayers() -> Int {
 		var result = suggestedPlayers ?? 0
 		if result == 0 {
@@ -128,7 +128,7 @@ final class Boardgame: Model, Searchable {
 		}
 		return result
 	}
-	
+
 	func getAvgPlayingTime() -> Int {
 		var result = avgPlayingTime ?? 0
 		if result == 0 {
@@ -136,12 +136,12 @@ final class Boardgame: Model, Searchable {
 		}
 		return result
 	}
-	
+
 	/// Unwraps, and gives games with no rating a low but not terrible default rating
 	func getAvgRating() -> Float {
 		return (avgRating ?? 0) == 0 ? 4.5 : (avgRating ?? 0)
 	}
-	
+
 	/// Unwraps, and gives games with no complexity rating an average complexity value as a default.
 	/// Ideally we'd give games with no complexity value a scoring penalty.
 	func getComplexity() -> Float {
@@ -152,37 +152,36 @@ final class Boardgame: Model, Searchable {
 struct CreateBoardgameSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		try await database.schema("boardgame")
-				.id()
-				.field("gameName", .string, .required)
-				.field("bggGameName", .string)
-				.field("yearPublished", .string)
-				.field("gameDescription", .string)
+			.id()
+			.field("gameName", .string, .required)
+			.field("bggGameName", .string)
+			.field("yearPublished", .string)
+			.field("gameDescription", .string)
 
-				.field("minPlayers", .int)
-				.field("maxPlayers", .int)
-				.field("suggestedPlayers", .int)
+			.field("minPlayers", .int)
+			.field("maxPlayers", .int)
+			.field("suggestedPlayers", .int)
 
-				.field("minPlayingTime", .int)
-				.field("maxPlayingTime", .int)
-				.field("avgPlayingTime", .int)
+			.field("minPlayingTime", .int)
+			.field("maxPlayingTime", .int)
+			.field("avgPlayingTime", .int)
 
-				.field("minAge", .int)
-				.field("numRatings", .int)
-				.field("avgRating", .float)
-				.field("complexity", .float)
+			.field("minAge", .int)
+			.field("numRatings", .int)
+			.field("avgRating", .float)
+			.field("complexity", .float)
 
-				.field("donatedBy", .string)
-				.field("notes", .string)
-				.field("numCopies", .int, .required)
-				
-				.field("expands", .uuid, .references("boardgame", "id"))
+			.field("donatedBy", .string)
+			.field("notes", .string)
+			.field("numCopies", .int, .required)
 
-				.field("created_at", .datetime)
-				.create()
+			.field("expands", .uuid, .references("boardgame", "id"))
+
+			.field("created_at", .datetime)
+			.create()
 	}
-	
+
 	func revert(on database: Database) async throws {
 		try await database.schema("boardgame").delete()
 	}
 }
-

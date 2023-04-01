@@ -9,7 +9,7 @@ public final class SwiftarrErrorMiddleware: AsyncMiddleware {
 		let status: HTTPResponseStatus
 		var reason: String
 		let headers: HTTPHeaders
-		var fieldErrors: [String : String]?
+		var fieldErrors: [String: String]?
 
 		// inspect the error type
 		switch error {
@@ -42,23 +42,34 @@ public final class SwiftarrErrorMiddleware: AsyncMiddleware {
 
 		// Report the error to logger.
 		req.logger.report(error: error)
-		req.logger.log(level: .info, "\(req.method) \(req.url.path.removingPercentEncoding ?? req.url.path) -> \(status)")
+		req.logger.log(
+			level: .info,
+			"\(req.method) \(req.url.path.removingPercentEncoding ?? req.url.path) -> \(status)"
+		)
 
 		// create a Response with appropriate status
 		let response = Response(status: status, headers: headers)
 
 		// attempt to serialize the error to json
 		do {
-			let errorResponse = ErrorResponse(error: true, status: status.code, reason: reason, fieldErrors: fieldErrors)
+			let errorResponse = ErrorResponse(
+				error: true,
+				status: status.code,
+				reason: reason,
+				fieldErrors: fieldErrors
+			)
 			response.body = try .init(data: JSONEncoder().encode(errorResponse))
 			response.headers.replaceOrAdd(name: .contentType, value: "application/json; charset=utf-8")
-		} catch {
-			response.body = .init(string: "{ \"error\": true, \"reason\": \"Unknown error. Error thrown during error handling.\" }")
+		}
+		catch {
+			response.body = .init(
+				string: "{ \"error\": true, \"reason\": \"Unknown error. Error thrown during error handling.\" }"
+			)
 			response.headers.replaceOrAdd(name: .contentType, value: "application/json; charset=utf-8")
 		}
 		return response
 	}
-	
+
 	init(environment: Environment) {
 		isReleaseMode = environment.isRelease
 	}
@@ -67,13 +78,16 @@ public final class SwiftarrErrorMiddleware: AsyncMiddleware {
 	public func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
 		var response: Response
 		do {
-	//		request.logger.log(level: .info, "START \(request.method) \(request.url.path.removingPercentEncoding ?? request.url.path)")
+			//		request.logger.log(level: .info, "START \(request.method) \(request.url.path.removingPercentEncoding ?? request.url.path)")
 			response = try await next.respond(to: request)
 		}
 		catch {
 			response = self.handleError(req: request, error: error)
 		}
-		request.logger.log(level: .info, "\(request.method) \(request.url.path.removingPercentEncoding ?? request.url.path) -> \(response.status)")
+		request.logger.log(
+			level: .info,
+			"\(request.method) \(request.url.path.removingPercentEncoding ?? request.url.path) -> \(response.status)"
+		)
 		return response
 	}
 }

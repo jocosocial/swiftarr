@@ -1,5 +1,5 @@
-import Vapor
 import Fluent
+import Vapor
 
 // Fezzes can be reported
 extension FriendlyFez: Reportable {

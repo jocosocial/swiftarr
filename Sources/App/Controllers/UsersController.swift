@@ -1,9 +1,9 @@
-import Vapor
 import Crypto
-import FluentSQL
 import Fluent
-import Redis
+import FluentSQL
 import RediStack
+import Redis
+import Vapor
 
 /// The collection of `/api/v3/user/*` route endpoints and handler functions related
 /// to a user's own data.
@@ -13,13 +13,13 @@ import RediStack
 /// entirely.
 
 struct UsersController: APIRouteCollection {
-		
+
 	/// Required. Registers routes to the incoming router.
 	func registerRoutes(_ app: Application) throws {
 
 		// convenience route group for all /api/v3/users endpoints
 		let usersRoutes = app.grouped("api", "v3", "users")
-				
+
 		// endpoints available only when logged in
 		let tokenCacheAuthGroup = addTokenCacheAuthGroup(to: usersRoutes)
 		tokenCacheAuthGroup.get("find", ":userSearchString", use: findHandler)
@@ -32,30 +32,30 @@ struct UsersController: APIRouteCollection {
 		// Endpoints available only when logged in, and also can be disabled by server admin
 		let blockableAuthGroup = tokenCacheAuthGroup.grouped(DisabledAPISectionMiddleware(feature: .users))
 
-			// Notes on users
+		// Notes on users
 		blockableAuthGroup.post(userIDParam, "note", use: noteCreateHandler)
 		blockableAuthGroup.post(userIDParam, "note", "delete", use: noteDeleteHandler)
 		blockableAuthGroup.delete(userIDParam, "note", use: noteDeleteHandler)
 		blockableAuthGroup.get(userIDParam, "note", use: noteHandler)
 
-			// Blocks, Mutes, Favorites
+		// Blocks, Mutes, Favorites
 		blockableAuthGroup.get("blocks", use: blocksHandler)
- 		blockableAuthGroup.post(userIDParam, "block", use: blockHandler)
+		blockableAuthGroup.post(userIDParam, "block", use: blockHandler)
 		blockableAuthGroup.post(userIDParam, "unblock", use: unblockHandler)
 		blockableAuthGroup.get("mutes", use: mutesHandler)
 		blockableAuthGroup.post(userIDParam, "mute", use: muteHandler)
 		blockableAuthGroup.post(userIDParam, "unmute", use: unmuteHandler)
 		blockableAuthGroup.get("favorites", use: favoritesHandler)
- 		blockableAuthGroup.post(userIDParam, "favorite", use: favoriteAddHandler)
+		blockableAuthGroup.post(userIDParam, "favorite", use: favoriteAddHandler)
 		blockableAuthGroup.post(userIDParam, "unfavorite", use: favoriteRemoveHandler)
 
-			// User Role Management for non-THO. Currently, this means the Shutternaut Manager managing the Shutternaut role
+		// User Role Management for non-THO. Currently, this means the Shutternaut Manager managing the Shutternaut role
 		blockableAuthGroup.get("userrole", userRoleParam, use: getUsersWithRole)
 		blockableAuthGroup.post("userrole", userRoleParam, "addrole", userIDParam, use: addRoleForUser)
 		blockableAuthGroup.post("userrole", userRoleParam, "removerole", userIDParam, use: removeRoleForUser)
 	}
-		
-// MARK: - Finding Other Users	
+
+	// MARK: - Finding Other Users
 	/// `GET /api/v3/users/find/:username`
 	///
 	/// Retrieves a user's `UserHeader` using either an ID (UUID string) or a username.
@@ -76,7 +76,7 @@ struct UsersController: APIRouteCollection {
 		guard let parameter = req.parameters.get("userSearchString") else {
 			throw Abort(.badRequest, reason: "Find User: missing search string")
 		}
-		var userHeader: UserHeader? = req.userCache.getHeader(parameter) 
+		var userHeader: UserHeader? = req.userCache.getHeader(parameter)
 		// try converting to UUID
 		if userHeader == nil, let userID = UUID(uuidString: parameter) {
 			userHeader = try? req.userCache.getHeader(userID)
@@ -89,7 +89,7 @@ struct UsersController: APIRouteCollection {
 		}
 		return foundUser
 	}
-			
+
 	/// `GET /api/v3/users/:userID`
 	///
 	/// Retrieves the specified user's `UserHeader` info.
@@ -114,7 +114,7 @@ struct UsersController: APIRouteCollection {
 		}
 		return userHeader
 	}
-	
+
 	/// `GET /api/v3/users/ID/profile`
 	///
 	/// Retrieves the specified user's profile, as a `ProfilePublicData` object.
@@ -136,15 +136,20 @@ struct UsersController: APIRouteCollection {
 			throw Abort(.notFound, reason: "profile is not available")
 		}
 		// Profile hidden if user quarantined and requester not mod, or if requester is banned.
-		var publicProfile = try ProfilePublicData(user: profiledUser, note: nil, requesterAccessLevel: requester.accessLevel)
+		var publicProfile = try ProfilePublicData(
+			user: profiledUser,
+			note: nil,
+			requesterAccessLevel: requester.accessLevel
+		)
 		// include UserNote if any, then return
 		if let note = try await UserNote.query(on: req.db).filter(\.$author.$id == requester.userID)
-				.filter(\.$noteSubject.$id == profiledUser.requireID()).first() {
+			.filter(\.$noteSubject.$id == profiledUser.requireID()).first()
+		{
 			publicProfile.note = note.note
 		}
 		return publicProfile
 	}
-		
+
 	/// `GET /api/v3/users/match/allnames/STRING`
 	///
 	/// Retrieves the first 10 `User.userSearch` values containing the specified substring,
@@ -184,11 +189,11 @@ struct UsersController: APIRouteCollection {
 		}
 		// remove blocks from results
 		let matchingUsers = try await User.query(on: req.db)
-				.filter(\.$userSearch, .custom("ILIKE"), "%\(search)%")
-				.filter(\.$id !~ requester.getBlocks())
-				.sort(\.$username, .ascending)
-				.range(0..<10)
-				.all()
+			.filter(\.$userSearch, .custom("ILIKE"), "%\(search)%")
+			.filter(\.$id !~ requester.getBlocks())
+			.sort(\.$username, .ascending)
+			.range(0..<10)
+			.all()
 		return try matchingUsers.map { try UserHeader(user: $0) }
 	}
 
@@ -216,12 +221,12 @@ struct UsersController: APIRouteCollection {
 		search = search.replacingOccurrences(of: "_", with: "\\_")
 		// remove blocks from results
 		let users = try await User.query(on: req.db).filter(\.$username, .custom("ILIKE"), "%\(search)%")
-				.filter(\.$id !~ requester.getBlocks()).sort(\.$username, .ascending).all()
+			.filter(\.$id !~ requester.getBlocks()).sort(\.$username, .ascending).all()
 		// return @username only
 		return users.map { "@\($0.username)" }
 	}
-	
-// MARK: - Actions Taken on Other Users	
+
+	// MARK: - Actions Taken on Other Users
 	/// `POST /api/v3/users/ID/note`
 	///
 	/// Saves a `UserNote` associated with the specified user and the current user.
@@ -234,22 +239,23 @@ struct UsersController: APIRouteCollection {
 	func noteCreateHandler(_ req: Request) async throws -> Response {
 		let requester = try req.auth.require(UserCacheData.self)
 		let data = try ValidatingJSONDecoder().decode(NoteCreateData.self, fromBodyOf: req)
-		let targetUser = try await User.findFromParameter(userIDParam, on: req) 
+		let targetUser = try await User.findFromParameter(userIDParam, on: req)
 		// profile shouldn't be visible, but just in case
 		guard targetUser.accessLevel != .banned else {
 			throw Abort(.badRequest, reason: "notes are unavailable for profile")
 		}
 		// check for existing note
-		let note = try await UserNote.query(on: req.db).filter(\.$author.$id == requester.userID)
-				.filter(\.$noteSubject.$id == targetUser.requireID()).first() ?? 
-				UserNote(authorID: requester.userID, subjectID: targetUser.requireID(), note: data.note)
+		let note =
+			try await UserNote.query(on: req.db).filter(\.$author.$id == requester.userID)
+			.filter(\.$noteSubject.$id == targetUser.requireID()).first()
+			?? UserNote(authorID: requester.userID, subjectID: targetUser.requireID(), note: data.note)
 		note.note = data.note
 		try await note.save(on: req.db)
 		// return note's data with 201 response
 		let createdNoteData = try NoteData(note: note, targetUser: targetUser)
 		return try await createdNoteData.encodeResponse(status: .created, for: req)
 	}
-	
+
 	/// `POST /api/v3/users/ID/note/delete`
 	/// `DELETE /api/v3/users/ID/note`
 	///
@@ -265,12 +271,13 @@ struct UsersController: APIRouteCollection {
 		let targetUser = try await User.findFromParameter(userIDParam, on: req)
 		// delete note if found
 		if let note = try await UserNote.query(on: req.db).filter(\.$author.$id == requester.userID)
-				.filter(\.$noteSubject.$id == targetUser.requireID()).first() {
+			.filter(\.$noteSubject.$id == targetUser.requireID()).first()
+		{
 			try await note.delete(force: true, on: req.db)
 		}
 		return .noContent
 	}
-		
+
 	/// `GET /api/v3/users/ID/note`
 	///
 	/// Retrieves an existing `UserNote` associated with the specified user's profile and
@@ -291,13 +298,15 @@ struct UsersController: APIRouteCollection {
 		guard let parameter = req.parameters.get(userIDParam.paramString), let targetUserID = UUID(parameter) else {
 			throw Abort(.badRequest, reason: "No user ID in request.")
 		}
-		guard let note = try await UserNote.query(on: req.db).filter(\.$author.$id == requester.userID)
-				.filter(\.$noteSubject.$id == targetUserID).with(\.$noteSubject).first() else {
+		guard
+			let note = try await UserNote.query(on: req.db).filter(\.$author.$id == requester.userID)
+				.filter(\.$noteSubject.$id == targetUserID).with(\.$noteSubject).first()
+		else {
 			throw Abort(.badRequest, reason: "no existing note found")
 		}
 		return try NoteData(note: note, targetUser: note.noteSubject)
 	}
-	
+
 	/// `POST /api/v3/users/ID/report`
 	///
 	/// Creates a `Report` regarding the specified user's profile, either the text fields or the avatar image.
@@ -310,12 +319,12 @@ struct UsersController: APIRouteCollection {
 	/// - Returns: 201 Created on success.
 	func reportHandler(_ req: Request) async throws -> HTTPStatus {
 		let submitter = try req.auth.require(UserCacheData.self)
-		let data = try req.content.decode(ReportData.self)		
+		let data = try req.content.decode(ReportData.self)
 		let reportedUser = try await User.findFromParameter(userIDParam, on: req)
 		return try await reportedUser.fileReport(submitter: submitter, submitterMessage: data.message, on: req)
 	}
-	
-// MARK: - Blocks and Mutes	
+
+	// MARK: - Blocks and Mutes
 	/// `GET /api/v3/users/blocks`
 	///
 	/// Returns a list of the user's currently blocked users as an array of `UserHeader` objects.
@@ -326,13 +335,14 @@ struct UsersController: APIRouteCollection {
 	func blocksHandler(_ req: Request) async throws -> [UserHeader] {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		// if sub-account, we want parent's blocks
-		guard let user = try await User.query(on: req.db).filter(\.$id == cacheUser.userID).with(\.$parent).first() else {
+		guard let user = try await User.query(on: req.db).filter(\.$id == cacheUser.userID).with(\.$parent).first()
+		else {
 			throw Abort(.internalServerError, reason: "User not found in database.")
 		}
 		let parentUser = user.parent ?? user
 		return req.userCache.getHeaders(parentUser.blockedUserIDs).sorted { $0.username < $1.username }
 	}
-	
+
 	/// `POST /api/v3/users/:userID/block`
 	///
 	/// Blocks the specified `User`. The blocking user and any sub-accounts will not be able
@@ -357,7 +367,8 @@ struct UsersController: APIRouteCollection {
 	func blockHandler(_ req: Request) async throws -> HTTPStatus {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		// if sub-account, we want parent
-		guard let requester = try await User.query(on: req.db).filter(\.$id == cacheUser.userID).with(\.$parent).first() else {
+		guard let requester = try await User.query(on: req.db).filter(\.$id == cacheUser.userID).with(\.$parent).first()
+		else {
 			throw Abort(.internalServerError, reason: "User not found in database.")
 		}
 		let parentUser = requester.parent ?? requester
@@ -367,13 +378,13 @@ struct UsersController: APIRouteCollection {
 		guard let blockee = req.userCache.getUser(userIDToBlock) else {
 			throw Abort(.badRequest, reason: "Can't find a user with the userID specified in the :userID parameter")
 		}
-		// This guard only applies to *directly* blocking a moderator's Mod account. 
+		// This guard only applies to *directly* blocking a moderator's Mod account.
 		guard blockee.accessLevel < .moderator else {
 			throw Abort(.badRequest, reason: "Cannot block accounts of moderators, THO, or admins")
 		}
 		guard try userIDToBlock != cacheUser.userID && userIDToBlock != parentUser.requireID() else {
 			throw Abort(.badRequest, reason: "You cannot block yourself.")
-		} 
+		}
 		if parentUser.blockedUserIDs.contains(userIDToBlock) {
 			return .ok
 		}
@@ -382,7 +393,7 @@ struct UsersController: APIRouteCollection {
 		try await addBlockToCache(requestedBy: parentUser, blocking: userIDToBlock, on: req)
 		return .created
 	}
-	
+
 	/// `POST /api/v3/users/ID/unblock`
 	///
 	/// Removes a block of the specified `User` and all sub-accounts by the current user and
@@ -394,7 +405,8 @@ struct UsersController: APIRouteCollection {
 	/// - Returns: 204 No Content on success.
 	func unblockHandler(_ req: Request) async throws -> HTTPStatus {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		guard let requester = try await User.query(on: req.db).filter(\.$id == cacheUser.userID).with(\.$parent).first() else {
+		guard let requester = try await User.query(on: req.db).filter(\.$id == cacheUser.userID).with(\.$parent).first()
+		else {
 			throw Abort(.internalServerError, reason: "User not found in database.")
 		}
 		let parentUser = requester.parent ?? requester
@@ -405,7 +417,7 @@ struct UsersController: APIRouteCollection {
 		try await removeBlockFromCache(by: requester, of: targetUser, on: req)
 		return .noContent
 	}
-	
+
 	/// `GET /api/v3/users/mutes`
 	///
 	/// Returns a list of the user's currently muted users.
@@ -464,9 +476,9 @@ struct UsersController: APIRouteCollection {
 	/// - Throws: 400 error if the specified user was not currently muted. A 5xx response should
 	///   be reported as a likely bug, please and thank you.
 	/// - Returns: 204 No Content on success.
-	func unmuteHandler(_ req: Request) async  throws -> HTTPStatus {
+	func unmuteHandler(_ req: Request) async throws -> HTTPStatus {
 		let requester = try req.auth.require(UserCacheData.self)
-  		guard let parameter = req.parameters.get(userIDParam.paramString), let unmutedUserID = UUID(parameter) else {
+		guard let parameter = req.parameters.get(userIDParam.paramString), let unmutedUserID = UUID(parameter) else {
 			throw Abort(.badRequest, reason: "No user ID in request.")
 		}
 		guard let _ = try await User.find(unmutedUserID, on: req.db) else {
@@ -482,7 +494,7 @@ struct UsersController: APIRouteCollection {
 		}
 		return .noContent
 	}
-	
+
 	/// `GET /api/v3/users/favorites`
 	///
 	/// Returns a list of the user's currently favorited users.
@@ -492,7 +504,7 @@ struct UsersController: APIRouteCollection {
 	func favoritesHandler(_ req: Request) async throws -> [UserHeader] {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let favoriteUsers = try await UserFavorite.query(on: req.db).filter(\.$user.$id == cacheUser.userID).all()
-		let favoriteUserIDs: [UUID] = favoriteUsers.map { $0.$favorite.id } 
+		let favoriteUserIDs: [UUID] = favoriteUsers.map { $0.$favorite.id }
 		return req.userCache.getHeaders(favoriteUserIDs).sorted { $0.username < $1.username }
 	}
 
@@ -513,8 +525,9 @@ struct UsersController: APIRouteCollection {
 			throw Abort(.notFound, reason: "no user found for identifier '\(parameter)'")
 		}
 		if let _ = try await UserFavorite.query(on: req.db).filter(\.$user.$id == requester.userID)
-				.filter(\.$favorite.$id == favoriteUserID).first() {
-			return .created		
+			.filter(\.$favorite.$id == favoriteUserID).first()
+		{
+			return .created
 		}
 		try await UserFavorite(userID: requester.userID, favoriteUserID: favoriteUserID).create(on: req.db)
 		return .created
@@ -527,27 +540,28 @@ struct UsersController: APIRouteCollection {
 	/// - Parameter userID: in URL path. The user to unfavorite.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: 204 No Content on success.
-	func favoriteRemoveHandler(_ req: Request) async  throws -> HTTPStatus {
+	func favoriteRemoveHandler(_ req: Request) async throws -> HTTPStatus {
 		let requester = try req.auth.require(UserCacheData.self)
-  		guard let parameter = req.parameters.get(userIDParam.paramString), let favoriteUserID = UUID(parameter) else {
+		guard let parameter = req.parameters.get(userIDParam.paramString), let favoriteUserID = UUID(parameter) else {
 			throw Abort(.badRequest, reason: "No user ID in request.")
 		}
 		guard let _ = try await User.find(favoriteUserID, on: req.db) else {
 			throw Abort(.notFound, reason: "no user found for identifier '\(parameter)'")
 		}
 		if let userFavorite = try await UserFavorite.query(on: req.db).filter(\.$user.$id == requester.userID)
-				.filter(\.$favorite.$id == favoriteUserID).first() {
+			.filter(\.$favorite.$id == favoriteUserID).first()
+		{
 			try await userFavorite.delete(on: req.db)
 		}
 		return .noContent
 	}
-	
-// MARK: - User Role Management
+
+	// MARK: - User Role Management
 	/// `GET /api/v3/forum/userrole/:user_role`
-	/// 
-	///  Returns a list of all users that have the given role. Currently, caller must have the `shutternautmanager` role to call this, and can only 
+	///
+	///  Returns a list of all users that have the given role. Currently, caller must have the `shutternautmanager` role to call this, and can only
 	///  query the `shutternaut` role.
-	///  
+	///
 	/// - Throws: badRequest if the caller isn't a shutternaut manager, or the user role param isn't `shutternaut`.
 	/// - Returns: Array of `UserHeader`. Array may be empty if nobody has this role yet.
 	func getUsersWithRole(_ req: Request) async throws -> [UserHeader] {
@@ -563,15 +577,15 @@ struct UsersController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "User cannot manage the \(roleString) role")
 		}
 		let userIDsWithRole = try await User.query(on: req.db).join(UserRole.self, on: \User.$id == \UserRole.$user.$id)
-				.filter(UserRole.self, \.$role == role).all(\.$id)
+			.filter(UserRole.self, \.$role == role).all(\.$id)
 		return req.userCache.getHeaders(userIDsWithRole)
 	}
-	
+
 	/// `POST /api/v3/forum/userrole/:user_role/addrole/:user_id`
-	/// 
-	/// Adds the given role to the given user's role list. Currently, caller must have the `shutternautmanager` role to call this, and can only 
+	///
+	/// Adds the given role to the given user's role list. Currently, caller must have the `shutternautmanager` role to call this, and can only
 	/// give a user the `shutternaut` role.
-	///  
+	///
 	/// - Throws: badRequest if the target user already has the role, or if the caller role/role being set are invalid.
 	/// - Returns: 200 OK if the user now has the given role.
 	func addRoleForUser(_ req: Request) async throws -> HTTPStatus {
@@ -584,23 +598,25 @@ struct UsersController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "No UserRoleType found in request.")
 		}
 		let targetUserID = try targetUser.requireID()
-		let role = try UserRoleType(fromAPIString: userRoleString)	
+		let role = try UserRoleType(fromAPIString: userRoleString)
 		guard role == .shutternaut else {
 			throw Abort(.badRequest, reason: "User cannot manage the \(userRoleString) role")
 		}
-		if let _ = try await UserRole.query(on: req.db).filter(\.$role == role).filter(\.$user.$id == targetUserID).first() {
+		if let _ = try await UserRole.query(on: req.db).filter(\.$role == role).filter(\.$user.$id == targetUserID)
+			.first()
+		{
 			throw Abort(.badRequest, reason: "User \(targetUser.username) already has role of \(role.label)")
 		}
 		try await UserRole(user: targetUserID, role: role).create(on: req.db)
 		try await req.userCache.updateUser(targetUserID)
 		return .ok
 	}
-	
+
 	/// `POST /api/v3/admin/userrole/:user_role/removerole/:user_id`
-	/// 
-	/// Removes the given role from the target user's role list. Currently, caller must have the `shutternautmanager` role to call this, and can only 
+	///
+	/// Removes the given role from the target user's role list. Currently, caller must have the `shutternautmanager` role to call this, and can only
 	/// remove the `shutternaut` role from a user's role list.
-	///  
+	///
 	/// - Throws: badRequest if the target user isn't a Shutternaut Manager, the role being set isn't Shutternaut. Does not error if the target user already doesn't have the role.
 	/// - Returns: 200 OK if the user was demoted successfully.
 	func removeRoleForUser(_ req: Request) async throws -> HTTPStatus {
@@ -611,24 +627,26 @@ struct UsersController: APIRouteCollection {
 		guard let userRoleString = req.parameters.get(userRoleParam.paramString) else {
 			throw Abort(.badRequest, reason: "No UserRoleType found in request.")
 		}
-		let role = try UserRoleType(fromAPIString: userRoleString)		
+		let role = try UserRoleType(fromAPIString: userRoleString)
 		guard role == .shutternaut else {
 			throw Abort(.badRequest, reason: "User cannot manage the \(userRoleString) role")
 		}
-		guard let targetUserIDStr = req.parameters.get(userIDParam.paramString), let targetUserID = UUID(targetUserIDStr) else {
+		guard let targetUserIDStr = req.parameters.get(userIDParam.paramString),
+			let targetUserID = UUID(targetUserIDStr)
+		else {
 			throw Abort(.badRequest, reason: "Missing user ID parameter.")
 		}
 		try await UserRole.query(on: req.db).filter(\.$role == role).filter(\.$user.$id == targetUserID).delete()
 		try await req.userCache.updateUser(targetUserID)
 		return .ok
 	}
-	
+
 	// MARK: - Helper Functions
-	
+
 	/// Updates the cache values for all accounts involved in a block removal. The currently
 	/// blocked user and any associated accounts are removed from all blocking user's associated
 	/// accounts' blocks caches, and vice versa.
-	/// 
+	///
 	/// - Parameters:
 	///   - requester: The `User` removing the block.
 	///   - user: The `User` currently being blocked.
@@ -639,13 +657,15 @@ struct UsersController: APIRouteCollection {
 		// get all involved IDs. We don't need to filter out mod accts, as Redis `srem` on them should no-op.
 		let requesterIDs = try await requester.allAccountIDs(on: req.db)
 		let unblockeeIDs = try await blockedUser.allAccountIDs(on: req.db)
-		guard let unblockParentID = unblockeeIDs.first, let unblockParent = try await User.find(unblockParentID, on: req.db) else {
-			return 
+		guard let unblockParentID = unblockeeIDs.first,
+			let unblockParent = try await User.find(unblockParentID, on: req.db)
+		else {
+			return
 		}
-		// If the person we're unblocking has somehow blocked *us*, don't actually remove the 
+		// If the person we're unblocking has somehow blocked *us*, don't actually remove the
 		// Redis blocks, but do still update the Barrel.
 		if !Set(unblockParent.blockedUserIDs).isDisjoint(with: requesterIDs) {
-			return 
+			return
 		}
 		try await withThrowingTaskGroup(of: Void.self) { group in
 			for ruuid in requesterIDs {
@@ -655,12 +675,11 @@ struct UsersController: APIRouteCollection {
 				_ = try await req.redis.removeBlockedUsers(requesterIDs, blockedBy: buuid)
 			}
 			// I believe this line is required to let subtasks propagate thrown errors by rethrowing.
-			for try await _ in group { }
+			for try await _ in group {}
 		}
 		try await req.userCache.updateUsers(requesterIDs + unblockeeIDs)
 	}
 
-	
 	/// Updates the cache values for all accounts involved in a block. Blocked user and any
 	/// associated accounts are added to all blocking user's associated accounts' blocks caches,
 	/// and vice versa.
@@ -679,11 +698,17 @@ struct UsersController: APIRouteCollection {
 		let requesterUsers = try await requester.allAccounts(on: req.db)
 		let blockedUsers = try await blockedUser.allAccounts(on: req.db)
 		// Relies on the fact that allAccounts returns parent acct in position 0
-		guard !requesterUsers.isEmpty, !blockedUsers.isEmpty, try requesterUsers[0].requireID() != blockedUsers[0].requireID() else {
+		guard !requesterUsers.isEmpty, !blockedUsers.isEmpty,
+			try requesterUsers[0].requireID() != blockedUsers[0].requireID()
+		else {
 			throw Abort(.badRequest, reason: "You cannot block your own alt accounts.")
 		}
-		let nonModRequesters = try requesterUsers.compactMap { try $0.accessLevel.hasAccess(.moderator) ? nil : $0.requireID() }
-		let nonModBlocked = try blockedUsers.compactMap { try $0.accessLevel.hasAccess(.moderator) ? nil : $0.requireID() }
+		let nonModRequesters = try requesterUsers.compactMap {
+			try $0.accessLevel.hasAccess(.moderator) ? nil : $0.requireID()
+		}
+		let nonModBlocked = try blockedUsers.compactMap {
+			try $0.accessLevel.hasAccess(.moderator) ? nil : $0.requireID()
+		}
 		try await withThrowingTaskGroup(of: Void.self) { group in
 			nonModRequesters.forEach { ruuid in
 				group.addTask { try await req.redis.addBlockedUsers(nonModBlocked, blockedBy: ruuid) }
@@ -691,7 +716,7 @@ struct UsersController: APIRouteCollection {
 			nonModBlocked.forEach { buuid in
 				group.addTask { try await req.redis.addBlockedUsers(nonModRequesters, blockedBy: buuid) }
 			}
-			for try await _ in group { }
+			for try await _ in group {}
 		}
 		return try await req.userCache.updateUsers(nonModRequesters + nonModBlocked)
 	}

@@ -1,17 +1,17 @@
-import Foundation
 import Fluent
+import Foundation
 
 /// A `Pivot` holding a sibling relation between `User` and `Event`.
 final class EventFavorite: Model {
 	static let schema = "event+favorite"
 
 	// MARK: Properties
-	
+
 	/// The ID of the pivot.
 	@ID(key: .id) var id: UUID?
-		
+
 	// MARK: Relations
-	
+
 	/// The associated `User` who favorited the game.
 	@Parent(key: "user") var user: User
 
@@ -19,10 +19,10 @@ final class EventFavorite: Model {
 	@Parent(key: "event") var event: Event
 
 	// MARK: Initialization
-	
+
 	// Used by Fluent
- 	init() { }
- 	
+	init() {}
+
 	/// Initializes a new BoardgameFavorite pivot.
 	///
 	/// - Parameters:
@@ -34,7 +34,7 @@ final class EventFavorite: Model {
 		self.$event.id = try event.requireID()
 		self.$event.value = event
 	}
-	
+
 	init(_ userID: UUID, _ event: Event) throws {
 		self.$user.id = userID
 		self.$event.id = try event.requireID()
@@ -44,13 +44,13 @@ final class EventFavorite: Model {
 struct CreateEventFavoriteSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		try await database.schema("event+favorite")
-				.id()
-				.unique(on: "user", "event")
- 				.field("user", .uuid, .required, .references("user", "id", onDelete: .cascade))
- 				.field("event", .uuid, .required, .references("event", "id", onDelete: .cascade))
-				.create()
+			.id()
+			.unique(on: "user", "event")
+			.field("user", .uuid, .required, .references("user", "id", onDelete: .cascade))
+			.field("event", .uuid, .required, .references("event", "id", onDelete: .cascade))
+			.create()
 	}
-	
+
 	func revert(on database: Database) async throws {
 		try await database.schema("event+favorite").delete()
 	}

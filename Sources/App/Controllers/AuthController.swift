@@ -1,6 +1,6 @@
-import Vapor
 import Crypto
 import FluentSQL
+import Vapor
 
 /// The collection of `/api/v3/auth/*` route endpoints and handler functions related
 /// to authentication.
@@ -45,29 +45,29 @@ import FluentSQL
 /// `/api/v3/auth/login` endpoint will need to be hit again to generate a new one.
 
 struct AuthController: APIRouteCollection {
-	
+
 	// MARK: RouteCollection Conformance
-	
+
 	/// Required. Registers routes to the incoming router.
 	func registerRoutes(_ app: Application) throws {
-		
+
 		// convenience route group for all /api/v3/auth endpoints
 		let authRoutes = app.grouped("api", "v3", "auth")
-		
+
 		// open access endpoints
 		authRoutes.post("recovery", use: recoveryHandler)
-		
+
 		// endpoints available only when not logged in
 		let basicAuthGroup = addBasicAuthGroup(to: authRoutes)
 		basicAuthGroup.post("login", use: loginHandler)
-		
+
 		// endpoints available only when logged in
 		let tokenAuthGroup = addTokenCacheAuthGroup(to: authRoutes)
 		tokenAuthGroup.post("logout", use: logoutHandler)
 	}
-	
+
 	// MARK: - Open Access Handlers
-	
+
 	/// `POST /api/v3/auth/recovery`
 	///
 	/// Attempts to authorize the user using a combination of `User.username` and *any one* of
@@ -78,7 +78,7 @@ struct AuthController: APIRouteCollection {
 	/// information internally, that doesn't necessarily help if the user is setting up another
 	/// client or on another device, and is even less likely to be of use for logging into the
 	/// web front end.
-	/// 
+	///
 	/// Upon successful authentication, the user's password is set to the `newPassword` value in the provided
 	/// `UserRecoveryData`, the user is logged in, and the users' login `TokenStringData` is returned
 	/// (the same struct returned by `/api/v3/login`).
@@ -114,7 +114,7 @@ struct AuthController: APIRouteCollection {
 		guard user.recoveryAttempts < 5 else {
 			throw Abort(.forbidden, reason: "please see a Twit-arr Team member for password recovery")
 		}
-		
+
 		// registration codes and recovery keys are normalized prior to storage
 		let normalizedKey = data.recoveryKey.lowercased().replacingOccurrences(of: " ", with: "")
 
@@ -126,7 +126,7 @@ struct AuthController: APIRouteCollection {
 				throw Abort(.badRequest, reason: "account must be recovered using the recovery key")
 			}
 		}
-			
+
 		// attempt data.recoveryKey match
 		var foundMatch = false
 		if normalizedKey == user.verification {
@@ -135,12 +135,14 @@ struct AuthController: APIRouteCollection {
 			if let newVerification = user.verification {
 				user.verification = "*" + newVerification
 			}
-		} else {
+		}
+		else {
 			// password and recoveryKey require hash verification
 			let verifier = BCryptDigest()
 			if try verifier.verify(data.recoveryKey, created: user.password) {
 				foundMatch = true
-			} else {
+			}
+			else {
 				// user.recoveryKey is normalized prior to hashing
 				if try verifier.verify(normalizedKey, created: user.recoveryKey) {
 					foundMatch = true
@@ -154,17 +156,17 @@ struct AuthController: APIRouteCollection {
 			try await user.save(on: req.db)
 			throw Abort(.badRequest, reason: "no match for supplied recovery key")
 		}
-			
+
 		// user appears valid, zero out attempt tracking and save new password
 		user.recoveryAttempts = 0
 		user.password = try Bcrypt.hash(data.newPassword)
 		try await user.save(on: req.db)
-			
+
 		// return existing token if any
 		let existingToken = try await Token.query(on: req.db).filter(\.$user.$id == user.requireID()).first()
 		if let existing = existingToken {
 			return try TokenStringData(user: user, token: existing)
-		} 
+		}
 		else {
 			// otherwise generate and return new token
 			let token = try Token.generate(for: user)
@@ -173,11 +175,11 @@ struct AuthController: APIRouteCollection {
 			return try TokenStringData(user: user, token: token)
 		}
 	}
-	
+
 	// MARK: - basicAuthGroup Handlers (not logged in)
 	// All handlers in this route group require a valid HTTP Basic Authentication
 	// header in the request.
-	
+
 	/// `POST /api/v3/auth/login`
 	///
 	/// Our basic login handler that utilizes the user's username and password.
@@ -215,7 +217,7 @@ struct AuthController: APIRouteCollection {
 	///   **not** supported in API v3.
 	///
 	/// - Requires: `User.accessLevel` other than `.banned`.
-	/// - Requires: HTTP Basic Auth in `Authorization` header. 
+	/// - Requires: HTTP Basic Auth in `Authorization` header.
 	/// - Throws: 401 error if the Basic authentication fails. 403 error if the user is
 	///   banned. A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: `TokenStringData` containing an authentication token (string) that should
@@ -238,11 +240,11 @@ struct AuthController: APIRouteCollection {
 		let ucd = try await req.userCache.updateUser(cacheUser.userID)
 		return TokenStringData(accessLevel: ucd.accessLevel, token: token)
 	}
-	
+
 	// MARK: - tokenAuthGroup Handlers (logged in)
 	// All handlers in this route group require a valid HTTP Bearer Authentication
 	// header in the request.
-	
+
 	/// `POST /api/v3/auth/logout`
 	///
 	/// Unauthenticates the user and deletes the user's authentication token. It is

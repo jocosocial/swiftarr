@@ -1,6 +1,6 @@
-import Vapor
 import Crypto
 import FluentSQL
+import Vapor
 
 struct TweetPageContext: Encodable {
 	enum FilterType: String, Encodable {
@@ -37,12 +37,14 @@ struct TweetPageContext: Encodable {
 			}
 			isReplyGroup = true
 			post = .init(forType: .tweetReply(rg))
-		} else {
+		}
+		else {
 			post = .init(forType: .tweet)
 			filterDesc = "Twarrts"
-			filterType = queryStruct.hideReplies ?? (req.session.data["hideTwarrtReplies"] == "true") ? .hideReplies : .all
+			filterType =
+				queryStruct.hideReplies ?? (req.session.data["hideTwarrtReplies"] == "true") ? .hideReplies : .all
 		}
-		
+
 		if let mention = queryStruct.mentions {
 			filters.append(mention == trunk.username ? " mentioning you" : " that mention '\(mention)'")
 			filterType = .mentions
@@ -80,10 +82,10 @@ struct TweetPageContext: Encodable {
 		}
 		if let liked = queryStruct.likeType {
 			switch liked {
-				case "like" : filters.append(" that you liked")
-				case "laugh" : filters.append(" that made you laugh")
-				case "love" : filters.append(" that you loved")
-				default: filters.append(" that you liked")
+			case "like": filters.append(" that you liked")
+			case "laugh": filters.append(" that made you laugh")
+			case "love": filters.append(" that you loved")
+			default: filters.append(" that you liked")
 			}
 			filterType = .liked
 		}
@@ -95,10 +97,10 @@ struct TweetPageContext: Encodable {
 			filters.append(" containing '\(search)'")
 		}
 		filterDesc.append(filters.joined(separator: ","))
-		
+
 		if tweets.count > 0, let anchorID = tweets.first?.twarrtID {
 			if queryStruct.directionIsNewer() {
-				// Down the page => newer tweets. 
+				// Down the page => newer tweets.
 				var showTopButton = true
 				if let firstTweet = tweets.first {
 					if let replyGroup = queryStruct.replyGroup, replyGroup == firstTweet.twarrtID {
@@ -107,15 +109,23 @@ struct TweetPageContext: Encodable {
 					if let after = queryStruct.after, after == firstTweet.twarrtID {
 						showTopButton = false
 					}
-					if firstTweet.twarrtID == 1 {		// Not sure this can happen, but if it does, I mean, we can't go any older.
+					if firstTweet.twarrtID == 1 {  // Not sure this can happen, but if it does, I mean, we can't go any older.
 						showTopButton = false
 					}
 				}
 				if showTopButton {
-					topMorePostsURL = queryStruct.buildQuery(baseURL: "/tweets", anchor: anchorID, startOffset: 0 - queryStruct.computedLimit())
+					topMorePostsURL = queryStruct.buildQuery(
+						baseURL: "/tweets",
+						anchor: anchorID,
+						startOffset: 0 - queryStruct.computedLimit()
+					)
 					topMorePostsLabel = "Older"
 				}
-				bottomMorePostsURL = queryStruct.buildQuery(baseURL: "/tweets", anchor: anchorID, startOffset: queryStruct.computedLimit())
+				bottomMorePostsURL = queryStruct.buildQuery(
+					baseURL: "/tweets",
+					anchor: anchorID,
+					startOffset: queryStruct.computedLimit()
+				)
 				bottomMorePostsLabel = "Newer"
 			}
 			else {
@@ -128,11 +138,19 @@ struct TweetPageContext: Encodable {
 					}
 				}
 				if showTopButton {
-					topMorePostsURL = queryStruct.buildQuery(baseURL: "/tweets", anchor: anchorID, startOffset: 0 - queryStruct.computedLimit())
+					topMorePostsURL = queryStruct.buildQuery(
+						baseURL: "/tweets",
+						anchor: anchorID,
+						startOffset: 0 - queryStruct.computedLimit()
+					)
 					topMorePostsLabel = "Newer"
 				}
 				if let last = tweets.last, last.twarrtID != 1 {
-					bottomMorePostsURL = queryStruct.buildQuery(baseURL: "/tweets", anchor: anchorID, startOffset: queryStruct.computedLimit())
+					bottomMorePostsURL = queryStruct.buildQuery(
+						baseURL: "/tweets",
+						anchor: anchorID,
+						startOffset: queryStruct.computedLimit()
+					)
 					bottomMorePostsLabel = "Older"
 				}
 			}
@@ -140,17 +158,17 @@ struct TweetPageContext: Encodable {
 	}
 }
 
-struct TweetEditPageContext : Encodable {
+struct TweetEditPageContext: Encodable {
 	var trunk: TrunkContext
 	var replyToTweet: TwarrtDetailData?
 	var post: MessagePostContext
-	
+
 	// For editing
 	init(_ req: Request, editTweet: TwarrtDetailData) throws {
 		trunk = .init(req, title: "Edit Twarrt", tab: .twarrts)
 		self.post = .init(forType: .tweetEdit(editTweet))
 	}
-	
+
 	// For replys
 	init(_ req: Request, replyToTweet: TwarrtDetailData) {
 		trunk = .init(req, title: "Reply to Twarrt", tab: .twarrts)
@@ -158,14 +176,13 @@ struct TweetEditPageContext : Encodable {
 		post = .init(forType: .tweetReply(replyToTweet.replyGroupID ?? replyToTweet.postID))
 	}
 }
-	
 
 struct SiteTwitarrController: SiteControllerUtils {
 
 	func registerRoutes(_ app: Application) throws {
 		// Routes that require login but are generally 'global' -- Two logged-in users could share this URL and both see the content
 		// Not for Seamails, pages for posting new content, mod pages, etc. Logged-out users given one of these links should get
-		// redirect-chained through /login and back.		
+		// redirect-chained through /login and back.
 		let globalRoutes = getGlobalRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .tweets))
 		globalRoutes.get("tweets", use: tweetsPageHandler)
 		globalRoutes.get("tweets", twarrtIDParam, use: tweetReplyPageHandler)
@@ -187,12 +204,12 @@ struct SiteTwitarrController: SiteControllerUtils {
 		privateRoutes.post("tweets", "edit", twarrtIDParam, use: tweetEditPostHandler)
 		privateRoutes.post("tweets", "create", use: tweetCreatePostHandler)
 		privateRoutes.post("tweets", "reply", twarrtIDParam, use: tweetReplyPostHandler)
-		
+
 		privateRoutes.get("tweets", "report", twarrtIDParam, use: tweetReportPageHandler)
 		privateRoutes.post("tweets", "report", twarrtIDParam, use: tweetReportPostHandler)
 	}
-	
-// MARK: - Twarrts
+
+	// MARK: - Twarrts
 	/// `GET /tweets`
 	///
 	/// Returns a page of twarrts. Passes URL options through, including "?search=" option.
@@ -209,13 +226,14 @@ struct SiteTwitarrController: SiteControllerUtils {
 		let ctx = try TweetPageContext(req, tweets: tweets)
 		return try await req.view.render("Tweets/tweets", ctx)
 	}
-	
+
 	/// `GET /tweets/:twarrt_ID`
 	///
 	/// Shorthand for `/tweets?replyGroup=<:twarrt_ID>`. A short, canonical way to indicate a single twarrt, similar to how Twitter works.
 	/// That is, when you send someone a link to a specific tweet with Twitter, you're really sending a link to the reply thread that starts with that tweet.
 	func tweetReplyPageHandler(_ req: Request) async throws -> View {
-		guard let twarrtIDString = req.parameters.get(twarrtIDParam.paramString), let twarrtID = Int(twarrtIDString) else {
+		guard let twarrtIDString = req.parameters.get(twarrtIDParam.paramString), let twarrtID = Int(twarrtIDString)
+		else {
 			throw Abort(.badRequest, reason: "Missing twarrt_id parameter.")
 		}
 		let response = try await apiQuery(req, endpoint: "/twitarr?replyGroup=\(twarrtID)")
@@ -223,7 +241,7 @@ struct SiteTwitarrController: SiteControllerUtils {
 		let ctx = try TweetPageContext(req, tweets: tweets, replyGroup: twarrtID)
 		return try await req.view.render("Tweets/tweets", ctx)
 	}
-	   
+
 	// GET /tweets/ID
 	// This is a passthrough for /api/v3/twitarr/ID, returning a TwarrtDetailData
 	func tweetGetDetailHandler(_ req: Request) async throws -> TwarrtDetailData {
@@ -248,7 +266,7 @@ struct SiteTwitarrController: SiteControllerUtils {
 	func tweetUnreactActionHandler(_ req: Request) async throws -> TwarrtData {
 		return try await tweetPostReactionHandler(req, reactionType: "unreact")
 	}
-	
+
 	func tweetPostReactionHandler(_ req: Request, reactionType: String) async throws -> TwarrtData {
 		guard let twarrtID = req.parameters.get(twarrtIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
@@ -256,7 +274,7 @@ struct SiteTwitarrController: SiteControllerUtils {
 		let response = try await apiQuery(req, endpoint: "/twitarr/\(twarrtID)/\(reactionType)", method: .POST)
 		return try response.content.decode(TwarrtData.self)
 	}
-	
+
 	// POST /tweets/ID/bookmark
 	//
 	// Bookmarks a tweet.
@@ -267,7 +285,7 @@ struct SiteTwitarrController: SiteControllerUtils {
 		let response = try await apiQuery(req, endpoint: "/twitarr/\(twarrtID)/bookmark", method: .POST)
 		return response.status
 	}
-	
+
 	// DELETE /tweets/ID/bookmark
 	//
 	// Un-bookmarks a tweet.
@@ -278,9 +296,9 @@ struct SiteTwitarrController: SiteControllerUtils {
 		let response = try await apiQuery(req, endpoint: "/twitarr/\(twarrtID)/bookmark/remove", method: .POST)
 		return response.status
 	}
-	
+
 	// POST /tweets/ID/delete
-	// Although this looks like it just redirects the call, middleware plays an important part here. 
+	// Although this looks like it just redirects the call, middleware plays an important part here.
 	// Javascript POSTs the delete request, middleware for this route validates via the session cookie.
 	// We then call the Swiftarr API, using the token (pulled out of our session data) to validate.
 	func tweetPostDeleteHandler(_ req: Request) async throws -> HTTPStatus {
@@ -290,34 +308,40 @@ struct SiteTwitarrController: SiteControllerUtils {
 		let response = try await apiQuery(req, endpoint: "/twitarr/\(twarrtID)", method: .DELETE)
 		return response.status
 	}
-	
+
 	// POST /tweets/create
 	func tweetCreatePostHandler(_ req: Request) async throws -> HTTPStatus {
 		let postStruct = try req.content.decode(MessagePostFormContent.self)
 		let postContent = postStruct.buildPostContentData()
 		try await apiQuery(req, endpoint: "/twitarr/create", method: .POST, encodeContent: postContent)
-//		let tweet = try response.content.decode(TwarrtData.self)
+		//		let tweet = try response.content.decode(TwarrtData.self)
 		return .created
 	}
-		
+
 	// POST /tweets/reply/ID
 	//
-	// When posting a twarrt reply, the ID should usually be the twarrt you're replying to. 
+	// When posting a twarrt reply, the ID should usually be the twarrt you're replying to.
 	func tweetReplyPostHandler(_ req: Request) async throws -> HTTPStatus {
 		guard let twarrtID = req.parameters.get(twarrtIDParam.paramString) else {
 			throw Abort(.badRequest, reason: "Missing twarrt_id parameter.")
 		}
 		let postStruct = try req.content.decode(MessagePostFormContent.self)
-		let images: [ImageUploadData] = [ImageUploadData(postStruct.serverPhoto1, postStruct.localPhoto1),
-				ImageUploadData(postStruct.serverPhoto2, postStruct.localPhoto2),
-				ImageUploadData(postStruct.serverPhoto3, postStruct.localPhoto3),
-				ImageUploadData(postStruct.serverPhoto4, postStruct.localPhoto4)].compactMap { $0 }
-		let postContent = PostContentData(text: postStruct.postText ?? "", images: images, 
-				postAsModerator: postStruct.postAsModerator != nil)
- 		try await apiQuery(req, endpoint: "/twitarr/\(twarrtID)/reply", method: .POST, encodeContent: postContent)
+		let images: [ImageUploadData] = [
+			ImageUploadData(postStruct.serverPhoto1, postStruct.localPhoto1),
+			ImageUploadData(postStruct.serverPhoto2, postStruct.localPhoto2),
+			ImageUploadData(postStruct.serverPhoto3, postStruct.localPhoto3),
+			ImageUploadData(postStruct.serverPhoto4, postStruct.localPhoto4),
+		]
+		.compactMap { $0 }
+		let postContent = PostContentData(
+			text: postStruct.postText ?? "",
+			images: images,
+			postAsModerator: postStruct.postAsModerator != nil
+		)
+		try await apiQuery(req, endpoint: "/twitarr/\(twarrtID)/reply", method: .POST, encodeContent: postContent)
 		return .created
 	}
-	
+
 	// GET /tweets/edit/ID
 	func tweetEditPageHandler(_ req: Request) async throws -> View {
 		guard let twarrtID = req.parameters.get(twarrtIDParam.paramString)?.percentEncodeFilePathEntry() else {
@@ -325,10 +349,10 @@ struct SiteTwitarrController: SiteControllerUtils {
 		}
 		let response = try await apiQuery(req, endpoint: "/twitarr/\(twarrtID)")
 		let tweet = try response.content.decode(TwarrtDetailData.self)
-		struct TweetEditPageContext : Encodable {
+		struct TweetEditPageContext: Encodable {
 			var trunk: TrunkContext
 			var post: MessagePostContext
-			
+
 			init(_ req: Request, tweet: TwarrtDetailData) throws {
 				trunk = .init(req, title: "Edit Twarrt", tab: .twarrts)
 				self.post = .init(forType: .tweetEdit(tweet))
@@ -340,23 +364,29 @@ struct SiteTwitarrController: SiteControllerUtils {
 		}
 		return try await req.view.render("Tweets/tweetEdit", ctx)
 	}
-	
+
 	// POST /tweets/edit/ID
 	func tweetEditPostHandler(_ req: Request) async throws -> HTTPStatus {
 		guard let twarrtID = req.parameters.get(twarrtIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing twarrt_id parameter.")
 		}
 		let postStruct = try req.content.decode(MessagePostFormContent.self)
-		let images: [ImageUploadData] = [ImageUploadData(postStruct.serverPhoto1, postStruct.localPhoto1),
-				ImageUploadData(postStruct.serverPhoto2, postStruct.localPhoto2),
-				ImageUploadData(postStruct.serverPhoto3, postStruct.localPhoto3),
-				ImageUploadData(postStruct.serverPhoto4, postStruct.localPhoto4)].compactMap { $0 }
-		let postContent = PostContentData(text: postStruct.postText ?? "", images: images, 
-				postAsModerator: postStruct.postAsModerator != nil)
- 		try await apiQuery(req, endpoint: "/twitarr/\(twarrtID)/update", method: .POST, encodeContent: postContent)
+		let images: [ImageUploadData] = [
+			ImageUploadData(postStruct.serverPhoto1, postStruct.localPhoto1),
+			ImageUploadData(postStruct.serverPhoto2, postStruct.localPhoto2),
+			ImageUploadData(postStruct.serverPhoto3, postStruct.localPhoto3),
+			ImageUploadData(postStruct.serverPhoto4, postStruct.localPhoto4),
+		]
+		.compactMap { $0 }
+		let postContent = PostContentData(
+			text: postStruct.postText ?? "",
+			images: images,
+			postAsModerator: postStruct.postAsModerator != nil
+		)
+		try await apiQuery(req, endpoint: "/twitarr/\(twarrtID)/update", method: .POST, encodeContent: postContent)
 		return .created
 	}
-	
+
 	// GET /tweets/report
 	//
 	// Shows the report page.
@@ -367,7 +397,7 @@ struct SiteTwitarrController: SiteControllerUtils {
 		let ctx = try ReportPageContext(req, twarrtID: twarrtID)
 		return try await req.view.render("reportCreate", ctx)
 	}
-	
+
 	// POST /tweets/report
 	//
 	// Submits a completed report.
@@ -376,8 +406,7 @@ struct SiteTwitarrController: SiteControllerUtils {
 			throw Abort(.badRequest, reason: "Missing twarrt_id parameter.")
 		}
 		let postStruct = try req.content.decode(ReportData.self)
- 		try await apiQuery(req, endpoint: "/twitarr/\(twarrtID)/report", method: .POST, encodeContent: postStruct)
+		try await apiQuery(req, endpoint: "/twitarr/\(twarrtID)/report", method: .POST, encodeContent: postStruct)
 		return .created
 	}
 }
-

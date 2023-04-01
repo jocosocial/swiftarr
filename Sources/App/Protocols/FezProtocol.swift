@@ -1,6 +1,6 @@
-import Vapor
-import Redis
 import Fluent
+import Redis
+import Vapor
 
 /// A `Protocol` for complex Fez interactions.
 /// One could consider this a `Helper` if it weren't for the limitation that Structs cannot inherit
@@ -17,10 +17,21 @@ extension FezProtocol {
 	// already presents all of this functionality to consumers but it's difficult to consume the API from the API.
 	// I thought about having it return (fez, post) but in my use case since I'm throwing them away I'm disinclined
 	// to do that. Maybe later.
-	func sendSimpleSeamail(_ req: Request, fromUserID: UUID, toUserIDs: [UUID], subject: String, initialMessage: String) async throws -> Void {
+	func sendSimpleSeamail(_ req: Request, fromUserID: UUID, toUserIDs: [UUID], subject: String, initialMessage: String)
+		async throws
+	{
 		// Build the Fez.
-		let fez = FriendlyFez(owner: fromUserID, fezType: FezType.closed, title: subject, info: "",
-				location: nil, startTime: nil, endTime: nil, minCapacity: 0, maxCapacity: 0)
+		let fez = FriendlyFez(
+			owner: fromUserID,
+			fezType: FezType.closed,
+			title: subject,
+			info: "",
+			location: nil,
+			startTime: nil,
+			endTime: nil,
+			minCapacity: 0,
+			maxCapacity: 0
+		)
 		let initialUsers = [fromUserID] + toUserIDs
 		fez.participantArray = initialUsers
 		fez.postCount += 1
@@ -29,7 +40,14 @@ extension FezProtocol {
 		// We need the real User objects to do the appropriate pivoting.
 		// There is some voodoo here that magically makes everything work under the hood.
 		let actualUsers = try await User.query(on: req.db).filter(\.$id ~~ initialUsers).all()
-		try await fez.$participants.attach(actualUsers, on: req.db, { $0.readCount = 0; $0.hiddenCount = 0 })
+		try await fez.$participants.attach(
+			actualUsers,
+			on: req.db,
+			{
+				$0.readCount = 0
+				$0.hiddenCount = 0
+			}
+		)
 
 		// Build the Post in the Fez.
 		let post = try FezPost(fez: fez, authorID: fromUserID, text: initialMessage, image: nil)

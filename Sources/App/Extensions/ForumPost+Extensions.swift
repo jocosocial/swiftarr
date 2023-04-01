@@ -1,5 +1,5 @@
-import Vapor
 import Fluent
+import Vapor
 
 // MARK: - Functions
 
@@ -12,8 +12,8 @@ extension ForumPost: ContentFilterable {
 
 extension ForumPost: Reportable {
 	var reportType: ReportType { .forumPost }
-	
+
 	var authorUUID: UUID { $author.id }
-	
+
 	var autoQuarantineThreshold: Int { Settings.shared.postAutoQuarantineThreshold }
 }
