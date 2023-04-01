@@ -1430,7 +1430,7 @@
               </div>
             <p>The collection of <code>/api/v3/mod/</code> route endpoints and handler functions related to moderation tasks.</p>
 
-<p>All routes in this group should be restricted to users with moderation priviliges. This controller returns data of 
+<p>All routes in this group should be restricted to users with moderation priviliges. This controller returns data of
 a privileged nature, including contents of user reports, edit histories of user content, and log data about moderation actions.</p>
 
 <p>Note that some moderation actions aren&rsquo;t in this file. Most such endpoints have a handler method allowing a user
@@ -1443,7 +1443,7 @@ In non-degenerate cases the arrays should less than ~20 elements. Additionally, 
 methods multiple times per second.</p>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L20-L672">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L18-L772">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1477,7 +1477,7 @@ methods multiple times per second.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L23-L60">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L21-L88">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1534,7 +1534,7 @@ methods multiple times per second.</p>
                         <p>An array of <code><a href="../Classes/Report.html">Report</a></code> objects</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L72-L79">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L100-L107">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1602,7 +1602,7 @@ identifier that matches the actions to the reports. Reports should be closed onc
                         <p>200 OK on success</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L92-L113">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L120-L141">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1666,7 +1666,7 @@ concerning the same post, this will close all of them.</p>
                         <p>200 OK on success</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L123-L140">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L151-L168">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1689,11 +1689,11 @@ concerning the same post, this will close all of them.</p>
                       <div class="abstract">
                         <p><code>GET /api/v3/mod/moderationlog</code></p>
 
-<p>Retrieves ModeratorAction records. These records are a log of Mods using their Mod powers. Generally, if an action 1) modifies the database and 
+<p>Retrieves ModeratorAction records. These records are a log of Mods using their Mod powers. Generally, if an action 1) modifies the database and
 2) requires that the acting user be a mod to perform the action, it will get logged.</p>
 <div class="aside aside-note">
     <p class="aside-title">Note</p>
-    A mod editing/deleting their own content will not get logged, even if they use a Moderator-only API call to do it. 
+    A mod editing/deleting their own content will not get logged, even if they use a Moderator-only API call to do it.
 
 </div>
 
@@ -1722,7 +1722,7 @@ concerning the same post, this will close all of them.</p>
                         <p>An array of <code><a href="../Structs/ModeratorActionLogData.html">ModeratorActionLogData</a></code> records.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L155-L161">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L183-L190">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1794,7 +1794,7 @@ twarrt&rsquo;s quarantine and reviewed states.</p>
                         <p><code><a href="../Structs/TwarrtModerationData.html">TwarrtModerationData</a></code> containing a bunch of data pertinient to moderating the twarrt.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L177-L198">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L206-L239">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1818,7 +1818,7 @@ twarrt&rsquo;s quarantine and reviewed states.</p>
                         <p><code>POST /api/v3/mod/twarrt/ID/setstate/STRING</code></p>
 
 <p>Moderator only. Sets the moderation state enum on the twarrt identified by ID to the <code><a href="../Enums/ContentModerationStatus.html">ContentModerationStatus</a></code> in STRING.
-Logs the action to the moderator log unless the user owns the twarrt. </p>
+Logs the action to the moderator log unless the user owns the twarrt.</p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
     A 5xx response should be reported as a likely bug, please and thank you.
@@ -1870,7 +1870,7 @@ Logs the action to the moderator log unless the user owns the twarrt. </p>
                         <p><code>HTTPStatus</code> .ok if the requested moderation status was set.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L209-L219">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L250-L264">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1942,7 +1942,7 @@ forumPost&rsquo;s quarantine and reviewed states.</p>
                         <p><code><a href="../Structs/ForumPostModerationData.html">ForumPostModerationData</a></code> containing a bunch of data pertinient to moderating the post.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L235-L257">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L280-L307">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1966,7 +1966,7 @@ forumPost&rsquo;s quarantine and reviewed states.</p>
                         <p><code>POST /api/v3/mod/forumpost/ID/setstate/STRING</code></p>
 
 <p>Moderator only. Sets the moderation state enum on the post idententified by ID to the <code><a href="../Enums/ContentModerationStatus.html">ContentModerationStatus</a></code> in STRING.
-Logs the action to the moderator log unless the user owns the post. </p>
+Logs the action to the moderator log unless the user owns the post.</p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
     A 5xx response should be reported as a likely bug, please and thank you.
@@ -2018,7 +2018,7 @@ Logs the action to the moderator log unless the user owns the post. </p>
                         <p><code>HTTPStatus</code> .ok if the requested moderation status was set.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L268-L278">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L318-L332">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2091,7 +2091,7 @@ Likely, they&rsquo;ll also get used to report problems with individual posts.</p
                         <p><code><a href="../Structs/ForumModerationData.html">ForumModerationData</a></code>  containing a bunch of data pertinient to moderating the forum.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L295-L313">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L349-L367">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2115,7 +2115,7 @@ Likely, they&rsquo;ll also get used to report problems with individual posts.</p
                         <p><code>POST /api/v3/mod/forum/ID/setstate/STRING</code></p>
 
 <p>Moderator only. Sets the moderation state enum on the forum idententified by ID to the <code><a href="../Enums/ContentModerationStatus.html">ContentModerationStatus</a></code> in STRING.
-Logs the action to the moderator log unless the current user owns the forum. </p>
+Logs the action to the moderator log unless the current user owns the forum.</p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
     A 5xx response should be reported as a likely bug, please and thank you.
@@ -2167,7 +2167,7 @@ Logs the action to the moderator log unless the current user owns the forum. </p
                         <p><code>HTTPStatus</code> .ok if the requested moderation status was set.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L324-L334">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L378-L392">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2202,7 +2202,7 @@ Logs the action to the moderator log unless the current user owns the forum. </p
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L339-L360">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L397-L418">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2274,7 +2274,7 @@ fez&rsquo;s quarantine and reviewed states.</p>
                         <p><code><a href="../Structs/FezModerationData.html">FezModerationData</a></code> containing a bunch of data pertinient to moderating the forum.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L376-L397">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L434-L460">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2298,7 +2298,7 @@ fez&rsquo;s quarantine and reviewed states.</p>
                         <p><code>POST /api/v3/mod/fez/ID/setstate/STRING</code></p>
 
 <p>Moderator only. Sets the moderation state enum on the fez identified by ID to the <code><a href="../Enums/ContentModerationStatus.html">ContentModerationStatus</a></code> in STRING.
-Logs the action to the moderator log unless the current user owns the fez. </p>
+Logs the action to the moderator log unless the current user owns the fez.</p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
     A 5xx response should be reported as a likely bug, please and thank you.
@@ -2350,7 +2350,7 @@ Logs the action to the moderator log unless the current user owns the fez. </p>
                         <p><code>HTTPStatus</code> .ok if the requested moderation status was set.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L408-L418">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L471-L485">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2421,7 +2421,7 @@ fez&rsquo;s quarantine and reviewed states.  Unlike most other content types, Fe
                         <p><code><a href="../Structs/FezPostModerationData.html">FezPostModerationData</a></code> containing a bunch of data pertinient to moderating the forum.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L433-L450">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L500-L522">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2497,7 +2497,7 @@ Logs the action to the moderator log unless the current user authored the post.<
                         <p><code>HTTPStatus</code> .ok if the requested moderation status was set.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L461-L471">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L533-L547">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2569,7 +2569,7 @@ for example, the web site puts the button allowing mods to edit a user&rsquo;s p
                         <p><code><a href="../Structs/ProfileModerationData.html">ProfileModerationData</a></code> containing a bunch of data pertinient to moderating the user&rsquo;s profile.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L487-L507">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L563-L590">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2593,7 +2593,7 @@ for example, the web site puts the button allowing mods to edit a user&rsquo;s p
                         <p><code>POST /api/v3/mod/profile/ID/setstate/STRING</code></p>
 
 <p>Moderator only. Sets the moderation state enum on the profile idententified by userID to the <code><a href="../Enums/ContentModerationStatus.html">ContentModerationStatus</a></code> in STRING.
-Logs the action to the moderator log unless the moderator is changing state on their own profile.. </p>
+Logs the action to the moderator log unless the moderator is changing state on their own profile..</p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
     A 5xx response should be reported as a likely bug, please and thank you.
@@ -2645,7 +2645,7 @@ Logs the action to the moderator log unless the moderator is changing state on t
                         <p><code>HTTPStatus</code> .ok if the requested moderation status was set.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L518-L528">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L601-L615">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2717,7 +2717,7 @@ itself,  such as banning and temp-quarantining. These actions don&rsquo;t edit o
                         <p><code><a href="../Structs/UserModerationData.html">UserModerationData</a></code> containing a bunch of data pertinient to moderating the forum.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L544-L552">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L631-L644">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2799,7 +2799,7 @@ be either a primary or sub-account.</p>
                         <p><code>HTTPStatus</code> .ok if the requested access level was set.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L569-L621">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L661-L720">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2822,7 +2822,7 @@ be either a primary or sub-account.</p>
                       <div class="abstract">
                         <p><code>POST /api/v3/mod/user/ID/tempquarantine/INT</code></p>
 
-<p>Moderator only. Applies a tempory quarantine on a user for INT hours, starting immediately. While quarantined, the user may not 
+<p>Moderator only. Applies a tempory quarantine on a user for INT hours, starting immediately. While quarantined, the user may not
 create or edit content, but can still read others&rsquo; content. They can still talk in private Seamail chats.</p>
 
 <p>The primary account and all sub-accounts linked to the given User account are affected by the temporary ban. The passed-in UserID may
@@ -2878,7 +2878,7 @@ be either a primary or sub-account.</p>
                         <p><code>HTTPStatus</code> .ok if the requested quarantine was set.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L635-L667">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ModerationController.swift#L734-L768">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

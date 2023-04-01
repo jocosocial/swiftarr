@@ -1460,7 +1460,7 @@
 <code>ForumController.postHashtagHandler(_:)</code>.</p>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L979-L996">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1011-L1028">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1494,7 +1494,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L981">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1013">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1524,7 +1524,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L983">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1015">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1554,7 +1554,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L985">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1017">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1584,7 +1584,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L987">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1019">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1614,7 +1614,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L989">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1021">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1644,7 +1644,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L991">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1023">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1674,7 +1674,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L993">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1025">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1704,7 +1704,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L995">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1027">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1728,12 +1728,19 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="nf">init</span><span class="p">(</span><span class="nv">post</span><span class="p">:</span> <span class="kt"><a href="../Classes/ForumPost.html">ForumPost</a></span><span class="p">,</span> <span class="nv">author</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserHeader.html">UserHeader</a></span><span class="p">,</span> <span class="nv">bookmarked</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">,</span> <span class="nv">userLike</span><span class="p">:</span> <span class="kt"><a href="../Enums/LikeType.html">LikeType</a></span><span class="p">?,</span> <span class="nv">likeCount</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">overrideQuarantine</span><span class="p">:</span> <span class="kt">Bool</span> <span class="o">=</span> <span class="kc">false</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+                          <pre class="highlight swift"><code><span class="nf">init</span><span class="p">(</span>
+	<span class="nv">post</span><span class="p">:</span> <span class="kt"><a href="../Classes/ForumPost.html">ForumPost</a></span><span class="p">,</span>
+	<span class="nv">author</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserHeader.html">UserHeader</a></span><span class="p">,</span>
+	<span class="nv">bookmarked</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">,</span>
+	<span class="nv">userLike</span><span class="p">:</span> <span class="kt"><a href="../Enums/LikeType.html">LikeType</a></span><span class="p">?,</span>
+	<span class="nv">likeCount</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span>
+	<span class="nv">overrideQuarantine</span><span class="p">:</span> <span class="kt">Bool</span> <span class="o">=</span> <span class="kc">false</span>
+<span class="p">)</span> <span class="k">throws</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L999-L1008">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1031-L1047">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1762,7 +1769,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1011-L1020">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L1050-L1059">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

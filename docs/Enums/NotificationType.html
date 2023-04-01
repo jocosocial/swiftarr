@@ -1430,7 +1430,7 @@
               </div>
             <p>A type of event that can change the value of the global notification handler&rsquo;s <code><a href="../Structs/UserNotificationData.html">UserNotificationData</a></code> result.</p>
 
-<p>When certain database-mutating events occur, the notification bookkeeping methods need to be called to keep our 
+<p>When certain database-mutating events occur, the notification bookkeeping methods need to be called to keep our
 cached notification counts up to date. The notification counts themselves are database-denormalizing, but they&rsquo;re a cache
 intended to improve the performance of the global notification method.</p>
 
@@ -1456,9 +1456,9 @@ in <code>NotificationHash-\(userID)</code>.</li>
 
 <ul>
 <li>Announcements:  Each user stores the # of their highest-read announcement in the <code>announcement</code> field of the hash-valued key <code>NotificationHash-\(userID)</code>.
-The number of announcements with IDs &gt; the highest-read announceemnt are &lsquo;new&rsquo; to that user. This means an announceement could appear and then expire unseen 
+The number of announcements with IDs &gt; the highest-read announceemnt are &lsquo;new&rsquo; to that user. This means an announceement could appear and then expire unseen
 by a user, and their unseen count would continue to be correct.</li>
-<li>Mentions: The # of mentions the user has viewed are stored in <code>twarrtMention_viewed</code> in the <code>NotificationHash-\(userID)</code> key, and set equal 
+<li>Mentions: The # of mentions the user has viewed are stored in <code>twarrtMention_viewed</code> in the <code>NotificationHash-\(userID)</code> key, and set equal
 to the relevant @mention count when a user&rsquo;s own mentions are viewed (that is, twarrts/posts are requested with a query of <code>mentionSelf</code> or similar).</li>
 <li>Alertwords: Similar to Mentions; the # of alertword hits that have been viewed is stored in <code>alertwordTweet-\(word)_viewed</code>. The difference between this
 field and <code>alertwordTweet-\(word)</code> equals the number of new, unseen alertword hits. The <code>_viewed</code> field is set equal to the count field upon viewing hits.</li>
@@ -1467,7 +1467,7 @@ field and <code>alertwordTweet-\(word)</code> equals the number of new, unseen a
 </ul>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Enumerations/NotificationType.swift#L36-L112">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Enumerations/NotificationType.swift#L36-L113">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1863,7 +1863,7 @@ Second is the post ID. Could also happen if an existing post was edited, and the
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Enumerations/NotificationType.swift#L95-L98">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Enumerations/NotificationType.swift#L95-L99">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1892,7 +1892,7 @@ Second is the post ID. Could also happen if an existing post was edited, and the
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Enumerations/NotificationType.swift#L100-L111">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Enumerations/NotificationType.swift#L101-L112">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

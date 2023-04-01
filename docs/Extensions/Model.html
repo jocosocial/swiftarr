@@ -1430,7 +1430,7 @@
               </div>
             
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/.build/checkouts/fluent-kit/Sources/FluentKit/Model/Model.swift#L5-L45">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/.build/checkouts/fluent-kit/Sources/FluentKit/Model/Model.swift#L5-L51">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1464,10 +1464,10 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Returns a <code>Model</code> that will match the ID given in a named request parameter. 
+                        <p>Returns a <code>Model</code> that will match the ID given in a named request parameter.
 For a route that has a  parameter named <code>userIDParam.paramString</code>,  <code>User.findFromParameter(userIDParam, req)</code>
 will get the value of the parameter and use that to fetch the user with that ID from the User table.
-Returns a failed future with an Abort error if: the parameter doesn&rsquo;t exist, the parameter&rsquo;s value can&rsquo;t be made into an IDValue 
+Returns a failed future with an Abort error if: the parameter doesn&rsquo;t exist, the parameter&rsquo;s value can&rsquo;t be made into an IDValue
 for the Model type, or no Model type with that ID was found in the database.</p>
 
                       </div>
@@ -1475,7 +1475,11 @@ for the Model type, or no Model type with that ID was found in the database.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">findFromParameter</span><span class="p">(</span><span class="n">_</span> <span class="nv">param</span><span class="p">:</span> <span class="kt">PathComponent</span><span class="p">,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">builder</span><span class="p">:</span> <span class="p">((</span><span class="kt">QueryBuilder</span><span class="o">&lt;</span><span class="k">Self</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="k">Self</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">findFromParameter</span><span class="p">(</span>
+	<span class="n">_</span> <span class="nv">param</span><span class="p">:</span> <span class="kt">PathComponent</span><span class="p">,</span>
+	<span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span>
+	<span class="nv">builder</span><span class="p">:</span> <span class="p">((</span><span class="kt">QueryBuilder</span><span class="o">&lt;</span><span class="k">Self</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)?</span> <span class="o">=</span> <span class="kc">nil</span>
+<span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="k">Self</span></code></pre>
 
                         </div>
                       </div>
@@ -1516,7 +1520,7 @@ which the query must be run.</p>
                         <p><code>[UUID]</code> containing all the user&rsquo;s associated IDs.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Extensions/Fluent+Extensions.swift#L17-L19">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Extensions/Fluent+Extensions.swift#L17-L23">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1537,9 +1541,9 @@ which the query must be run.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Returns a <code>Model</code> that will match the ID given in a named request parameter. 
+                        <p>Returns a <code>Model</code> that will match the ID given in a named request parameter.
 For a route that has a &ldquo;:userid&rdquo; parameter,  <code>User.findFromParameter(&quot;userid&quot;, req)</code> will return that user from the User table.
-Returns a failed future with an Abort error if: the parameter doesn&rsquo;t exist, the parameter&rsquo;s value can&rsquo;t be made into an IDValue 
+Returns a failed future with an Abort error if: the parameter doesn&rsquo;t exist, the parameter&rsquo;s value can&rsquo;t be made into an IDValue
 for the Model type, or no Model type with that ID was found in the database.</p>
 
                       </div>
@@ -1547,7 +1551,8 @@ for the Model type, or no Model type with that ID was found in the database.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">findFromParameter</span><span class="p">(</span><span class="n">_</span> <span class="nv">param</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">builder</span><span class="p">:</span> <span class="p">((</span><span class="kt">QueryBuilder</span><span class="o">&lt;</span><span class="k">Self</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="k">Self</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">findFromParameter</span><span class="p">(</span><span class="n">_</span> <span class="nv">param</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">builder</span><span class="p">:</span> <span class="p">((</span><span class="kt">QueryBuilder</span><span class="o">&lt;</span><span class="k">Self</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span>
+	<span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="k">Self</span></code></pre>
 
                         </div>
                       </div>
@@ -1599,7 +1604,7 @@ for the Model type, or no Model type with that ID was found in the database.</p>
                         <p><code>[UUID]</code> containing all the user&rsquo;s associated IDs.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Extensions/Fluent+Extensions.swift#L30-L44">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Extensions/Fluent+Extensions.swift#L34-L50">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

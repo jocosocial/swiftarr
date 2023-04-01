@@ -1431,7 +1431,7 @@
             <p>The collection of <code>/api/v3/fez/*</code> route endpoints and handler functions related to Looking For Group and Seamail chats.</p>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L7-L920">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L7-L980">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1597,7 +1597,7 @@
                         <p>An array of <code><a href="../Structs/FezData.html">FezData</a></code> containing current fezzes with open slots.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L112-L148">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L112-L155">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1662,7 +1662,7 @@
                         <p>An array of <code><a href="../Structs/FezData.html">FezData</a></code> containing all the fezzes joined by the user.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L172-L226">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L179-L239">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1724,7 +1724,7 @@ longer visible to the non-owning party.
                         <p>An array of <code><a href="../Structs/FezData.html">FezData</a></code> containing all the fezzes created by the user.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L247-L284">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L260-L302">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1747,9 +1747,9 @@ longer visible to the non-owning party.
                       <div class="abstract">
                         <p><code>GET /api/v3/fez/:fez_ID</code></p>
 
-<p>Retrieve information about the specified FriendlyFez. For users that aren&rsquo;t members of the fez, this info will be the same as 
+<p>Retrieve information about the specified FriendlyFez. For users that aren&rsquo;t members of the fez, this info will be the same as
 the info returned for <code>GET /api/v3/fez/open</code>. For users that have joined the fez the <code><a href="../Structs/FezData/MembersOnlyData.html">FezData.MembersOnlyData</a></code> will be populated, as will
-the <code><a href="../Classes/FezPost.html">FezPost</a></code>s. </p>
+the <code><a href="../Classes/FezPost.html">FezPost</a></code>s.</p>
 
 <p><strong>Query Parameters:</strong></p>
 
@@ -1758,7 +1758,7 @@ the <code><a href="../Classes/FezPost.html">FezPost</a></code>s. </p>
 <li><code>?limit=INT</code> - The maximum number of posts to return; defaults to 50.</li>
 </ul>
 
-<p>Start and limit only have an effect when the user is a member of the Fez. Limit defaults to 50 and start defaults to <code>(readCount / limit) * limit</code>, 
+<p>Start and limit only have an effect when the user is a member of the Fez. Limit defaults to 50 and start defaults to <code>(readCount / limit) * limit</code>,
 where readCount is how many posts the user has read already.</p>
 
 <p>Moderators and above can use the <code>foruser</code> query parameter to access pseudo-accounts:</p>
@@ -1817,7 +1817,7 @@ should be reported as a likely bug, please and thank you.</p>
                         <p><code><a href="../Structs/FezData.html">FezData</a></code> with fez info and all discussion posts.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L316-L331">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L334-L350">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1903,7 +1903,7 @@ reported as a likely bug, please and thank you.</p>
                         <p><code><a href="../Structs/FezData.html">FezData</a></code> containing the updated fez data.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L350-L380">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L369-L400">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1969,7 +1969,7 @@ reported as a likely bug, please and thank you.
                         <p><code><a href="../Structs/FezData.html">FezData</a></code> containing the updated fez data.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L392-L407">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L412-L427">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2005,7 +2005,7 @@ reported as a likely bug, please and thank you.
                       <div class="abstract">
                         <p><code>POST /api/v3/fez/ID/post</code></p>
 
-<p>Add a <code><a href="../Classes/FezPost.html">FezPost</a></code> to the specified <code><a href="../Classes/FriendlyFez.html">FriendlyFez</a></code>. </p>
+<p>Add a <code><a href="../Classes/FezPost.html">FezPost</a></code> to the specified <code><a href="../Classes/FriendlyFez.html">FriendlyFez</a></code>.</p>
 
 <p>Open fez types are only permitted to have 1 image per post. Private fezzes (aka Seamail) cannot have any images.</p>
 <div class="aside aside-throws">
@@ -2060,7 +2060,7 @@ as a likely bug, please and thank you.
                         <p><code><a href="../Structs/FezPostData.html">FezPostData</a></code> containing the user&rsquo;s new post.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L422-L485">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L442-L506">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2125,7 +2125,7 @@ available. A 5xx response should be reported as a likely bug, please and thank y
                         <p>HTTP 204 No Content</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L496-L537">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L517-L563">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2210,7 +2210,7 @@ send an empty string in the <code>.message</code> field.</p>
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L552-L563">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L578-L589">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2301,7 +2301,7 @@ limit: &ldquo;there is no minimum&rdquo;, &ldquo;there is no maximum&rdquo;.</p>
                         <p>201 Created; <code><a href="../Structs/FezData.html">FezData</a></code> containing the newly created fez.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L586-L635">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L612-L677">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2370,7 +2370,7 @@ reported as a likely bug, please and thank you.</p>
                         <p><code><a href="../Structs/FezData.html">FezData</a></code> with the updated fez info.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L648-L659">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L690-L702">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2394,9 +2394,9 @@ reported as a likely bug, please and thank you.</p>
                         <p><code>POST /api/v3/fez/ID/delete</code>
 <code>DELETE /api/v3/fez/ID</code></p>
 
-<p>Delete the specified <code><a href="../Classes/FriendlyFez.html">FriendlyFez</a></code>. This soft-deletes the fez. Posts are left as-is. </p>
+<p>Delete the specified <code><a href="../Classes/FriendlyFez.html">FriendlyFez</a></code>. This soft-deletes the fez. Posts are left as-is.</p>
 
-<p>To delete, the user must have an access level allowing them to delete the fez. Currently this means moderators and above. 
+<p>To delete, the user must have an access level allowing them to delete the fez. Currently this means moderators and above.
 The owner of a fez may Cancel the fez, which tells the members the fez was cancelled, but does not delete it.</p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
@@ -2437,7 +2437,7 @@ The owner of a fez may Cancel the fez, which tells the members the fez was cance
                         <p>204 No Content on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L672-L684">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L715-L727">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2519,7 +2519,7 @@ A 5xx response should be reported as a likely bug, please and thank you.</p>
                         <p><code><a href="../Structs/FezData.html">FezData</a></code> containing the updated fez info.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L699-L729">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L742-L772">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2595,7 +2595,7 @@ owner. A 5xx response should be reported as a likely bug, please and thank you.
                         <p><code><a href="../Structs/FezData.html">FezData</a></code> containing the updated fez info.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L740-L771">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L783-L817">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2671,7 +2671,7 @@ owner. A 5xx response should be reported as a likely bug, please and thank you.
                         <p><code><a href="../Structs/FezData.html">FezData</a></code> containing the updated fez info.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L782-L806">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L828-L853">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2694,7 +2694,7 @@ owner. A 5xx response should be reported as a likely bug, please and thank you.
                       <div class="abstract">
                         <p><code>POST /api/v3/fez/ID/report</code></p>
 
-<p>Creates a <code><a href="../Classes/Report.html">Report</a></code> regarding the specified <code>Fez</code>. This reports on the Fez itself, not any of its posts in particular. This could mean a 
+<p>Creates a <code><a href="../Classes/Report.html">Report</a></code> regarding the specified <code>Fez</code>. This reports on the Fez itself, not any of its posts in particular. This could mean a
 Fez with reportable content in its Title, Info, or Location fields, or a bunch of reportable posts in the fez.</p>
 <div class="aside aside-note">
     <p class="aside-title">Note</p>
@@ -2749,7 +2749,7 @@ send an empty string in the <code>.message</code> field.</p>
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L820-L828">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L867-L875">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2811,7 +2811,7 @@ fez a user joins and keep them open continually. Use <code>WS /api/v3/notificati
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L846-L863">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L893-L910">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2840,7 +2840,7 @@ fez a user joins and keep them open continually. Use <code>WS /api/v3/notificati
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L866-L900">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L913-L956">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2869,7 +2869,7 @@ fez a user joins and keep them open continually. Use <code>WS /api/v3/notificati
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L903-L919">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L959-L979">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2906,13 +2906,18 @@ fez a user joins and keep them open continually. Use <code>WS /api/v3/notificati
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">buildFezData</span><span class="p">(</span><span class="n">from</span> <span class="nv">fez</span><span class="p">:</span> <span class="kt"><a href="../Classes/FriendlyFez.html">FriendlyFez</a></span><span class="p">,</span> <span class="n">with</span> <span class="nv">pivot</span><span class="p">:</span> <span class="kt"><a href="../Classes/FezParticipant.html">FezParticipant</a></span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">posts</span><span class="p">:</span> <span class="p">[</span><span class="kt"><a href="../Structs/FezPostData.html">FezPostData</a></span><span class="p">]?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> 
-		<span class="k">for</span> <span class="nv">cacheUser</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserCacheData.html">UserCacheData</a></span><span class="p">,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/FezData.html">FezData</a></span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">buildFezData</span><span class="p">(</span>
+	<span class="n">from</span> <span class="nv">fez</span><span class="p">:</span> <span class="kt"><a href="../Classes/FriendlyFez.html">FriendlyFez</a></span><span class="p">,</span>
+	<span class="n">with</span> <span class="nv">pivot</span><span class="p">:</span> <span class="kt"><a href="../Classes/FezParticipant.html">FezParticipant</a></span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+	<span class="nv">posts</span><span class="p">:</span> <span class="p">[</span><span class="kt"><a href="../Structs/FezPostData.html">FezPostData</a></span><span class="p">]?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+	<span class="k">for</span> <span class="nv">cacheUser</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserCacheData.html">UserCacheData</a></span><span class="p">,</span>
+	<span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span>
+<span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../Structs/FezData.html">FezData</a></span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L933-L964">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L993-L1034">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2940,12 +2945,12 @@ fez a user joins and keep them open continually. Use <code>WS /api/v3/notificati
                         <div class="language">
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">buildPostsForFez</span><span class="p">(</span><span class="n">_</span> <span class="nv">fez</span><span class="p">:</span> <span class="kt"><a href="../Classes/FriendlyFez.html">FriendlyFez</a></span><span class="p">,</span> <span class="nv">pivot</span><span class="p">:</span> <span class="kt"><a href="../Classes/FezParticipant.html">FezParticipant</a></span><span class="p">?,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">user</span><span class="p">:</span> <span class="kt"><a href="../Structs/UserCacheData.html">UserCacheData</a></span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span>
-		<span class="o">-&gt;</span> <span class="p">([</span><span class="kt"><a href="../Structs/FezPostData.html">FezPostData</a></span><span class="p">],</span> <span class="kt"><a href="../Structs/Paginator.html">Paginator</a></span><span class="p">)</span></code></pre>
+	<span class="o">-&gt;</span> <span class="p">([</span><span class="kt"><a href="../Structs/FezPostData.html">FezPostData</a></span><span class="p">],</span> <span class="kt"><a href="../Structs/Paginator.html">Paginator</a></span><span class="p">)</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L967-L996">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L1037-L1067">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2977,7 +2982,7 @@ fez a user joins and keep them open continually. Use <code>WS /api/v3/notificati
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L998-L1000">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L1069-L1071">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3006,7 +3011,7 @@ fez a user joins and keep them open continually. Use <code>WS /api/v3/notificati
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L1002-L1004">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L1073-L1075">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3035,7 +3040,7 @@ fez a user joins and keep them open continually. Use <code>WS /api/v3/notificati
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L1009-L1027">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L1080-L1098">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -3064,7 +3069,7 @@ fez a user joins and keep them open continually. Use <code>WS /api/v3/notificati
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L1032-L1048">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/FezController.swift#L1103-L1121">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

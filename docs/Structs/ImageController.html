@@ -1430,7 +1430,7 @@
               </div>
             
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ImageController.swift#L7-L251">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ImageController.swift#L7-L253">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1552,7 +1552,7 @@ call the <code>/api/v3/image/user/</code> endpoints instead&ndash;these endpoint
                       <div class="abstract">
                         <p><code>GET /api/v3/image/thumb/STRING</code></p>
 
-<p>Returns a user-created image thumbnail previously uploaded to the server. This includes images in Twitarr posts, ForumPosts, 
+<p>Returns a user-created image thumbnail previously uploaded to the server. This includes images in Twitarr posts, ForumPosts,
 FezPosts, User Avatars, and Daily Theme images. The exact size of the thumbnail may vary based on the usage given at upload time.</p>
 
 <p>Image filenames should have a form of: <code>UUIDString.typeExtension</code> where the UUIDString matches the output of <code>UUID().string</code> and <code>typeExtension</code>
@@ -1686,20 +1686,20 @@ versions of this call return differently-sized versions of the same image when c
                         <p><code>GET /api/v3/image/user/full/:userID</code>
 <code>GET /api/v3/image/user/thumb/:userID</code></p>
 
-<p>Gets the avatar image for the given user. 
+<p>Gets the avatar image for the given user.
  If the user has a custom avatar, result is the same as if you called <code>/api/v3/image/&lt;thumb|full&gt;/&lt;user.userImage&gt;</code>
- If the user has no custom avatar, returns a 40x40 Identicon image specific to the given userID. </p>
+ If the user has no custom avatar, returns a 40x40 Identicon image specific to the given userID.</p>
 
 <p>Note: This method is a convenience for clients that do their own image caching. For clients that rely on <code>Cache-Control</code> headers, it&rsquo;s better to call
  either the custom image or user identicon call instead; those calls can set a long-term cache expiry and this method cannot. Said differently,
  <code>/api/v3/image/thumb/:filename</code> only changes its result if the file is mod-deleted, and if that happens the user&rsquo;s userImage field updates.
- Similarly, <code>api/v3/image/user/identicon/:userID</code> will always return the same result for the same userID parameter. This method returns a different 
- image for the same URL whenever the user updates their profile image, therefore we can&rsquo;t set cache headers as aggressively.  </p>
+ Similarly, <code>api/v3/image/user/identicon/:userID</code> will always return the same result for the same userID parameter. This method returns a different
+ image for the same URL whenever the user updates their profile image, therefore we can&rsquo;t set cache headers as aggressively.</p>
 
 <p>Barring severe errors, this method will always return an image&ndash;either a user&rsquo;s custom avatar or their default identicon. A consequence of this is that you cannot tell
  whether a user has a custom avatar set or not when calling this method.</p>
 
-<p>This method is optional. If you don&rsquo;t want the server-generated identicons for your client, you can create your own and know when to use them instead of 
+<p>This method is optional. If you don&rsquo;t want the server-generated identicons for your client, you can create your own and know when to use them instead of
  user-created avatars, as the user&rsquo;s userImage will be nil if they have no custom avatar.</p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
@@ -1840,12 +1840,13 @@ their default identicon will look like even when a custom avatar is set.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">getUserUploadedImage</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">sizeGroup</span><span class="p">:</span> <span class="kt"><a href="../Enums/ImageSizeGroup.html">ImageSizeGroup</a></span><span class="p">,</span> <span class="nv">imageFilename</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Response</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">getUserUploadedImage</span><span class="p">(</span><span class="n">_</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">sizeGroup</span><span class="p">:</span> <span class="kt"><a href="../Enums/ImageSizeGroup.html">ImageSizeGroup</a></span><span class="p">,</span> <span class="nv">imageFilename</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">throws</span>
+	<span class="o">-&gt;</span> <span class="kt">Response</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ImageController.swift#L161-L198">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ImageController.swift#L161-L200">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1863,9 +1864,9 @@ their default identicon will look like even when a custom avatar is set.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Creates an identicon image from the given user&rsquo;s userID. </p>
+                        <p>Creates an identicon image from the given user&rsquo;s userID.</p>
 
-<p>Created images are 40x40 PNG palette-based images, averaging ~200 bytes in size. Random inputs into the generator come from the 
+<p>Created images are 40x40 PNG palette-based images, averaging ~200 bytes in size. Random inputs into the generator come from the
 Xoshiro random number generator, seeded with a (very poor) hash of the user&rsquo;s userID value. Because of this seeding, the algorithm repeatedly
 produces the same image for the same userID value.</p>
 
@@ -1882,7 +1883,7 @@ and retrieve generated images; we may as well just generate them on-demand.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ImageController.swift#L208-L249">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ImageController.swift#L210-L251">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

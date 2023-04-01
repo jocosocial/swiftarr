@@ -1430,19 +1430,19 @@
               </div>
             <p><code>GET /api/v3/boardgames/recommend</code></p>
 
-<p>Returns an array of boardgames in a structure designed to support pagination. The returned array of board games will be sorted 
+<p>Returns an array of boardgames in a structure designed to support pagination. The returned array of board games will be sorted
 in decreasing order of how closely each games matches the criteria in the <code><a href="../../Structs/BoardgameRecommendationData.html">BoardgameRecommendationData</a></code> JSON content.
 Can be called while not logged in; if logged in favorite information is returned.</p>
 
-<p>The recommendation algorithom filters out games that don&rsquo;t match the given criteria, i.e. if you ask for games for 6 players, games for 1-4 players 
-will not be returned. Then, games are assigned a score taking each games&rsquo; <code>suggestedNumPlayers</code>, <code>avgPlayingTime</code>, <code>avgRating</code>, 
+<p>The recommendation algorithom filters out games that don&rsquo;t match the given criteria, i.e. if you ask for games for 6 players, games for 1-4 players
+will not be returned. Then, games are assigned a score taking each games&rsquo; <code>suggestedNumPlayers</code>, <code>avgPlayingTime</code>, <code>avgRating</code>,
 and <code>gameComplexity</code> into account.</p>
 
 <p><strong>URL Query Parameters</strong></p>
 
 <ul>
 <li><code>?start=INT</code> - Offset from start of results set</li>
-<li><p><code>?limit=INT</code> - the maximum number of games to retrieve: 1-200, default is 50. </p></li>
+<li><p><code>?limit=INT</code> - the maximum number of games to retrieve: 1-200, default is 50.</p></li>
 </ul>
 
               <div>
@@ -1450,7 +1450,7 @@ and <code>gameComplexity</code> into account.</p>
                 <p><code><a href="../../Structs/BoardgameResponseData.html">BoardgameResponseData</a></code></p>
               </div>
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L158-L195">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L169-L209">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1484,7 +1484,7 @@ and <code>gameComplexity</code> into account.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L173-L176">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/BoardgameController.swift#L184-L187">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

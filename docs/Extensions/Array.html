@@ -1466,7 +1466,7 @@
 <p>Result is a Dictionary instead of an array because (I think?) SQL may coalesce array values with the same ID, resulting in a output array
 smaller than the input. Also, SQL won&rsquo;t return rows for UUIDS that aren&rsquo;t in the table.</p>
 
-<p>If the database is SQL-backed, this method uses SQLKit to get counts for the # of related rows of each array element all with one call. 
+<p>If the database is SQL-backed, this method uses SQLKit to get counts for the # of related rows of each array element all with one call.
 This is considerably faster than the Fluent-only path, saving ~1.2ms per array element. For a 50 element array, the SQLKit path will take
 ~2ms, and the Fluent path will take ~75ms.</p>
 
@@ -1478,15 +1478,18 @@ The intent is that the filters express the same operation (only one will be used
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="n">childCountsPerModel</span><span class="o">&lt;</span><span class="kt">ChildModel</span><span class="p">:</span> <span class="kt">Model</span><span class="o">&gt;</span><span class="p">(</span><span class="nv">atPath</span><span class="p">:</span> <span class="kt">KeyPath</span><span class="o">&lt;</span><span class="kt">Element</span><span class="p">,</span> <span class="kt">ChildrenProperty</span><span class="o">&lt;</span><span class="kt">Element</span><span class="p">,</span> <span class="kt">ChildModel</span><span class="o">&gt;&gt;</span><span class="p">,</span> <span class="n">on</span> <span class="nv">db</span><span class="p">:</span> <span class="kt">Database</span><span class="p">,</span>
-		<span class="nv">fluentFilter</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">QueryBuilder</span><span class="o">&lt;</span><span class="kt">ChildModel</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">()</span> <span class="o">=</span> <span class="p">{</span><span class="n">_</span> <span class="k">in</span> <span class="p">},</span>
-		<span class="nv">sqlFilter</span><span class="p">:</span> <span class="p">((</span><span class="kt">SQLSelectBuilder</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">())?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span>
-		<span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Dictionary</span><span class="o">&lt;</span><span class="kt">Element</span><span class="o">.</span><span class="kt">IDValue</span><span class="p">,</span> <span class="kt">Int</span><span class="o">&gt;</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="n">childCountsPerModel</span><span class="o">&lt;</span><span class="kt">ChildModel</span><span class="p">:</span> <span class="kt">Model</span><span class="o">&gt;</span><span class="p">(</span>
+	<span class="nv">atPath</span><span class="p">:</span> <span class="kt">KeyPath</span><span class="o">&lt;</span><span class="kt">Element</span><span class="p">,</span> <span class="kt">ChildrenProperty</span><span class="o">&lt;</span><span class="kt">Element</span><span class="p">,</span> <span class="kt">ChildModel</span><span class="o">&gt;&gt;</span><span class="p">,</span>
+	<span class="n">on</span> <span class="nv">db</span><span class="p">:</span> <span class="kt">Database</span><span class="p">,</span>
+	<span class="nv">fluentFilter</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">QueryBuilder</span><span class="o">&lt;</span><span class="kt">ChildModel</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span> <span class="o">=</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="p">},</span>
+	<span class="nv">sqlFilter</span><span class="p">:</span> <span class="p">((</span><span class="kt">SQLSelectBuilder</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)?</span> <span class="o">=</span> <span class="kc">nil</span>
+<span class="p">)</span>
+	<span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">Element</span><span class="o">.</span><span class="kt">IDValue</span><span class="p">:</span> <span class="kt">Int</span><span class="p">]</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Extensions/Fluent+Extensions.swift#L59-L114">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Extensions/Fluent+Extensions.swift#L65-L127">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

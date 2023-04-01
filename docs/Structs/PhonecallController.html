@@ -1431,7 +1431,7 @@
             <p>The collection of <code>/api/v3/phone/*</code> route endpoints and handler functions related to phone call management..</p>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/PhonecallController.swift#L61-L385">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/PhonecallController.swift#L74-L438">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1464,7 +1464,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/PhonecallController.swift#L62">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/PhonecallController.swift#L75">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1493,7 +1493,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/PhonecallController.swift#L64-L73">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/PhonecallController.swift#L77-L86">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1523,7 +1523,7 @@
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/PhonecallController.swift#L76-L95">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/PhonecallController.swift#L89-L120">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1550,7 +1550,7 @@
 the IP address(es) of the caller. The callee is then expected to open a socket to the caller for moving audio.</p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
-    BadRequest if malformed. notFound if user can&rsquo;t be notified of call. 
+    BadRequest if malformed. notFound if user can&rsquo;t be notified of call.
 
 </div>
 
@@ -1599,7 +1599,7 @@ the IP address(es) of the caller. The callee is then expected to open a socket t
                         <p>200 OK on success</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/PhonecallController.swift#L106-L144">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/PhonecallController.swift#L131-L180">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1622,14 +1622,14 @@ the IP address(es) of the caller. The callee is then expected to open a socket t
                       <div class="abstract">
                         <p><code>GET /api/v3/phone/socket/initiate/:call_id/to/:user_id</code></p>
 
-<p>The requester is trying to start a phone call to the given user. Notify the target user of the incoming phone call via their notification socket and save the 
+<p>The requester is trying to start a phone call to the given user. Notify the target user of the incoming phone call via their notification socket and save the
 caller socket. The callee should open a phone socket to the server using <code>answerPhoneSocket</code> at which point the server will start forwarding websocket
 packets between the caller and callee sockets.</p>
 
 <p>This is the server-mediated phone call path.</p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
-    BadRequest if malformed. notFound if user can&rsquo;t be notified of call. 
+    BadRequest if malformed. notFound if user can&rsquo;t be notified of call.
 
 </div>
 
@@ -1678,7 +1678,7 @@ packets between the caller and callee sockets.</p>
                         <p>200 OK on success</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/PhonecallController.swift#L158-L180">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/PhonecallController.swift#L194-L217">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1701,14 +1701,14 @@ packets between the caller and callee sockets.</p>
                       <div class="abstract">
                         <p><code>WS /api/v3/phone/socket/initiate/:call_id/to/:user_id</code></p>
 
-<p>The requester is trying to start a phone call to the given user. Notify the target user of the incoming phone call via their notification socket and save the 
+<p>The requester is trying to start a phone call to the given user. Notify the target user of the incoming phone call via their notification socket and save the
 caller socket. The callee should open a phone socket to the server using <code>answerPhoneSocket</code> at which point the server will start forwarding websocket
 packets between the caller and callee sockets.</p>
 
 <p>This is the server-mediated phone call path.</p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
-    BadRequest if malformed. notFound if user can&rsquo;t be notified of call. 
+    BadRequest if malformed. notFound if user can&rsquo;t be notified of call.
 
 </div>
 
@@ -1757,7 +1757,7 @@ packets between the caller and callee sockets.</p>
                         <p>200 OK on success</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/PhonecallController.swift#L194-L238">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/PhonecallController.swift#L231-L283">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1820,7 +1820,7 @@ packets between the caller and callee sockets.</p>
                         <p>200 OK on success</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/PhonecallController.swift#L247-L265">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/PhonecallController.swift#L292-L311">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1883,7 +1883,7 @@ packets between the caller and callee sockets.</p>
                         <p>200 OK on success</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/PhonecallController.swift#L274-L305">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/PhonecallController.swift#L320-L352">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1947,7 +1947,7 @@ for the direct-socket path.</p>
                         <p>200 OK on success</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/PhonecallController.swift#L315-L332">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/PhonecallController.swift#L362-L382">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2013,7 +2013,7 @@ will detect this and close the other socket and clean up. Requester must be a pa
                         <p>200 OK on success</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/PhonecallController.swift#L344-L361">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/PhonecallController.swift#L394-L413">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2055,7 +2055,7 @@ will detect this and close the other socket and clean up. Requester must be a pa
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/PhonecallController.swift#L367-L384">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/PhonecallController.swift#L419-L437">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

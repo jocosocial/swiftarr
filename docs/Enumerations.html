@@ -1442,7 +1442,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Moderation status of a piece of reportable content. 
+                        <p>Moderation status of a piece of reportable content.
 This enum is used both in Models and in data transfer objects in the API. Be very careful about renaming enum cases or customizing case strings.</p>
 
                         <a href="Enums/ContentModerationStatus.html" class="slightly-smaller">See more</a>
@@ -1456,7 +1456,7 @@ This enum is used both in Models and in data transfer objects in the API. Be ver
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Enumerations/ReportType.swift#L22-L55">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Enumerations/ReportType.swift#L22-L56">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1481,12 +1481,12 @@ This enum is used both in Models and in data transfer objects in the API. Be ver
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">fileprivate</span> <span class="kd">enum</span> <span class="kt">EventModification</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">private</span> <span class="kd">enum</span> <span class="kt">EventModification</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/AdminController.swift#L742-L748">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/AdminController.swift#L801-L807">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1572,7 +1572,7 @@ This enum is used both in Models and in data transfer objects in the API. Be ver
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Image/Format.swift#L286-L315">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Image/Format.swift#L301-L330">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1641,7 +1641,7 @@ This enum is used both in Models and in data transfer objects in the API. Be ver
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Image/Geometry.swift#L8-L13">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Image/Geometry.swift#L7-L12">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1747,7 +1747,7 @@ may vary based on <code><a href="Enums/ImageUsage.html">ImageUsage</a></code>. R
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Image/Format.swift#L242-L274">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Image/Format.swift#L255-L289">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1779,7 +1779,7 @@ Only positive reactions are provided in <code>swiftarr</code>.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Enumerations/LikeType.swift#L5-L12">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Enumerations/LikeType.swift#L4-L11">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1811,7 +1811,7 @@ Be careful when modifying this. Not all ModeratorActionTypes are applicable to a
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Enumerations/ModeratorActionType.swift#L4-L60">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Enumerations/ModeratorActionType.swift#L3-L59">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1831,7 +1831,7 @@ Be careful when modifying this. Not all ModeratorActionTypes are applicable to a
                       <div class="abstract">
                         <p>A type of event that can change the value of the global notification handler&rsquo;s <code><a href="Structs/UserNotificationData.html">UserNotificationData</a></code> result.</p>
 
-<p>When certain database-mutating events occur, the notification bookkeeping methods need to be called to keep our 
+<p>When certain database-mutating events occur, the notification bookkeeping methods need to be called to keep our
 cached notification counts up to date. The notification counts themselves are database-denormalizing, but they&rsquo;re a cache
 intended to improve the performance of the global notification method.</p>
 
@@ -1857,9 +1857,9 @@ in <code>NotificationHash-\(userID)</code>.</li>
 
 <ul>
 <li>Announcements:  Each user stores the # of their highest-read announcement in the <code>announcement</code> field of the hash-valued key <code>NotificationHash-\(userID)</code>.
-The number of announcements with IDs &gt; the highest-read announceemnt are &lsquo;new&rsquo; to that user. This means an announceement could appear and then expire unseen 
+The number of announcements with IDs &gt; the highest-read announceemnt are &lsquo;new&rsquo; to that user. This means an announceement could appear and then expire unseen
 by a user, and their unseen count would continue to be correct.</li>
-<li>Mentions: The # of mentions the user has viewed are stored in <code>twarrtMention_viewed</code> in the <code>NotificationHash-\(userID)</code> key, and set equal 
+<li>Mentions: The # of mentions the user has viewed are stored in <code>twarrtMention_viewed</code> in the <code>NotificationHash-\(userID)</code> key, and set equal
 to the relevant @mention count when a user&rsquo;s own mentions are viewed (that is, twarrts/posts are requested with a query of <code>mentionSelf</code> or similar).</li>
 <li>Alertwords: Similar to Mentions; the # of alertword hits that have been viewed is stored in <code>alertwordTweet-\(word)_viewed</code>. The difference between this
 field and <code>alertwordTweet-\(word)</code> equals the number of new, unseen alertword hits. The <code>_viewed</code> field is set equal to the count field upon viewing hits.</li>
@@ -1878,7 +1878,7 @@ field and <code>alertwordTweet-\(word)</code> equals the number of new, unseen a
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Enumerations/NotificationType.swift#L36-L112">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Enumerations/NotificationType.swift#L36-L113">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2033,9 +2033,9 @@ without one of the extensions always being a superset of the other.</p>
 
 <p>This implementation is not a full RBAC. Instead:
     - Each user may have multiple roles
-    - A db object or API call that requires a role to use must test that the requesting user has the proper role. 
+    - A db object or API call that requires a role to use must test that the requesting user has the proper role.
     - Roles implicitly define permissions; there is no facility to add/remove permissions from roles.
-    - There is no role hierarchy. An operation X that allows X_User and X_Manager to access it must test for both roles explicitly. 
+    - There is no role hierarchy. An operation X that allows X_User and X_Manager to access it must test for both roles explicitly.
     - Ideally, a DB object that requires a role to access should only require one role be stored for it.
     - In general, a nil value for a DB object&rsquo;s <code>requiredRole</code> should mean no special role is required to access it.
     - Moderators and above should usually have access to role-protected content; without us having to add a bunch of roles to each moderator user.</p>

@@ -2166,7 +2166,7 @@ string in UTC <code>yyyy-MM-dd&#39;T&#39;HH:mm:ssZ</code> format.</p>
                         <p>A <code>Date</code> if the conversion was successful, otherwise <code>nil</code>.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L42-L64">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L41-L65">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2201,8 +2201,8 @@ string in UTC <code>yyyy-MM-dd&#39;T&#39;HH:mm:ssZ</code> format.</p>
                       <div class="pointer"></div>
                       <div class="abstract">
                         <p>Adds Flexible Auth to a route. This route can be accessed without a token (while not logged in), but <code>req.auth.get(User.self)</code> will still
-return a user if one is logged in. Route handlers for these routes should not call <code>req.auth.require(User.self)</code>. A route with no auth 
-middleware will not auth any user and <code>.get(User.self)</code> will always return nil. The Basic and Token auth groups will throw an error if 
+return a user if one is logged in. Route handlers for these routes should not call <code>req.auth.require(User.self)</code>. A route with no auth
+middleware will not auth any user and <code>.get(User.self)</code> will always return nil. The Basic and Token auth groups will throw an error if
 no user gets authenticated (specifically:<code>User.guardMiddleware</code> throws).</p>
 
 <p>So, use this auth group for routes that can be accessed while not logged in, but which provide more (or different) data when a logged-in user
@@ -2218,7 +2218,7 @@ accesses the route.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L74-L76">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L75-L77">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2252,7 +2252,7 @@ gets added to <code>req.auth</code> instead of a <code><a href="../Classes/User.
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L80-L82">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L81-L83">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2285,7 +2285,7 @@ gets added to <code>req.auth</code> instead of a <code><a href="../Classes/User.
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L85-L87">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L86-L91">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2318,7 +2318,7 @@ gets added to <code>req.auth</code> instead of a <code><a href="../Classes/User.
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L90-L92">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L94-L99">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2363,7 +2363,7 @@ gets added to <code>req.auth</code> instead of a <code><a href="../Classes/User.
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L96-L113">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L103-L120">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2408,7 +2408,7 @@ gets added to <code>req.auth</code> instead of a <code><a href="../Classes/User.
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L124-L182">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L131-L207">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2435,13 +2435,18 @@ gets added to <code>req.auth</code> instead of a <code><a href="../Classes/User.
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">handleUnreadMessage</span><span class="p">(</span><span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">msgID</span><span class="p">:</span> <span class="kt">UUID</span><span class="p">,</span> <span class="nv">inbox</span><span class="p">:</span> <span class="kt">Request</span><span class="o">.</span><span class="kt">Redis</span><span class="o">.</span><span class="kt">MailInbox</span><span class="p">,</span> <span class="nv">users</span><span class="p">:</span> <span class="p">[</span><span class="kt">UUID</span><span class="p">],</span> 
-		<span class="nv">group</span><span class="p">:</span> <span class="k">inout</span> <span class="kt">ThrowingTaskGroup</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">UUID</span><span class="p">]</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">handleUnreadMessage</span><span class="p">(</span>
+	<span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span>
+	<span class="nv">msgID</span><span class="p">:</span> <span class="kt">UUID</span><span class="p">,</span>
+	<span class="nv">inbox</span><span class="p">:</span> <span class="kt">Request</span><span class="o">.</span><span class="kt">Redis</span><span class="o">.</span><span class="kt">MailInbox</span><span class="p">,</span>
+	<span class="nv">users</span><span class="p">:</span> <span class="p">[</span><span class="kt">UUID</span><span class="p">],</span>
+	<span class="nv">group</span><span class="p">:</span> <span class="k">inout</span> <span class="kt">ThrowingTaskGroup</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Error</span><span class="o">&gt;</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">UUID</span><span class="p">]</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L184-L208">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L209-L242">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2468,12 +2473,13 @@ gets added to <code>req.auth</code> instead of a <code><a href="../Classes/User.
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">subtractNotifications</span><span class="p">(</span><span class="nv">users</span><span class="p">:</span> <span class="p">[</span><span class="kt">UUID</span><span class="p">],</span> <span class="nv">type</span><span class="p">:</span> <span class="kt"><a href="../Enums/NotificationType.html">NotificationType</a></span><span class="p">,</span> <span class="nv">subtractCount</span><span class="p">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">subtractNotifications</span><span class="p">(</span><span class="nv">users</span><span class="p">:</span> <span class="p">[</span><span class="kt">UUID</span><span class="p">],</span> <span class="nv">type</span><span class="p">:</span> <span class="kt"><a href="../Enums/NotificationType.html">NotificationType</a></span><span class="p">,</span> <span class="nv">subtractCount</span><span class="p">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span>
+	<span class="n">async</span> <span class="k">throws</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L213-L273">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L246-L338">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2505,7 +2511,7 @@ gets added to <code>req.auth</code> instead of a <code><a href="../Classes/User.
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L276-L280">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L341-L345">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2537,7 +2543,7 @@ gets added to <code>req.auth</code> instead of a <code><a href="../Classes/User.
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L285-L310">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L350-L372">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2569,7 +2575,7 @@ gets added to <code>req.auth</code> instead of a <code><a href="../Classes/User.
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L313-L347">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Protocols/APIRouteCollection.swift#L375-L416">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

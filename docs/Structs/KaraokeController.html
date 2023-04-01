@@ -1431,7 +1431,7 @@
             <p>Methods for accessing the list of boardgames available in the onboard Games Library.</p>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L6-L233">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L6-L250">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1488,10 +1488,10 @@
                       <div class="abstract">
                         <p><code>GET /api/v3/karaoke</code></p>
 
-<p>Returns an array of karaoke songs in a structure designed to support pagination. Can be called while not logged in; 
-if logged in favorite information is returned. </p>
+<p>Returns an array of karaoke songs in a structure designed to support pagination. Can be called while not logged in;
+if logged in favorite information is returned.</p>
 
-<p>This call can&rsquo;t be used to browse the entire ~25000 song library. You must specify either a search string with &gt;2 chars, or 
+<p>This call can&rsquo;t be used to browse the entire ~25000 song library. You must specify either a search string with &gt;2 chars, or
 specify favorites=true.</p>
 
 <p><strong>URL Query Parameters</strong></p>
@@ -1519,7 +1519,7 @@ If a single letter or %23 is sent, it will return songs where the artist matches
                         <p><code><a href="../Structs/KaraokeSongResponseData.html">KaraokeSongResponseData</a></code></p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L46-L115">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L46-L125">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1558,7 +1558,7 @@ If a single letter or %23 is sent, it will return songs where the artist matches
                         <p><code><a href="../Structs/KaraokeSongData.html">KaraokeSongData</a></code></p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L122-L129">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L132-L139">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1584,7 +1584,7 @@ If a single letter or %23 is sent, it will return songs where the artist matches
 <p>Returns an array of the 10 most recent karaoke songs that have been marked as being performed.
 Can be called while not logged in; if logged in favorite information is returned.</p>
 
-<p>Intent of this call is to let people see what&rsquo;s been happening recently in the karaoke lounge without making a complete index of 
+<p>Intent of this call is to let people see what&rsquo;s been happening recently in the karaoke lounge without making a complete index of
 <code>who sang what song when</code> available.</p>
 
                       </div>
@@ -1601,7 +1601,7 @@ Can be called while not logged in; if logged in favorite information is returned
                         <p>An array of up to 10 <code><a href="../Structs/KaraokePerformedSongsData.html">KaraokePerformedSongsData</a></code></p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L140-L145">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L150-L161">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1659,7 +1659,7 @@ Can be called while not logged in; if logged in favorite information is returned
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L153-L166">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L169-L182">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1718,7 +1718,7 @@ Can be called while not logged in; if logged in favorite information is returned
                         <p>204 No Content on success. 200 OK if song was already not favorited.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L175-L186">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L191-L203">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1757,7 +1757,7 @@ Can be called while not logged in; if logged in favorite information is returned
                         <p>200 OK</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L193-L196">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L210-L213">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1782,7 +1782,7 @@ Can be called while not logged in; if logged in favorite information is returned
 
 <p>Allows authorized users to create log entries for karaoke performances. Each log entry is timestamped, references a song in the Karaoke song
 catalog, and has a freeform text field for entering the song performer(s). Song performers don&rsquo;t need to be Twit-arr users and may not have accounts,
-but @mentions in the note field should be processed. </p>
+but @mentions in the note field should be processed.</p>
 
                       </div>
                       <div class="declaration">
@@ -1829,7 +1829,7 @@ but @mentions in the note field should be processed. </p>
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L207-L216">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L224-L233">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1873,7 +1873,7 @@ but @mentions in the note field should be processed. </p>
                         <p><code>HTTP 200 OK</code> if the settings were updated.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L224-L229">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/KaraokeController.swift#L241-L246">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

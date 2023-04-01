@@ -1430,7 +1430,7 @@
               </div>
             
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/.build/checkouts/fluent-kit/Sources/FluentKit/Properties/Siblings.swift#L117-L152">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/.build/checkouts/fluent-kit/Sources/FluentKit/Properties/Siblings.swift#L130-L167">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1462,7 +1462,7 @@ the pivot.</p>
 
 <p>Anyway, given From and To sibling objects where From needs to be the object that contains
 the sibling property, finds or creates the pivot model, calls the edit block so you can mod it,
-and saves the pivot. </p>
+and saves the pivot.</p>
 
 <p>Importantly, the edit closure is always called, whether a new pivot is created or not.</p>
 
@@ -1471,12 +1471,13 @@ and saves the pivot. </p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">attachOrEdit</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="kt">From</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="kt">To</span><span class="p">,</span> <span class="n">on</span> <span class="nv">database</span><span class="p">:</span> <span class="kt">Database</span><span class="p">,</span> <span class="n">_</span> <span class="nv">edit</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">Through</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">()</span> <span class="o">=</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="p">})</span> <span class="n">async</span> <span class="k">throws</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">attachOrEdit</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="kt">From</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="kt">To</span><span class="p">,</span> <span class="n">on</span> <span class="nv">database</span><span class="p">:</span> <span class="kt">Database</span><span class="p">,</span> <span class="n">_</span> <span class="nv">edit</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">Through</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span> <span class="o">=</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="p">})</span>
+	<span class="n">async</span> <span class="k">throws</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Extensions/Fluent+Extensions.swift#L128-L150">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Extensions/Fluent+Extensions.swift#L141-L165">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

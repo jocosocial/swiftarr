@@ -1436,7 +1436,7 @@ cleaner collection, since use of <code>User.parameter</code> in the paths here c
 entirely.</p>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L13-L723">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L13-L756">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1599,7 +1599,7 @@ not available.</p>
 recovery key string.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L146-L189">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L146-L208">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1636,9 +1636,9 @@ recovery key string.</p>
                         <p><code>POST /api/v3/user/verify</code></p>
 
 <p>Changes a <code><a href="../Classes/User.html#/s:3App4UserC11accessLevelAA0b6AccessD0Ovp">User.accessLevel</a></code> from <code>.unverified</code> to <code>.verified</code> on successful submission
-of a registration code. User must be logged in. </p>
+of a registration code. User must be logged in.</p>
 
-<p>NOTE: previously it was possible to create an account and NOT provide a Registration Code, creating an account with an access level of .unverified. We 
+<p>NOTE: previously it was possible to create an account and NOT provide a Registration Code, creating an account with an access level of .unverified. We
 now require a registration code to create an account and all accounts are therefore already verified at creation time, meaning this method is not currently useful.</p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
@@ -1681,7 +1681,7 @@ another user.
                         <p>HTTP status 200 on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L208-L236">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L227-L256">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1704,10 +1704,10 @@ another user.
                       <div class="abstract">
                         <p><code>POST /api/v3/user/add</code></p>
 
-<p>Adds a new <code><a href="../Classes/User.html">User</a></code> sub-account to the current user&rsquo;s primary account. You can create a new sub account while logged in 
+<p>Adds a new <code><a href="../Classes/User.html">User</a></code> sub-account to the current user&rsquo;s primary account. You can create a new sub account while logged in
 on a sub account, but the new account is an sub of the primary account&ndash;there&rsquo;s no nesting or tree structure.</p>
 
-<p>This method does not log in the newly created user. Users are limited to <code>Settings.shared.maxAlternateAccounts</code> 
+<p>This method does not log in the newly created user. Users are limited to <code>Settings.shared.maxAlternateAccounts</code>
 alts, which is 6 by default.</p>
 
 <p>An <code><a href="../Structs/AddedUserData.html">AddedUserData</a></code> structure is returned on success, containing the new user&rsquo;s ID
@@ -1761,7 +1761,7 @@ the username is not available.</p>
                         <p><code><a href="../Structs/AddedUserData.html">AddedUserData</a></code> containing the newly created user&rsquo;s ID and username.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L260-L295">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L280-L316">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1797,7 +1797,7 @@ the username is not available.</p>
                         <p><code><a href="../Structs/CurrentUserData.html">CurrentUserData</a></code> containing the current user&rsquo;s ID, username and logged in status.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L302-L308">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L323-L332">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1861,7 +1861,7 @@ if the user is a <code>.client</code>.
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L318-L334">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L342-L358">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1928,7 +1928,7 @@ while <code>/api/v3/user/:userID/username</code> allows moderators to change the
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L347-L394">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L371-L419">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1964,11 +1964,11 @@ while <code>/api/v3/user/:userID/username</code> allows moderators to change the
                       <div class="abstract">
                         <p><code>POST /api/v3/user/image</code></p>
 
-<p>Sets the user&rsquo;s profile image to the <code><a href="../Structs/ImageUploadData.html">ImageUploadData</a></code> uploaded in the HTTP body. </p>
+<p>Sets the user&rsquo;s profile image to the <code><a href="../Structs/ImageUploadData.html">ImageUploadData</a></code> uploaded in the HTTP body.</p>
 
 <ul>
 <li>If the <code><a href="../Structs/ImageUploadData.html">ImageUploadData</a></code> contains image data in the <code>image</code> member, that data is processed, saved, and set to user&rsquo;s new image</li>
-<li>If the <code><a href="../Structs/ImageUploadData.html">ImageUploadData</a></code> contains a filename in the <code>filename</code> member, the user&rsquo;s avatar is set to that image file on the server. 
+<li>If the <code><a href="../Structs/ImageUploadData.html">ImageUploadData</a></code> contains a filename in the <code>filename</code> member, the user&rsquo;s avatar is set to that image file on the server.
 We don&rsquo;t check whether the file exists.</li>
 <li><p>If both members are nil, the user&rsquo;s avatar image is set to nil, which will cause the default image be returned.</p></li>
 </ul><div class="aside aside-throws">
@@ -2010,7 +2010,7 @@ We don&rsquo;t check whether the file exists.</li>
                         <p><code><a href="../Structs/UserHeader.html">UserHeader</a></code> containing the generated image identifier string.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L410-L432">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L434-L457">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2033,9 +2033,9 @@ We don&rsquo;t check whether the file exists.</li>
                       <div class="abstract">
                         <p><code>POST /api/v3/user/image/remove</code>
 <code>DELETE /api/v3/user/image</code>
-<code>DELETE /api/v3/user/:userID/image</code>              </p>
+<code>DELETE /api/v3/user/:userID/image</code></p>
 
-<p>Removes the user&rsquo;s profile image from their <code><a href="../Classes/User.html">User</a></code> object. This generally reverts their user avatar image to a default or auto-generated image. </p>
+<p>Removes the user&rsquo;s profile image from their <code><a href="../Classes/User.html">User</a></code> object. This generally reverts their user avatar image to a default or auto-generated image.</p>
 
 <p>The third form, that takes a userID in the URL path, is for moderators only.</p>
 <div class="aside aside-throws">
@@ -2077,7 +2077,7 @@ We don&rsquo;t check whether the file exists.</li>
                         <p>204 No Content on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L445-L473">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L470-L500">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2105,7 +2105,7 @@ We don&rsquo;t check whether the file exists.</li>
     <p class="aside-title">Note</p>
     <p>The <code>.header.username</code> and <code>.header.displayName</code> properties of the returned object
 are for display convenience only. A username must be changed using the
-<code>POST /api/v3/user/username</code> endpoint. </p>
+<code>POST /api/v3/user/username</code> endpoint.</p>
 
 </div><div class="aside aside-throws">
     <p class="aside-title">Throws</p>
@@ -2128,7 +2128,7 @@ bug, please and thank you.</p>
                         <p><code><a href="../Structs/ProfilePublicData.html">ProfilePublicData</a></code> containing the editable properties of the profile.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L486-L489">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L513-L516">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2211,7 +2211,7 @@ resets its respective profile property to <code>nil</code>.</p>
                         <p><code><a href="../Structs/ProfilePublicData.html">ProfilePublicData</a></code> containing the updated editable properties of the profile.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L505-L539">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L532-L567">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2287,7 +2287,7 @@ resets its respective profile property to <code>nil</code>.</p>
                         <p><code>AlertKeywordData</code> containing the updated contents of the barrel.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L549-L567">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L577-L597">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2331,7 +2331,7 @@ resets its respective profile property to <code>nil</code>.</p>
                         <p><code>AlertKeywordData</code> containing the current alert keywords as an array of strings.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L575-L580">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L605-L611">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2394,7 +2394,7 @@ resets its respective profile property to <code>nil</code>.</p>
                         <p><code>AlertKeywordData</code> containing the updated contents of the barrel.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L589-L606">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L620-L638">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2470,7 +2470,7 @@ resets its respective profile property to <code>nil</code>.</p>
                         <p><code>MuteKeywordData</code> containing the updated contents of the barrel.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L618-L641">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L650-L673">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2514,7 +2514,7 @@ resets its respective profile property to <code>nil</code>.</p>
                         <p><code>MuteKeywordData</code> containing the current muting keywords as an array of  strings.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L649-L654">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L681-L686">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2577,7 +2577,7 @@ resets its respective profile property to <code>nil</code>.</p>
                         <p><code>MuteKeywordData</code> containing the updated contents of the barrel.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L663-L682">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L695-L714">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2626,7 +2626,7 @@ editing of notes outside of a profile-viewing context.</p>
                         <p>An array of  <code><a href="../Structs/NoteData.html">NoteData</a></code> containing all of the user&rsquo;s notes.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L695-L705">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L727-L737">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2697,7 +2697,7 @@ editing of notes outside of a profile-viewing context.</p>
                         <p>A recoveryKey string.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L714-L722">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/UserController.swift#L746-L755">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

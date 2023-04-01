@@ -1432,7 +1432,7 @@
 to the event schedule.</p>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L9-L221">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L9-L225">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1508,7 +1508,7 @@ to the event schedule.</p>
 
 <ul>
 <li>cruiseday=INT     Embarkation day is day 1, value should be  less than or equal to <code>Settings.shared.cruiseLengthInDays</code>, which will be 8 for the 2022 cruise.</li>
-<li>day=STRING            3 letter day of week abbreviation e.g. &ldquo;TUE&rdquo; .Returns events for that day <em>of the cruise in 2022</em> &ldquo;SAT&rdquo; returns events for embarkation day while 
+<li>day=STRING            3 letter day of week abbreviation e.g. &ldquo;TUE&rdquo; .Returns events for that day <em>of the cruise in 2022</em> &ldquo;SAT&rdquo; returns events for embarkation day while
                 the current date is earlier than embarkation day, then it returns events for disembarkation day.</li>
 <li>?date=DATE            Returns events occurring on the given day. Empty list if there are no cruise events on that day.</li>
 <li>?time=DATE            Returns events whose startTime is earlier (or equal) to DATE and endTime is later than DATE. Note that this will often include &lsquo;all day&rsquo; events.</li>
@@ -1520,7 +1520,7 @@ to the event schedule.</p>
 The day and date parameters actually return events from 3AM local time on the given day until 3AM the next day&ndash;some events start after midnight and tend to get lost by those
 looking at daily schedules.</p>
 
-<p>All the above parameters filter the set of <code><a href="../Structs/EventData.html">EventData</a></code> objects that get returned. Onlly one of [cruiseday, day, date, time] may be used.  </p>
+<p>All the above parameters filter the set of <code><a href="../Structs/EventData.html">EventData</a></code> objects that get returned. Onlly one of [cruiseday, day, date, time] may be used.</p>
 
                         <a href="../Structs/EventController/eventsHandler%28_%3A%29.html" class="slightly-smaller">See more</a>
                       </div>
@@ -1537,7 +1537,7 @@ looking at daily schedules.</p>
                         <p>An array of  <code><a href="../Structs/EventData.html">EventData</a></code> containing filtered events.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L54-L131">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L54-L132">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1595,7 +1595,7 @@ looking at daily schedules.</p>
                         <p><code><a href="../Structs/EventData.html">EventData</a></code> containing  event info.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L139-L159">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L140-L161">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1666,7 +1666,7 @@ looking at daily schedules.</p>
                         <p>201 Created on success; 200 OK if already favorited.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L171-L183">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L173-L185">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1730,7 +1730,7 @@ looking at daily schedules.</p>
                         <p>204 No Content on success; 200 OK if event is already not favorited.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L193-L205">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L195-L208">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1769,7 +1769,7 @@ looking at daily schedules.</p>
                         <p>An array of  <code><a href="../Structs/EventData.html">EventData</a></code> containing the user&rsquo;s favorite events.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L212-L217">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/EventController.swift#L215-L221">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

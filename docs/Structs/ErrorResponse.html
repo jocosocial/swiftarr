@@ -1430,14 +1430,14 @@
               </div>
             <p>All errors returned in HTTP responses use this structure.</p>
 
-<p>Some server errors (such as 404s) may not have any payload in the response body, but for any HTTP error response that has a payload, the 
+<p>Some server errors (such as 404s) may not have any payload in the response body, but for any HTTP error response that has a payload, the
  payload will have this strcture.</p>
 
 <p><code>error</code> is always true, <code>reason</code> concatenates all errors into a single string, and <code>fieldErrors</code> breaks errors up by field name
  of the request&rsquo;s body content, if available. Only content validation errors actaully use <code>fieldErrors</code>.
  Field-specific validation errors are keyed by the path to the field that caused the error. Validation errors that aren&rsquo;t specific to an input field
  (e.g. an error indicating that one of two fields may be empty, but not both) are all concatenated and placed into a <code>general</code> key in <code>fieldErrors</code>.
- This means that all field errors are both in <code>error</code> (concatenated into a single string), and also in <code>fieldErrors</code> (split into fields). </p>
+ This means that all field errors are both in <code>error</code> (concatenated into a single string), and also in <code>fieldErrors</code> (split into fields).</p>
 <div class="aside aside-note">
     <p class="aside-title">Note</p>
     If the request body has validation errors, the error response should list all validation errors at once. However, other errors that may prevent a successful
@@ -1447,7 +1447,7 @@ After fixing those issues, the user could still get an error becuase they are qu
 </div>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L305-L315">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L303-L313">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1481,7 +1481,7 @@ After fixing those issues, the user could still get an error becuase they are qu
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L307">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L305">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1511,7 +1511,7 @@ After fixing those issues, the user could still get an error becuase they are qu
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L309">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L307">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1541,7 +1541,7 @@ After fixing those issues, the user could still get an error becuase they are qu
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L311">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L309">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1572,7 +1572,7 @@ keyed by the keypath to the fields that failed validation.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L314">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/Structs/ControllerStructs.swift#L312">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

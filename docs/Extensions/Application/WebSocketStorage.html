@@ -1429,8 +1429,8 @@
                 </div>
               </div>
             <p>This is the datatype that gets stored in UserCacheStorage. Vapor&rsquo;s Services API uses this.
-Making this a class instead of a struct. This prevents internal modifications (e.g. adding/removing a value from the dicts) from causing the entire app.storage 
-getting copied, in the case where app.storage is a value type composed of other value types. The custom setter for app.storage is not thread-safe. So, this is a 
+Making this a class instead of a struct. This prevents internal modifications (e.g. adding/removing a value from the dicts) from causing the entire app.storage
+getting copied, in the case where app.storage is a value type composed of other value types. The custom setter for app.storage is not thread-safe. So, this is a
 workaround for app.storage having a non-thread-safe setter.</p>
 
               <div class="slightly-smaller">

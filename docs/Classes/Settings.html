@@ -1431,7 +1431,7 @@
             <p>A (hopefully) thread-safe singleton that provides modifiable global settings.</p>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L6-L148">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L6-L150">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1453,7 +1453,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Wraps settings properties, making them thread-safe. All access to the internalValue should be done through the wrapper 
+                        <p>Wraps settings properties, making them thread-safe. All access to the internalValue should be done through the wrapper
 because of the thread-safety thing.</p>
 
                         <a href="../Classes/Settings/SettingsValue.html" class="slightly-smaller">See more</a>
@@ -1496,12 +1496,13 @@ Use this for settings that should be database-backed.</p>
                         <div class="language">
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="kd">@propertyWrapper</span>
-<span class="kd">class</span> <span class="kt">StoredSettingsValue</span><span class="o">&lt;</span><span class="kt">T</span><span class="o">&gt;</span> <span class="p">:</span> <span class="kt"><a href="../Classes/Settings/SettingsValue.html">SettingsValue</a></span><span class="o">&lt;</span><span class="kt">T</span><span class="o">&gt;</span><span class="p">,</span> <span class="kt"><a href="../Protocols/StoredSetting.html">StoredSetting</a></span> <span class="k">where</span> <span class="kt">T</span> <span class="p">:</span> <span class="kt">RESPValueConvertible</span><span class="p">,</span> <span class="kt">T</span> <span class="p">:</span> <span class="kt">Encodable</span></code></pre>
+<span class="kd">class</span> <span class="kt">StoredSettingsValue</span><span class="o">&lt;</span><span class="kt">T</span><span class="o">&gt;</span><span class="p">:</span> <span class="kt"><a href="../Classes/Settings/SettingsValue.html">SettingsValue</a></span><span class="o">&lt;</span><span class="kt">T</span><span class="o">&gt;</span><span class="p">,</span> <span class="kt"><a href="../Protocols/StoredSetting.html">StoredSetting</a></span>
+<span class="k">where</span> <span class="kt">T</span><span class="p">:</span> <span class="kt">Encodable</span> <span class="o">&amp;</span> <span class="kt">RESPValueConvertible</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L29-L53">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L29-L54">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1531,7 +1532,7 @@ Use this for settings that should be database-backed.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L56">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L57">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1561,7 +1562,7 @@ Use this for settings that should be database-backed.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L59">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L60">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1592,7 +1593,7 @@ Use this for settings that should be database-backed.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L62">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L63">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1623,7 +1624,7 @@ Use this for settings that should be database-backed.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L65">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L66">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1667,7 +1668,7 @@ Use this for settings that should be database-backed.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L70">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L71">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1698,7 +1699,7 @@ Use this for settings that should be database-backed.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L73">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L75">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1742,7 +1743,7 @@ Use this for settings that should be database-backed.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L77">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L79">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1773,7 +1774,7 @@ Use this for settings that should be database-backed.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L80">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L82">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1804,7 +1805,7 @@ Use this for settings that should be database-backed.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L83">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L85">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1835,7 +1836,7 @@ Use this for settings that should be database-backed.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L86">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L88">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1866,7 +1867,7 @@ Use this for settings that should be database-backed.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L89">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L91">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1910,7 +1911,7 @@ Use this for settings that should be database-backed.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L93">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L95">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1941,7 +1942,7 @@ Use this for settings that should be database-backed.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L96">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L98">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1972,7 +1973,7 @@ Use this for settings that should be database-backed.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L99">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L101">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2018,7 +2019,7 @@ configure.swift. This setting should not be referenced anywhere. That&rsquo;s wh
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L105">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L107">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2049,7 +2050,7 @@ configure.swift. This setting should not be referenced anywhere. That&rsquo;s wh
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L108">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L110">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2080,7 +2081,7 @@ configure.swift. This setting should not be referenced anywhere. That&rsquo;s wh
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L111">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L113">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2111,7 +2112,7 @@ configure.swift. This setting should not be referenced anywhere. That&rsquo;s wh
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L114">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L116">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2142,7 +2143,7 @@ configure.swift. This setting should not be referenced anywhere. That&rsquo;s wh
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L117">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L119">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2187,7 +2188,7 @@ If our server app is moved to a new machine after it&rsquo;s built, the valid in
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L122">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L124">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2219,7 +2220,7 @@ If our server app is moved to a new machine after it&rsquo;s built, the valid in
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L126">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L128">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2250,7 +2251,7 @@ If our server app is moved to a new machine after it&rsquo;s built, the valid in
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L129">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L131">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2281,7 +2282,7 @@ If our server app is moved to a new machine after it&rsquo;s built, the valid in
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L132">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L134">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2327,7 +2328,7 @@ The Resources and Seeds dirs get <em>copied</em> into this dir from the root of 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L138">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L140">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2358,7 +2359,7 @@ The Resources and Seeds dirs get <em>copied</em> into this dir from the root of 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L141">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L143">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2389,7 +2390,7 @@ The Resources and Seeds dirs get <em>copied</em> into this dir from the root of 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L144">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L146">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2420,7 +2421,7 @@ The Resources and Seeds dirs get <em>copied</em> into this dir from the root of 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L147">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L149">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2450,7 +2451,7 @@ The Resources and Seeds dirs get <em>copied</em> into this dir from the root of 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L154-L158">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L156-L160">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2480,7 +2481,7 @@ The Resources and Seeds dirs get <em>copied</em> into this dir from the root of 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L161-L163">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L163-L165">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2509,7 +2510,7 @@ The Resources and Seeds dirs get <em>copied</em> into this dir from the root of 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L168-L178">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L170-L180">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2539,7 +2540,7 @@ The Resources and Seeds dirs get <em>copied</em> into this dir from the root of 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L181-L185">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L183-L187">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2568,7 +2569,7 @@ The Resources and Seeds dirs get <em>copied</em> into this dir from the root of 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L187-L191">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L189-L193">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2600,7 +2601,7 @@ The Resources and Seeds dirs get <em>copied</em> into this dir from the root of 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L201-L210">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L203-L212">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2632,7 +2633,7 @@ The Resources and Seeds dirs get <em>copied</em> into this dir from the root of 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L213-L219">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Helpers/Settings.swift#L215-L221">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

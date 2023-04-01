@@ -1432,7 +1432,7 @@
 to the twit-arr stream.</p>
 
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L135-L662">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L144-L704">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1475,7 +1475,7 @@ to the twit-arr stream.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L139-L165">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L148-L180">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1551,7 +1551,7 @@ to the twit-arr stream.</p>
                         <p><code><a href="../Structs/TwarrtDetailData.html">TwarrtDetailData</a></code> containing the specified twarrt.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L180-L219">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L195-L235">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1578,7 +1578,7 @@ to the twit-arr stream.</p>
 
 <p><strong>URL Query Parameters</strong></p>
 
-<p>Parameters that filter the set of returned <code><a href="../Classes/Twarrt.html">Twarrt</a></code>s. These may be combined (but only one instance of each); 
+<p>Parameters that filter the set of returned <code><a href="../Classes/Twarrt.html">Twarrt</a></code>s. These may be combined (but only one instance of each);
 the result set will match all provided filters.</p>
 
 <ul>
@@ -1596,7 +1596,7 @@ even if there are no replies to it.</li>
 </ul>
 
 <p>Parameters that set the anchor. The anchor can be a specific <code><a href="../Classes/Twarrt.html">Twarrt</a></code>, a <code>Date</code>, or the first or last twarrt in the stream.
-These parameters are mutually exclusive. The default anchor if none is specified is <code>?from=last</code>. 
+These parameters are mutually exclusive. The default anchor if none is specified is <code>?from=last</code>.
 If you specify a twarrt ID as an anchor, that twarrt does not need to pass the filter params (see above).</p>
 
 <ul>
@@ -1637,7 +1637,7 @@ omitted.</p>
 
 </div><div class="aside aside-note">
     <p class="aside-title">Note</p>
-    <p>Blocks are always applied to the search results. User mutes are applied to the search results unless a filter is used that 
+    <p>Blocks are always applied to the search results. User mutes are applied to the search results unless a filter is used that
 involves users or twarrts the user has previously interacted with (<code>inBarrel</code>, <code>likeType</code>, <code>bookmarked</code>) or matches users by name (<code>byuser</code>).</p>
 
 </div><div class="aside aside-throws">
@@ -1660,7 +1660,7 @@ involves users or twarrts the user has previously interacted with (<code>inBarre
                         <p>An array of <code><a href="../Structs/TwarrtData.html">TwarrtData</a></code> containing the requested twarrts.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L281-L404">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L297-L427">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1723,7 +1723,7 @@ involves users or twarrts the user has previously interacted with (<code>inBarre
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L413-L422">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L436-L446">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1786,7 +1786,7 @@ involves users or twarrts the user has previously interacted with (<code>inBarre
                         <p>204 NoContent on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L431-L442">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L455-L467">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1812,7 +1812,7 @@ involves users or twarrts the user has previously interacted with (<code>inBarre
 <p>Create a <code><a href="../Classes/Twarrt.html">Twarrt</a></code> as a reply to an existing twarrt. If the replyTo twarrt is in quarantine, the post is rejected.</p>
 <div class="aside aside-note">
     <p class="aside-title">Note</p>
-    Replies work differently than on Twitter. Here, any twarrt that is replied to becomes a reply-group, and all 
+    Replies work differently than on Twitter. Here, any twarrt that is replied to becomes a reply-group, and all
 twarrts replying to ANY twarrt in the reply-group are added to that reply-group. Reply-groups are not nestable, and every twarrt
 is a member of at most one reply group. Twarrts that are not replies themselves are eligible to become the head of a reply-group if they are replied to.
 Twarrts that are replies are placed in a reply-group whose ID is the twarrt ID of the first twarrt in the group. This may not be the ID of the twarrt
@@ -1872,7 +1872,7 @@ they&rsquo;re directly replying to. If B is created as a reply to A, and C is cr
                         <p>A <code><a href="../Structs/TwarrtData.html">TwarrtData</a></code> containing the twarrt&rsquo;s contents and metadata. HTTP 201 status if successful.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L460-L487">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L485-L519">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1930,7 +1930,7 @@ they&rsquo;re directly replying to. If B is created as a reply to A, and C is cr
                         <p><code><a href="../Structs/TwarrtData.html">TwarrtData</a></code> containing the twarrt&rsquo;s contents and metadata. HTTP 201 status if successful.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L495-L512">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L527-L551">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1994,7 +1994,7 @@ they&rsquo;re directly replying to. If B is created as a reply to A, and C is cr
                         <p>204 No Content on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L522-L530">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L561-L569">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2076,7 +2076,7 @@ sent an empty string in the <code>.message</code> field.</p>
                         <p>201 Created on success.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L545-L550">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L584-L589">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2139,7 +2139,7 @@ sent an empty string in the <code>.message</code> field.</p>
                         <p><code><a href="../Structs/TwarrtData.html">TwarrtData</a></code> containing the updated like info.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L559-L561">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L598-L600">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2202,7 +2202,7 @@ sent an empty string in the <code>.message</code> field.</p>
                         <p><code><a href="../Structs/TwarrtData.html">TwarrtData</a></code> containing the updated like info.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L570-L572">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L609-L611">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2265,7 +2265,7 @@ sent an empty string in the <code>.message</code> field.</p>
                         <p><code><a href="../Structs/TwarrtData.html">TwarrtData</a></code> containing the updated like info.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L581-L583">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L620-L622">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2339,7 +2339,7 @@ sent an empty string in the <code>.message</code> field.</p>
                         <p><code><a href="../Structs/TwarrtData.html">TwarrtData</a></code> containing the updated like info.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L592-L605">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L631-L646">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2366,7 +2366,7 @@ sent an empty string in the <code>.message</code> field.</p>
 <p>Remove a <code><a href="../Enums/LikeType.html">LikeType</a></code> reaction from the specified <code><a href="../Classes/Twarrt.html">Twarrt</a></code>.</p>
 <div class="aside aside-throws">
     <p class="aside-title">Throws</p>
-    403 error if user is is the twarrt&rsquo;s creator. 404 if no twarrt with the ID is found. 
+    403 error if user is is the twarrt&rsquo;s creator. 404 if no twarrt with the ID is found.
 
 </div>
 
@@ -2403,7 +2403,7 @@ sent an empty string in the <code>.message</code> field.</p>
                         <p><code><a href="../Structs/TwarrtData.html">TwarrtData</a></code> containing the updated like info.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L615-L628">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L656-L670">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2478,7 +2478,7 @@ sent an empty string in the <code>.message</code> field.</p>
                         <p><code><a href="../Structs/TwarrtData.html">TwarrtData</a></code> containing the twarrt&rsquo;s contents and metadata.</p>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L638-L661">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L680-L703">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2514,7 +2514,7 @@ sent an empty string in the <code>.message</code> field.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L668-L674">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L710-L716">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2541,13 +2541,19 @@ sent an empty string in the <code>.message</code> field.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">buildTwarrtData</span><span class="p">(</span><span class="n">from</span> <span class="nv">twarrts</span><span class="p">:</span> <span class="p">[</span><span class="kt"><a href="../Classes/Twarrt.html">Twarrt</a></span><span class="p">],</span> <span class="nv">userID</span><span class="p">:</span> <span class="kt">UUID</span><span class="p">,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span> <span class="nv">mutewords</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> 
-		<span class="nv">assumeBookmarked</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">matchHashtag</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt"><a href="../Structs/TwarrtData.html">TwarrtData</a></span><span class="p">]</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">buildTwarrtData</span><span class="p">(</span>
+	<span class="n">from</span> <span class="nv">twarrts</span><span class="p">:</span> <span class="p">[</span><span class="kt"><a href="../Classes/Twarrt.html">Twarrt</a></span><span class="p">],</span>
+	<span class="nv">userID</span><span class="p">:</span> <span class="kt">UUID</span><span class="p">,</span>
+	<span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">,</span>
+	<span class="nv">mutewords</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+	<span class="nv">assumeBookmarked</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+	<span class="nv">matchHashtag</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>
+<span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt"><a href="../Structs/TwarrtData.html">TwarrtData</a></span><span class="p">]</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L678-L708">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L720-L766">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -2574,12 +2580,13 @@ sent an empty string in the <code>.message</code> field.</p>
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">processTwarrtMentions</span><span class="p">(</span><span class="nv">twarrt</span><span class="p">:</span> <span class="kt"><a href="../Classes/Twarrt.html">Twarrt</a></span><span class="p">,</span> <span class="nv">editedText</span><span class="p">:</span> <span class="kt">String</span><span class="p">?,</span> <span class="nv">isCreate</span><span class="p">:</span> <span class="kt">Bool</span> <span class="o">=</span> <span class="kc">false</span><span class="p">,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span> <span class="n">async</span> <span class="k">throws</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">processTwarrtMentions</span><span class="p">(</span><span class="nv">twarrt</span><span class="p">:</span> <span class="kt"><a href="../Classes/Twarrt.html">Twarrt</a></span><span class="p">,</span> <span class="nv">editedText</span><span class="p">:</span> <span class="kt">String</span><span class="p">?,</span> <span class="nv">isCreate</span><span class="p">:</span> <span class="kt">Bool</span> <span class="o">=</span> <span class="kc">false</span><span class="p">,</span> <span class="n">on</span> <span class="nv">req</span><span class="p">:</span> <span class="kt">Request</span><span class="p">)</span>
+	<span class="n">async</span> <span class="k">throws</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L716-L763">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/TwitarrController.swift#L774-L839">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

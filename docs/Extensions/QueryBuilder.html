@@ -1430,7 +1430,7 @@
               </div>
             
               <div class="slightly-smaller">
-                <a href="https://github.com/jocosocial/swiftarr/tree/master/.build/checkouts/fluent-kit/Sources/FluentKit/Query/Builder/QueryBuilder.swift#L1460-L1490">Show on GitHub</a>
+                <a href="https://github.com/jocosocial/swiftarr/tree/master/.build/checkouts/fluent-kit/Sources/FluentKit/Query/Builder/QueryBuilder.swift#L1640-L1671">Show on GitHub</a>
               </div>
           </div>
         </section>
@@ -1466,7 +1466,7 @@ Joins the Category (and the Forum, if necessary) to the query to do this.</p>
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1464-L1489">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Controllers/ForumController.swift#L1644-L1670">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1493,13 +1493,13 @@ in FluentKit&rsquo;s QueryBuilder+Filter.swift.</p>
                         <div class="language">
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="kd">@discardableResult</span>
-<span class="kd">public</span> <span class="kd">func</span> <span class="n">fullTextFilter</span><span class="o">&lt;</span><span class="kt">Field</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nv">field</span><span class="p">:</span> <span class="kt">KeyPath</span><span class="o">&lt;</span><span class="kt">Model</span><span class="p">,</span> <span class="kt">Field</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">_</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="k">Self</span> 
+<span class="kd">public</span> <span class="kd">func</span> <span class="n">fullTextFilter</span><span class="o">&lt;</span><span class="kt">Field</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nv">field</span><span class="p">:</span> <span class="kt">KeyPath</span><span class="o">&lt;</span><span class="kt">Model</span><span class="p">,</span> <span class="kt">Field</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">_</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="k">Self</span>
 <span class="k">where</span> <span class="kt">Field</span><span class="p">:</span> <span class="kt">QueryableProperty</span><span class="p">,</span> <span class="kt">Field</span><span class="o">.</span><span class="kt">Model</span> <span class="o">==</span> <span class="kt">Model</span><span class="p">,</span> <span class="kt">Field</span><span class="o">.</span><span class="kt">Value</span> <span class="o">==</span> <span class="kt">String</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Extensions/Fluent+Extensions.swift#L177-L186">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Extensions/Fluent+Extensions.swift#L192-L208">Show on GitHub</a>
                       </div>
                     </section>
                   </div>
@@ -1524,13 +1524,17 @@ in FluentKit&rsquo;s QueryBuilder+Filter.swift.</p>
                         <div class="language">
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="kd">@discardableResult</span>
-<span class="kd">public</span> <span class="kd">func</span> <span class="n">fullTextFilter</span><span class="o">&lt;</span><span class="kt">Joined</span><span class="p">,</span> <span class="kt">Field</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nv">joined</span><span class="p">:</span> <span class="kt">Joined</span><span class="o">.</span><span class="k">Type</span><span class="p">,</span> <span class="n">_</span> <span class="nv">field</span><span class="p">:</span> <span class="kt">KeyPath</span><span class="o">&lt;</span><span class="kt">Joined</span><span class="p">,</span> <span class="kt">Field</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">_</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="k">Self</span>
-		<span class="k">where</span> <span class="kt">Joined</span><span class="p">:</span> <span class="kt">Schema</span><span class="p">,</span> <span class="kt">Field</span><span class="p">:</span> <span class="kt">QueryableProperty</span><span class="p">,</span> <span class="kt">Field</span><span class="o">.</span><span class="kt">Model</span> <span class="o">==</span> <span class="kt">Joined</span><span class="p">,</span> <span class="kt">Field</span><span class="o">.</span><span class="kt">Value</span> <span class="o">==</span> <span class="kt">String</span></code></pre>
+<span class="kd">public</span> <span class="kd">func</span> <span class="n">fullTextFilter</span><span class="o">&lt;</span><span class="kt">Joined</span><span class="p">,</span> <span class="kt">Field</span><span class="o">&gt;</span><span class="p">(</span>
+	<span class="n">_</span> <span class="nv">joined</span><span class="p">:</span> <span class="kt">Joined</span><span class="o">.</span><span class="k">Type</span><span class="p">,</span>
+	<span class="n">_</span> <span class="nv">field</span><span class="p">:</span> <span class="kt">KeyPath</span><span class="o">&lt;</span><span class="kt">Joined</span><span class="p">,</span> <span class="kt">Field</span><span class="o">&gt;</span><span class="p">,</span>
+	<span class="n">_</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">String</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="k">Self</span>
+<span class="k">where</span> <span class="kt">Joined</span><span class="p">:</span> <span class="kt">Schema</span><span class="p">,</span> <span class="kt">Field</span><span class="p">:</span> <span class="kt">QueryableProperty</span><span class="p">,</span> <span class="kt">Field</span><span class="o">.</span><span class="kt">Model</span> <span class="o">==</span> <span class="kt">Joined</span><span class="p">,</span> <span class="kt">Field</span><span class="o">.</span><span class="kt">Value</span> <span class="o">==</span> <span class="kt">String</span></code></pre>
 
                         </div>
                       </div>
                       <div class="slightly-smaller">
-                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Extensions/Fluent+Extensions.swift#L189-L198">Show on GitHub</a>
+                        <a href="https://github.com/jocosocial/swiftarr/tree/master/Sources/App/Extensions/Fluent+Extensions.swift#L211-L231">Show on GitHub</a>
                       </div>
                     </section>
                   </div>

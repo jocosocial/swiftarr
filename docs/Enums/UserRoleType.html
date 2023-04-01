@@ -1435,9 +1435,9 @@ without one of the extensions always being a superset of the other.</p>
 
 <p>This implementation is not a full RBAC. Instead:
     - Each user may have multiple roles
-    - A db object or API call that requires a role to use must test that the requesting user has the proper role. 
+    - A db object or API call that requires a role to use must test that the requesting user has the proper role.
     - Roles implicitly define permissions; there is no facility to add/remove permissions from roles.
-    - There is no role hierarchy. An operation X that allows X_User and X_Manager to access it must test for both roles explicitly. 
+    - There is no role hierarchy. An operation X that allows X_User and X_Manager to access it must test for both roles explicitly.
     - Ideally, a DB object that requires a role to access should only require one role be stored for it.
     - In general, a nil value for a DB object&rsquo;s <code>requiredRole</code> should mean no special role is required to access it.
     - Moderators and above should usually have access to role-protected content; without us having to add a bunch of roles to each moderator user.</p>
@@ -1585,7 +1585,7 @@ without one of the extensions always being a superset of the other.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>This gives us a bit more control than <code>init(rawValue:)</code>. Since the strings for AccessControl are part of the API (specifically, they&rsquo;re URL query values), 
+                        <p>This gives us a bit more control than <code>init(rawValue:)</code>. Since the strings for AccessControl are part of the API (specifically, they&rsquo;re URL query values),
 they should be somewhat abstracted from internal representation. This fn provides lazy abstraction, making it easy for API strings to  get re-mapped to enum values, in the future.
 URL Parameters that take an UserRoleType string should use this function to make a <code>AccessControl</code> from the input.
 I am not overriding <code>init(rawValue:)</code> both so that I can call through to that initializer, and because devs have specific ideas about how init(rawValue:) works.</p>
