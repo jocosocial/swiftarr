@@ -1,15 +1,15 @@
-import Vapor
 import Crypto
 import FluentSQL
+import Vapor
 
 // Leaf data used by all views. Mostly this is stuff in the navbar.
 struct TrunkContext: Encodable {
 	var title: String
 	var metaRedirectURL: String?
-	var searchPrompt: String?				// Tells user what search fields does e.g. "Search Tweets" 
-	var searchString: String?				// The user's previously entered search string. Nil if this page isn't search results.
-	var searchPosts: Bool					// TRUE if we're searching posts; only relevant if we're using the Forum search form
-	
+	var searchPrompt: String?  // Tells user what search fields does e.g. "Search Tweets"
+	var searchString: String?  // The user's previously entered search string. Nil if this page isn't search results.
+	var searchPosts: Bool  // TRUE if we're searching posts; only relevant if we're using the Forum search form
+
 	// current nav item
 	enum Tab: String, Codable {
 		case twarrts
@@ -26,26 +26,26 @@ struct TrunkContext: Encodable {
 		case admin
 		case time
 		case map
-		
+
 		case none
 	}
 	var tab: Tab
 	var inTwitarrSubmenu: Bool
-	
+
 	var userIsLoggedIn: Bool
 	var userIsMod: Bool
 	var userIsTwitarrTeam: Bool
 	var userIsTHO: Bool
 	var userIsShutternautManager: Bool
-	
+
 	var username: String
 	var userID: UUID
-	
+
 	var alertCounts: UserNotificationData
 	var eventStartingSoon: Bool
 	var newTweetAlertwords: Bool
 	var newForumAlertwords: Bool
-	
+
 	init(_ req: Request, title: String, tab: Tab, search: String? = nil) {
 		if let user = req.auth.get(UserCacheData.self) {
 			let userAccessLevel = UserAccessLevel(rawValue: req.session.data["accessLevel"] ?? "banned") ?? .banned
@@ -67,33 +67,37 @@ struct TrunkContext: Encodable {
 			userID = UUID()
 		}
 		eventStartingSoon = false
-		if req.route != nil, let alertsStr = req.session.data["alertCounts"], let alertData = alertsStr.data(using: .utf8) {
+		if req.route != nil, let alertsStr = req.session.data["alertCounts"],
+			let alertData = alertsStr.data(using: .utf8)
+		{
 			let alerts = try? JSONDecoder().decode(UserNotificationData.self, from: alertData)
 			alertCounts = alerts ?? UserNotificationData()
-			
+
 			// If we have a nextEventTime, and that event starts between 15 mins in the past -> 30 mins in the future,
 			// mark that we have an event starting soon
 			if let nextEventInterval = alerts?.nextFollowedEventTime?.timeIntervalSinceNow,
-					((-15 * 60.0)...(30 * 60.0)).contains(nextEventInterval) {
-				eventStartingSoon = true	
+				((-15 * 60.0)...(30 * 60.0)).contains(nextEventInterval)
+			{
+				eventStartingSoon = true
 			}
 		}
 		else {
 			alertCounts = UserNotificationData()
 		}
-		
+
 		self.title = title
 		self.tab = tab
 		self.inTwitarrSubmenu = [.home, .lfg, .games, .karaoke, .moderator, .admin].contains(tab)
 		self.searchPrompt = search
-		
-		// Pull search params, if any, out of the request's query. 
+
+		// Pull search params, if any, out of the request's query.
 		// This is to place the (just-run) search params back in the search form.
 		let queryItems = req.url.query?.split(separator: "&")
-		searchString = queryItems?.first(where: { $0.hasPrefix("search=") })?.dropFirst(7).replacingOccurrences(of: "+", with: " ")
-				.removingPercentEncoding
+		searchString =
+			queryItems?.first(where: { $0.hasPrefix("search=") })?.dropFirst(7).replacingOccurrences(of: "+", with: " ")
+			.removingPercentEncoding
 		searchPosts = queryItems?.contains("searchType=posts") ?? false
-		
+
 		newTweetAlertwords = alertCounts.alertWords.contains { $0.newTwarrtMentionCount > 0 }
 		newForumAlertwords = alertCounts.alertWords.contains { $0.newForumMentionCount > 0 }
 	}
@@ -112,7 +116,7 @@ struct PaginatorContext: Codable {
 	var nextPageURL: String?
 	var lastPageURL: String?
 	var pageURLs: [PageInfo]
-		
+
 	/// Works with "paginator.leaf". Builds a paginator control allowing navigation to different pages in a N-page array.
 	///
 	/// Parameters:
@@ -125,14 +129,16 @@ struct PaginatorContext: Codable {
 		let localLimit = max(limit, 1)
 		let currentPage = (start + localLimit - 1) / localLimit
 		let totalPages = (start + localLimit - 1) / localLimit + (total - start + localLimit - 1) / localLimit
-		
+
 		var minPage = max(currentPage - 3, 0)
 		var maxPage = min(minPage + 6, totalPages - 1)
 		minPage = max(maxPage - 6, 0)
 		maxPage = max(maxPage, 0)
-		
+
 		for pageIndex in minPage...maxPage {
-			pageURLs.append(PageInfo(index: pageIndex + 1, active: pageIndex == currentPage, link: urlForPage(pageIndex)))
+			pageURLs.append(
+				PageInfo(index: pageIndex + 1, active: pageIndex == currentPage, link: urlForPage(pageIndex))
+			)
 		}
 		if currentPage > 0 {
 			prevPageURL = urlForPage(currentPage - 1)
@@ -144,7 +150,7 @@ struct PaginatorContext: Codable {
 			lastPageURL = urlForPage(totalPages - 1)
 		}
 	}
-	
+
 	init(_ paginator: Paginator, urlForPage: (Int) -> String) {
 		self.init(start: paginator.start, total: paginator.total, limit: paginator.limit, urlForPage: urlForPage)
 	}
@@ -156,28 +162,28 @@ struct MessagePostContext: Encodable {
 	var forumTitlePlaceholder: String = "Forum Title"
 	var messageText: String = ""
 	var messageTextPlaceholder: String = "Post Text"
-	var photoFilenames: [String] = ["", "", "", ""]	// Must have 4 values to make Leaf templating work. Use "" as placeholder.
+	var photoFilenames: [String] = ["", "", "", ""]  // Must have 4 values to make Leaf templating work. Use "" as placeholder.
 	var allowedImageTypes: String
-	var displayUntil: String = ""					// Used by announcements.
-	var postErrorString: String = ""				// Prepopulates the error alert. Useful for partial successes.
+	var displayUntil: String = ""  // Used by announcements.
+	var postErrorString: String = ""  // Prepopulates the error alert. Useful for partial successes.
 
 	var formAction: String
 	var postSuccessURL: String
-	var authorName: String?							// Nil if current user is also author. Non-nil therefore implies mod edit.
+	var authorName: String?  // Nil if current user is also author. Non-nil therefore implies mod edit.
 	var showForumTitle: Bool = false
 	var onlyShowForumTitle: Bool = false
 	var showModPostOptions: Bool = false
 	var showCruiseDaySelector: Bool = false
 	var isEdit: Bool = false
 
-	// Used as an parameter to the initializer	
+	// Used as an parameter to the initializer
 	enum InitType {
 		case tweet
-		case tweetReply(Int)					// replyGroup ID, or TwarrtID
+		case tweetReply(Int)  // replyGroup ID, or TwarrtID
 		case tweetEdit(TwarrtDetailData)
-		case forum(String)						// Category ID
+		case forum(String)  // Category ID
 		case forumEdit(ForumData)
-		case forumPost(String)					// Forum ID
+		case forumPost(String)  // Forum ID
 		case forumPostEdit(PostDetailData)
 		case seamail
 		case seamailPost(FezData)
@@ -187,7 +193,7 @@ struct MessagePostContext: Encodable {
 		case theme
 		case themeEdit(DailyThemeData)
 	}
-	
+
 	init(forType: InitType) {
 		allowedImageTypes = Settings.shared.validImageInputTypes.joined(separator: ", ")
 		switch forType {
@@ -297,8 +303,8 @@ struct MessagePostContext: Encodable {
 
 // POST data structure returned by the form in messagePostForm.leaf
 // This form and data structure are used for creating and editing twarrts, forum posts, and fez messages.
-struct MessagePostFormContent : Codable {
-	let forumTitle: String?					// Only used when creating new forums
+struct MessagePostFormContent: Codable {
+	let forumTitle: String?  // Only used when creating new forums
 	let postText: String?
 	let localPhoto1: Data?
 	let serverPhoto1: String?
@@ -308,8 +314,8 @@ struct MessagePostFormContent : Codable {
 	let serverPhoto3: String?
 	let localPhoto4: Data?
 	let serverPhoto4: String?
-	let displayUntil: String? 				// Used for announcements
-	let cruiseDay: Int32? 					// Used for Daily Themes
+	let displayUntil: String?  // Used for announcements
+	let cruiseDay: Int32?  // Used for Daily Themes
 	let postAsTwitarrTeam: String?
 	let postAsModerator: String?
 }
@@ -320,22 +326,29 @@ extension MessagePostFormContent {
 	// I usually prefer struct conversion functions being set up as initialization of the dest type, but am
 	// making an exception here.
 	func buildPostContentData() -> PostContentData {
-		let images: [ImageUploadData] = [ImageUploadData(serverPhoto1, localPhoto1),
-				ImageUploadData(serverPhoto2, localPhoto2),
-				ImageUploadData(serverPhoto3, localPhoto3),
-				ImageUploadData(serverPhoto4, localPhoto4)].compactMap { $0 }
-		let postContent = PostContentData(text: postText ?? "", images: images,
-				postAsModerator: postAsModerator != nil, postAsTwitarrTeam: postAsTwitarrTeam != nil)
+		let images: [ImageUploadData] = [
+			ImageUploadData(serverPhoto1, localPhoto1),
+			ImageUploadData(serverPhoto2, localPhoto2),
+			ImageUploadData(serverPhoto3, localPhoto3),
+			ImageUploadData(serverPhoto4, localPhoto4),
+		]
+		.compactMap { $0 }
+		let postContent = PostContentData(
+			text: postText ?? "",
+			images: images,
+			postAsModerator: postAsModerator != nil,
+			postAsTwitarrTeam: postAsTwitarrTeam != nil
+		)
 		return postContent
 	}
 }
 
-struct ReportPageContext : Encodable {
+struct ReportPageContext: Encodable {
 	var trunk: TrunkContext
 	var reportTitle: String
 	var reportFormAction: String
 	var reportSuccessURL: String
-	
+
 	// For reporting a twarrt
 	init(_ req: Request, twarrtID: String) throws {
 		trunk = .init(req, title: "Report Twarrt", tab: .twarrts)
@@ -343,7 +356,7 @@ struct ReportPageContext : Encodable {
 		reportFormAction = "/tweets/report/\(twarrtID)"
 		reportSuccessURL = req.headers.first(name: "Referer") ?? "/tweets"
 	}
-	
+
 	// For reporting a forum post
 	init(_ req: Request, postID: String) throws {
 		trunk = .init(req, title: "Report Forum Post", tab: .forums)
@@ -351,7 +364,7 @@ struct ReportPageContext : Encodable {
 		reportFormAction = "/forumpost/report/\(postID)"
 		reportSuccessURL = req.headers.first(name: "Referer") ?? "/forums"
 	}
-	
+
 	// For reporting a forum title
 	init(_ req: Request, forumID: String) throws {
 		trunk = .init(req, title: "Report Forum Title", tab: .forums)
@@ -359,7 +372,7 @@ struct ReportPageContext : Encodable {
 		reportFormAction = "/forum/report/\(forumID)"
 		reportSuccessURL = req.headers.first(name: "Referer") ?? "/forums"
 	}
-	
+
 	// For reporting a fez (The fez itself: title, info, location)
 	init(_ req: Request, fezID: String) throws {
 		trunk = .init(req, title: "Report LFG Content", tab: .lfg)
@@ -367,16 +380,16 @@ struct ReportPageContext : Encodable {
 		reportFormAction = "/fez/report/\(fezID)"
 		reportSuccessURL = req.headers.first(name: "Referer") ?? "/fez"
 	}
-	
-	// For reporting a fez post 
+
+	// For reporting a fez post
 	init(_ req: Request, fezPostID: String) throws {
 		trunk = .init(req, title: "Report LFG Post", tab: .lfg)
 		reportTitle = "Report LFG Post"
 		reportFormAction = "/fez/post/report/\(fezPostID)"
 		reportSuccessURL = req.headers.first(name: "Referer") ?? "/fez"
 	}
-	
-	// For reporting a user profile 
+
+	// For reporting a user profile
 	init(_ req: Request, userID: String) throws {
 		trunk = .init(req, title: "Report User Profile", tab: .none)
 		reportTitle = "Report a User's Profile"
@@ -396,7 +409,7 @@ struct SiteController: SiteControllerUtils {
 		openRoutes.get("time", use: timePageHandler)
 		openRoutes.get("map", use: mapPageHandler)
 	}
-	
+
 	/// GET /
 	///
 	/// Root page. This has a surprising number of queries.
@@ -407,29 +420,49 @@ struct SiteController: SiteControllerUtils {
 		let themes = try await themeResponse.content.decode([DailyThemeData].self)
 
 		let cal = Settings.shared.getPortCalendar()
-		let components = cal.dateComponents([.day], from: cal.startOfDay(for: Settings.shared.cruiseStartDate()), to: Date())
+		let components = cal.dateComponents(
+			[.day],
+			from: cal.startOfDay(for: Settings.shared.cruiseStartDate()),
+			to: Date()
+		)
 		let cruiseDay = Int32(components.day ?? 0)
 		var backupTheme: DailyThemeData
 		if cruiseDay < 0 {
-			backupTheme = DailyThemeData(themeID: UUID(), title: "\(0 - cruiseDay) Days before Boat", info: "Soon™", 
-					image: nil, cruiseDay: cruiseDay)
+			backupTheme = DailyThemeData(
+				themeID: UUID(),
+				title: "\(0 - cruiseDay) Days before Boat",
+				info: "Soon™",
+				image: nil,
+				cruiseDay: cruiseDay
+			)
 		}
 		else if cruiseDay < Settings.shared.cruiseLengthInDays {
-			backupTheme = DailyThemeData(themeID: UUID(), title: "Cruise Day \(cruiseDay + 1): No Theme Day", info: 
-					"A wise man once said, \"A day without a theme is like a guitar ever-so-slightly out of tune. " +
-					"You can play it however you want, and it will be great, but someone out there will know " +
-					"that if only there was a theme, everything would be in tune.\"", 
-					image: nil, cruiseDay: cruiseDay)
-		} else {
-			backupTheme = DailyThemeData(themeID: UUID(), title: "\(cruiseDay + 1 - Int32(Settings.shared.cruiseLengthInDays)) Days after Boat", 
-					info: "JoCo Cruise has ended. Hope you're enjoying being back in the real world.", image: nil, cruiseDay: cruiseDay)
+			backupTheme = DailyThemeData(
+				themeID: UUID(),
+				title: "Cruise Day \(cruiseDay + 1): No Theme Day",
+				info:
+					"A wise man once said, \"A day without a theme is like a guitar ever-so-slightly out of tune. "
+					+ "You can play it however you want, and it will be great, but someone out there will know "
+					+ "that if only there was a theme, everything would be in tune.\"",
+				image: nil,
+				cruiseDay: cruiseDay
+			)
+		}
+		else {
+			backupTheme = DailyThemeData(
+				themeID: UUID(),
+				title: "\(cruiseDay + 1 - Int32(Settings.shared.cruiseLengthInDays)) Days after Boat",
+				info: "JoCo Cruise has ended. Hope you're enjoying being back in the real world.",
+				image: nil,
+				cruiseDay: cruiseDay
+			)
 		}
 		let dailyTheme: DailyThemeData = themes.first { $0.cruiseDay == cruiseDay } ?? backupTheme
-		struct HomePageContext : Encodable {
+		struct HomePageContext: Encodable {
 			var trunk: TrunkContext
 			var announcements: [AnnouncementData]
 			var dailyTheme: DailyThemeData?
-			
+
 			init(_ req: Request, announcements: [AnnouncementData], theme: DailyThemeData) throws {
 				trunk = .init(req, title: "Twitarr", tab: .home)
 				self.announcements = announcements
@@ -439,14 +472,14 @@ struct SiteController: SiteControllerUtils {
 		let ctx = try HomePageContext(req, announcements: announcements, theme: dailyTheme)
 		return try await req.view.render("home", ctx)
 	}
-	
+
 	/// GET /about
 	///
 	///
 	func aboutTwitarrViewHandler(_ req: Request) async throws -> View {
-		struct AboutPageContext : Encodable {
+		struct AboutPageContext: Encodable {
 			var trunk: TrunkContext
-			
+
 			init(_ req: Request) throws {
 				trunk = .init(req, title: "About Twitarr", tab: .home)
 			}
@@ -459,11 +492,11 @@ struct SiteController: SiteControllerUtils {
 	///
 	/// Timezone information page.
 	func timePageHandler(_ req: Request) async throws -> View {
-		struct TimePageContext : Encodable {
+		struct TimePageContext: Encodable {
 			var trunk: TrunkContext
-			var displayTime: String				// The time on the Boat's clocks, with the current TZ
-			var serverTime: String				// The current time on the server box, including the box's timezone
-			var portTime: String				// The time in the port we embarked from
+			var displayTime: String  // The time on the Boat's clocks, with the current TZ
+			var serverTime: String  // The current time on the server box, including the box's timezone
+			var portTime: String  // The time in the port we embarked from
 
 			init(_ req: Request) throws {
 				trunk = .init(req, title: "Time Zone Check", tab: .time)
@@ -473,7 +506,7 @@ struct SiteController: SiteControllerUtils {
 				let serverDateFormatter = DateFormatter()
 				serverDateFormatter.timeZone = TimeZone.current
 				serverDateFormatter.setLocalizedDateFormatFromTemplate(dateFormatTemplate)
-				
+
 				let displayDateFormatter = DateFormatter()
 				// This could use the GMToffset stuff but then it renders a different time zone
 				// name leading to inconsistencies. For eaxmple, if the setting is "AST" then
@@ -481,7 +514,7 @@ struct SiteController: SiteControllerUtils {
 				// confusing for people to read.
 				displayDateFormatter.timeZone = Settings.shared.timeZoneChanges.tzAtTime()
 				displayDateFormatter.setLocalizedDateFormatFromTemplate(dateFormatTemplate)
-				
+
 				let portDateFormatter = DateFormatter()
 				portDateFormatter.timeZone = Settings.shared.portTimeZone
 				portDateFormatter.setLocalizedDateFormatFromTemplate(dateFormatTemplate)
@@ -500,12 +533,12 @@ struct SiteController: SiteControllerUtils {
 	}
 
 	/// GET /map
-	/// 
+	///
 	/// Ship map
 	func mapPageHandler(_ req: Request) async throws -> View {
 		let deckNumber = req.query[String.self, at: "deck"]
 
-		struct MapContext : Encodable {
+		struct MapContext: Encodable {
 			var trunk: TrunkContext
 			var deckNumber: String?
 			var decks = [Int](1...11)
@@ -519,7 +552,7 @@ struct SiteController: SiteControllerUtils {
 		return try await req.view.render("map", ctx)
 	}
 }
-	
+
 // MARK: - Utilities
 
 protocol SiteControllerUtils {
@@ -545,54 +578,81 @@ extension SiteControllerUtils {
 	var boardgameIDParam: PathComponent { PathComponent(":boardgame_id") }
 	var songIDParam: PathComponent { PathComponent(":karaoke_song_id") }
 	var usernameParam: PathComponent { PathComponent(":user_name") }
-	
-	@discardableResult func apiQuery<EncodableContent: Encodable>(_ req: Request, endpoint: String, query: [URLQueryItem]? = nil, 
-			method: HTTPMethod = .GET, defaultHeaders: HTTPHeaders? = nil, passThroughQuery: Bool = true, encodeContent: EncodableContent, 
-			beforeSend: (inout ClientRequest) throws -> () = { _ in }) async throws -> ClientResponse {
-		let encodeBeforeSend: (inout ClientRequest) throws -> () = { req in
+
+	@discardableResult func apiQuery<EncodableContent: Encodable>(
+		_ req: Request,
+		endpoint: String,
+		query: [URLQueryItem]? = nil,
+		method: HTTPMethod = .GET,
+		defaultHeaders: HTTPHeaders? = nil,
+		passThroughQuery: Bool = true,
+		encodeContent: EncodableContent,
+		beforeSend: (inout ClientRequest) throws -> Void = { _ in }
+	) async throws -> ClientResponse {
+		let encodeBeforeSend: (inout ClientRequest) throws -> Void = { req in
 			try req.content.encode(encodeContent, as: .json)
 			try beforeSend(&req)
 		}
-		return try await apiQuery(req, endpoint: endpoint, query: query, method: method, defaultHeaders: defaultHeaders, 
-				passThroughQuery: passThroughQuery, beforeSend: encodeBeforeSend)
+		return try await apiQuery(
+			req,
+			endpoint: endpoint,
+			query: query,
+			method: method,
+			defaultHeaders: defaultHeaders,
+			passThroughQuery: passThroughQuery,
+			beforeSend: encodeBeforeSend
+		)
 	}
 
-	/// Call the Swiftarr API. This method pulls a user's token from their session data and adds it to the API call. 
+	/// Call the Swiftarr API. This method pulls a user's token from their session data and adds it to the API call.
 	/// By default it also forwards URL query parameters from the Site-level request to the API-level request.
 	///
 	/// We used to calculate the API URL from the request Host headers. But this proved untenable prior to boat 2022
 	/// due to NATing, DNS, and multi-layer networking. It was decided to explicitly make this a setting instead.
 	///
-	@discardableResult func apiQuery(_ req: Request, endpoint: String, query: [URLQueryItem]? = nil, 
-			method: HTTPMethod = .GET, defaultHeaders: HTTPHeaders? = nil, passThroughQuery: Bool = true, 
-			beforeSend: (inout ClientRequest) throws -> () = { _ in }) async throws -> ClientResponse {
+	@discardableResult func apiQuery(
+		_ req: Request,
+		endpoint: String,
+		query: [URLQueryItem]? = nil,
+		method: HTTPMethod = .GET,
+		defaultHeaders: HTTPHeaders? = nil,
+		passThroughQuery: Bool = true,
+		beforeSend: (inout ClientRequest) throws -> Void = { _ in }
+	) async throws -> ClientResponse {
 		// Step 1: Make sure we add the Token Auth header to the API request. The user's auth token is saved in their
 		// session data.
 		var headers = defaultHeaders ?? HTTPHeaders()
 		if let token = req.session.data["token"], !headers.contains(name: "Authorization") {
-   			headers.add(name: "Authorization", value: "Bearer \(token)")
-    	}
-    	
-    	// Step 2: Generate URLComponents, extract a 'clean' path, append the 'clean' path for the endpoint.
+			headers.add(name: "Authorization", value: "Bearer \(token)")
+		}
+
+		// Step 2: Generate URLComponents, extract a 'clean' path, append the 'clean' path for the endpoint.
 		var urlComponents = Settings.shared.apiUrlComponents
 		guard let apiPathURL = URL(string: urlComponents.path),
-				let endpointComponents = URLComponents(string: endpoint) else {
-		 	throw Abort(.internalServerError, reason: "Unable to decode API URL components.")
+			let endpointComponents = URLComponents(string: endpoint)
+		else {
+			throw Abort(.internalServerError, reason: "Unable to decode API URL components.")
 		}
 		urlComponents.path = apiPathURL.appendingPathComponent(endpointComponents.path).absoluteString
 
 		// Step 3: Combine all sources of query items, producing an array of URLQueryItem
-		var combinedQueryItems = (urlComponents.queryItems ?? []) + (endpointComponents.queryItems ?? []) + (query ?? [])
+		var combinedQueryItems =
+			(urlComponents.queryItems ?? []) + (endpointComponents.queryItems ?? []) + (query ?? [])
 		if passThroughQuery, let requestQueryItems = URLComponents(string: req.url.string)?.queryItems {
 			combinedQueryItems.append(contentsOf: requestQueryItems)
 		}
 		urlComponents.queryItems = combinedQueryItems.count > 0 ? combinedQueryItems : nil
-    	
-    	// Step 4: Build an URL string from the components, call the API with it.
-    	guard let apiURLString = urlComponents.string else {
-		 	throw Abort(.internalServerError, reason: "Unable to build URL to API endpoint.")
-    	}
-		let response = try await req.client.send(method, headers: headers, to: URI(string: apiURLString), beforeSend: beforeSend)
+
+		// Step 4: Build an URL string from the components, call the API with it.
+		guard let apiURLString = urlComponents.string else {
+			throw Abort(.internalServerError, reason: "Unable to build URL to API endpoint.")
+		}
+		let response = try await req.client.send(
+			method,
+			headers: headers,
+			to: URI(string: apiURLString),
+			beforeSend: beforeSend
+		)
 		guard response.status.code < 300 else {
 			if let errorResponse = try? response.content.decode(ErrorResponse.self) {
 				throw errorResponse
@@ -601,14 +661,14 @@ extension SiteControllerUtils {
 		}
 		return response
 	}
-	
+
 	// Routes that the user does not need to be logged in to access.
 	func getOpenRoutes(_ app: Application) -> RoutesBuilder {
-		return app.grouped( [
-				app.sessions.middleware, 
-				UserCacheData.SessionAuth(),
-				Token.authenticator(),			// For apps that want to sometimes open web pages
-				NotificationsMiddleware()
+		return app.grouped([
+			app.sessions.middleware,
+			UserCacheData.SessionAuth(),
+			Token.authenticator(),  // For apps that want to sometimes open web pages
+			NotificationsMiddleware(),
 		])
 	}
 
@@ -622,41 +682,41 @@ extension SiteControllerUtils {
 			req.session.data["returnAfterLogin"] = req.url.string
 			return "/login"
 		}
-		
-		return app.grouped( [
-				app.sessions.middleware, 
-				UserCacheData.SessionAuth(),
-				Token.authenticator(),			// For apps that want to sometimes open web pages
-				NotificationsMiddleware(),
-				redirectMiddleware
+
+		return app.grouped([
+			app.sessions.middleware,
+			UserCacheData.SessionAuth(),
+			Token.authenticator(),  // For apps that want to sometimes open web pages
+			NotificationsMiddleware(),
+			redirectMiddleware,
 		])
 	}
-		
+
 	// Routes for non-shareable content. If you're not logged in we failscreen. Most POST actions go here.
 	//
 	// Private site routes should not allow token auth. Token auth is for apps that want to open a webpage with their
 	// token. They can initiate a web flow with a token, get a session back, and use that to complete the flow. However,
 	// we don't want apps to be able to jump to private web pages.
 	func getPrivateRoutes(_ app: Application) -> RoutesBuilder {
-		return app.grouped( [ 
-				app.sessions.middleware, 
-				UserCacheData.SessionAuth(),
-				UserCacheData.guardMiddleware()
+		return app.grouped([
+			app.sessions.middleware,
+			UserCacheData.SessionAuth(),
+			UserCacheData.guardMiddleware(),
 		])
 	}
-	
+
 	// Convert a date string submitted by a client into a Date. Usually this comes from a form input field.
 	// https://www.w3.org/TR/NOTE-datetime specifies a subset of what the ISO 8601 spec allows for date formats.
 	//
 	// Date objects that get stored in the db are stored in the ship's portTimeZone, and the API layer converts them
 	// to the ship's current tz when retrieved. This fn returns Dates matching the indicated ISO8601 'floating' time
 	// in the ship's port time zone for that reason.
-	// 
+	//
 	// In Swift's libs, both DateFormatter and ISO8601DateFormatter require specific formatting options be set that match
 	// the format of the input string--generally, they assume you know what a specific string is going to look like before
 	// conversion. We don't know this, as the browser formats the string and there's a bunch of possibiliites.
-	// 
-	// We could pre-parse the string and normalize it, but isn't it more fun to just complain about how Apple doesn't 
+	//
+	// We could pre-parse the string and normalize it, but isn't it more fun to just complain about how Apple doesn't
 	// include a general-purpose ISO 8601 string-to-date converter that accepts any valid ISO 8601 date string?
 	// (at least with the 2019 version of the spec; IIRC previous versions had ambiguities preventing general-case parsing).
 	func dateFromW3DatetimeString(_ dateStr: String) -> Date? {
@@ -691,7 +751,7 @@ extension SiteControllerUtils {
 }
 
 extension String {
-	
+
 	// Utility to perform URL percent encoding on a string that is to be placed in an URL path. The string
 	// is percent encoded for all non-url-path chars, plus "/", as the string must be a *single* path component.
 	func percentEncodeFilePathEntry() -> String? {
@@ -699,7 +759,7 @@ extension String {
 		pathEntryChars.remove("/")
 		return self.addingPercentEncoding(withAllowedCharacters: pathEntryChars)
 	}
-	
+
 	// Utility to perform URL percent encoding on a string that is to be placed in an URL Query value. NOT a full
 	// query string, the value in a '?key=value' clause.
 	func percentEncodeQueryValue() -> String? {
@@ -708,4 +768,3 @@ extension String {
 		return self.addingPercentEncoding(withAllowedCharacters: allowedChars)
 	}
 }
-

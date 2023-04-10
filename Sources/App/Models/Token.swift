@@ -1,8 +1,6 @@
+import Fluent
 import Foundation
 import Vapor
-import Fluent
-
-
 
 /// A `Token` model associates a randomly generated string with a `User`.
 ///
@@ -14,26 +12,26 @@ import Fluent
 
 final class Token: Model {
 	static let schema = "token"
-	
-   // MARK: Properties
-	
+
+	// MARK: Properties
+
 	/// The Token's ID, provisioned automatically.
 	@ID(key: .id) var id: UUID?
-	
+
 	/// The generated token value.
 	@Field(key: "token") var token: String
-	
+
 	/// The `User` associated to the Token.
 	@Parent(key: "user") var user: User
-	
+
 	/// Timestamp of the model's creation, set automatically.
 	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
-	
+
 	// MARK: Initializaton
-	
+
 	// Used by Fluent
- 	init() { }
- 	
+	init() {}
+
 	/// Initializes a new Token.
 	///
 	/// - Parameters:
@@ -44,7 +42,7 @@ final class Token: Model {
 		self.$user.id = try user.requireID()
 		self.$user.value = user
 	}
-	
+
 	/// Initializes a new Token.
 	///
 	/// - Parameters:
@@ -59,15 +57,14 @@ final class Token: Model {
 struct CreateTokenSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		try await database.schema("token")
-				.id()
-				.field("token", .string, .required)
-				.field("created_at", .datetime)
- 				.field("user", .uuid, .required, .references("user", "id"))
-				.create()
+			.id()
+			.field("token", .string, .required)
+			.field("created_at", .datetime)
+			.field("user", .uuid, .required, .references("user", "id"))
+			.create()
 	}
-	
+
 	func revert(on database: Database) async throws {
 		try await database.schema("token").delete()
 	}
 }
-

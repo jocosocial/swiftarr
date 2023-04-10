@@ -1,6 +1,6 @@
-import Vapor
 import Crypto
 import FluentSQL
+import Vapor
 
 // A set of reports that are all reporting on the same piece of content
 struct ReportContentGroup: Codable {
@@ -15,10 +15,10 @@ struct ReportContentGroup: Codable {
 }
 
 // For the Open Reports and Closed Reports views
-struct ReportsContext : Encodable {
+struct ReportsContext: Encodable {
 	var trunk: TrunkContext
 	var reports: [ReportContentGroup]
-	
+
 	init(_ req: Request, reports: [ReportContentGroup], isClosed: Bool = false) throws {
 		trunk = .init(req, title: isClosed ? "Closed Reports" : "Reports", tab: .moderator)
 		self.reports = reports
@@ -26,7 +26,7 @@ struct ReportsContext : Encodable {
 }
 
 /// SiteModController handles a bunch of pages that exist to moderate user content. There's a `.moderator` value in `UserAccessLevel`,
-/// but that doesn't mean that everything in this controller is accessible by moderators. 
+/// but that doesn't mean that everything in this controller is accessible by moderators.
 ///
 /// The SiteAdminController, by contrast, is responsible for the web front-end to the administration functions, such as server configuration, uploading
 /// reg codes/calendars/song lists/game lists, performance monitoring, security, and client management.
@@ -35,14 +35,14 @@ struct SiteModController: SiteControllerUtils {
 	func registerRoutes(_ app: Application) throws {
 		// Routes that require login but are generally 'global' -- Two logged-in users could share this URL and both see the content
 		// Not for Seamails, pages for posting new content, mod pages, etc. Logged-out users given one of these links should get
-		// redirect-chained through /login and back.	
+		// redirect-chained through /login and back.
 		//
-		// In this case, modRoutes are still Moderator-only. But, one mod could send another a link to one of these pages and it'd work.	
+		// In this case, modRoutes are still Moderator-only. But, one mod could send another a link to one of these pages and it'd work.
 		let modRoutes = getGlobalRoutes(app).grouped(SiteRequireModeratorMiddleware())
 		modRoutes.get("moderator", use: moderatorRootPageHandler)
 		modRoutes.get("reports", use: reportsPageHandler)
 		modRoutes.get("reports", "closed", use: closedReportsPageHandler)
-		modRoutes.get("moderator", "log",  use: moderatorLogPageHandler)
+		modRoutes.get("moderator", "log", use: moderatorLogPageHandler)
 		modRoutes.get("moderator", "seamail", use: moderatorSeamailPageHandler)
 		modRoutes.get("moderator", "guide", use: moderatorGuidePageHandler)
 
@@ -58,28 +58,66 @@ struct SiteModController: SiteControllerUtils {
 		let modPrivateRoutes = getPrivateRoutes(app).grouped(SiteRequireModeratorMiddleware())
 		modPrivateRoutes.get("archivedimage", imageIDParam, use: archivedImageHandler)
 
-		modPrivateRoutes.post("twarrt", twarrtIDParam, "setstate", modStateParam, use: setTwarrtModerationStatePostHandler)
-		modPrivateRoutes.post("forumpost", postIDParam, "setstate", modStateParam, use: setForumPostModerationStatePostHandler)
+		modPrivateRoutes.post(
+			"twarrt",
+			twarrtIDParam,
+			"setstate",
+			modStateParam,
+			use: setTwarrtModerationStatePostHandler
+		)
+		modPrivateRoutes.post(
+			"forumpost",
+			postIDParam,
+			"setstate",
+			modStateParam,
+			use: setForumPostModerationStatePostHandler
+		)
 		modPrivateRoutes.post("forum", forumIDParam, "setstate", modStateParam, use: setForumModerationStatePostHandler)
-		modPrivateRoutes.post("fezpost", postIDParam, "setstate", modStateParam, use: setFezPostModerationStatePostHandler)
+		modPrivateRoutes.post(
+			"fezpost",
+			postIDParam,
+			"setstate",
+			modStateParam,
+			use: setFezPostModerationStatePostHandler
+		)
 		modPrivateRoutes.post("fez", fezIDParam, "setstate", modStateParam, use: setFezModerationStatePostHandler)
-		modPrivateRoutes.post("userprofile", userIDParam, "setstate", modStateParam, use: setUserProfileModerationStatePostHandler)
+		modPrivateRoutes.post(
+			"userprofile",
+			userIDParam,
+			"setstate",
+			modStateParam,
+			use: setUserProfileModerationStatePostHandler
+		)
 
 		modPrivateRoutes.post("forum", forumIDParam, "setcategory", categoryIDParam, use: setForumCategoryPostHandler)
-		modPrivateRoutes.post("moderate", "user", userIDParam, "setaccesslevel", accessLevelParam, use: setUserAccessLevelPostHandler)
+		modPrivateRoutes.post(
+			"moderate",
+			"user",
+			userIDParam,
+			"setaccesslevel",
+			accessLevelParam,
+			use: setUserAccessLevelPostHandler
+		)
 		modPrivateRoutes.post("moderate", "user", userIDParam, "tempquarantine", use: applyTempBanPostHandler)
-		modPrivateRoutes.post("moderate", "user", userIDParam, "tempquarantine", "delete", use: removeTempBanPostHandler)
+		modPrivateRoutes.post(
+			"moderate",
+			"user",
+			userIDParam,
+			"tempquarantine",
+			"delete",
+			use: removeTempBanPostHandler
+		)
 
-		modPrivateRoutes.post("reports", reportIDParam, "handle",  use: beginProcessingReportsPostHandler)
-		modPrivateRoutes.post("reports", reportIDParam, "close",  use: closeReportsPostHandler)
+		modPrivateRoutes.post("reports", reportIDParam, "handle", use: beginProcessingReportsPostHandler)
+		modPrivateRoutes.post("reports", reportIDParam, "close", use: closeReportsPostHandler)
 	}
-	
+
 	// GET /moderator
 	// Shows the root moderator page, which just shows links to other pages.
 	func moderatorRootPageHandler(_ req: Request) async throws -> View {
-		struct ModeratorRootPageContext : Encodable {
+		struct ModeratorRootPageContext: Encodable {
 			var trunk: TrunkContext
-			
+
 			init(_ req: Request) throws {
 				trunk = .init(req, title: "Moderator Pages", tab: .moderator)
 			}
@@ -103,7 +141,7 @@ struct SiteModController: SiteControllerUtils {
 		let response = Response(status: apiResponse.status, headers: apiResponse.headers, body: body)
 		return response
 	}
-	
+
 	/// `GET /reports`
 	///
 	/// Shows moderators a summary of user-submitted reports, grouped by the content that was reported.
@@ -113,9 +151,9 @@ struct SiteModController: SiteControllerUtils {
 		let reportedContentArray = generateContentGroups(from: reports)
 		let openReportContent = reportedContentArray.compactMap { $0.openCount > 0 ? $0 : nil }
 		let ctx = try ReportsContext(req, reports: openReportContent)
-		return try await req.view.render("moderation/reports", ctx)			
+		return try await req.view.render("moderation/reports", ctx)
 	}
-	
+
 	/// `GET /reports/closed`
 	///
 	/// Shows moderators a summary of user-submitted reports, grouped by the content that was reported.
@@ -125,12 +163,12 @@ struct SiteModController: SiteControllerUtils {
 		let reportedContentArray = generateContentGroups(from: reports)
 		let closedReportContent = reportedContentArray.compactMap { $0.openCount > 0 ? nil : $0 }
 		let ctx = try ReportsContext(req, reports: closedReportContent, isClosed: true)
-		return try await req.view.render("moderation/reports", ctx)			
+		return try await req.view.render("moderation/reports", ctx)
 	}
-	
+
 	/// `POST /reports/ID/handle`
-	/// 
-	/// Marks all reports reporting a specific piece of content as being handled by the current user. While a moderator is handling a report, any 
+	///
+	/// Marks all reports reporting a specific piece of content as being handled by the current user. While a moderator is handling a report, any
 	/// moderation actions taken get tied to the report being handled. Also, reports being handled are marked as such so other moderators can
 	/// hopefully avoid duplicate work. Mods should close reports when they're done to complete the flow.
 	func beginProcessingReportsPostHandler(_ req: Request) async throws -> HTTPStatus {
@@ -138,9 +176,9 @@ struct SiteModController: SiteControllerUtils {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
 		let response = try await apiQuery(req, endpoint: "/mod/reports/\(reportID)/handleall", method: .POST)
-		return response.status	
+		return response.status
 	}
-	
+
 	/// `POST /reports/ID/close`
 	///
 	/// Sets the state of all reports in a group to Closed. Although it takes an ID of one report, it finds all reports that refer to the same pirce
@@ -150,19 +188,19 @@ struct SiteModController: SiteControllerUtils {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
 		let response = try await apiQuery(req, endpoint: "/mod/reports/\(reportID)/closeall", method: .POST)
-		return response.status	
+		return response.status
 	}
 
 	/// `GET /moderator/log`
 	///
-	/// Shows a page with a table of all moderator actions. 
+	/// Shows a page with a table of all moderator actions.
 	func moderatorLogPageHandler(_ req: Request) async throws -> View {
 		let response = try await apiQuery(req, endpoint: "/mod/moderationlog")
 		let logData = try response.content.decode([ModeratorActionLogData].self)
-		struct LogContext : Encodable {
+		struct LogContext: Encodable {
 			var trunk: TrunkContext
 			var log: [ModeratorActionLogData]
-			
+
 			init(_ req: Request, log: [ModeratorActionLogData]) throws {
 				trunk = .init(req, title: "Moderator Action Log", tab: .moderator)
 				self.log = log
@@ -171,7 +209,7 @@ struct SiteModController: SiteControllerUtils {
 		let ctx = try LogContext(req, log: logData)
 		return try await req.view.render("moderation/moderatorActionLog", ctx)
 	}
-	
+
 	// `GET /moderator/seamail`
 	func moderatorSeamailPageHandler(_ req: Request) async throws -> View {
 		let response = try await apiQuery(req, endpoint: "/fez/joined?type=closed")
@@ -188,12 +226,12 @@ struct SiteModController: SiteControllerUtils {
 			}
 		}
 		let allFezzes = newMsgFezzes + noNewMsgFezzes
-		struct SeamailRootPageContext : Encodable {
+		struct SeamailRootPageContext: Encodable {
 			var trunk: TrunkContext
 			var fezList: FezListData
 			var fezzes: [FezData]
 			var paginator: PaginatorContext
-			
+
 			init(_ req: Request, fezList: FezListData, fezzes: [FezData]) throws {
 				trunk = .init(req, title: "Seamail", tab: .moderator)
 				self.fezList = fezList
@@ -207,12 +245,12 @@ struct SiteModController: SiteControllerUtils {
 		let ctx = try SeamailRootPageContext(req, fezList: fezList, fezzes: allFezzes)
 		return try await req.view.render("moderation/moderatorSeamail", ctx)
 	}
-	
+
 	/// `GET /moderator/guide`
-	/// 
-	/// 
+	///
+	///
 	func moderatorGuidePageHandler(_ req: Request) async throws -> View {
-		struct GuideContext : Encodable {
+		struct GuideContext: Encodable {
 			var trunk: TrunkContext
 			init(_ req: Request) throws {
 				trunk = .init(req, title: "Moderator Guide", tab: .moderator)
@@ -235,12 +273,12 @@ struct SiteModController: SiteControllerUtils {
 		}
 		let response = try await apiQuery(req, endpoint: "/mod/twarrt/\(twarrtID)")
 		let modData = try response.content.decode(TwarrtModerationData.self)
-		struct ReportContext : Encodable {
+		struct ReportContext: Encodable {
 			var trunk: TrunkContext
 			var modData: TwarrtModerationData
 			var firstReport: ReportModerationData?
 			var finalEditAuthor: UserHeader?
-			
+
 			init(_ req: Request, modData: TwarrtModerationData) throws {
 				trunk = .init(req, title: "Reports", tab: .moderator)
 				self.modData = modData
@@ -249,20 +287,21 @@ struct SiteModController: SiteControllerUtils {
 				if self.modData.edits.count > 1 {
 					for index in (0...self.modData.edits.count - 2).reversed() {
 						self.modData.edits[index + 1].author = self.modData.edits[index].author
-						self.modData.edits[index + 1].author.username = "\(self.modData.edits[index + 1].author.username) edited to:"
+						self.modData.edits[index + 1].author.username =
+							"\(self.modData.edits[index + 1].author.username) edited to:"
 					}
 				}
 				if self.modData.edits.count > 0 {
 					self.modData.edits[0].author = modData.twarrt.author
 					self.modData.edits[0].author.username = "\(self.modData.edits[0].author.username) initially wrote:"
-					
+
 				}
 			}
 		}
 		let ctx = try ReportContext(req, modData: modData)
 		return try await req.view.render("moderation/twarrtView", ctx)
 	}
-	
+
 	///	`POST /moderate/twarrt/ID/setstate/STRING`
 	///
 	/// Sets the moderation state of the given twarrt. Moderation states include "locked" and "quarantined", as well as a few others.
@@ -284,19 +323,19 @@ struct SiteModController: SiteControllerUtils {
 	/// * All reports made against this content
 	/// * All previous versions of this content
 	/// * (hopefully) Mod actions taken against this content already
-	/// * 
+	/// *
 	func moderateForumPostContentPageHandler(_ req: Request) async throws -> View {
 		guard let postID = req.parameters.get(postIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
 		let response = try await apiQuery(req, endpoint: "/mod/forumpost/\(postID)")
 		let modData = try response.content.decode(ForumPostModerationData.self)
-		struct ReportContext : Encodable {
+		struct ReportContext: Encodable {
 			var trunk: TrunkContext
 			var modData: ForumPostModerationData
 			var firstReport: ReportModerationData?
 			var finalEditAuthor: UserHeader?
-			
+
 			init(_ req: Request, modData: ForumPostModerationData) throws {
 				trunk = .init(req, title: "Reports", tab: .moderator)
 				self.modData = modData
@@ -305,20 +344,21 @@ struct SiteModController: SiteControllerUtils {
 				if self.modData.edits.count > 1 {
 					for index in (0...self.modData.edits.count - 2).reversed() {
 						self.modData.edits[index + 1].author = self.modData.edits[index].author
-						self.modData.edits[index + 1].author.username = "\(self.modData.edits[index + 1].author.username) edited to:"
+						self.modData.edits[index + 1].author.username =
+							"\(self.modData.edits[index + 1].author.username) edited to:"
 					}
 				}
 				if self.modData.edits.count > 0 {
 					self.modData.edits[0].author = modData.forumPost.author
 					self.modData.edits[0].author.username = "\(self.modData.edits[0].author.username) initially wrote:"
-					
+
 				}
 			}
 		}
 		let ctx = try ReportContext(req, modData: modData)
 		return try await req.view.render("moderation/forumPostView", ctx)
 	}
-	
+
 	///	`POST /moderate/forumpost/ID/setstate/STRING`
 	///
 	/// Sets the moderation state of the given forum post. Moderation states include "locked" and "quarantined", as well as a few others.
@@ -332,7 +372,7 @@ struct SiteModController: SiteControllerUtils {
 		let response = try await apiQuery(req, endpoint: "/mod/forumpost/\(postID)/setstate/\(modState)", method: .POST)
 		return response.status
 	}
-	
+
 	/// `GET /moderate/forum/:forum_ID`
 	///
 	/// This shows a view that focuses on the *content* that was reported, showing:
@@ -340,7 +380,7 @@ struct SiteModController: SiteControllerUtils {
 	/// * All reports made against this content
 	/// * All previous versions of this content
 	/// * (hopefully) Mod actions taken against this content already
-	/// * 
+	/// *
 	func moderateForumContentPageHandler(_ req: Request) async throws -> View {
 		guard let forumID = req.parameters.get(forumIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
@@ -349,7 +389,7 @@ struct SiteModController: SiteControllerUtils {
 		let forumResponse = try await apiQuery(req, endpoint: "/mod/forum/\(forumID)")
 		let modData = try forumResponse.content.decode(ForumModerationData.self)
 		let categoryData = try categoriesResponse.content.decode([CategoryData].self)
-		struct ReportContext : Encodable {
+		struct ReportContext: Encodable {
 			var trunk: TrunkContext
 			var modData: ForumModerationData
 			var firstReport: ReportModerationData?
@@ -357,7 +397,7 @@ struct SiteModController: SiteControllerUtils {
 			var finalEditPrevCategory: String?
 			var currentCategory: String?
 			var categories: [CategoryData]
-			
+
 			init(_ req: Request, modData: ForumModerationData, categories: [CategoryData]) throws {
 				let categoryDict = categories.reduce(into: [:]) { $0[$1.categoryID] = $1 }
 				trunk = .init(req, title: "Reports", tab: .moderator)
@@ -374,11 +414,12 @@ struct SiteModController: SiteControllerUtils {
 						self.modData.edits[index + 1].author = self.modData.edits[index].author
 						if let oldCat = self.modData.edits[index].categoryID {
 							let oldCatTitle = categoryDict[oldCat]?.title ?? "unknown category"
-							self.modData.edits[index + 1].author.username = 
-									"\(self.modData.edits[index + 1].author.username) changed the category from \"\(oldCatTitle)\""
+							self.modData.edits[index + 1].author.username =
+								"\(self.modData.edits[index + 1].author.username) changed the category from \"\(oldCatTitle)\""
 						}
 						else {
-							self.modData.edits[index + 1].author.username = "\(self.modData.edits[index + 1].author.username) edited to:"
+							self.modData.edits[index + 1].author.username =
+								"\(self.modData.edits[index + 1].author.username) edited to:"
 						}
 					}
 				}
@@ -391,7 +432,7 @@ struct SiteModController: SiteControllerUtils {
 		let ctx = try ReportContext(req, modData: modData, categories: categoryData)
 		return try await req.view.render("moderation/forumView", ctx)
 	}
-	
+
 	///	`POST /moderate/forum/:forum_ID/move/:category_ID`
 	///
 	/// Moves a forum thread into a new category. Once moved, the thread will have the same restrictions on viewability as other threads in the destination category.
@@ -404,10 +445,14 @@ struct SiteModController: SiteControllerUtils {
 		guard let categoryID = req.parameters.get(categoryIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing category ID parameter.")
 		}
-		let response = try await apiQuery(req, endpoint: "/mod/forum/\(forumID)/setcategory/\(categoryID)", method: .POST)
+		let response = try await apiQuery(
+			req,
+			endpoint: "/mod/forum/\(forumID)/setcategory/\(categoryID)",
+			method: .POST
+		)
 		return response.status
 	}
-	
+
 	///	`POST /moderate/forum/ID/setstate/STRING`
 	///
 	/// Sets the moderation state of the given forum. Moderation states include "locked" and "quarantined", as well as a few others.
@@ -421,7 +466,7 @@ struct SiteModController: SiteControllerUtils {
 		let response = try await apiQuery(req, endpoint: "/mod/forum/\(forumID)/setstate/\(modState)", method: .POST)
 		return response.status
 	}
-	
+
 	/// `GET /moderate/fez/:fez_ID`
 	///
 	/// This shows a view that focuses on the *content* that was reported, showing:
@@ -429,19 +474,19 @@ struct SiteModController: SiteControllerUtils {
 	/// * All reports made against this content
 	/// * All previous versions of this content
 	/// * (hopefully) Mod actions taken against this content already
-	/// * 
+	/// *
 	func moderateFezContentPageHandler(_ req: Request) async throws -> View {
 		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
 		let response = try await apiQuery(req, endpoint: "/mod/fez/\(fezID)")
 		let modData = try response.content.decode(FezModerationData.self)
-		struct ReportContext : Encodable {
+		struct ReportContext: Encodable {
 			var trunk: TrunkContext
 			var modData: FezModerationData
 			var firstReport: ReportModerationData?
 			var finalEditAuthor: UserHeader?
-			
+
 			init(_ req: Request, modData: FezModerationData) throws {
 				trunk = .init(req, title: "Fez Moderation", tab: .moderator)
 				self.modData = modData
@@ -450,7 +495,8 @@ struct SiteModController: SiteControllerUtils {
 				if self.modData.edits.count > 1 {
 					for index in (0...self.modData.edits.count - 2).reversed() {
 						self.modData.edits[index + 1].author = self.modData.edits[index].author
-						self.modData.edits[index + 1].author.username = "\(self.modData.edits[index + 1].author.username) edited to:"
+						self.modData.edits[index + 1].author.username =
+							"\(self.modData.edits[index + 1].author.username) edited to:"
 					}
 				}
 				if self.modData.edits.count > 0 {
@@ -462,7 +508,7 @@ struct SiteModController: SiteControllerUtils {
 		let ctx = try ReportContext(req, modData: modData)
 		return try await req.view.render("moderation/fezView", ctx)
 	}
-	
+
 	///	`POST /moderate/fez/ID/setstate/STRING`
 	///
 	/// Sets the moderation state of the given fez. Moderation states include "locked" and "quarantined", as well as a few others.
@@ -476,7 +522,7 @@ struct SiteModController: SiteControllerUtils {
 		let response = try await apiQuery(req, endpoint: "/mod/fez/\(fezID)/setstate/\(modState)", method: .POST)
 		return response.status
 	}
-	
+
 	/// `GET /moderate/fezpost/:fezpost_ID`
 	///
 	/// This shows a view that focuses on the *content* that was reported, showing:
@@ -484,19 +530,19 @@ struct SiteModController: SiteControllerUtils {
 	/// * All reports made against this content
 	/// * All previous versions of this content
 	/// * (hopefully) Mod actions taken against this content already
-	/// * 
+	/// *
 	func moderateFezPostContentPageHandler(_ req: Request) async throws -> View {
 		guard let fezPostID = req.parameters.get(postIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
 		let response = try await apiQuery(req, endpoint: "/mod/fezpost/\(fezPostID)")
 		let modData = try response.content.decode(FezPostModerationData.self)
-		struct ReportContext : Encodable {
+		struct ReportContext: Encodable {
 			var trunk: TrunkContext
 			var modData: FezPostModerationData
 			var firstReport: ReportModerationData?
 			var finalEditAuthor: UserHeader?
-			
+
 			init(_ req: Request, modData: FezPostModerationData) throws {
 				trunk = .init(req, title: "Fez Post Moderation", tab: .moderator)
 				self.modData = modData
@@ -520,9 +566,9 @@ struct SiteModController: SiteControllerUtils {
 		let response = try await apiQuery(req, endpoint: "/mod/fezpost/\(postID)/setstate/\(modState)", method: .POST)
 		return response.status
 	}
-	
+
 	/// `GET /moderate/userprofile/ID`
-	/// 
+	///
 	/// Info from user's profile. Previous profile versions, reports against the user's profile fields or avatar image.
 	func moderateUserProfileContentPageHandler(_ req: Request) async throws -> View {
 		guard let userID = req.parameters.get(userIDParam.paramString)?.percentEncodeFilePathEntry() else {
@@ -530,12 +576,12 @@ struct SiteModController: SiteControllerUtils {
 		}
 		let response = try await apiQuery(req, endpoint: "/mod/profile/\(userID)")
 		let modData = try response.content.decode(ProfileModerationData.self)
-		struct UserModContext : Encodable {
+		struct UserModContext: Encodable {
 			var trunk: TrunkContext
 			var modData: ProfileModerationData
 			var firstReport: ReportModerationData?
 			var finalEditAuthor: UserHeader?
-			
+
 			init(_ req: Request, modData: ProfileModerationData) throws {
 				trunk = .init(req, title: "User Profile Moderation", tab: .moderator)
 				self.modData = modData
@@ -544,7 +590,8 @@ struct SiteModController: SiteControllerUtils {
 				if self.modData.edits.count > 1 {
 					for index in (0...self.modData.edits.count - 2).reversed() {
 						self.modData.edits[index + 1].author = self.modData.edits[index].author
-						self.modData.edits[index + 1].author.username = "\(self.modData.edits[index + 1].author.username) edited to:"
+						self.modData.edits[index + 1].author.username =
+							"\(self.modData.edits[index + 1].author.username) edited to:"
 					}
 				}
 				if self.modData.edits.count > 0 {
@@ -558,11 +605,11 @@ struct SiteModController: SiteControllerUtils {
 		let ctx = try UserModContext(req, modData: modData)
 		return try await req.view.render("moderation/profileView", ctx)
 	}
-	
+
 	///	`POST /moderate/userprofile/ID/setstate/STRING`
 	///
 	/// Sets the moderation state of the given user's profile. ID is a userID UUID.. Moderation states include "locked" and "quarantined", as well as a few others.
-	/// Again: Setting the state to "locked" prevents the user from modifying their profile and avatar, but doesn't otherwise constrain them. 
+	/// Again: Setting the state to "locked" prevents the user from modifying their profile and avatar, but doesn't otherwise constrain them.
 	/// Similarly, quarantine state prevents others from seeing the avatar and profile field text, but doesn't prevent the user from posting content.
 	func setUserProfileModerationStatePostHandler(_ req: Request) async throws -> HTTPStatus {
 		guard let userID = req.parameters.get(userIDParam.paramString)?.percentEncodeFilePathEntry() else {
@@ -574,9 +621,9 @@ struct SiteModController: SiteControllerUtils {
 		let response = try await apiQuery(req, endpoint: "/mod/profile/\(userID)/setstate/\(modState)", method: .POST)
 		return response.status
 	}
-	
+
 	/// `GET /moderate/user/ID`
-	/// 
+	///
 	/// Shows the User Moderation page, which has the user's accessLevel controls, temp banning, and a list of all reports
 	/// filed against any of this user's content.
 	func moderateUserContentPageHandler(_ req: Request) async throws -> View {
@@ -585,12 +632,12 @@ struct SiteModController: SiteControllerUtils {
 		}
 		let response = try await apiQuery(req, endpoint: "/mod/user/\(userID)")
 		let modData = try response.content.decode(UserModerationData.self)
-		struct UserModContext : Encodable {
+		struct UserModContext: Encodable {
 			var trunk: TrunkContext
 			var modData: UserModerationData
 			var accessLevelString: String
 			var reportGroups: [ReportContentGroup]
-			
+
 			init(_ req: Request, modData: UserModerationData) throws {
 				trunk = .init(req, title: "User Moderation", tab: .moderator)
 				self.modData = modData
@@ -601,11 +648,11 @@ struct SiteModController: SiteControllerUtils {
 		let ctx = try UserModContext(req, modData: modData)
 		return try await req.view.render("moderation/userView", ctx)
 	}
-	
+
 	///	`POST /moderate/user/ID/setaccesslevel/STRING`
 	///
 	/// Sets the moderation state of the given user's profile. ID is a userID UUID.. Moderation states include "locked" and "quarantined", as well as a few others.
-	/// Again: Setting the state to "locked" prevents the user from modifying their profile and avatar, but doesn't otherwise constrain them. 
+	/// Again: Setting the state to "locked" prevents the user from modifying their profile and avatar, but doesn't otherwise constrain them.
 	/// Similarly, quarantine state prevents others from seeing the avatar and profile field text, but doesn't prevent the user from posting content.
 	func setUserAccessLevelPostHandler(_ req: Request) async throws -> HTTPStatus {
 		guard let userID = req.parameters.get(userIDParam.paramString)?.percentEncodeFilePathEntry() else {
@@ -614,13 +661,17 @@ struct SiteModController: SiteControllerUtils {
 		guard let accessLevel = req.parameters.get(accessLevelParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing access level parameter.")
 		}
-		let response = try await apiQuery(req, endpoint: "/mod/user/\(userID)/setaccesslevel/\(accessLevel)", method: .POST)
+		let response = try await apiQuery(
+			req,
+			endpoint: "/mod/user/\(userID)/setaccesslevel/\(accessLevel)",
+			method: .POST
+		)
 		return response.status
 	}
-	
+
 	///	`POST /moderate/user/ID/tempquarantine`
 	///
-	/// Applies a temporary quarantine to the user given by ID. While quarantined, the user may not create or edit content, 
+	/// Applies a temporary quarantine to the user given by ID. While quarantined, the user may not create or edit content,
 	/// but can still log in and read others' content. They can still talk in private Seamail chats. They cannot edit their profile or change their avatar image.
 	/// Temp quarantines effectively change the user's accessLevel to `.quarantined` for the duration, after which the user's accessLevel reverts
 	/// to what it was previously.
@@ -632,14 +683,17 @@ struct SiteModController: SiteControllerUtils {
 			var banlength: Int
 		}
 		let postStruct = try req.content.decode(TempBanFormData.self)
-		let response = try await apiQuery(req, endpoint: "/mod/user/\(userID)/tempquarantine/\(postStruct.banlength)", method: .POST)
+		let response = try await apiQuery(
+			req,
+			endpoint: "/mod/user/\(userID)/tempquarantine/\(postStruct.banlength)",
+			method: .POST
+		)
 		return response.status
 	}
-	
-	
+
 	///	`POST /moderate/user/ID/tempquarantine/delete`
 	///
-	/// Applies a temporary quarantine to the user given by ID. While quarantined, the user may not create or edit content, 
+	/// Applies a temporary quarantine to the user given by ID. While quarantined, the user may not create or edit content,
 	/// but can still log in and read others' content. They can still talk in private Seamail chats. They cannot edit their profile or change their avatar image.
 	/// Temp quarantines effectively change the user's accessLevel to `.quarantined` for the duration, after which the user's accessLevel reverts
 	/// to what it was previously.
@@ -650,17 +704,19 @@ struct SiteModController: SiteControllerUtils {
 		let response = try await apiQuery(req, endpoint: "/mod/user/\(userID)/tempquarantine/0", method: .POST)
 		return response.status
 	}
-	
+
 }
-	
+
 // MARK: - Utilities
 
-// Groups reports that are reporting on the same thing; returns `ReportContentGroup` array with one 
+// Groups reports that are reporting on the same thing; returns `ReportContentGroup` array with one
 // entry per reported content
 func generateContentGroups(from reports: [ReportModerationData]) -> [ReportContentGroup] {
 	var reportedContentArray = [ReportContentGroup]()
 	for report in reports {
-		if let index = reportedContentArray.firstIndex(where: { report.reportedID == $0.reportedID && report.type == $0.reportType }) {
+		if let index = reportedContentArray.firstIndex(where: {
+			report.reportedID == $0.reportedID && report.type == $0.reportType
+		}) {
 			var content = reportedContentArray[index]
 			content.openCount += report.isClosed ? 0 : 1
 			if report.handledBy != nil {
@@ -673,22 +729,28 @@ func generateContentGroups(from reports: [ReportModerationData]) -> [ReportConte
 			reportedContentArray[index] = content
 			continue
 		}
-		
+
 		var contentURL: String
 		switch report.type {
-			case .twarrt: 		contentURL = "/moderate/twarrt/\(report.reportedID)"
-			case .forumPost: 	contentURL = "/moderate/forumpost/\(report.reportedID)"
-			case .forum: 		contentURL = "/moderate/forum/\(report.reportedID)"
-			case .fez: 			contentURL = "/moderate/fez/\(report.reportedID)"
-			case .fezPost: 		contentURL = "/moderate/fezpost/\(report.reportedID)"
-			case .userProfile: 	contentURL = "/moderate/userprofile/\(report.reportedID)"
+		case .twarrt: contentURL = "/moderate/twarrt/\(report.reportedID)"
+		case .forumPost: contentURL = "/moderate/forumpost/\(report.reportedID)"
+		case .forum: contentURL = "/moderate/forum/\(report.reportedID)"
+		case .fez: contentURL = "/moderate/fez/\(report.reportedID)"
+		case .fezPost: contentURL = "/moderate/fezpost/\(report.reportedID)"
+		case .userProfile: contentURL = "/moderate/userprofile/\(report.reportedID)"
 		}
-		var newGroup = ReportContentGroup(reportType: report.type, reportedID: report.reportedID, reportedUser: report.reportedUser, 
-				firstReport: report, openCount: 0, handledBy: report.handledBy, contentURL: contentURL, reports: [report])
+		var newGroup = ReportContentGroup(
+			reportType: report.type,
+			reportedID: report.reportedID,
+			reportedUser: report.reportedUser,
+			firstReport: report,
+			openCount: 0,
+			handledBy: report.handledBy,
+			contentURL: contentURL,
+			reports: [report]
+		)
 		newGroup.openCount += report.isClosed ? 0 : 1
 		reportedContentArray.append(newGroup)
 	}
 	return reportedContentArray
 }
-
-

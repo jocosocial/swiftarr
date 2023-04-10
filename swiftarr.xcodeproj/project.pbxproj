@@ -16316,6 +16316,7 @@
 				EA20206927FA592C00F82C28 /* Resources */,
 			);
 			sourceTree = "<group>";
+			usesTabs = 1;
 		};
 		OBJ_500 /* Migration */ = {
 			isa = PBXGroup;

@@ -1,7 +1,7 @@
-import Vapor
 import Crypto
 import FluentSQL
 import LeafKit
+import Vapor
 
 struct GameListContext: Encodable {
 	var trunk: TrunkContext
@@ -10,7 +10,7 @@ struct GameListContext: Encodable {
 	var favoriteBtnURL: String
 	var searchText: String
 	var paginator: PaginatorContext
-	
+
 	// URL query options for the boardgame recommendation call
 	var query: QueryOptions
 	struct QueryOptions: Content {
@@ -41,7 +41,7 @@ struct GameListContext: Encodable {
 		paginator = .init(start: games.start, total: games.totalGames, limit: games.limit) { pageIndex in
 			"/boardgames?start=\(pageIndex * games.limit)&limit=\(games.limit)"
 		}
-		query = try req.query.decode(QueryOptions.self)		
+		query = try req.query.decode(QueryOptions.self)
 	}
 }
 
@@ -55,7 +55,6 @@ struct GameExpansionsContext: Encodable {
 	}
 }
 
-
 /// Pages for displaying board games in the onboard Board Game Library.
 struct SiteBoardgameController: SiteControllerUtils {
 
@@ -66,15 +65,15 @@ struct SiteBoardgameController: SiteControllerUtils {
 		openRoutes.get("boardgames", boardgameIDParam, "expansions", use: expansionPageHandler)
 		openRoutes.get("boardgames", boardgameIDParam, "createfez", use: createFezForGame)
 		openRoutes.get("boardgames", "guide", use: boardgameGuideHandler)
-		
+
 		// Routes that the user needs to be logged in to access.
 		let privateRoutes = getPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .gameslist))
 		privateRoutes.post("boardgames", boardgameIDParam, "favorite", use: addFavoriteGame)
 		privateRoutes.delete("boardgames", boardgameIDParam, "favorite", use: removeFavoriteGame)
 	}
-	
+
 	/// `GET /boardgames`
-	/// 
+	///
 	/// Returns a list of boardgames matching the query. Pageable.
 	///
 	/// Query Parameters:
@@ -88,9 +87,9 @@ struct SiteBoardgameController: SiteControllerUtils {
 		let gameListContext = try GameListContext(req, games: games)
 		return try await req.view.render("GamesAndSongs/boardgameList", gameListContext)
 	}
-	
+
 	/// `GET /boardgames/:boardgameID/expansions`
-	/// 
+	///
 	///
 	func expansionPageHandler(_ req: Request) async throws -> View {
 		guard let gameID = req.parameters.get(boardgameIDParam.paramString)?.percentEncodeFilePathEntry() else {
@@ -101,9 +100,9 @@ struct SiteBoardgameController: SiteControllerUtils {
 		let ctx = try GameExpansionsContext(req, games: games)
 		return try await req.view.render("GamesAndSongs/boardgameExpansions", ctx)
 	}
-	
+
 	/// `GET /boardgames/:boardgameID/createfez`
-	/// 
+	///
 	/// Opens the Create Fez page, prefilled with info aboutt he given board game.
 	func createFezForGame(_ req: Request) async throws -> View {
 		guard let gameID = req.parameters.get(boardgameIDParam.paramString)?.percentEncodeFilePathEntry() else {
@@ -123,15 +122,15 @@ struct SiteBoardgameController: SiteControllerUtils {
 			return try await req.view.render("Fez/fezCreate", ctx)
 		}
 	}
-	
+
 	/// `GET /boardgames/guide`
-	/// 
+	///
 	/// Finds boardgames that match a set of user's criteria. Uses a scoring system to find games that best match the criteria given in the URL query.
 	/// With no query, just shows the input form.
-	/// 
+	///
 	/// To avoid confusion: The API has both maxAge and minAge parameters. The URL query in the UI only has maxage, but considers the value 14
 	/// to actually be a minAge parameter.
-	/// 
+	///
 	/// Query Parameters:
 	/// - `numplayers=INT`		The desired number of players. Filters for games that allow this # of players, and sorts for recommendedPlayers close to this.
 	/// - `timetoplay=INT`		How much time you have to play. Filters for games with a avgPlayTime shorter than this, sorts for games with avgPlayTime close to this.
@@ -141,23 +140,29 @@ struct SiteBoardgameController: SiteControllerUtils {
 		let queryStruct = try req.query.decode(GameListContext.QueryOptions.self)
 		var games = BoardgameResponseData(totalGames: 0, start: 0, limit: 50, gameArray: [])
 		if let numPlayers = queryStruct.numplayers, let timeToPlay = queryStruct.timetoplay,
-				var maxAge = queryStruct.maxage, let complexity = queryStruct.complexity {
+			var maxAge = queryStruct.maxage, let complexity = queryStruct.complexity
+		{
 			var minAge = 0
 			if maxAge == 14 {
 				maxAge = 0
 				minAge = 14
 			}
-			let queryContent = BoardgameRecommendationData(numPlayers: numPlayers, timeToPlay: timeToPlay, maxAge: maxAge, 
-					minAge: minAge, complexity: complexity)
+			let queryContent = BoardgameRecommendationData(
+				numPlayers: numPlayers,
+				timeToPlay: timeToPlay,
+				maxAge: maxAge,
+				minAge: minAge,
+				complexity: complexity
+			)
 			let response = try await apiQuery(req, endpoint: "/boardgames/recommend", encodeContent: queryContent)
 			games = try response.content.decode(BoardgameResponseData.self)
 		}
 		let gameListContext = try GameListContext(req, games: games)
 		return try await req.view.render("GamesAndSongs/boardgameGuide", gameListContext)
 	}
-	
+
 	/// `GET /boardgame/:boardgameID/favorite`
-	/// 
+	///
 	func addFavoriteGame(_ req: Request) async throws -> HTTPStatus {
 		guard let gameID = req.parameters.get(boardgameIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing game ID parameter.")
@@ -167,7 +172,7 @@ struct SiteBoardgameController: SiteControllerUtils {
 	}
 
 	/// `DELETE /boardgame/:boardgameID/favorite`
-	/// 
+	///
 	func removeFavoriteGame(_ req: Request) async throws -> HTTPStatus {
 		guard let gameID = req.parameters.get(boardgameIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing game ID parameter.")

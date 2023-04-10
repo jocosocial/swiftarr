@@ -1,5 +1,5 @@
-import Vapor
 import Fluent
+import Vapor
 
 /// All API endpoints are protected by a minimum user access level.
 /// This `enum` structure MUST match the values in `CreateCustomEnums` in SchemaCreation.swift
@@ -31,33 +31,33 @@ extension UserAccessLevel {
 
 	static func fromRawString(_ str: String) -> Self? {
 		switch str {
-			case "unverified": return .unverified
-			case "banned": return .banned
-			case "quarantined": return .quarantined
-			case "verified": return .verified
-			case "client": return .client
-			case "moderator": return .moderator
-			case "twitarrteam": return .twitarrteam
-			case "tho": return .tho
-			case "admin": return .admin
-			default: return nil
+		case "unverified": return .unverified
+		case "banned": return .banned
+		case "quarantined": return .quarantined
+		case "verified": return .verified
+		case "client": return .client
+		case "moderator": return .moderator
+		case "twitarrteam": return .twitarrteam
+		case "tho": return .tho
+		case "admin": return .admin
+		default: return nil
 		}
 	}
 
 	func visibleName() -> String {
 		switch self {
-			case .unverified: return "Unverified"
-			case .banned: return "Banned"
-			case .quarantined: return "Quarantined"
-			case .verified: return "Verified"
-			case .client: return "Client"
-			case .moderator: return "Moderator"
-			case .twitarrteam: return "TwitarrTeam"
-			case .tho: return "THO"
-			case .admin: return "Administrator"
+		case .unverified: return "Unverified"
+		case .banned: return "Banned"
+		case .quarantined: return "Quarantined"
+		case .verified: return "Verified"
+		case .client: return "Client"
+		case .moderator: return "Moderator"
+		case .twitarrteam: return "TwitarrTeam"
+		case .tho: return "THO"
+		case .admin: return "Administrator"
 		}
 	}
-	
+
 	/// Ensures that the access level of self grants at least the access level given in `level`.
 	/// That is, UserAccessLevel.admin.hasAccess(.verified) returns true, while moderator.hasAccess(.admin) returns false.
 	/// Although this currently uses > to test, the method could be expanded to non-hierarchy access types--and we may need to,
@@ -65,20 +65,20 @@ extension UserAccessLevel {
 	func hasAccess(_ level: UserAccessLevel) -> Bool {
 		return self >= level
 	}
-	
-// MARK: Capability Queries
+
+	// MARK: Capability Queries
 
 	/// Returns TRUE iff this user is allowed to post their own content and edit or delete content they created..
 	func canCreateContent() -> Bool {
 		return self >= UserAccessLevel.verified
 	}
-	
-	/// Returns TRUE if this user is allowed to moderate others' content. This includes editing text, removing images, and 
+
+	/// Returns TRUE if this user is allowed to moderate others' content. This includes editing text, removing images, and
 	/// deleting posts. This capability does not include the ability to moderate users themselves.
 	func canEditOthersContent() -> Bool {
 		return self >= UserAccessLevel.moderator
 	}
-	
+
 	/// Returns TRUE if this user can change the access level of other users. The access level of Client users cannot be changed,
 	/// and only `admin` level users can set other users' access level to equal their own. For example `moderator` users can
 	/// change user levels FROM any of [unverified, banned, quarantined, verified] TO any of [unverified, banned, quarantined, verified].
@@ -91,17 +91,17 @@ extension UserAccessLevel: Comparable {
 	public static func < (lhs: UserAccessLevel, rhs: UserAccessLevel) -> Bool {
 		func orderFromEnum(val: Self) -> Int {
 			switch val {
-				case .unverified: return 1
-				case .banned: return 2
-				case .quarantined: return 3
-				case .verified: return 4
-				case .client: return 5
-				case .moderator: return 6
-				case .twitarrteam: return 7
-				case .tho: return 8
-				case .admin: return 9
+			case .unverified: return 1
+			case .banned: return 2
+			case .quarantined: return 3
+			case .verified: return 4
+			case .client: return 5
+			case .moderator: return 6
+			case .twitarrteam: return 7
+			case .tho: return 8
+			case .admin: return 9
 			}
 		}
-		return orderFromEnum(val: lhs) < orderFromEnum(val: rhs)   		
-   }
+		return orderFromEnum(val: lhs) < orderFromEnum(val: rhs)
+	}
 }

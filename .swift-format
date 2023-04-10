@@ -4,5 +4,10 @@
   },
   "lineLength" : 120,
   "tabWidth" : 4,
-  "version" : 1
+  "version" : 1,
+  "respectsExistingLineBreaks": true,
+  "maximumBlankLines": 1,
+  "lineBreakBeforeEachArgument": true,
+  "lineBreakBeforeControlFlowKeywords": true,
+  "lineBreakAroundMultilineExpressionChainComponents": true
 }

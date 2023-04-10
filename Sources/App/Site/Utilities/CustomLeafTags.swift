@@ -5,10 +5,10 @@
 //  Created by Chall Fry on 4/21/21.
 //
 
-import Vapor
-import Leaf
 import Foundation
 import Ink
+import Leaf
+import Vapor
 
 /// This tag should output-sanitize all string values in self, replacing existing values.
 /// For each string, it should encode the chars &<>"'/ into their HTML entities, preventing them from being interpreted as HTML
@@ -31,7 +31,7 @@ import Ink
 //			default: continue
 //			}
 //		}
-//		
+//
 //		return string
 //	}
 //
@@ -49,13 +49,18 @@ import Ink
 ///
 /// Usage: #addJocomoji(String) -> String
 struct AddJocomojiTag: UnsafeUnescapedLeafTag {
-	static let jocomoji = [ "buffet", "die-ship", "die", "hottub", "joco", "pirate", "ship-front",
-			"ship", "towel-monkey", "tropical-drink", "wangwang", "zombie" ]
-			
+	static let jocomoji = [
+		"buffet", "die-ship", "die", "hottub", "joco", "pirate", "ship-front",
+		"ship", "towel-monkey", "tropical-drink", "wangwang", "zombie",
+	]
+
 	static func process(_ str: String) -> String {
 		var string = str
 		for emojiTag in AddJocomojiTag.jocomoji {
-			string = string.replacingOccurrences(of: ":\(emojiTag):", with: "<img src=\"/img/emoji/small/\(emojiTag).png\" width=18 height=18>")
+			string = string.replacingOccurrences(
+				of: ":\(emojiTag):",
+				with: "<img src=\"/img/emoji/small/\(emojiTag).png\" width=18 height=18>"
+			)
 		}
 		return string
 	}
@@ -65,13 +70,13 @@ struct AddJocomojiTag: UnsafeUnescapedLeafTag {
 		guard var string = ctx.parameters[0].string else {
 			return LeafData.string("")
 		}
-		
+
 		// Sanitize first to remove any existing tags. Also ensure the inline <img> tags we're about to add don't get nuked
 		string = AddJocomojiTag.process(string.htmlEscaped())
-		
+
 		// Also convert newlines to HTML breaks.
 		string = string.replacingOccurrences(of: "\r", with: "<br>")
-		
+
 		return LeafData.string(string)
 	}
 }
@@ -95,10 +100,10 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		guard var string = ctx.parameters[0].string else {
 			return LeafData.string("")
 		}
-		
+
 		// Sanitize, then add jocomoji.
 		string = AddJocomojiTag.process(string.htmlEscaped())
-		
+
 		var words = string.split(separator: " ", omittingEmptySubsequences: false)
 		words = words.map {
 			if $0.hasPrefix("@") && $0.count <= 50 && $0.count >= 3 {
@@ -106,19 +111,23 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 				let firstValidUsernameIndex = scalars.index(scalars.startIndex, offsetBy: 1)
 				var firstNonUsernameIndex = firstValidUsernameIndex
 				// Move forward to the last char that's valid in a username
-				while firstNonUsernameIndex < scalars.endIndex, CharacterSet.validUsernameChars.contains(scalars[firstNonUsernameIndex]) {
-					scalars.formIndex(after: &firstNonUsernameIndex)		
+				while firstNonUsernameIndex < scalars.endIndex,
+					CharacterSet.validUsernameChars.contains(scalars[firstNonUsernameIndex])
+				{
+					scalars.formIndex(after: &firstNonUsernameIndex)
 				}
-				// Separator chars can't be at the end. Move backward until we get a non-separator. This check fixes posts with 
-				// constructions like "Hello, @admin." where the period ends a sentence. 
-				while firstNonUsernameIndex > firstValidUsernameIndex, 
-						CharacterSet.usernameSeparators.contains(scalars[scalars.index(before: firstNonUsernameIndex)]) {
-					scalars.formIndex(before: &firstNonUsernameIndex)		
+				// Separator chars can't be at the end. Move backward until we get a non-separator. This check fixes posts with
+				// constructions like "Hello, @admin." where the period ends a sentence.
+				while firstNonUsernameIndex > firstValidUsernameIndex,
+					CharacterSet.usernameSeparators.contains(scalars[scalars.index(before: firstNonUsernameIndex)])
+				{
+					scalars.formIndex(before: &firstNonUsernameIndex)
 				}
 				// After trimming, username must be >=2 chars, plus the @ sign makes 3.
 				if scalars.distance(from: scalars.startIndex, to: firstNonUsernameIndex) >= 3,
-						let name = String(scalars[firstValidUsernameIndex..<firstNonUsernameIndex])
-						.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) {
+					let name = String(scalars[firstValidUsernameIndex..<firstNonUsernameIndex])
+						.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)
+				{
 					// We could in theory ask UserCache if the username actually exists. But that breaks separation
 					// between site and API, and every other method of checking the username is async. Even then, we may not
 					// have access to the Request from here.
@@ -131,13 +140,16 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 				let firstValidHashtagIndex = scalars.index(scalars.startIndex, offsetBy: 1)
 				var firstNonHashtagIndex = firstValidHashtagIndex
 				// Move forward to the last char that's valid in a hashtag
-				while firstNonHashtagIndex < scalars.endIndex, CharacterSet.alphanumerics.contains(scalars[firstNonHashtagIndex]) {
-					scalars.formIndex(after: &firstNonHashtagIndex)		
+				while firstNonHashtagIndex < scalars.endIndex,
+					CharacterSet.alphanumerics.contains(scalars[firstNonHashtagIndex])
+				{
+					scalars.formIndex(after: &firstNonHashtagIndex)
 				}
 				// After trimming, hashtag must be >=2 chars, plus the # sign makes 3.
 				if scalars.distance(from: scalars.startIndex, to: firstNonHashtagIndex) >= 3,
-						let hashtag = String(scalars[firstValidHashtagIndex..<firstNonHashtagIndex])
-						.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+					let hashtag = String(scalars[firstValidHashtagIndex..<firstNonHashtagIndex])
+						.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
+				{
 					let restOfString = String(scalars[firstNonHashtagIndex...])
 					var searchHref: String
 					switch usage {
@@ -159,12 +171,12 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		if string.hasPrefix("&lt;Markdown&gt;") {
 			string.removeFirst("&lt;Markdown&gt;".lengthOfBytes(using: .utf8))
 			let parser = MarkdownParser()
-//			parser.addModifier(Modifier(target: .headings, closure: { html, markdown in
-//				if html.hasPrefix("<h") {
-//					return "<h5>\(html.dropFirst(4).dropLast(5))</h5>"
-//				}
-//				return html
-//			}))
+			//			parser.addModifier(Modifier(target: .headings, closure: { html, markdown in
+			//				if html.hasPrefix("<h") {
+			//					return "<h5>\(html.dropFirst(4).dropLast(5))</h5>"
+			//				}
+			//				return html
+			//			}))
 			let html = parser.html(from: string)
 			return LeafData.string(html)
 		}
@@ -174,7 +186,7 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		string = string.replacingOccurrences(of: "\r\n", with: "<br>")
 		string = string.replacingOccurrences(of: "\r", with: "<br>")
 		string = string.replacingOccurrences(of: "\n", with: "<br>")
-		
+
 		// Links in posts should be automatically clickable. Similarly, we desire to shorten Twitarr
 		// specific links. Maybe someday we could parse them and give some linktext?
 		// e.g. "http://192.168.0.19:8081/fez/ADDBA5D9-1154-4033-88AE-07B12F3AE162"
@@ -203,7 +215,7 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 	///   - matches: Array of regex matching ranges.
 	/// - Returns: void
 	///
-	private func processUrlMatches(string: inout String, matches: [NSTextCheckingResult]) -> Void {
+	private func processUrlMatches(string: inout String, matches: [NSTextCheckingResult]) {
 		// We reverse the matches since we're gonna manipulate the string and insert characters (ie, HTML)
 		// so we want to preserve the range indices if there are multiple matches within the same string.
 		for match in matches.reversed() {
@@ -219,7 +231,7 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 			// not a valid URL and usually 404's, so we chomp off that last period from the match.
 			// https://stackoverflow.com/questions/24122288/remove-last-character-from-string-swift-language
 			//
-			// A future consideration could be to insert a special unicode character or sequence that the 
+			// A future consideration could be to insert a special unicode character or sequence that the
 			// frontend JS can detect and give users a popup saying their URL has been messed with.
 			var urlTextSuffix = ""
 			if urlStr.hasSuffix(".") {
@@ -230,56 +242,64 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 			// at is preserved. The browser will automatically handle this for us.
 			// Only do this for URLs that have a real path (ie, not top level).
 			guard var components = URLComponents(string: urlStr) else { continue }
-			if Settings.shared.canonicalHostnames.contains(components.host ?? "") && !["", "/"].contains(components.path) {
+			if Settings.shared.canonicalHostnames.contains(components.host ?? "")
+				&& !["", "/"].contains(components.path)
+			{
 				(components.scheme, components.host, components.port) = (nil, nil, nil)
 				var linkText = components.string
 				if let url = URL(string: urlStr), url.pathComponents.count > 1, url.pathComponents[0] == "/" {
 					switch url.pathComponents[1] {
-						case "tweets": linkText = "[Twitarr Tweet Link]"
-						case "forums": 
-							if url.pathComponents.count == 2 {
-								linkText = "[Forum Categories Link]"
+					case "tweets": linkText = "[Twitarr Tweet Link]"
+					case "forums":
+						if url.pathComponents.count == 2 {
+							linkText = "[Forum Categories Link]"
+						}
+						else {
+							linkText = "[Forum Category Link]"
+						}
+					case "forum": linkText = "[Forum Link]"
+					case "seamail": linkText = "[Seamail Link]"
+					case "fez":
+						if url.pathComponents.count > 2 {
+							switch url.pathComponents[2] {
+							case "joined": linkText = "[Joined LFGs Link]"
+							case "owned": linkText = "[Your LFGs Link]"
+							case "faq": linkText = "[LFG FAQ Link]"
+							default: linkText = "[LFG Link]"
 							}
-							else {
-								linkText = "[Forum Category Link]"
-							}
-						case "forum": linkText = "[Forum Link]"
-						case "seamail": linkText = "[Seamail Link]"
-						case "fez": 
-							if url.pathComponents.count > 2 {
-								switch url.pathComponents[2] {
-									case "joined": linkText = "[Joined LFGs Link]"
-									case "owned": linkText = "[Your LFGs Link]"
-									case "faq": linkText = "[LFG FAQ Link]"
-									default: linkText = "[LFG Link]"
-								}
-							}
-							else {
-								linkText = "[LFGs Link]"
-							}
-						case "events": linkText = "[Events Link]"
-						case "user", "profile": linkText = "[User Link]"
-						case "boardgames": 
-							if url.pathComponents.count > 2 {
-								linkText = "[Boardgame Link]"
-							}
-							else {
-								linkText = "[Boardgames Link]"
-							}
-						case "karaoke": linkText = "[Karaoke Link]"
-						default: linkText = "[Twitarr Link]"
+						}
+						else {
+							linkText = "[LFGs Link]"
+						}
+					case "events": linkText = "[Events Link]"
+					case "user", "profile": linkText = "[User Link]"
+					case "boardgames":
+						if url.pathComponents.count > 2 {
+							linkText = "[Boardgame Link]"
+						}
+						else {
+							linkText = "[Boardgames Link]"
+						}
+					case "karaoke": linkText = "[Karaoke Link]"
+					default: linkText = "[Twitarr Link]"
 					}
 				}
 				// Replace the link's text with a wiki-like linkbox describing where the link goes
-				string.replaceSubrange(stringRange, with: "<a href=\"\(components.string!)\">\(linkText!)</a>\(urlTextSuffix)")
+				string.replaceSubrange(
+					stringRange,
+					with: "<a href=\"\(components.string!)\">\(linkText!)</a>\(urlTextSuffix)"
+				)
 			}
 			else {
 				// This is where we replace the text in the Leaf string with the newly crafted <a> element.
-				string.replaceSubrange(stringRange, with: "<a href=\"\(components.string!)\">\(components.string!)</a>\(urlTextSuffix)")
+				string.replaceSubrange(
+					stringRange,
+					with: "<a href=\"\(components.string!)\">\(components.string!)</a>\(urlTextSuffix)"
+				)
 			}
 		}
 	}
-	
+
 	enum Usage {
 		case twarrt
 		case forumpost
@@ -290,7 +310,7 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 	let genericUrlRegex: NSRegularExpression
 	init(_ forUsage: Usage) throws {
 		usage = forUsage
-		
+
 		// Let https://regex101.com/ be your guide on this spiritual journey.
 		// This regex matches any URL starting in http:// or https://.
 		// Certain browsers (looking at you Safari on iOS) do not prefix the scheme in pasted links from the linkbar.
@@ -298,13 +318,15 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		// To be at least a little bit safe we replace all hostname dots (twittar.com) with regex-escaped literal dots.
 		// The canonicalNamesRegexStr has both http and https seperated because lookbacks must be of fixed length.
 		// So https?:// is unavailable which makes me sad.
-		let escapedCanonicalHostnames = Settings.shared.canonicalHostnames.joined(separator: "|").replacingOccurrences(of: ".", with: "\\.")
-		let genericUrlRegexStr = "(?i)\\b((?:https?:(?:/{1,3}|[a-z0-9%])|\(escapedCanonicalHostnames)/)(?:[^\\s()<>{}\\[\\]]+|\\([^\\s()]*?\\([^\\s()]+\\)[^\\s()]*?\\)|\\([^\\s]+?\\))+(?:\\([^\\s()]*?\\([^\\s()]+\\)[^\\s()]*?\\)|\\([^\\s]+?\\)|[^\\s`!()\\[\\]{};:'\".,<>?«»“”‘’])|(?:(?<!@)\(escapedCanonicalHostnames)\\b/?(?!@)))"
+		let escapedCanonicalHostnames = Settings.shared.canonicalHostnames.joined(separator: "|")
+			.replacingOccurrences(of: ".", with: "\\.")
+		let genericUrlRegexStr =
+			"(?i)\\b((?:https?:(?:/{1,3}|[a-z0-9%])|\(escapedCanonicalHostnames)/)(?:[^\\s()<>{}\\[\\]]+|\\([^\\s()]*?\\([^\\s()]+\\)[^\\s()]*?\\)|\\([^\\s]+?\\))+(?:\\([^\\s()]*?\\([^\\s()]+\\)[^\\s()]*?\\)|\\([^\\s]+?\\)|[^\\s`!()\\[\\]{};:'\".,<>?«»“”‘’])|(?:(?<!@)\(escapedCanonicalHostnames)\\b/?(?!@)))"
 		genericUrlRegex = try NSRegularExpression(pattern: genericUrlRegexStr, options: .caseInsensitive)
 	}
 }
 
-/// Turns a Date string into a relative date string. Argument is a ISO8601 formatted Date, or what JSON encoding 
+/// Turns a Date string into a relative date string. Argument is a ISO8601 formatted Date, or what JSON encoding
 /// does to Date values. Output is a string giving a relative time in the past (from now) indicating the approximate time of the Date.
 ///
 ///	Output is constrained to a single element. e.g: "3 hours ago", "1 day ago", "5 minutes ago"
@@ -320,30 +342,42 @@ struct RelativeTimeTag: LeafTag {
 		if date.timeIntervalSinceNow > -1.0 {
 			return "a second ago"
 		}
-		
+
 		// If the date is Date.distantPast
 		let daySecs = 60 * 60 * 24
 		if date.timeIntervalSinceNow < Double(0 - daySecs * 365 * 100) {
 			return ""
 		}
-		
+
 		let hour = 60.0 * 60.0
 		let day = hour * 24.0
 		let month = day * 30.0
 		let year = day * 365.0
 		let interval = Date().timeIntervalSince(date)
-		
-		// Initially I'd just used DateComponentsFormatter to produce human-readable relative time strings. 
+
+		// Initially I'd just used DateComponentsFormatter to produce human-readable relative time strings.
 		// However, swift-corelibs-foundation doesn't support DateComponentsFormatter as yet, which means Linux builds fail.
 		switch interval {
-			case 0..<1: return "just now"
-			case 1..<60: let secs = Int(interval); return LeafData.string("\(secs) second\(secs == 1 ? "" : "s") ago")
-			case 60..<hour: let mins = Int(interval / 60.0); return LeafData.string("\(mins) minute\(mins == 1 ? "" : "s") ago")
-			case hour..<day: let hours = Int(interval / hour); return LeafData.string("\(hours) hour\(hours == 1 ? "" : "s") ago")
-			case day..<month: let days = Int(interval / day); return LeafData.string("\(days) day\(days == 1 ? "" : "s") ago")
-			case month..<year: let months = Int(interval / month); return LeafData.string("\(months) month\(months == 1 ? "" : "s") ago")
-			case year..<year * 10: let years = Int(interval / year); return LeafData.string("\(years) year\(years == 1 ? "" : "s") ago")
-			default: return "some time ago"
+		case 0..<1: return "just now"
+		case 1..<60:
+			let secs = Int(interval)
+			return LeafData.string("\(secs) second\(secs == 1 ? "" : "s") ago")
+		case 60..<hour:
+			let mins = Int(interval / 60.0)
+			return LeafData.string("\(mins) minute\(mins == 1 ? "" : "s") ago")
+		case hour..<day:
+			let hours = Int(interval / hour)
+			return LeafData.string("\(hours) hour\(hours == 1 ? "" : "s") ago")
+		case day..<month:
+			let days = Int(interval / day)
+			return LeafData.string("\(days) day\(days == 1 ? "" : "s") ago")
+		case month..<year:
+			let months = Int(interval / month)
+			return LeafData.string("\(months) month\(months == 1 ? "" : "s") ago")
+		case year..<year * 10:
+			let years = Int(interval / year)
+			return LeafData.string("\(years) year\(years == 1 ? "" : "s") ago")
+		default: return "some time ago"
 		}
 	}
 }
@@ -362,7 +396,7 @@ struct RelativeTimeTag: LeafTag {
 /// is currently no functional difference between EvenTimeTag and FezTimeTag. It is being left in
 /// the code so that some day we can define programatic timezone transitions and not have to do
 /// munging of the input.
-/// 
+///
 /// Usage in Leaf templates:: #eventTime(startTime, endTime) -> String
 struct EventTimeTag: LeafTag {
 	func render(_ ctx: LeafContext) throws -> LeafData {
@@ -389,7 +423,7 @@ struct EventTimeTag: LeafTag {
 }
 
 /// Returns a string descibing when an LFG is taking place. Shows both the start and end time.
-/// 
+///
 /// Usage in Leaf templates:: #fezTime(startTime, endTime) -> String
 struct FezTimeTag: LeafTag {
 	func render(_ ctx: LeafContext) throws -> LeafData {
@@ -484,7 +518,8 @@ struct CruiseDayIndexTag: LeafTag {
 		guard let startTimeDouble = ctx.parameters[0].double else {
 			throw "Leaf: Unable to convert parameter to double for date"
 		}
-		let difference = Date(timeIntervalSince1970: startTimeDouble).timeIntervalSince(Settings.shared.cruiseStartDate()) - 3600 * 3
+		let difference =
+			Date(timeIntervalSince1970: startTimeDouble).timeIntervalSince(Settings.shared.cruiseStartDate()) - 3600 * 3
 		let dayIndex = String(Int(floor(difference / (3600.0 * 24.0))))
 		return LeafData.string(dayIndex)
 	}
@@ -504,7 +539,8 @@ struct AvatarTag: UnsafeUnescapedLeafTag {
 			imgSize = tempSize
 		}
 		guard ctx.parameters.count >= 1, let userHeader = ctx.parameters[0].dictionary,
-				let userID = userHeader["userID"]?.string else {
+			let userID = userHeader["userID"]?.string
+		else {
 			throw "Leaf: avatarTag tag unable to get user header."
 		}
 		let imgLoadSize = imgSize > Settings.shared.imageThumbnailSize ? "full" : "thumb"
@@ -521,13 +557,14 @@ struct AvatarTag: UnsafeUnescapedLeafTag {
 ///
 /// Usage: #userByline(userHeader)
 /// Or: #userByline(userHeader, "css-class") to style the link
-/// Or: #userByline(userHeader, "short") to display a shorter link (only the username, no displayname). 
+/// Or: #userByline(userHeader, "short") to display a shorter link (only the username, no displayname).
 /// Or: #userByline(userHeader, "nolink") to display the username and displayname, without a link
 struct UserBylineTag: UnsafeUnescapedLeafTag {
 	func render(_ ctx: LeafContext) throws -> LeafData {
 		guard ctx.parameters.count >= 1, let userHeader = ctx.parameters[0].dictionary,
-			  let userID = userHeader["userID"]?.string,
-			  let username = userHeader["username"]?.string?.htmlEscaped() else {
+			let userID = userHeader["userID"]?.string,
+			let username = userHeader["username"]?.string?.htmlEscaped()
+		else {
 			throw "Leaf: userByline tag unable to get user header."
 		}
 		var styling = ""
@@ -537,8 +574,11 @@ struct UserBylineTag: UnsafeUnescapedLeafTag {
 		if styling == "nolink" {
 			let displayName = userHeader["displayName"]?.string?.htmlEscaped() ?? ""
 			return LeafData.string("<b>\(displayName)</b> @\(username)")
-		} else if styling != "short", let displayName = userHeader["displayName"]?.string?.htmlEscaped() {
-			return LeafData.string("<a class=\"\(styling)\" href=\"/user/\(userID)\"><b>\(displayName)</b> @\(username)</a>")
+		}
+		else if styling != "short", let displayName = userHeader["displayName"]?.string?.htmlEscaped() {
+			return LeafData.string(
+				"<a class=\"\(styling)\" href=\"/user/\(userID)\"><b>\(displayName)</b> @\(username)</a>"
+			)
 		}
 		else {
 			return LeafData.string("<a class=\"\(styling)\" href=\"/user/\(userID)\">@\(username)</a>")
@@ -558,4 +598,3 @@ struct GameRatingTag: LeafTag {
 		return LeafData.string(str)
 	}
 }
-

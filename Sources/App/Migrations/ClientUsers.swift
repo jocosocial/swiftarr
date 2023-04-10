@@ -1,6 +1,6 @@
-import Vapor
-import Fluent
 import Crypto
+import Fluent
+import Vapor
 
 /// A `Migration` that creates a set of registered client users during startup, from a
 /// `registered-clients.txt` file located in the `seeds/` subdirectory of the project. The file
@@ -29,12 +29,18 @@ struct CreateClientUsers: AsyncMigration {
 	/// - Returns: Void.
 	func prepare(on database: Database) async throws {
 		// get file containing client triplets
-		let clients = getClients().map { client in
-			User(username: client.clientName, password: client.clientPassword, recoveryKey: client.clientRecoveryKey, accessLevel: .client)
-		}
+		let clients = getClients()
+			.map { client in
+				User(
+					username: client.clientName,
+					password: client.clientPassword,
+					recoveryKey: client.clientRecoveryKey,
+					accessLevel: .client
+				)
+			}
 		try await clients.create(on: database)
 	}
-	
+
 	/// Required by `Migration` protocol, but this isn't a model update, so just return a
 	/// pre-completed `Future`.
 	///
@@ -45,26 +51,28 @@ struct CreateClientUsers: AsyncMigration {
 		let clientNames = getClients().map { $0.clientName }
 		try await User.query(on: database).filter(\.$username ~~ clientNames).delete()
 	}
-	
+
 	func getClients() -> [ClientUserData] {
 		// get file containing client triplets
 		let clientsFile: String
 		do {
-			if (try Environment.detect().isRelease) {
+			if try Environment.detect().isRelease {
 				// use static set of clients if just testing
 				clientsFile = "registered-clients.txt"
-			} else {
+			}
+			else {
 				clientsFile = "test-registered-clients.txt"
 			}
 			// read file as string
 			let clientsPath = Settings.shared.seedsDirectoryPath.appendingPathComponent(clientsFile)
 			guard let data = FileManager.default.contents(atPath: clientsPath.path),
-					let dataString = String(bytes: data, encoding: .utf8) else {
+				let dataString = String(bytes: data, encoding: .utf8)
+			else {
 				fatalError("Could not read clients file at \(clientsPath).")
 			}
 			// transform to array
 			let clientsArray = dataString.components(separatedBy: .newlines)
-			
+
 			// add as `User`s
 			var clients: [ClientUserData] = []
 			for clientString in clientsArray {
@@ -86,16 +94,21 @@ struct CreateClientUsers: AsyncMigration {
 				let password = try? Bcrypt.hash(triad[1].trimmingCharacters(in: .whitespaces), cost: 9)
 				let recovery = try? Bcrypt.hash(normalizedKey, cost: 9)
 				guard let passwordHash = password,
-					let recoveryHash = recovery else {
-						fatalError("could not create client users: password hash failed")
+					let recoveryHash = recovery
+				else {
+					fatalError("could not create client users: password hash failed")
 				}
-				let newClient = ClientUserData(clientName: clientName, clientPassword: passwordHash, clientRecoveryKey:recoveryHash)
+				let newClient = ClientUserData(
+					clientName: clientName,
+					clientPassword: passwordHash,
+					clientRecoveryKey: recoveryHash
+				)
 				clients.append(newClient)
 			}
 			return clients
-		} catch let error {
+		}
+		catch let error {
 			fatalError("Environment.detect() failed! error: \(error)")
 		}
 	}
 }
-

@@ -1,17 +1,17 @@
-import Vapor
 import Crypto
-import FluentSQL
 import Fluent
-import Redis
+import FluentSQL
 import Metrics
+import Redis
+import Vapor
 
 /// The collection of `/api/v3/client/*` route endpoints and handler functions that provide
 /// bulk retrieval services for registered API clients.
 
 struct ClientController: APIRouteCollection {
-	
+
 	// MARK: RouteCollection Conformance
-	
+
 	/// Required. Registers routes to the incoming router.
 	func registerRoutes(_ app: Application) throws {
 
@@ -25,7 +25,7 @@ struct ClientController: APIRouteCollection {
 		let tokenAuthGroup = addTokenCacheAuthGroup(to: clientRoutes)
 		tokenAuthGroup.get("user", "updates", "since", ":date", use: userUpdatesHandler)
 		tokenAuthGroup.get("usersearch", use: userSearchHandler)
-		
+
 		// Endpoints available with HTTP Basic auth. I'd prefer token auth for this, but setting that up looks difficult.
 		let basicAuthGroup = addBasicAuthGroup(to: clientRoutes)
 		basicAuthGroup.get("metrics", use: prometheusMetricsSource)
@@ -35,7 +35,7 @@ struct ClientController: APIRouteCollection {
 	// MARK: - tokenAuthGroup Handlers (logged in)
 	// All handlers in this route group require a valid HTTP Bearer Authentication
 	// header in the request.
-		
+
 	/// `GET /api/v3/client/usersearch`
 	///
 	/// Retrieves all `UserProfile.userSearch` values, returning an array of precomposed
@@ -56,8 +56,9 @@ struct ClientController: APIRouteCollection {
 		}
 		// must be on behalf of user
 		guard let userHeader = req.headers["x-swiftarr-user"].first,
-			let userID = UUID(uuidString: userHeader) else {
-				throw Abort(.unauthorized, reason: "no valid 'x-swiftarr-user' header found")
+			let userID = UUID(uuidString: userHeader)
+		else {
+			throw Abort(.unauthorized, reason: "no valid 'x-swiftarr-user' header found")
 		}
 		// find user
 		guard let user = try await User.find(userID, on: req.db) else {
@@ -73,7 +74,7 @@ struct ClientController: APIRouteCollection {
 		// return as [UserSearch]
 		return try users.map { try UserSearch(userID: $0.requireID(), userSearch: $0.userSearch) }
 	}
-	
+
 	/// `GET /api/v3/client/user/updates/since/DATE`
 	///
 	/// Retrieves the `UserHeader` of all users with a `.profileUpdatedAt` timestamp later
@@ -99,8 +100,9 @@ struct ClientController: APIRouteCollection {
 		}
 		// must be on behalf of user
 		guard let userHeader = req.headers["x-swiftarr-user"].first,
-			let userID = UUID(uuidString: userHeader) else {
-				throw Abort(.unauthorized, reason: "no valid 'x-swiftarr-user' header found")
+			let userID = UUID(uuidString: userHeader)
+		else {
+			throw Abort(.unauthorized, reason: "no valid 'x-swiftarr-user' header found")
 		}
 		// parse date parameter
 		let since = req.parameters.get("date")!
@@ -117,7 +119,7 @@ struct ClientController: APIRouteCollection {
 		}
 		return try req.userCache.getHeaders(fromDate: date, forUser: user)
 	}
-	
+
 	/// `GET /api/v3/client/metrics`
 	///
 	/// For use with [Prometheus](https://prometheus.io), a server metrics package. When a Prometheus server process
@@ -129,13 +131,15 @@ struct ClientController: APIRouteCollection {
 	/// plus a bunch of other metrics data. All the data is in some opaquish Prometheus format.
 	func prometheusMetricsSource(_ req: Request) -> EventLoopFuture<String> {
 		let promise = req.eventLoop.makePromise(of: String.self)
-		DispatchQueue.global().async {
-			do {
-				try MetricsSystem.prometheus().collect(into: promise)
-			} catch {
-				promise.fail(error)
+		DispatchQueue.global()
+			.async {
+				do {
+					try MetricsSystem.prometheus().collect(into: promise)
+				}
+				catch {
+					promise.fail(error)
+				}
 			}
-		}
 		return promise.futureResult
 	}
 
@@ -153,7 +157,7 @@ struct ClientController: APIRouteCollection {
 	///
 	/// This should be used very judiciously and only for actionable alerts! On-call sucks in the real world and I don't want
 	/// people to get spammed with messages while on vacation.
-	/// 
+	///
 	/// - Throws: 403 error if user is not a registered client.
 	/// - Returns: 201 created.
 	func prometheusAlertHandler(_ req: Request) async throws -> Response {
@@ -171,7 +175,10 @@ struct ClientController: APIRouteCollection {
 				throw Abort(.badRequest, reason: "Could not decode participants. Requires annotation.")
 			}
 			guard let destinationUsernames = alert.annotations["participants"]?.components(separatedBy: ",") else {
-				throw Abort(.badRequest, reason: "Could not decode participants. Requires comma-separated list of usernames.")
+				throw Abort(
+					.badRequest,
+					reason: "Could not decode participants. Requires comma-separated list of usernames."
+				)
 			}
 			var destinationUserHeaders: [UserHeader] = []
 			for destinationUsername in destinationUsernames {
@@ -184,8 +191,13 @@ struct ClientController: APIRouteCollection {
 			req.logger.warning("\(alertSubject)")
 			// I speak Python, and "list comprehension" is not nearly as easy here. Fortunately the toUserIDs magic
 			// was adapted from https://stackoverflow.com/questions/24003584/list-comprehension-in-swift
-			try await sendSimpleSeamail(req, fromUserID: sourceUserHeader.userID, toUserIDs: destinationUserHeaders.map {$0.userID}, 
-				subject: alertSubject, initialMessage: alert.getSummary())
+			try await sendSimpleSeamail(
+				req,
+				fromUserID: sourceUserHeader.userID,
+				toUserIDs: destinationUserHeaders.map { $0.userID },
+				subject: alertSubject,
+				initialMessage: alert.getSummary()
+			)
 		}
 
 		// It's possible that Alertmanager could do something with the information
@@ -201,7 +213,7 @@ struct ClientController: APIRouteCollection {
 	/// requests but the app wasn't listening yet. This healthcheck won't complete
 	/// successfully unless the app has started so it's a good barometer of when we're
 	/// ready to service requests.
-	/// 
+	///
 	/// - Throws: 500 error if Redis or Postgres are unhappy.
 	/// - Returns: 200 OK.
 	func healthHandler(_ req: Request) async throws -> HealthResponse {

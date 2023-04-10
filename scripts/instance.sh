@@ -19,11 +19,10 @@
 # specific directories in the repo, we use Git voodoo to cd to the right place for
 # this script. Then regardless if the compose fails we'll go back to where their
 # shell started.
-CURRENT_DIR=$(pwd)
 GIT_ROOT=$(git rev-parse --show-toplevel)
 
-cd $GIT_ROOT
+pushd $GIT_ROOT
 COMPOSE_PROJECT_NAME="swiftarr_instance"
 COMPOSE_FILE="scripts/docker-compose-instance.yml"
 docker-compose -p ${COMPOSE_PROJECT_NAME} -f ${COMPOSE_FILE} "$@"
-cd $CURRENT_DIR
+popd  # not really required for subshells, but good practice anyway

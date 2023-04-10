@@ -1,32 +1,30 @@
-import Vapor
 import Fluent
+import Vapor
 
-/**
-	When a `UserProfile` is edited, a `ProfileEdit` is created and associated with the
-	profile. The `ProfileEdit` records the state of the profile just before the edit occurred.
-	
-	This is done for accountability purposes and the data collected is intended to be viewable
-	only by users with an access level of `.moderator` or above.
-
-	- See Also: [CreateProfileEditSchema](CreateProfileEditSchema) the Migration for creating the ProfileEdit table in the database.
-*/
+/// 	When a `UserProfile` is edited, a `ProfileEdit` is created and associated with the
+/// 	profile. The `ProfileEdit` records the state of the profile just before the edit occurred.
+///
+/// 	This is done for accountability purposes and the data collected is intended to be viewable
+/// 	only by users with an access level of `.moderator` or above.
+///
+/// 	- See Also: [CreateProfileEditSchema](CreateProfileEditSchema) the Migration for creating the ProfileEdit table in the database.
 final class ProfileEdit: Model {
 	static let schema = "profileedit"
-	
+
 	// MARK: Properties
-	
+
 	/// The edit's ID.
 	@ID(key: .id) var id: UUID?
-		
+
 	/// The `UserProfileData` contents of the user's profile, just before the edit.
 	@OptionalField(key: "profileData") var profileData: UserProfileUploadData?
 
 	/// The user's userImage filename, just before the edit.
 	@OptionalField(key: "profileImage") var profileImage: String?
-	
+
 	/// Timestamp of the model's creation, set automatically.
 	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
-	
+
 	// MARK: Relations
 
 	/// The `User` whose profile got edited.
@@ -34,12 +32,12 @@ final class ProfileEdit: Model {
 
 	/// The `User` that performed the edit. Equal to `user` if someone's editing their own profile.
 	@Parent(key: "editor") var editor: User
-		
+
 	// MARK: Initialization
-	
+
 	// Used by Fluent
- 	init() { }
- 	
+	init() {}
+
 	/// Initializes a new ProfileEdit.
 	///
 	/// - Parameters:
@@ -58,17 +56,16 @@ final class ProfileEdit: Model {
 struct CreateProfileEditSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		try await database.schema("profileedit")
-				.id()
-				.field("profileData", .dictionary)
-				.field("profileImage", .string)
-				.field("created_at", .datetime)
- 				.field("user", .uuid, .required, .references("user", "id"))
- 				.field("editor", .uuid, .required, .references("user", "id"))
-				.create()
+			.id()
+			.field("profileData", .dictionary)
+			.field("profileImage", .string)
+			.field("created_at", .datetime)
+			.field("user", .uuid, .required, .references("user", "id"))
+			.field("editor", .uuid, .required, .references("user", "id"))
+			.create()
 	}
-	
+
 	func revert(on database: Database) async throws {
 		try await database.schema("profileedit").delete()
 	}
 }
-

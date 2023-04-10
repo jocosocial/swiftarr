@@ -1,17 +1,17 @@
-import Vapor
 import FluentSQL
+import Vapor
 
 /// FezPostData, modified to be easier for sockets.
-/// 
+///
 /// Fez and Seamail socket clients will receive this message as a JSON string when a user posts in the fez/seamail. Posts made by a user
 /// will be reflected back to them via this socket. If a user is logged on from 2 clients and both have open sockets, both clients will see the
 /// socket message when the user posts a new message from one of the clients.
 /// Each struct contains the UserHeader of the poster instead of the author's UUID; this way clients (okay, the javascript web client) can
 /// format the post without additional requests.
-/// 
+///
 /// Note: Fezzes have other state changes that don't currently have websocket notifications. Your socket message handler should gracefully
 /// handle the possibility that you receive a message that doesn't fit any of the currently documented message structs.
-/// 
+///
 /// See:
 /// * `WS /api/v3/fez/:fezID/socket`
 struct SocketFezPostData: Content {
@@ -27,12 +27,12 @@ struct SocketFezPostData: Content {
 	var timestamp: Date
 	/// An optional image that may be attached to the post.
 	var image: String?
-	/// HTML fragment for the post, using the Swiftarr Web UI's front end. Fragment is built using the same semantic data available in the other fields in this struct. 
+	/// HTML fragment for the post, using the Swiftarr Web UI's front end. Fragment is built using the same semantic data available in the other fields in this struct.
 	/// Please don't try parsing this to gather data. This field is here so the Javascript can insert HTML that matches what the HTTP endpoints render.
 	var html: String?
 }
 
-extension SocketFezPostData {	
+extension SocketFezPostData {
 	init(post: FezPostData) {
 		self.postID = post.postID
 		self.author = post.author
@@ -40,7 +40,7 @@ extension SocketFezPostData {
 		self.timestamp = post.timestamp
 		self.image = post.image
 	}
-	
+
 	init(post: FezPost, author: UserHeader) throws {
 		self.postID = try post.requireID()
 		self.author = author
@@ -51,12 +51,12 @@ extension SocketFezPostData {
 }
 
 /// Informs Fez WebSocket clients of a change in Fez membership.
-/// 
+///
 /// If joined is FALSE, the user has left the fez. Although seamail sockets use the same endpoint (seamail threads are Fezzes internally),
 /// this mesage will never be sent to Seamail threads as membership is fixed at creation time.
-/// 
+///
 /// Fez socket message handlers will receive this message as a JSON string when a user joins/leaves the fez, or is added/removed by the fez owner.
-/// 
+///
 /// See:
 /// * `WS /api/v3/fez/:fezID/socket`
 struct SocketFezMemberChangeData: Content {
@@ -64,13 +64,13 @@ struct SocketFezMemberChangeData: Content {
 	var user: UserHeader
 	/// TRUE if this is a join.
 	var joined: Bool
-	/// HTML fragment for the action, using the Swiftarr Web UI's front end. Fragment is built using the same semantic data available in the other fields in this struct. 
+	/// HTML fragment for the action, using the Swiftarr Web UI's front end. Fragment is built using the same semantic data available in the other fields in this struct.
 	/// Please don't try parsing this to gather data. This field is here so the Javascript can insert HTML that matches what the HTTP endpoints render.
 	var html: String?
 }
 
 /// Informs Notification WebSocket clients of a new notification.
-/// 
+///
 /// Each notification is delivered as a JSON string, containing a type of announcement and a string appropriate for displaying to the user.
 /// The string will be of the form, "User @authorName wrote a forum post that mentioned you."
 struct SocketNotificationData: Content {
@@ -94,7 +94,7 @@ struct SocketNotificationData: Content {
 		case followedEventStarting
 		/// Someone is trying to call this user via KrakenTalk.
 		case incomingPhoneCall
-		/// The callee answered the call, possibly on another device. 
+		/// The callee answered the call, possibly on another device.
 		case phoneCallAnswered
 		/// Caller hung up while phone was rining, or other party ended the call in progress, or callee declined
 		case phoneCallEnded
@@ -114,19 +114,19 @@ struct SocketNotificationData: Content {
 extension SocketNotificationData {
 	init(_ type: NotificationType, info: String, id: String) {
 		switch type {
-			case .announcement: self.type = .announcement
-			case .fezUnreadMsg: self.type = .fezUnreadMsg
-			case .seamailUnreadMsg: self.type = .seamailUnreadMsg
-			case .alertwordTwarrt: self.type = .alertwordTwarrt
-			case .alertwordPost: self.type = .alertwordPost
-			case .twarrtMention: self.type = .twarrtMention
-			case .forumMention: self.type = .forumMention
-			case .nextFollowedEventTime: self.type = .followedEventStarting
+		case .announcement: self.type = .announcement
+		case .fezUnreadMsg: self.type = .fezUnreadMsg
+		case .seamailUnreadMsg: self.type = .seamailUnreadMsg
+		case .alertwordTwarrt: self.type = .alertwordTwarrt
+		case .alertwordPost: self.type = .alertwordPost
+		case .twarrtMention: self.type = .twarrtMention
+		case .forumMention: self.type = .forumMention
+		case .nextFollowedEventTime: self.type = .followedEventStarting
 		}
 		self.info = info
 		self.contentID = id
 	}
-	
+
 	// Creates an incoming phone call notification
 	init(callID: UUID, caller: UserHeader, callerAddr: PhoneSocketServerAddress?) {
 		self.type = .incomingPhoneCall
@@ -135,13 +135,13 @@ extension SocketNotificationData {
 		self.caller = caller
 		self.callerAddress = callerAddr
 	}
-	
+
 	init(forCallEnded: UUID) {
 		type = .phoneCallEnded
 		contentID = forCallEnded.uuidString
 		info = ""
 	}
-	
+
 	init(forCallAnswered: UUID) {
 		type = .phoneCallAnswered
 		contentID = forCallAnswered.uuidString
@@ -158,5 +158,5 @@ struct PhoneSocketServerAddress: Codable {
 
 /// Sent at the start of a phone call. Used as a handshake.
 struct PhoneSocketStartData: Codable {
-	var phonecallStartTime: Date = Date()	
+	var phonecallStartTime: Date = Date()
 }

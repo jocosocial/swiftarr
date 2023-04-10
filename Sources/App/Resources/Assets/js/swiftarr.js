@@ -13,12 +13,12 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 		case "block":
 		case "mute":
 		case "muteForum": // Different than mute[User] due to code in spinnerButtonAction.
-		case "unblock": 
+		case "unblock":
 		case "unmute":
 		case "alertWordDelete":
 		case "muteWordDelete":
 		case "redirect":
-			btn.addEventListener("click", spinnerButtonAction); 
+			btn.addEventListener("click", spinnerButtonAction);
 			break;
 		case "delete": btn.addEventListener("click", deleteAction); break;
 		case "eventFiltersChanged": btn.addEventListener("click", filterEvents); break;
@@ -26,8 +26,8 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 		case "eventScrollToNow": btn.addEventListener("click", soonButtonTappedAction); break;
 		case "filterFezDay":
 		case "filterFezType":
-		case "filterFezHidePast": 
-			dropdownButtonSetup(btn); 
+		case "filterFezHidePast":
+			dropdownButtonSetup(btn);
 			btn.addEventListener("click", fezFilterDropdownTappedAction);
 			break;
 	}
@@ -37,7 +37,7 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 function setActionButtonsState(tappedButton, state) {
 	if (!tappedButton) { return }
 	let spinnerElem = tappedButton.labels[0]?.querySelector(".spinner-border") ??
-			 tappedButton.querySelector(".spinner-border");
+		tappedButton.querySelector(".spinner-border");
 	if (state) {
 		setTimeout(() => {
 			for (let btn of tappedButton.parentElement.children) {
@@ -83,20 +83,20 @@ async function spinnerButtonAction() {
 			// https://stackoverflow.com/questions/57477805/why-do-i-get-fetch-failed-loading-when-it-actually-worked
 			await response.text();
 
-			switch(tappedButton.dataset.action) {
-				case "like": 
-				case "laugh": 
-				case "love": 
+			switch (tappedButton.dataset.action) {
+				case "like":
+				case "laugh":
+				case "love":
 					let postElement = tappedButton.closest('[data-postid]');
 					updateLikeCounts(postElement);
 					break;
 				case "follow":
-					tappedButton.closest('[data-eventfavorite]').dataset.eventfavorite = tappedButton.checked ? "true": "false";
+					tappedButton.closest('[data-eventfavorite]').dataset.eventfavorite = tappedButton.checked ? "true" : "false";
 					break;
 				case "reload":
 					location.reload();
 					break;
-				case "redirect": 
+				case "redirect":
 					let newLoc = tappedButton.dataset.successpath;
 					if (newLoc != null) {
 						window.location.replace(newLoc);
@@ -117,15 +117,15 @@ async function spinnerButtonAction() {
 		}
 		else {
 			let responseJson = await response.json();
-			throw responseJson.reason; 
+			throw responseJson.reason;
 		}
 	} catch (error) {
 		if (tappedButton.dataset.istoggle == "true") {
 			tappedButton.checked = !tappedButton.checked;
 		}
 		let errorSpan = errorDiv?.querySelector(".errortext");
-		if (errorSpan) { 
-			errorSpan.innerText = error; 
+		if (errorSpan) {
+			errorSpan.innerText = error;
 		}
 		errorDiv?.classList.remove("d-none");
 	} finally {
@@ -148,7 +148,7 @@ for (let modal of document.querySelectorAll('.modal')) {
 }
 
 // When a Delete Modal is shown, stash the ID of the thing being deleted in the Delete btn. 
-document.getElementById('deleteModal')?.addEventListener('show.bs.modal', function(event) {
+document.getElementById('deleteModal')?.addEventListener('show.bs.modal', function (event) {
 	let postElem = event.relatedTarget.closest('[data-postid]');
 	let deleteBtn = event.target.querySelector('[data-delete-postid]');
 	deleteBtn.setAttribute('data-delete-postid', postElem.dataset.postid);
@@ -171,17 +171,17 @@ async function deleteAction() {
 			}
 			else {
 				location.reload();
-			}	
+			}
 		}
 		else {
 			let responseJson = await response.json();
-			throw responseJson.reason; 
+			throw responseJson.reason;
 		}
 	}
 	catch (error) {
 		let errorSpan = modal?.querySelector(".errortext");
-		if (errorSpan) { 
-			errorSpan.innerText = error; 
+		if (errorSpan) {
+			errorSpan.innerText = error;
 		}
 		modal?.querySelector(".error-display")?.classList.remove("d-none");
 	}
@@ -207,28 +207,28 @@ function updateLikeCounts(postElement) {
 	let postid = postElement.dataset.postid;
 	if (!listType || !postid) return;
 	fetch("/" + listType + "/" + postid + "/details")
-			.then(response => response.json())
-			.then(jsonStruct => {
-		let actionBar = postElement.querySelector('[data-label="actionbar"]');
-		if (jsonStruct.laughs) { 
-			let laughspan = actionBar.querySelector('.laughtext');
-			if (laughspan) {
-				laughspan.textContent = (jsonStruct.laughs.length > 0 ? "\xa0\xa0" + jsonStruct.laughs.length : "");
+		.then(response => response.json())
+		.then(jsonStruct => {
+			let actionBar = postElement.querySelector('[data-label="actionbar"]');
+			if (jsonStruct.laughs) {
+				let laughspan = actionBar.querySelector('.laughtext');
+				if (laughspan) {
+					laughspan.textContent = (jsonStruct.laughs.length > 0 ? "\xa0\xa0" + jsonStruct.laughs.length : "");
+				}
 			}
-		}
-		if (jsonStruct.likes) { 
-			let likespan = actionBar.querySelector('.liketext');
-			if (likespan) {
-				likespan.textContent = (jsonStruct.likes.length > 0 ? "\xa0\xa0" + jsonStruct.likes.length : "");
+			if (jsonStruct.likes) {
+				let likespan = actionBar.querySelector('.liketext');
+				if (likespan) {
+					likespan.textContent = (jsonStruct.likes.length > 0 ? "\xa0\xa0" + jsonStruct.likes.length : "");
+				}
 			}
-		}
-		if (jsonStruct.loves) { 
-			let lovespan = actionBar.querySelector('.lovetext');
-			if (lovespan) {
-				lovespan.textContent = (jsonStruct.loves.length > 0 ? "\xa0\xa0" + jsonStruct.loves.length : "");
+			if (jsonStruct.loves) {
+				let lovespan = actionBar.querySelector('.lovetext');
+				if (lovespan) {
+					lovespan.textContent = (jsonStruct.loves.length > 0 ? "\xa0\xa0" + jsonStruct.loves.length : "");
+				}
 			}
-		}
-	});
+		});
 }
 
 function dropdownButtonSetup(menuItemBtn) {
@@ -254,7 +254,7 @@ function updateDropdownButton(menuItemBtn) {
 // Updates the char/line count labels as text input fields change
 for (let input of document.querySelectorAll('[data-lengthlabel]')) {
 	updateInputFieldCharCounts(input);
-	input.addEventListener("input", function() { updateInputFieldCharCounts(event.target); });
+	input.addEventListener("input", function () { updateInputFieldCharCounts(event.target); });
 }
 function updateInputFieldCharCounts(inputElement) {
 	let label = document.getElementById(inputElement.dataset.lengthlabel);
@@ -273,7 +273,7 @@ function updateInputFieldCharCounts(inputElement) {
 // Updates a photo card when its file input field changes (mostly, shows the photo selected).
 for (let input of document.querySelectorAll('.image-upload-input')) {
 	updatePhotoCardState(input.closest('.card'));
-	input.addEventListener("change", function() { updatePhotoCardState(event.target.closest('.card')); })
+	input.addEventListener("change", function () { updatePhotoCardState(event.target.closest('.card')); })
 }
 function updatePhotoCardState(cardElement) {
 	let imgElem = cardElement.querySelector('img');
@@ -358,14 +358,14 @@ function swapUploadImage() {
 
 // For all form submits that display an error alert on fail but load a new page on success.
 for (let form of document.querySelectorAll('form.ajax')) {
-	form.addEventListener("submit", function(event) { submitAJAXForm(form, event); });
+	form.addEventListener("submit", function (event) { submitAJAXForm(form, event); });
 }
 async function submitAJAXForm(formElement, event) {
 	if (!formElement.classList.contains('ajax')) {
 		return;
 	}
-    event.preventDefault();
-    try {
+	event.preventDefault();
+	try {
 		let response = await fetch(formElement.action, { method: 'POST', body: new FormData(formElement) });
 		if (response.status < 300) {
 			let successURL = formElement.dataset.successurl;
@@ -401,7 +401,7 @@ async function submitAJAXForm(formElement, event) {
 			}
 		}
 	}
-	catch(e) {
+	catch (e) {
 		let alertElement = formElement.querySelector('.alert-danger');
 		alertElement.innerHTML = "<b>Error:</b> " + this.statusText;
 		alertElement.classList.remove("d-none");
@@ -426,7 +426,7 @@ if ((new URL(document.location)).searchParams.get('cruiseday') != null) {
 	}
 	for (let listItem of document.querySelectorAll('[data-eventid]')) {
 		let hideEvent = (onlyFollowing && listItem.dataset.eventfavorite == "false") ||
-				(category && category != "all" && category != listItem.dataset.eventcategory)
+			(category && category != "all" && category != listItem.dataset.eventcategory)
 		if (hideEvent && listItem.classList.contains("show")) {
 			listItem.classList.remove("show");
 		}
@@ -524,8 +524,8 @@ function filterEvents() {
 	}
 	for (let listItem of document.querySelectorAll('[data-eventid]')) {
 		let hideEvent = (onlyFollowing && listItem.dataset.eventfavorite == "false") ||
-				(category && category != "all" && category != listItem.dataset.eventcategory) ||
-				(selectedDays.length > 0 && !selectedDays.includes(listItem.dataset.cruiseday))
+			(category && category != "all" && category != listItem.dataset.eventcategory) ||
+			(selectedDays.length > 0 && !selectedDays.includes(listItem.dataset.cruiseday))
 		if ((hideEvent && listItem.classList.contains("show")) || (!hideEvent && !listItem.classList.contains("show"))) {
 			bootstrap.Collapse.getOrCreateInstance(listItem).toggle();
 		}
@@ -574,7 +574,7 @@ function applyFezSearchFilters() {
 // Populates username completions for a partial username. 
 let userSearchAPICallTimeout = null;
 let userSearch = document.querySelector('input.user-autocomplete');
-userSearch?.addEventListener('input', function(event) {
+userSearch?.addEventListener('input', function (event) {
 	if (userSearchAPICallTimeout) {
 		clearTimeout(userSearchAPICallTimeout);
 	}
@@ -590,7 +590,7 @@ userSearch?.addEventListener('input', function(event) {
 				for (user of userHeaders) {
 					let listItem = document.getElementById('potentialMemberTemplate').content.firstElementChild.cloneNode(true);
 					listItem.dataset.userid = user.userID;
-					listItem.querySelector('.username-here').innerHTML = ["@", user.username, " <b>", user.displayName,"</b>"].join('');
+					listItem.querySelector('.username-here').innerHTML = ["@", user.username, " <b>", user.displayName, "</b>"].join('');
 					suggestionDiv.append(listItem);
 					let checkbox = listItem.querySelector('.btn-check');
 					if (checkbox != null) {
@@ -610,7 +610,7 @@ userSearch?.addEventListener('input', function(event) {
 					}
 				}
 			})
-		
+
 	}, 200);
 })
 
@@ -621,12 +621,12 @@ function addToNamedParticipants(event) {
 		if (participantsDiv.children[index].dataset.userid == listItem.dataset.userid) {
 			return;
 		}
-	} 
+	}
 	let divCopy = listItem.cloneNode(true);
 	divCopy.querySelector('.button-title-here').innerText = "Remove";
 	participantsDiv.append(divCopy);
 	updateParticipantFormElement(participantsDiv);
-	divCopy.addEventListener('click', function(event) {
+	divCopy.addEventListener('click', function (event) {
 		divCopy.remove();
 		updateParticipantFormElement(participantsDiv);
 	});
@@ -636,7 +636,7 @@ function updateParticipantFormElement(participantsDiv) {
 	let names = [];
 	for (index = 1; index < participantsDiv.children.length; ++index) {
 		names.push(participantsDiv.children[index].dataset.userid);
-	} 
+	}
 	let hiddenFormElem = document.getElementById('participants_hidden');
 	hiddenFormElem.value = names;
 }
@@ -665,7 +665,7 @@ function setDefaultAvatarImage() {
 	updatePhotoCardState(cardElement);
 }
 
-document.getElementById('imageCarouselModal')?.addEventListener('show.bs.modal', function(event) {
+document.getElementById('imageCarouselModal')?.addEventListener('show.bs.modal', function (event) {
 	let pageImg = event.relatedTarget.querySelector('img');
 	let modalImg = event.target.querySelector('.swiftarr-closeup-image');
 	if (pageImg && modalImg) {
@@ -676,7 +676,7 @@ document.getElementById('imageCarouselModal')?.addEventListener('show.bs.modal',
 
 // It would be really nice if we could easily break this out into a time-only script. But since
 // we don't have a pattern for that yet I'm not looking to re-invent the wheel just yet.
-window.addEventListener('DOMContentLoaded', function() {
+window.addEventListener('DOMContentLoaded', function () {
 	if (document.getElementById('browserTimeDisplay')) {
 		browserTime = new Date();
 		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/formatToParts
@@ -687,7 +687,7 @@ window.addEventListener('DOMContentLoaded', function() {
 			minute: '2-digit',
 			hour12: true,
 			timeZoneName: 'long'
-		  });
+		});
 		// I don't know how to get the DateTimeFormat to not spit out "Date at Time". This will at least match
 		// the formatting coming out of Swiftarr.
 		document.getElementById('browserTimeDisplay').innerHTML = formatter.format(browserTime).replace(" at ", ", ")
