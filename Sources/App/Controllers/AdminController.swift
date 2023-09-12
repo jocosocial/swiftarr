@@ -260,7 +260,7 @@ struct AdminController: APIRouteCollection {
 		guard let scheduleFileStr = buffer.getString(at: 0, length: buffer.readableBytes) else {
 			throw Abort(.badRequest, reason: "Could not read schedule file.")
 		}
-		let updateEvents = EventParser().parse(scheduleFileStr)
+		let updateEvents = try EventParser().parse(scheduleFileStr)
 		let existingEvents = try await Event.query(on: req.db).withDeleted().all()
 		// Convert to dictionaries, keyed by uid of the events
 		let existingEventDict = Dictionary(existingEvents.map { ($0.uid, $0) }) { first, _ in first }
@@ -360,7 +360,7 @@ struct AdminController: APIRouteCollection {
 		guard let scheduleFileStr = buffer.getString(at: 0, length: buffer.readableBytes) else {
 			throw Abort(.badRequest, reason: "Could not read schedule file.")
 		}
-		let updateEvents = EventParser().parse(scheduleFileStr)
+		let updateEvents = try EventParser().parse(scheduleFileStr)
 
 		let officialCategory = try await Category.query(on: req.db).filter(\.$title, .custom("ILIKE"), "event%").first()
 		let shadowCategory = try await Category.query(on: req.db).filter(\.$title, .custom("ILIKE"), "shadow%").first()
