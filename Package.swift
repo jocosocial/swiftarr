@@ -1,4 +1,4 @@
-// swift-tools-version:5.6
+// swift-tools-version:5.8
 import PackageDescription
 
 let package = Package(
@@ -6,11 +6,8 @@ let package = Package(
 	platforms: [
 		.macOS(.v12)
 	],
-	products: [
-		.library(name: "swiftarr", targets: ["App"])
-	],
 	dependencies: [
-		.package(url: "https://github.com/vapor/vapor.git", from: "4.0.0"),
+		.package(url: "https://github.com/vapor/vapor.git", from: "4.76.0"),
 		.package(url: "https://github.com/vapor/fluent.git", from: "4.0.0"),
 		.package(url: "https://github.com/vapor/fluent-postgres-driver.git", from: "2.0.0"),
 		.package(url: "https://github.com/vapor/redis.git", from: "4.0.0"),
@@ -20,29 +17,28 @@ let package = Package(
 	],
 	targets: [
 		.systemLibrary(name: "gd", pkgConfig: "gdlib", providers: [.apt(["libgd-dev"]), .brew(["gd"])]),
-		.systemLibrary(name: "jpeg", pkgConfig: "libjpeg", providers: [.apt(["libjpeg-dev"]), .brew(["jpeg"])]),
+		.systemLibrary(name: "jpeg", pkgConfig: "libjpeg", providers: [.apt(["libjpeg-dev"]), .brew(["jpeg-turbo"])]),
 		.target(name: "gdOverrides", dependencies: ["gd", "jpeg"], publicHeadersPath: "."),
-		.target(
-			name: "App",
-			dependencies: [
-				"gd",
-				"jpeg",
-				"gdOverrides",
+        .executableTarget(
+            name: "swiftarr",
+            dependencies: [
+                .product(name: "Vapor", package: "vapor"),
 				.product(name: "Fluent", package: "fluent"),
 				.product(name: "FluentPostgresDriver", package: "fluent-postgres-driver"),
-				.product(name: "Vapor", package: "vapor"),
 				.product(name: "Redis", package: "redis"),
 				.product(name: "Leaf", package: "leaf"),
 				.product(name: "SwiftPrometheus", package: "SwiftPrometheus"),
 				.product(name: "Ink", package: "ink"),
-			],
+				"gd",
+				"jpeg",
+				"gdOverrides",
+            ],
 			resources: [
 				.copy("Resources"),
 				.copy("seeds"),
 			]
-		),
-		.executableTarget(name: "Run", dependencies: ["App"]),
-		.testTarget(name: "AppTests", dependencies: ["App"]),
+        ),
+		.testTarget(name: "AppTests", dependencies: ["swiftarr"]),
 	],
 	cLanguageStandard: .c11
 )

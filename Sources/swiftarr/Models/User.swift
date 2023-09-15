@@ -235,6 +235,7 @@ final class User: Model {
 	}
 }
 
+/// Creates the `User` table in the database and specifies its fields. 
 struct CreateUserSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		let modStatusEnum = try await database.enum("moderation_status").read()
@@ -280,3 +281,19 @@ struct CreateUserSchema: AsyncMigration {
 		try await database.schema("user").delete()
 	}
 }
+
+// MARK: - ModelAuthenticatable Conformance
+
+extension User: ModelAuthenticatable {
+	/// Required username key for HTTP Basic Authorization.
+	static let usernameKey = \User.$username
+	/// Required password key for HTTP Basic Authorization.
+	static let passwordHashKey = \User.$password
+
+	func verify(password: String) throws -> Bool {
+		try Bcrypt.verify(password, created: self.password)
+	}
+}
+
+extension User: ModelSessionAuthenticatable {}
+

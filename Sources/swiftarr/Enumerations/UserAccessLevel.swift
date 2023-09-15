@@ -5,7 +5,7 @@ import Vapor
 /// This `enum` structure MUST match the values in `CreateCustomEnums` in SchemaCreation.swift
 /// as this enum is part of the database schema. This enum is also sent out in several Data Transfer Object types.
 /// Think very carefully about modifying these values.
-public enum UserAccessLevel: String, Codable {
+public enum UserAccessLevel: String, Codable, Sendable {
 	/// A user account that has not yet been activated. [read-only, limited]
 	case unverified
 	/// A user account that has been banned. [cannot log in]

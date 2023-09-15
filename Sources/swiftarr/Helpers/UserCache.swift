@@ -148,7 +148,7 @@ extension UserCacheData {
 	// However, route handlers that need the User object to do their job might as well auth with Token.authenticator,
 	// since the database query is 'free'.
 	struct TokenAuthenticator: AsyncBearerAuthenticator {
-		typealias User = App.UserCacheData
+		typealias User = UserCacheData
 
 		func authenticate(bearer: BearerAuthorization, for request: Request) async throws {
 			if let foundUser = request.userCache.getUser(token: bearer.token), foundUser.accessLevel != .banned {
@@ -160,7 +160,7 @@ extension UserCacheData {
 	// UserCacheData.SessionAuthenticator lets routes auth a UserCacheData object from a session ID.
 	// Don't use this in API routes, as API routes should use token based auth (or basic auth for login).
 	struct SessionAuth: AsyncSessionAuthenticator {
-		typealias User = App.UserCacheData
+		typealias User = UserCacheData
 
 		func authenticate(sessionID: String, for request: Request) async throws {
 			if let userID = UUID(sessionID), let foundUser = request.userCache.getUser(userID),

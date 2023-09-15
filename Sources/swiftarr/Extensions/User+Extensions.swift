@@ -1,21 +1,6 @@
 import Fluent
 import Vapor
 
-// MARK: - ModelAuthenticatable Conformance
-
-extension User: ModelAuthenticatable {
-	/// Required username key for HTTP Basic Authorization.
-	static let usernameKey = \User.$username
-	/// Required password key for HTTP Basic Authorization.
-	static let passwordHashKey = \User.$password
-
-	func verify(password: String) throws -> Bool {
-		try Bcrypt.verify(password, created: self.password)
-	}
-}
-
-extension User: ModelSessionAuthenticatable {}
-
 // MARK: - Functions
 
 extension User {

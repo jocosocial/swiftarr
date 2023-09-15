@@ -54,6 +54,7 @@ final class Token: Model {
 	}
 }
 
+/// Creates the db schema for the `Token` table.
 struct CreateTokenSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		try await database.schema("token")
@@ -66,5 +67,31 @@ struct CreateTokenSchema: AsyncMigration {
 
 	func revert(on database: Database) async throws {
 		try await database.schema("token").delete()
+	}
+}
+
+/// BearerAuthenticatable Conformance. ModelTokenAuthenticatable tells Vapor how to associate an HTTP Bearer token
+/// with its Token model object, and then to the User being authenticated.
+extension Token: ModelTokenAuthenticatable {
+	/// Required key for HTTP Bearer Authorization token.
+	static let valueKey = \Token.$token
+	static let userKey = \Token.$user
+
+	var isValid: Bool {
+		true
+	}
+}
+
+// MARK: - Methods
+
+extension Token {
+	/// Creates a new random Token.
+	///
+	/// - Parameter user: The `User` to be associated with this `Token`.
+	/// - Parameter length: Desired length of token data, defaults to 16.
+	/// - Returns: A `Token` object.
+	static func generate(for user: User, length: Int = 16) throws -> Token {
+		let random = [UInt8].random(count: length).base64
+		return try Token(token: random, user: user)
 	}
 }

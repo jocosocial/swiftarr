@@ -34,15 +34,18 @@ If running on macOS with Xcode installed, the easiest way to get an instance up 
 
 1. Install Docker.
 2. Install `libgd`. With [Homebrew](https://brew.sh) installed, simply `brew install gd`.
-3. Install the [Vapor](http://docs.vapor.codes/) toolbox. (I don't actually know if this is necessary
-for just running an instance, and have no way to easily test that at the moment, but it *might* be needed to get the
-correct SSL library and shimming for SwiftNIO.)
-4. Download or clone the `switarr` [repository](https://github.com/jocosocial/swiftarr).
+3. If you're using an ARM-based Mac (and installed libgd using homebrew), add 
+
+```shell
+export PKG_CONFIG_PATH="/opt/homebrew/lib/pkgconfig"
+```
+
+to your .zshrc file to make xcodebuild find the ARM64 libs homebrew installs (in /opt/homebrew) instead of the X86 libs (in /usr/local/lib).
+4. Download or clone the `swiftarr` [repository](https://github.com/jocosocial/swiftarr).
 5. Run `scripts/instance.sh up -d redis postgres` from the `swiftarr` directory to create and launch postgres and redis
 Docker containers.
 6. Create your own `development.env` in `Sources/App/seeds/Private Swiftarr Config`. See [Configuration](configuration.html) for details.
-7. Open the swiftarr.xcodeproj file.
-8. Run the "Migrate" scheme to configure the databses, or
+7. Open the `Package.swift` file in Xcode and run the "Migrate" scheme to configure the databses, or from the command line:
 
 ```shell
 xcodebuild -project "swiftarr.xcodeproj" -scheme "Migrate"
@@ -51,29 +54,17 @@ xcodebuild -project "swiftarr.xcodeproj" -scheme "Migrate"
 
 You'll be asked to approve a bunch of migrations; these mostly create database tables. 
 
-9. Set the scheme to "Run/My Mac" in Xcode, hit Run, and `swiftarr` should shortly be available at http://localhost:8081.
+8. Set the scheme to "Run/My Mac" in Xcode, hit Run, and `swiftarr` should shortly be available at http://localhost:8081.
 To shut down the Docker containers, `scripts/instance.sh stop`.
 
 Yes, that's a bunch the first time through and it does take some time. From here on out though, it's just a matter of
 pulling the latest updates from the repository and regenerating the .xcodeproj file.
 
-#### Generating a new Xcode Project
-
-Swiftarr uses a Package.swift dependency management file; like a million other package-managers it loads in other source code
-and manages dependencies. Xcode can also direclty open and build Package.swift files in a way similar to project files; 
-except you can't set up build scripts or do a bunch of other project-y things. To regen the project:
-
-```shell
-cd <swiftarr-directory>
-swift package generate-xcodeproj
-open ./swiftarr.xcodeproj
-```
-
-Then, in Target Settings for the App Target, select the Build Phases tab. Add a Copy Files phase copying "Resources" and 
-"Seeds" directories to the "Products Directory" destination.
+#### Using Xcode
 
 One of the many Xcode quirks that confuses developers not used to it is that Xcode puts the built app and all the buildfiles
-in the /DerivedData folder. The Copy Files script copies all the Leaf templates, javascript, css, images, into /DerivedData
+in the /DerivedData folder. This happens whether you build using the app or from the command line using xcodebuild. 
+The Copy Files script (part of the build process) copies all the Leaf templates, javascript, css, images, into /DerivedData
 on each build and the running app uses the copies, NOT the files in /Resources and /Seeds. But, the copy happens every build,
 even if no sources changed. So, while running the server, you can edit a Leaf template or some JS, hit command-B to build, 
 reload the page, and see the changes. 

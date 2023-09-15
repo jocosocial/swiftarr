@@ -13,7 +13,7 @@ import Vapor
 /// 	- Ideally, a DB object that requires a role to access should only require one role be stored for it.
 /// 	- In general, a nil value for a DB object's `requiredRole` should mean no special role is required to access it.
 /// 	- Moderators and above should usually have access to role-protected content; without us having to add a bunch of roles to each moderator user.
-public enum UserRoleType: String, CaseIterable, Codable {
+public enum UserRoleType: String, CaseIterable, Codable, Sendable {
 	/// KaraokeManagers have the ability to log song performances in the Karaoke Bar.
 	case karaokemanager
 	/// Shutternaut Managers can add and remove members from the Shutternauts group. Note: Because of the "no hierarchy" rule, managers are NOT automatically Shutternauts.
