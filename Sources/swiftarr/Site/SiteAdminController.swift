@@ -34,11 +34,12 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTTRoutes.get("timezonechanges", use: timeZonesViewHandler)
 		privateTTRoutes.post("serversettings", "reloadtzfile", use: settingsReloadTZFilePostHandler)
 
-		privateTTRoutes.get("scheduleupload", use: scheduleUploadViewHandler)
+		privateTTRoutes.get("schedule", use: scheduleManagerViewHandler)
 		privateTTRoutes.post("scheduleupload", use: scheduleUploadPostHandler)
 		privateTTRoutes.get("scheduleverify", use: scheduleVerifyViewHandler)
 		privateTTRoutes.post("scheduleverify", use: scheduleVerifyPostHandler)
 		privateTTRoutes.get("scheduleupload", "complete", use: scheduleUpdateCompleteViewtHandler)
+		privateTTRoutes.get("schedulelogview", scheduleLogIDParam, use: scheduleLogEntryViewer)
 
 		privateTTRoutes.get("regcodes", use: getRegCodeHandler)
 		privateTTRoutes.get("regcodes", "showuser", userIDParam, use: getRegCodeForUserHandler)
@@ -390,6 +391,7 @@ struct SiteAdminController: SiteControllerUtils {
 			var postAutoQuarantineThreshold: Int
 			var userAutoQuarantineThreshold: Int
 			var shipWifiSSID: String?
+			var scheduleUpdateURL: String?
 			var allowAnimatedImages: String?
 			var disableAppName: String
 			var disableFeatureName: String
@@ -428,7 +430,8 @@ struct SiteAdminController: SiteControllerUtils {
 			allowAnimatedImages: postStruct.allowAnimatedImages == "on",
 			enableFeatures: enablePairs,
 			disableFeatures: disablePairs,
-			shipWifiSSID: postStruct.shipWifiSSID
+			shipWifiSSID: postStruct.shipWifiSSID,
+			scheduleUpdateURL: postStruct.scheduleUpdateURL
 		)
 		try await apiQuery(req, endpoint: "/admin/serversettings/update", method: .POST, encodeContent: apiPostContent)
 		return .ok
@@ -509,20 +512,47 @@ struct SiteAdminController: SiteControllerUtils {
 		return .ok
 	}
 
-	// GET /admin/scheduleupload
+	// GET /admin/schedule
 	//
 	// Shows a form with a file upload button for upload a new schedule.ics file. This the start of a flow, going from
 	// scheduleupload to scheduleverify to scheduleapply.
-	func scheduleUploadViewHandler(_ req: Request) async throws -> View {
+	func scheduleManagerViewHandler(_ req: Request) async throws -> View {
 		struct ScheduleUploadViewContext: Encodable {
 			var trunk: TrunkContext
+			var updateLog: [EventUpdateLogData]
 
-			init(_ req: Request) throws {
+			init(_ req: Request, logEntries: [EventUpdateLogData]) throws {
 				trunk = .init(req, title: "Upload Schedule", tab: .admin)
+				updateLog = logEntries
 			}
 		}
-		let ctx = try ScheduleUploadViewContext(req)
+		let response = try await apiQuery(req, endpoint: "/admin/schedule/viewlog")
+		let logEntries = try response.content.decode([EventUpdateLogData].self)
+		let ctx = try ScheduleUploadViewContext(req, logEntries: logEntries)
 		return try await req.view.render("admin/scheduleUpload", ctx)
+	}
+
+	// GET /admin/schedulelogview/:log_id
+	//
+	// Displays a page showing the schedule changes
+	func scheduleLogEntryViewer(_ req: Request) async throws -> View {
+		guard let logIDString = req.parameters.get(scheduleLogIDParam.paramString, as: String.self), let logID = Int(logIDString) else {
+			throw Abort(.badRequest, reason: "Could not parse log ID from request URL.")
+		}
+		let response = try await apiQuery(req, endpoint: "/admin/schedule/viewlog/\(logID)")
+		let differenceData = try response.content.decode(EventUpdateDifferenceData.self)
+
+		struct ScheduleUpdateVerifyViewContext: Encodable {
+			var trunk: TrunkContext
+			var diff: EventUpdateDifferenceData
+
+			init(_ req: Request, differenceData: EventUpdateDifferenceData) throws {
+				trunk = .init(req, title: "Verify Schedule Changes", tab: .admin)
+				self.diff = differenceData
+			}
+		}
+		let ctx = try ScheduleUpdateVerifyViewContext(req, differenceData: differenceData)
+		return try await req.view.render("admin/scheduleLogView", ctx)
 	}
 
 	// POST /admin/scheduleupload

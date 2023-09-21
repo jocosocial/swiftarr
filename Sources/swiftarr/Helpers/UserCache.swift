@@ -251,6 +251,14 @@ extension Application {
 		Application.ucs = initialStorage
 		//		}
 	}
+
+	func getUserHeader(_ username: String) -> UserHeader? {
+		let cacheLock = self.locks.lock(for: Application.UserCacheLockKey.self)
+		if let user = cacheLock.withLock({ Application.userCacheStorage.usersByName[username.lowercased()] }) {
+			return UserHeader(userID: user.userID, username: user.username, displayName: user.displayName, userImage: user.userImage)
+		}
+		return nil
+	}
 }
 
 extension Request {

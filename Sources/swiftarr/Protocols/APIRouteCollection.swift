@@ -29,6 +29,7 @@ extension APIRouteCollection {
 	var songIDParam: PathComponent { PathComponent(":karaoke_song+id") }
 	var userRoleParam: PathComponent { PathComponent(":user_role") }
 	var phonecallParam: PathComponent { PathComponent(":phone_call") }
+	var scheduleLogIDParam: PathComponent { PathComponent(":schedule_log_id") }
 
 	/// Transforms a string that might represent a date (either a `Double` or an ISO 8601
 	/// representation) into a `Date`, if possible.

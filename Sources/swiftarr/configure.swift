@@ -5,6 +5,8 @@ import LeafKit
 import Metrics
 import Prometheus
 import Redis
+import QueuesRedisDriver
+import Queues
 import Vapor
 import gd
 
@@ -69,6 +71,7 @@ struct SwiftarrConfigurator {
 		try configureMiddleware(app)
 		try configureSessions(app)
 		try configureLeaf(app)
+		try configureQueues(app)
 		try configurePrometheus(app)
 		try routes(app)
 		try configureMigrations(app)
@@ -464,6 +467,64 @@ struct SwiftarrConfigurator {
 		app.leaf.tags["gameRating"] = GameRatingTag()
 		app.leaf.tags["localTime"] = LocalTimeTag()
 	}
+	
+	func configureQueues(_ app: Application) throws {
+		guard app.environment.commandInput.arguments.isEmpty || app.environment.commandInput.arguments.first == "serve" else {
+			return
+		}
+		guard let config = app.redis.configuration else {
+			throw Abort(.internalServerError, reason: "Cannot configure queues; no Redis config object")
+		}
+		app.queues.use(.redis(config))
+
+		struct UpdateScheduleJob: AsyncScheduledJob {
+			func run(context: QueueContext) async throws {
+				do {
+					context.logger.notice("Starting UpdateScheduleJob")
+					let scheduleURLString = Settings.shared.scheduleUpdateURL
+					guard !scheduleURLString.isEmpty else {
+						throw Abort(.internalServerError, reason: "Schedule Updater ran, but the URL is empty, so we're bailing.")
+					}
+					let scheduleURL = URI(string: Settings.shared.scheduleUpdateURL)
+					let response = try await context.application.client.get(scheduleURL, headers: [ "User-Agent" : "curl/8.1.2"])
+					guard response.status == .ok else {
+						throw Abort(.internalServerError, reason: "Failed to GET schedule data from \(String(reflecting: scheduleURL))")
+					}
+					guard let fileLen = response.body?.readableBytes, let scheduleFileStr = response.body?.getString(at: 0, length: fileLen) else {
+						throw Abort(.badRequest, reason: "Could not read schedule data.")
+					}
+					// Parse and validate, throw if >50 events deleted (require manual in this case)
+					let differences = try await EventParser().validateEventsInICS(scheduleFileStr, on: context.application.db)
+					if differences.deletedEvents.count > 50 {
+						throw Abort(.badRequest, reason: "This update deletes more than 50 events and should be done manually, not via automatic updating.")
+					}
+					if differences.deletedEvents.isEmpty && differences.createdEvents.isEmpty && differences.timeChangeEvents.isEmpty &&
+							differences.locationChangeEvents.isEmpty && differences.minorChangeEvents.isEmpty {
+						// Log that no change was needed
+						try await ScheduleLog(diff: nil, isAutomatic: true).save(on: context.application.db)
+						context.logger.notice("UpdateScheduleJob completed successfully. Source schedule hasn't changed, no updates to apply.")
+					}
+					else {
+						// Apply changes to db, log what happened
+						guard let forumAuthor = context.application.getUserHeader("admin") else {
+							throw Abort(.internalServerError, reason: "Could not find admin user when running schedule updater.")
+						}
+						try await EventParser().updateDatabaseFromICS(scheduleFileStr, on: context.application.db, forumAuthor: forumAuthor)
+						try await ScheduleLog(diff: differences, isAutomatic: true).save(on: context.application.db)
+						context.logger.notice("UpdateScheduleJob completed successfully--there were updates to apply.")
+					}
+				}
+				catch {
+					context.logger.notice("UpdateScheduleJob failed. \(String(reflecting: error))")
+					try await ScheduleLog(error: "Update threw an error: \(String(reflecting: error))").save(on: context.application.db)
+				}
+			}
+		}
+
+		app.queues.schedule(UpdateScheduleJob()).hourly().at(5)
+//		app.queues.schedule(UpdateScheduleJob()).minutely().at(5)
+		try app.queues.startScheduledJobs()
+	}
 
 	func configurePrometheus(_ app: Application) throws {
 		let myProm = PrometheusClient()
@@ -514,6 +575,7 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreateKaraokePlayedSongSchema(), to: .psql)
 		app.migrations.add(CreateKaraokeFavoriteSchema(), to: .psql)
 		app.migrations.add(CreateTimeZoneChangeSchema(), to: .psql)
+		app.migrations.add(CreateScheduleLogSchema(), to: .psql)
 
 		// Third, *updates* to the schema since we started tracking them (Dec 2022-ish).
 		// These migrations generally mutate schema created in Group 2, and should appear in the order the migrations were added.

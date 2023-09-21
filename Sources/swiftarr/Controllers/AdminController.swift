@@ -20,6 +20,8 @@ struct AdminController: APIRouteCollection {
 		ttAuthGroup.post("schedule", "update", use: scheduleUploadPostHandler)
 		ttAuthGroup.get("schedule", "verify", use: scheduleChangeVerificationHandler)
 		ttAuthGroup.post("schedule", "update", "apply", use: scheduleChangeApplyHandler)
+		ttAuthGroup.get("schedule", "viewlog", use: scheduleChangeLogHandler)
+		ttAuthGroup.get("schedule", "viewlog", scheduleLogIDParam, use: scheduleGetLogEntryHandler)
 
 		ttAuthGroup.get("regcodes", "stats", use: regCodeStatsHandler)
 		ttAuthGroup.get("regcodes", "find", searchStringParam, use: userForRegCodeHandler)
@@ -174,6 +176,9 @@ struct AdminController: APIRouteCollection {
 		if let value = data.shipWifiSSID {
 			Settings.shared.shipWifiSSID = value
 		}
+		if let value = data.scheduleUpdateURL {
+			Settings.shared.scheduleUpdateURL = value
+		}
 		var localDisables = Settings.shared.disabledFeatures.value
 		for pair in data.enableFeatures {
 			if let app = SwiftarrClientApp(rawValue: pair.app), let feature = SwiftarrFeature(rawValue: pair.feature) {
@@ -260,79 +265,8 @@ struct AdminController: APIRouteCollection {
 		guard let scheduleFileStr = buffer.getString(at: 0, length: buffer.readableBytes) else {
 			throw Abort(.badRequest, reason: "Could not read schedule file.")
 		}
-		let updateEvents = try EventParser().parse(scheduleFileStr)
-		let existingEvents = try await Event.query(on: req.db).withDeleted().all()
-		// Convert to dictionaries, keyed by uid of the events
-		let existingEventDict = Dictionary(existingEvents.map { ($0.uid, $0) }) { first, _ in first }
-		let updateEventDict = Dictionary(updateEvents.map { ($0.uid, $0) }) { first, _ in first }
-		let existingEventuids = Set(existingEvents.map { $0.uid })
-		let updateEventuids = Set(updateEvents.map { $0.uid })
-		var responseData = EventUpdateDifferenceData()
-
-		// Deletes
-		let deleteduids = existingEventuids.subtracting(updateEventuids)
-		try deleteduids.forEach { uid in
-			if let existing = existingEventDict[uid] {
-				try responseData.deletedEvents.append(EventData(existing))
-			}
-		}
-
-		// Creates
-		let createduids = updateEventuids.subtracting(existingEventuids)
-		createduids.forEach { uid in
-			if let updated = updateEventDict[uid] {
-				// This eventData uses a throwaway UUID as the Event isn't in the db yet
-				let eventData = EventData(
-					eventID: UUID(),
-					uid: updated.uid,
-					title: updated.title,
-					description: updated.description,
-					startTime: updated.startTime,
-					endTime: updated.endTime,
-					timeZone: "",
-					location: updated.location,
-					eventType: updated.eventType.rawValue,
-					lastUpdateTime: updated.updatedAt ?? Date(),
-					forum: nil,
-					isFavorite: false
-				)
-				responseData.createdEvents.append(eventData)
-			}
-		}
-
-		// Updates
-		let updatedEvents = existingEventuids.intersection(updateEventuids)
-		updatedEvents.forEach { uid in
-			if let existing = existingEventDict[uid], let updated = updateEventDict[uid] {
-				let eventData = EventData(
-					eventID: UUID(),
-					uid: updated.uid,
-					title: updated.title,
-					description: updated.description,
-					startTime: updated.startTime,
-					endTime: updated.endTime,
-					timeZone: "",
-					location: updated.location,
-					eventType: updated.eventType.rawValue,
-					lastUpdateTime: updated.updatedAt ?? Date(),
-					forum: nil,
-					isFavorite: false
-				)
-				if existing.startTime != updated.startTime || existing.endTime != updated.endTime {
-					responseData.timeChangeEvents.append(eventData)
-				}
-				if existing.location != updated.location {
-					responseData.locationChangeEvents.append(eventData)
-				}
-				if existing.title != updated.title || existing.info != updated.info
-					|| existing.eventType != updated.eventType
-				{
-					responseData.minorChangeEvents.append(eventData)
-				}
-			}
-		}
-
-		return responseData
+		let result =  try await EventParser().validateEventsInICS(scheduleFileStr, on: req.db)
+		return result
 	}
 
 	/// `POST /api/v3/admin/schedule/update/apply`
@@ -360,161 +294,44 @@ struct AdminController: APIRouteCollection {
 		guard let scheduleFileStr = buffer.getString(at: 0, length: buffer.readableBytes) else {
 			throw Abort(.badRequest, reason: "Could not read schedule file.")
 		}
-		let updateEvents = try EventParser().parse(scheduleFileStr)
-
-		let officialCategory = try await Category.query(on: req.db).filter(\.$title, .custom("ILIKE"), "event%").first()
-		let shadowCategory = try await Category.query(on: req.db).filter(\.$title, .custom("ILIKE"), "shadow%").first()
-		let existingEvents = try await Event.query(on: req.db).withDeleted().with(\.$forum).all()
-		try await req.db.transaction { database in
-			// Convert to dictionaries, keyed by uid of the events
-			let existingEventDict = Dictionary(existingEvents.map { ($0.uid, $0) }) { first, _ in first }
-			let updateEventDict = Dictionary(updateEvents.map { ($0.uid, $0) }) { first, _ in first }
-			let existingEventuids = Set(existingEvents.map { $0.uid })
-			let updateEventuids = Set(updateEvents.map { $0.uid })
-
-			// Process deletes
-			if processDeletes {
-				let deleteduids = existingEventuids.subtracting(updateEventuids)
-				if makeForumPosts {
-					for eventUID in deleteduids {
-						if let existingEvent = existingEventDict[eventUID] {
-							try await existingEvent.$forum.load(on: database)
-							if let forum = existingEvent.forum {
-								let newPost = try ForumPost(
-									forum: forum,
-									authorID: user.userID,
-									text: """
-																				Automatic Notification of Schedule Change: This event has been deleted from the \
-																				schedule. Apologies to those planning on attending.
-																				
-																				However, since this is an automatic announcement, it's possible the event got moved or \
-																				rescheduled and it only looks like a delete to me, your automatic server software. \
-																				Check the schedule.
-																				"""
-								)
-								try await newPost.save(on: database)
-							}
-						}
-					}
-				}
-				try await Event.query(on: database).filter(\.$uid ~~ deleteduids).delete()
-			}
-
-			// Process creates
-			let createduids = updateEventuids.subtracting(existingEventuids)
-			for uid in createduids {
-				if let event = updateEventDict[uid] {
-					// Note that for creates, we make an initial forum post whether or not makeForumPosts is set.
-					// makeForumPosts only concerns the "Schedule was changed" posts.
-					if let officialCategory = officialCategory, let shadowCategory = shadowCategory {
-						let forum = try SetInitialEventForums.buildEventForum(
-							event,
-							creatorID: user.userID,
-							shadowCategory: shadowCategory,
-							officialCategory: officialCategory
-						)
-						try await forum.save(on: database)
-						// Build an initial post in the forum with information about the event, and
-						// a callout for posters to discuss the event.
-						let postText = SetInitialEventForums.buildEventPostText(event)
-						let infoPost = try ForumPost(forum: forum, authorID: user.userID, text: postText)
-
-						// Associate the forum with the event
-						event.$forum.id = forum.id
-						event.$forum.value = forum
-						try await event.save(on: database)
-						try await infoPost.save(on: database)
-						if makeForumPosts {
-							let newPost = try ForumPost(
-								forum: forum,
-								authorID: user.userID,
-								text: """
-																		Automatic Notification of Schedule Change: This event was just added to the \
-																		schedule.
-																		"""
-							)
-							try await newPost.save(on: database)
-						}
-					}
-				}
-			}
-
-			// Process changes to existing events
-			let updatedEvents = existingEventuids.intersection(updateEventuids)
-			for uid in updatedEvents {
-				if let existing = existingEventDict[uid], let updated = updateEventDict[uid] {
-					var changes: Set<EventModification> = Set()
-					if let deleteTime = existing.deletedAt, deleteTime < Date() {
-						changes.insert(.undelete)
-						existing.deletedAt = nil
-					}
-					if existing.startTime != updated.startTime {
-						changes.insert(.startTime)
-						existing.startTime = updated.startTime
-						existing.endTime = updated.endTime
-					}
-					else if existing.endTime != updated.endTime {
-						changes.insert(.endTime)
-						existing.endTime = updated.endTime
-					}
-					if existing.location != updated.location {
-						changes.insert(.location)
-						existing.location = updated.location
-					}
-					if existing.title != updated.title || existing.info != updated.info
-						|| existing.eventType != updated.eventType
-					{
-						changes.insert(.info)
-						existing.title = updated.title
-						existing.info = updated.info
-						existing.eventType = updated.eventType
-					}
-					if !changes.isEmpty {
-						try await existing.save(on: database)
-						if let forum = existing.forum {
-							// Update title of event's linked forum
-							let dateFormatter = DateFormatter()
-							dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
-							dateFormatter.dateFormat = "(E, HH:mm)"
-							forum.title = dateFormatter.string(from: existing.startTime) + " \(existing.title)"
-							try await forum.save(on: database)
-							// Update first post of event's forum thread.
-							if let firstPost = try await forum.$posts.query(on: database).sort(\.$id, .ascending)
-								.first()
-							{
-								firstPost.text = SetInitialEventForums.buildEventPostText(existing)
-								try await firstPost.save(on: database)
-							}
-							// Add post to forum detailing changes made to this event.
-							if makeForumPosts {
-								let newPost = try ForumPost(
-									forum: forum,
-									authorID: user.userID,
-									text: """
-																				Automatic Notification of Schedule Change: This event has changed.
-																				
-																				\(changes.contains(.undelete) ? "This event was canceled, but now is un-canceled.\r" : "")\
-																				\(changes.contains(.startTime) ? "Start Time changed\r" : "")\
-																				\(changes.contains(.endTime) ? "End Time changed\r" : "")\
-																				\(changes.contains(.location) ? "Location changed\r" : "")\
-																				\(changes.contains(.info) ? "Event info changed\r" : "")
-																				"""
-								)
-								try await newPost.save(on: database)
-							}
-						}
-					}
-				}
-			}
-			// Update the cached counts of how many forums are in each category
-			let categories = try await Category.query(on: database).with(\.$forums).all()
-			for cat in categories {
-				cat.forumCount = Int32(cat.forums.count)
-				try await cat.save(on: database)
-			}
-		}
-		// End database transaction
+		let differences =  try await EventParser().validateEventsInICS(scheduleFileStr, on: req.db)
+		try await EventParser().updateDatabaseFromICS(scheduleFileStr, on: req.db, forumAuthor: user.makeHeader(), 
+				processDeletes: processDeletes, makeForumPosts: makeForumPosts)
+		try await ScheduleLog(diff: differences, isAutomatic: false).save(on: req.db)
 		return .ok
+	}
+	
+	/// `GET /api/v3/admin/schedule/viewlog`
+	///
+	///  Gets the last 100 entries in the schedule update log, showing what the automatic (and manual) updates to the schedule have been doing.
+	///
+	/// - Returns: `[EventUpdateLogData]` the most recent 100 log entries, in descending order of update time.
+	func scheduleChangeLogHandler(_ req: Request) async throws -> [EventUpdateLogData] {
+		let logEntries = try await ScheduleLog.query(on: req.db).sort(\.$createdAt, .descending).limit(100).all()
+		return try logEntries.map { try .init($0) }
+	}
+	
+	/// `GET /api/v3/admin/schedule/viewlog/:log_id`
+	///
+	/// ** Parameters:**
+	/// - `:log_id` the ID of the schedule change log entry to return.
+	/// 
+	///  NOTE: Unless you've requested the most recent change, the returned data may not match the state of the schedule in the db.  
+	///
+	/// - Returns: `EventUpdateDifferenceData` showing what events were modified by this change to the schedule
+	func scheduleGetLogEntryHandler(_ req: Request) async throws -> EventUpdateDifferenceData {
+		guard let entryIDString = req.parameters.get(scheduleLogIDParam.paramString, as: String.self), let entryID = Int(entryIDString) else {
+			throw Abort(.badRequest, reason: "Could not parse log ID from request URL.")
+		}
+		guard let entry = try await ScheduleLog.query(on: req.db).filter(\.$id == entryID).first() else {
+			throw Abort(.badRequest, reason: "No schedule log entry with this ID.")
+		}
+		guard let differenceData = entry.differenceData else {
+			// Return an empty difference data object if this was an automatic schedule update that resulted in no changes.
+			return EventUpdateDifferenceData()
+		}
+		// Yes, in this case we're decoding the JSON into the struct just so the response builder can encode it back.
+		return try JSONDecoder().decode(EventUpdateDifferenceData.self, from: differenceData)
 	}
 
 	/// `GET /api/v3/admin/regcodes/stats`
@@ -795,13 +612,4 @@ struct AdminController: APIRouteCollection {
 		return filePath
 	}
 
-}
-
-// Used internally to track the diffs involved in an calendar update.
-private enum EventModification {
-	case startTime
-	case endTime
-	case location
-	case undelete
-	case info
 }

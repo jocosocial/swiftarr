@@ -7,7 +7,7 @@
 						<ol class="breadcrumb">
 							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
 							<li class="breadcrumb-item"><a href="/admin/schedule">Schedule</a></li>
-							<li class="breadcrumb-item active" aria-current="page">Verify Schedule Updates</li>
+							<li class="breadcrumb-item active" aria-current="page">Update Log</li>
 						</ol>
 					</nav>
 				</div>
@@ -169,31 +169,6 @@
 					</div>
 				</div>
 			</div>
-						
-			<form class="ajax" action="/admin/scheduleverify" enctype="multipart/form-data" method="POST" data-successurl="/admin/scheduleupload/complete" id="messagePostForm">
-			<form>
-				<div class="row mb-2">
-					<div class="col">
-						<input type="checkbox" id="addForumPosts" name="addForumPosts" checked>
-						<label for="addForumPosts">Add post</label>
-						about update to each affected Event's Forum thread
-					</div>
-				</div>
-				<div class="row mb-2">
-					<div class="col">
-						<input type="checkbox" id="ignoreDeletes" name="ignoreDeletes">
-						<label for="ignoreDeletes">Ignore deleted events</label>
-						(use when update .ics file isn't a complete list of all events)
-					</div>
-				</div>
-				<div class="alert alert-danger mt-3 d-none" role="alert">
-				</div>				
-				<div class="row mb-2">
-					<div class="col col-auto">
-						<button type="submit" class="btn btn-primary">Update</button>
-					</div>
-				</div>
-			</form>			
-    	</div>
+		</div>
 	#endexport
 #endextend

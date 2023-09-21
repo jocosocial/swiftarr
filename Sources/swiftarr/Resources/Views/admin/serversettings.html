@@ -68,7 +68,13 @@
 				<div class="row my-1">
 					<div class="col">
 						<label for="shipWifiSSID">Onboard Wifi Network SSID</label>
-						<input type="text" id="shipWifiSSID" name="shipWifiSSID" value="#(settings.shipWifiSSID)" #if(!enableFields):disabled#endif>
+						<input type="text" class="form-control" id="shipWifiSSID" name="shipWifiSSID" value="#(settings.shipWifiSSID)" #if(!enableFields):disabled#endif>
+					</div>
+				</div>
+				<div class="row my-1">
+					<div class="col">
+						<label for="scheduleUpdateURL">Schedule Update URL</label>
+						<input type="text" class="form-control" id="scheduleUpdateURL" name="scheduleUpdateURL" value="#(settings.scheduleUpdateURL)" #if(!enableFields):disabled#endif>
 					</div>
 				</div>
 				<div class="row my-1">

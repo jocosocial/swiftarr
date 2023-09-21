@@ -578,6 +578,7 @@ extension SiteControllerUtils {
 	var boardgameIDParam: PathComponent { PathComponent(":boardgame_id") }
 	var songIDParam: PathComponent { PathComponent(":karaoke_song_id") }
 	var usernameParam: PathComponent { PathComponent(":user_name") }
+	var scheduleLogIDParam: PathComponent { PathComponent(":schedule_log_id") }
 
 	@discardableResult func apiQuery<EncodableContent: Encodable>(
 		_ req: Request,

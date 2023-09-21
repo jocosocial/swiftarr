@@ -109,6 +109,24 @@
       }
     },
     {
+      "identity" : "queues",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/vapor/queues.git",
+      "state" : {
+        "revision" : "3dc80954c672effa188d01a15f56bf358c34beac",
+        "version" : "1.13.0"
+      }
+    },
+    {
+      "identity" : "queues-redis-driver",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/vapor/queues-redis-driver.git",
+      "state" : {
+        "revision" : "89a4350c1a6eb03b5693f481817741ff36a8cdcc",
+        "version" : "1.1.1"
+      }
+    },
+    {
       "identity" : "redis",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/redis.git",

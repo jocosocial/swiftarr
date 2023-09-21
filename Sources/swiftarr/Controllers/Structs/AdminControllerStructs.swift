@@ -68,6 +68,29 @@ public struct EventUpdateDifferenceData: Content {
 	var minorChangeEvents: [EventData] = []
 }
 
+public struct EventUpdateLogData: Content {
+	/// The ID of this log entry
+	var entryID: Int
+	/// TRUE if this was an automatic, scheduled update.
+	var automaticUpdate: Bool
+	/// How many changes were made to the db as a result of this schedule update. 0 if the update resulted in an error; may also be zero if no changes detected.
+	var changeCount: Int
+	/// When the update was processed.
+	var timestamp: Date
+	/// If the update failed, the reason why.
+	var error: String?
+}
+
+extension EventUpdateLogData {
+	init(_ logEntry: ScheduleLog) throws{
+		self.entryID = try logEntry.requireID()
+		self.automaticUpdate = logEntry.automaticUpdate
+		self.changeCount = logEntry.changeCount
+		self.timestamp = logEntry.createdAt ?? Date()
+		self.error = logEntry.errorResult
+	}
+}
+
 /// Returns the registration code associated with a user. Not all users have registration codes; e.g. asking for the reg code for 'admin' will return an error.
 public struct RegistrationCodeUserData: Content {
 	// User accounts associated with the reg code. First item in the array is the primary account.
@@ -104,11 +127,11 @@ public struct SettingsAppFeaturePair: Content {
 	var feature: String
 }
 
-/// Used to return the current `Settings` values. Doesn't update everything--some values aren't meant to be updated live, and others are
+/// Used to return the current `Settings` values. 
 ///
-/// Required by: `POST /api/v3/events/update`
+/// Required by: `GET /api/v3/events/update`
 ///
-/// See `EventController.eventsUpdateHandler(_:data:)`.
+/// See `AdminController.settingsHandler()`.
 public struct SettingsAdminData: Content {
 	var maxAlternateAccounts: Int
 	var maximumTwarrts: Int
@@ -124,6 +147,7 @@ public struct SettingsAdminData: Content {
 	/// Currently disabled app:feature pairs.
 	var disabledFeatures: [SettingsAppFeaturePair]
 	var shipWifiSSID: String?
+	var scheduleUpdateURL: String
 }
 
 extension SettingsAdminData {
@@ -144,6 +168,7 @@ extension SettingsAdminData {
 			}
 		}
 		self.shipWifiSSID = settings.shipWifiSSID
+		self.scheduleUpdateURL = settings.scheduleUpdateURL
 	}
 }
 
@@ -152,7 +177,7 @@ extension SettingsAdminData {
 ///
 /// Required by: `POST /api/v3/events/update`
 ///
-/// See `EventController.eventsUpdateHandler(_:data:)`.
+/// See `AdminController.settingsUpdateHandler()`.
 public struct SettingsUpdateData: Content {
 	var maxAlternateAccounts: Int?
 	var maximumTwarrts: Int?
@@ -170,6 +195,8 @@ public struct SettingsUpdateData: Content {
 	var disableFeatures: [SettingsAppFeaturePair]
 	/// The wifi name of the onboard wifi network
 	var shipWifiSSID: String?
+	/// The URL to use for automated schedule updates. The server polls this every hour to update the Events table.
+	var scheduleUpdateURL: String?
 }
 
 /// Used to return information about the time zone changes scheduled to occur during the cruise.
