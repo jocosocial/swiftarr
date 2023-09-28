@@ -17,7 +17,7 @@ import Vapor
 /// 	watching on that alertword. When someone posts, we get all fields in `alertwords` with values > 0. We then intersect the words in the post
 /// 	with the words from alertwords. For any words in the intersection, we get the set-valued key `alertwordusers-\(word)` to get the set of
 /// 	users watching on that particular word. We then increment the count of the field `alertwordTweet-\(word)` in key `NotificationHash-\(userID)`.
-/// - Fez Posts/Seamails: When a post is created, we increment a field named with the fezzes' ID in the `UnreadFezzes-\(userID)` or `UnreadSeamails-\(userID)` key.
+/// - Group Posts/Seamails: When a post is created, we increment a field named with the groups' ID in the `UnreadGroups-\(userID)` or `UnreadSeamails-\(userID)` key.
 /// 	When a post is deleted, we decrement the same field, only for users that haven't seen the post (their unseen count is less than how far back the deleted post is).
 /// - Next Event Time: Every time an event is followed/unfollowed, we calculate the time of the next event in the followed list, storing that in the `nextFollowedEventTime` field
 /// 	in `NotificationHash-\(userID)`.
@@ -30,15 +30,15 @@ import Vapor
 /// 	to the relevant @mention count when a user's own mentions are viewed (that is, twarrts/posts are requested with a query of `mentionSelf` or similar).
 /// - Alertwords: Similar to Mentions; the # of alertword hits that have been viewed is stored in `alertwordTweet-\(word)_viewed`. The difference between this
 /// 	field and `alertwordTweet-\(word)` equals the number of new, unseen alertword hits. The `_viewed` field is set equal to the count field upon viewing hits.
-/// - Fez Posts: When the fez is viewed (more corectly, the getSingleFez api call is made), we set the # of unseen posts for the fez to 0.
+/// - Group Posts: When the group is viewed (more corectly, the getSingleGroup api call is made), we set the # of unseen posts for the group to 0.
 /// - Next Event Time: Never gets deleted, but can get expired when the current time is > the event time.
 ///
 enum NotificationType {
 	/// An app-wide announcement. Associated value is the ID of the announcement.
 	case announcement(Int)
-	/// A new message posted to a fez. Associated value is the ID of the fez. (NOT the id of the new message).
-	case fezUnreadMsg(UUID)
-	/// A new message posted to a fez. Associated value is the ID of the fez. (NOT the id of the new message).
+	/// A new message posted to a group. Associated value is the ID of the group. (NOT the id of the new message).
+	case groupUnreadMsg(UUID)
+	/// A new message posted to a group. Associated value is the ID of the group. (NOT the id of the new message).
 	case seamailUnreadMsg(UUID)
 	/// A twarrt has been posted that contained a word that a user was alerting on. Associated value is a tuple. First is the alert word that matched.
 	/// Second is the twarrt id. Could also happen if an existing twarrt was edited, and the edit adds the alert word to the text.
@@ -57,7 +57,7 @@ enum NotificationType {
 	func redisFieldName() -> String {
 		switch self {
 		case .announcement: return "announcement"
-		case .fezUnreadMsg(let msgID): return msgID.uuidString
+		case .groupUnreadMsg(let msgID): return msgID.uuidString
 		case .seamailUnreadMsg(let msgID): return msgID.uuidString
 		case .alertwordTwarrt(let str, _): return "alertwordTweet-\(str)"
 		case .alertwordPost(let str, _): return "alertwordPost-\(str)"
@@ -76,7 +76,7 @@ enum NotificationType {
 	func redisKeyName(userID: UUID) -> RedisKey {
 		switch self {
 		case .announcement: return "NotificationHash-\(userID)"
-		case .fezUnreadMsg: return "UnreadFezzes-\(userID)"
+		case .groupUnreadMsg: return "UnreadGroups-\(userID)"
 		case .seamailUnreadMsg: return "UnreadSeamails-\(userID)"
 		case .alertwordTwarrt: return "NotificationHash-\(userID)"
 		case .alertwordPost: return "NotificationHash-\(userID)"
@@ -91,17 +91,17 @@ enum NotificationType {
 		return "NotificationHash-\(userID)"
 	}
 
-	/// A shortcut method to get the RedisKey to use to store notification data about a fez.
-	static func redisKeyForFez(_ fez: FriendlyFez, userID: UUID) throws -> RedisKey {
-		return try [.open, .closed].contains(fez.fezType)
-			? NotificationType.seamailUnreadMsg(fez.requireID()).redisKeyName(userID: userID)
-			: NotificationType.fezUnreadMsg(fez.requireID()).redisKeyName(userID: userID)
+	/// A shortcut method to get the RedisKey to use to store notification data about a group.
+	static func redisKeyForGroup(_ group: FriendlyGroup, userID: UUID) throws -> RedisKey {
+		return try [.open, .closed].contains(group.groupType)
+			? NotificationType.seamailUnreadMsg(group.requireID()).redisKeyName(userID: userID)
+			: NotificationType.groupUnreadMsg(group.requireID()).redisKeyName(userID: userID)
 	}
 
 	func objectID() -> String {
 		switch self {
 		case .announcement(let id): return String(id)
-		case .fezUnreadMsg(let uuid): return String(uuid)
+		case .groupUnreadMsg(let uuid): return String(uuid)
 		case .seamailUnreadMsg(let uuid): return String(uuid)
 		case .alertwordTwarrt(_, let id): return String(id)
 		case .alertwordPost(_, let id): return String(id)

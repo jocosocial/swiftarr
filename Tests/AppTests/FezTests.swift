@@ -4,7 +4,7 @@ import XCTest
 
 import Foundation
 
-final class FezTests: XCTestCase {
+final class GroupTests: XCTestCase {
     
     // MARK: - Configure Test Environment
     
@@ -12,7 +12,7 @@ final class FezTests: XCTestCase {
     let testUsername = "grundoon"
     let testPassword = "password"
     let adminURI = "/api/v3/admin/"
-    let fezURI = "/api/v3/fez/"
+    let groupURI = "/api/v3/group/"
     let twitarrURI = "/api/v3/twitarr/"
     let userURI = "/api/v3/user/"
     let usersURI = "/api/v3/users/"
@@ -36,8 +36,8 @@ final class FezTests: XCTestCase {
     // MARK: - Tests
     // Note: We migrate an "admin" user first during boot, so it is always present as `.first()`.
     
-    /// `GET /api/v3/fez/types`
-    /// `POST /api/v3/fez/create`
+    /// `GET /api/v3/group/types`
+    /// `POST /api/v3/group/create`
     func testCreate() throws {
         // get logged in user
         let token = try app.login(username: "verified", password: testPassword, on: conn)
@@ -46,18 +46,18 @@ final class FezTests: XCTestCase {
         
         // test types
         let types = try app.getResult(
-            from: fezURI + "types",
+            from: groupURI + "types",
             method: .GET,
             headers: headers,
             decodeTo: [String].self
         )
         XCTAssertFalse(types.isEmpty, "should be types")
         
-        // test fez with times
+        // test group with times
         let startTime = Date().timeIntervalSince1970
         let endTime = startTime.advanced(by: 3600)
-        var fezContentData = FezContentData(
-            fezType: types[0],
+        var groupContentData = GroupContentData(
+            groupType: types[0],
             title: "A Title!",
             info: "Some info.",
             startTime: String(startTime),
@@ -66,44 +66,44 @@ final class FezTests: XCTestCase {
             minCapacity: 0,
             maxCapacity: 2
         )
-        var fezData = try app.getResult(
-            from: fezURI + "create",
+        var groupData = try app.getResult(
+            from: groupURI + "create",
             method: .POST,
             headers: headers,
-            body: fezContentData,
-            decodeTo: FezData.self
+            body: groupContentData,
+            decodeTo: GroupData.self
         )
-        XCTAssertTrue(fezData.seamonkeys[0].username == "@verified", "should be 'verified'")
+        XCTAssertTrue(groupData.seamonkeys[0].username == "@verified", "should be 'verified'")
         
         // test with no times
-        fezContentData.startTime = ""
-        fezContentData.endTime = ""
-        fezData = try app.getResult(
-            from: fezURI + "create",
+        groupContentData.startTime = ""
+        groupContentData.endTime = ""
+        groupData = try app.getResult(
+            from: groupURI + "create",
             method: .POST,
             headers: headers,
-            body: fezContentData,
-            decodeTo: FezData.self
+            body: groupContentData,
+            decodeTo: GroupData.self
         )
-        XCTAssertTrue(fezData.startTime == "TBD", "should be 'TBD'")
-        XCTAssertTrue(fezData.endTime == "TBD", "should be 'TBD'")
+        XCTAssertTrue(groupData.startTime == "TBD", "should be 'TBD'")
+        XCTAssertTrue(groupData.endTime == "TBD", "should be 'TBD'")
         
         // test with invalid times
-        fezContentData.startTime = "abc"
-        fezContentData.endTime = "def"
+        groupContentData.startTime = "abc"
+        groupContentData.endTime = "def"
         let response = try app.getResponse(
-            from: fezURI + "create",
+            from: groupURI + "create",
             method: .POST,
             headers: headers,
-            body: fezContentData
+            body: groupContentData
         )
         XCTAssertTrue(response.http.status.code == 400, "should be 400 Bad Request")
     }
     
-    /// `POST /api/v3/fez/ID/join`
-    /// `GET /api/v3/fez/joined`
-    /// `GET /api/v3/fez/owner`
-    /// `POST /api/v3/fez/ID/unjoin`
+    /// `POST /api/v3/group/ID/join`
+    /// `GET /api/v3/group/joined`
+    /// `GET /api/v3/group/owner`
+    /// `POST /api/v3/group/ID/unjoin`
     func testJoin() throws {
         // need 3 logged in users
         let user = try app.createUser(username: testUsername, password: testPassword, on: conn)
@@ -117,17 +117,17 @@ final class FezTests: XCTestCase {
         var moderatorHeaders = HTTPHeaders()
         moderatorHeaders.bearerAuthorization = BearerAuthorization(token: token.token)
         
-        // create fez
+        // create group
         let types = try app.getResult(
-            from: fezURI + "types",
+            from: groupURI + "types",
             method: .GET,
             headers: userHeaders,
             decodeTo: [String].self
         )
         let startTime = Date().timeIntervalSince1970
         let endTime = startTime.advanced(by: 3600)
-        let fezContentData = FezContentData(
-            fezType: types[0],
+        let groupContentData = GroupContentData(
+            groupType: types[0],
             title: "A Title!",
             info: "Some info.",
             startTime: String(startTime),
@@ -136,58 +136,58 @@ final class FezTests: XCTestCase {
             minCapacity: 0,
             maxCapacity: 2
         )
-        var fezData = try app.getResult(
-            from: fezURI + "create",
+        var groupData = try app.getResult(
+            from: groupURI + "create",
             method: .POST,
             headers: userHeaders,
-            body: fezContentData,
-            decodeTo: FezData.self
+            body: groupContentData,
+            decodeTo: GroupData.self
         )
-        XCTAssertTrue(fezData.seamonkeys[0].username == "@\(testUsername)", "should be \(testUsername)")
+        XCTAssertTrue(groupData.seamonkeys[0].username == "@\(testUsername)", "should be \(testUsername)")
         
-        // test join fez
-        fezData = try app.getResult(
-            from: fezURI + "\(fezData.fezID)/join",
+        // test join group
+        groupData = try app.getResult(
+            from: groupURI + "\(groupData.groupID)/join",
             method: .POST,
             headers: verifiedHeaders,
-            decodeTo: FezData.self
+            decodeTo: GroupData.self
         )
-        XCTAssertTrue(fezData.seamonkeys.count == 2, "should be 2 seamonkeys")
-        XCTAssertTrue(fezData.seamonkeys[1].username == "@verified", "should be '@verified'")
+        XCTAssertTrue(groupData.seamonkeys.count == 2, "should be 2 seamonkeys")
+        XCTAssertTrue(groupData.seamonkeys[1].username == "@verified", "should be '@verified'")
         
         // test waitList
-        fezData = try app.getResult(
-            from: fezURI + "\(fezData.fezID)/join",
+        groupData = try app.getResult(
+            from: groupURI + "\(groupData.groupID)/join",
             method: .POST,
             headers: moderatorHeaders,
-            decodeTo: FezData.self
+            decodeTo: GroupData.self
         )
-        XCTAssertTrue(fezData.seamonkeys.count == 2, "should be 2 seamonkeys")
-        XCTAssertTrue(fezData.waitingList.count == 1, "should be 1 waiting")
-        XCTAssertTrue(fezData.waitingList[0].username == "@moderator", "should be '@moderator'")
+        XCTAssertTrue(groupData.seamonkeys.count == 2, "should be 2 seamonkeys")
+        XCTAssertTrue(groupData.waitingList.count == 1, "should be 1 waiting")
+        XCTAssertTrue(groupData.waitingList[0].username == "@moderator", "should be '@moderator'")
 
         // test joined
         var joined = try app.getResult(
-            from: fezURI + "joined",
+            from: groupURI + "joined",
             method: .GET,
             headers: verifiedHeaders,
-            decodeTo: [FezData].self
+            decodeTo: [GroupData].self
         )
-        XCTAssertTrue(joined.count == 1, "should be 1 fez")
+        XCTAssertTrue(joined.count == 1, "should be 1 group")
         var response = try app.getResponse(
-            from: fezURI + "create",
+            from: groupURI + "create",
             method: .POST,
             headers: verifiedHeaders,
-            body: fezContentData
+            body: groupContentData
         )
         XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
         joined = try app.getResult(
-            from: fezURI + "joined",
+            from: groupURI + "joined",
             method: .GET,
             headers: verifiedHeaders,
-            decodeTo: [FezData].self
+            decodeTo: [GroupData].self
         )
-        XCTAssertTrue(joined.count == 2, "should be 2 fezzes")
+        XCTAssertTrue(joined.count == 2, "should be 2 groups")
         
         // test owner
         let whoami = try app.getResult(
@@ -197,32 +197,32 @@ final class FezTests: XCTestCase {
             decodeTo: CurrentUserData.self
         )
         var owned = try app.getResult(
-            from: fezURI + "owner",
+            from: groupURI + "owner",
             method: .GET,
             headers: verifiedHeaders,
-            decodeTo: [FezData].self
+            decodeTo: [GroupData].self
         )
-        XCTAssertTrue(owned.count == 1, "should be 1 fez")
+        XCTAssertTrue(owned.count == 1, "should be 1 group")
         XCTAssertTrue(owned[0].ownerID == whoami.userID, "should be \(whoami.userID)")
         owned = try app.getResult(
-            from: fezURI + "owner",
+            from: groupURI + "owner",
             method: .GET,
             headers: userHeaders,
-            decodeTo: [FezData].self
+            decodeTo: [GroupData].self
         )
-        XCTAssertTrue(owned.count == 1, "should be 1 fez")
+        XCTAssertTrue(owned.count == 1, "should be 1 group")
         XCTAssertTrue(owned[0].ownerID == user.userID, "should be \(user.userID)")
         
         // test unjoin
-        fezData = try app.getResult(
-            from: fezURI + "\(fezData.fezID)/unjoin",
+        groupData = try app.getResult(
+            from: groupURI + "\(groupData.groupID)/unjoin",
             method: .POST,
             headers: verifiedHeaders,
-            decodeTo: FezData.self
+            decodeTo: GroupData.self
         )
-        XCTAssertTrue(fezData.seamonkeys.count == 2, "should be 2 seamonkeys")
-        XCTAssertTrue(fezData.seamonkeys[1].username == "@moderator", "should be '@moderator'")
-        XCTAssertTrue(fezData.waitingList.isEmpty, "should be 0 waiting")
+        XCTAssertTrue(groupData.seamonkeys.count == 2, "should be 2 seamonkeys")
+        XCTAssertTrue(groupData.seamonkeys[1].username == "@moderator", "should be '@moderator'")
+        XCTAssertTrue(groupData.waitingList.isEmpty, "should be 0 waiting")
         
         
         // test block
@@ -239,14 +239,14 @@ final class FezTests: XCTestCase {
         )
         XCTAssertTrue(response.http.status.code == 201, "should be 201 Created")
         response = try app.getResponse(
-            from: fezURI + "\(fezData.fezID)/join",
+            from: groupURI + "\(groupData.groupID)/join",
             method: .POST,
             headers: verifiedHeaders
         )
         XCTAssertTrue(response.http.status.code == 404, "should be 404 Not Found")
     }
     
-    /// `GET /api/v3/fez/open`
+    /// `GET /api/v3/group/open`
     func testOpen() throws {
         // need 2 logged in users
         let user = try app.createUser(username: testUsername, password: testPassword, on: conn)
@@ -257,17 +257,17 @@ final class FezTests: XCTestCase {
         var verifiedHeaders = HTTPHeaders()
         verifiedHeaders.bearerAuthorization = BearerAuthorization(token: token.token)
         
-        // create fezzes
+        // create groups
         let types = try app.getResult(
-            from: fezURI + "types",
+            from: groupURI + "types",
             method: .GET,
             headers: userHeaders,
             decodeTo: [String].self
         )
         let startTime = Date().timeIntervalSince1970
         let endTime = startTime.advanced(by: 3600)
-        let fezContentData = FezContentData(
-            fezType: types[0],
+        let groupContentData = GroupContentData(
+            groupType: types[0],
             title: "A Title!",
             info: "Some info.",
             startTime: String(startTime),
@@ -276,71 +276,71 @@ final class FezTests: XCTestCase {
             minCapacity: 0,
             maxCapacity: 2
         )
-        let fezData1 = try app.getResult(
-            from: fezURI + "create",
+        let groupData1 = try app.getResult(
+            from: groupURI + "create",
             method: .POST,
             headers: userHeaders,
-            body: fezContentData,
-            decodeTo: FezData.self
+            body: groupContentData,
+            decodeTo: GroupData.self
         )
-        let fezData2 = try app.getResult(
-            from: fezURI + "create",
+        let groupData2 = try app.getResult(
+            from: groupURI + "create",
             method: .POST,
             headers: userHeaders,
-            body: fezContentData,
-            decodeTo: FezData.self
+            body: groupContentData,
+            decodeTo: GroupData.self
         )
         
         // test open
         var open = try app.getResult(
-            from: fezURI + "open",
+            from: groupURI + "open",
             method: .GET,
             headers: userHeaders,
-            decodeTo: [FezData].self
+            decodeTo: [GroupData].self
         )
-        XCTAssertTrue(open.count == 2, "should be 2 fezzes")
+        XCTAssertTrue(open.count == 2, "should be 2 groups")
         _ = try app.getResponse(
-            from: fezURI + "\(fezData1.fezID)/join",
+            from: groupURI + "\(groupData1.groupID)/join",
             method: .POST,
             headers: verifiedHeaders
         )
         open = try app.getResult(
-            from: fezURI + "open",
+            from: groupURI + "open",
             method: .GET,
             headers: userHeaders,
-            decodeTo: [FezData].self
+            decodeTo: [GroupData].self
         )
-        XCTAssertTrue(open.count == 1, "should be 1 fez")
+        XCTAssertTrue(open.count == 1, "should be 1 group")
         _ = try app.getResponse(
-            from: fezURI + "\(fezData2.fezID)/join",
+            from: groupURI + "\(groupData2.groupID)/join",
             method: .POST,
             headers: verifiedHeaders
         )
         open = try app.getResult(
-            from: fezURI + "open",
+            from: groupURI + "open",
             method: .GET,
             headers: userHeaders,
-            decodeTo: [FezData].self
+            decodeTo: [GroupData].self
         )
-        XCTAssertTrue(open.count == 0, "should be no fez")
+        XCTAssertTrue(open.count == 0, "should be no group")
         _ = try app.getResponse(
-            from: fezURI + "\(fezData1.fezID)/unjoin",
+            from: groupURI + "\(groupData1.groupID)/unjoin",
             method: .POST,
             headers: verifiedHeaders
         )
         open = try app.getResult(
-            from: fezURI + "open",
+            from: groupURI + "open",
             method: .GET,
             headers: userHeaders,
-            decodeTo: [FezData].self
+            decodeTo: [GroupData].self
         )
-        XCTAssertTrue(open.count == 1, "should be 1 fez")
+        XCTAssertTrue(open.count == 1, "should be 1 group")
     }
     
-    /// `POST /api/v3/fez/ID/user/ID/add`
-    /// `POST /api/v3/fez/ID/user/ID/remove`
-    /// `POST /api/v3/fez/ID/update`
-    /// `POST /api/v3/fez/ID/candcel`
+    /// `POST /api/v3/group/ID/user/ID/add`
+    /// `POST /api/v3/group/ID/user/ID/remove`
+    /// `POST /api/v3/group/ID/update`
+    /// `POST /api/v3/group/ID/candcel`
     func testOwnerModify() throws {
         // need 2 users
         let user = try app.createUser(username: testUsername, password: testPassword, on: conn)
@@ -357,17 +357,17 @@ final class FezTests: XCTestCase {
             decodeTo: CurrentUserData.self
         )
         
-        // create fez
+        // create group
         let types = try app.getResult(
-            from: fezURI + "types",
+            from: groupURI + "types",
             method: .GET,
             headers: verifiedHeaders,
             decodeTo: [String].self
         )
         let startTime = Date().timeIntervalSince1970
         let endTime = startTime.advanced(by: 3600)
-        var fezContentData = FezContentData(
-            fezType: types[0],
+        var groupContentData = GroupContentData(
+            groupType: types[0],
             title: "A Title!",
             info: "Some info.",
             startTime: String(startTime),
@@ -376,28 +376,28 @@ final class FezTests: XCTestCase {
             minCapacity: 0,
             maxCapacity: 2
         )
-        var fezData = try app.getResult(
-            from: fezURI + "create",
+        var groupData = try app.getResult(
+            from: groupURI + "create",
             method: .POST,
             headers: verifiedHeaders,
-            body: fezContentData,
-            decodeTo: FezData.self
+            body: groupContentData,
+            decodeTo: GroupData.self
         )
-        XCTAssertTrue(fezData.seamonkeys[0].username == "@verified", "should be '@verified'")
+        XCTAssertTrue(groupData.seamonkeys[0].username == "@verified", "should be '@verified'")
         
         // test add user
-        fezData = try app.getResult(
-            from: fezURI + "\(fezData.fezID)/user/\(user.userID)/add",
+        groupData = try app.getResult(
+            from: groupURI + "\(groupData.groupID)/user/\(user.userID)/add",
             method: .POST,
             headers: verifiedHeaders,
-            decodeTo: FezData.self
+            decodeTo: GroupData.self
         )
-        XCTAssertTrue(fezData.seamonkeys.count == 2, "should be 2 seamonkeys")
-        XCTAssertTrue(fezData.seamonkeys[1].username == "@\(testUsername)", "should be '@\(testUsername)'")
+        XCTAssertTrue(groupData.seamonkeys.count == 2, "should be 2 seamonkeys")
+        XCTAssertTrue(groupData.seamonkeys[1].username == "@\(testUsername)", "should be '@\(testUsername)'")
         
         // test can't add twice
         var response = try app.getResponse(
-            from: fezURI + "\(fezData.fezID)/user/\(user.userID)/add",
+            from: groupURI + "\(groupData.groupID)/user/\(user.userID)/add",
             method: .POST,
             headers: verifiedHeaders
         )
@@ -405,25 +405,25 @@ final class FezTests: XCTestCase {
         
         // test not owner
         response = try app.getResponse(
-            from: fezURI + "\(fezData.fezID)/user/\(whoami.userID)/add",
+            from: groupURI + "\(groupData.groupID)/user/\(whoami.userID)/add",
             method: .POST,
             headers: userHeaders
         )
         XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
 
         // test remove user
-        fezData = try app.getResult(
-            from: fezURI + "\(fezData.fezID)/user/\(user.userID)/remove",
+        groupData = try app.getResult(
+            from: groupURI + "\(groupData.groupID)/user/\(user.userID)/remove",
             method: .POST,
             headers: verifiedHeaders,
-            decodeTo: FezData.self
+            decodeTo: GroupData.self
         )
-        XCTAssertTrue(fezData.seamonkeys[1].username == "AvailableSlot", "should be 'AvailableSlot'")
-        XCTAssertTrue(fezData.seamonkeys[0].username == "@verified", "should be '@verified'")
+        XCTAssertTrue(groupData.seamonkeys[1].username == "AvailableSlot", "should be 'AvailableSlot'")
+        XCTAssertTrue(groupData.seamonkeys[0].username == "@verified", "should be '@verified'")
         
         // test can't remove twice
         response = try app.getResponse(
-            from: fezURI + "\(fezData.fezID)/user/\(user.userID)/remove",
+            from: groupURI + "\(groupData.groupID)/user/\(user.userID)/remove",
             method: .POST,
             headers: verifiedHeaders
         )
@@ -431,70 +431,70 @@ final class FezTests: XCTestCase {
         
         // test not owner
         response = try app.getResponse(
-            from: fezURI + "\(fezData.fezID)/user/\(whoami.userID)/remove",
+            from: groupURI + "\(groupData.groupID)/user/\(whoami.userID)/remove",
             method: .POST,
             headers: userHeaders
         )
         XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
         
         // test update
-        fezContentData.fezType = types[1]
-        fezContentData.title = "A new title!"
-        fezContentData.info = "This is an updated description."
-        fezContentData.startTime = String(startTime.advanced(by: 7200))
-        fezContentData.endTime = ""
-        fezContentData.location = "SeaView Pool"
-        fezContentData.minCapacity = 0
-        fezContentData.maxCapacity = 10
-        fezData = try app.getResult(
-            from: fezURI + "\(fezData.fezID)/update",
+        groupContentData.groupType = types[1]
+        groupContentData.title = "A new title!"
+        groupContentData.info = "This is an updated description."
+        groupContentData.startTime = String(startTime.advanced(by: 7200))
+        groupContentData.endTime = ""
+        groupContentData.location = "SeaView Pool"
+        groupContentData.minCapacity = 0
+        groupContentData.maxCapacity = 10
+        groupData = try app.getResult(
+            from: groupURI + "\(groupData.groupID)/update",
             method: .POST,
             headers: verifiedHeaders,
-            body: fezContentData,
-            decodeTo: FezData.self
+            body: groupContentData,
+            decodeTo: GroupData.self
         )
-        XCTAssert(fezData.fezType == fezContentData.fezType, "should be \(fezContentData.fezType)")
-        XCTAssert(fezData.title == fezContentData.title, "should be \(fezContentData.title)")
-        XCTAssert(fezData.info == fezContentData.info, "should be \(fezContentData.info)")
-        XCTAssert(fezData.endTime == "TBD", "should be 'TBD')")
-        XCTAssert(fezData.location == fezContentData.location, "should be \(fezContentData.location)")
-        XCTAssert(fezData.seamonkeys.count == 10, "should be \(fezContentData.maxCapacity)")
-        XCTAssert(fezData.waitingList.count == 0, "should be no waitList")
+        XCTAssert(groupData.groupType == groupContentData.groupType, "should be \(groupContentData.groupType)")
+        XCTAssert(groupData.title == groupContentData.title, "should be \(groupContentData.title)")
+        XCTAssert(groupData.info == groupContentData.info, "should be \(groupContentData.info)")
+        XCTAssert(groupData.endTime == "TBD", "should be 'TBD')")
+        XCTAssert(groupData.location == groupContentData.location, "should be \(groupContentData.location)")
+        XCTAssert(groupData.seamonkeys.count == 10, "should be \(groupContentData.maxCapacity)")
+        XCTAssert(groupData.waitingList.count == 0, "should be no waitList")
         
         // test not owner
         response = try app.getResponse(
-            from: fezURI + "\(fezData.fezID)/update",
+            from: groupURI + "\(groupData.groupID)/update",
             method: .POST,
             headers: userHeaders,
-            body: fezContentData
+            body: groupContentData
         )
         XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
         
         // test cancel
-        fezData = try app.getResult(
-            from: fezURI + "\(fezData.fezID)/cancel",
+        groupData = try app.getResult(
+            from: groupURI + "\(groupData.groupID)/cancel",
             method: .POST,
             headers: verifiedHeaders,
-            decodeTo: FezData.self
+            decodeTo: GroupData.self
         )
-        XCTAssertTrue(fezData.title.hasPrefix("[CANCELLED]"), "should be cancelled")
-        XCTAssertTrue(fezData.info.hasPrefix("[CANCELLED]"), "should be cancelled")
-        XCTAssertTrue(fezData.startTime == "[CANCELLED]", "should be cancelled")
-        XCTAssertTrue(fezData.endTime == "[CANCELLED]", "should be cancelled")
-        XCTAssertTrue(fezData.location.hasPrefix("[CANCELLED]"), "should be cancelled")
+        XCTAssertTrue(groupData.title.hasPrefix("[CANCELLED]"), "should be cancelled")
+        XCTAssertTrue(groupData.info.hasPrefix("[CANCELLED]"), "should be cancelled")
+        XCTAssertTrue(groupData.startTime == "[CANCELLED]", "should be cancelled")
+        XCTAssertTrue(groupData.endTime == "[CANCELLED]", "should be cancelled")
+        XCTAssertTrue(groupData.location.hasPrefix("[CANCELLED]"), "should be cancelled")
         
         // test not owner
         response = try app.getResponse(
-            from: fezURI + "\(fezData.fezID)/cancel",
+            from: groupURI + "\(groupData.groupID)/cancel",
             method: .POST,
             headers: userHeaders
         )
         XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
     }
     
-    /// `GET /api/v3/fez/ID`
-    /// `POST /api/v3/fez/ID/post`
-    /// `POST /api/v3/fez/post/ID/delete`
+    /// `GET /api/v3/group/ID`
+    /// `POST /api/v3/group/ID/post`
+    /// `POST /api/v3/group/post/ID/delete`
     func testPosts() throws {
         // need 2 users
         let _ = try app.createUser(username: testUsername, password: testPassword, on: conn)
@@ -505,17 +505,17 @@ final class FezTests: XCTestCase {
         var verifiedHeaders = HTTPHeaders()
         verifiedHeaders.bearerAuthorization = BearerAuthorization(token: token.token)
         
-        // create fez
+        // create group
         let types = try app.getResult(
-            from: fezURI + "types",
+            from: groupURI + "types",
             method: .GET,
             headers: verifiedHeaders,
             decodeTo: [String].self
         )
         let startTime = Date().timeIntervalSince1970
         let endTime = startTime.advanced(by: 3600)
-        let fezContentData = FezContentData(
-            fezType: types[0],
+        let groupContentData = GroupContentData(
+            groupType: types[0],
             title: "A Title!",
             info: "Some info.",
             startTime: String(startTime),
@@ -524,50 +524,50 @@ final class FezTests: XCTestCase {
             minCapacity: 0,
             maxCapacity: 2
         )
-        let fezData = try app.getResult(
-            from: fezURI + "create",
+        let groupData = try app.getResult(
+            from: groupURI + "create",
             method: .POST,
             headers: verifiedHeaders,
-            body: fezContentData,
-            decodeTo: FezData.self
+            body: groupContentData,
+            decodeTo: GroupData.self
         )
-        XCTAssertTrue(fezData.seamonkeys[0].username == "@verified", "should be '@verified'")
+        XCTAssertTrue(groupData.seamonkeys[0].username == "@verified", "should be '@verified'")
         
-        // test fez detail
-        var fezDetailData = try app.getResult(
-            from: fezURI + "\(fezData.fezID)",
+        // test group detail
+        var groupDetailData = try app.getResult(
+            from: groupURI + "\(groupData.groupID)",
             method: .GET,
             headers: verifiedHeaders,
-            decodeTo: FezDetailData.self
+            decodeTo: GroupDetailData.self
         )
-        XCTAssertTrue(fezDetailData.posts.count == 0, "should be no posts")
+        XCTAssertTrue(groupDetailData.posts.count == 0, "should be no posts")
         
         // test post
         let postCreateData = PostCreateData(text: "Hello.", imageData: nil)
-        fezDetailData = try app.getResult(
-            from: fezURI + "\(fezData.fezID)/post",
+        groupDetailData = try app.getResult(
+            from: groupURI + "\(groupData.groupID)/post",
             method: .POST,
             headers: verifiedHeaders,
             body: postCreateData,
-            decodeTo: FezDetailData.self
+            decodeTo: GroupDetailData.self
         )
-        XCTAssertTrue(fezDetailData.posts.count == 1, "should be 1 post")
+        XCTAssertTrue(groupDetailData.posts.count == 1, "should be 1 post")
         
         // test can't delete post
         let response = try app.getResponse(
-            from: fezURI + "post/\(fezDetailData.posts[0].postID)/delete",
+            from: groupURI + "post/\(groupDetailData.posts[0].postID)/delete",
             method: .POST,
             headers: userHeaders
         )
         XCTAssertTrue(response.http.status.code == 403, "should be 403 Forbidden")
         
         // test delete post
-        fezDetailData = try app.getResult(
-            from: fezURI + "post/\(fezDetailData.posts[0].postID)/delete",
+        groupDetailData = try app.getResult(
+            from: groupURI + "post/\(groupDetailData.posts[0].postID)/delete",
             method: .POST,
             headers: verifiedHeaders,
-            decodeTo: FezDetailData.self
+            decodeTo: GroupDetailData.self
         )
-        XCTAssertTrue(fezDetailData.posts.count == 0, "should be no posts")
+        XCTAssertTrue(groupDetailData.posts.count == 0, "should be no posts")
     }
 }

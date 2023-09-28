@@ -6,9 +6,9 @@ struct CreatePerformanceIndexes: AsyncMigration {
 
 		try await create_index(on: sqlDatabase, tableName: "forum", columnName: "category_id")
 		try await create_index(on: sqlDatabase, tableName: "forumpost", columnName: "forum")
-		try await create_index(on: sqlDatabase, tableName: "fezposts", columnName: "friendly_fez")
+		try await create_index(on: sqlDatabase, tableName: "groupposts", columnName: "friendly_group")
 		try await create_index(on: sqlDatabase, tableName: "event", columnName: "forum_id")
-		try await create_index(on: sqlDatabase, tableName: "fez_edit", columnName: "fez")
+		try await create_index(on: sqlDatabase, tableName: "group_edit", columnName: "group")
 		try await create_index(on: sqlDatabase, tableName: "forum_edit", columnName: "forum")
 		try await create_index(on: sqlDatabase, tableName: "forum_post_edit", columnName: "post")
 		try await create_index(on: sqlDatabase, tableName: "karaoke_played_song", columnName: "song")
@@ -25,9 +25,9 @@ struct CreatePerformanceIndexes: AsyncMigration {
 
 		try await drop_index(on: sqlDatabase, tableName: "forum", columnName: "category_id")
 		try await drop_index(on: sqlDatabase, tableName: "forumpost", columnName: "forum")
-		try await drop_index(on: sqlDatabase, tableName: "fezposts", columnName: "friendly_fez")
+		try await drop_index(on: sqlDatabase, tableName: "groupposts", columnName: "friendly_group")
 		try await drop_index(on: sqlDatabase, tableName: "event", columnName: "forum_id")
-		try await drop_index(on: sqlDatabase, tableName: "fez_edit", columnName: "fez")
+		try await drop_index(on: sqlDatabase, tableName: "group_edit", columnName: "group")
 		try await drop_index(on: sqlDatabase, tableName: "forum_edit", columnName: "forum")
 		try await drop_index(on: sqlDatabase, tableName: "forum_post_edit", columnName: "post")
 		try await drop_index(on: sqlDatabase, tableName: "karaoke_played_song", columnName: "song")

@@ -4,41 +4,41 @@ struct CreateSeamailSearchIndexes: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		let sqlDatabase = (database as! SQLDatabase)
 
-		try await createFezPostsSearch(on: sqlDatabase)
-		try await createFriendlyFezSearch(on: sqlDatabase)
+		try await createGroupPostsSearch(on: sqlDatabase)
+		try await createFriendlyGroupSearch(on: sqlDatabase)
 	}
 
 	func revert(on database: Database) async throws {
 		let sqlDatabase = (database as! SQLDatabase)
 
-		try await dropSearchIndexAndColumn(on: sqlDatabase, tableName: "fezposts")
-		try await dropSearchIndexAndColumn(on: sqlDatabase, tableName: "friendlyfez")
+		try await dropSearchIndexAndColumn(on: sqlDatabase, tableName: "groupposts")
+		try await dropSearchIndexAndColumn(on: sqlDatabase, tableName: "friendlygroup")
 	}
 
-	func createFezPostsSearch(on database: SQLDatabase) async throws {
+	func createGroupPostsSearch(on database: SQLDatabase) async throws {
 		try await database.raw(
 			"""
-			  ALTER TABLE fezposts
+			  ALTER TABLE groupposts
 			  ADD COLUMN IF NOT EXISTS fulltext_search tsvector
 			    GENERATED ALWAYS AS (to_tsvector('english', text)) STORED;
 			"""
 		)
 		.run()
 
-		try await createSearchIndex(on: database, tableName: "fezposts")
+		try await createSearchIndex(on: database, tableName: "groupposts")
 	}
 
-	func createFriendlyFezSearch(on database: SQLDatabase) async throws {
+	func createFriendlyGroupSearch(on database: SQLDatabase) async throws {
 		try await database.raw(
 			"""
-			  ALTER TABLE friendlyfez
+			  ALTER TABLE friendlygroup
 			  ADD COLUMN IF NOT EXISTS fulltext_search tsvector
 			    GENERATED ALWAYS AS (to_tsvector('english', coalesce(title, '') || ' ' || coalesce(info, ''))) STORED;
 			"""
 		)
 		.run()
 
-		try await createSearchIndex(on: database, tableName: "friendlyfez")
+		try await createSearchIndex(on: database, tableName: "friendlygroup")
 	}
 
 	func createSearchIndex(on database: SQLDatabase, tableName: String) async throws {

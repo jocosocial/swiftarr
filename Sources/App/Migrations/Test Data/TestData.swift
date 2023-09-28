@@ -107,11 +107,11 @@ struct CreateTestData: AsyncMigration {
 		guard users.count == 4 else {
 			throw Abort(.internalServerError, reason: "Users for large test seamail thread don't exist.")
 		}
-		let bigFez = try FriendlyFez(owner: users[0].requireID())
-		bigFez.title = "Hey Everybody, Let's Make Lots of Posts"
-		bigFez.participantArray = try users.map { try $0.requireID() }
-		try await bigFez.save(on: database)
-		try await bigFez.$participants.attach(
+		let bigGroup = try FriendlyGroup(owner: users[0].requireID())
+		bigGroup.title = "Hey Everybody, Let's Make Lots of Posts"
+		bigGroup.participantArray = try users.map { try $0.requireID() }
+		try await bigGroup.save(on: database)
+		try await bigGroup.$participants.attach(
 			users,
 			on: database,
 			{
@@ -143,15 +143,15 @@ struct CreateTestData: AsyncMigration {
 			default: postStr = "Okay then, let's do it!"
 			}
 
-			let post = try FezPost(
-				fez: bigFez,
+			let post = try GroupPost(
+				group: bigGroup,
 				authorID: users.randomElement()!.requireID(),
 				text: "Post #\(index): \(postStr)",
 				image: nil
 			)
 			try await post.save(on: database)
 		}
-		bigFez.postCount = 825
-		try await bigFez.save(on: database)
+		bigGroup.postCount = 825
+		try await bigGroup.save(on: database)
 	}
 }

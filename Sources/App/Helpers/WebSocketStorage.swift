@@ -6,14 +6,14 @@ public struct UserSocket {
 	let socketID: UUID
 	let userID: UUID
 	let socket: WebSocket
-	let fezID: UUID?
+	let groupID: UUID?
 	let htmlOutput: Bool
 
-	init(userID: UUID, socket: WebSocket, fezID: UUID? = nil, htmlOutput: Bool = false) {
+	init(userID: UUID, socket: WebSocket, groupID: UUID? = nil, htmlOutput: Bool = false) {
 		self.userID = userID
 		self.socket = socket
 		socketID = UUID()
-		self.fezID = fezID
+		self.groupID = groupID
 		self.htmlOutput = htmlOutput
 	}
 }
@@ -41,8 +41,8 @@ extension Application {
 	class WebSocketStorage {
 		// Stored by user, so userID : [UserSocket]
 		var notificationSockets: [UUID: [UserSocket]] = [:]
-		// Stored by fezID, so fezID : [UserSocket]
-		var fezSockets: [UUID: [UserSocket]] = [:]
+		// Stored by groupID, so groupID : [UserSocket]
+		var groupSockets: [UUID: [UserSocket]] = [:]
 	}
 
 	/// Storage key used by Vapor's Services API. Used by UserCache to access its cache data.
@@ -106,61 +106,61 @@ extension Request {
 			}
 		}
 
-		// MARK: Fez Sockets
-		func getFezSockets(_ fezID: UUID) -> [UserSocket] {
+		// MARK: Group Sockets
+		func getGroupSockets(_ groupID: UUID) -> [UserSocket] {
 			let cacheLock = request.application.locks.lock(for: Application.WebSocketStorageLockKey.self)
 			let cacheResult = cacheLock.withLock { () -> [UserSocket] in
-				return request.application.websocketStorage.fezSockets[fezID] ?? []
+				return request.application.websocketStorage.groupSockets[groupID] ?? []
 			}
 			return cacheResult
 		}
 
-		func storeFezSocket(_ ws: UserSocket) throws {
-			guard let fezID = ws.fezID else {
+		func storeGroupSocket(_ ws: UserSocket) throws {
+			guard let groupID = ws.groupID else {
 				throw Abort(.badRequest, reason: "WebSocket for a conversation needs the conversation ID")
 			}
 			let cacheLock = request.application.locks.lock(for: Application.WebSocketStorageLockKey.self)
 			cacheLock.withLock {
-				var sockets = request.application.websocketStorage.fezSockets[fezID] ?? []
+				var sockets = request.application.websocketStorage.groupSockets[groupID] ?? []
 				sockets.append(ws)
-				request.application.websocketStorage.fezSockets[fezID] = sockets
+				request.application.websocketStorage.groupSockets[groupID] = sockets
 			}
 		}
 
-		func removeFezSocket(_ ws: UserSocket) throws {
+		func removeGroupSocket(_ ws: UserSocket) throws {
 			let cacheLock = request.application.locks.lock(for: Application.WebSocketStorageLockKey.self)
-			guard let fezID = ws.fezID else {
+			guard let groupID = ws.groupID else {
 				throw Abort(.badRequest, reason: "WebSocket for a conversation needs the conversation ID")
 			}
 			cacheLock.withLock {
-				var sockets = request.application.websocketStorage.fezSockets[fezID] ?? []
+				var sockets = request.application.websocketStorage.groupSockets[groupID] ?? []
 				if let index = sockets.firstIndex(where: { $0.socketID == ws.socketID }) {
 					sockets.remove(at: index)
-					request.application.websocketStorage.fezSockets[fezID] = sockets
+					request.application.websocketStorage.groupSockets[groupID] = sockets
 				}
 			}
 		}
 
 		// MARK: Logout
 		func handleUserLogout(_ userID: UUID) async throws {
-			var fezSocketsToClose: [UserSocket] = []
+			var groupSocketsToClose: [UserSocket] = []
 			let cacheLock = request.application.locks.lock(for: Application.WebSocketStorageLockKey.self)
 			cacheLock.withLock {
-				fezSocketsToClose.append(
+				groupSocketsToClose.append(
 					contentsOf: request.application.websocketStorage.notificationSockets[userID] ?? []
 				)
 				request.application.websocketStorage.notificationSockets[userID] = nil
-				for fezSockets in request.application.websocketStorage.fezSockets.values {
-					let userFezSockets = fezSockets.filter { $0.userID == userID }
-					if !userFezSockets.isEmpty, let fezID = userFezSockets[0].fezID {
-						fezSocketsToClose.append(contentsOf: userFezSockets)
-						let openSockets = fezSockets.filter { $0.userID != userID }
-						request.application.websocketStorage.fezSockets[fezID] = openSockets
+				for groupSockets in request.application.websocketStorage.groupSockets.values {
+					let userGroupSockets = groupSockets.filter { $0.userID == userID }
+					if !userGroupSockets.isEmpty, let groupID = userGroupSockets[0].groupID {
+						groupSocketsToClose.append(contentsOf: userGroupSockets)
+						let openSockets = groupSockets.filter { $0.userID != userID }
+						request.application.websocketStorage.groupSockets[groupID] = openSockets
 					}
 				}
 			}
-			for userFezSocket in fezSocketsToClose {
-				try await userFezSocket.socket.close().get()
+			for userGroupSocket in groupSocketsToClose {
+				try await userGroupSocket.socket.close().get()
 			}
 		}
 	}

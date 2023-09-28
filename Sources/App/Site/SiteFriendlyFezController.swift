@@ -2,8 +2,8 @@ import Crypto
 import FluentSQL
 import Vapor
 
-// Form data from the Create/Update Fez form
-struct CreateFezPostFormContent: Codable {
+// Form data from the Create/Update Group form
+struct CreateGroupPostFormContent: Codable {
 	var subject: String
 	var location: String
 	var eventtype: String
@@ -14,13 +14,13 @@ struct CreateFezPostFormContent: Codable {
 	var postText: String
 }
 
-struct FezCreateUpdatePageContext: Encodable {
+struct GroupCreateUpdatePageContext: Encodable {
 	var trunk: TrunkContext
-	var fez: FezData?
+	var group: GroupData?
 	var pageTitle: String
-	var fezTitle: String = ""
-	var fezLocation: String = ""
-	var fezType: String = ""
+	var groupTitle: String = ""
+	var groupLocation: String = ""
+	var groupType: String = ""
 	var startTime: Date?
 	var minutes: Int = 0
 	var minPeople: Int = 0
@@ -29,41 +29,41 @@ struct FezCreateUpdatePageContext: Encodable {
 	var formAction: String
 	var submitButtonTitle: String = "Create"
 
-	init(_ req: Request, fezToUpdate: FezData? = nil) throws {
-		if let fez = fezToUpdate {
+	init(_ req: Request, groupToUpdate: GroupData? = nil) throws {
+		if let group = groupToUpdate {
 			trunk = .init(req, title: "Update Looking For Group", tab: .lfg)
-			self.fez = fezToUpdate
+			self.group = groupToUpdate
 			pageTitle = "Update Looking For Group"
-			fezTitle = fez.title
-			fezLocation = fez.location ?? ""
-			fezType = fez.fezType.rawValue
-			startTime = fez.startTime
-			if let start = fez.startTime, let end = fez.endTime {
+			groupTitle = group.title
+			groupLocation = group.location ?? ""
+			groupType = group.groupType.rawValue
+			startTime = group.startTime
+			if let start = group.startTime, let end = group.endTime {
 				minutes = Int(end.timeIntervalSince(start) / 60 + 0.01)  // should be 30, 60, 90, etc.
 			}
-			minPeople = fez.minParticipants
-			maxPeople = fez.maxParticipants
-			info = fez.info
-			formAction = "/fez/\(fez.fezID)/update"
+			minPeople = group.minParticipants
+			maxPeople = group.maxParticipants
+			info = group.info
+			formAction = "/group/\(group.groupID)/update"
 			submitButtonTitle = "Update"
 		}
 		else {
 			trunk = .init(req, title: "New Looking For Group", tab: .lfg)
 			pageTitle = "Create a New LFG"
-			formAction = "/fez/create"
+			formAction = "/group/create"
 			minPeople = 2
 			maxPeople = 2
 		}
 	}
 
-	// Builds a Create Fez page for a fez, prefilled to play the indicated boardgame.
+	// Builds a Create Group page for a group, prefilled to play the indicated boardgame.
 	// If `game` is an expansion set, you can optionally pass the baseGame in as well.
 	init(_ req: Request, forGame game: BoardgameData, baseGame: BoardgameData? = nil) {
 		trunk = .init(req, title: "New LFG", tab: .lfg)
 		pageTitle = "Create LFG to play a Boardgame"
-		fezTitle = "Play \(game.gameName)"
-		fezLocation = "Dining Room, Deck 3 Aft"
-		fezType = "gaming"
+		groupTitle = "Play \(game.gameName)"
+		groupLocation = "Dining Room, Deck 3 Aft"
+		groupType = "gaming"
 		minutes = game.avgPlayingTime ?? game.minPlayingTime ?? game.maxPlayingTime ?? 0
 		minPeople = game.minPlayers ?? 2
 		maxPeople = game.maxPlayers ?? 2
@@ -76,218 +76,218 @@ struct FezCreateUpdatePageContext: Encodable {
 				"\n\n\(game.gameName) is an expansion pack for \(baseGame.gameName). You'll need to check this out of the library too. The game library has \(baseGameCopyText) of the base game."
 			)
 		}
-		formAction = "/fez/create"
+		formAction = "/group/create"
 		submitButtonTitle = "Create"
 	}
 }
 
-struct SiteFriendlyFezController: SiteControllerUtils {
+struct SiteFriendlyGroupController: SiteControllerUtils {
 
 	func registerRoutes(_ app: Application) throws {
 		// Routes that require login but are generally 'global' -- Two logged-in users could share this URL and both see the content
-		let globalRoutes = getGlobalRoutes(app).grouped("fez")
-			.grouped(DisabledSiteSectionMiddleware(feature: .friendlyfez))
-		globalRoutes.get("", use: fezRootPageHandler)
-		globalRoutes.get("joined", use: joinedFezPageHandler)
-		globalRoutes.get("owned", use: ownedFezPageHandler)
-		globalRoutes.get(fezIDParam, use: singleFezPageHandler)
-		globalRoutes.get("faq", use: fezFAQHandler)
+		let globalRoutes = getGlobalRoutes(app).grouped("group")
+			.grouped(DisabledSiteSectionMiddleware(feature: .friendlygroup))
+		globalRoutes.get("", use: groupRootPageHandler)
+		globalRoutes.get("joined", use: joinedGroupPageHandler)
+		globalRoutes.get("owned", use: ownedGroupPageHandler)
+		globalRoutes.get(groupIDParam, use: singleGroupPageHandler)
+		globalRoutes.get("faq", use: groupFAQHandler)
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
-		let privateRoutes = getPrivateRoutes(app).grouped("fez")
-			.grouped(DisabledSiteSectionMiddleware(feature: .friendlyfez))
-		privateRoutes.get("create", use: fezCreatePageHandler)
-		privateRoutes.get(fezIDParam, "update", use: fezUpdatePageHandler)
-		privateRoutes.get(fezIDParam, "edit", use: fezUpdatePageHandler)
-		privateRoutes.post("create", use: fezCreateOrUpdatePostHandler)
-		privateRoutes.post(fezIDParam, "update", use: fezCreateOrUpdatePostHandler)
+		let privateRoutes = getPrivateRoutes(app).grouped("group")
+			.grouped(DisabledSiteSectionMiddleware(feature: .friendlygroup))
+		privateRoutes.get("create", use: groupCreatePageHandler)
+		privateRoutes.get(groupIDParam, "update", use: groupUpdatePageHandler)
+		privateRoutes.get(groupIDParam, "edit", use: groupUpdatePageHandler)
+		privateRoutes.post("create", use: groupCreateOrUpdatePostHandler)
+		privateRoutes.post(groupIDParam, "update", use: groupCreateOrUpdatePostHandler)
 
-		privateRoutes.post(fezIDParam, "join", use: fezJoinPostHandler)
-		privateRoutes.post(fezIDParam, "leave", use: fezLeavePostHandler)
-		privateRoutes.post(fezIDParam, "post", use: fezThreadPostHandler)
-		privateRoutes.post("post", postIDParam, "delete", use: fezPostDeleteHandler)
-		privateRoutes.delete("post", postIDParam, use: fezPostDeleteHandler)
-		privateRoutes.post(fezIDParam, "cancel", use: fezCancelPostHandler)
-		privateRoutes.get(fezIDParam, "members", use: fezMembersPageHandler)
-		privateRoutes.post(fezIDParam, "members", "add", userIDParam, use: fezAddUserPostHandler)
-		privateRoutes.post(fezIDParam, "members", "remove", userIDParam, use: fezRemoveUserPostHandler)
+		privateRoutes.post(groupIDParam, "join", use: groupJoinPostHandler)
+		privateRoutes.post(groupIDParam, "leave", use: groupLeavePostHandler)
+		privateRoutes.post(groupIDParam, "post", use: groupThreadPostHandler)
+		privateRoutes.post("post", postIDParam, "delete", use: groupPostDeleteHandler)
+		privateRoutes.delete("post", postIDParam, use: groupPostDeleteHandler)
+		privateRoutes.post(groupIDParam, "cancel", use: groupCancelPostHandler)
+		privateRoutes.get(groupIDParam, "members", use: groupMembersPageHandler)
+		privateRoutes.post(groupIDParam, "members", "add", userIDParam, use: groupAddUserPostHandler)
+		privateRoutes.post(groupIDParam, "members", "remove", userIDParam, use: groupRemoveUserPostHandler)
 
-		privateRoutes.get("report", fezIDParam, use: fezReportPageHandler)
-		privateRoutes.post("report", fezIDParam, use: fezReportPostHandler)
-		privateRoutes.get("post", "report", postIDParam, use: fezPostReportPageHandler)
-		privateRoutes.post("post", "report", postIDParam, use: fezPostReportPostHandler)
+		privateRoutes.get("report", groupIDParam, use: groupReportPageHandler)
+		privateRoutes.post("report", groupIDParam, use: groupReportPostHandler)
+		privateRoutes.get("post", "report", postIDParam, use: groupPostReportPageHandler)
+		privateRoutes.post("post", "report", postIDParam, use: groupPostReportPostHandler)
 
-		privateRoutes.webSocket(fezIDParam, "socket", shouldUpgrade: shouldCreateFezSocket, onUpgrade: createFezSocket)
+		privateRoutes.webSocket(groupIDParam, "socket", shouldUpgrade: shouldCreateGroupSocket, onUpgrade: createGroupSocket)
 
 		// Mods only
-		privateRoutes.post(fezIDParam, "delete", use: fezDeleteHandler)
-		privateRoutes.delete(fezIDParam, use: fezDeleteHandler)
+		privateRoutes.post(groupIDParam, "delete", use: groupDeleteHandler)
+		privateRoutes.delete(groupIDParam, use: groupDeleteHandler)
 	}
 
-	// MARK: - FriendlyFez
+	// MARK: - FriendlyGroup
 
-	enum FezTab: String, Codable {
+	enum GroupTab: String, Codable {
 		case faq, find, joined, owned
 	}
 
-	// GET /fez
-	// Shows the root Fez page, with a list of all fezzes.
-	func fezRootPageHandler(_ req: Request) async throws -> View {
-		let response = try await apiQuery(req, endpoint: "/fez/open")
-		let fezList = try response.content.decode(FezListData.self)
-		struct FezRootPageContext: Encodable {
+	// GET /group
+	// Shows the root Group page, with a list of all groups.
+	func groupRootPageHandler(_ req: Request) async throws -> View {
+		let response = try await apiQuery(req, endpoint: "/group/open")
+		let groupList = try response.content.decode(GroupListData.self)
+		struct GroupRootPageContext: Encodable {
 			var trunk: TrunkContext
-			var fezList: FezListData
+			var groupList: GroupListData
 			var paginator: PaginatorContext
-			var tab: FezTab
+			var tab: GroupTab
 			var typeSelection: String?
 			var daySelection: Int?
 			var hidePastSelection: Bool?
 
-			init(_ req: Request, fezList: FezListData) throws {
+			init(_ req: Request, groupList: GroupListData) throws {
 				trunk = .init(req, title: "Looking For Group", tab: .lfg)
-				self.fezList = fezList
+				self.groupList = groupList
 				tab = .find
 				typeSelection = req.query[String.self, at: "type"] ?? "all"
 				daySelection = req.query[Int.self, at: "cruiseday"]
 				let hidePastQuery = req.query[String.self, at: "hidePast"]
 				hidePastSelection = hidePastQuery == nil ? nil : hidePastQuery?.lowercased() == "true"
-				let limit = fezList.paginator.limit
-				paginator = .init(fezList.paginator) { pageIndex in
-					"/fez?start=\(pageIndex * limit)&limit=\(limit)"
+				let limit = groupList.paginator.limit
+				paginator = .init(groupList.paginator) { pageIndex in
+					"/group?start=\(pageIndex * limit)&limit=\(limit)"
 				}
 			}
 		}
-		let ctx = try FezRootPageContext(req, fezList: fezList)
-		return try await req.view.render("Fez/fezRoot", ctx)
+		let ctx = try GroupRootPageContext(req, groupList: groupList)
+		return try await req.view.render("Group/groupRoot", ctx)
 	}
 
-	// GET /fez/faq
+	// GET /group/faq
 	//
-	// Shows a FAQ page for Fezzes.
-	func fezFAQHandler(_ req: Request) async throws -> View {
-		struct FezFAQPageContext: Encodable {
+	// Shows a FAQ page for Groups.
+	func groupFAQHandler(_ req: Request) async throws -> View {
+		struct GroupFAQPageContext: Encodable {
 			var trunk: TrunkContext
-			var tab: FezTab
+			var tab: GroupTab
 
 			init(_ req: Request) throws {
 				trunk = .init(req, title: "Looking For Group", tab: .lfg)
 				tab = .faq
 			}
 		}
-		let ctx = try FezFAQPageContext(req)
-		return try await req.view.render("Fez/fezFAQ", ctx)
+		let ctx = try GroupFAQPageContext(req)
+		return try await req.view.render("Group/groupFAQ", ctx)
 	}
 
-	// GET /fez/joined
+	// GET /group/joined
 	//
-	// Shows the Joined Fezzes page.
-	func joinedFezPageHandler(_ req: Request) async throws -> View {
-		let response = try await apiQuery(req, endpoint: "/fez/joined?excludetype=closed&excludetype=open")
-		let fezList = try response.content.decode(FezListData.self)
-		struct JoinedFezPageContext: Encodable {
+	// Shows the Joined Groups page.
+	func joinedGroupPageHandler(_ req: Request) async throws -> View {
+		let response = try await apiQuery(req, endpoint: "/group/joined?excludetype=closed&excludetype=open")
+		let groupList = try response.content.decode(GroupListData.self)
+		struct JoinedGroupPageContext: Encodable {
 			var trunk: TrunkContext
-			var fezList: FezListData
+			var groupList: GroupListData
 			var paginator: PaginatorContext
-			var tab: FezTab
+			var tab: GroupTab
 			var typeSelection: String?
 			var daySelection: Int?
 			var hidePastSelection: Bool?
 
-			init(_ req: Request, fezList: FezListData) throws {
+			init(_ req: Request, groupList: GroupListData) throws {
 				trunk = .init(req, title: "LFG Joined Groups", tab: .lfg)
-				self.fezList = fezList
+				self.groupList = groupList
 				tab = .joined
 				typeSelection = req.query[String.self, at: "type"] ?? "all"
 				daySelection = req.query[Int.self, at: "cruiseday"]
 				let hidePastQuery = req.query[String.self, at: "hidePast"]
 				hidePastSelection = hidePastQuery == nil ? nil : hidePastQuery?.lowercased() == "true"
-				let limit = fezList.paginator.limit
-				paginator = .init(fezList.paginator) { pageIndex in
-					"/fez/joined?start=\(pageIndex * limit)&limit=\(limit)"
+				let limit = groupList.paginator.limit
+				paginator = .init(groupList.paginator) { pageIndex in
+					"/group/joined?start=\(pageIndex * limit)&limit=\(limit)"
 				}
 			}
 		}
-		let ctx = try JoinedFezPageContext(req, fezList: fezList)
-		return try await req.view.render("Fez/fezJoined", ctx)
+		let ctx = try JoinedGroupPageContext(req, groupList: groupList)
+		return try await req.view.render("Group/groupJoined", ctx)
 	}
 
-	// GET /fez/owned
+	// GET /group/owned
 	//
-	// Shows the Owned Fezzes page. These are the Fezzes a user has created.
-	func ownedFezPageHandler(_ req: Request) async throws -> View {
-		let response = try await apiQuery(req, endpoint: "/fez/owner?excludetype=closed&excludetype=open")
-		let fezList = try response.content.decode(FezListData.self)
-		struct OwnedFezPageContext: Encodable {
+	// Shows the Owned Groups page. These are the Groups a user has created.
+	func ownedGroupPageHandler(_ req: Request) async throws -> View {
+		let response = try await apiQuery(req, endpoint: "/group/owner?excludetype=closed&excludetype=open")
+		let groupList = try response.content.decode(GroupListData.self)
+		struct OwnedGroupPageContext: Encodable {
 			var trunk: TrunkContext
-			var fezList: FezListData
+			var groupList: GroupListData
 			var paginator: PaginatorContext
-			var tab: FezTab
+			var tab: GroupTab
 			var typeSelection: String?
 			var daySelection: Int?
 			var hidePastSelection: Bool?
 
-			init(_ req: Request, fezList: FezListData) throws {
+			init(_ req: Request, groupList: GroupListData) throws {
 				trunk = .init(req, title: "LFGs Created By You", tab: .lfg)
-				self.fezList = fezList
+				self.groupList = groupList
 				tab = .owned
 				typeSelection = req.query[String.self, at: "type"] ?? "all"
 				daySelection = req.query[Int.self, at: "cruiseday"]
 				let hidePastQuery = req.query[String.self, at: "hidePast"]
 				hidePastSelection = hidePastQuery == nil ? nil : hidePastQuery?.lowercased() == "true"
-				let limit = fezList.paginator.limit
-				paginator = .init(fezList.paginator) { pageIndex in
-					"/fez/joined?start=\(pageIndex * limit)&limit=\(limit)"
+				let limit = groupList.paginator.limit
+				paginator = .init(groupList.paginator) { pageIndex in
+					"/group/joined?start=\(pageIndex * limit)&limit=\(limit)"
 				}
 			}
 		}
-		let ctx = try OwnedFezPageContext(req, fezList: fezList)
-		return try await req.view.render("Fez/fezOwned", ctx)
+		let ctx = try OwnedGroupPageContext(req, groupList: groupList)
+		return try await req.view.render("Group/groupOwned", ctx)
 	}
 
-	// GET /fez/create
+	// GET /group/create
 	//
-	// Shows the Create New Friendly Fez page
-	func fezCreatePageHandler(_ req: Request) async throws -> View {
-		let ctx = try FezCreateUpdatePageContext(req)
-		return try await req.view.render("Fez/fezCreate", ctx)
+	// Shows the Create New Friendly Group page
+	func groupCreatePageHandler(_ req: Request) async throws -> View {
+		let ctx = try GroupCreateUpdatePageContext(req)
+		return try await req.view.render("Group/groupCreate", ctx)
 	}
 
-	// GET `/fez/ID/update`
-	// GET `/fez/ID/edit`
+	// GET `/group/ID/update`
+	// GET `/group/ID/edit`
 	//
-	// Shows the Update Friendly Fez page.
-	func fezUpdatePageHandler(_ req: Request) async throws -> View {
-		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
-			throw "Invalid fez ID"
+	// Shows the Update Friendly Group page.
+	func groupUpdatePageHandler(_ req: Request) async throws -> View {
+		guard let groupID = req.parameters.get(groupIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw "Invalid group ID"
 		}
-		let response = try await apiQuery(req, endpoint: "/fez/\(fezID)")
-		let fez = try response.content.decode(FezData.self)
-		let ctx = try FezCreateUpdatePageContext(req, fezToUpdate: fez)
-		return try await req.view.render("Fez/fezCreate", ctx)
+		let response = try await apiQuery(req, endpoint: "/group/\(groupID)")
+		let group = try response.content.decode(GroupData.self)
+		let ctx = try GroupCreateUpdatePageContext(req, groupToUpdate: group)
+		return try await req.view.render("Group/groupCreate", ctx)
 	}
 
-	// POST /fez/create
-	// POST /fez/ID/update
-	// Handles the POST from either the Create Or Update Fez page
-	func fezCreateOrUpdatePostHandler(_ req: Request) async throws -> HTTPStatus {
-		let postStruct = try req.content.decode(CreateFezPostFormContent.self)
-		var fezType: FezType
+	// POST /group/create
+	// POST /group/ID/update
+	// Handles the POST from either the Create Or Update Group page
+	func groupCreateOrUpdatePostHandler(_ req: Request) async throws -> HTTPStatus {
+		let postStruct = try req.content.decode(CreateGroupPostFormContent.self)
+		var groupType: GroupType
 		switch postStruct.eventtype {
-		case "activity": fezType = .activity
-		case "dining": fezType = .dining
-		case "gaming": fezType = .gaming
-		case "meetup": fezType = .meetup
-		case "music": fezType = .music
-		case "ashore": fezType = .shore
-		default: fezType = .other
+		case "activity": groupType = .activity
+		case "dining": groupType = .dining
+		case "gaming": groupType = .gaming
+		case "meetup": groupType = .meetup
+		case "music": groupType = .music
+		case "ashore": groupType = .shore
+		default: groupType = .other
 		}
 		guard let startTime = dateFromW3DatetimeString(postStruct.starttime) else {
 			throw Abort(.badRequest, reason: "Couldn't parse start time")
 		}
 		let endTime = startTime.addingTimeInterval(TimeInterval(postStruct.duration) * 60.0)
-		let fezContentData = FezContentData(
-			fezType: fezType,
+		let groupContentData = GroupContentData(
+			groupType: groupType,
 			title: postStruct.subject,
 			info: postStruct.postText,
 			startTime: startTime,
@@ -297,275 +297,275 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 			maxCapacity: postStruct.maximum,
 			initialUsers: []
 		)
-		var path = "/fez/create"
-		if let updatingFezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() {
-			path = "/fez/\(updatingFezID)/update"
+		var path = "/group/create"
+		if let updatingGroupID = req.parameters.get(groupIDParam.paramString)?.percentEncodeFilePathEntry() {
+			path = "/group/\(updatingGroupID)/update"
 		}
-		try await apiQuery(req, endpoint: path, method: .POST, encodeContent: fezContentData)
+		try await apiQuery(req, endpoint: path, method: .POST, encodeContent: groupContentData)
 		return .created
 	}
 
-	// GET /fez/ID
+	// GET /group/ID
 	//
 	// Paginated.
 	//
-	// Shows a single Fez with all its posts.
-	func singleFezPageHandler(_ req: Request) async throws -> View {
-		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
-			throw "Invalid fez ID"
+	// Shows a single Group with all its posts.
+	func singleGroupPageHandler(_ req: Request) async throws -> View {
+		guard let groupID = req.parameters.get(groupIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw "Invalid group ID"
 		}
-		let response = try await apiQuery(req, endpoint: "/fez/\(fezID)")
-		let fez = try response.content.decode(FezData.self)
-		struct FezPageContext: Encodable {
+		let response = try await apiQuery(req, endpoint: "/group/\(groupID)")
+		let group = try response.content.decode(GroupData.self)
+		struct GroupPageContext: Encodable {
 			var trunk: TrunkContext
-			var fez: FezData
+			var group: GroupData
 			var userID: UUID
 			var userIsMember: Bool  // TRUE if user is member
 			var showModButton: Bool
-			var oldPosts: [SocketFezPostData]  // Posts user has read already
+			var oldPosts: [SocketGroupPostData]  // Posts user has read already
 			var showDivider: Bool  // TRUE if there a both old and new posts
-			var newPosts: [SocketFezPostData]  // Posts user hasn't read.
+			var newPosts: [SocketGroupPostData]  // Posts user hasn't read.
 			var post: MessagePostContext  // New post area
 			var paginator: PaginatorContext  // For > 50 posts in thread.
 
-			init(_ req: Request, fez: FezData) throws {
+			init(_ req: Request, group: GroupData) throws {
 				let cacheUser = try req.auth.require(UserCacheData.self)
 				trunk = .init(req, title: "LFG", tab: .lfg)
-				self.fez = fez
+				self.group = group
 				self.userID = cacheUser.userID
 				userIsMember = false
-				showModButton = trunk.userIsMod && ![.closed, .open].contains(fez.fezType)
+				showModButton = trunk.userIsMod && ![.closed, .open].contains(group.groupType)
 				oldPosts = []
 				newPosts = []
 				showDivider = false
-				post = .init(forType: .fezPost(fez))
+				post = .init(forType: .groupPost(group))
 				paginator = PaginatorContext(
 					start: 0,
 					total: 40,
 					limit: 50,
 					urlForPage: { pageIndex in
-						"/fez/\(fez.fezID)?start=\(pageIndex * 50)&limit=50"
+						"/group/\(group.groupID)?start=\(pageIndex * 50)&limit=50"
 					}
 				)
-				if let members = fez.members, let posts = members.posts, let paginator = members.paginator {
+				if let members = group.members, let posts = members.posts, let paginator = members.paginator {
 					self.userIsMember =
 						members.participants.contains(where: { $0.userID == cacheUser.userID })
 						|| members.waitingList.contains(where: { $0.userID == cacheUser.userID })
 					for index in 0..<posts.count {
 						let post = posts[index]
 						if index < members.readCount {
-							oldPosts.append(SocketFezPostData(post: post))
+							oldPosts.append(SocketGroupPostData(post: post))
 						}
 						else {
-							newPosts.append(SocketFezPostData(post: post))
+							newPosts.append(SocketGroupPostData(post: post))
 						}
 					}
 					self.showDivider = oldPosts.count > 0 && newPosts.count > 0
 					let limit = paginator.limit
 					self.paginator = PaginatorContext(paginator) { pageIndex in
-						"/fez/\(fez.fezID)?start=\(pageIndex * limit)&limit=\(limit)"
+						"/group/\(group.groupID)?start=\(pageIndex * limit)&limit=\(limit)"
 					}
 				}
 			}
 		}
-		let ctx = try FezPageContext(req, fez: fez)
-		return try await req.view.render("Fez/singleFez", ctx)
+		let ctx = try GroupPageContext(req, group: group)
+		return try await req.view.render("Group/singleGroup", ctx)
 	}
 
-	// WS /fez/:fez_id/socket
+	// WS /group/:group_id/socket
 	//
 	// This fn is called before socket creation; its purpose is to check that the requested socket should be delivered.
-	// We do this by inferring from the result from /api/v3/fez/:fez_id -- if the result includes members-only data,
+	// We do this by inferring from the result from /api/v3/group/:group_id -- if the result includes members-only data,
 	// we assume the user should be able to get updates to the members-only data.
-	func shouldCreateFezSocket(_ req: Request) async throws -> HTTPHeaders? {
-		guard let lfgIDStr = req.parameters.get(fezIDParam.paramString), let lfgID = UUID(uuidString: lfgIDStr) else {
+	func shouldCreateGroupSocket(_ req: Request) async throws -> HTTPHeaders? {
+		guard let lfgIDStr = req.parameters.get(groupIDParam.paramString), let lfgID = UUID(uuidString: lfgIDStr) else {
 			throw Abort(.unauthorized, reason: "Request parameter lfg_ID is missing")
 		}
-		let response = try await apiQuery(req, endpoint: "/fez/\(lfgID)")
-		let fez = try response.content.decode(FezData.self)
-		guard fez.members != nil else {
+		let response = try await apiQuery(req, endpoint: "/group/\(lfgID)")
+		let group = try response.content.decode(GroupData.self)
+		guard group.members != nil else {
 			throw Abort(.unauthorized, reason: "Not authorized")
 		}
 		return HTTPHeaders()
 	}
 
-	// WS /fez/:fez_ID/socket
+	// WS /group/:group_ID/socket
 	//
-	// Opens a WebSocket that receives updates on the given Fez. This websocket is intended for use by the
+	// Opens a WebSocket that receives updates on the given Group. This websocket is intended for use by the
 	// web client and updates include HTML fragments ready for document insertion.
 	// There are no messages intended to be sent from the client of this socket. Although this socket sends HTML for
 	// new posts to the client, new posts *created* by the client should use the regular POST method.
-	func createFezSocket(_ req: Request, _ ws: WebSocket) async {
+	func createGroupSocket(_ req: Request, _ ws: WebSocket) async {
 		guard let user = try? req.auth.require(UserCacheData.self),
-			let fezID = req.parameters.get(fezIDParam.paramString, as: UUID.self)
+			let groupID = req.parameters.get(groupIDParam.paramString, as: UUID.self)
 		else {
 			try? await ws.close()
 			return
 		}
 		// Note: This kind of breaks UI-API separation as it makes webSocketStore a structure that operates
 		// at both levels.
-		let userSocket = UserSocket(userID: user.userID, socket: ws, fezID: fezID, htmlOutput: true)
-		try? req.webSocketStore.storeFezSocket(userSocket)
+		let userSocket = UserSocket(userID: user.userID, socket: ws, groupID: groupID, htmlOutput: true)
+		try? req.webSocketStore.storeGroupSocket(userSocket)
 
 		ws.onClose.whenComplete { result in
-			try? req.webSocketStore.removeFezSocket(userSocket)
+			try? req.webSocketStore.removeGroupSocket(userSocket)
 		}
 	}
 
-	// POST /fez/ID/post
+	// POST /group/ID/post
 	//
-	// Post a message in a fez.
-	func fezThreadPostHandler(_ req: Request) async throws -> HTTPStatus {
-		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
-			throw Abort(.badRequest, reason: "Missing fez_id")
+	// Post a message in a group.
+	func groupThreadPostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let groupID = req.parameters.get(groupIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing group_id")
 		}
 		let postStruct = try req.content.decode(MessagePostFormContent.self)
 		let postContent = postStruct.buildPostContentData()
-		try await apiQuery(req, endpoint: "/fez/\(fezID)/post", method: .POST, encodeContent: postContent)
+		try await apiQuery(req, endpoint: "/group/\(groupID)/post", method: .POST, encodeContent: postContent)
 		return .created
 	}
 
-	// POST /fez/post/:fezPost_ID/delete
-	// DELETE /fez/post/:fezPost_ID
+	// POST /group/post/:groupPost_ID/delete
+	// DELETE /group/post/:groupPost_ID
 	//
-	// Deletes a message posted in a fez. Must be author or mod.
-	func fezPostDeleteHandler(_ req: Request) async throws -> HTTPStatus {
+	// Deletes a message posted in a group. Must be author or mod.
+	func groupPostDeleteHandler(_ req: Request) async throws -> HTTPStatus {
 		guard let postID = req.parameters.get(postIDParam.paramString) else {
-			throw Abort(.badRequest, reason: "Missing fez_id")
+			throw Abort(.badRequest, reason: "Missing group_id")
 		}
-		let response = try await apiQuery(req, endpoint: "/fez/post/\(postID)", method: .DELETE)
+		let response = try await apiQuery(req, endpoint: "/group/post/\(postID)", method: .DELETE)
 		return response.status
 	}
 
-	// POST /fez/ID/join
+	// POST /group/ID/join
 	//
-	// Joins a fez.
-	func fezJoinPostHandler(_ req: Request) async throws -> HTTPStatus {
-		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
-			throw Abort(.badRequest, reason: "Missing fez_id")
+	// Joins a group.
+	func groupJoinPostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let groupID = req.parameters.get(groupIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing group_id")
 		}
-		try await apiQuery(req, endpoint: "/fez/\(fezID)/join", method: .POST)
+		try await apiQuery(req, endpoint: "/group/\(groupID)/join", method: .POST)
 		return .created
 	}
 
-	// POST /fez/ID/leave
+	// POST /group/ID/leave
 	//
-	// Leaves a fez.
-	func fezLeavePostHandler(_ req: Request) async throws -> HTTPStatus {
-		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
-			throw Abort(.badRequest, reason: "Missing fez_id")
+	// Leaves a group.
+	func groupLeavePostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let groupID = req.parameters.get(groupIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing group_id")
 		}
-		try await apiQuery(req, endpoint: "/fez/\(fezID)/unjoin", method: .POST)
+		try await apiQuery(req, endpoint: "/group/\(groupID)/unjoin", method: .POST)
 		return .created
 	}
 
-	// POST /fez/ID/cancel
+	// POST /group/ID/cancel
 	//
-	// Cancels a fez. Owner only.
-	func fezCancelPostHandler(_ req: Request) async throws -> HTTPStatus {
-		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
-			throw Abort(.badRequest, reason: "Missing fez_id")
+	// Cancels a group. Owner only.
+	func groupCancelPostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let groupID = req.parameters.get(groupIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing group_id")
 		}
-		try await apiQuery(req, endpoint: "/fez/\(fezID)/cancel", method: .POST)
+		try await apiQuery(req, endpoint: "/group/\(groupID)/cancel", method: .POST)
 		return .created
 	}
 
-	// GET /fez/ID/members
+	// GET /group/ID/members
 	//
-	// Allows the owner of a fez to add/remove members.
-	func fezMembersPageHandler(_ req: Request) async throws -> View {
-		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
-			throw "Invalid fez ID"
+	// Allows the owner of a group to add/remove members.
+	func groupMembersPageHandler(_ req: Request) async throws -> View {
+		guard let groupID = req.parameters.get(groupIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw "Invalid group ID"
 		}
-		let response = try await apiQuery(req, endpoint: "/fez/\(fezID)")
-		let fez = try response.content.decode(FezData.self)
-		let ctx = try FezCreateUpdatePageContext(req, fezToUpdate: fez)
-		return try await req.view.render("Fez/fezManageMembers", ctx)
+		let response = try await apiQuery(req, endpoint: "/group/\(groupID)")
+		let group = try response.content.decode(GroupData.self)
+		let ctx = try GroupCreateUpdatePageContext(req, groupToUpdate: group)
+		return try await req.view.render("Group/groupManageMembers", ctx)
 	}
 
-	// POST /fez/fez_ID/members/add/user_ID
+	// POST /group/group_ID/members/add/user_ID
 	//
-	// Allows a fez owner to add a user to their fez.
-	func fezAddUserPostHandler(_ req: Request) async throws -> HTTPStatus {
-		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
-			throw Abort(.badRequest, reason: "Missing fez_id")
+	// Allows a group owner to add a user to their group.
+	func groupAddUserPostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let groupID = req.parameters.get(groupIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing group_id")
 		}
 		guard let userID = req.parameters.get(userIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing user_id")
 		}
-		try await apiQuery(req, endpoint: "/fez/\(fezID)/user/\(userID)/add", method: .POST)
+		try await apiQuery(req, endpoint: "/group/\(groupID)/user/\(userID)/add", method: .POST)
 		return .created
 	}
 
-	// POST /fez/fez_ID/members/remove/user_ID
+	// POST /group/group_ID/members/remove/user_ID
 	//
-	// Allows a fez owner to remove a user from their fez.
-	func fezRemoveUserPostHandler(_ req: Request) async throws -> HTTPStatus {
-		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
-			throw Abort(.badRequest, reason: "Missing fez_id")
+	// Allows a group owner to remove a user from their group.
+	func groupRemoveUserPostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let groupID = req.parameters.get(groupIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing group_id")
 		}
 		guard let userID = req.parameters.get(userIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing user_id")
 		}
-		try await apiQuery(req, endpoint: "/fez/\(fezID)/user/\(userID)/remove", method: .POST)
+		try await apiQuery(req, endpoint: "/group/\(groupID)/user/\(userID)/remove", method: .POST)
 		return .created
 	}
 
-	// GET /fez/report/:fez_ID
+	// GET /group/report/:group_ID
 	//
-	// Shows the page for reporting on a fezzes' content. This reports on the Fez itself, not individual posts.
-	func fezReportPageHandler(_ req: Request) async throws -> View {
-		guard let fezID = req.parameters.get(fezIDParam.paramString) else {
-			throw Abort(.badRequest, reason: "Missing fez_id")
+	// Shows the page for reporting on a groups' content. This reports on the Group itself, not individual posts.
+	func groupReportPageHandler(_ req: Request) async throws -> View {
+		guard let groupID = req.parameters.get(groupIDParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing group_id")
 		}
-		let ctx = try ReportPageContext(req, fezID: fezID)
+		let ctx = try ReportPageContext(req, groupID: groupID)
 		return try await req.view.render("reportCreate", ctx)
 	}
 
-	// POST /fez/report/ID
+	// POST /group/report/ID
 	//
-	// Submits a report on a fez.
-	func fezReportPostHandler(_ req: Request) async throws -> HTTPStatus {
-		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
-			throw Abort(.badRequest, reason: "Missing fez_id")
+	// Submits a report on a group.
+	func groupReportPostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let groupID = req.parameters.get(groupIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing group_id")
 		}
 		let postStruct = try req.content.decode(ReportData.self)
-		try await apiQuery(req, endpoint: "/fez/\(fezID)/report", method: .POST, encodeContent: postStruct)
+		try await apiQuery(req, endpoint: "/group/\(groupID)/report", method: .POST, encodeContent: postStruct)
 		return .created
 	}
 
-	// GET /fez/post/report/:post_id
+	// GET /group/post/report/:post_id
 	//
-	// Shows the report page for reporting on an individual post in a fez.
-	func fezPostReportPageHandler(_ req: Request) async throws -> View {
+	// Shows the report page for reporting on an individual post in a group.
+	func groupPostReportPageHandler(_ req: Request) async throws -> View {
 		guard let postID = req.parameters.get(postIDParam.paramString) else {
 			throw Abort(.badRequest, reason: "Missing post_id parameter.")
 		}
-		let ctx = try ReportPageContext(req, fezPostID: postID)
+		let ctx = try ReportPageContext(req, groupPostID: postID)
 		return try await req.view.render("reportCreate", ctx)
 	}
 
-	// POST /fez/post/report/:post_id
+	// POST /group/post/report/:post_id
 	//
 	// Submits a completed report.
-	func fezPostReportPostHandler(_ req: Request) async throws -> HTTPStatus {
+	func groupPostReportPostHandler(_ req: Request) async throws -> HTTPStatus {
 		guard let postID = req.parameters.get(postIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing post_id parameter.")
 		}
 		let postStruct = try req.content.decode(ReportData.self)
-		try await apiQuery(req, endpoint: "/fez/post/\(postID)/report", method: .POST, encodeContent: postStruct)
+		try await apiQuery(req, endpoint: "/group/post/\(postID)/report", method: .POST, encodeContent: postStruct)
 		return .created
 	}
 
-	// POST /fez/:fez_ID/delete
-	// DELETE /fez/:fez_ID
+	// POST /group/:group_ID/delete
+	// DELETE /group/:group_ID
 	//
-	// Deletes a fez. Moderators only at the moment--owners may be able to delete, eventually.
-	func fezDeleteHandler(_ req: Request) async throws -> HTTPStatus {
-		guard let fez = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
-			throw "While deleting fez: Invalid fez ID"
+	// Deletes a group. Moderators only at the moment--owners may be able to delete, eventually.
+	func groupDeleteHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let group = req.parameters.get(groupIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw "While deleting group: Invalid group ID"
 		}
-		let response = try await apiQuery(req, endpoint: "/fez/\(fez)", method: .DELETE)
+		let response = try await apiQuery(req, endpoint: "/group/\(group)", method: .DELETE)
 		return response.status
 	}
 }

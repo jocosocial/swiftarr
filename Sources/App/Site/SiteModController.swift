@@ -49,8 +49,8 @@ struct SiteModController: SiteControllerUtils {
 		modRoutes.get("moderate", "twarrt", twarrtIDParam, use: moderateTwarrtContentPageHandler)
 		modRoutes.get("moderate", "forumpost", postIDParam, use: moderateForumPostContentPageHandler)
 		modRoutes.get("moderate", "forum", forumIDParam, use: moderateForumContentPageHandler)
-		modRoutes.get("moderate", "fez", fezIDParam, use: moderateFezContentPageHandler)
-		modRoutes.get("moderate", "fezpost", postIDParam, use: moderateFezPostContentPageHandler)
+		modRoutes.get("moderate", "group", groupIDParam, use: moderateGroupContentPageHandler)
+		modRoutes.get("moderate", "grouppost", postIDParam, use: moderateGroupPostContentPageHandler)
 		modRoutes.get("moderate", "userprofile", userIDParam, use: moderateUserProfileContentPageHandler)
 		modRoutes.get("moderate", "user", userIDParam, use: moderateUserContentPageHandler)
 
@@ -74,13 +74,13 @@ struct SiteModController: SiteControllerUtils {
 		)
 		modPrivateRoutes.post("forum", forumIDParam, "setstate", modStateParam, use: setForumModerationStatePostHandler)
 		modPrivateRoutes.post(
-			"fezpost",
+			"grouppost",
 			postIDParam,
 			"setstate",
 			modStateParam,
-			use: setFezPostModerationStatePostHandler
+			use: setGroupPostModerationStatePostHandler
 		)
-		modPrivateRoutes.post("fez", fezIDParam, "setstate", modStateParam, use: setFezModerationStatePostHandler)
+		modPrivateRoutes.post("group", groupIDParam, "setstate", modStateParam, use: setGroupModerationStatePostHandler)
 		modPrivateRoutes.post(
 			"userprofile",
 			userIDParam,
@@ -212,37 +212,37 @@ struct SiteModController: SiteControllerUtils {
 
 	// `GET /moderator/seamail`
 	func moderatorSeamailPageHandler(_ req: Request) async throws -> View {
-		let response = try await apiQuery(req, endpoint: "/fez/joined?type=closed")
-		let fezList = try response.content.decode(FezListData.self)
-		// Re-sort fezzes so ones with new msgs are first. Keep most-recent-change sort within each group.
-		var newMsgFezzes: [FezData] = []
-		var noNewMsgFezzes: [FezData] = []
-		fezList.fezzes.forEach {
+		let response = try await apiQuery(req, endpoint: "/group/joined?type=closed")
+		let groupList = try response.content.decode(GroupListData.self)
+		// Re-sort groups so ones with new msgs are first. Keep most-recent-change sort within each group.
+		var newMsgGroups: [GroupData] = []
+		var noNewMsgGroups: [GroupData] = []
+		groupList.groups.forEach {
 			if let members = $0.members, members.postCount > members.readCount {
-				newMsgFezzes.append($0)
+				newMsgGroups.append($0)
 			}
 			else {
-				noNewMsgFezzes.append($0)
+				noNewMsgGroups.append($0)
 			}
 		}
-		let allFezzes = newMsgFezzes + noNewMsgFezzes
+		let allGroups = newMsgGroups + noNewMsgGroups
 		struct SeamailRootPageContext: Encodable {
 			var trunk: TrunkContext
-			var fezList: FezListData
-			var fezzes: [FezData]
+			var groupList: GroupListData
+			var groups: [GroupData]
 			var paginator: PaginatorContext
 
-			init(_ req: Request, fezList: FezListData, fezzes: [FezData]) throws {
+			init(_ req: Request, groupList: GroupListData, groups: [GroupData]) throws {
 				trunk = .init(req, title: "Seamail", tab: .moderator)
-				self.fezList = fezList
-				self.fezzes = fezzes
-				let limit = fezList.paginator.limit
-				paginator = .init(fezList.paginator) { pageIndex in
+				self.groupList = groupList
+				self.groups = groups
+				let limit = groupList.paginator.limit
+				paginator = .init(groupList.paginator) { pageIndex in
 					"/seamail?start=\(pageIndex * limit)&limit=\(limit)"
 				}
 			}
 		}
-		let ctx = try SeamailRootPageContext(req, fezList: fezList, fezzes: allFezzes)
+		let ctx = try SeamailRootPageContext(req, groupList: groupList, groups: allGroups)
 		return try await req.view.render("moderation/moderatorSeamail", ctx)
 	}
 
@@ -467,28 +467,28 @@ struct SiteModController: SiteControllerUtils {
 		return response.status
 	}
 
-	/// `GET /moderate/fez/:fez_ID`
+	/// `GET /moderate/group/:group_ID`
 	///
 	/// This shows a view that focuses on the *content* that was reported, showing:
-	/// * The Fez that was reported
+	/// * The Group that was reported
 	/// * All reports made against this content
 	/// * All previous versions of this content
 	/// * (hopefully) Mod actions taken against this content already
 	/// *
-	func moderateFezContentPageHandler(_ req: Request) async throws -> View {
-		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
+	func moderateGroupContentPageHandler(_ req: Request) async throws -> View {
+		guard let groupID = req.parameters.get(groupIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
-		let response = try await apiQuery(req, endpoint: "/mod/fez/\(fezID)")
-		let modData = try response.content.decode(FezModerationData.self)
+		let response = try await apiQuery(req, endpoint: "/mod/group/\(groupID)")
+		let modData = try response.content.decode(GroupModerationData.self)
 		struct ReportContext: Encodable {
 			var trunk: TrunkContext
-			var modData: FezModerationData
+			var modData: GroupModerationData
 			var firstReport: ReportModerationData?
 			var finalEditAuthor: UserHeader?
 
-			init(_ req: Request, modData: FezModerationData) throws {
-				trunk = .init(req, title: "Fez Moderation", tab: .moderator)
+			init(_ req: Request, modData: GroupModerationData) throws {
+				trunk = .init(req, title: "Group Moderation", tab: .moderator)
 				self.modData = modData
 				firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
 				finalEditAuthor = modData.edits.last?.author
@@ -500,70 +500,70 @@ struct SiteModController: SiteControllerUtils {
 					}
 				}
 				if self.modData.edits.count > 0 {
-					self.modData.edits[0].author = modData.fez.owner
+					self.modData.edits[0].author = modData.group.owner
 					self.modData.edits[0].author.username = "\(self.modData.edits[0].author.username) initially wrote:"
 				}
 			}
 		}
 		let ctx = try ReportContext(req, modData: modData)
-		return try await req.view.render("moderation/fezView", ctx)
+		return try await req.view.render("moderation/groupView", ctx)
 	}
 
-	///	`POST /moderate/fez/ID/setstate/STRING`
+	///	`POST /moderate/group/ID/setstate/STRING`
 	///
-	/// Sets the moderation state of the given fez. Moderation states include "locked" and "quarantined", as well as a few others.
-	func setFezModerationStatePostHandler(_ req: Request) async throws -> HTTPStatus {
-		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
+	/// Sets the moderation state of the given group. Moderation states include "locked" and "quarantined", as well as a few others.
+	func setGroupModerationStatePostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let groupID = req.parameters.get(groupIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
 		guard let modState = req.parameters.get(modStateParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
-		let response = try await apiQuery(req, endpoint: "/mod/fez/\(fezID)/setstate/\(modState)", method: .POST)
+		let response = try await apiQuery(req, endpoint: "/mod/group/\(groupID)/setstate/\(modState)", method: .POST)
 		return response.status
 	}
 
-	/// `GET /moderate/fezpost/:fezpost_ID`
+	/// `GET /moderate/grouppost/:grouppost_ID`
 	///
 	/// This shows a view that focuses on the *content* that was reported, showing:
-	/// * The Fez Post that was reported
+	/// * The Group Post that was reported
 	/// * All reports made against this content
 	/// * All previous versions of this content
 	/// * (hopefully) Mod actions taken against this content already
 	/// *
-	func moderateFezPostContentPageHandler(_ req: Request) async throws -> View {
-		guard let fezPostID = req.parameters.get(postIDParam.paramString)?.percentEncodeFilePathEntry() else {
+	func moderateGroupPostContentPageHandler(_ req: Request) async throws -> View {
+		guard let groupPostID = req.parameters.get(postIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
-		let response = try await apiQuery(req, endpoint: "/mod/fezpost/\(fezPostID)")
-		let modData = try response.content.decode(FezPostModerationData.self)
+		let response = try await apiQuery(req, endpoint: "/mod/grouppost/\(groupPostID)")
+		let modData = try response.content.decode(GroupPostModerationData.self)
 		struct ReportContext: Encodable {
 			var trunk: TrunkContext
-			var modData: FezPostModerationData
+			var modData: GroupPostModerationData
 			var firstReport: ReportModerationData?
 			var finalEditAuthor: UserHeader?
 
-			init(_ req: Request, modData: FezPostModerationData) throws {
-				trunk = .init(req, title: "Fez Post Moderation", tab: .moderator)
+			init(_ req: Request, modData: GroupPostModerationData) throws {
+				trunk = .init(req, title: "Group Post Moderation", tab: .moderator)
 				self.modData = modData
 				firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
 			}
 		}
 		let ctx = try ReportContext(req, modData: modData)
-		return try await req.view.render("moderation/fezPostView", ctx)
+		return try await req.view.render("moderation/groupPostView", ctx)
 	}
 
-	///	`POST /moderate/fezpost/:post_ID/setstate/STRING`
+	///	`POST /moderate/grouppost/:post_ID/setstate/STRING`
 	///
-	/// Sets the moderation state of the given fez. Moderation states include "locked" and "quarantined", as well as a few others.
-	func setFezPostModerationStatePostHandler(_ req: Request) async throws -> HTTPStatus {
+	/// Sets the moderation state of the given group. Moderation states include "locked" and "quarantined", as well as a few others.
+	func setGroupPostModerationStatePostHandler(_ req: Request) async throws -> HTTPStatus {
 		guard let postID = req.parameters.get(postIDParam.paramString) else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
 		guard let modState = req.parameters.get(modStateParam.paramString) else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
-		let response = try await apiQuery(req, endpoint: "/mod/fezpost/\(postID)/setstate/\(modState)", method: .POST)
+		let response = try await apiQuery(req, endpoint: "/mod/grouppost/\(postID)/setstate/\(modState)", method: .POST)
 		return response.status
 	}
 
@@ -735,8 +735,8 @@ func generateContentGroups(from reports: [ReportModerationData]) -> [ReportConte
 		case .twarrt: contentURL = "/moderate/twarrt/\(report.reportedID)"
 		case .forumPost: contentURL = "/moderate/forumpost/\(report.reportedID)"
 		case .forum: contentURL = "/moderate/forum/\(report.reportedID)"
-		case .fez: contentURL = "/moderate/fez/\(report.reportedID)"
-		case .fezPost: contentURL = "/moderate/fezpost/\(report.reportedID)"
+		case .group: contentURL = "/moderate/group/\(report.reportedID)"
+		case .groupPost: contentURL = "/moderate/grouppost/\(report.reportedID)"
 		case .userProfile: contentURL = "/moderate/userprofile/\(report.reportedID)"
 		}
 		var newGroup = ReportContentGroup(

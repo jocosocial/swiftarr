@@ -226,7 +226,7 @@ struct ClientController: APIRouteCollection {
 	}
 }
 
-extension ClientController: FezProtocol {
+extension ClientController: GroupProtocol {
 	/// This page intentionally left blank. In case we have extra things to add later on
 	/// I'm keeping it seperate even though this could be done above.
 }

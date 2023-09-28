@@ -1,37 +1,37 @@
-<a class="list-group-item list-group-item-action" href="/fez/#(fez.fezID)">		
+<a class="list-group-item list-group-item-action" href="/group/#(group.groupID)">		
 	<div class="row">
 		<div class="col">
-			#if(fez.cancelled):<span class="text-danger"><b>Cancelled</b></span>#endif <b>#(fez.title)</b>
+			#if(group.cancelled):<span class="text-danger"><b>Cancelled</b></span>#endif <b>#(group.title)</b>
 		</div>
 		<div class="col col-auto">
-			<span class="text-muted">#fezTime(fez.startTime, fez.endTime)</span>
+			<span class="text-muted">#groupTime(group.startTime, group.endTime)</span>
 		</div>
 	</div>
 
 	<div class="row">
 		<div class="col">
-			by: #userByline(fez.owner, "nolink")
+			by: #userByline(group.owner, "nolink")
 		</div>
 		<div class="col col-auto">
-			#if(fez.maxParticipants == 0):
-				#(fez.participantCount) attendee#if(fez.participantCount != 1):s#endif
-			#elseif(fez.participantCount > fez.maxParticipants):
-				Full; #(fez.participantCount - fez.maxParticipants) waitlisted
+			#if(group.maxParticipants == 0):
+				#(group.participantCount) attendee#if(group.participantCount != 1):s#endif
+			#elseif(group.participantCount > group.maxParticipants):
+				Full; #(group.participantCount - group.maxParticipants) waitlisted
 			#else:
-				#(fez.participantCount)/#(fez.maxParticipants) attendees
+				#(group.participantCount)/#(group.maxParticipants) attendees
 			#endif
 		</div>
 	</div>
 
 	<div class="row">
 		<div class="col">
-			#(fez.fezType)
+			#(group.groupType)
 		</div>
-		#if(fez.members):
+		#if(group.members):
 			<div class="col col-auto">
-				<span class="badge rounded-pill bg-light text-dark">#(fez.members.postCount) posts</span>
-				#if(fez.members.readCount < fez.members.postCount):
-					<span class="badge rounded-pill bg-danger">#(fez.members.postCount - fez.members.readCount) new</span>
+				<span class="badge rounded-pill bg-light text-dark">#(group.members.postCount) posts</span>
+				#if(group.members.readCount < group.members.postCount):
+					<span class="badge rounded-pill bg-danger">#(group.members.postCount - group.members.readCount) new</span>
 				#endif
 			</div>
 		#endif
@@ -39,12 +39,12 @@
 	
 	<div class="row d-none">
 		<div class="col">
-			#(fez.location)
+			#(group.location)
 		</div>
 	</div>
 	<div class="row d-none">
 		<div class="col">
-			#formatPostText(fez.info)
+			#formatPostText(group.info)
 		</div>
 	</div>
 </a>

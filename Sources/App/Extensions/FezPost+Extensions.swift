@@ -3,20 +3,20 @@ import Vapor
 
 // MARK: - Functions
 
-// fezposts can be filtered by author and content
-extension FezPost: ContentFilterable {
+// groupposts can be filtered by author and content
+extension GroupPost: ContentFilterable {
 	func contentTextStrings() -> [String] {
 		return [self.text]
 	}
 }
 
-// Fez posts can be reported
-extension FezPost: Reportable {
-	/// The report type for `FezPost` reports.
-	var reportType: ReportType { .fezPost }
+// Group posts can be reported
+extension GroupPost: Reportable {
+	/// The report type for `GroupPost` reports.
+	var reportType: ReportType { .groupPost }
 	/// Standardizes how to get the author ID of a Reportable object.
 	var authorUUID: UUID { $author.id }
 
-	/// No auto quarantine for fez posts.
+	/// No auto quarantine for group posts.
 	var autoQuarantineThreshold: Int { Int.max }
 }

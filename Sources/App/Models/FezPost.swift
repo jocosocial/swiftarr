@@ -1,14 +1,14 @@
 import Fluent
 import Vapor
 
-/// 	An individual post within a `FriendlyFez` discussion. A FezPost must contain
-/// 	text content and may also contain image content, unless the Fez is of type `FezType.closed`,
+/// 	An individual post within a `FriendlyGroup` discussion. A GroupPost must contain
+/// 	text content and may also contain image content, unless the Group is of type `GroupType.closed`,
 /// 	in which case the post may not contain images.
 ///
-/// 	- See Also: [FezPostData](FezPostData) the DTO for returning info on FezPosts. FezPostData is also a member of `FezData`.
-/// 	- See Also: [CreateFezPostSchema](CreateFezPostSchema) the Migration for creating the FezPost table in the database.
-final class FezPost: Model, Searchable {
-	static let schema = "fezposts"
+/// 	- See Also: [GroupPostData](GroupPostData) the DTO for returning info on GroupPosts. GroupPostData is also a member of `GroupData`.
+/// 	- See Also: [CreateGroupPostSchema](CreateGroupPostSchema) the Migration for creating the GroupPost table in the database.
+final class GroupPost: Model, Searchable {
+	static let schema = "groupposts"
 
 	// MARK: Properties
 
@@ -18,10 +18,10 @@ final class FezPost: Model, Searchable {
 	/// The text content of the post.
 	@Field(key: "text") var text: String
 
-	/// The filename of any image content of the post. FezPosts are limited to one image, and "closed" Fez types cannot have any.
+	/// The filename of any image content of the post. GroupPosts are limited to one image, and "closed" Group types cannot have any.
 	@OptionalField(key: "image") var image: String?
 
-	/// Moderators can set several statuses on fezPosts that modify editability and visibility.
+	/// Moderators can set several statuses on groupPosts that modify editability and visibility.
 	@Enum(key: "mod_status") var moderationStatus: ContentModerationStatus
 
 	/// Timestamp of the model's creation, set automatically.
@@ -35,8 +35,8 @@ final class FezPost: Model, Searchable {
 
 	// MARK: Relations
 
-	/// The `FriendlyFez` to which the post belongs.
-	@Parent(key: "friendly_fez") var fez: FriendlyFez
+	/// The `FriendlyGroup` to which the post belongs.
+	@Parent(key: "friendly_group") var group: FriendlyGroup
 
 	/// The post's author.
 	@Parent(key: "author") var author: User
@@ -46,21 +46,21 @@ final class FezPost: Model, Searchable {
 	/// Used by Fluent
 	init() {}
 
-	/// Initializes a new FezPost.
+	/// Initializes a new GroupPost.
 	///
 	/// - Parameters:
-	///   - fezID: The ID of the post's FriendlyFez.
+	///   - groupID: The ID of the post's FriendlyGroup.
 	///   - authorID: The ID of the author of the post.
 	///   - text: The text content of the post.
 	///   - image: The filename of any image content of the post.
 	init(
-		fez: FriendlyFez,
+		group: FriendlyGroup,
 		authorID: UUID,
 		text: String,
 		image: String?
 	) throws {
-		self.$fez.id = try fez.requireID()
-		self.$fez.value = fez
+		self.$group.id = try group.requireID()
+		self.$group.value = group
 		self.$author.id = authorID
 
 		// Generally I'm in favor of "validate input, sanitize output" but I hate "\r\n" with the fury of a thousand suns.
@@ -70,10 +70,10 @@ final class FezPost: Model, Searchable {
 	}
 }
 
-struct CreateFezPostSchema: AsyncMigration {
+struct CreateGroupPostSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		let modStatusEnum = try await database.enum("moderation_status").read()
-		try await database.schema("fezposts")
+		try await database.schema("groupposts")
 			.field("id", .int, .identifier(auto: true))
 			.field("text", .string, .required)
 			.field("image", .string)
@@ -81,12 +81,12 @@ struct CreateFezPostSchema: AsyncMigration {
 			.field("created_at", .datetime)
 			.field("updated_at", .datetime)
 			.field("deleted_at", .datetime)
-			.field("friendly_fez", .uuid, .required, .references("friendlyfez", "id"))
+			.field("friendly_group", .uuid, .required, .references("friendlygroup", "id"))
 			.field("author", .uuid, .required, .references("user", "id"))
 			.create()
 	}
 
 	func revert(on database: Database) async throws {
-		try await database.schema("fezposts").delete()
+		try await database.schema("groupposts").delete()
 	}
 }

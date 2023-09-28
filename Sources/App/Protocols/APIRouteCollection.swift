@@ -13,8 +13,8 @@ extension APIRouteCollection {
 	var twarrtIDParam: PathComponent { PathComponent(":twarrt_id") }
 	var forumIDParam: PathComponent { PathComponent(":forum_id") }
 	var postIDParam: PathComponent { PathComponent(":post_id") }
-	var fezIDParam: PathComponent { PathComponent(":fez_id") }
-	var fezPostIDParam: PathComponent { PathComponent(":fezPost_id") }
+	var groupIDParam: PathComponent { PathComponent(":group_id") }
+	var groupPostIDParam: PathComponent { PathComponent(":groupPost_id") }
 	var userIDParam: PathComponent { PathComponent(":user_id") }
 	var eventIDParam: PathComponent { PathComponent(":event_id") }
 	var reportIDParam: PathComponent { PathComponent(":report_id") }
@@ -152,7 +152,7 @@ extension APIRouteCollection {
 					users: notifyUsers,
 					group: &group
 				)
-			case .fezUnreadMsg(let msgID):
+			case .groupUnreadMsg(let msgID):
 				notifyUsers = handleUnreadMessage(
 					req: req,
 					msgID: msgID,
@@ -321,7 +321,7 @@ extension APIRouteCollection {
 					}
 				}
 
-			case .fezUnreadMsg(let msgID):
+			case .groupUnreadMsg(let msgID):
 				for userID in users {
 					group.addTask {
 						try await req.redis.deletedUnreadMessage(msgID: msgID, userID: userID, inbox: .lfgMessages)
@@ -337,10 +337,10 @@ extension APIRouteCollection {
 		}
 	}
 
-	// When a user leaves a fez or the fez is deleted, delete the unread count for that fez for all participants; it no longer applies.
-	func deleteFezNotifications(userIDs: [UUID], fez: FriendlyFez, on req: Request) async throws {
+	// When a user leaves a group or the group is deleted, delete the unread count for that group for all participants; it no longer applies.
+	func deleteGroupNotifications(userIDs: [UUID], group: FriendlyGroup, on req: Request) async throws {
 		for userID in userIDs {
-			try await req.redis.markLFGDeleted(msgID: fez.requireID(), userID: userID)
+			try await req.redis.markLFGDeleted(msgID: group.requireID(), userID: userID)
 		}
 	}
 
@@ -363,7 +363,7 @@ extension APIRouteCollection {
 			if user.accessLevel.hasAccess(.twitarrteam) {
 				try await req.redis.markSeamailRead(type: type, in: .twitarrTeamSeamail, userID: user.userID)
 			}
-		case .fezUnreadMsg:
+		case .groupUnreadMsg:
 			try await req.redis.markSeamailRead(type: type, in: .lfgMessages, userID: user.userID)
 		case .nextFollowedEventTime:
 			return  // Can't be cleared

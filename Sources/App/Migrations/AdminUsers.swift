@@ -168,7 +168,7 @@ struct CreateAdminUsers: AsyncMigration {
 	/// However, anyone with moderotor access may post content *as* moderator, in which case the moderator account becomes
 	/// the author of the content instead of the current user.
 	///
-	/// ''Content' in this sense means tweets, forum posts, fez messages.
+	/// ''Content' in this sense means tweets, forum posts, group messages.
 	func createModeratorUser(on database: Database) async throws {
 		var password = ""
 		var recoveryKey = ""
@@ -196,7 +196,7 @@ struct CreateAdminUsers: AsyncMigration {
 	/// However, anyone with TwitarrTeam access may post content *as* TwitarrTeam, in which case the TwitarrTeam account becomes
 	/// the author of the content instead of the current user.
 	///
-	/// ''Content' in this sense means tweets, forum posts, fez messages.
+	/// ''Content' in this sense means tweets, forum posts, group messages.
 	func createTwitarrTeamUser(on database: Database) async throws {
 		var password = ""
 		var recoveryKey = ""

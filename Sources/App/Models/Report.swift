@@ -4,7 +4,7 @@ import Vapor
 
 /// Twit-arr moderation relies in part on user-submitted reports of content and/or behavior
 /// which does not conform to community standards. A `Report` can be submitted for Moderator
-/// review on any of: an individual `Twarrt` or `ForumPost`, an entire `Forum`, a `FezPost`,
+/// review on any of: an individual `Twarrt` or `ForumPost`, an entire `Forum`, a `GroupPost`,
 /// or a `User` (such as for general behavioral pattern, or their profile contents).
 ///
 /// The `.submitterID` is always the user's primary user ID. An individual post can only be

@@ -63,7 +63,7 @@ struct SiteBoardgameController: SiteControllerUtils {
 		let openRoutes = getOpenRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .gameslist))
 		openRoutes.get("boardgames", use: gamesPageHandler)
 		openRoutes.get("boardgames", boardgameIDParam, "expansions", use: expansionPageHandler)
-		openRoutes.get("boardgames", boardgameIDParam, "createfez", use: createFezForGame)
+		openRoutes.get("boardgames", boardgameIDParam, "creategroup", use: createGroupForGame)
 		openRoutes.get("boardgames", "guide", use: boardgameGuideHandler)
 
 		// Routes that the user needs to be logged in to access.
@@ -101,10 +101,10 @@ struct SiteBoardgameController: SiteControllerUtils {
 		return try await req.view.render("GamesAndSongs/boardgameExpansions", ctx)
 	}
 
-	/// `GET /boardgames/:boardgameID/createfez`
+	/// `GET /boardgames/:boardgameIDcreategroup`
 	///
-	/// Opens the Create Fez page, prefilled with info aboutt he given board game.
-	func createFezForGame(_ req: Request) async throws -> View {
+	/// Opens the Create Group page, prefilled with info aboutt he given board game.
+	func createGroupForGame(_ req: Request) async throws -> View {
 		guard let gameID = req.parameters.get(boardgameIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing game ID parameter.")
 		}
@@ -114,12 +114,12 @@ struct SiteBoardgameController: SiteControllerUtils {
 			let expansionsResponse = try await apiQuery(req, endpoint: "/boardgames/expansions/\(gameID)")
 			let expansions = try expansionsResponse.content.decode([BoardgameData].self)
 			let basegame = expansions.first(where: { !$0.isExpansion })
-			let ctx = FezCreateUpdatePageContext(req, forGame: game, baseGame: basegame)
-			return try await req.view.render("Fez/fezCreate", ctx)
+			let ctx = GroupCreateUpdatePageContext(req, forGame: game, baseGame: basegame)
+			return try await req.view.render("Group/groupCreate", ctx)
 		}
 		else {
-			let ctx = FezCreateUpdatePageContext(req, forGame: game)
-			return try await req.view.render("Fez/fezCreate", ctx)
+			let ctx = GroupCreateUpdatePageContext(req, forGame: game)
+			return try await req.view.render("Group/groupCreate", ctx)
 		}
 	}
 

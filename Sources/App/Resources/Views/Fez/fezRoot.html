@@ -1,15 +1,15 @@
 #extend("trunk"):
     #export("body"):
     	<div class="container-md ms-0 mt-2">
-			#extend("Fez/fezNavbar")
-			#extend("Fez/fezFilter")
+			#extend("Group/groupNavbar")
+			#extend("Group/groupFilter")
 			#extend("paginator")
 			<div class="list-group">
-				#if(count(fezList.fezzes) == 0):
+				#if(count(groupList.groups) == 0):
 					<li class="list-group-item">No LFG posts match the current filters.</li>
 				#else:
-					#for(fez in fezList.fezzes):
-						#extend("Fez/fezListItem")
+					#for(group in groupList.groups):
+						#extend("Group/groupListItem")
 					#endfor
 				#endif
 			</div>

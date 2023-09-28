@@ -367,44 +367,44 @@ extension EventData {
 	}
 }
 
-/// Used to create or update a `FriendlyFez`.
+/// Used to create or update a `FriendlyGroup`.
 ///
 /// Required by:
-/// * `POST /api/v3/fez/create`
-/// * `POST /api/v3/fez/ID/update`
+/// * `POST /api/v3/group/create`
+/// * `POST /api/v3/group/ID/update`
 ///
-/// See: `FezController.createHandler(_:data:)`, `FezController.updateHandler(_:data:)`.
-public struct FezContentData: Content {
-	/// The `FezType` .label of the fez.
-	var fezType: FezType
-	/// The title for the FriendlyFez.
+/// See: `GroupController.createHandler(_:data:)`, `GroupController.updateHandler(_:data:)`.
+public struct GroupContentData: Content {
+	/// The `GroupType` .label of the group.
+	var groupType: GroupType
+	/// The title for the FriendlyGroup.
 	var title: String
-	/// A description of the fez.
+	/// A description of the group.
 	var info: String
-	/// The starting time for the fez.
+	/// The starting time for the group.
 	var startTime: Date?
-	/// The ending time for the fez.
+	/// The ending time for the group.
 	var endTime: Date?
-	/// The location for the fez.
+	/// The location for the group.
 	var location: String?
-	/// The minimum number of users needed for the fez.
+	/// The minimum number of users needed for the group.
 	var minCapacity: Int
-	/// The maximum number of users for the fez.
+	/// The maximum number of users for the group.
 	var maxCapacity: Int
-	/// Users to add to the fez upon creation. The creator is always added as the first user.
+	/// Users to add to the group upon creation. The creator is always added as the first user.
 	var initialUsers: [UUID]
-	/// If TRUE, the Fez will be created by user @moderator instead of the current user. Current user must be a mod.
+	/// If TRUE, the Group will be created by user @moderator instead of the current user. Current user must be a mod.
 	var createdByModerator: Bool?
-	/// If TRUE, the Fez will be created by user @TwitarrTeam instead of the current user. Current user must be a TT member.
+	/// If TRUE, the Group will be created by user @TwitarrTeam instead of the current user. Current user must be a TT member.
 	var createdByTwitarrTeam: Bool?
 }
 
-extension FezContentData: RCFValidatable {
+extension GroupContentData: RCFValidatable {
 	func runValidations(using decoder: ValidatingDecoder) throws {
 		let tester = try decoder.validator(keyedBy: CodingKeys.self)
 		tester.validate(title.count >= 2, forKey: .title, or: "title field has a 2 character minimum")
 		tester.validate(title.count <= 100, forKey: .title, or: "title field has a 100 character limit")
-		if ![.closed, .open].contains(fezType) {
+		if ![.closed, .open].contains(groupType) {
 			tester.validate(info.count >= 2, forKey: .info, or: "info field has a 2 character minimum")
 			tester.validate(
 				info.count <= 2048,
@@ -420,137 +420,137 @@ extension FezContentData: RCFValidatable {
 	}
 }
 
-/// Used to return data on a group of `FriendlyFez` objects.
+/// Used to return data on a group of `FriendlyGroup` objects.
 ///
 ///
-public struct FezListData: Content {
+public struct GroupListData: Content {
 	/// Pagination into the results set..
 	var paginator: Paginator
-	///The fezzes in the result set.
-	var fezzes: [FezData]
+	///The groups in the result set.
+	var groups: [GroupData]
 }
 
-/// Used to return a `FriendlyFez`'s data.
+/// Used to return a `FriendlyGroup`'s data.
 ///
 /// Returned by these methods, with `members` set to nil.
-/// * `POST /api/v3/fez/ID/join`
-/// * `POST /api/v3/fez/ID/unjoin`
-/// * `GET /api/v3/fez/joined`
-/// * `GET /api/v3/fez/open`
-/// * `GET /api/v3/fez/owner`
-/// * `POST /api/v3/fez/ID/user/ID/add`
-/// * `POST /api/v3/fez/ID/user/ID/remove`
-/// * `POST /api/v3/fez/ID/cancel`
+/// * `POST /api/v3/group/ID/join`
+/// * `POST /api/v3/group/ID/unjoin`
+/// * `GET /api/v3/group/joined`
+/// * `GET /api/v3/group/open`
+/// * `GET /api/v3/group/owner`
+/// * `POST /api/v3/group/ID/user/ID/add`
+/// * `POST /api/v3/group/ID/user/ID/remove`
+/// * `POST /api/v3/group/ID/cancel`
 ///
 /// Returned by these  methods, with `members` populated.
-/// * `GET /api/v3/fez/ID`
-/// * `POST /api/v3/fez/create`
-/// * `POST /api/v3/fez/ID/post`
+/// * `GET /api/v3/group/ID`
+/// * `POST /api/v3/group/create`
+/// * `POST /api/v3/group/ID/post`
 /// * `POST /api/v3/fex/ID/post/ID/delete`
 
-/// See `FezController.createHandler(_:data:)`, `FezController.joinHandler(_:)`,
-/// `FezController.unjoinHandler(_:)`, `FezController.joinedHandler(_:)`
-/// `FezController.openhandler(_:)`, `FezController.ownerHandler(_:)`,
-/// `FezController.userAddHandler(_:)`, `FezController.userRemoveHandler(_:)`,
-/// `FezController.cancelHandler(_:)`.
-public struct FezData: Content, ResponseEncodable {
-	/// The ID of the fez.
-	var fezID: UUID
-	/// The fez's owner.
+/// See `GroupController.createHandler(_:data:)`, `GroupController.joinHandler(_:)`,
+/// `GroupController.unjoinHandler(_:)`, `GroupController.joinedHandler(_:)`
+/// `GroupController.openhandler(_:)`, `GroupController.ownerHandler(_:)`,
+/// `GroupController.userAddHandler(_:)`, `GroupController.userRemoveHandler(_:)`,
+/// `GroupController.cancelHandler(_:)`.
+public struct GroupData: Content, ResponseEncodable {
+	/// The ID of the group.
+	var groupID: UUID
+	/// The group's owner.
 	var owner: UserHeader
-	/// The `FezType` .label of the fez.
-	var fezType: FezType
-	/// The title of the fez.
+	/// The `GroupType` .label of the group.
+	var groupType: GroupType
+	/// The title of the group.
 	var title: String
-	/// A description of the fez.
+	/// A description of the group.
 	var info: String
-	/// The starting time of the fez.
+	/// The starting time of the group.
 	var startTime: Date?
-	/// The ending time of the fez.
+	/// The ending time of the group.
 	var endTime: Date?
-	/// The 3 letter abbreviation for the active time zone at the time and place where the fez is happening.
+	/// The 3 letter abbreviation for the active time zone at the time and place where the group is happening.
 	var timeZone: String?
-	/// The location for the fez.
+	/// The location for the group.
 	var location: String?
-	/// How many users are currently members of the fez. Can be larger than maxParticipants; which indicates a waitlist.
+	/// How many users are currently members of the group. Can be larger than maxParticipants; which indicates a waitlist.
 	var participantCount: Int
-	/// The min number of people for the activity. Set by the host. Fezzes may?? auto-cancel if the minimum participant count isn't met when the fez is scheduled to start.
+	/// The min number of people for the activity. Set by the host. Groups may?? auto-cancel if the minimum participant count isn't met when the group is scheduled to start.
 	var minParticipants: Int
 	/// The max number of people for the activity. Set by the host.
 	var maxParticipants: Int
-	/// TRUE if the fez has been cancelled by the owner. Cancelled fezzes should display CANCELLED so users know not to show up, but cancelled fezzes are not deleted.
+	/// TRUE if the group has been cancelled by the owner. Cancelled groups should display CANCELLED so users know not to show up, but cancelled groups are not deleted.
 	var cancelled: Bool
-	/// The most recent of: Creation time for the fez, time of the last post (may not exactly match post time), user add/remove, or update to fezzes' fields.
+	/// The most recent of: Creation time for the group, time of the last post (may not exactly match post time), user add/remove, or update to groups' fields.
 	var lastModificationTime: Date
 
-	/// FezData.MembersOnlyData returns data only available to participants in a Fez.
+	/// GroupData.MembersOnlyData returns data only available to participants in a Group.
 	public struct MembersOnlyData: Content, ResponseEncodable {
-		/// The users participating in the fez.
+		/// The users participating in the group.
 		var participants: [UserHeader]
-		/// The users on a waiting list for the fez.
+		/// The users on a waiting list for the group.
 		var waitingList: [UserHeader]
-		/// How many posts the user can see in the fez. The count is returned even for calls that don't return the actual posts, but is not returned for
-		/// fezzes where the user is not a member. PostCount does not include posts from blocked/muted users.
+		/// How many posts the user can see in the group. The count is returned even for calls that don't return the actual posts, but is not returned for
+		/// groups where the user is not a member. PostCount does not include posts from blocked/muted users.
 		var postCount: Int
 		/// How many posts the user has read. If postCount > readCount, there's posts to be read. UI can also use readCount to set the initial view
 		/// to the first unread message.ReadCount does not include posts from blocked/muted users.
 		var readCount: Int
 		/// Paginates the array in posts--gives the start and limit of the returned posts array relative to all the posts in the thread.
 		var paginator: Paginator?
-		/// The FezPosts in the fez discussion. Methods that return arrays of Fezzes, or that add or remove users, do not populate this field (it will be nil).
-		var posts: [FezPostData]?
+		/// The GroupPosts in the group discussion. Methods that return arrays of Groups, or that add or remove users, do not populate this field (it will be nil).
+		var posts: [GroupPostData]?
 	}
 
-	/// Will be nil if user is not a member of the fez (in the participant or waiting lists).
+	/// Will be nil if user is not a member of the group (in the participant or waiting lists).
 	var members: MembersOnlyData?
 }
 
-extension FezData {
-	init(fez: FriendlyFez, owner: UserHeader) throws {
-		self.fezID = try fez.requireID()
+extension GroupData {
+	init(group: FriendlyGroup, owner: UserHeader) throws {
+		self.groupID = try group.requireID()
 		self.owner = owner
-		self.fezType = fez.fezType
-		self.title = fez.moderationStatus.showsContent() ? fez.title : "Fez Title is under moderator review"
-		self.info = fez.moderationStatus.showsContent() ? fez.info : "Fez Information field is under moderator review"
+		self.groupType = group.groupType
+		self.title = group.moderationStatus.showsContent() ? group.title : "Group Title is under moderator review"
+		self.info = group.moderationStatus.showsContent() ? group.info : "Group Information field is under moderator review"
 		self.startTime =
-			fez.startTime == nil ? nil : Settings.shared.timeZoneChanges.portTimeToDisplayTime(fez.startTime)
-		self.endTime = fez.endTime == nil ? nil : Settings.shared.timeZoneChanges.portTimeToDisplayTime(fez.endTime)
+			group.startTime == nil ? nil : Settings.shared.timeZoneChanges.portTimeToDisplayTime(group.startTime)
+		self.endTime = group.endTime == nil ? nil : Settings.shared.timeZoneChanges.portTimeToDisplayTime(group.endTime)
 		self.timeZone = self.startTime == nil ? nil : Settings.shared.timeZoneChanges.abbrevAtTime(self.startTime)
 		self.location =
-			fez.moderationStatus.showsContent() ? fez.location : "Fez Location field is under moderator review"
-		self.lastModificationTime = fez.updatedAt ?? Date()
-		self.participantCount = fez.participantArray.count
-		self.minParticipants = fez.minCapacity
-		self.maxParticipants = fez.maxCapacity
+			group.moderationStatus.showsContent() ? group.location : "Group Location field is under moderator review"
+		self.lastModificationTime = group.updatedAt ?? Date()
+		self.participantCount = group.participantArray.count
+		self.minParticipants = group.minCapacity
+		self.maxParticipants = group.maxCapacity
 		self.members = nil
-		self.cancelled = fez.cancelled
+		self.cancelled = group.cancelled
 	}
 }
 
-/// Used to return a `FezPost`'s data.
+/// Used to return a `GroupPost`'s data.
 ///
 /// Returned by:
-/// * `GET /api/v3/fez/ID`
-/// * `POST /api/v3/fez/ID/post`
-/// * `POST /api/v3/fez/ID/post/ID/delete`
+/// * `GET /api/v3/group/ID`
+/// * `POST /api/v3/group/ID/post`
+/// * `POST /api/v3/group/ID/post/ID/delete`
 ///
-/// See: `FezController.fezHandler(_:)`, `FezController.postAddHandler(_:data:)`,
-/// `FezController.postDeleteHandler(_:)`.
-public struct FezPostData: Content {
-	/// The ID of the fez post.
+/// See: `GroupController.groupHandler(_:)`, `GroupController.postAddHandler(_:data:)`,
+/// `GroupController.postDeleteHandler(_:)`.
+public struct GroupPostData: Content {
+	/// The ID of the group post.
 	var postID: Int
-	/// The fez post's author.
+	/// The group post's author.
 	var author: UserHeader
-	/// The text content of the fez post.
+	/// The text content of the group post.
 	var text: String
 	/// The time the post was submitted.
 	var timestamp: Date
-	/// The image content of the fez post.
+	/// The image content of the group post.
 	var image: String?
 }
 
-extension FezPostData {
-	init(post: FezPost, author: UserHeader, overrideQuarantine: Bool = false) throws {
+extension GroupPostData {
+	init(post: GroupPost, author: UserHeader, overrideQuarantine: Bool = false) throws {
 		guard author.userID == post.$author.id else {
 			throw Abort(.internalServerError, reason: "Internal server error--Post's author does not match.")
 		}
@@ -939,7 +939,7 @@ public struct Paginator: Content {
 	var limit: Int
 }
 
-/// Used to create or update a `ForumPost`, `Twarrt`, or `FezPost`.
+/// Used to create or update a `ForumPost`, `Twarrt`, or `GroupPost`.
 ///
 /// Required by:
 /// * `POST /api/v3/forum/ID/create`
@@ -948,13 +948,13 @@ public struct Paginator: Content {
 /// * `POST /api/v3/twitarr/create`
 /// * `POST /api/v3/twitarr/ID/reply`
 /// * `POST /api/v3/twitarr/ID/update`
-/// * `POST /api/v3/fez/ID/post`
+/// * `POST /api/v3/group/ID/post`
 ///
 /// See `ForumController.postUpdateHandler(_:data:)`.
 public struct PostContentData: Content {
 	/// The new text of the forum post.
 	var text: String
-	/// An array of up to 4 images (1 when used in a Fez post). Each image can specify either new image data or an existing image filename.
+	/// An array of up to 4 images (1 when used in a Group post). Each image can specify either new image data or an existing image filename.
 	/// For new posts, images will generally contain all new image data. When editing existing posts, images may contain a mix of new and existing images.
 	/// Reorder ImageUploadDatas to change presentation order. Set images to [] to remove images attached to post when editing.
 	var images: [ImageUploadData]
@@ -1517,8 +1517,8 @@ public struct UserNotificationData: Content {
 
 	/// Count of # of Seamail threads with new messages. NOT total # of new messages-a single seamail thread with 10 new messages counts as 1. 0 if not logged in.
 	var newSeamailMessageCount: Int
-	/// Count of # of Fezzes with new messages. 0 if not logged in.
-	var newFezMessageCount: Int
+	/// Count of # of Groups with new messages. 0 if not logged in.
+	var newGroupMessageCount: Int
 
 	/// The start time of the earliest event that the user has followed with a start time > now. nil if not logged in or no matching event.
 	var nextFollowedEventTime: Date?
@@ -1551,7 +1551,7 @@ public struct UserNotificationData: Content {
 
 extension UserNotificationData {
 	init(
-		newFezCount: Int,
+		newGroupCount: Int,
 		newSeamailCount: Int,
 		activeAnnouncementIDs: [Int],
 		newAnnouncementCount: Int,
@@ -1570,7 +1570,7 @@ extension UserNotificationData {
 		self.forumMentionCount = 0
 		self.newForumMentionCount = 0
 		self.newSeamailMessageCount = newSeamailCount
-		self.newFezMessageCount = newFezCount
+		self.newGroupMessageCount = newGroupCount
 		self.nextFollowedEventTime = nextEventTime
 		self.nextFollowedEventID = nextEvent
 		self.alertWords = []
@@ -1590,7 +1590,7 @@ extension UserNotificationData {
 		self.forumMentionCount = 0
 		self.newForumMentionCount = 0
 		self.newSeamailMessageCount = 0
-		self.newFezMessageCount = 0
+		self.newGroupMessageCount = 0
 		self.nextFollowedEventTime = nil
 		self.alertWords = []
 	}

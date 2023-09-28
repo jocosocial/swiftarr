@@ -37,11 +37,11 @@ Method | Route | Notes
 | GET | /forum/:forum_id | Shows an individual forum thread.
 | GET | /forum/containingpost/:post_id | Shows the forum containing a specific post.
 | GET | /seamail | Shows the root seamail page, with a list of all the user's seamail chats.
-| GET | /fez/ | Root LFG page.
-| GET | /fez/joined | Shows LFGs you've joined.
-| GET | /fez/owned | Shows LFGs you've created.
-| GET | /fez/:fez_id | Shows a specific LFG.
-| GET | /fez/faq | Shows a guide to using LFGs responsibly.
+| GET | /group/ | Root LFG page.
+| GET | /group/joined | Shows LFGs you've joined.
+| GET | /group/owned | Shows LFGs you've created.
+| GET | /group/:group_id | Shows a specific LFG.
+| GET | /group/faq | Shows a guide to using LFGs responsibly.
 | GET | /events | Shows the Events page. Several query options.
 | GET | /avatar/full/:user_id | Returns an image (not HTML wrapping an image)
 | GET | /avatar/thumb/:user_id | Returns an image
