@@ -5,7 +5,7 @@
 				<nav aria-label="breadcrumb">
 				  <ol class="breadcrumb">
 					<li class="breadcrumb-item"><a href="#(breadcrumbURL)">#(trunk.title)</a></li>
-					<li class="breadcrumb-item active" aria-current="page">#(fez.title)</li>
+					<li class="breadcrumb-item active" aria-current="page">#(chatgroup.title)</li>
 				  </ol>
 				</nav>
 			</div>
@@ -13,18 +13,18 @@
 				<div class="col">
 					<h6>Participants</h6>
 				</div>
-				#if(fez.fezType == "open"):
+				#if(chatgroup.chatGroupType == "open"):
 					<div class="col col-auto btn-group btn-group-sm" role="group" aria-label="member actions">
-						#if(fez.owner.userID == trunk.userID):
-							<a class="btn btn-outline-primary" href="/fez/#(fez.fezID)/members">Manage Members</a>
+						#if(chatgroup.owner.userID == trunk.userID):
+							<a class="btn btn-outline-primary" href="/chatgroup/#(chatgroup.chatGroupID)/members">Manage Members</a>
 						#else:
-							<button type="button" class="btn btn-outline-primary px-3" data-bs-toggle="modal" data-bs-target="\#leaveFezModal">Leave</button>
+							<button type="button" class="btn btn-outline-primary px-3" data-bs-toggle="modal" data-bs-target="\#leaveChatGroupModal">Leave</button>
 						#endif
 					</div>
 				#endif
 			</div>
 			<div class="row mb-2 mx-0">
-				#for(participant in fez.members.participants):
+				#for(participant in chatgroup.members.participants):
 					<div class="col col-auto border">
 						#avatar(participant)
 						<span>#(participant.username)</span>
@@ -33,19 +33,19 @@
 			</div>
 			#extend("paginator")
 			<ul class="list-group container-md mx-0 px-0">
-				#for(fezPost in oldPosts):
-					#extend("Fez/fezPost")
+				#for(chatGroupPost in oldPosts):
+					#extend("ChatGroup/chatGroupPost")
 				#endfor
 				#if(showDivider):
 					<hr class="newline">
 				#endif
 				<span id="newposts"></span>
-				#for(fezPost in newPosts):
-					#extend("Fez/fezPost")
+				#for(chatGroupPost in newPosts):
+					#extend("ChatGroup/chatGroupPost")
 				#endfor
 				
 				#if(paginator.nextPageURL == nil):
-					<div class="fez-list-end" data-url="#(socketURL)" id="fez-list-end"></div>
+					<div class="chatgroup-list-end" data-url="#(socketURL)" id="chatgroup-list-end"></div>
 					<script src="/js/swiftarrMessages.js"></script>
 				#endif
 			</ul>
@@ -95,7 +95,7 @@
 						</form>
 					</li>
 				</ul>
-				#if(fez.fezType == "open"):
+				#if(chatgroup.chatGroupType == "open"):
 					<div class="alert text-muted alert-secondary py-0 my-1" role="alert">
 						This is an open chat. The creator can add or remove members at any time.
 					</div>
@@ -106,7 +106,7 @@
 			#endif
 		</div>
 
-		<div class="modal fade" id="leaveFezModal" tabindex="-1" aria-labelledby="leave chat modal" aria-hidden="true">
+		<div class="modal fade" id="leaveChatGroupModal" tabindex="-1" aria-labelledby="leave chat modal" aria-hidden="true">
 			<div class="modal-dialog">
 				<div class="modal-content">
 					<div class="modal-header">
@@ -120,16 +120,16 @@
 						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
 						<input type="checkbox" class="btn-check" autocomplete="off" data-action="redirect" 
 								data-successpath="/seamail"
-								data-actionpath="/fez/#(fez.fezID)/leave"
-								data-errordiv="fezDialog_errorDisplay"
-								id="#(fez.fezID)_leave">
-						<label class="btn btn-primary px-4" for="#(fez.fezID)_leave">
+								data-actionpath="/chatgroup/#(chatgroup.chatGroupID)/leave"
+								data-errordiv="chatGroupDialog_errorDisplay"
+								id="#(chatgroup.chatGroupID)_leave">
+						<label class="btn btn-primary px-4" for="#(chatgroup.chatGroupID)_leave">
 							Leave
 							<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
 							<span class="visually-hidden">Loading...</span>
 						</label>
 					</div>
-					<div class="mx-3 pb-1 text-end text-danger d-none error-display" id="fezDialog_errorDisplay">
+					<div class="mx-3 pb-1 text-end text-danger d-none error-display" id="chatGroupDialog_errorDisplay">
 						Error attempting to leave chat: <span class="errortext"></span>
 					</div>
 				</div>

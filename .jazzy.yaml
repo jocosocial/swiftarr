@@ -57,7 +57,7 @@ custom_categories:
     - BoardgameController
     - ClientController
     - EventController
-    - FezController
+    - ChatGroupController
     - ForumController
     - ImageController
     - KaraokeController
@@ -76,13 +76,13 @@ custom_categories:
     - Category
     - DailyTheme
     - Event
-    - FezPost
+    - ChatGroupPost
     - ForumEdit
     - ForumPostEdit
     - ForumPost
     - Forum
-    - FriendlyFezEdit
-    - FriendlyFez
+    - FriendlyChatGroupEdit
+    - FriendlyChatGroup
     - KaraokePlayedSong
     - KaraokeSong
     - ModeratorAction
@@ -104,7 +104,7 @@ custom_categories:
     - EventModification
     - EventType
     - ExportableFormat
-    - FezType
+    - ChatGroupType
     - GDError
     - ImageSizeGroup
     - ImageUsage
@@ -122,7 +122,7 @@ custom_categories:
     children:
     - AnnouncementCreateData
     - EventsUpdateData
-    - FezContentData
+    - ChatGroupContentData
     - ForumCreateData
     - ImageUploadData
     - NoteCreateData
@@ -144,8 +144,8 @@ custom_categories:
     - CreatedUserData
     - CurrentUserData
     - EventData
-    - FezData
-    - FezPostData
+    - ChatGroupData
+    - ChatGroupPostData
     - ForumData
     - ForumListData
     - NoteData
@@ -198,16 +198,16 @@ custom_categories:
       - CreateDailyThemeSchema
       - CreateEventFavoriteSchema
       - CreateEventSchema
-      - CreateFezParticipantSchema
-      - CreateFezPostSchema
+      - CreateChatGroupParticipantSchema
+      - CreateChatGroupPostSchema
       - CreateForumEditSchema
       - CreateForumPostEditSchema
       - CreateForumPostSchema
       - CreateForumReadersSchema
       - CreateForums
       - CreateForumSchema
-      - CreateFriendlyFezEditSchema
-      - CreateFriendlyFezSchema
+      - CreateFriendlyChatGroupEditSchema
+      - CreateFriendlyChatGroupSchema
       - CreateKaraokeFavoriteSchema
       - CreateKaraokePlayedSongSchema
       - CreateKaraokeSongSchema
@@ -242,7 +242,7 @@ custom_categories:
     - AlertWordPivot
     - BoardgameFavorite
     - EventFavorite
-    - FezParticipant
+    - ChatGroupParticipant
     - ForumReaders
     - KaraokeFavorite
     - PostLikes
@@ -254,7 +254,7 @@ custom_categories:
     - APIRouteCollection
     - ContentFilterable
     - ExportableFormatter
-    - FezProtocol
+    - ChatGroupProtocol
     - ImportableFormatter
     - LibGdExportableFormatter
     - LibGdImportableFormatter
@@ -278,7 +278,7 @@ custom_categories:
       - SiteEventsController
       - SiteFileController
       - SiteForumController
-      - SiteFriendlyFezController
+      - SiteFriendlyChatGroupController
       - SiteKaraokeController
       - SiteLoginController
       - SiteModController

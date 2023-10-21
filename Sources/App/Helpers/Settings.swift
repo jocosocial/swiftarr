@@ -62,8 +62,8 @@ final class Settings: Encodable {
 	/// The ID of the blocked user placeholder.
 	@SettingsValue var blockedUserID: UUID = UUID()
 
-	/// The ID of the FriendlyFez user placeholder.
-	@SettingsValue var friendlyFezID: UUID = UUID()
+	/// The ID of the FriendlyChatGroup user placeholder.
+	@SettingsValue var friendlyChatGroupID: UUID = UUID()
 
 	// MARK: Sections / Features / Apps
 

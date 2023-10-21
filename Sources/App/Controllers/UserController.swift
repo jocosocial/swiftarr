@@ -37,7 +37,7 @@ struct UserController: APIRouteCollection {
 		"enormous", "entertain", "enthusiastic", "equal", "escape", "excellent",
 		"excite", "exciting", "exist", "expect", "expert", "exuberant", "fairy",
 		"familiar", "fancy", "fantastic", "farm", "fascinating", "feeling",
-		"fez", "first", "five", "fixed", "float", "flood", "flower", "fluffy",
+		"chatgroup", "first", "five", "fixed", "float", "flood", "flower", "fluffy",
 		"food", "fork", "frequent", "friend", "friendly", "frog", "fruit",
 		"future", "futuristic", "garrulous", "geese", "ghost", "giants",
 		"gifted", "gigantic", "giraffe", "glib", "glorious", "gorgeous",

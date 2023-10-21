@@ -86,7 +86,7 @@ struct AddJocomojiTag: UnsafeUnescapedLeafTag {
 ///
 /// Usage: #formatTwarrtText(String) -> String
 /// Usage: #formatPostText(String) -> String
-/// Usage: #formatFezText(String) -> String
+/// Usage: #formatChatGroupText(String) -> String
 /// Usage: #formatSeamailText(String) -> String
 struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 	static var nameRefStartCharacterSet: CharacterSet {
@@ -155,7 +155,7 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 					switch usage {
 					case .twarrt: searchHref = "/tweets?hashtag=\(hashtag)"
 					case .forumpost: searchHref = "/forumpost/search?hashtag=\(hashtag)"
-					case .fez: searchHref = "/tweets?hashtag=\(hashtag)"
+					case .chatgroup: searchHref = "/tweets?hashtag=\(hashtag)"
 					case .seamail: searchHref = "/tweets?hashtag=\(hashtag)"
 					}
 					return "<a class=\"link-primary\" href=\"\(searchHref)\">#\(hashtag)</a>\(restOfString)"
@@ -189,7 +189,7 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 
 		// Links in posts should be automatically clickable. Similarly, we desire to shorten Twitarr
 		// specific links. Maybe someday we could parse them and give some linktext?
-		// e.g. "http://192.168.0.19:8081/fez/ADDBA5D9-1154-4033-88AE-07B12F3AE162"
+		// e.g. "http://192.168.0.19:8081/chatgroup/ADDBA5D9-1154-4033-88AE-07B12F3AE162"
 		// could have linktext "[An LFG Link]" or somesuch.
 
 		// Since we have multiple potential Twitarr hostnames (twitarr.com, joco.hollandamerica.com)
@@ -259,7 +259,7 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 						}
 					case "forum": linkText = "[Forum Link]"
 					case "seamail": linkText = "[Seamail Link]"
-					case "fez":
+					case "chatgroup":
 						if url.pathComponents.count > 2 {
 							switch url.pathComponents[2] {
 							case "joined": linkText = "[Joined LFGs Link]"
@@ -303,7 +303,7 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 	enum Usage {
 		case twarrt
 		case forumpost
-		case fez
+		case chatgroup
 		case seamail
 	}
 	let usage: Usage
@@ -393,7 +393,7 @@ struct RelativeTimeTag: LeafTag {
 ///
 /// For 2022 a munger was developed so that the days of odd time zones get their UTC times adjusted
 /// by the difference between Port Timezone and AST (which was our only transition). As such there
-/// is currently no functional difference between EvenTimeTag and FezTimeTag. It is being left in
+/// is currently no functional difference between EvenTimeTag and ChatGroupTimeTag. It is being left in
 /// the code so that some day we can define programatic timezone transitions and not have to do
 /// munging of the input.
 ///
@@ -424,8 +424,8 @@ struct EventTimeTag: LeafTag {
 
 /// Returns a string descibing when an LFG is taking place. Shows both the start and end time.
 ///
-/// Usage in Leaf templates:: #fezTime(startTime, endTime) -> String
-struct FezTimeTag: LeafTag {
+/// Usage in Leaf templates:: #chatGroupTime(startTime, endTime) -> String
+struct ChatGroupTimeTag: LeafTag {
 	func render(_ ctx: LeafContext) throws -> LeafData {
 		try ctx.requireParameterCount(2)
 		guard let startTimeDouble = ctx.parameters[0].double, let endTimeDouble = ctx.parameters[1].double else {

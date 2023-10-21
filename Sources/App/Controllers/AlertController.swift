@@ -14,7 +14,7 @@ import Vapor
 /// 	- getting server time,,
 ///		- getting public address-style announcements,,
 ///		- getting notifications on alertwords,
-///		- getting notificaitons on incoming Fez messages.
+///		- getting notificaitons on incoming ChatGroup messages.
 struct AlertController: APIRouteCollection {
 
 	/// Required. Registers routes to the incoming router.
@@ -85,7 +85,7 @@ struct AlertController: APIRouteCollection {
 			result.disabledFeatures = Settings.shared.disabledFeatures.buildDisabledFeatureArray()
 			return result
 		}
-		// Get the number of fezzes with unread messages
+		// Get the number of chatgroups with unread messages
 		async let userHash = try req.redis.getUserHash(userID: user.userID)
 		async let unreadSeamailCount = try req.redis.getSeamailUnreadCounts(userID: user.userID, inbox: .seamail)
 		async let unreadLFGCount = try req.redis.getSeamailUnreadCounts(userID: user.userID, inbox: .lfgMessages)
@@ -101,7 +101,7 @@ struct AlertController: APIRouteCollection {
 			nextEvent = try await storeNextFollowedEvent(userID: user.userID, on: req)
 		}
 		var result = try await UserNotificationData(
-			newFezCount: unreadLFGCount,
+			newChatGroupCount: unreadLFGCount,
 			newSeamailCount: unreadSeamailCount,
 			activeAnnouncementIDs: actives,
 			newAnnouncementCount: newAnnouncements,

@@ -1,23 +1,23 @@
 import Vapor
 
-/// Used to return `FriendlyFezEdit` data for moderators. The only primary data an edit stores is the title, info, and location text fields.
+/// Used to return `FriendlyChatGroupEdit` data for moderators. The only primary data an edit stores is the title, info, and location text fields.
 ///
 ///	Included in:
-///	* `FezModerationData`
+///	* `ChatGroupModerationData`
 ///
 /// Returned by:
-/// * `GET /api/v3/mod/fez/ID`
-public struct FezEditLogData: Content {
-	/// The ID of the fez.
-	var fezID: UUID
+/// * `GET /api/v3/mod/chatgroup/ID`
+public struct ChatGroupEditLogData: Content {
+	/// The ID of the chatgroup.
+	var chatGroupID: UUID
 	/// The ID of the edit.
 	var editID: UUID
 	/// The timestamp of the edit.
 	var createdAt: Date
-	/// Who initiated the edit. Usually the fez creator, but could be a moderator. Note that the saved edit shows the state BEFORE the edit,
+	/// Who initiated the edit. Usually the chatgroup creator, but could be a moderator. Note that the saved edit shows the state BEFORE the edit,
 	/// therefore the 'author' here changed the contents to those of the NEXT edit (or to the current state).
 	var author: UserHeader
-	/// The title of the fez just before `author` edited it.
+	/// The title of the chatgroup just before `author` edited it.
 	var title: String
 	/// The info field just before `author` edited it.
 	var info: String
@@ -25,9 +25,9 @@ public struct FezEditLogData: Content {
 	var location: String
 }
 
-extension FezEditLogData {
-	init(_ edit: FriendlyFezEdit, on req: Request) throws {
-		fezID = edit.$fez.id
+extension ChatGroupEditLogData {
+	init(_ edit: FriendlyChatGroupEdit, on req: Request) throws {
+		chatGroupID = edit.$chatGroup.id
 		editID = try edit.requireID()
 		createdAt = edit.createdAt ?? Date()
 		author = try req.userCache.getHeader(edit.$editor.id)
@@ -37,31 +37,31 @@ extension FezEditLogData {
 	}
 }
 
-/// Used to return data a moderator needs to moderate a fez.
+/// Used to return data a moderator needs to moderate a chatgroup.
 ///
 /// Returned by:
-/// * `GET /api/v3/mod/fez/:fez_id`
+/// * `GET /api/v3/mod/chatgroup/:chatgroup_id`
 ///
-/// Note that FezPosts can't be edited and don't have an edit log.
+/// Note that ChatGroupPosts can't be edited and don't have an edit log.
 ///
-/// See `ModerationController.fezModerationHandler(_:)`
-public struct FezModerationData: Content {
-	var fez: FezData
+/// See `ModerationController.chatGroupModerationHandler(_:)`
+public struct ChatGroupModerationData: Content {
+	var chatgroup: ChatGroupData
 	var isDeleted: Bool
 	var moderationStatus: ContentModerationStatus
-	var edits: [FezEditLogData]
+	var edits: [ChatGroupEditLogData]
 	var reports: [ReportModerationData]
 }
 
-/// Used to return data a moderator needs to moderate a fez post.
+/// Used to return data a moderator needs to moderate a chatgroup post.
 ///
 /// Returned by:
-/// * `GET /api/v3/mod/fezpost/:post_id`
+/// * `GET /api/v3/mod/chatgrouppost/:post_id`
 ///
-/// See `ModerationController.fezPostModerationHandler(_:)`
-public struct FezPostModerationData: Content {
-	var fezPost: FezPostData
-	var fezID: UUID
+/// See `ModerationController.chatGroupPostModerationHandler(_:)`
+public struct ChatGroupPostModerationData: Content {
+	var chatGroupPost: ChatGroupPostData
+	var chatGroupID: UUID
 	var isDeleted: Bool
 	var moderationStatus: ContentModerationStatus
 	var reports: [ReportModerationData]
@@ -171,7 +171,7 @@ public struct ModeratorActionLogData: Content {
 	var id: UUID
 	/// What action the moderator took.
 	var actionType: ModeratorActionType
-	/// The type of content that got moderated: Twarrt, forum, forum post, fez, fez post, or user profile.
+	/// The type of content that got moderated: Twarrt, forum, forum post, chatgroup, chatgroup post, or user profile.
 	var contentType: ReportType
 	/// The ID of the content. Could be an Int or a UUID, dpeeneding on `contentType`
 	var contentID: String
@@ -341,7 +341,7 @@ public struct UserModerationData: Content {
 	/// This user's access level. Main user and all sub accounts share an access level.
 	var accessLevel: UserAccessLevel
 	/// If this user is temporarily quarantined, this will contain the end time for the quarantine. While quarantined, the user can log in and read content as normal
-	/// but cannot create content in any public area (posts, edit posts, create forums, participate in FriendlyFezzes, or edit their profile).
+	/// but cannot create content in any public area (posts, edit posts, create forums, participate in FriendlyChatGroups, or edit their profile).
 	var tempQuarantineEndTime: Date?
 	/// All reports against any user account this user controls.
 	var reports: [ReportModerationData]

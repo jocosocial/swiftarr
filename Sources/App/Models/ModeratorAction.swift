@@ -1,7 +1,7 @@
 import Fluent
 import Vapor
 
-/// 	Each time a moderator performs a moderation action--editing, locking, or deleting a post, forum, or fez, changing a user's access level, issuing a temp quarantine,
+/// 	Each time a moderator performs a moderation action--editing, locking, or deleting a post, forum, or chatgroup, changing a user's access level, issuing a temp quarantine,
 /// 	or other moderation-only activities, we log the action by creating one of these records in the database..
 ///
 /// 	The data collected may only be viewed by moderators. The intent is to make it easier for mods to coordinate.

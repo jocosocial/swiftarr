@@ -24,11 +24,11 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 		case "eventFiltersChanged": btn.addEventListener("click", filterEvents); break;
 		case "filterEventType": btn.addEventListener("click", eventFilterDropdownTappedAction); break;
 		case "eventScrollToNow": btn.addEventListener("click", soonButtonTappedAction); break;
-		case "filterFezDay":
-		case "filterFezType":
-		case "filterFezHidePast":
+		case "filterChatGroupDay":
+		case "filterChatGroupType":
+		case "filterChatGroupHidePast":
 			dropdownButtonSetup(btn);
-			btn.addEventListener("click", fezFilterDropdownTappedAction);
+			btn.addEventListener("click", chatGroupFilterDropdownTappedAction);
 			break;
 	}
 }
@@ -154,7 +154,7 @@ document.getElementById('deleteModal')?.addEventListener('show.bs.modal', functi
 	deleteBtn.setAttribute('data-delete-postid', postElem.dataset.postid);
 })
 
-// Deletes forums, forumposts, tweets, and fez posts. Delete btn handler inside Delete Modal.
+// Deletes forums, forumposts, tweets, and chatgroup posts. Delete btn handler inside Delete Modal.
 async function deleteAction() {
 	let postid = event.target.dataset.deletePostid;
 	let deleteType = event.target.dataset.deleteType;
@@ -534,22 +534,22 @@ function filterEvents() {
 	localStorage.setItem('eventCategoryFilterState', category);
 }
 
-// MARK: - Fez Handlers
+// MARK: - ChatGroup Handlers
 
-function fezFilterDropdownTappedAction(event) {
+function chatGroupFilterDropdownTappedAction(event) {
 	updateDropdownButton(event.target);
-	applyFezSearchFilters();
+	applyChatGroupSearchFilters();
 }
 
-function applyFezSearchFilters() {
+function applyChatGroupSearchFilters() {
 	let queryString = ""
 
-	let typeSelection = document.getElementById("fezTypeFilterMenu").dataset.selected;
+	let typeSelection = document.getElementById("chatGroupTypeFilterMenu").dataset.selected;
 	if (typeSelection != "all") {
 		queryString = "?type=" + typeSelection;
 	}
 
-	let daySelection = document.getElementById("fezDayFilterMenu").dataset.selected;
+	let daySelection = document.getElementById("chatGroupDayFilterMenu").dataset.selected;
 	if (daySelection != "all") {
 		if (queryString.length > 0) {
 			queryString = queryString + "&cruiseday=" + daySelection;
@@ -559,7 +559,7 @@ function applyFezSearchFilters() {
 		}
 	}
 
-	let hidePastSelection = document.getElementById("fezHidePastFilterMenu").dataset.selected;
+	let hidePastSelection = document.getElementById("chatGroupHidePastFilterMenu").dataset.selected;
 	if (hidePastSelection != "default") {
 		if (queryString.length > 0) {
 			queryString = queryString + "&hidePast=" + hidePastSelection;

@@ -14,7 +14,7 @@ Swiftarr has a bunch of new features. Many of these were listed in the readme fo
 
 Here’s a short list of differentiating features:
 
-* Friendly Fez - A Looking For Group feature. A user can create a Fez describing an event they want to have, others can then search for Fezzes and join up. Fezzes have group chats similar to Seamail chats. 
+* Looking For Group feature - A user can create a LFG describing an event they want to have, others can then search for LFGs and join up. LFGs have group chats similar to Seamail chats. 
 * Forum Categories - does what you’d think
 * Event Forums - All events get an associated Forum created for them.
 * Moderator Features - Report views, edit histories, auto-quarantined content, timed user bans, moderator action log, mod-only discussion forum
@@ -25,8 +25,8 @@ There’s a bunch of minor features, from twarrts allowing 4 images to a unified
 
 Plus, there’s a bunch of stuff that I still want to do for 2022:
 
-* Board Games and Karaoke song indexes would tie into Friendly Fez, with a “find people to play this” button of some sort.
-* Canonical links for most content, including twarrts and forum posts. This means, with some work, a native client could scan a forum post’s text, find a link to a Fez, and make that link open in-app.
+* Board Games and Karaoke song indexes would tie into LFGs, with a “find people to play this” button of some sort.
+* Canonical links for most content, including twarrts and forum posts. This means, with some work, a native client could scan a forum post’s text, find a link to a LFG, and make that link open in-app.
 * Come up with a plan for DB migration, allowing us to deploy the server via Heroku or similar before boat, and migrate the DB to the boat server on embarkation day.
 
 ### Why Not Swiftarr

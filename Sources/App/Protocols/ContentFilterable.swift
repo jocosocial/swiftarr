@@ -176,7 +176,7 @@ extension ContentFilterable {
 	/// valid at the end of a username (must have a following alphanumeric).
 	///
 	/// - Parameter username: String of the username (including @) that we are attempting to match for.
-	/// - Returns: A ContentFilterable (such as ForumPost or FezPost) if the username is found, else nil.
+	/// - Returns: A ContentFilterable (such as ForumPost or ChatGroupPost) if the username is found, else nil.
 	///
 	/// @TODO consider: https://www.swiftbysundell.com/articles/string-parsing-in-swift/
 	///

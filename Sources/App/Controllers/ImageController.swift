@@ -28,7 +28,7 @@ struct ImageController: APIRouteCollection {
 
 	/// `GET /api/v3/image/full/STRING`
 	///
-	/// Returns a user-created image previously uploaded to the server. This includes images in Twitarr posts, ForumPosts, FezPosts, User Avatars, and Daily Theme images.
+	/// Returns a user-created image previously uploaded to the server. This includes images in Twitarr posts, ForumPosts, ChatGroupPosts, User Avatars, and Daily Theme images.
 	/// Even though the path for this API call says 'full', images may be downsized when uploaded (currently, images get downsized to a max edge length of 2048).
 	///
 	/// Image filenames should have a form of: `UUIDString.typeExtension` where the UUIDString matches the output of `UUID().string` and `typeExtension`
@@ -48,7 +48,7 @@ struct ImageController: APIRouteCollection {
 	/// `GET /api/v3/image/thumb/STRING`
 	///
 	/// Returns a user-created image thumbnail previously uploaded to the server. This includes images in Twitarr posts, ForumPosts,
-	/// FezPosts, User Avatars, and Daily Theme images. The exact size of the thumbnail may vary based on the usage given at upload time.
+	/// ChatGroupPosts, User Avatars, and Daily Theme images. The exact size of the thumbnail may vary based on the usage given at upload time.
 	///
 	/// Image filenames should have a form of: `UUIDString.typeExtension` where the UUIDString matches the output of `UUID().string` and `typeExtension`
 	/// matches one of : "bmp", "gif", "jpg", "png", "tiff", "wbmp", "webp". Example: `F818D809-AAB9-4C92-8AAD-6AE483C8AB82.jpg`. The `thumb` and `full`
@@ -67,7 +67,7 @@ struct ImageController: APIRouteCollection {
 	/// `GET /api/v3/image/archive/STRING`
 	///
 	/// Returns an archived user-created image previously uploaded to the server, and then previously deleted/replaced. This includes images in Twitarr posts,
-	/// ForumPosts, FezPosts, User Avatars, and Daily Theme images. Archived images are only accessible by Moderators and above.
+	/// ForumPosts, ChatGroupPosts, User Avatars, and Daily Theme images. Archived images are only accessible by Moderators and above.
 	///
 	/// Image filenames should have a form of: `UUIDString.typeExtension` where the UUIDString matches the output of `UUID().string` and `typeExtension`
 	/// matches one of : "bmp", "gif", "jpg", "png", "tiff", "wbmp", "webp". Example: `F818D809-AAB9-4C92-8AAD-6AE483C8AB82.jpg`. The `thumb` and `full`

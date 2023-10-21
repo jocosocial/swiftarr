@@ -45,7 +45,7 @@
 /* Begin PBXBuildFile section */
 		EA20207A27FA59FE00F82C28 /* seeds in CopyFiles */ = {isa = PBXBuildFile; fileRef = EA20207927FA59FB00F82C28 /* seeds */; };
 		EA20207B27FA5A0100F82C28 /* Resources in CopyFiles */ = {isa = PBXBuildFile; fileRef = EA20206927FA592C00F82C28 /* Resources */; };
-		EA20207D2803DE7300F82C28 /* FezProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA20207C2803DE7200F82C28 /* FezProtocol.swift */; };
+		EA20207D2803DE7300F82C28 /* ChatGroupProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA20207C2803DE7200F82C28 /* ChatGroupProtocol.swift */; };
 		EA2020822807F8E300F82C28 /* SiteRedisWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2020812807F8E300F82C28 /* SiteRedisWrapper.swift */; };
 		EA2020862811C95600F82C28 /* ScheduleMunger.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2020852811C95600F82C28 /* ScheduleMunger.swift */; };
 		OBJ_2826 /* AdminController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_10 /* AdminController.swift */; };
@@ -54,7 +54,7 @@
 		OBJ_2829 /* BoardgameController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_13 /* BoardgameController.swift */; };
 		OBJ_2830 /* ClientController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_14 /* ClientController.swift */; };
 		OBJ_2831 /* EventController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_15 /* EventController.swift */; };
-		OBJ_2832 /* FezController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_16 /* FezController.swift */; };
+		OBJ_2832 /* ChatGroupController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_16 /* ChatGroupController.swift */; };
 		OBJ_2833 /* ForumController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_17 /* ForumController.swift */; };
 		OBJ_2834 /* ImageController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_18 /* ImageController.swift */; };
 		OBJ_2835 /* KaraokeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_19 /* KaraokeController.swift */; };
@@ -69,15 +69,15 @@
 		OBJ_2844 /* UsersController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_29 /* UsersController.swift */; };
 		OBJ_2845 /* AppFeatures.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_31 /* AppFeatures.swift */; };
 		OBJ_2847 /* EventType.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_33 /* EventType.swift */; };
-		OBJ_2848 /* FezType.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_34 /* FezType.swift */; };
+		OBJ_2848 /* ChatGroupType.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_34 /* ChatGroupType.swift */; };
 		OBJ_2849 /* LikeType.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_35 /* LikeType.swift */; };
 		OBJ_2850 /* ModeratorActionType.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_36 /* ModeratorActionType.swift */; };
 		OBJ_2851 /* NotificationType.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_37 /* NotificationType.swift */; };
 		OBJ_2852 /* ReportType.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_38 /* ReportType.swift */; };
 		OBJ_2853 /* UserAccessLevel.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_39 /* UserAccessLevel.swift */; };
 		OBJ_2854 /* Event+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_41 /* Event+Extensions.swift */; };
-		OBJ_2855 /* Fez+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_42 /* Fez+Extensions.swift */; };
-		OBJ_2856 /* FezPost+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_43 /* FezPost+Extensions.swift */; };
+		OBJ_2855 /* ChatGroup+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_42 /* ChatGroup+Extensions.swift */; };
+		OBJ_2856 /* ChatGroupPost+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_43 /* ChatGroupPost+Extensions.swift */; };
 		OBJ_2857 /* Forum+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_44 /* Forum+Extensions.swift */; };
 		OBJ_2858 /* ForumPost+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_45 /* ForumPost+Extensions.swift */; };
 		OBJ_2859 /* Foundation+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_46 /* Foundation+Extensions.swift */; };
@@ -116,13 +116,13 @@
 		OBJ_2893 /* Category.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_87 /* Category.swift */; };
 		OBJ_2894 /* DailyTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_88 /* DailyTheme.swift */; };
 		OBJ_2895 /* Event.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_89 /* Event.swift */; };
-		OBJ_2896 /* FezPost.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_90 /* FezPost.swift */; };
+		OBJ_2896 /* ChatGroupPost.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_90 /* ChatGroupPost.swift */; };
 		OBJ_2897 /* Forum.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_91 /* Forum.swift */; };
 		OBJ_2898 /* ForumEdit.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_92 /* ForumEdit.swift */; };
 		OBJ_2899 /* ForumPost.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_93 /* ForumPost.swift */; };
 		OBJ_2900 /* ForumPostEdit.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_94 /* ForumPostEdit.swift */; };
-		OBJ_2901 /* FriendlyFez.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_95 /* FriendlyFez.swift */; };
-		OBJ_2902 /* FriendlyFezEdit.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_96 /* FriendlyFezEdit.swift */; };
+		OBJ_2901 /* FriendlyChatGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_95 /* FriendlyChatGroup.swift */; };
+		OBJ_2902 /* FriendlyChatGroupEdit.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_96 /* FriendlyChatGroupEdit.swift */; };
 		OBJ_2903 /* KaraokePlayedSong.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_97 /* KaraokePlayedSong.swift */; };
 		OBJ_2904 /* KaraokeSong.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_98 /* KaraokeSong.swift */; };
 		OBJ_2905 /* ModeratorAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_99 /* ModeratorAction.swift */; };
@@ -138,7 +138,7 @@
 		OBJ_2915 /* AlertWordPivot.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_110 /* AlertWordPivot.swift */; };
 		OBJ_2916 /* BoardgameFavorite.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_111 /* BoardgameFavorite.swift */; };
 		OBJ_2917 /* EventFavorite.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_112 /* EventFavorite.swift */; };
-		OBJ_2918 /* FezParticipant.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_113 /* FezParticipant.swift */; };
+		OBJ_2918 /* ChatGroupParticipant.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_113 /* ChatGroupParticipant.swift */; };
 		OBJ_2919 /* ForumReaders.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_114 /* ForumReaders.swift */; };
 		OBJ_2920 /* KaraokeFavorite.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_115 /* KaraokeFavorite.swift */; };
 		OBJ_2921 /* PostLikes.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_116 /* PostLikes.swift */; };
@@ -157,7 +157,7 @@
 		OBJ_2935 /* SiteEventsController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_133 /* SiteEventsController.swift */; };
 		OBJ_2936 /* SiteFileController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_134 /* SiteFileController.swift */; };
 		OBJ_2937 /* SiteForumController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_135 /* SiteForumController.swift */; };
-		OBJ_2938 /* SiteFriendlyFezController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_136 /* SiteFriendlyFezController.swift */; };
+		OBJ_2938 /* SiteFriendlyChatGroupController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_136 /* SiteFriendlyChatGroupController.swift */; };
 		OBJ_2939 /* SiteKaraokeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_137 /* SiteKaraokeController.swift */; };
 		OBJ_2940 /* SiteLoginController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_138 /* SiteLoginController.swift */; };
 		OBJ_2941 /* SiteModController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_139 /* SiteModController.swift */; };
@@ -230,7 +230,7 @@
 		OBJ_3132 /* BarrelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_162 /* BarrelTests.swift */; };
 		OBJ_3133 /* ClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_163 /* ClientTests.swift */; };
 		OBJ_3134 /* EventTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_164 /* EventTests.swift */; };
-		OBJ_3135 /* FezTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_165 /* FezTests.swift */; };
+		OBJ_3135 /* ChatGroupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_165 /* ChatGroupTests.swift */; };
 		OBJ_3136 /* ForumTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_166 /* ForumTests.swift */; };
 		OBJ_3137 /* Models+Testable.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_167 /* Models+Testable.swift */; };
 		OBJ_3138 /* TwitarrTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_168 /* TwitarrTests.swift */; };
@@ -8239,7 +8239,7 @@
 /* Begin PBXFileReference section */
 		EA20206927FA592C00F82C28 /* Resources */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Resources; path = Sources/App/Resources; sourceTree = "<group>"; };
 		EA20207927FA59FB00F82C28 /* seeds */ = {isa = PBXFileReference; lastKnownFileType = folder; name = seeds; path = Sources/App/seeds; sourceTree = "<group>"; };
-		EA20207C2803DE7200F82C28 /* FezProtocol.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FezProtocol.swift; sourceTree = "<group>"; };
+		EA20207C2803DE7200F82C28 /* ChatGroupProtocol.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ChatGroupProtocol.swift; sourceTree = "<group>"; };
 		EA2020812807F8E300F82C28 /* SiteRedisWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteRedisWrapper.swift; sourceTree = "<group>"; };
 		EA2020852811C95600F82C28 /* ScheduleMunger.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ScheduleMunger.swift; sourceTree = "<group>"; };
 		OBJ_10 /* AdminController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminController.swift; sourceTree = "<group>"; };
@@ -8366,7 +8366,7 @@
 		OBJ_1125 /* crypto.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = crypto.c; sourceTree = "<group>"; };
 		OBJ_1128 /* x25519-asm-arm.S */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; path = "x25519-asm-arm.S"; sourceTree = "<group>"; };
 		OBJ_1129 /* curve25519.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = curve25519.c; sourceTree = "<group>"; };
-		OBJ_113 /* FezParticipant.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FezParticipant.swift; sourceTree = "<group>"; };
+		OBJ_113 /* ChatGroupParticipant.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatGroupParticipant.swift; sourceTree = "<group>"; };
 		OBJ_1130 /* spake25519.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = spake25519.c; sourceTree = "<group>"; };
 		OBJ_1132 /* des.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = des.c; sourceTree = "<group>"; };
 		OBJ_1134 /* dh_asn1.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dh_asn1.c; sourceTree = "<group>"; };
@@ -8583,7 +8583,7 @@
 		OBJ_1354 /* hpke.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hpke.c; sourceTree = "<group>"; };
 		OBJ_1357 /* poly_rq_mul.S */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; path = poly_rq_mul.S; sourceTree = "<group>"; };
 		OBJ_1358 /* hrss.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hrss.c; sourceTree = "<group>"; };
-		OBJ_136 /* SiteFriendlyFezController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteFriendlyFezController.swift; sourceTree = "<group>"; };
+		OBJ_136 /* SiteFriendlyChatGroupController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteFriendlyChatGroupController.swift; sourceTree = "<group>"; };
 		OBJ_1360 /* lhash.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = lhash.c; sourceTree = "<group>"; };
 		OBJ_1361 /* mem.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = mem.c; sourceTree = "<group>"; };
 		OBJ_1363 /* obj.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = obj.c; sourceTree = "<group>"; };
@@ -8817,7 +8817,7 @@
 		OBJ_1597 /* ASN1Identifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ASN1Identifier.swift; sourceTree = "<group>"; };
 		OBJ_1598 /* ASN1Integer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ASN1Integer.swift; sourceTree = "<group>"; };
 		OBJ_1599 /* ASN1OctetString.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ASN1OctetString.swift; sourceTree = "<group>"; };
-		OBJ_16 /* FezController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FezController.swift; sourceTree = "<group>"; };
+		OBJ_16 /* ChatGroupController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatGroupController.swift; sourceTree = "<group>"; };
 		OBJ_160 /* AppTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTests.swift; sourceTree = "<group>"; };
 		OBJ_1600 /* ArraySliceBigint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArraySliceBigint.swift; sourceTree = "<group>"; };
 		OBJ_1601 /* ObjectIdentifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectIdentifier.swift; sourceTree = "<group>"; };
@@ -8858,7 +8858,7 @@
 		OBJ_1646 /* MACFunctions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MACFunctions.swift; sourceTree = "<group>"; };
 		OBJ_1647 /* MessageAuthenticationCode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageAuthenticationCode.swift; sourceTree = "<group>"; };
 		OBJ_1649 /* AES.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AES.swift; sourceTree = "<group>"; };
-		OBJ_165 /* FezTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FezTests.swift; sourceTree = "<group>"; };
+		OBJ_165 /* ChatGroupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatGroupTests.swift; sourceTree = "<group>"; };
 		OBJ_1652 /* ECDSASignature_boring.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECDSASignature_boring.swift; sourceTree = "<group>"; };
 		OBJ_1653 /* ECDSA_boring.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECDSA_boring.swift; sourceTree = "<group>"; };
 		OBJ_1654 /* EdDSA_boring.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EdDSA_boring.swift; sourceTree = "<group>"; };
@@ -9968,7 +9968,7 @@
 		OBJ_336 /* PostgresRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostgresRow.swift; sourceTree = "<group>"; };
 		OBJ_338 /* PostgresData+UInt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PostgresData+UInt.swift"; sourceTree = "<group>"; };
 		OBJ_339 /* PostgresMessage+Authentication.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PostgresMessage+Authentication.swift"; sourceTree = "<group>"; };
-		OBJ_34 /* FezType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FezType.swift; sourceTree = "<group>"; };
+		OBJ_34 /* ChatGroupType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatGroupType.swift; sourceTree = "<group>"; };
 		OBJ_340 /* PostgresMessage+Bind.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PostgresMessage+Bind.swift"; sourceTree = "<group>"; };
 		OBJ_341 /* PostgresMessage+Close.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PostgresMessage+Close.swift"; sourceTree = "<group>"; };
 		OBJ_342 /* PostgresMessage+CommandComplete.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PostgresMessage+CommandComplete.swift"; sourceTree = "<group>"; };
@@ -10049,7 +10049,7 @@
 		OBJ_417 /* PSQLTask.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PSQLTask.swift; sourceTree = "<group>"; };
 		OBJ_418 /* PostgresBackendMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostgresBackendMessage.swift; sourceTree = "<group>"; };
 		OBJ_419 /* PostgresBackendMessageDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostgresBackendMessageDecoder.swift; sourceTree = "<group>"; };
-		OBJ_42 /* Fez+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Fez+Extensions.swift"; sourceTree = "<group>"; };
+		OBJ_42 /* ChatGroup+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ChatGroup+Extensions.swift"; sourceTree = "<group>"; };
 		OBJ_420 /* PostgresCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostgresCell.swift; sourceTree = "<group>"; };
 		OBJ_421 /* PostgresChannelHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostgresChannelHandler.swift; sourceTree = "<group>"; };
 		OBJ_422 /* PostgresCodable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostgresCodable.swift; sourceTree = "<group>"; };
@@ -10060,7 +10060,7 @@
 		OBJ_427 /* PostgresRowSequence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostgresRowSequence.swift; sourceTree = "<group>"; };
 		OBJ_428 /* Postgres+PSQLCompat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Postgres+PSQLCompat.swift"; sourceTree = "<group>"; };
 		OBJ_429 /* PostgresDatabase+Query.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PostgresDatabase+Query.swift"; sourceTree = "<group>"; };
-		OBJ_43 /* FezPost+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FezPost+Extensions.swift"; sourceTree = "<group>"; };
+		OBJ_43 /* ChatGroupPost+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ChatGroupPost+Extensions.swift"; sourceTree = "<group>"; };
 		OBJ_430 /* PostgresDatabase+SimpleQuery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PostgresDatabase+SimpleQuery.swift"; sourceTree = "<group>"; };
 		OBJ_431 /* PostgresDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostgresDatabase.swift; sourceTree = "<group>"; };
 		OBJ_432 /* PostgresRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostgresRequest.swift; sourceTree = "<group>"; };
@@ -10504,7 +10504,7 @@
 		OBJ_897 /* RangeResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RangeResult.swift; sourceTree = "<group>"; };
 		OBJ_898 /* Validatable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Validatable.swift; sourceTree = "<group>"; };
 		OBJ_899 /* Validation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Validation.swift; sourceTree = "<group>"; };
-		OBJ_90 /* FezPost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FezPost.swift; sourceTree = "<group>"; };
+		OBJ_90 /* ChatGroupPost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatGroupPost.swift; sourceTree = "<group>"; };
 		OBJ_900 /* ValidationKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ValidationKey.swift; sourceTree = "<group>"; };
 		OBJ_901 /* Validations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Validations.swift; sourceTree = "<group>"; };
 		OBJ_902 /* ValidationsError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ValidationsError.swift; sourceTree = "<group>"; };
@@ -10551,7 +10551,7 @@
 		OBJ_947 /* Storage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Storage.swift; sourceTree = "<group>"; };
 		OBJ_948 /* MultipartFormData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultipartFormData.swift; sourceTree = "<group>"; };
 		OBJ_949 /* MultipartParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultipartParser.swift; sourceTree = "<group>"; };
-		OBJ_95 /* FriendlyFez.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendlyFez.swift; sourceTree = "<group>"; };
+		OBJ_95 /* FriendlyChatGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendlyChatGroup.swift; sourceTree = "<group>"; };
 		OBJ_950 /* MultipartPart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultipartPart.swift; sourceTree = "<group>"; };
 		OBJ_951 /* MultipartPartConvertible.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultipartPartConvertible.swift; sourceTree = "<group>"; };
 		OBJ_952 /* MultipartSerializer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultipartSerializer.swift; sourceTree = "<group>"; };
@@ -10560,7 +10560,7 @@
 		OBJ_957 /* _HashTable+Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "_HashTable+Constants.swift"; sourceTree = "<group>"; };
 		OBJ_958 /* _HashTable+UnsafeHandle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "_HashTable+UnsafeHandle.swift"; sourceTree = "<group>"; };
 		OBJ_959 /* _HashTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = _HashTable.swift; sourceTree = "<group>"; };
-		OBJ_96 /* FriendlyFezEdit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendlyFezEdit.swift; sourceTree = "<group>"; };
+		OBJ_96 /* FriendlyChatGroupEdit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendlyChatGroupEdit.swift; sourceTree = "<group>"; };
 		OBJ_960 /* _Hashtable+Header.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "_Hashtable+Header.swift"; sourceTree = "<group>"; };
 		OBJ_962 /* OrderedDictionary+Equatable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "OrderedDictionary+Equatable.swift"; sourceTree = "<group>"; };
 		OBJ_963 /* OrderedDictionary+ExpressibleByDictionaryLiteral.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "OrderedDictionary+ExpressibleByDictionaryLiteral.swift"; sourceTree = "<group>"; };
@@ -12100,7 +12100,7 @@
 				OBJ_110 /* AlertWordPivot.swift */,
 				OBJ_111 /* BoardgameFavorite.swift */,
 				OBJ_112 /* EventFavorite.swift */,
-				OBJ_113 /* FezParticipant.swift */,
+				OBJ_113 /* ChatGroupParticipant.swift */,
 				OBJ_114 /* ForumReaders.swift */,
 				OBJ_115 /* KaraokeFavorite.swift */,
 				OBJ_116 /* PostLikes.swift */,
@@ -12394,7 +12394,7 @@
 			children = (
 				OBJ_119 /* APIRouteCollection.swift */,
 				OBJ_120 /* ContentFilterable.swift */,
-				EA20207C2803DE7200F82C28 /* FezProtocol.swift */,
+				EA20207C2803DE7200F82C28 /* ChatGroupProtocol.swift */,
 				OBJ_121 /* ImageHandler.swift */,
 				OBJ_122 /* Reportable.swift */,
 			);
@@ -12495,7 +12495,7 @@
 				OBJ_133 /* SiteEventsController.swift */,
 				OBJ_134 /* SiteFileController.swift */,
 				OBJ_135 /* SiteForumController.swift */,
-				OBJ_136 /* SiteFriendlyFezController.swift */,
+				OBJ_136 /* SiteFriendlyChatGroupController.swift */,
 				OBJ_137 /* SiteKaraokeController.swift */,
 				OBJ_138 /* SiteLoginController.swift */,
 				OBJ_139 /* SiteModController.swift */,
@@ -13110,7 +13110,7 @@
 				OBJ_162 /* BarrelTests.swift */,
 				OBJ_163 /* ClientTests.swift */,
 				OBJ_164 /* EventTests.swift */,
-				OBJ_165 /* FezTests.swift */,
+				OBJ_165 /* ChatGroupTests.swift */,
 				OBJ_166 /* ForumTests.swift */,
 				OBJ_167 /* Models+Testable.swift */,
 				OBJ_168 /* TwitarrTests.swift */,
@@ -15911,7 +15911,7 @@
 			children = (
 				OBJ_31 /* AppFeatures.swift */,
 				OBJ_33 /* EventType.swift */,
-				OBJ_34 /* FezType.swift */,
+				OBJ_34 /* ChatGroupType.swift */,
 				OBJ_35 /* LikeType.swift */,
 				OBJ_36 /* ModeratorActionType.swift */,
 				OBJ_37 /* NotificationType.swift */,
@@ -16126,8 +16126,8 @@
 			isa = PBXGroup;
 			children = (
 				OBJ_41 /* Event+Extensions.swift */,
-				OBJ_42 /* Fez+Extensions.swift */,
-				OBJ_43 /* FezPost+Extensions.swift */,
+				OBJ_42 /* ChatGroup+Extensions.swift */,
+				OBJ_43 /* ChatGroupPost+Extensions.swift */,
 				OBJ_44 /* Forum+Extensions.swift */,
 				OBJ_45 /* ForumPost+Extensions.swift */,
 				OBJ_46 /* Foundation+Extensions.swift */,
@@ -17078,13 +17078,13 @@
 				OBJ_87 /* Category.swift */,
 				OBJ_88 /* DailyTheme.swift */,
 				OBJ_89 /* Event.swift */,
-				OBJ_90 /* FezPost.swift */,
+				OBJ_90 /* ChatGroupPost.swift */,
 				OBJ_91 /* Forum.swift */,
 				OBJ_92 /* ForumEdit.swift */,
 				OBJ_93 /* ForumPost.swift */,
 				OBJ_94 /* ForumPostEdit.swift */,
-				OBJ_95 /* FriendlyFez.swift */,
-				OBJ_96 /* FriendlyFezEdit.swift */,
+				OBJ_95 /* FriendlyChatGroup.swift */,
+				OBJ_96 /* FriendlyChatGroupEdit.swift */,
 				OBJ_97 /* KaraokePlayedSong.swift */,
 				OBJ_98 /* KaraokeSong.swift */,
 				OBJ_99 /* ModeratorAction.swift */,
@@ -17253,7 +17253,7 @@
 				OBJ_13 /* BoardgameController.swift */,
 				OBJ_14 /* ClientController.swift */,
 				OBJ_15 /* EventController.swift */,
-				OBJ_16 /* FezController.swift */,
+				OBJ_16 /* ChatGroupController.swift */,
 				OBJ_17 /* ForumController.swift */,
 				OBJ_18 /* ImageController.swift */,
 				OBJ_19 /* KaraokeController.swift */,
@@ -19932,7 +19932,7 @@
 				OBJ_2829 /* BoardgameController.swift in Sources */,
 				OBJ_2830 /* ClientController.swift in Sources */,
 				OBJ_2831 /* EventController.swift in Sources */,
-				OBJ_2832 /* FezController.swift in Sources */,
+				OBJ_2832 /* ChatGroupController.swift in Sources */,
 				OBJ_2833 /* ForumController.swift in Sources */,
 				OBJ_2834 /* ImageController.swift in Sources */,
 				OBJ_2835 /* KaraokeController.swift in Sources */,
@@ -19947,7 +19947,7 @@
 				OBJ_2844 /* UsersController.swift in Sources */,
 				OBJ_2845 /* AppFeatures.swift in Sources */,
 				OBJ_2847 /* EventType.swift in Sources */,
-				OBJ_2848 /* FezType.swift in Sources */,
+				OBJ_2848 /* ChatGroupType.swift in Sources */,
 				EA2020822807F8E300F82C28 /* SiteRedisWrapper.swift in Sources */,
 				OBJ_2849 /* LikeType.swift in Sources */,
 				OBJ_2850 /* ModeratorActionType.swift in Sources */,
@@ -19955,9 +19955,9 @@
 				OBJ_2852 /* ReportType.swift in Sources */,
 				OBJ_2853 /* UserAccessLevel.swift in Sources */,
 				OBJ_2854 /* Event+Extensions.swift in Sources */,
-				OBJ_2855 /* Fez+Extensions.swift in Sources */,
-				EA20207D2803DE7300F82C28 /* FezProtocol.swift in Sources */,
-				OBJ_2856 /* FezPost+Extensions.swift in Sources */,
+				OBJ_2855 /* ChatGroup+Extensions.swift in Sources */,
+				EA20207D2803DE7300F82C28 /* ChatGroupProtocol.swift in Sources */,
+				OBJ_2856 /* ChatGroupPost+Extensions.swift in Sources */,
 				OBJ_2857 /* Forum+Extensions.swift in Sources */,
 				OBJ_2858 /* ForumPost+Extensions.swift in Sources */,
 				OBJ_2859 /* Foundation+Extensions.swift in Sources */,
@@ -19997,13 +19997,13 @@
 				OBJ_2893 /* Category.swift in Sources */,
 				OBJ_2894 /* DailyTheme.swift in Sources */,
 				OBJ_2895 /* Event.swift in Sources */,
-				OBJ_2896 /* FezPost.swift in Sources */,
+				OBJ_2896 /* ChatGroupPost.swift in Sources */,
 				OBJ_2897 /* Forum.swift in Sources */,
 				OBJ_2898 /* ForumEdit.swift in Sources */,
 				OBJ_2899 /* ForumPost.swift in Sources */,
 				OBJ_2900 /* ForumPostEdit.swift in Sources */,
-				OBJ_2901 /* FriendlyFez.swift in Sources */,
-				OBJ_2902 /* FriendlyFezEdit.swift in Sources */,
+				OBJ_2901 /* FriendlyChatGroup.swift in Sources */,
+				OBJ_2902 /* FriendlyChatGroupEdit.swift in Sources */,
 				OBJ_2903 /* KaraokePlayedSong.swift in Sources */,
 				OBJ_2904 /* KaraokeSong.swift in Sources */,
 				OBJ_2905 /* ModeratorAction.swift in Sources */,
@@ -20019,7 +20019,7 @@
 				OBJ_2915 /* AlertWordPivot.swift in Sources */,
 				OBJ_2916 /* BoardgameFavorite.swift in Sources */,
 				OBJ_2917 /* EventFavorite.swift in Sources */,
-				OBJ_2918 /* FezParticipant.swift in Sources */,
+				OBJ_2918 /* ChatGroupParticipant.swift in Sources */,
 				OBJ_2919 /* ForumReaders.swift in Sources */,
 				OBJ_2920 /* KaraokeFavorite.swift in Sources */,
 				OBJ_2921 /* PostLikes.swift in Sources */,
@@ -20038,7 +20038,7 @@
 				OBJ_2935 /* SiteEventsController.swift in Sources */,
 				OBJ_2936 /* SiteFileController.swift in Sources */,
 				OBJ_2937 /* SiteForumController.swift in Sources */,
-				OBJ_2938 /* SiteFriendlyFezController.swift in Sources */,
+				OBJ_2938 /* SiteFriendlyChatGroupController.swift in Sources */,
 				OBJ_2939 /* SiteKaraokeController.swift in Sources */,
 				OBJ_2940 /* SiteLoginController.swift in Sources */,
 				OBJ_2941 /* SiteModController.swift in Sources */,
@@ -20059,7 +20059,7 @@
 				OBJ_3132 /* BarrelTests.swift in Sources */,
 				OBJ_3133 /* ClientTests.swift in Sources */,
 				OBJ_3134 /* EventTests.swift in Sources */,
-				OBJ_3135 /* FezTests.swift in Sources */,
+				OBJ_3135 /* ChatGroupTests.swift in Sources */,
 				OBJ_3136 /* ForumTests.swift in Sources */,
 				OBJ_3137 /* Models+Testable.swift in Sources */,
 				OBJ_3138 /* TwitarrTests.swift in Sources */,

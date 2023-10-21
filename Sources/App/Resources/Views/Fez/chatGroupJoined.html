@@ -1,19 +1,19 @@
 #extend("trunk"):
     #export("body"):
     	<div class="container-md ms-0 mt-2">
-			#extend("Fez/fezNavbar")
-			#extend("Fez/fezFilter")
+			#extend("ChatGroup/chatGroupNavbar")
+			#extend("ChatGroup/chatGroupFilter")
 			#extend("paginator")
 			<div class="list-group">
-				#if(count(fezList.fezzes) == 0):
+				#if(count(chatGroupList.chatgroups) == 0):
 					<div class="row">
 						<div class="col">
 							<li class="list-group-item">You haven't joined any Looking For Groups yet, but you can find some using the Find tab, or create a new one in the Owned tab.</li>
 						</div>
 					</div>
 				#else:
-					#for(fez in fezList.fezzes):
-						#extend("Fez/fezListItem")
+					#for(chatgroup in chatGroupList.chatgroups):
+						#extend("ChatGroup/chatGroupListItem")
 					#endfor
 				#endif
 			</div>

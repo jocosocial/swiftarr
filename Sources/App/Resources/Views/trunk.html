@@ -56,8 +56,8 @@
 					</a>
 				</div>
 				<div class="col-auto px-0">	  
-					<a class="nav-item nav-link link-light px-1 #if(trunk.tab == "lfg"): active#endif" #if(trunk.tab == "lfg"):aria-current="page"#endif href="/fez">
-						<span class="#if(trunk.alertCounts.newFezMessageCount > 0):border-bottom border-danger#endif">
+					<a class="nav-item nav-link link-light px-1 #if(trunk.tab == "lfg"): active#endif" #if(trunk.tab == "lfg"):aria-current="page"#endif href="/chatgroup">
+						<span class="#if(trunk.alertCounts.newChatGroupMessageCount > 0):border-bottom border-danger#endif">
 							LFG
 						</span>
 					</a>
@@ -88,11 +88,11 @@
 						#endif
 					</li>
 					<li class="nav-item">
-						<a class="nav-link #if(trunk.tab == "lfg"): active#endif" href="/fez">
-							<span class="#if(trunk.alertCounts.newFezMessageCount > 0):border-bottom border-danger#endif">Looking For Group</span>
+						<a class="nav-link #if(trunk.tab == "lfg"): active#endif" href="/chatgroup">
+							<span class="#if(trunk.alertCounts.newChatGroupMessageCount > 0):border-bottom border-danger#endif">Looking For Group</span>
 						</a>
-						#if(trunk.alertCounts.newFezMessageCount > 0):
-							<span class="text-muted"><i>#(trunk.alertCounts.newFezMessageCount) Msg#if(trunk.alertCounts.newFezMessageCount > 1):s#endif</i></span>
+						#if(trunk.alertCounts.newChatGroupMessageCount > 0):
+							<span class="text-muted"><i>#(trunk.alertCounts.newChatGroupMessageCount) Msg#if(trunk.alertCounts.newChatGroupMessageCount > 1):s#endif</i></span>
 						#endif
 					</li>
 					<li class="nav-item">

@@ -153,11 +153,11 @@ final class User: Model {
 	/// The `ForumReaders` pivots contain read counts for each forum thread this user had viewed..
 	@Siblings(through: ForumReaders.self, from: \.$user, to: \.$forum) var readForums: [Forum]
 
-	/// The child `FriendlyFez` objects created by this user.
-	@Children(for: \.$owner) var owned_fezzes: [FriendlyFez]
+	/// The child `FriendlyChatGroup` objects created by this user.
+	@Children(for: \.$owner) var owned_chatGroups: [FriendlyChatGroup]
 
-	/// The sibling `FriendlyFez` objects this user has joined.
-	@Siblings(through: FezParticipant.self, from: \.$user, to: \.$fez) var joined_fezzes: [FriendlyFez]
+	/// The sibling `FriendlyChatGroup` objects this user has joined.
+	@Siblings(through: ChatGroupParticipant.self, from: \.$user, to: \.$chatGroup) var joined_chatGroups: [FriendlyChatGroup]
 
 	/// The child `ProfileEdit` accountability records of this user.
 	@Children(for: \.$user) var edits: [ProfileEdit]

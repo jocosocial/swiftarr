@@ -1,25 +1,25 @@
 import FluentSQL
 import Vapor
 
-/// FezPostData, modified to be easier for sockets.
+/// ChatGroupPostData, modified to be easier for sockets.
 ///
-/// Fez and Seamail socket clients will receive this message as a JSON string when a user posts in the fez/seamail. Posts made by a user
+/// ChatGroup and Seamail socket clients will receive this message as a JSON string when a user posts in the chatgroup/seamail. Posts made by a user
 /// will be reflected back to them via this socket. If a user is logged on from 2 clients and both have open sockets, both clients will see the
 /// socket message when the user posts a new message from one of the clients.
 /// Each struct contains the UserHeader of the poster instead of the author's UUID; this way clients (okay, the javascript web client) can
 /// format the post without additional requests.
 ///
-/// Note: Fezzes have other state changes that don't currently have websocket notifications. Your socket message handler should gracefully
+/// Note: ChatGroups have other state changes that don't currently have websocket notifications. Your socket message handler should gracefully
 /// handle the possibility that you receive a message that doesn't fit any of the currently documented message structs.
 ///
 /// See:
-/// * `WS /api/v3/fez/:fezID/socket`
-struct SocketFezPostData: Content {
+/// * `WS /api/v3/chatgroup/:chatGroupID/socket`
+struct SocketChatGroupPostData: Content {
 	/// PostID of the new post
 	var postID: Int
-	/// User that posted. Should be a current member of the fez; socket should get a `SocketMemberChangeData` adding a new user before any posts by that user.
-	/// But, there's a possible race condition where membership could change before the socket is opened. Unless you update FezData after opening the socket, you may
-	/// see posts from users that don't appear to be members of the fez.
+	/// User that posted. Should be a current member of the chatgroup; socket should get a `SocketMemberChangeData` adding a new user before any posts by that user.
+	/// But, there's a possible race condition where membership could change before the socket is opened. Unless you update ChatGroupData after opening the socket, you may
+	/// see posts from users that don't appear to be members of the chatgroup.
 	var author: UserHeader
 	/// The text of this post.
 	var text: String
@@ -32,8 +32,8 @@ struct SocketFezPostData: Content {
 	var html: String?
 }
 
-extension SocketFezPostData {
-	init(post: FezPostData) {
+extension SocketChatGroupPostData {
+	init(post: ChatGroupPostData) {
 		self.postID = post.postID
 		self.author = post.author
 		self.text = post.text
@@ -41,7 +41,7 @@ extension SocketFezPostData {
 		self.image = post.image
 	}
 
-	init(post: FezPost, author: UserHeader) throws {
+	init(post: ChatGroupPost, author: UserHeader) throws {
 		self.postID = try post.requireID()
 		self.author = author
 		self.text = post.text
@@ -50,16 +50,16 @@ extension SocketFezPostData {
 	}
 }
 
-/// Informs Fez WebSocket clients of a change in Fez membership.
+/// Informs ChatGroup WebSocket clients of a change in ChatGroup membership.
 ///
-/// If joined is FALSE, the user has left the fez. Although seamail sockets use the same endpoint (seamail threads are Fezzes internally),
+/// If joined is FALSE, the user has left the chatgroup. Although seamail sockets use the same endpoint (seamail threads are ChatGroups internally),
 /// this mesage will never be sent to Seamail threads as membership is fixed at creation time.
 ///
-/// Fez socket message handlers will receive this message as a JSON string when a user joins/leaves the fez, or is added/removed by the fez owner.
+/// ChatGroup socket message handlers will receive this message as a JSON string when a user joins/leaves the chatgroup, or is added/removed by the chatgroup owner.
 ///
 /// See:
-/// * `WS /api/v3/fez/:fezID/socket`
-struct SocketFezMemberChangeData: Content {
+/// * `WS /api/v3/chatgroup/:chatGroupID/socket`
+struct SocketChatGroupMemberChangeData: Content {
 	/// The user that joined/left.
 	var user: UserHeader
 	/// TRUE if this is a join.
@@ -77,8 +77,8 @@ struct SocketNotificationData: Content {
 	enum NotificationTypeData: Content {
 		/// A server-wide announcement has just been added.
 		case announcement
-		/// A participant in a Fez the user is a member of has posted a new message.
-		case fezUnreadMsg
+		/// A participant in a ChatGroup the user is a member of has posted a new message.
+		case chatGroupUnreadMsg
 		/// A participant in a Seamail thread the user is a member of has posted a new message.
 		case seamailUnreadMsg
 		/// A user has posted a Twarrt that contains a word this user has set as an alertword.
@@ -103,7 +103,7 @@ struct SocketNotificationData: Content {
 	var type: NotificationTypeData
 	/// A string describing what happened, suitable for adding to a notification alert.
 	var info: String
-	/// An ID of an Announcement, Fez, Twarrt, ForumPost, or Event.
+	/// An ID of an Announcement, ChatGroup, Twarrt, ForumPost, or Event.
 	var contentID: String
 	/// For .incomingPhoneCall notifications, the caller.
 	var caller: UserHeader?
@@ -115,7 +115,7 @@ extension SocketNotificationData {
 	init(_ type: NotificationType, info: String, id: String) {
 		switch type {
 		case .announcement: self.type = .announcement
-		case .fezUnreadMsg: self.type = .fezUnreadMsg
+		case .chatGroupUnreadMsg: self.type = .chatGroupUnreadMsg
 		case .seamailUnreadMsg: self.type = .seamailUnreadMsg
 		case .alertwordTwarrt: self.type = .alertwordTwarrt
 		case .alertwordPost: self.type = .alertwordPost

@@ -3,14 +3,14 @@
     	<div class="container-md ms-0 mt-2">
     		<div class="row align-items-end">
     			<div class="col col-auto">
-			    	<h6><b>Moderate Fez \##(modData.fez.fezID)</br>Titled: #(modData.fez.title)</b></h6>
+			    	<h6><b>Moderate ChatGroup \##(modData.chatgroup.chatGroupID)</br>Titled: #(modData.chatgroup.title)</b></h6>
 				</div>
 			</div>
 			<div class="row justify-content-between mb-3">
-				<div class="col" data-reportabletype="fez" data-reportableid="#(modData.fez.fezID)" data-postid="#(modData.fez.fezID)">
+				<div class="col" data-reportabletype="chatgroup" data-reportableid="#(modData.chatgroup.chatGroupID)" data-postid="#(modData.chatgroup.chatGroupID)">
 					#if(!modData.isDeleted):
-						<a class="btn btn-outline-primary btn-sm" href="/fez/#(modData.fez.fezID)/edit">Edit</a>
-						<button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="\#deleteFezModal">Delete</button>
+						<a class="btn btn-outline-primary btn-sm" href="/chatgroup/#(modData.chatgroup.chatGroupID)/edit">Edit</a>
+						<button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="\#deleteChatGroupModal">Delete</button>
 						<span class="dropdown">
 							<button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
 								Set State
@@ -31,12 +31,12 @@
 			</div>				
     		<div class="row">
     			<div class="col col-auto">
-					Created by: #userByline(modData.fez.owner)<a class="btn btn-outline-primary btn-sm ms-2" href="/moderate/user/#(modData.fez.owner.userID)">Mod User</a>
+					Created by: #userByline(modData.chatgroup.owner)<a class="btn btn-outline-primary btn-sm ms-2" href="/moderate/user/#(modData.chatgroup.owner.userID)">Mod User</a>
 				</div>
 			</div>
     		<div class="row mt-2">
     			#if(modData.isDeleted):
-					<h6><b>Fez has been Deleted.<br>Prior to delete, it looked like this:</b></h6>
+					<h6><b>ChatGroup has been Deleted.<br>Prior to delete, it looked like this:</b></h6>
     			#else:
 					<h6><b>As it currently exists:</b></h6>
 				#endif
@@ -46,17 +46,17 @@
 					<div class="list-group-item list-group-item-action">		
 						<div class="row">
 							<div class="col">
-								<b>Title:</b> #(modData.fez.title)
+								<b>Title:</b> #(modData.chatgroup.title)
 							</div>
 						</div>
 						<div class="row">
 							<div class="col">
-								<b>Location:</b> #(modData.fez.location)
+								<b>Location:</b> #(modData.chatgroup.location)
 							</div>
 						</div>
 						<div class="row">
 							<div class="col">
-								<b>Info:</b> #(modData.fez.info)
+								<b>Info:</b> #(modData.chatgroup.info)
 							</div>
 						</div>
 					</div>
@@ -71,14 +71,14 @@
 			#endif
 			<div class="row my-3">
 				<div class="col">
-					<a class="btn btn-primary btn-sm" href="/fez/#(modData.fez.fezID)">View in Context</a>
+					<a class="btn btn-primary btn-sm" href="/chatgroup/#(modData.chatgroup.chatGroupID)">View in Context</a>
 				</div>
 			</div>
 
 			#if(count(modData.edits) == 0):
 				<div class="row mb-3">
 					<div class="col">
-						<h6><b>No previous edits to this fez.</b></h6>
+						<h6><b>No previous edits to this chatgroup.</b></h6>
 					</div>
 				</div>
 			#else:
@@ -119,10 +119,10 @@
 			#endif
 			
 			#if(count(modData.reports) == 0):
-				<h6><b>No reports on this fez.</b></h6>
+				<h6><b>No reports on this chatgroup.</b></h6>
 			#else:				
 				<div class="row mt-3">
-					<h6><b>#count(modData.reports) reports on this fez:</b></h6>
+					<h6><b>#count(modData.reports) reports on this chatgroup:</b></h6>
 				</div>
 				<div class="row mb-3">
 					<div class="col">
@@ -138,7 +138,7 @@
 			#endif
 		</div>
 
-		<div class="modal fade" id="deleteFezModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+		<div class="modal fade" id="deleteChatGroupModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
 			<div class="modal-dialog">
 				<div class="modal-content">
 					<div class="modal-header">
@@ -146,22 +146,22 @@
 						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 					</div>
 					<div class="modal-body">
-						Are you sure you want to delete this fez?
+						Are you sure you want to delete this chatgroup?
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
 						<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload" 
-								data-actionpath="/fez/#(modData.fez.fezID)/delete" 
-								data-errordiv="fezDialog_errorDisplay"
-								id="fezDialog_deleteBtn">
-						<label class="btn btn-primary px-4" for="fezDialog_deleteBtn">
+								data-actionpath="/chatgroup/#(modData.chatgroup.chatGroupID)/delete" 
+								data-errordiv="chatGroupDialog_errorDisplay"
+								id="chatGroupDialog_deleteBtn">
+						<label class="btn btn-primary px-4" for="chatGroupDialog_deleteBtn">
 							Delete
 							<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
 							<span class="visually-hidden">Loading...</span>
 						</label>
 					</div>
-					<div class="mx-3 pb-1 text-end text-danger error-display d-none" id="fezDialog_errorDisplay">
-						<b>Error attempting to delete fez:</b> <span class="errortext"></span>
+					<div class="mx-3 pb-1 text-end text-danger error-display d-none" id="chatGroupDialog_errorDisplay">
+						<b>Error attempting to delete chatgroup:</b> <span class="errortext"></span>
 					</div>
 				</div>
 			</div>

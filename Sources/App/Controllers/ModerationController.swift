@@ -55,16 +55,16 @@ struct ModerationController: APIRouteCollection {
 		moderatorAuthGroup.post("forum", forumIDParam, "setstate", modStateParam, use: forumSetModerationStateHandler)
 		moderatorAuthGroup.post("forum", forumIDParam, "setcategory", categoryIDParam, use: forumSetCategoryHandler)
 
-		moderatorAuthGroup.get("fez", fezIDParam, use: fezModerationHandler)
-		moderatorAuthGroup.post("fez", fezIDParam, "setstate", modStateParam, use: fezSetModerationStateHandler)
+		moderatorAuthGroup.get("chatgroup", chatGroupIDParam, use: chatGroupModerationHandler)
+		moderatorAuthGroup.post("chatgroup", chatGroupIDParam, "setstate", modStateParam, use: chatGroupSetModerationStateHandler)
 
-		moderatorAuthGroup.get("fezpost", fezPostIDParam, use: fezPostModerationHandler)
+		moderatorAuthGroup.get("chatgrouppost", chatGroupPostIDParam, use: chatGroupPostModerationHandler)
 		moderatorAuthGroup.post(
-			"fezpost",
-			fezPostIDParam,
+			"chatgrouppost",
+			chatGroupPostIDParam,
 			"setstate",
 			modStateParam,
-			use: fezPostSetModerationStateHandler
+			use: ChatGroupPostsetModerationStateHandler
 		)
 
 		moderatorAuthGroup.get("profile", userIDParam, use: profileModerationHandler)
@@ -417,40 +417,40 @@ struct ModerationController: APIRouteCollection {
 		return .ok
 	}
 
-	/// `GET /api/v3/mod/fez/ID`
+	/// `GET /api/v3/mod/chatgroup/ID`
 	///
-	/// Moderator only. Returns info admins and moderators need to review a Fez. Works if fez has been deleted. Shows
-	/// fez's quarantine and reviewed states.
+	/// Moderator only. Returns info admins and moderators need to review a ChatGroup. Works if chatgroup has been deleted. Shows
+	/// chatgroup's quarantine and reviewed states.
 	///
-	/// The `FezModerationData` contains:
-	/// * The current fez contents, even if its deleted
-	/// * Previous edits of the fez
-	/// * Reports against the fez
-	/// * The fez's current deletion and moderation status.
+	/// The `ChatGroupModerationData` contains:
+	/// * The current chatgroup contents, even if its deleted
+	/// * Previous edits of the chatgroup
+	/// * Reports against the chatgroup
+	/// * The chatgroup's current deletion and moderation status.
 	///
-	/// - Parameter fezID: in URL path.
+	/// - Parameter chatGroupID: in URL path.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: `FezModerationData` containing a bunch of data pertinient to moderating the forum.
-	func fezModerationHandler(_ req: Request) async throws -> FezModerationData {
-		guard let lfgIDString = req.parameters.get(fezIDParam.paramString), let lfgID = UUID(lfgIDString) else {
-			throw Abort(.badRequest, reason: "Request parameter \(fezIDParam.paramString) is missing.")
+	/// - Returns: `ChatGroupModerationData` containing a bunch of data pertinient to moderating the forum.
+	func chatGroupModerationHandler(_ req: Request) async throws -> ChatGroupModerationData {
+		guard let lfgIDString = req.parameters.get(chatGroupIDParam.paramString), let lfgID = UUID(lfgIDString) else {
+			throw Abort(.badRequest, reason: "Request parameter \(chatGroupIDParam.paramString) is missing.")
 		}
-		guard let lfg = try await FriendlyFez.query(on: req.db).filter(\.$id == lfgID).withDeleted().first() else {
+		guard let lfg = try await FriendlyChatGroup.query(on: req.db).filter(\.$id == lfgID).withDeleted().first() else {
 			throw Abort(.notFound, reason: "no LFG found for identifier '\(lfgID)'")
 		}
 		let reports = try await Report.query(on: req.db)
-			.filter(\.$reportType == .fez)
+			.filter(\.$reportType == .chatgroup)
 			.filter(\.$reportedID == lfgIDString)
 			.sort(\.$createdAt, .descending).all()
 		let edits = try await lfg.$edits.query(on: req.db).sort(\.$createdAt, .ascending).all()
 		let ownerHeader = try req.userCache.getHeader(lfg.$owner.id)
-		let fezData = try FezData(fez: lfg, owner: ownerHeader)
-		let editData: [FezEditLogData] = try edits.map {
-			return try FezEditLogData($0, on: req)
+		let chatGroupData = try ChatGroupData(chatgroup: lfg, owner: ownerHeader)
+		let editData: [ChatGroupEditLogData] = try edits.map {
+			return try ChatGroupEditLogData($0, on: req)
 		}
 		let reportData = try reports.map { try ReportModerationData.init(req: req, report: $0) }
-		let modData = FezModerationData(
-			fez: fezData,
+		let modData = ChatGroupModerationData(
+			chatgroup: chatGroupData,
 			isDeleted: lfg.deletedAt != nil,
 			moderationStatus: lfg.moderationStatus,
 			edits: editData,
@@ -459,21 +459,21 @@ struct ModerationController: APIRouteCollection {
 		return modData
 	}
 
-	/// ` POST /api/v3/mod/fez/ID/setstate/STRING`
+	/// ` POST /api/v3/mod/chatgroup/ID/setstate/STRING`
 	///
-	/// Moderator only. Sets the moderation state enum on the fez identified by ID to the `ContentModerationStatus` in STRING.
-	/// Logs the action to the moderator log unless the current user owns the fez.
+	/// Moderator only. Sets the moderation state enum on the chatgroup identified by ID to the `ContentModerationStatus` in STRING.
+	/// Logs the action to the moderator log unless the current user owns the chatgroup.
 	///
-	/// - Parameter fezID: in URL path.
+	/// - Parameter chatGroupID: in URL path.
 	/// - Parameter moderationState: in URL path. Value must match a `ContentModerationStatus` rawValue.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: `HTTPStatus` .ok if the requested moderation status was set.
-	func fezSetModerationStateHandler(_ req: Request) async throws -> HTTPStatus {
+	func chatGroupSetModerationStateHandler(_ req: Request) async throws -> HTTPStatus {
 		let user = try req.auth.require(UserCacheData.self)
 		guard let modState = req.parameters.get(modStateParam.paramString) else {
 			throw Abort(.badRequest, reason: "Request parameter `Moderation_State` is missing.")
 		}
-		let lfg = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		let lfg = try await FriendlyChatGroup.findFromParameter(chatGroupIDParam, on: req)
 		try lfg.moderationStatus.setFromParameterString(modState)
 		await lfg.logIfModeratorAction(
 			ModeratorActionType.setFromModerationStatus(lfg.moderationStatus),
@@ -484,36 +484,36 @@ struct ModerationController: APIRouteCollection {
 		return .ok
 	}
 
-	/// `GET /api/v3/mod/fezpost/:post_id`
+	/// `GET /api/v3/mod/chatgrouppost/:post_id`
 	///
-	/// Moderator only. Returns info admins and moderators need to review a Fez post. Works if post has been deleted. Shows
-	/// fez's quarantine and reviewed states.  Unlike most other content types, Fez Posts cannot be edited (although they may be deleted).
+	/// Moderator only. Returns info admins and moderators need to review a ChatGroup post. Works if post has been deleted. Shows
+	/// chatgroup's quarantine and reviewed states.  Unlike most other content types, ChatGroup Posts cannot be edited (although they may be deleted).
 	///
-	/// The `FezPostModerationData` contains:
+	/// The `ChatGroupPostModerationData` contains:
 	/// * The current post contents, even if its deleted
 	/// * Reports against the post
 	/// * The post's current deletion and moderation status.
 	///
-	/// - Parameter fezPostID: in URL path.
+	/// - Parameter chatGroupPostID: in URL path.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: `FezPostModerationData` containing a bunch of data pertinient to moderating the forum.
-	func fezPostModerationHandler(_ req: Request) async throws -> FezPostModerationData {
-		guard let postIDString = req.parameters.get(fezPostIDParam.paramString), let postID = Int(postIDString) else {
-			throw Abort(.badRequest, reason: "Request parameter \(fezPostIDParam.paramString) is missing.")
+	/// - Returns: `ChatGroupPostModerationData` containing a bunch of data pertinient to moderating the forum.
+	func chatGroupPostModerationHandler(_ req: Request) async throws -> ChatGroupPostModerationData {
+		guard let postIDString = req.parameters.get(chatGroupPostIDParam.paramString), let postID = Int(postIDString) else {
+			throw Abort(.badRequest, reason: "Request parameter \(chatGroupPostIDParam.paramString) is missing.")
 		}
-		guard let lfgPost = try await FezPost.query(on: req.db).filter(\.$id == postID).withDeleted().first() else {
+		guard let lfgPost = try await ChatGroupPost.query(on: req.db).filter(\.$id == postID).withDeleted().first() else {
 			throw Abort(.notFound, reason: "no LFG Post found for identifier '\(postID)'")
 		}
 		let reports = try await Report.query(on: req.db)
-			.filter(\.$reportType == .fezPost)
+			.filter(\.$reportType == .chatGroupPost)
 			.filter(\.$reportedID == postIDString)
 			.sort(\.$createdAt, .descending).all()
 		let authorHeader = try req.userCache.getHeader(lfgPost.$author.id)
-		let fezPostData = try FezPostData(post: lfgPost, author: authorHeader, overrideQuarantine: true)
+		let chatGroupPostData = try ChatGroupPostData(post: lfgPost, author: authorHeader, overrideQuarantine: true)
 		let reportData = try reports.map { try ReportModerationData.init(req: req, report: $0) }
-		let modData = FezPostModerationData(
-			fezPost: fezPostData,
-			fezID: lfgPost.$fez.id,
+		let modData = ChatGroupPostModerationData(
+			chatGroupPost: chatGroupPostData,
+			chatGroupID: lfgPost.$chatGroup.id,
 			isDeleted: lfgPost.deletedAt != nil,
 			moderationStatus: lfgPost.moderationStatus,
 			reports: reportData
@@ -521,21 +521,21 @@ struct ModerationController: APIRouteCollection {
 		return modData
 	}
 
-	/// ` POST /api/v3/mod/fezpost/:post_id/setstate/STRING`
+	/// ` POST /api/v3/mod/chatgrouppost/:post_id/setstate/STRING`
 	///
-	/// Moderator only. Sets the moderation state enum on the fez post identified by ID to the `ContentModerationStatus` in STRING.
+	/// Moderator only. Sets the moderation state enum on the chatgroup post identified by ID to the `ContentModerationStatus` in STRING.
 	/// Logs the action to the moderator log unless the current user authored the post.
 	///
-	/// - Parameter fezPostID: in URL path.
+	/// - Parameter chatGroupPostID: in URL path.
 	/// - Parameter moderationState: in URL path. Value must match a `ContentModerationStatus` rawValue.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: `HTTPStatus` .ok if the requested moderation status was set.
-	func fezPostSetModerationStateHandler(_ req: Request) async throws -> HTTPStatus {
+	func ChatGroupPostsetModerationStateHandler(_ req: Request) async throws -> HTTPStatus {
 		let user = try req.auth.require(UserCacheData.self)
 		guard let modState = req.parameters.get(modStateParam.paramString) else {
 			throw Abort(.badRequest, reason: "Request parameter `Moderation_State` is missing.")
 		}
-		let lfgPost = try await FezPost.findFromParameter(fezPostIDParam, on: req)
+		let lfgPost = try await ChatGroupPost.findFromParameter(chatGroupPostIDParam, on: req)
 		try lfgPost.moderationStatus.setFromParameterString(modState)
 		await lfgPost.logIfModeratorAction(
 			ModeratorActionType.setFromModerationStatus(lfgPost.moderationStatus),

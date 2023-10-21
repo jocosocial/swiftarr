@@ -6,8 +6,8 @@ enum ImageUsage: String {
 	case forumPost
 	/// The image is for a `Twarrt`
 	case twarrt
-	/// The image is for a `FezPost`
-	case fezPost
+	/// The image is for a `ChatGroupPost`
+	case chatGroupPost
 	/// The image is for a `User`'s profile.
 	case userProfile
 	/// The image is for a `DailyTheme`.

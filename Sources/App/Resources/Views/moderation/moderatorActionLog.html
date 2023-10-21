@@ -40,10 +40,10 @@
 										<a href="/moderate/forum/#(report.contentID)">forum</a>
 									#elseif(report.contentType == "forumPost"):
 										<a href="/moderate/forumpost/#(report.contentID)">forumPost</a>
-									#elseif(report.contentType == "fez"):
-										<a href="/moderate/fez/#(report.contentID)">LFG</a>
-									#elseif(report.contentType == "fezPost"):
-										<a href="/moderate/fezpost/#(report.contentID)">LFGPost</a>
+									#elseif(report.contentType == "chatgroup"):
+										<a href="/moderate/chatgroup/#(report.contentID)">LFG</a>
+									#elseif(report.contentType == "chatGroupPost"):
+										<a href="/moderate/chatgrouppost/#(report.contentID)">LFGPost</a>
 									#elseif(report.contentType == "userProfile"):
 										<a href="/moderate/userprofile/#(report.contentID)">profile</a>
 									#else:

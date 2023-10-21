@@ -11,10 +11,10 @@ public enum ReportType: String, Codable {
 	case twarrt
 	/// A `User`, although it specifically refers to the user's profile fields.
 	case userProfile
-	/// a `FriendlyFez`
-	case fez
-	/// a `FezPost`
-	case fezPost
+	/// a `FriendlyChatGroup`
+	case chatgroup
+	/// a `ChatGroupPost`
+	case chatGroupPost
 }
 
 /// Moderation status of a piece of reportable content.

@@ -1,7 +1,7 @@
 /// Describes the type of action a moderator took. This enum is used both in the ModeratorAction Model, and in several Moderation DTOs.
 /// Be careful when modifying this. Not all ModeratorActionTypes are applicable to all ReportTypes.
 public enum ModeratorActionType: String, Codable {
-	/// The moderator has created a post, but is posting as @moderator or @twitarrTeam. 'Post' could be a twarrt, forum post, or fez post.
+	/// The moderator has created a post, but is posting as @moderator or @twitarrTeam. 'Post' could be a twarrt, forum post, or chatgroup post.
 	case post
 	/// The moderator edited a piece of content owned by somebody else. For `user` content, this means the profile fields (custom avatar images can't be
 	/// edited by mods, only deleted).
@@ -17,7 +17,7 @@ public enum ModeratorActionType: String, Codable {
 	/// If enough users report on some content (e.g. a twarrt or forum post), that content will get auto-quarantined. A mod can review the content and if it's not in violation
 	/// they can set it's modStatus to `markReviewed` to indicate the content is OK. This protects the content from auto-quarantining.
 	case markReviewed
-	/// The moderator has locked a piece of content. Locking prevents the owner from modifying the content; locking a forum or fez prevents new messages
+	/// The moderator has locked a piece of content. Locking prevents the owner from modifying the content; locking a forum or chatgroup prevents new messages
 	/// from being posted.
 	case lock
 	/// The moderator has unlocked a piece of content.

@@ -4,18 +4,18 @@
     		<div class="row">
 				<nav aria-label="breadcrumb">
 				  <ol class="breadcrumb">
-					#if(fez.fezType == "open"):
+					#if(chatgroup.chatGroupType == "open"):
 						<li class="breadcrumb-item"><a href="/seamail">Seamail</a></li>
-						<li class="breadcrumb-item"><a href="/seamail/#(fez.fezID)">#(fez.title)</a></li>
+						<li class="breadcrumb-item"><a href="/seamail/#(chatgroup.chatGroupID)">#(chatgroup.title)</a></li>
 					#else:
-						<li class="breadcrumb-item"><a href="/fez">LFG</a></li>
-						<li class="breadcrumb-item"><a href="/fez/#(fez.fezID)">#(fez.title)</a></li>
+						<li class="breadcrumb-item"><a href="/chatgroup">LFG</a></li>
+						<li class="breadcrumb-item"><a href="/chatgroup/#(chatgroup.chatGroupID)">#(chatgroup.title)</a></li>
 					#endif
 					<li class="breadcrumb-item" aria-current="page">Manage Members</li>
 				  </ol>
 				</nav>
 			</div>
-			#if(fez.fezType != "open"):
+			#if(chatgroup.chatGroupType != "open"):
 				<div class="row justify-content-end">
 					<div class="col col-auto">
 						<button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="\#responsibilitiesModal">About User Management</button>
@@ -23,10 +23,10 @@
 				</div>
 			#endif
 			<div class="row">
-				<div class="col"><h6>Current Participants (#(count(fez.members.participants))#if(maxPeople != 0):/#(maxPeople)#endif)</h6></div>
+				<div class="col"><h6>Current Participants (#(count(chatgroup.members.participants))#if(maxPeople != 0):/#(maxPeople)#endif)</h6></div>
 			</div>				
 			<ol class="container-md mx-0 px-0 mb-2 list-group list-group-numbered">
-				#for(user in fez.members.participants):
+				#for(user in chatgroup.members.participants):
 					<li class="list-group-item justify-content-between align-items-baseline d-flex">
 						<div class="ms-2 me-auto">
 							#avatar(user) #userByline(user)
@@ -34,7 +34,7 @@
 						#if(user.userID != trunk.userID):
 							<div>
 								<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload" 
-										data-actionpath="/fez/#(fez.fezID)/members/remove/#(user.userID)"
+										data-actionpath="/chatgroup/#(chatgroup.chatGroupID)/members/remove/#(user.userID)"
 										data-errordiv="#(user.userID)_participanterror"
 										id="#(user.userID)_remove">
 								<label class="btn btn-sm btn-primary" for="#(user.userID)_remove">
@@ -51,8 +51,8 @@
 				#endfor
 			</ol>				
 			
-			#if(fez.fezType != "open"):
-				#if(count(fez.members.waitingList) == 0):
+			#if(chatgroup.chatGroupType != "open"):
+				#if(count(chatgroup.members.waitingList) == 0):
 					<div class="row">
 						<div class="col"><h6>Waitlist</h6></div>
 					</div>
@@ -63,10 +63,10 @@
 					</ul>
 				#else:
 					<div class="row">
-						<div class="col"><h6>Waitlist (#count(fez.members.waitingList))</h6></div>
+						<div class="col"><h6>Waitlist (#count(chatgroup.members.waitingList))</h6></div>
 					</div>				
 					<ol class="container-md mx-0 px-0 list-group list-group-numbered">
-						#for(user in fez.members.waitingList):
+						#for(user in chatgroup.members.waitingList):
 							<li class="list-group-item justify-content-between align-items-baseline d-flex">
 								<div class="ms-2 me-auto">
 									#avatar(user) #userByline(user)
@@ -74,7 +74,7 @@
 								#if(user.userID != trunk.userID):
 									<div class="">
 										<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload" 
-											data-actionpath="/fez/#(fez.fezID)/members/remove/#(user.userID)"
+											data-actionpath="/chatgroup/#(chatgroup.chatGroupID)/members/remove/#(user.userID)"
 											data-errordiv="#(user.userID)_waitlisterror"
 											id="#(user.userID)_remove">
 										<label class="btn btn-sm btn-primary" for="#(user.userID)_remove">
@@ -107,7 +107,7 @@
 					</div>
 					<div class="row">
 						<div class="col"><i>Enter partial username above, then tap search matches below to add to the 
-							#if(fez.fezType == "open"):chat#else:LFG#endif.</i>
+							#if(chatgroup.chatGroupType == "open"):chat#else:LFG#endif.</i>
 						</div>
 					</div>
 					<ul class="row list-group mb-2 mx-0" id="name_suggestions">
@@ -146,7 +146,7 @@
 					<div class="col col-auto username-here"></div>
 					<label class="col col-auto btn btn-sm btn-primary px-3 me-2">
 						<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload"
-								data-actionpath="/fez/#(fez.fezID)/members/add/">
+								data-actionpath="/chatgroup/#(chatgroup.chatGroupID)/members/add/">
 						<span class="button-title-here">Add</span>
 						<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
 						<span class="visually-hidden">Loading...</span>

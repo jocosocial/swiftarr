@@ -49,8 +49,8 @@ struct SiteModController: SiteControllerUtils {
 		modRoutes.get("moderate", "twarrt", twarrtIDParam, use: moderateTwarrtContentPageHandler)
 		modRoutes.get("moderate", "forumpost", postIDParam, use: moderateForumPostContentPageHandler)
 		modRoutes.get("moderate", "forum", forumIDParam, use: moderateForumContentPageHandler)
-		modRoutes.get("moderate", "fez", fezIDParam, use: moderateFezContentPageHandler)
-		modRoutes.get("moderate", "fezpost", postIDParam, use: moderateFezPostContentPageHandler)
+		modRoutes.get("moderate", "chatgroup", chatGroupIDParam, use: moderateChatGroupContentPageHandler)
+		modRoutes.get("moderate", "chatgrouppost", postIDParam, use: moderateChatGroupPostContentPageHandler)
 		modRoutes.get("moderate", "userprofile", userIDParam, use: moderateUserProfileContentPageHandler)
 		modRoutes.get("moderate", "user", userIDParam, use: moderateUserContentPageHandler)
 
@@ -74,13 +74,13 @@ struct SiteModController: SiteControllerUtils {
 		)
 		modPrivateRoutes.post("forum", forumIDParam, "setstate", modStateParam, use: setForumModerationStatePostHandler)
 		modPrivateRoutes.post(
-			"fezpost",
+			"chatgrouppost",
 			postIDParam,
 			"setstate",
 			modStateParam,
-			use: setFezPostModerationStatePostHandler
+			use: setChatGroupPostModerationStatePostHandler
 		)
-		modPrivateRoutes.post("fez", fezIDParam, "setstate", modStateParam, use: setFezModerationStatePostHandler)
+		modPrivateRoutes.post("chatgroup", chatGroupIDParam, "setstate", modStateParam, use: setChatGroupModerationStatePostHandler)
 		modPrivateRoutes.post(
 			"userprofile",
 			userIDParam,
@@ -212,37 +212,37 @@ struct SiteModController: SiteControllerUtils {
 
 	// `GET /moderator/seamail`
 	func moderatorSeamailPageHandler(_ req: Request) async throws -> View {
-		let response = try await apiQuery(req, endpoint: "/fez/joined?type=closed")
-		let fezList = try response.content.decode(FezListData.self)
-		// Re-sort fezzes so ones with new msgs are first. Keep most-recent-change sort within each group.
-		var newMsgFezzes: [FezData] = []
-		var noNewMsgFezzes: [FezData] = []
-		fezList.fezzes.forEach {
+		let response = try await apiQuery(req, endpoint: "/chatgroup/joined?type=closed")
+		let chatGroupList = try response.content.decode(ChatGroupListData.self)
+		// Re-sort chatgroups so ones with new msgs are first. Keep most-recent-change sort within each group.
+		var newMsgChatGroups: [ChatGroupData] = []
+		var noNewMsgChatGroups: [ChatGroupData] = []
+		chatGroupList.chatgroups.forEach {
 			if let members = $0.members, members.postCount > members.readCount {
-				newMsgFezzes.append($0)
+				newMsgChatGroups.append($0)
 			}
 			else {
-				noNewMsgFezzes.append($0)
+				noNewMsgChatGroups.append($0)
 			}
 		}
-		let allFezzes = newMsgFezzes + noNewMsgFezzes
+		let allChatGroups = newMsgChatGroups + noNewMsgChatGroups
 		struct SeamailRootPageContext: Encodable {
 			var trunk: TrunkContext
-			var fezList: FezListData
-			var fezzes: [FezData]
+			var chatGroupList: ChatGroupListData
+			var chatgroups: [ChatGroupData]
 			var paginator: PaginatorContext
 
-			init(_ req: Request, fezList: FezListData, fezzes: [FezData]) throws {
+			init(_ req: Request, chatGroupList: ChatGroupListData, chatgroups: [ChatGroupData]) throws {
 				trunk = .init(req, title: "Seamail", tab: .moderator)
-				self.fezList = fezList
-				self.fezzes = fezzes
-				let limit = fezList.paginator.limit
-				paginator = .init(fezList.paginator) { pageIndex in
+				self.chatGroupList = chatGroupList
+				self.chatgroups = chatgroups
+				let limit = chatGroupList.paginator.limit
+				paginator = .init(chatGroupList.paginator) { pageIndex in
 					"/seamail?start=\(pageIndex * limit)&limit=\(limit)"
 				}
 			}
 		}
-		let ctx = try SeamailRootPageContext(req, fezList: fezList, fezzes: allFezzes)
+		let ctx = try SeamailRootPageContext(req, chatGroupList: chatGroupList, chatgroups: allChatGroups)
 		return try await req.view.render("moderation/moderatorSeamail", ctx)
 	}
 
@@ -467,28 +467,28 @@ struct SiteModController: SiteControllerUtils {
 		return response.status
 	}
 
-	/// `GET /moderate/fez/:fez_ID`
+	/// `GET /moderate/chatgroup/:chatgroup_ID`
 	///
 	/// This shows a view that focuses on the *content* that was reported, showing:
-	/// * The Fez that was reported
+	/// * The ChatGroup that was reported
 	/// * All reports made against this content
 	/// * All previous versions of this content
 	/// * (hopefully) Mod actions taken against this content already
 	/// *
-	func moderateFezContentPageHandler(_ req: Request) async throws -> View {
-		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
+	func moderateChatGroupContentPageHandler(_ req: Request) async throws -> View {
+		guard let chatGroupID = req.parameters.get(chatGroupIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
-		let response = try await apiQuery(req, endpoint: "/mod/fez/\(fezID)")
-		let modData = try response.content.decode(FezModerationData.self)
+		let response = try await apiQuery(req, endpoint: "/mod/chatgroup/\(chatGroupID)")
+		let modData = try response.content.decode(ChatGroupModerationData.self)
 		struct ReportContext: Encodable {
 			var trunk: TrunkContext
-			var modData: FezModerationData
+			var modData: ChatGroupModerationData
 			var firstReport: ReportModerationData?
 			var finalEditAuthor: UserHeader?
 
-			init(_ req: Request, modData: FezModerationData) throws {
-				trunk = .init(req, title: "Fez Moderation", tab: .moderator)
+			init(_ req: Request, modData: ChatGroupModerationData) throws {
+				trunk = .init(req, title: "ChatGroup Moderation", tab: .moderator)
 				self.modData = modData
 				firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
 				finalEditAuthor = modData.edits.last?.author
@@ -500,70 +500,70 @@ struct SiteModController: SiteControllerUtils {
 					}
 				}
 				if self.modData.edits.count > 0 {
-					self.modData.edits[0].author = modData.fez.owner
+					self.modData.edits[0].author = modData.chatgroup.owner
 					self.modData.edits[0].author.username = "\(self.modData.edits[0].author.username) initially wrote:"
 				}
 			}
 		}
 		let ctx = try ReportContext(req, modData: modData)
-		return try await req.view.render("moderation/fezView", ctx)
+		return try await req.view.render("moderation/chatGroupView", ctx)
 	}
 
-	///	`POST /moderate/fez/ID/setstate/STRING`
+	///	`POST /moderate/chatgroup/ID/setstate/STRING`
 	///
-	/// Sets the moderation state of the given fez. Moderation states include "locked" and "quarantined", as well as a few others.
-	func setFezModerationStatePostHandler(_ req: Request) async throws -> HTTPStatus {
-		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
+	/// Sets the moderation state of the given chatgroup. Moderation states include "locked" and "quarantined", as well as a few others.
+	func setChatGroupModerationStatePostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let chatGroupID = req.parameters.get(chatGroupIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
 		guard let modState = req.parameters.get(modStateParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
-		let response = try await apiQuery(req, endpoint: "/mod/fez/\(fezID)/setstate/\(modState)", method: .POST)
+		let response = try await apiQuery(req, endpoint: "/mod/chatgroup/\(chatGroupID)/setstate/\(modState)", method: .POST)
 		return response.status
 	}
 
-	/// `GET /moderate/fezpost/:fezpost_ID`
+	/// `GET /moderate/chatgrouppost/:chatgrouppost_ID`
 	///
 	/// This shows a view that focuses on the *content* that was reported, showing:
-	/// * The Fez Post that was reported
+	/// * The ChatGroup Post that was reported
 	/// * All reports made against this content
 	/// * All previous versions of this content
 	/// * (hopefully) Mod actions taken against this content already
 	/// *
-	func moderateFezPostContentPageHandler(_ req: Request) async throws -> View {
-		guard let fezPostID = req.parameters.get(postIDParam.paramString)?.percentEncodeFilePathEntry() else {
+	func moderateChatGroupPostContentPageHandler(_ req: Request) async throws -> View {
+		guard let chatGroupPostID = req.parameters.get(postIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
-		let response = try await apiQuery(req, endpoint: "/mod/fezpost/\(fezPostID)")
-		let modData = try response.content.decode(FezPostModerationData.self)
+		let response = try await apiQuery(req, endpoint: "/mod/chatgrouppost/\(chatGroupPostID)")
+		let modData = try response.content.decode(ChatGroupPostModerationData.self)
 		struct ReportContext: Encodable {
 			var trunk: TrunkContext
-			var modData: FezPostModerationData
+			var modData: ChatGroupPostModerationData
 			var firstReport: ReportModerationData?
 			var finalEditAuthor: UserHeader?
 
-			init(_ req: Request, modData: FezPostModerationData) throws {
-				trunk = .init(req, title: "Fez Post Moderation", tab: .moderator)
+			init(_ req: Request, modData: ChatGroupPostModerationData) throws {
+				trunk = .init(req, title: "ChatGroup Post Moderation", tab: .moderator)
 				self.modData = modData
 				firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
 			}
 		}
 		let ctx = try ReportContext(req, modData: modData)
-		return try await req.view.render("moderation/fezPostView", ctx)
+		return try await req.view.render("moderation/chatGroupPostView", ctx)
 	}
 
-	///	`POST /moderate/fezpost/:post_ID/setstate/STRING`
+	///	`POST /moderate/chatgrouppost/:post_ID/setstate/STRING`
 	///
-	/// Sets the moderation state of the given fez. Moderation states include "locked" and "quarantined", as well as a few others.
-	func setFezPostModerationStatePostHandler(_ req: Request) async throws -> HTTPStatus {
+	/// Sets the moderation state of the given chatgroup. Moderation states include "locked" and "quarantined", as well as a few others.
+	func setChatGroupPostModerationStatePostHandler(_ req: Request) async throws -> HTTPStatus {
 		guard let postID = req.parameters.get(postIDParam.paramString) else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
 		guard let modState = req.parameters.get(modStateParam.paramString) else {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
-		let response = try await apiQuery(req, endpoint: "/mod/fezpost/\(postID)/setstate/\(modState)", method: .POST)
+		let response = try await apiQuery(req, endpoint: "/mod/chatgrouppost/\(postID)/setstate/\(modState)", method: .POST)
 		return response.status
 	}
 
@@ -735,8 +735,8 @@ func generateContentGroups(from reports: [ReportModerationData]) -> [ReportConte
 		case .twarrt: contentURL = "/moderate/twarrt/\(report.reportedID)"
 		case .forumPost: contentURL = "/moderate/forumpost/\(report.reportedID)"
 		case .forum: contentURL = "/moderate/forum/\(report.reportedID)"
-		case .fez: contentURL = "/moderate/fez/\(report.reportedID)"
-		case .fezPost: contentURL = "/moderate/fezpost/\(report.reportedID)"
+		case .chatgroup: contentURL = "/moderate/chatgroup/\(report.reportedID)"
+		case .chatGroupPost: contentURL = "/moderate/chatgrouppost/\(report.reportedID)"
 		case .userProfile: contentURL = "/moderate/userprofile/\(report.reportedID)"
 		}
 		var newGroup = ReportContentGroup(

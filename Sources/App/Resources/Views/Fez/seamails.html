@@ -17,7 +17,7 @@
 			</div>
 			#extend("paginator")
 			<div class="list-group">
-				#if(count(fezzes) == 0):
+				#if(count(chatgroups) == 0):
 					<div class="row">
 						<div class="col">
 							#if(filterActive):
@@ -28,18 +28,18 @@
 						</div>
 					</div>
 				#else:
-					#for(fez in fezzes):
-						<a href="/seamail/#(fez.fezID)#if(effectiveUser != nil):?foruser=#(effectiveUser)#endif" class="list-group-item list-group-item-action">		
+					#for(chatgroup in chatgroups):
+						<a href="/seamail/#(chatgroup.chatGroupID)#if(effectiveUser != nil):?foruser=#(effectiveUser)#endif" class="list-group-item list-group-item-action">		
 							<div class="row">
 								<div class="col">
-									#(fez.title)
+									#(chatgroup.title)
 								</div>
 								<div class="col col-auto">
-									<span title="#localTime(fez.lastModificationTime)" class="text-muted">#relativeTime(fez.lastModificationTime)</span>
+									<span title="#localTime(chatgroup.lastModificationTime)" class="text-muted">#relativeTime(chatgroup.lastModificationTime)</span>
 								</div>
 							</div>
 							<div class="row">
-								#for(participant in fez.members.participants):
+								#for(participant in chatgroup.members.participants):
 									#if(participant.userID != trunk.userID):
 										<div class="col col-auto border">
 											#avatar(participant)
@@ -50,12 +50,12 @@
 							</div>
 							<div class="row">
 								<div class="col">
-									<span title="#localTime(fez.lastModificationTime)" class="text-muted">#relativeTime(fez.lastModificationTime)</span>
+									<span title="#localTime(chatgroup.lastModificationTime)" class="text-muted">#relativeTime(chatgroup.lastModificationTime)</span>
 								</div>
 								<div class="col col-auto">
-									<span class="badge rounded-pill bg-light text-dark">#(fez.members.postCount) posts</span>
-									#if(fez.members.readCount < fez.members.postCount):
-										<span class="badge rounded-pill bg-danger">#(fez.members.postCount - fez.members.readCount) new</span>
+									<span class="badge rounded-pill bg-light text-dark">#(chatgroup.members.postCount) posts</span>
+									#if(chatgroup.members.readCount < chatgroup.members.postCount):
+										<span class="badge rounded-pill bg-danger">#(chatgroup.members.postCount - chatgroup.members.readCount) new</span>
 									#endif
 								</div>
 							</div>

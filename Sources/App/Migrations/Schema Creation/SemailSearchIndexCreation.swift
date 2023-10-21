@@ -4,41 +4,41 @@ struct CreateSeamailSearchIndexes: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		let sqlDatabase = (database as! SQLDatabase)
 
-		try await createFezPostsSearch(on: sqlDatabase)
-		try await createFriendlyFezSearch(on: sqlDatabase)
+		try await createChatGroupPostsSearch(on: sqlDatabase)
+		try await createFriendlyChatGroupSearch(on: sqlDatabase)
 	}
 
 	func revert(on database: Database) async throws {
 		let sqlDatabase = (database as! SQLDatabase)
 
-		try await dropSearchIndexAndColumn(on: sqlDatabase, tableName: "fezposts")
-		try await dropSearchIndexAndColumn(on: sqlDatabase, tableName: "friendlyfez")
+		try await dropSearchIndexAndColumn(on: sqlDatabase, tableName: "ChatGroupPosts")
+		try await dropSearchIndexAndColumn(on: sqlDatabase, tableName: "friendlychatgroup")
 	}
 
-	func createFezPostsSearch(on database: SQLDatabase) async throws {
+	func createChatGroupPostsSearch(on database: SQLDatabase) async throws {
 		try await database.raw(
 			"""
-			  ALTER TABLE fezposts
+			  ALTER TABLE ChatGroupPosts
 			  ADD COLUMN IF NOT EXISTS fulltext_search tsvector
 			    GENERATED ALWAYS AS (to_tsvector('english', text)) STORED;
 			"""
 		)
 		.run()
 
-		try await createSearchIndex(on: database, tableName: "fezposts")
+		try await createSearchIndex(on: database, tableName: "ChatGroupPosts")
 	}
 
-	func createFriendlyFezSearch(on database: SQLDatabase) async throws {
+	func createFriendlyChatGroupSearch(on database: SQLDatabase) async throws {
 		try await database.raw(
 			"""
-			  ALTER TABLE friendlyfez
+			  ALTER TABLE friendlychatgroup
 			  ADD COLUMN IF NOT EXISTS fulltext_search tsvector
 			    GENERATED ALWAYS AS (to_tsvector('english', coalesce(title, '') || ' ' || coalesce(info, ''))) STORED;
 			"""
 		)
 		.run()
 
-		try await createSearchIndex(on: database, tableName: "friendlyfez")
+		try await createSearchIndex(on: database, tableName: "friendlychatgroup")
 	}
 
 	func createSearchIndex(on database: SQLDatabase, tableName: String) async throws {

@@ -296,7 +296,7 @@ class SeamailAPIUser(FastHttpUser):
 	heidiID = ""
 	jamesAuth = { "Authorization": "Bearer " }
 	jamesID = ""
-	fezID = ""
+	chatGroupID = ""
 	
 	def on_start(self):
 		authResponse = self.client.post("/api/v3/auth/login", auth=('sam', 'password'))
@@ -308,32 +308,32 @@ class SeamailAPIUser(FastHttpUser):
 		authResponse = self.client.post("/api/v3/auth/login", auth=('james', 'password'))
 		self.jamesAuth = { "Authorization": "Bearer " + authResponse.json()["token"] }
 		self.jamesID = authResponse.json()["userID"]
-		createResponse = self.client.post("/api/v3/fez/create", headers = self.heidiAuth, 
-				json={ "fezType": "closed", "title": "Hey Everyone", "info": "what", "minCapacity": 0, "maxCapacity": 0, "initialUsers": [ self.samID, self.jamesID ] })
-		self.fezID = createResponse.json()["fezID"]
+		createResponse = self.client.post("/api/v3/chatgroup/create", headers = self.heidiAuth, 
+				json={ "chatGroupType": "closed", "title": "Hey Everyone", "info": "what", "minCapacity": 0, "maxCapacity": 0, "initialUsers": [ self.samID, self.jamesID ] })
+		self.chatGroupID = createResponse.json()["chatGroupID"]
 
 	@task
 	def joinedSeamails(self):
-		self.client.get("/api/v3/fez/joined?type=private", headers = self.heidiAuth)
+		self.client.get("/api/v3/chatgroup/joined?type=private", headers = self.heidiAuth)
 
 	@task
 	def ownedSeamails(self):
-		self.client.get("/api/v3/fez/owner?type=private", headers = self.heidiAuth)
+		self.client.get("/api/v3/chatgroup/owner?type=private", headers = self.heidiAuth)
 
 	@task
 	def createSeamail(self):
-		createResponse = self.client.post("/api/v3/fez/create", headers = self.heidiAuth, 
-				json={ "fezType": "closed", "title": "Hey Everyone", "info": "what", "minCapacity": 0, "maxCapacity": 0, "initialUsers": [ self.samID, self.jamesID ] })
-		newFezID = createResponse.json()["fezID"]
-		self.client.get("/api/v3/fez/" + newFezID, headers = self.samAuth, name="/api/v3/fez/:fez_ID")
-		self.client.get("/api/v3/fez/" + newFezID, headers = self.jamesAuth, name="/api/v3/fez/:fez_ID")
+		createResponse = self.client.post("/api/v3/chatgroup/create", headers = self.heidiAuth, 
+				json={ "chatGroupType": "closed", "title": "Hey Everyone", "info": "what", "minCapacity": 0, "maxCapacity": 0, "initialUsers": [ self.samID, self.jamesID ] })
+		chatGroupID = createResponse.json()["chatGroupID"]
+		self.client.get("/api/v3/chatgroup/" + chatGroupID, headers = self.samAuth, name="/api/v3/chatgroup/:chatgroup_ID")
+		self.client.get("/api/v3/chatgroup/" + chatGroupID, headers = self.jamesAuth, name="/api/v3/chatgroup/:chatgroup_ID")
 
 	@task
 	def postAndDeleteMsg(self):
-		response = self.client.post("/api/v3/fez/" + self.fezID + "/post", json={ "text": "This is a Locust Seamail Post.", "images": [], "postAsModerator": False, "postAsTwitarrTeam": False },
-				headers = self.heidiAuth, name = "/api/v3/fez/:fez_id/post")
+		response = self.client.post("/api/v3/chatgroup/" + self.chatGroupID + "/post", json={ "text": "This is a Locust Seamail Post.", "images": [], "postAsModerator": False, "postAsTwitarrTeam": False },
+				headers = self.heidiAuth, name = "/api/v3/chatgroup/:chatgroup_id/post")
 		postID = str(response.json()["postID"])
-		self.client.delete("/api/v3/fez/post/" + postID, headers = self.heidiAuth, name = "/api/v3/fez/post/:postID")
+		self.client.delete("/api/v3/chatgroup/post/" + postID, headers = self.heidiAuth, name = "/api/v3/chatgroup/post/:postID")
 
 class SeamailWebUser(FastHttpUser):
 	wait_time = between(1, 5)
@@ -370,10 +370,10 @@ class SeamailWebUser(FastHttpUser):
 
 	@task
 	def seamailCreateAndView(self):
-		createResponse = self.client.post("/api/v3/fez/create", headers = self.jamesAuth, 
-				json={ "fezType": "closed", "title": "Talking to Sam", "info": "", "minCapacity": 0, "maxCapacity": 0, "initialUsers": [ self.heidiID ] })
-		newFezID = createResponse.json()["fezID"]
-		self.client.get("/seamail/" + newFezID, name="/seamail/:seamail_id")
+		createResponse = self.client.post("/api/v3/chatgroup/create", headers = self.jamesAuth, 
+				json={ "chatGroupType": "closed", "title": "Talking to Sam", "info": "", "minCapacity": 0, "maxCapacity": 0, "initialUsers": [ self.heidiID ] })
+		chatGroupID = createResponse.json()["chatGroupID"]
+		self.client.get("/seamail/" + chatGroupID, name="/seamail/:seamail_id")
 
 class EventsAPIUser(FastHttpUser):
 	wait_time = between(1, 5)
@@ -473,11 +473,11 @@ class BoardgamesWebUser(FastHttpUser):
 		self.client.get("/boardgames?search=star")
 
 	@task
-	def viewMakeGameFezPage(self):
+	def viewMakeGameChatGroupPage(self):
 		boardgameResponse = self.client.get("/api/v3/boardgames", headers = self.heidiAuth)
 		boardgameIDs = [ game["gameID"] for game in boardgameResponse.json()["gameArray"] ]
-		fezGame = random.choice(boardgameIDs)
-		self.client.get("/boardgames/" + fezGame + "/createfez", name="/boardgames/:game_id/createFez")
+		chatGroupGame = random.choice(boardgameIDs)
+		self.client.get("/boardgames/" + chatGroupGame + "/createchatgroup", name="/boardgames/:game_id/createChatGroup")
 		
 class KaraokeAPIUser(FastHttpUser):
 	wait_time = between(1, 5)
@@ -564,7 +564,7 @@ class ProfileAPIUser(FastHttpUser):
 
 # AuthUser, to login/logout, maybe create accts?
 # ClientUser
-# FezUser
+# ChatGroupUser
 # ImageUser; uploads/downloads images
 # UserUser; modifies profile, sets alertwords/blocks/mutes/mutewords
 
@@ -576,7 +576,7 @@ class SeamailWebsocketUser(FastHttpUser):
 	heidiID = ""
 	jamesAuth = { "Authorization": "Bearer " }
 	jamesID = ""
-	fezID = ""
+	chatGroupID = ""
 	cookie = ""
 	
 	def on_start(self):
@@ -589,18 +589,18 @@ class SeamailWebsocketUser(FastHttpUser):
 		authResponse = self.client.post("/api/v3/auth/login", auth=('james', 'password'))
 		self.jamesAuth = { "Authorization": "Bearer " + authResponse.json()["token"] }
 		self.jamesID = authResponse.json()["userID"]
-		createResponse = self.client.post("/api/v3/fez/create", headers = self.heidiAuth, 
-				json={ "fezType": "closed", "title": "Hey Everyone", "info": "what", "minCapacity": 0, "maxCapacity": 0, "initialUsers": [ self.samID, self.jamesID ] })
-		self.fezID = createResponse.json()["fezID"]
+		createResponse = self.client.post("/api/v3/chatgroup/create", headers = self.heidiAuth, 
+				json={ "chatGroupType": "closed", "title": "Hey Everyone", "info": "what", "minCapacity": 0, "maxCapacity": 0, "initialUsers": [ self.samID, self.jamesID ] })
+		self.chatGroupID = createResponse.json()["chatGroupID"]
 
 		# We need a cookie for the websocket module to talk.
 		cookieAuthResponse = self.client.post("/login", json={"username":"heidi", "password":"password"})
 		self.cookie = cookieAuthResponse.headers.get('set-cookie')
 
 	@task
-	def open_fez_websocket(self):
+	def open_chatgroup_websocket(self):
 		ws_host = urlparse(self.client.base_url).netloc
 
-		ws = websocket.create_connection("ws://%s/fez/%s/socket" % (ws_host, self.fezID), cookie=self.cookie)
+		ws = websocket.create_connection("ws://%s/chatgroup/%s/socket" % (ws_host, self.chatGroupID), cookie=self.cookie)
 		ws.send("test")
 		ws.close()
