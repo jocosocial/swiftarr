@@ -81,12 +81,12 @@ struct ChatGroupCreateUpdatePageContext: Encodable {
 	}
 }
 
-struct SiteFriendlyChatGroupController: SiteControllerUtils {
+struct SitechatgroupController: SiteControllerUtils {
 
 	func registerRoutes(_ app: Application) throws {
 		// Routes that require login but are generally 'global' -- Two logged-in users could share this URL and both see the content
 		let globalRoutes = getGlobalRoutes(app).grouped("chatgroup")
-			.grouped(DisabledSiteSectionMiddleware(feature: .friendlychatgroup))
+			.grouped(DisabledSiteSectionMiddleware(feature: .chatgroup))
 		globalRoutes.get("", use: chatGroupRootPageHandler)
 		globalRoutes.get("joined", use: joinedChatGroupPageHandler)
 		globalRoutes.get("owned", use: ownedChatGroupPageHandler)
@@ -95,7 +95,7 @@ struct SiteFriendlyChatGroupController: SiteControllerUtils {
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let privateRoutes = getPrivateRoutes(app).grouped("chatgroup")
-			.grouped(DisabledSiteSectionMiddleware(feature: .friendlychatgroup))
+			.grouped(DisabledSiteSectionMiddleware(feature: .chatgroup))
 		privateRoutes.get("create", use: chatGroupCreatePageHandler)
 		privateRoutes.get(chatGroupIDParam, "update", use: chatGroupUpdatePageHandler)
 		privateRoutes.get(chatGroupIDParam, "edit", use: chatGroupUpdatePageHandler)
@@ -124,7 +124,7 @@ struct SiteFriendlyChatGroupController: SiteControllerUtils {
 		privateRoutes.delete(chatGroupIDParam, use: chatGroupDeleteHandler)
 	}
 
-	// MARK: - FriendlyChatGroup
+	// MARK: - ChatGroup
 
 	enum ChatGroupTab: String, Codable {
 		case faq, find, joined, owned
@@ -247,7 +247,7 @@ struct SiteFriendlyChatGroupController: SiteControllerUtils {
 
 	// GET /chatgroup/create
 	//
-	// Shows the Create New Friendly ChatGroup page
+	// Shows the Create New ChatGroup page
 	func chatGroupCreatePageHandler(_ req: Request) async throws -> View {
 		let ctx = try ChatGroupCreateUpdatePageContext(req)
 		return try await req.view.render("ChatGroup/chatGroupCreate", ctx)
@@ -256,7 +256,7 @@ struct SiteFriendlyChatGroupController: SiteControllerUtils {
 	// GET `/chatgroup/ID/update`
 	// GET `/chatgroup/ID/edit`
 	//
-	// Shows the Update Friendly ChatGroup page.
+	// Shows the Update ChatGroup page.
 	func chatGroupUpdatePageHandler(_ req: Request) async throws -> View {
 		guard let chatGroupID = req.parameters.get(chatGroupIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw "Invalid chatgroup ID"

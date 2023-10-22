@@ -367,7 +367,7 @@ extension EventData {
 	}
 }
 
-/// Used to create or update a `FriendlyChatGroup`.
+/// Used to create or update a `ChatGroup`.
 ///
 /// Required by:
 /// * `POST /api/v3/chatgroup/create`
@@ -377,7 +377,7 @@ extension EventData {
 public struct ChatGroupContentData: Content {
 	/// The `ChatGroupType` .label of the chatgroup.
 	var chatGroupType: ChatGroupType
-	/// The title for the FriendlyChatGroup.
+	/// The title for the ChatGroup.
 	var title: String
 	/// A description of the chatgroup.
 	var info: String
@@ -420,7 +420,7 @@ extension ChatGroupContentData: RCFValidatable {
 	}
 }
 
-/// Used to return data on a group of `FriendlyChatGroup` objects.
+/// Used to return data on a group of `ChatGroup` objects.
 ///
 ///
 public struct ChatGroupListData: Content {
@@ -430,7 +430,7 @@ public struct ChatGroupListData: Content {
 	var chatgroups: [ChatGroupData]
 }
 
-/// Used to return a `FriendlyChatGroup`'s data.
+/// Used to return a `ChatGroup`'s data.
 ///
 /// Returned by these methods, with `members` set to nil.
 /// * `POST /api/v3/chatgroup/ID/join`
@@ -506,7 +506,7 @@ public struct ChatGroupData: Content, ResponseEncodable {
 }
 
 extension ChatGroupData {
-	init(chatgroup: FriendlyChatGroup, owner: UserHeader) throws {
+	init(chatgroup: ChatGroup, owner: UserHeader) throws {
 		self.chatGroupID = try chatgroup.requireID()
 		self.owner = owner
 		self.chatGroupType = chatgroup.chatGroupType

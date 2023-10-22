@@ -1,6 +1,6 @@
 import Vapor
 
-/// Used to return `FriendlyChatGroupEdit` data for moderators. The only primary data an edit stores is the title, info, and location text fields.
+/// Used to return `chatgroupEdit` data for moderators. The only primary data an edit stores is the title, info, and location text fields.
 ///
 ///	Included in:
 ///	* `ChatGroupModerationData`
@@ -26,7 +26,7 @@ public struct ChatGroupEditLogData: Content {
 }
 
 extension ChatGroupEditLogData {
-	init(_ edit: FriendlyChatGroupEdit, on req: Request) throws {
+	init(_ edit: chatgroupEdit, on req: Request) throws {
 		chatGroupID = edit.$chatGroup.id
 		editID = try edit.requireID()
 		createdAt = edit.createdAt ?? Date()
@@ -341,7 +341,7 @@ public struct UserModerationData: Content {
 	/// This user's access level. Main user and all sub accounts share an access level.
 	var accessLevel: UserAccessLevel
 	/// If this user is temporarily quarantined, this will contain the end time for the quarantine. While quarantined, the user can log in and read content as normal
-	/// but cannot create content in any public area (posts, edit posts, create forums, participate in FriendlyChatGroups, or edit their profile).
+	/// but cannot create content in any public area (posts, edit posts, create forums, participate in ChatGroups, or edit their profile).
 	var tempQuarantineEndTime: Date?
 	/// All reports against any user account this user controls.
 	var reports: [ReportModerationData]

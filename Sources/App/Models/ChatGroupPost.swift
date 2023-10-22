@@ -1,7 +1,7 @@
 import Fluent
 import Vapor
 
-/// 	An individual post within a `FriendlyChatGroup` discussion. A ChatGroupPost must contain
+/// 	An individual post within a `ChatGroup` discussion. A ChatGroupPost must contain
 /// 	text content and may also contain image content, unless the ChatGroup is of type `ChatGroupType.closed`,
 /// 	in which case the post may not contain images.
 ///
@@ -35,8 +35,8 @@ final class ChatGroupPost: Model, Searchable {
 
 	// MARK: Relations
 
-	/// The `FriendlyChatGroup` to which the post belongs.
-	@Parent(key: "friendly_chatgroup") var chatgroup: FriendlyChatGroup
+	/// The `ChatGroup` to which the post belongs.
+	@Parent(key: "chatgroup") var chatgroup: ChatGroup
 
 	/// The post's author.
 	@Parent(key: "author") var author: User
@@ -49,12 +49,12 @@ final class ChatGroupPost: Model, Searchable {
 	/// Initializes a new ChatGroupPost.
 	///
 	/// - Parameters:
-	///   - chatGroupID: The ID of the post's FriendlyChatGroup.
+	///   - chatGroupID: The ID of the post's ChatGroup.
 	///   - authorID: The ID of the author of the post.
 	///   - text: The text content of the post.
 	///   - image: The filename of any image content of the post.
 	init(
-		chatgroup: FriendlyChatGroup,
+		chatgroup: ChatGroup,
 		authorID: UUID,
 		text: String,
 		image: String?
@@ -81,7 +81,7 @@ struct CreateChatGroupPostSchema: AsyncMigration {
 			.field("created_at", .datetime)
 			.field("updated_at", .datetime)
 			.field("deleted_at", .datetime)
-			.field("friendly_chatgroup", .uuid, .required, .references("friendlychatgroup", "id"))
+			.field("chatgroup", .uuid, .required, .references("chatgroup", "id"))
 			.field("author", .uuid, .required, .references("user", "id"))
 			.create()
 	}

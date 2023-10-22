@@ -2,8 +2,8 @@ import Fluent
 import Vapor
 
 // ChatGroups can be reported
-extension FriendlyChatGroup: Reportable {
-	/// The report type for `FriendlyChatGroup` reports.
+extension ChatGroup: Reportable {
+	/// The report type for `ChatGroup` reports.
 	var reportType: ReportType { .chatgroup }
 	/// Standardizes how to get the author ID of a Reportable object.
 	var authorUUID: UUID { $owner.id }
@@ -12,7 +12,7 @@ extension FriendlyChatGroup: Reportable {
 	var autoQuarantineThreshold: Int { Int.max }
 }
 
-extension FriendlyChatGroup {
+extension ChatGroup {
 	func notificationType() throws -> NotificationType {
 		if [.closed, .open].contains(chatGroupType) {
 			return try .seamailUnreadMsg(requireID())

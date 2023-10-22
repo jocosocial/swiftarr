@@ -1,6 +1,6 @@
 import Vapor
 
-/// The type of `FriendlyChatGroup`.
+/// The type of `ChatGroup`.
 
 public enum ChatGroupType: String, CaseIterable, Codable {
 	/// A closed chat. Participants are set at creation and can't be changed. No location, start/end time, or capacity.

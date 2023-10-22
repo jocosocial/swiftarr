@@ -435,7 +435,7 @@ struct ModerationController: APIRouteCollection {
 		guard let lfgIDString = req.parameters.get(chatGroupIDParam.paramString), let lfgID = UUID(lfgIDString) else {
 			throw Abort(.badRequest, reason: "Request parameter \(chatGroupIDParam.paramString) is missing.")
 		}
-		guard let lfg = try await FriendlyChatGroup.query(on: req.db).filter(\.$id == lfgID).withDeleted().first() else {
+		guard let lfg = try await ChatGroup.query(on: req.db).filter(\.$id == lfgID).withDeleted().first() else {
 			throw Abort(.notFound, reason: "no LFG found for identifier '\(lfgID)'")
 		}
 		let reports = try await Report.query(on: req.db)
@@ -473,7 +473,7 @@ struct ModerationController: APIRouteCollection {
 		guard let modState = req.parameters.get(modStateParam.paramString) else {
 			throw Abort(.badRequest, reason: "Request parameter `Moderation_State` is missing.")
 		}
-		let lfg = try await FriendlyChatGroup.findFromParameter(chatGroupIDParam, on: req)
+		let lfg = try await ChatGroup.findFromParameter(chatGroupIDParam, on: req)
 		try lfg.moderationStatus.setFromParameterString(modState)
 		await lfg.logIfModeratorAction(
 			ModeratorActionType.setFromModerationStatus(lfg.moderationStatus),

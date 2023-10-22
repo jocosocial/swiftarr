@@ -107,7 +107,7 @@ struct CreateTestData: AsyncMigration {
 		guard users.count == 4 else {
 			throw Abort(.internalServerError, reason: "Users for large test seamail thread don't exist.")
 		}
-		let bigChatGroup = try FriendlyChatGroup(owner: users[0].requireID())
+		let bigChatGroup = try ChatGroup(owner: users[0].requireID())
 		bigChatGroup.title = "Hey Everybody, Let's Make Lots of Posts"
 		bigChatGroup.participantArray = try users.map { try $0.requireID() }
 		try await bigChatGroup.save(on: database)

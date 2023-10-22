@@ -92,7 +92,7 @@ enum NotificationType {
 	}
 
 	/// A shortcut method to get the RedisKey to use to store notification data about a chatgroup.
-	static func redisKeyForChatGroup(_ chatgroup: FriendlyChatGroup, userID: UUID) throws -> RedisKey {
+	static func redisKeyForChatGroup(_ chatgroup: ChatGroup, userID: UUID) throws -> RedisKey {
 		return try [.open, .closed].contains(chatgroup.chatGroupType)
 			? NotificationType.seamailUnreadMsg(chatgroup.requireID()).redisKeyName(userID: userID)
 			: NotificationType.chatGroupUnreadMsg(chatgroup.requireID()).redisKeyName(userID: userID)

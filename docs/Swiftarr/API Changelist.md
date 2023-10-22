@@ -6,10 +6,10 @@
 ## Dec 2, 2021
 
 * THO account can now access most Admin endpoints (creating daily themes, uploading schedules, promoting moderators), but not server settings.
-* Added `postAsModerator` and `postAsTwitarrTeam` fields to `PostContentData`. When a post is **created** in Twitarr, Forums, or ChatGroups,
+* Added `postAsModerator` and `postAsTwitarrTeam` fields to `PostContentData`. When a post is **created** in Twitarr, Forums, or Fezzes,
 and the poster is a moderator, and the poster sets one of these options, the post's author will be set to the indicated user instead of the 
 actual poster.
-* ChatGroupPostData had its UUID-valued `authorID` field changed to a `UserHeader` field named `author`.
+* FezPostData had its UUID-valued `authorID` field changed to a `UserHeader` field named `author`.
 
 ## Dec 5, 2021
 
@@ -19,7 +19,7 @@ actual poster.
 
 ## Dec 7, 2021
 
-* Added `ChatGroupPostModerationData` to ModeratorControllerStructs, allowing moderators to perform mod actions on chatgroup posts.
+* Added `FezPostModerationData` to ModeratorControllerStructs, allowing moderators to perform mod actions on fez posts.
 * Added `categoryID` to ForumEditLogData, a component of ForumModerationData. Changing the category of a forum now creates a log entry;
 the entry contains the previous category the forum was in.
 
@@ -35,7 +35,7 @@ access is between Moderator and THO; importantly it gives access to the @Twitarr
 * Added a call to promote users to TwittarTeam, callable by THO and above, and a call to promote users to THO, callable by admin.
 * The call to downgrade access levels requires THO access to set 'banned' or 'unverified'. Moderator level still required to set
 'quarantined' or 'verified'.
-* added the '?foruser=' query parameter to several ChatGroup API calls; used by moderators and TwittarTeam members to access their 
+* added the '?foruser=' query parameter to several Fez API calls; used by moderators and TwittarTeam members to access their 
 respective shared Seamail inboxes. 
 
 ## Feb 2, 2022
@@ -58,7 +58,7 @@ for this game.
 
 ## Apr 22, 2022
 
-* ChatGroupContentData now has createdByModerator and createdByTwitarrTeam fields, allowing mods to create Seamails that appear to be
+* FezContentData now has createdByModerator and createdByTwitarrTeam fields, allowing mods to create Seamails that appear to be
 from the @moderator user and not themselves.
 
 ## Apr 30, 2022
@@ -73,7 +73,7 @@ Only applicable for Event categories (Official Events, Shadow Events). Event cat
 
 ## Sep 24, 2022
 
-* Adds a new filter option when getting chatgroup info: "onlynew", which only returns chatgroups with new messages.
+* Adds a new filter option when getting fez info: "onlynew", which only returns fezzes with new messages.
 
 ## Oct 8, 2022
 
@@ -111,9 +111,9 @@ doesn't have the expansions.
 
 ## Feb 19, 2023
 
-* ChatGroups now support a `search` parameter. This works just like all of the other searchable endpoints. Seamails and LFGs are now searchable in the API!
+* Fezzes now support a `search` parameter. This works just like all of the other searchable endpoints. Seamails and LFGs are now searchable in the API!
 
 ## Feb 27, 2023
 
-* ChatGroup `open`, `joined`, and `owned` queries now support a `hidePast` parameter. When `true`, chatgroups with a start date more than 1 hour in the past will be hidden. These queries use default values that match query behavior prior to the addition of this parameter, so clients which do not support it will see no change in list behavior.
-* ChatGroup `joined` and `owned` queries now allow the `cruiseday` parameter. It functions identically to the `cruiseday` parameter on `open` chatgroups.
+* Fez `open`, `joined`, and `owned` queries now support a `hidePast` parameter. When `true`, fezzes with a start date more than 1 hour in the past will be hidden. These queries use default values that match query behavior prior to the addition of this parameter, so clients which do not support it will see no change in list behavior.
+* Fez `joined` and `owned` queries now allow the `cruiseday` parameter. It functions identically to the `cruiseday` parameter on `open` fezzes.

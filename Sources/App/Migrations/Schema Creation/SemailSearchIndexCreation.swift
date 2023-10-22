@@ -5,14 +5,14 @@ struct CreateSeamailSearchIndexes: AsyncMigration {
 		let sqlDatabase = (database as! SQLDatabase)
 
 		try await createChatGroupPostsSearch(on: sqlDatabase)
-		try await createFriendlyChatGroupSearch(on: sqlDatabase)
+		try await createchatgroupSearch(on: sqlDatabase)
 	}
 
 	func revert(on database: Database) async throws {
 		let sqlDatabase = (database as! SQLDatabase)
 
 		try await dropSearchIndexAndColumn(on: sqlDatabase, tableName: "ChatGroupPosts")
-		try await dropSearchIndexAndColumn(on: sqlDatabase, tableName: "friendlychatgroup")
+		try await dropSearchIndexAndColumn(on: sqlDatabase, tableName: "chatgroup")
 	}
 
 	func createChatGroupPostsSearch(on database: SQLDatabase) async throws {
@@ -28,17 +28,17 @@ struct CreateSeamailSearchIndexes: AsyncMigration {
 		try await createSearchIndex(on: database, tableName: "ChatGroupPosts")
 	}
 
-	func createFriendlyChatGroupSearch(on database: SQLDatabase) async throws {
+	func createchatgroupSearch(on database: SQLDatabase) async throws {
 		try await database.raw(
 			"""
-			  ALTER TABLE friendlychatgroup
+			  ALTER TABLE chatgroup
 			  ADD COLUMN IF NOT EXISTS fulltext_search tsvector
 			    GENERATED ALWAYS AS (to_tsvector('english', coalesce(title, '') || ' ' || coalesce(info, ''))) STORED;
 			"""
 		)
 		.run()
 
-		try await createSearchIndex(on: database, tableName: "friendlychatgroup")
+		try await createSearchIndex(on: database, tableName: "chatgroup")
 	}
 
 	func createSearchIndex(on database: SQLDatabase, tableName: String) async throws {

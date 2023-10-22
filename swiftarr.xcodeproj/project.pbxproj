@@ -121,8 +121,8 @@
 		OBJ_2898 /* ForumEdit.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_92 /* ForumEdit.swift */; };
 		OBJ_2899 /* ForumPost.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_93 /* ForumPost.swift */; };
 		OBJ_2900 /* ForumPostEdit.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_94 /* ForumPostEdit.swift */; };
-		OBJ_2901 /* FriendlyChatGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_95 /* FriendlyChatGroup.swift */; };
-		OBJ_2902 /* FriendlyChatGroupEdit.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_96 /* FriendlyChatGroupEdit.swift */; };
+		OBJ_2901 /* ChatGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_95 /* ChatGroup.swift */; };
+		OBJ_2902 /* chatgroupEdit.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_96 /* chatgroupEdit.swift */; };
 		OBJ_2903 /* KaraokePlayedSong.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_97 /* KaraokePlayedSong.swift */; };
 		OBJ_2904 /* KaraokeSong.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_98 /* KaraokeSong.swift */; };
 		OBJ_2905 /* ModeratorAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_99 /* ModeratorAction.swift */; };
@@ -157,7 +157,7 @@
 		OBJ_2935 /* SiteEventsController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_133 /* SiteEventsController.swift */; };
 		OBJ_2936 /* SiteFileController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_134 /* SiteFileController.swift */; };
 		OBJ_2937 /* SiteForumController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_135 /* SiteForumController.swift */; };
-		OBJ_2938 /* SiteFriendlyChatGroupController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_136 /* SiteFriendlyChatGroupController.swift */; };
+		OBJ_2938 /* SitechatgroupController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_136 /* SitechatgroupController.swift */; };
 		OBJ_2939 /* SiteKaraokeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_137 /* SiteKaraokeController.swift */; };
 		OBJ_2940 /* SiteLoginController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_138 /* SiteLoginController.swift */; };
 		OBJ_2941 /* SiteModController.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_139 /* SiteModController.swift */; };
@@ -8583,7 +8583,7 @@
 		OBJ_1354 /* hpke.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hpke.c; sourceTree = "<group>"; };
 		OBJ_1357 /* poly_rq_mul.S */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; path = poly_rq_mul.S; sourceTree = "<group>"; };
 		OBJ_1358 /* hrss.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hrss.c; sourceTree = "<group>"; };
-		OBJ_136 /* SiteFriendlyChatGroupController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteFriendlyChatGroupController.swift; sourceTree = "<group>"; };
+		OBJ_136 /* SitechatgroupController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SitechatgroupController.swift; sourceTree = "<group>"; };
 		OBJ_1360 /* lhash.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = lhash.c; sourceTree = "<group>"; };
 		OBJ_1361 /* mem.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = mem.c; sourceTree = "<group>"; };
 		OBJ_1363 /* obj.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = obj.c; sourceTree = "<group>"; };
@@ -10551,7 +10551,7 @@
 		OBJ_947 /* Storage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Storage.swift; sourceTree = "<group>"; };
 		OBJ_948 /* MultipartFormData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultipartFormData.swift; sourceTree = "<group>"; };
 		OBJ_949 /* MultipartParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultipartParser.swift; sourceTree = "<group>"; };
-		OBJ_95 /* FriendlyChatGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendlyChatGroup.swift; sourceTree = "<group>"; };
+		OBJ_95 /* ChatGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatGroup.swift; sourceTree = "<group>"; };
 		OBJ_950 /* MultipartPart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultipartPart.swift; sourceTree = "<group>"; };
 		OBJ_951 /* MultipartPartConvertible.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultipartPartConvertible.swift; sourceTree = "<group>"; };
 		OBJ_952 /* MultipartSerializer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultipartSerializer.swift; sourceTree = "<group>"; };
@@ -10560,7 +10560,7 @@
 		OBJ_957 /* _HashTable+Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "_HashTable+Constants.swift"; sourceTree = "<group>"; };
 		OBJ_958 /* _HashTable+UnsafeHandle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "_HashTable+UnsafeHandle.swift"; sourceTree = "<group>"; };
 		OBJ_959 /* _HashTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = _HashTable.swift; sourceTree = "<group>"; };
-		OBJ_96 /* FriendlyChatGroupEdit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendlyChatGroupEdit.swift; sourceTree = "<group>"; };
+		OBJ_96 /* chatgroupEdit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = chatgroupEdit.swift; sourceTree = "<group>"; };
 		OBJ_960 /* _Hashtable+Header.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "_Hashtable+Header.swift"; sourceTree = "<group>"; };
 		OBJ_962 /* OrderedDictionary+Equatable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "OrderedDictionary+Equatable.swift"; sourceTree = "<group>"; };
 		OBJ_963 /* OrderedDictionary+ExpressibleByDictionaryLiteral.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "OrderedDictionary+ExpressibleByDictionaryLiteral.swift"; sourceTree = "<group>"; };
@@ -12495,7 +12495,7 @@
 				OBJ_133 /* SiteEventsController.swift */,
 				OBJ_134 /* SiteFileController.swift */,
 				OBJ_135 /* SiteForumController.swift */,
-				OBJ_136 /* SiteFriendlyChatGroupController.swift */,
+				OBJ_136 /* SitechatgroupController.swift */,
 				OBJ_137 /* SiteKaraokeController.swift */,
 				OBJ_138 /* SiteLoginController.swift */,
 				OBJ_139 /* SiteModController.swift */,
@@ -17083,8 +17083,8 @@
 				OBJ_92 /* ForumEdit.swift */,
 				OBJ_93 /* ForumPost.swift */,
 				OBJ_94 /* ForumPostEdit.swift */,
-				OBJ_95 /* FriendlyChatGroup.swift */,
-				OBJ_96 /* FriendlyChatGroupEdit.swift */,
+				OBJ_95 /* ChatGroup.swift */,
+				OBJ_96 /* chatgroupEdit.swift */,
 				OBJ_97 /* KaraokePlayedSong.swift */,
 				OBJ_98 /* KaraokeSong.swift */,
 				OBJ_99 /* ModeratorAction.swift */,
@@ -20002,8 +20002,8 @@
 				OBJ_2898 /* ForumEdit.swift in Sources */,
 				OBJ_2899 /* ForumPost.swift in Sources */,
 				OBJ_2900 /* ForumPostEdit.swift in Sources */,
-				OBJ_2901 /* FriendlyChatGroup.swift in Sources */,
-				OBJ_2902 /* FriendlyChatGroupEdit.swift in Sources */,
+				OBJ_2901 /* ChatGroup.swift in Sources */,
+				OBJ_2902 /* chatgroupEdit.swift in Sources */,
 				OBJ_2903 /* KaraokePlayedSong.swift in Sources */,
 				OBJ_2904 /* KaraokeSong.swift in Sources */,
 				OBJ_2905 /* ModeratorAction.swift in Sources */,
@@ -20038,7 +20038,7 @@
 				OBJ_2935 /* SiteEventsController.swift in Sources */,
 				OBJ_2936 /* SiteFileController.swift in Sources */,
 				OBJ_2937 /* SiteForumController.swift in Sources */,
-				OBJ_2938 /* SiteFriendlyChatGroupController.swift in Sources */,
+				OBJ_2938 /* SitechatgroupController.swift in Sources */,
 				OBJ_2939 /* SiteKaraokeController.swift in Sources */,
 				OBJ_2940 /* SiteLoginController.swift in Sources */,
 				OBJ_2941 /* SiteModController.swift in Sources */,

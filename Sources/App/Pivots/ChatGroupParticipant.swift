@@ -1,7 +1,7 @@
 import Fluent
 import Foundation
 
-/// A `Pivot` holding a siblings relation between `User` and `FriendlyChatGroup`.
+/// A `Pivot` holding a siblings relation between `User` and `ChatGroup`.
 
 final class ChatGroupParticipant: Model {
 	static let schema = "chatgroup+participants"
@@ -21,8 +21,8 @@ final class ChatGroupParticipant: Model {
 	/// The associated `User` who is a member of the chatgroup..
 	@Parent(key: "user") var user: User
 
-	/// The associated `FriendlyChatGroup` the user is a member of.
-	@Parent(key: "friendly_chatgroup") var chatgroup: FriendlyChatGroup
+	/// The associated `ChatGroup` the user is a member of.
+	@Parent(key: "chatgroup") var chatgroup: ChatGroup
 
 	// MARK: Initialization
 	// Used by Fluent
@@ -32,8 +32,8 @@ final class ChatGroupParticipant: Model {
 	///
 	/// - Parameters:
 	///   - userID: The left hand `User` model.
-	///   - post: The right hand `FriendlyChatGroup` model.
-	init(_ userID: UUID, _ post: FriendlyChatGroup) throws {
+	///   - post: The right hand `ChatGroup` model.
+	init(_ userID: UUID, _ post: ChatGroup) throws {
 		self.$user.id = userID
 		self.$chatGroup.id = try post.requireID()
 		self.$chatGroup.value = post
@@ -46,9 +46,9 @@ struct CreateChatGroupParticipantSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		try await database.schema("chatgroup+participants")
 			.id()
-			.unique(on: "user", "friendly_chatgroup")
+			.unique(on: "user", "chatgroup")
 			.field("user", .uuid, .required, .references("user", "id", onDelete: .cascade))
-			.field("friendly_chatgroup", .uuid, .required, .references("friendlychatgroup", "id", onDelete: .cascade))
+			.field("chatgroup", .uuid, .required, .references("chatgroup", "id", onDelete: .cascade))
 			.field("read_count", .int, .required)
 			.field("hidden_count", .int, .required)
 			.create()

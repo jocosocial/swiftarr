@@ -2,7 +2,7 @@ import Fluent
 import Foundation
 import Vapor
 
-/// 	A FriendlyChatGroup (ChatGroup for short) is a multi person chat facilty.
+/// 	A ChatGroup (ChatGroup for short) is a multi person chat facilty.
 ///
 /// 	Broadly speaking, ChatGroups may be open or closed, chosen at creation time.
 /// 	- Open chatgroups generally have a publicly stated purpose, and may be for an event at a specific time and place. Open chatgroups allow users to join and leave
@@ -17,9 +17,9 @@ import Vapor
 ///
 /// 	- See Also: [ChatGroupData](ChatGroupData) the DTO for returning basic data on ChatGroups.
 /// 	- See Also: [ChatGroupContentData](ChatGroupContentData) the DTO for creating or editing ChatGroups.
-/// 	- See Also: [CreateFriendlyChatGroupSchema](CreateFriendlyChatGroupSchema) the Migration for creating the ChatGroup table in the database.
-final class FriendlyChatGroup: Model, Searchable {
-	static let schema = "friendlychatgroup"
+/// 	- See Also: [CreatechatgroupSchema](CreatechatgroupSchema) the Migration for creating the ChatGroup table in the database.
+final class ChatGroup: Model, Searchable {
+	static let schema = "chatgroup"
 
 	// MARK: Properties
 	/// Unique ID for this ChatGroup.
@@ -76,8 +76,8 @@ final class FriendlyChatGroup: Model, Searchable {
 	/// The posts participants have made in the chatgroup.
 	@Children(for: \.$chatGroup) var ChatGroupPosts: [ChatGroupPost]
 
-	/// The child `FriendlyChatGroupEdit` accountability records of the chatgroup.
-	@Children(for: \.$chatGroup) var edits: [FriendlyChatGroupEdit]
+	/// The child `chatgroupEdit` accountability records of the chatgroup.
+	@Children(for: \.$chatGroup) var edits: [chatgroupEdit]
 
 	// MARK: Record-keeping
 	/// Timestamp of the model's creation, set automatically.
@@ -93,7 +93,7 @@ final class FriendlyChatGroup: Model, Searchable {
 	// Used by Fluent
 	init() {}
 
-	/// Initializes a new FriendlyChatGroup.
+	/// Initializes a new ChatGroup.
 	///
 	/// - Parameters:
 	///   - owner: The ID of the owning entity.
@@ -129,7 +129,7 @@ final class FriendlyChatGroup: Model, Searchable {
 		self.cancelled = false
 	}
 
-	/// Initializes a closed FriendlyChatGroup, also known as a Chat session.
+	/// Initializes a closed ChatGroup, also known as a Chat session.
 	init(owner: UUID) {
 		self.$owner.id = owner
 		self.chatGroupType = .closed
@@ -144,10 +144,10 @@ final class FriendlyChatGroup: Model, Searchable {
 	}
 }
 
-struct CreateFriendlyChatGroupSchema: AsyncMigration {
+struct CreatechatgroupSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		let modStatusEnum = try await database.enum("moderation_status").read()
-		try await database.schema("friendlychatgroup")
+		try await database.schema("chatgroup")
 			.id()
 			.field("chatGroupType", .string, .required)
 			.field("title", .string, .required)
@@ -169,6 +169,6 @@ struct CreateFriendlyChatGroupSchema: AsyncMigration {
 	}
 
 	func revert(on database: Database) async throws {
-		try await database.schema("friendlychatgroup").delete()
+		try await database.schema("chatgroup").delete()
 	}
 }

@@ -21,7 +21,7 @@ extension ChatGroupProtocol {
 		async throws
 	{
 		// Build the ChatGroup.
-		let chatgroup = FriendlyChatGroup(
+		let chatgroup = ChatGroup(
 			owner: fromUserID,
 			chatGroupType: ChatGroupType.closed,
 			title: subject,

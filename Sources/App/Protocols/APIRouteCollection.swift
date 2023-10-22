@@ -338,7 +338,7 @@ extension APIRouteCollection {
 	}
 
 	// When a user leaves a chatgroup or the chatgroup is deleted, delete the unread count for that chatgroup for all participants; it no longer applies.
-	func deleteChatGroupNotifications(userIDs: [UUID], chatgroup: FriendlyChatGroup, on req: Request) async throws {
+	func deleteChatGroupNotifications(userIDs: [UUID], chatgroup: ChatGroup, on req: Request) async throws {
 		for userID in userIDs {
 			try await req.redis.markLFGDeleted(msgID: chatgroup.requireID(), userID: userID)
 		}

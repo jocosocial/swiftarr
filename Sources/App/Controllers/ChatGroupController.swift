@@ -51,7 +51,7 @@ struct ChatGroupController: APIRouteCollection {
 	func registerRoutes(_ app: Application) throws {
 
 		// convenience route group for all /api/v3/chatgroup endpoints
-		let chatGroupRoutes = app.grouped(DisabledAPISectionMiddleware(feature: .friendlychatgroup)).grouped("api", "v3", "chatgroup")
+		let chatGroupRoutes = app.grouped(DisabledAPISectionMiddleware(feature: .chatgroup)).grouped("api", "v3", "chatgroup")
 
 		// Open access routes
 		chatGroupRoutes.get("types", use: typesHandler)
@@ -97,7 +97,7 @@ struct ChatGroupController: APIRouteCollection {
 
 	/// `GET /api/v3/chatgroup/open`
 	///
-	/// Retrieve FriendlyChatGroups with open slots and a startTime of no earlier than one hour ago. Results are returned sorted by start time, then by title.
+	/// Retrieve ChatGroups with open slots and a startTime of no earlier than one hour ago. Results are returned sorted by start time, then by title.
 	///
 	/// **URL Query Parameters:**
 	///
@@ -113,7 +113,7 @@ struct ChatGroupController: APIRouteCollection {
 		let urlQuery = try req.query.decode(ChatGroupURLQueryStruct.self)
 		let cacheUser = try req.auth.require(UserCacheData.self)
 
-		let chatGroupQuery = FriendlyChatGroup.query(on: req.db)
+		let chatGroupQuery = ChatGroup.query(on: req.db)
 			.filter(\.$chatGroupType !~ [.closed, .open])
 			.filter(\.$owner.$id !~ cacheUser.getBlocks())
 			.filter(\.$cancelled == false)
@@ -156,7 +156,7 @@ struct ChatGroupController: APIRouteCollection {
 
 	/// `GET /api/v3/chatgroup/joined`
 	///
-	/// Retrieve all the FriendlyChatGroup chats that the user has joined. Results are sorted by descending chatgroup update time.
+	/// Retrieve all the ChatGroup chats that the user has joined. Results are sorted by descending chatgroup update time.
 	///
 	/// **Query Parameters:**
 	/// * `?cruiseday=INT` - Only return chatgroups occuring on this day of the cruise. Embarkation Day is day 0.
@@ -181,12 +181,12 @@ struct ChatGroupController: APIRouteCollection {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let effectiveUser = try getEffectiveUser(user: cacheUser, req: req)
 		let query = ChatGroupParticipant.query(on: req.db).filter(\.$user.$id == effectiveUser.userID)
-			.join(FriendlyChatGroup.self, on: \ChatGroupParticipant.$chatGroup.$id == \FriendlyChatGroup.$id)
+			.join(ChatGroup.self, on: \ChatGroupParticipant.$chatGroup.$id == \ChatGroup.$id)
 		if let includeTypes = try urlQuery.getTypes() {
-			query.filter(FriendlyChatGroup.self, \.$chatGroupType ~~ includeTypes)
+			query.filter(ChatGroup.self, \.$chatGroupType ~~ includeTypes)
 		}
 		else if let excludeTypes = try urlQuery.getExcludeTypes() {
-			query.filter(FriendlyChatGroup.self, \.$chatGroupType !~ excludeTypes)
+			query.filter(ChatGroup.self, \.$chatGroupType !~ excludeTypes)
 		}
 
 		if let dayFilter = req.query[Int.self, at: "cruiseday"] {
@@ -196,40 +196,40 @@ struct ChatGroupController: APIRouteCollection {
 				?? Settings.shared.cruiseStartDate()
 			let dayStart = portCalendar.date(byAdding: .day, value: dayFilter, to: threeAMCutoff) ?? threeAMCutoff
 			let dayEnd = portCalendar.date(byAdding: .day, value: 1, to: dayStart) ?? Date()
-			query.filter(FriendlyChatGroup.self, \.$startTime >= dayStart).filter(FriendlyChatGroup.self, \.$startTime < dayEnd)
+			query.filter(ChatGroup.self, \.$startTime >= dayStart).filter(ChatGroup.self, \.$startTime < dayEnd)
 		}
 
 		if urlQuery.hidePast ?? false {
 			let searchStartTime = Settings.shared.timeZoneChanges.displayTimeToPortTime().addingTimeInterval(-3600)
-			query.filter(FriendlyChatGroup.self, \.$startTime > searchStartTime)
+			query.filter(ChatGroup.self, \.$startTime > searchStartTime)
 		}
 
 		if let onlyNew = urlQuery.onlynew {
-			// Uses a custom filter to test "readCount + hiddenCount < FriendlyChatGroup.postCount". If true, there's unread messages
+			// Uses a custom filter to test "readCount + hiddenCount < ChatGroup.postCount". If true, there's unread messages
 			// in this chat. Because it uses a custom filter for parameter 1, the other params use the weird long-form notation.
 			query.filter(
 				DatabaseQuery.Field.custom("\(ChatGroupParticipant().$readCount.key) + \(ChatGroupParticipant().$hiddenCount.key)"),
 				onlyNew ? DatabaseQuery.Filter.Method.lessThan : DatabaseQuery.Filter.Method.equal,
-				DatabaseQuery.Field.path(FriendlyChatGroup.path(for: \.$postCount), schema: FriendlyChatGroup.schema)
+				DatabaseQuery.Field.path(ChatGroup.path(for: \.$postCount), schema: ChatGroup.schema)
 			)
 		}
 		if var searchStr = urlQuery.search {
 			searchStr = searchStr.replacingOccurrences(of: "_", with: "\\_")
 				.replacingOccurrences(of: "%", with: "\\%")
 				.trimmingCharacters(in: .whitespacesAndNewlines)
-			query.join(ChatGroupPost.self, on: \ChatGroupPost.$chatGroup.$id == \FriendlyChatGroup.$id, method: .left)
+			query.join(ChatGroupPost.self, on: \ChatGroupPost.$chatGroup.$id == \ChatGroup.$id, method: .left)
 			query.group(.or) { group in
 				group.fullTextFilter(ChatGroupPost.self, \.$text, searchStr)
-					.fullTextFilter(FriendlyChatGroup.self, \.$title, searchStr)
-					.fullTextFilter(FriendlyChatGroup.self, \.$info, searchStr)
+					.fullTextFilter(ChatGroup.self, \.$title, searchStr)
+					.fullTextFilter(ChatGroup.self, \.$info, searchStr)
 			}
 			// We joined ChatGroupPost above, but we need to exclude its fields from the result set to prevent duplicates
-			query.fields(for: ChatGroupParticipant.self).fields(for: FriendlyChatGroup.self).unique()
+			query.fields(for: ChatGroupParticipant.self).fields(for: ChatGroup.self).unique()
 		}
 		async let groupChatCount = try query.count()
-		async let pivots = query.sort(FriendlyChatGroup.self, \.$updatedAt, .descending).range(urlQuery.calcRange()).all()
+		async let pivots = query.sort(ChatGroup.self, \.$updatedAt, .descending).range(urlQuery.calcRange()).all()
 		let chatGroupDataArray = try await pivots.map { pivot -> ChatGroupData in
-			let chatgroup = try pivot.joined(FriendlyChatGroup.self)
+			let chatgroup = try pivot.joined(ChatGroup.self)
 			return try buildChatGroupData(from: chatgroup, with: pivot, for: effectiveUser, on: req)
 		}
 		return try await ChatGroupListData(
@@ -240,7 +240,7 @@ struct ChatGroupController: APIRouteCollection {
 
 	/// `GET /api/v3/chatgroup/owner`
 	///
-	/// Retrieve the FriendlyChatGroup chats created by the user.
+	/// Retrieve the ChatGroup chats created by the user.
 	///
 	/// - Note: There is no block filtering on this endpoint. In theory, a block could only
 	///   apply if it were set *after* the chatgroup had been joined by the second party. The
@@ -262,8 +262,8 @@ struct ChatGroupController: APIRouteCollection {
 		let user = try req.auth.require(UserCacheData.self)
 		let start = (req.query[Int.self, at: "start"] ?? 0)
 		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
-		let query = FriendlyChatGroup.query(on: req.db).filter(\.$owner.$id == user.userID)
-			.join(ChatGroupParticipant.self, on: \ChatGroupParticipant.$chatGroup.$id == \FriendlyChatGroup.$id)
+		let query = ChatGroup.query(on: req.db).filter(\.$owner.$id == user.userID)
+			.join(ChatGroupParticipant.self, on: \ChatGroupParticipant.$chatGroup.$id == \ChatGroup.$id)
 			.filter(ChatGroupParticipant.self, \.$user.$id == user.userID)
 		if let includeTypes = try urlQuery.getTypes() {
 			query.filter(\.$chatGroupType ~~ includeTypes)
@@ -303,7 +303,7 @@ struct ChatGroupController: APIRouteCollection {
 
 	/// `GET /api/v3/chatgroup/:chatgroup_ID`
 	///
-	/// Retrieve information about the specified FriendlyChatGroup. For users that aren't members of the chatgroup, this info will be the same as
+	/// Retrieve information about the specified ChatGroup. For users that aren't members of the chatgroup, this info will be the same as
 	/// the info returned for `GET /api/v3/chatgroup/open`. For users that have joined the chatgroup the `ChatGroupData.MembersOnlyData` will be populated, as will
 	/// the `ChatGroupPost`s.
 	///
@@ -333,7 +333,7 @@ struct ChatGroupController: APIRouteCollection {
 	/// - Returns: `ChatGroupData` with chatgroup info and all discussion posts.
 	func chatGroupHandler(_ req: Request) async throws -> ChatGroupData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		let chatgroup = try await FriendlyChatGroup.findFromParameter(chatGroupIDParam, on: req)
+		let chatgroup = try await ChatGroup.findFromParameter(chatGroupIDParam, on: req)
 		let effectiveUser = getEffectiveUser(user: cacheUser, req: req, chatgroup: chatgroup)
 		guard !cacheUser.getBlocks().contains(chatgroup.$owner.id) else {
 			throw Abort(.notFound, reason: "this \(chatgroup.chatGroupType.lfgLabel) is not available")
@@ -353,7 +353,7 @@ struct ChatGroupController: APIRouteCollection {
 
 	/// `POST /api/v3/chatgroup/ID/join`
 	///
-	/// Add the current user to the FriendlyChatGroup. If the `.maxCapacity` of the chatgroup has been
+	/// Add the current user to the ChatGroup. If the `.maxCapacity` of the chatgroup has been
 	/// reached, the user is added to the waiting list.
 	///
 	/// - Note: A user cannot join a chatgroup that is owned by a blocked or blocking user. If any
@@ -368,7 +368,7 @@ struct ChatGroupController: APIRouteCollection {
 	/// - Returns: `ChatGroupData` containing the updated chatgroup data.
 	func joinHandler(_ req: Request) async throws -> Response {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		let chatgroup = try await FriendlyChatGroup.findFromParameter(chatGroupIDParam, on: req)
+		let chatgroup = try await ChatGroup.findFromParameter(chatGroupIDParam, on: req)
 		guard chatgroup.chatGroupType != .closed else {
 			throw Abort(.badRequest, reason: "Cannot add members to a closed chat")
 		}
@@ -401,7 +401,7 @@ struct ChatGroupController: APIRouteCollection {
 
 	/// `POST /api/v3/chatgroup/ID/unjoin`
 	///
-	/// Remove the current user from the FriendlyChatGroup. If the `.maxCapacity` of the chatgroup had
+	/// Remove the current user from the ChatGroup. If the `.maxCapacity` of the chatgroup had
 	/// previously been reached, the first user from the waiting list, if any, is moved to the
 	/// participant list.
 	///
@@ -411,7 +411,7 @@ struct ChatGroupController: APIRouteCollection {
 	/// - Returns: `ChatGroupData` containing the updated chatgroup data.
 	func unjoinHandler(_ req: Request) async throws -> ChatGroupData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		let chatgroup = try await FriendlyChatGroup.findFromParameter(chatGroupIDParam, on: req)
+		let chatgroup = try await ChatGroup.findFromParameter(chatGroupIDParam, on: req)
 		guard chatgroup.chatGroupType != .closed else {
 			throw Abort(.badRequest, reason: "Cannot remove members to a closed chat")
 		}
@@ -430,7 +430,7 @@ struct ChatGroupController: APIRouteCollection {
 
 	/// `POST /api/v3/chatgroup/ID/post`
 	///
-	/// Add a `ChatGroupPost` to the specified `FriendlyChatGroup`.
+	/// Add a `ChatGroupPost` to the specified `ChatGroup`.
 	///
 	/// Open chatgroup types are only permitted to have 1 image per post. Private chatgroups (aka Seamail) cannot have any images.
 	///
@@ -444,7 +444,7 @@ struct ChatGroupController: APIRouteCollection {
 		try cacheUser.guardCanCreateContent()
 		// see PostContentData.validations()
 		let data = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
-		let chatgroup = try await FriendlyChatGroup.findFromParameter(chatGroupIDParam, on: req)
+		let chatgroup = try await ChatGroup.findFromParameter(chatGroupIDParam, on: req)
 		guard ![.closed, .open].contains(chatgroup.chatGroupType) || data.images.count == 0 else {
 			throw Abort(.badRequest, reason: "Private conversations can't contain photos.")
 		}
@@ -579,10 +579,10 @@ struct ChatGroupController: APIRouteCollection {
 		let submitter = try req.auth.require(UserCacheData.self)
 		let data = try req.content.decode(ReportData.self)
 		let reportedPost = try await ChatGroupPost.findFromParameter(chatGroupPostIDParam, on: req)
-		guard let reportedFriendlyChatGroup = try await FriendlyChatGroup.find(reportedPost.$chatGroup.id, on: req.db) else {
+		guard let reportedchatgroup = try await ChatGroup.find(reportedPost.$chatGroup.id, on: req.db) else {
 			throw Abort(.notFound, reason: "While trying to file report: could not find container for post")
 		}
-		guard reportedFriendlyChatGroup.chatGroupType != ChatGroupType.closed else {
+		guard reportedchatgroup.chatGroupType != ChatGroupType.closed else {
 			throw Abort(.badRequest, reason: "cannot report private (closed) posts")
 		}
 		return try await reportedPost.fileReport(submitter: submitter, submitterMessage: data.message, on: req)
@@ -592,7 +592,7 @@ struct ChatGroupController: APIRouteCollection {
 
 	/// `POST /api/v3/chatgroup/create`
 	///
-	/// Create a `FriendlyChatGroup`. The creating user is automatically added to the participant list.
+	/// Create a `ChatGroup`. The creating user is automatically added to the participant list.
 	///
 	/// The list of recognized values for use in the `.chatGroupType` field is obtained from
 	/// `GET /api/v3/chatgroup/types`.
@@ -633,7 +633,7 @@ struct ChatGroupController: APIRouteCollection {
 			}
 			creator = modUser
 		}
-		let chatgroup = FriendlyChatGroup(
+		let chatgroup = ChatGroup(
 			owner: creator.userID,
 			chatGroupType: data.chatGroupType,
 			title: data.title,
@@ -678,7 +678,7 @@ struct ChatGroupController: APIRouteCollection {
 
 	/// `POST /api/v3/chatgroup/ID/cancel`
 	///
-	/// Cancel a FriendlyChatGroup. Owner only. Cancelling a ChatGroup is different from deleting it. A canceled chatgroup is still visible; members may still post to it.
+	/// Cancel a ChatGroup. Owner only. Cancelling a ChatGroup is different from deleting it. A canceled chatgroup is still visible; members may still post to it.
 	/// But, a cenceled chatgroup does not show up in searches for open chatgroups, and should be clearly marked in UI to indicate that it's been canceled.
 	///
 	/// - Note: Eventually, cancelling a chatgroup should notifiy all members via the notifications endpoint.
@@ -689,7 +689,7 @@ struct ChatGroupController: APIRouteCollection {
 	/// - Returns: `ChatGroupData` with the updated chatgroup info.
 	func cancelHandler(_ req: Request) async throws -> ChatGroupData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		let chatgroup = try await FriendlyChatGroup.findFromParameter(chatGroupIDParam, on: req)
+		let chatgroup = try await ChatGroup.findFromParameter(chatGroupIDParam, on: req)
 		guard chatgroup.$owner.id == cacheUser.userID else {
 			throw Abort(.forbidden, reason: "user does not own this \(chatgroup.chatGroupType.lfgLabel)")
 		}
@@ -704,7 +704,7 @@ struct ChatGroupController: APIRouteCollection {
 	/// `POST /api/v3/chatgroup/ID/delete`
 	/// `DELETE /api/v3/chatgroup/ID`
 	///
-	/// Delete the specified `FriendlyChatGroup`. This soft-deletes the chatgroup. Posts are left as-is.
+	/// Delete the specified `ChatGroup`. This soft-deletes the chatgroup. Posts are left as-is.
 	///
 	/// To delete, the user must have an access level allowing them to delete the chatgroup. Currently this means moderators and above.
 	/// The owner of a chatgroup may Cancel the chatgroup, which tells the members the chatgroup was cancelled, but does not delete it.
@@ -714,7 +714,7 @@ struct ChatGroupController: APIRouteCollection {
 	/// - Returns: 204 No Content on success.
 	func chatGroupDeleteHandler(_ req: Request) async throws -> HTTPStatus {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		let chatgroup = try await FriendlyChatGroup.findFromParameter(chatGroupIDParam, on: req)
+		let chatgroup = try await ChatGroup.findFromParameter(chatGroupIDParam, on: req)
 		guard cacheUser.accessLevel.canEditOthersContent() else {
 			throw Abort(.forbidden, reason: "User does not have access to delete an \(chatgroup.chatGroupType.lfgLabel).")
 		}
@@ -728,7 +728,7 @@ struct ChatGroupController: APIRouteCollection {
 
 	/// `POST /api/v3/chatgroup/ID/update`
 	///
-	/// Update the specified FriendlyChatGroup with the supplied data. Updating a cancelled chatgroup will un-cancel it.
+	/// Update the specified ChatGroup with the supplied data. Updating a cancelled chatgroup will un-cancel it.
 	///
 	/// - Note: All fields in the supplied `ChatGroupContentData` must be filled, just as if the chatgroup
 	///   were being created from scratch. If there is demand, using a set of more efficient
@@ -744,7 +744,7 @@ struct ChatGroupController: APIRouteCollection {
 		// see ChatGroupContentData.validations()
 		let data = try ValidatingJSONDecoder().decode(ChatGroupContentData.self, fromBodyOf: req)
 		// get chatgroup
-		let chatgroup = try await FriendlyChatGroup.findFromParameter(chatGroupIDParam, on: req)
+		let chatgroup = try await ChatGroup.findFromParameter(chatGroupIDParam, on: req)
 		try cacheUser.guardCanModifyContent(chatgroup, customErrorString: "User cannot modify LFG")
 		guard ![.closed, .open].contains(chatgroup.chatGroupType) else {
 			throw Abort(.forbidden, reason: "Cannot edit info on Seamail chats")
@@ -753,7 +753,7 @@ struct ChatGroupController: APIRouteCollection {
 			throw Abort(.forbidden, reason: "Cannot turn a LFG into a Seamail chat")
 		}
 		if data.title != chatgroup.title || data.location != chatgroup.location || data.info != chatgroup.info {
-			let chatGroupEdit = try FriendlyChatGroupEdit(chatgroup: chatgroup, editorID: cacheUser.userID)
+			let chatGroupEdit = try chatgroupEdit(chatgroup: chatgroup, editorID: cacheUser.userID)
 			try await chatgroup.logIfModeratorAction(.edit, moderatorID: cacheUser.userID, on: req)
 			try await chatGroupEdit.save(on: req.db)
 		}
@@ -783,7 +783,7 @@ struct ChatGroupController: APIRouteCollection {
 	func userAddHandler(_ req: Request) async throws -> ChatGroupData {
 		let requester = try req.auth.require(UserCacheData.self)
 		// get chatgroup and user to add
-		let chatgroup = try await FriendlyChatGroup.findFromParameter(chatGroupIDParam, on: req)
+		let chatgroup = try await ChatGroup.findFromParameter(chatGroupIDParam, on: req)
 		guard chatgroup.chatGroupType != .closed else {
 			throw Abort(.forbidden, reason: "Cannot add users to closed chat")
 		}
@@ -818,7 +818,7 @@ struct ChatGroupController: APIRouteCollection {
 
 	/// `POST /api/v3/chatgroup/ID/user/:userID/remove`
 	///
-	/// Remove the specified `User` from the specified FriendlyChatGroup barrel. This lets a chatgroup owner remove others.
+	/// Remove the specified `User` from the specified ChatGroup barrel. This lets a chatgroup owner remove others.
 	///
 	/// - Parameter chatGroupID: in URL path.
 	/// - Parameter userID: in URL path.
@@ -830,7 +830,7 @@ struct ChatGroupController: APIRouteCollection {
 		// get chatgroup and user to remove
 		let removeUser = try await User.findFromParameter(userIDParam, on: req)
 		let removeUserID = try removeUser.requireID()
-		let chatgroup = try await FriendlyChatGroup.findFromParameter(chatGroupIDParam, on: req)
+		let chatgroup = try await ChatGroup.findFromParameter(chatGroupIDParam, on: req)
 		guard chatgroup.chatGroupType != .closed else {
 			throw Abort(.forbidden, reason: "Cannot remove users from closed chat")
 		}
@@ -867,7 +867,7 @@ struct ChatGroupController: APIRouteCollection {
 	func reportChatGroupHandler(_ req: Request) async throws -> HTTPStatus {
 		let submitter = try req.auth.require(UserCacheData.self)
 		let data = try req.content.decode(ReportData.self)
-		let reportedChatGroup = try await FriendlyChatGroup.findFromParameter(chatGroupIDParam, on: req)
+		let reportedChatGroup = try await ChatGroup.findFromParameter(chatGroupIDParam, on: req)
 		guard reportedChatGroup.chatGroupType != .closed else {
 			throw Abort(.forbidden, reason: "Cannot file reports on closed chats")
 		}
@@ -893,7 +893,7 @@ struct ChatGroupController: APIRouteCollection {
 	func createGroupChatSocket(_ req: Request, _ ws: WebSocket) async {
 		do {
 			let user = try req.auth.require(UserCacheData.self)
-			let chatgroup = try await FriendlyChatGroup.findFromParameter(chatGroupIDParam, on: req)
+			let chatgroup = try await ChatGroup.findFromParameter(chatGroupIDParam, on: req)
 			guard userCanViewMemberData(user: user, chatgroup: chatgroup), let chatGroupID = try? chatgroup.requireID() else {
 				throw Abort(.badRequest, reason: "User can't vew messages in this LFG")
 			}
@@ -910,7 +910,7 @@ struct ChatGroupController: APIRouteCollection {
 	}
 
 	// Checks for sockets open on this chatgroup, and sends the post to each of them.
-	func forwardPostToSockets(_ chatgroup: FriendlyChatGroup, _ post: ChatGroupPost, on req: Request) throws {
+	func forwardPostToSockets(_ chatgroup: ChatGroup, _ post: ChatGroupPost, on req: Request) throws {
 		try req.webSocketStore.getChatGroupSockets(chatgroup.requireID())
 			.forEach { userSocket in
 				let postAuthor = try req.userCache.getHeader(post.$author.id)
@@ -956,7 +956,7 @@ struct ChatGroupController: APIRouteCollection {
 	}
 
 	// Checks for sockets open on this chatgroup, and sends the membership change info to each of them.
-	func forwardMembershipChangeToSockets(_ chatgroup: FriendlyChatGroup, participantID: UUID, joined: Bool, on req: Request) throws
+	func forwardMembershipChangeToSockets(_ chatgroup: ChatGroup, participantID: UUID, joined: Bool, on req: Request) throws
 	{
 		try req.webSocketStore.getChatGroupSockets(chatgroup.requireID())
 			.forEach { userSocket in
@@ -991,7 +991,7 @@ extension ChatGroupController {
 	// To read the 'moderator' or 'twitarrteam' seamail, verify the requestor has access and call this fn with
 	// the effective user's account.
 	func buildChatGroupData(
-		from chatgroup: FriendlyChatGroup,
+		from chatgroup: ChatGroup,
 		with pivot: ChatGroupParticipant? = nil,
 		posts: [ChatGroupPostData]? = nil,
 		for cacheUser: UserCacheData,
@@ -1034,7 +1034,7 @@ extension ChatGroupController {
 	}
 
 	// Remember that there can be posts by authors who are not currently participants.
-	func buildPostsForChatGroup(_ chatgroup: FriendlyChatGroup, pivot: ChatGroupParticipant?, on req: Request, user: UserCacheData) async throws
+	func buildPostsForChatGroup(_ chatgroup: ChatGroup, pivot: ChatGroupParticipant?, on req: Request, user: UserCacheData) async throws
 		-> ([ChatGroupPostData], Paginator)
 	{
 		let readCount = pivot?.readCount ?? 0
@@ -1066,11 +1066,11 @@ extension ChatGroupController {
 		return (postDatas, paginator)
 	}
 
-	func getUserPivot(chatgroup: FriendlyChatGroup, userID: UUID, on db: Database) async throws -> ChatGroupParticipant? {
+	func getUserPivot(chatgroup: ChatGroup, userID: UUID, on db: Database) async throws -> ChatGroupParticipant? {
 		return try await chatgroup.$participants.$pivots.query(on: db).filter(\.$user.$id == userID).first()
 	}
 
-	func userCanViewMemberData(user: UserCacheData, chatgroup: FriendlyChatGroup) -> Bool {
+	func userCanViewMemberData(user: UserCacheData, chatgroup: ChatGroup) -> Bool {
 		return user.accessLevel.hasAccess(.moderator) || chatgroup.participantArray.contains(user.userID)
 	}
 
@@ -1100,7 +1100,7 @@ extension ChatGroupController {
 	// This version of getEffectiveUser checks the user against the chatgroup's membership, and also checks whether
 	// user 'moderator' or user 'TwitarrTeam' is a member of the chatgroup and the user has the appropriate access level.
 	//
-	func getEffectiveUser(user: UserCacheData, req: Request, chatgroup: FriendlyChatGroup) -> UserCacheData {
+	func getEffectiveUser(user: UserCacheData, req: Request, chatgroup: ChatGroup) -> UserCacheData {
 		if chatgroup.participantArray.contains(user.userID) {
 			return user
 		}

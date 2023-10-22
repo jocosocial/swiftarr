@@ -38,7 +38,7 @@ public enum SwiftarrFeature: String, Content, CaseIterable {
 	case forums
 	case seamail
 	case schedule
-	case friendlychatgroup
+	case chatgroup
 	case karaoke
 	case gameslist
 	case images

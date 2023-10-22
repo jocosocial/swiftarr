@@ -81,8 +81,8 @@ custom_categories:
     - ForumPostEdit
     - ForumPost
     - Forum
-    - FriendlyChatGroupEdit
-    - FriendlyChatGroup
+    - chatgroupEdit
+    - ChatGroup
     - KaraokePlayedSong
     - KaraokeSong
     - ModeratorAction
@@ -206,8 +206,8 @@ custom_categories:
       - CreateForumReadersSchema
       - CreateForums
       - CreateForumSchema
-      - CreateFriendlyChatGroupEditSchema
-      - CreateFriendlyChatGroupSchema
+      - CreatechatgroupEditSchema
+      - CreatechatgroupSchema
       - CreateKaraokeFavoriteSchema
       - CreateKaraokePlayedSongSchema
       - CreateKaraokeSongSchema
@@ -278,7 +278,7 @@ custom_categories:
       - SiteEventsController
       - SiteFileController
       - SiteForumController
-      - SiteFriendlyChatGroupController
+      - SitechatgroupController
       - SiteKaraokeController
       - SiteLoginController
       - SiteModController

@@ -38,7 +38,7 @@ public func routes(_ app: Application) throws {
 		SiteLoginController(),
 		SiteTwitarrController(),
 		SiteSeamailController(),
-		SiteFriendlyChatGroupController(),
+		SitechatgroupController(),
 		SiteForumController(),
 		SiteEventsController(),
 		SiteUserController(),
