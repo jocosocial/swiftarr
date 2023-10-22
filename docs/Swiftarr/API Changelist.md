@@ -1,7 +1,7 @@
 #  Changes to API functions or structures
 
 ## Oct 21, 2023
-* All instances of 'fez' in the codebase, including API routes, have been renamed to 'chatgroup'.
+* We renamed Fez to ChatGroup.
 
 ## Dec 2, 2021
 
