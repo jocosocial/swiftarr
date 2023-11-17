@@ -5,7 +5,7 @@ services:
     image: docker.io/bitnami/postgresql:14
     environment:
       POSTGRESQL_DATABASE: swiftarr
-      POSTGRESQL_USER: swiftarr
+      POSTGRESQL_USERNAME: swiftarr
       POSTGRESQL_PASSWORD: password
     ports:
       - 5432:5432
