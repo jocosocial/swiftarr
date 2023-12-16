@@ -17,7 +17,7 @@ if [ "${AUTO_MIGRATE}" = true ]; then
   if [ $? != 0 ]; then
     echo "Database not initialized. Running migration..."
     # Papa Bless - https://theswiftdev.com/server-side-swift-projects-inside-docker-using-vapor-4/
-    /app/Run migrate --yes --env "${ENVIRONMENT}"
+    /app/swiftarr migrate --yes --env "${ENVIRONMENT}"
   else
     echo "Database already initialized."
   fi
@@ -25,4 +25,4 @@ else
   echo "Automatic database migration was disabled."
 fi
 
-exec /app/Run serve --env "${ENVIRONMENT}" --hostname ${SWIFTARR_IP} --port ${SWIFTARR_PORT}
+exec /app/swiftarr serve --env "${ENVIRONMENT}" --hostname ${SWIFTARR_IP} --port ${SWIFTARR_PORT}
