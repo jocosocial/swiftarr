@@ -1545,16 +1545,19 @@ extension ForumController {
 				}
 				return user.userID
 			}
+			let userDidntMentionSelf = { (userID: UUID) -> Bool in
+				post.authorUUID != userID 
+			}
 			// Mentions
 			let (subtracts, adds) = post.getMentionsDiffs(editedString: editedText, isCreate: isCreate)
 			if !subtracts.isEmpty {
-				let subtractUUIDs = req.userCache.getUsers(usernames: subtracts).compactMap(canUserAccessCategory)
+				let subtractUUIDs = req.userCache.getUsers(usernames: subtracts).compactMap(canUserAccessCategory).filter(userDidntMentionSelf)
 				group.addTask {
 					try await subtractNotifications(users: subtractUUIDs, type: .forumMention(postID), on: req)
 				}
 			}
 			if !adds.isEmpty {
-				let addUUIDs = req.userCache.getUsers(usernames: adds).compactMap(canUserAccessCategory)
+				let addUUIDs = req.userCache.getUsers(usernames: adds).compactMap(canUserAccessCategory).filter(userDidntMentionSelf)
 				var authorText = "A user"
 				if let authorName = req.userCache.getUser(post.$author.id)?.username {
 					authorText = "User @\(authorName)"
