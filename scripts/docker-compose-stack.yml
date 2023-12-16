@@ -4,7 +4,7 @@ services:
   postgres:
     image: docker.io/bitnami/postgresql:14
     env_file:
-      - "../Sources/App/seeds/Private Swiftarr Config/${ENVIRONMENT}.env"
+      - "../Sources/swiftarr/seeds/Private Swiftarr Config/${ENVIRONMENT}.env"
     volumes:
       - pgdata:/bitnami/postgresql
     ports:
@@ -13,7 +13,7 @@ services:
   redis:
     image: docker.io/bitnami/redis:6.2
     env_file:
-      - "../Sources/App/seeds/Private Swiftarr Config/${ENVIRONMENT}.env"
+      - "../Sources/swiftarr/seeds/Private Swiftarr Config/${ENVIRONMENT}.env"
     volumes:
       - redisdata:/bitnami/redis/data
     ports:
@@ -33,9 +33,9 @@ services:
       - postgres
       - redis
     env_file:
-      - "../Sources/App/seeds/Private Swiftarr Config/${ENVIRONMENT}.env"
+      - "../Sources/swiftarr/seeds/Private Swiftarr Config/${ENVIRONMENT}.env"
     volumes:
-      - "../Sources/App/seeds:/app/swiftarr_App.resources/seeds:ro"
+      - "../Sources/swiftarr/seeds:/app/swiftarr_App.resources/seeds:ro"
       - images:/app/images
 
 volumes:

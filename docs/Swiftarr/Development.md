@@ -44,7 +44,7 @@ to your .zshrc file to make xcodebuild find the ARM64 libs homebrew installs (in
 4. Download or clone the `swiftarr` [repository](https://github.com/jocosocial/swiftarr).
 5. Run `scripts/instance.sh up -d redis postgres` from the `swiftarr` directory to create and launch postgres and redis
 Docker containers.
-6. Create your own `development.env` in `Sources/App/seeds/Private Swiftarr Config`. See [Configuration](configuration.html) for details.
+6. Create your own `development.env` in `Sources/swiftarr/seeds/Private Swiftarr Config`. See [Configuration](configuration.html) for details.
 7. Open the `Package.swift` file in Xcode and run the "Migrate" scheme to configure the databses, or from the command line:
 
 ```shell
@@ -96,6 +96,6 @@ If running on Linux with VSCode or in a terminal, the easiest way to get an inst
 4. Run `scripts/instance.sh up -d postgres redis` from the repo directory to create and launch Postgres and Redis
 Docker containers. You can omit the `postgres redis` portion of the command to get additional instance containers.
 5. Build the codebase using VSCode or in a terminal with `swift build`. This could take a while if it's the first time.
-6. Create your own `development.env` in `Sources/App/seeds/Private Swiftarr Config`. See [Configuration](configuration.html) for details.
-7. Perform an initial database migration. This only needs to be done once or whenever there are additional migrations to apply. `swift run Run migrate [--yes]`. Note the two run's with differing case.
-8. Start the app with `swift run Run serve` and you should be greeted with a line akin to `Server starting on http://127.0.0.1:8081`.
+6. Create your own `development.env` in `Sources/swiftarr/seeds/Private Swiftarr Config`. See [Configuration](configuration.html) for details.
+7. Perform an initial database migration. This only needs to be done once or whenever there are additional migrations to apply. `swift run swiftarr migrate [--yes]`. Note the two run's with differing case.
+8. Start the app with `swift run swiftarr serve` and you should be greeted with a line akin to `Server starting on http://127.0.0.1:8081`.

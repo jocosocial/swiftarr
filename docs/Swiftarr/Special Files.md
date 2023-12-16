@@ -35,21 +35,21 @@ So I made this.
 - `generatedocs.sh`: Shell script that uses swift doc to generate documentation files for the API from inline header comments.
 - `instance.sh`: Shell script for staring/stopping/resetting the databases in on a Mac.
 
-## Inside `/Sources/App/seeds/Private Swiftarr Config`
+## Inside `/Sources/swiftarr/seeds/Private Swiftarr Config`
 
 - `Template.env`: This is the template for setting up environment files for Swiftarr, when running Swiftarr as a local process. Environment files contain server and DB passwords, and shouldn't be checked into Git. Set up an environment by copying this file and filling in the various fields as appropriate.
 - `Docker-Template.env`: Same idea as `Template.env`, but for running Swiftarr inside a Docker container.
 
-## Inside `/Sources/App/Controllers/Structs`
+## Inside `/Sources/swiftarr/Controllers/Structs`
 
 Almost all the data types used by the API are in these files. Most of the data types are Swift structs that get serialized to/from JSON, and the struct member names map exactly to what's in the JSON. Values with an ending `?` are optional, and won't be emitted in JSON if their value is NULL (that is, they won't be { "value": null }). A struct member with an Enum value type have its enum value converted to a string that matches the name of the enum value.
 
 Swift allows for several sorts of data transformations with JSON serialization, and also allows for enums to be parsed as integers or renamed when converted to JSON. We're not doing those things with the API structs, for improved clarity.
 
-## Inside `/Sources/App/Resources`
+## Inside `/Sources/swiftarr/Resources`
 
 Resource files that Swiftarr needs. Located here instead of at the root because of how the Swift Package Manager's build system works. Files in the `/Views` subdirectory are Leaf template files for the front end HTML.
 
-## Inside `Sources/App/gdOverrides`
+## Inside `Sources/swiftarr/gdOverrides`
 
 We've customized some parts of how GD works; mostly pertaining to JPEG file handling.

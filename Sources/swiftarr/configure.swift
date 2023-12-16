@@ -734,7 +734,7 @@ struct SwiftarrConfigurator {
 	}
 
 	// Wrapper function to add any custom CLI commands. Might be overkill but at least it's scalable.
-	// These should be stored in Sources/App/Commands.
+	// These should be stored in Sources/swiftarr/Commands.
 	func configureCommands(_ app: Application) {
 	}
 }

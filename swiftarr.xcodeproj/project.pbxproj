@@ -8237,8 +8237,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		EA20206927FA592C00F82C28 /* Resources */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Resources; path = Sources/App/Resources; sourceTree = "<group>"; };
-		EA20207927FA59FB00F82C28 /* seeds */ = {isa = PBXFileReference; lastKnownFileType = folder; name = seeds; path = Sources/App/seeds; sourceTree = "<group>"; };
+		EA20206927FA592C00F82C28 /* Resources */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Resources; path = Sources/swiftarr/Resources; sourceTree = "<group>"; };
+		EA20207927FA59FB00F82C28 /* seeds */ = {isa = PBXFileReference; lastKnownFileType = folder; name = seeds; path = Sources/swiftarr/seeds; sourceTree = "<group>"; };
 		EA20207C2803DE7200F82C28 /* FezProtocol.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FezProtocol.swift; sourceTree = "<group>"; };
 		EA2020812807F8E300F82C28 /* SiteRedisWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteRedisWrapper.swift; sourceTree = "<group>"; };
 		EA2020852811C95600F82C28 /* ScheduleMunger.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ScheduleMunger.swift; sourceTree = "<group>"; };
@@ -17018,8 +17018,8 @@
 				OBJ_143 /* configure.swift */,
 				OBJ_144 /* routes.swift */,
 			);
-			name = App;
-			path = Sources/App;
+			name = swiftarr;
+			path = Sources/swiftarr;
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_800 /* Logging */ = {
