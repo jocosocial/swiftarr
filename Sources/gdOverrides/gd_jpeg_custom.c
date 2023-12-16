@@ -40,6 +40,7 @@
 #include <setjmp.h>
 #include <limits.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "gd.h"
 #include "gd_errors.h"
