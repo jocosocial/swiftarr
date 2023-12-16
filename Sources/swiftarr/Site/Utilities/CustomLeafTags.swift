@@ -155,8 +155,8 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 					switch usage {
 					case .twarrt: searchHref = "/tweets?hashtag=\(hashtag)"
 					case .forumpost: searchHref = "/forumpost/search?hashtag=\(hashtag)"
-					case .fez: searchHref = "/tweets?hashtag=\(hashtag)"
-					case .seamail: searchHref = "/tweets?hashtag=\(hashtag)"
+					case .fez: searchHref = "/forumpost/search?hashtag=\(hashtag)"
+					case .seamail: searchHref = "/forumpost/search?hashtag=\(hashtag)"
 					}
 					return "<a class=\"link-primary\" href=\"\(searchHref)\">#\(hashtag)</a>\(restOfString)"
 				}

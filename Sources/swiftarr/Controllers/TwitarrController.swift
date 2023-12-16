@@ -144,9 +144,12 @@ public struct TwarrtQueryOptions: Content {
 struct TwitarrController: APIRouteCollection {
 
 	// MARK: RouteCollection Conformance
-	/// Required. Resisters routes to the incoming router.
+	/// Empty stub register fn; Twarrt stream has been decomissioned.
 	func registerRoutes(_ app: Application) throws {
-
+	}
+	
+	/// Required. Registers routes to the incoming router.
+	func DISABLED_registerRoutes(_ app: Application) throws {
 		// convenience route group for all /api/v3/twitarr endpoints
 		let twitarrRoutes = app.grouped(DisabledAPISectionMiddleware(feature: .tweets)).grouped("api", "v3", "twitarr")
 
@@ -170,13 +173,7 @@ struct TwitarrController: APIRouteCollection {
 		tokenCacheAuthGroup.post(twarrtIDParam, "bookmark", use: bookmarkAddHandler)
 		tokenCacheAuthGroup.post(twarrtIDParam, "bookmark", "remove", use: bookmarkRemoveHandler)
 		tokenCacheAuthGroup.post(twarrtIDParam, "report", use: twarrtReportHandler)
-		tokenCacheAuthGroup.on(
-			.POST,
-			twarrtIDParam,
-			"update",
-			body: .collect(maxSize: "30mb"),
-			use: twarrtUpdateHandler
-		)
+		tokenCacheAuthGroup.on(.POST, twarrtIDParam, "update", body: .collect(maxSize: "30mb"), use: twarrtUpdateHandler)
 	}
 
 	// MARK: - tokenAuthGroup Handlers (logged in)

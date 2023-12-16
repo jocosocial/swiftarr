@@ -179,7 +179,12 @@ struct TweetEditPageContext: Encodable {
 
 struct SiteTwitarrController: SiteControllerUtils {
 
+	/// Empty stub register fn; Twarrt stream has been decomissioned.
 	func registerRoutes(_ app: Application) throws {
+	}
+	
+	/// Required. Registers routes to the incoming router.
+	func DISABLED_registerRoutes(_ app: Application) throws {
 		// Routes that require login but are generally 'global' -- Two logged-in users could share this URL and both see the content
 		// Not for Seamails, pages for posting new content, mod pages, etc. Logged-out users given one of these links should get
 		// redirect-chained through /login and back.

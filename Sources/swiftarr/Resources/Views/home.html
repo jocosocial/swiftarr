@@ -50,11 +50,6 @@
 				<h6><b>Notifications</b></h6>
 			#endif
 			<div class="list-group">
-			#if(trunk.alertCounts.newTwarrtMentionCount > 0):
-				<a class="list-group-item list-group-item-action" href="/tweets?mentions=#(trunk.username)">
-					You have #(trunk.alertCounts.newTwarrtMentionCount) new tweet @mentions
-				</a>
-			#endif
 			#if(trunk.alertCounts.newForumMentionCount > 0):
 				<a class="list-group-item list-group-item-action" href="/forumpost/mentions">
 					You have #(trunk.alertCounts.newForumMentionCount) new forum @mentions

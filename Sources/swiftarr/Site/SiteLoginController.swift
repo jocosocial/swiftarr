@@ -105,7 +105,7 @@ struct SiteLoginController: SiteControllerUtils {
 			let tokenResponse = try response.content.decode(TokenStringData.self)
 			try await loginUser(with: tokenResponse, on: req)
 			var loginContext = try await LoginPageContext(req)
-			loginContext.trunk.metaRedirectURL = req.session.data["returnAfterLogin"] ?? "/tweets"
+			loginContext.trunk.metaRedirectURL = req.session.data["returnAfterLogin"] ?? "/"
 			loginContext.operationSuccess = true
 			return try await req.view.render("Login/login", loginContext)
 		}
@@ -351,7 +351,7 @@ struct SiteLoginController: SiteControllerUtils {
 			let tokenResponse = try apiResponse.content.decode(TokenStringData.self)
 			try await loginUser(with: tokenResponse, on: req)
 			var loginContext = try await LoginPageContext(req)
-			loginContext.trunk.metaRedirectURL = req.session.data["returnAfterLogin"] ?? "/tweets"
+			loginContext.trunk.metaRedirectURL = req.session.data["returnAfterLogin"] ?? "/"
 			loginContext.operationSuccess = true
 			loginContext.operationName = "Password Change"
 			return try await req.view.render("Login/login", loginContext)
