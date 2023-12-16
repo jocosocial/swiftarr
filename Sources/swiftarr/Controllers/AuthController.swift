@@ -102,8 +102,7 @@ struct AuthController: APIRouteCollection {
 		// see `UserRecoveryData.validations()`
 		let data = try ValidatingJSONDecoder().decode(UserRecoveryData.self, fromBodyOf: req)
 		// find data.username user
-		let user = try await User.query(on: req.db).filter(\.$username == data.username).first()
-		guard let user = user else {
+		guard let user = try await User.query(on: req.db).filter(\.$username, .custom("ilike"), data.username).first() else {
 			throw Abort(.badRequest, reason: "username \"\(data.username)\" not found")
 		}
 		// no login for punks
