@@ -22,3 +22,6 @@ __pycache__/
 
 # Auto-generated Documentation
 docs/Output
+
+# Local environment configuration
+Sources/swiftarr/seeds/Private Swiftarr Config/development.env
