@@ -39,7 +39,7 @@ These install steps assume you have git and Xcode already, and are installing wi
 
 ## Part 2: Configure, Build and Run
 
-If this is a publicly accessible install, you should make a copy of the `Template.env` Environment setup file in `Sources/App/seeds/Private Swiftarr Config` folder, name it with the name of your environment and fill in passwords and such with private values. See [Configuration](configuration.html) for details.
+If this is a publicly accessible install, you should make a copy of the `Template.env` Environment setup file in `Sources/swiftarr/seeds/Private Swiftarr Config` folder, name it with the name of your environment and fill in passwords and such with private values. See [Configuration](configuration.html) for details.
 
 ### Building with Xcode
 
@@ -69,9 +69,9 @@ When launching Swiftarr from the command line, use:
 
 `swift run Run serve --env production`
 
-with the environment you want to use. `development` is the default; if you're only doing development builds you probably don't need to make a development.env file. If this is a publicly accessible install, you should make a copy of the `Template.env` Environment setup file in `Sources/App/seeds/Private Swiftarr Config` folder, name it with the name of your environment and fill in passwords and such with private values.
+with the environment you want to use. `development` is the default; if you're only doing development builds you probably don't need to make a development.env file. If this is a publicly accessible install, you should make a copy of the `Template.env` Environment setup file in `Sources/swiftarr/seeds/Private Swiftarr Config` folder, name it with the name of your environment and fill in passwords and such with private values.
 
-The git repo is configured to ignore all files in the `Sources/App/seeds/Private Swiftarr Config` directory other than the Template.env file. This is on purpose; don't check in your custom .env files.
+The git repo is configured to ignore all files in the `Sources/swiftarr/seeds/Private Swiftarr Config` directory other than the Template.env file. This is on purpose; don't check in your custom .env files.
 
 There are several predefined environments:
 - `development` is the default

@@ -50,7 +50,7 @@ else
   echo "Using compose file at ${filename}."
 fi
 
-envfile="./Sources/App/seeds/Private Swiftarr Config/${environment}.env"
+envfile="./Sources/swiftarr/seeds/Private Swiftarr Config/${environment}.env"
 echo "Using env file at ${envfile}"
 
 docker-compose --project-name "${stackname}" --env-file "${envfile}" --file "${filename}" "${@}"

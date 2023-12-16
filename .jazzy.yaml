@@ -21,8 +21,8 @@ min_acl: private
 
 # @TODO should we exclude some stuff?
 #exclude:
-#  - "Sources/App/Site*"
-#  - "Sources/App/Migrations*"
+#  - "Sources/swiftarr/Site*"
+#  - "Sources/swiftarr/Migrations*"
 
 custom_categories:
   - name: Overview
