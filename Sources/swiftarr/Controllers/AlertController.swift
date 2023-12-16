@@ -35,13 +35,13 @@ struct AlertController: APIRouteCollection {
 		let tokenAuthGroup = addTokenCacheAuthGroup(to: alertRoutes)
 		tokenAuthGroup.webSocket("socket", onUpgrade: createNotificationSocket)  // shouldUpgrade: (Request) -> Headers
 
-		// endpoints available only when logged in as THO or above
-		let thoAuthGroup = addTokenCacheAuthGroup(to: alertRoutes).grouped(RequireTHOMiddleware())
-		thoAuthGroup.get("announcement", announcementIDParam, use: getSingleAnnouncement)
-		thoAuthGroup.post("announcement", "create", use: createAnnouncement)
-		thoAuthGroup.post("announcement", announcementIDParam, "edit", use: editAnnouncement)
-		thoAuthGroup.post("announcement", announcementIDParam, "delete", use: deleteAnnouncement)
-		thoAuthGroup.delete("announcement", announcementIDParam, use: deleteAnnouncement)
+		// endpoints available only when logged in as TwitarrTeam or above
+		let ttAuthGroup = addTokenCacheAuthGroup(to: alertRoutes).grouped(RequireTwitarrTeamMiddleware())
+		ttAuthGroup.get("announcement", announcementIDParam, use: getSingleAnnouncement)
+		ttAuthGroup.post("announcement", "create", use: createAnnouncement)
+		ttAuthGroup.post("announcement", announcementIDParam, "edit", use: editAnnouncement)
+		ttAuthGroup.post("announcement", announcementIDParam, "delete", use: deleteAnnouncement)
+		ttAuthGroup.delete("announcement", announcementIDParam, use: deleteAnnouncement)
 
 	}
 
@@ -220,7 +220,7 @@ struct AlertController: APIRouteCollection {
 
 	// MARK: - Announcements
 
-	/// `POST /api/v3/announcement/create`
+	/// `POST /api/v3/notification/announcement/create`
 	///
 	/// Create a new announcement. Requires TwitarrTeam access and above. When a new announcement is created the notification endpoints will start
 	/// indicating the new announcement to all users.
