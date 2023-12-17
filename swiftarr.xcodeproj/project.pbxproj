@@ -122,7 +122,7 @@
 		OBJ_2899 /* ForumPost.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_93 /* ForumPost.swift */; };
 		OBJ_2900 /* ForumPostEdit.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_94 /* ForumPostEdit.swift */; };
 		OBJ_2901 /* ChatGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_95 /* ChatGroup.swift */; };
-		OBJ_2902 /* chatgroupEdit.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_96 /* chatgroupEdit.swift */; };
+		OBJ_2902 /* chatGroupEdit.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_96 /* chatGroupEdit.swift */; };
 		OBJ_2903 /* KaraokePlayedSong.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_97 /* KaraokePlayedSong.swift */; };
 		OBJ_2904 /* KaraokeSong.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_98 /* KaraokeSong.swift */; };
 		OBJ_2905 /* ModeratorAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_99 /* ModeratorAction.swift */; };
@@ -10560,7 +10560,7 @@
 		OBJ_957 /* _HashTable+Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "_HashTable+Constants.swift"; sourceTree = "<group>"; };
 		OBJ_958 /* _HashTable+UnsafeHandle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "_HashTable+UnsafeHandle.swift"; sourceTree = "<group>"; };
 		OBJ_959 /* _HashTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = _HashTable.swift; sourceTree = "<group>"; };
-		OBJ_96 /* chatgroupEdit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = chatgroupEdit.swift; sourceTree = "<group>"; };
+		OBJ_96 /* chatGroupEdit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = chatGroupEdit.swift; sourceTree = "<group>"; };
 		OBJ_960 /* _Hashtable+Header.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "_Hashtable+Header.swift"; sourceTree = "<group>"; };
 		OBJ_962 /* OrderedDictionary+Equatable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "OrderedDictionary+Equatable.swift"; sourceTree = "<group>"; };
 		OBJ_963 /* OrderedDictionary+ExpressibleByDictionaryLiteral.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "OrderedDictionary+ExpressibleByDictionaryLiteral.swift"; sourceTree = "<group>"; };
@@ -17018,8 +17018,8 @@
 				OBJ_143 /* configure.swift */,
 				OBJ_144 /* routes.swift */,
 			);
-			name = App;
-			path = Sources/App;
+			name = swiftarr;
+			path = Sources/swiftarr;
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_800 /* Logging */ = {
@@ -17084,7 +17084,7 @@
 				OBJ_93 /* ForumPost.swift */,
 				OBJ_94 /* ForumPostEdit.swift */,
 				OBJ_95 /* ChatGroup.swift */,
-				OBJ_96 /* chatgroupEdit.swift */,
+				OBJ_96 /* chatGroupEdit.swift */,
 				OBJ_97 /* KaraokePlayedSong.swift */,
 				OBJ_98 /* KaraokeSong.swift */,
 				OBJ_99 /* ModeratorAction.swift */,
@@ -20003,7 +20003,7 @@
 				OBJ_2899 /* ForumPost.swift in Sources */,
 				OBJ_2900 /* ForumPostEdit.swift in Sources */,
 				OBJ_2901 /* ChatGroup.swift in Sources */,
-				OBJ_2902 /* chatgroupEdit.swift in Sources */,
+				OBJ_2902 /* chatGroupEdit.swift in Sources */,
 				OBJ_2903 /* KaraokePlayedSong.swift in Sources */,
 				OBJ_2904 /* KaraokeSong.swift in Sources */,
 				OBJ_2905 /* ModeratorAction.swift in Sources */,

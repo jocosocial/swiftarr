@@ -1,7 +1,7 @@
 # Builder image
 # 
 # This sets up the environment used to build swiftarr.
-FROM docker.io/library/swift:5.7-jammy as builder
+FROM docker.io/library/swift:5.8-jammy as builder
 
 ARG env
 
@@ -70,9 +70,9 @@ ENV AUTO_MIGRATE=true
 
 # App installation
 WORKDIR /app
-COPY --from=builder /build/bin/Run /app
+COPY --from=builder /build/bin/swiftarr /app
 COPY --from=builder /build/lib/* /usr/lib/
-COPY --from=builder /build/bin/swiftarr_App.resources /app/swiftarr_App.resources
+COPY --from=builder /build/bin/swiftarr_swiftarr.resources /app/swiftarr_swiftarr.resources
 # @TODO tests???
 
 # Healthcheck & Network 

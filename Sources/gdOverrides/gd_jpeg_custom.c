@@ -27,7 +27,7 @@
  * Read and write JPEG images.
  */
  
-// RCF: This is the "gd_jpeg.c" file from GD version 2.3.2, with edits to allow for better exif data handling
+// RCF: This is the "gd_jpeg.c" file from GD version 2.3.3, with edits to allow for better exif data handling
 // Since this file exists in the GD library, external symbols need to be re-named. Other edits to the file 
 // are tagged with "// RCF:"
 #define HAVE_LIBJPEG
@@ -40,6 +40,7 @@
 #include <setjmp.h>
 #include <limits.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "gd.h"
 #include "gd_errors.h"
@@ -47,10 +48,6 @@
 /* JCE: arrange HAVE_LIBJPEG so that it can be set in gd.h */
 
 #ifdef HAVE_LIBJPEG
-
-// RCF: Somehow, the Heroku build system hasn't heard of these 22 year old additions to the C specification. C99 people!
-typedef unsigned int uint32_t;
-typedef unsigned short uint16_t;
 
 // RCF: gdhelpers appears to an internal header. Commenting out and inserting the only stuff we use from the .h and .c files.
 //#include "gdhelpers.h"
@@ -287,17 +284,20 @@ static int _gdImageJpegCtx(gdImagePtr im, gdIOCtx *outfile, int quality);
 
 /*
   Function: gdImageJpeg
+
     <gdImageJpeg> outputs the specified image to the specified file in
     JPEG format. The file must be open for writing. Under MSDOS and
     all versions of Windows, it is important to use "wb" as opposed to
     simply "w" as the mode when opening the file, and under Unix there
     is no penalty for doing so. <gdImageJpeg> does not close the file;
     your code must do so.
+
     If _quality_ is negative, the default IJG JPEG quality value (which
     should yield a good general quality / size tradeoff for most
     situations) is used. Otherwise, for practical purposes, _quality_
     should be a value in the range 0-95, higher quality values usually
     implying both higher quality and larger image sizes.
+
     If you have set image interlacing using <gdImageInterlace>, this
     function will interpret that to mean you wish to output a
     progressive JPEG. Some programs (e.g., Web browsers) can display
@@ -305,17 +305,26 @@ static int _gdImageJpegCtx(gdImagePtr im, gdIOCtx *outfile, int quality);
     over a relatively slow communications link, for
     example. Progressive JPEGs can also be slightly smaller than
     sequential (non-progressive) JPEGs.
+
   Variants:
+
     <gdImageJpegCtx> stores the image using a <gdIOCtx> struct.
+
     <gdImageJpegPtr> stores the image to RAM.
+
   Parameters:
+
     im      - The image to save
     outFile - The FILE pointer to write to.
     quality - Compression quality (0-95, 0 means use the default).
+
   Returns:
+
     Nothing.
+
   Example:
     (start code)
+    
     gdImagePtr im;
     int black, white;
     FILE *out;
@@ -335,6 +344,7 @@ static int _gdImageJpegCtx(gdImagePtr im, gdIOCtx *outfile, int quality);
     fclose(out);
     // Destroy image
     gdImageDestroy(im);
+
     (end code)
 */
 
@@ -378,7 +388,7 @@ BGD_DECLARE(void *) rcf_gdImageJpegPtr(gdImagePtr im, int *size, int quality)
 	return rv;
 }
 
-void jpeg_gdIOCtx_dest(j_compress_ptr cinfo, gdIOCtx *outfile);
+static void jpeg_gdIOCtx_dest(j_compress_ptr cinfo, gdIOCtx *outfile);
 
 /*
   Function: gdImageJpegCtx
@@ -650,7 +660,7 @@ BGD_DECLARE(gdImagePtr) gdImageCreateFromJpegPtrEx(int size, void *data, int ign
 	return im;
 }
 
-void jpeg_gdIOCtx_src(j_decompress_ptr cinfo, gdIOCtx *infile);
+static void jpeg_gdIOCtx_src(j_decompress_ptr cinfo, gdIOCtx *infile);
 
 static int CMYKToRGB(int c, int m, int y, int k, int inverted);
 
@@ -1019,7 +1029,7 @@ typedef my_source_mgr *my_src_ptr;
  * before any data is actually read.
  */
 
-void init_source(j_decompress_ptr cinfo)
+static void init_source(j_decompress_ptr cinfo)
 {
 	my_src_ptr src = (my_src_ptr)cinfo->src;
 
@@ -1066,7 +1076,7 @@ void init_source(j_decompress_ptr cinfo)
 
 #define END_JPEG_SEQUENCE "\r\n[*]--:END JPEG:--[*]\r\n"
 
-boolean fill_input_buffer(j_decompress_ptr cinfo)
+static boolean fill_input_buffer(j_decompress_ptr cinfo)
 {
 	my_src_ptr src = (my_src_ptr)cinfo->src;
 	/* 2.0.12: signed size. Thanks to Geert Jansen */
@@ -1121,7 +1131,7 @@ boolean fill_input_buffer(j_decompress_ptr cinfo)
  * buffer is the application writer's problem.
  */
 
-void skip_input_data(j_decompress_ptr cinfo, long num_bytes)
+static void skip_input_data(j_decompress_ptr cinfo, long num_bytes)
 {
 	my_src_ptr src = (my_src_ptr)cinfo->src;
 
@@ -1157,7 +1167,7 @@ void skip_input_data(j_decompress_ptr cinfo, long num_bytes)
  * application must deal with any cleanup that should happen even
  * for error exit.
  */
-void term_source(j_decompress_ptr cinfo)
+static void term_source(j_decompress_ptr cinfo)
 {
 	(void)cinfo;
 }
@@ -1169,7 +1179,7 @@ void term_source(j_decompress_ptr cinfo)
  * for closing it after finishing decompression.
  */
 
-void jpeg_gdIOCtx_src(j_decompress_ptr cinfo, gdIOCtx *infile)
+static void jpeg_gdIOCtx_src(j_decompress_ptr cinfo, gdIOCtx *infile)
 {
 	my_src_ptr src;
 
@@ -1219,7 +1229,7 @@ typedef my_destination_mgr *my_dest_ptr;
  * before any data is actually written.
  */
 
-void init_destination(j_compress_ptr cinfo)
+static void init_destination(j_compress_ptr cinfo)
 {
 	my_dest_ptr dest = (my_dest_ptr)cinfo->dest;
 
@@ -1256,7 +1266,7 @@ void init_destination(j_compress_ptr cinfo)
  * write it out when emptying the buffer externally.
  */
 
-boolean empty_output_buffer(j_compress_ptr cinfo)
+static boolean empty_output_buffer(j_compress_ptr cinfo)
 {
 	my_dest_ptr dest = (my_dest_ptr)cinfo->dest;
 
@@ -1280,7 +1290,7 @@ boolean empty_output_buffer(j_compress_ptr cinfo)
  * for error exit.
  */
 
-void term_destination(j_compress_ptr cinfo)
+static void term_destination(j_compress_ptr cinfo)
 {
 	my_dest_ptr dest = (my_dest_ptr) cinfo->dest;
 	int datacount = OUTPUT_BUF_SIZE - (int) dest->pub.free_in_buffer;
@@ -1299,7 +1309,7 @@ void term_destination(j_compress_ptr cinfo)
  * for closing it after finishing compression.
  */
 
-void jpeg_gdIOCtx_dest(j_compress_ptr cinfo, gdIOCtx *outfile)
+static void jpeg_gdIOCtx_dest(j_compress_ptr cinfo, gdIOCtx *outfile)
 {
 	my_dest_ptr dest;
 

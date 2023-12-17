@@ -20,7 +20,7 @@ Prerequisites
 Configure
 ---------
 
-01. Create your own `production.env` in `Sources/App/seeds/Private Swiftarr Config`. 
+01. Create your own `production.env` in `Sources/swiftarr/seeds/Private Swiftarr Config`. 
     See [Configuration](configuration.html) for details.
 
 Build

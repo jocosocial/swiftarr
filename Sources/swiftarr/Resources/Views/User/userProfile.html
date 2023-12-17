@@ -1,0 +1,146 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 mt-2">
+    		<div class="row justify-content-center">
+    			<div class="col col-auto">
+    				#if(profile.message != ""):
+    					#(profile.message)
+					#else:
+	    				User Profile for: <b>@#(profile.header.username)</b>
+					#endif
+				</div>
+			</div>
+			<div class="row justify-content-center align-items-center mx-1 mb-3">
+    			<div class="col col-auto p-1 border">
+    				#avatar(profile.header, 200)
+				</div>
+				<div class="col-sm">
+					#if(profile.header.displayName && profile.header.displayName != ""):
+						Display Name: <b>#(profile.header.displayName)</b><br>
+					#endif
+					#if(profile.realName != ""):
+						Real Name: <b>#(profile.realName)</b><br>
+					#endif
+					#if(profile.preferredPronoun != ""):
+						Pronouns: <b>#(profile.preferredPronoun)</b><br>
+					#endif
+					#if(profile.email != ""):
+						Email: <b>#(profile.email)</b><br>
+					#endif
+					#if(profile.homeLocation != ""):
+						Home Town: <b>#(profile.homeLocation)</b><br>
+					#endif
+					#if(profile.roomNumber != ""):
+						Room #: <b>#(profile.roomNumber)</b><br>
+					#endif
+				</div>
+			</div>
+			#if(profile.about != ""):
+				<div class="row mx-1 mb-3 border">
+					<div class="col col-auto p-1">
+						<h6><b>About @#(profile.header.username)&#58;</b></h6>
+						#(profile.about)
+					</div>				
+				</div>
+			#endif
+			#if(profile.header.userID != trunk.userID):
+				<form class="ajax" action="#(noteFormAction)" enctype="multipart/form-data" method="POST">
+					<div class="row mx-1 pb-2 border">
+						<div class="col col-12 p-1">
+							<b>Your private note about @#(profile.header.username) (only visible to you):</b><br>
+							<textarea class="form-control" maxlength="2000" rows="5" name="noteText" id="noteText" placeholder="">#(profile.note)</textarea>
+						</div>				
+						<div class="col col-12">
+							<div class="alert alert-danger mt-3 d-none" role="alert">
+							</div>				
+						</div>				
+						<div class="col col-auto me-auto">
+						</div>
+						<div class="col col-auto">
+							<button type="submit" class="btn btn-primary btn-sm">Save</button>
+						</div>
+					</div>
+				</form>
+			#endif
+			<div class="row mx-1 mt-2 list-group">
+				<a href="/forum/search?creatorid=#(profile.header.userID)&searchType=forums" class="list-group-item list-group-item-action">View Forums by @#(profile.header.username)</a>
+				<a href="/seamail/create?withuser=#(profile.header.userID)" class="list-group-item list-group-item-action">Start chat with @#(profile.header.username)</a>
+			</div>
+			<div class="row mt-2">
+				<div class="col btn-group btn-group-sm col-auto mx-1" role="group" aria-label="Profile actions">
+					#if(trunk.userID == profile.header.userID):
+						<a class="btn btn-sm btn-outline-primary" href="/profile/edit">Edit Profile</a>
+						<a class="btn btn-sm btn-outline-primary" href="/profile/username/edit">Edit Username</a>
+					#else:
+						<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="\#blockModal">Block</button>
+						<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="\#muteModal">Mute</button>
+						<a class="btn btn-outline-primary" href="/profile/report/#(profile.header.userID)">Report</a>
+						#if(trunk.userIsMod):
+							<a class="btn btn-sm btn-outline-primary" href="/moderate/userprofile/#(profile.header.userID)">Mod</a>
+						#endif
+					#endif
+				</div>
+			</div>
+		</div>
+		<div class="modal fade" id="blockModal" tabindex="-1" aria-labelledby="blockModalTitle" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="blockModalTitle">Block User @#(profile.header.username)?</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<p>Blocking a user will hide all that user's content from you, and also hide all your content from them.</p>
+						#if(trunk.userIsMod):
+							<p>But, since you're a Moderator, you'll still see their content. Blocking <b>does</b> hide your non-Mod
+							alt accounts from this person, and vice-versa.</p>
+						#endif
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+						<button type="button" class="btn btn-primary px-4" data-action="block" 
+								data-actionpath="/user/#(profile.header.userID)/block" 
+								data-errordiv="blockDialog_errorDisplay">
+							Block
+							<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+							<span class="visually-hidden">Loading...</span>
+						</button>
+					</div>
+					<div class="mx-3 pb-1 text-end text-danger error-display d-none" id="blockDialog_errorDisplay">
+						<b>Error attempting to block user:</b> <span class="errortext"></span>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="modal fade" id="muteModal" tabindex="-1" aria-labelledby="muteModalTitle" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="muteModalTitle">Mute User @#(profile.header.username)?</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<p>Muting a user will hide all that user's content from you.</p>
+						#if(trunk.userIsMod):
+							<p>But, since you're a Moderator, you'll still see their content. I know, I know.</p>
+						#endif
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+						<button type="button" class="btn btn-primary px-4" autocomplete="off" data-action="mute" 
+								data-actionpath="/user/#(profile.header.userID)/mute" 
+								data-errordiv="muteDialog_errorDisplay">
+							Mute
+							<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+							<span class="visually-hidden">Loading...</span>
+						</button>
+					</div>
+					<div class="mx-3 pb-1 text-end text-danger error-display d-none" id="muteDialog_errorDisplay">
+						<b>Error attempting to mute user:</b> <span class="errortext"></span>
+					</div>
+				</div>
+			</div>
+		</div>
+    #endexport
+#endextend
+

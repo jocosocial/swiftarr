@@ -2,22 +2,20 @@ version: '3'
 services:
 
   postgres:
-    image: docker.io/ubuntu/postgres:14-22.04_beta
-    user: postgres
+    image: docker.io/bitnami/postgresql:14
     env_file:
-      - "../Sources/App/seeds/Private Swiftarr Config/${ENVIRONMENT}.env"
+      - "../Sources/swiftarr/seeds/Private Swiftarr Config/${ENVIRONMENT}.env"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/bitnami/postgresql
     ports:
       - ${DATABASE_PORT}:5432
 
   redis:
-    image: docker.io/ubuntu/redis:6.0-22.04_beta
-    user: redis
+    image: docker.io/bitnami/redis:6.2
     env_file:
-      - "../Sources/App/seeds/Private Swiftarr Config/${ENVIRONMENT}.env"
+      - "../Sources/swiftarr/seeds/Private Swiftarr Config/${ENVIRONMENT}.env"
     volumes:
-      - redisdata:/data
+      - redisdata:/bitnami/redis/data
     ports:
       - ${REDIS_PORT}:6379
 
@@ -35,9 +33,9 @@ services:
       - postgres
       - redis
     env_file:
-      - "../Sources/App/seeds/Private Swiftarr Config/${ENVIRONMENT}.env"
+      - "../Sources/swiftarr/seeds/Private Swiftarr Config/${ENVIRONMENT}.env"
     volumes:
-      - "../Sources/App/seeds:/app/swiftarr_App.resources/seeds:ro"
+      - "../Sources/swiftarr/seeds:/app/swiftarr_swiftarr.resources/seeds:ro"
       - images:/app/images
 
 volumes:

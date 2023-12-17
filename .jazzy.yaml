@@ -7,7 +7,7 @@ github_url: https://github.com/jocosocial/swiftarr
 github_file_prefix: https://github.com/jocosocial/swiftarr/tree/master
 # copyright:
 
-swift_version: 5.7.2
+swift_version: 5.8
 
 theme: fullwidth
 skip_undocumented: no
@@ -21,8 +21,8 @@ min_acl: private
 
 # @TODO should we exclude some stuff?
 #exclude:
-#  - "Sources/App/Site*"
-#  - "Sources/App/Migrations*"
+#  - "Sources/swiftarr/Site*"
+#  - "Sources/swiftarr/Migrations*"
 
 custom_categories:
   - name: Overview
@@ -81,7 +81,7 @@ custom_categories:
     - ForumPostEdit
     - ForumPost
     - Forum
-    - chatgroupEdit
+    - ChatGroupEdit
     - ChatGroup
     - KaraokePlayedSong
     - KaraokeSong
@@ -206,8 +206,8 @@ custom_categories:
       - CreateForumReadersSchema
       - CreateForums
       - CreateForumSchema
-      - CreatechatgroupEditSchema
-      - CreatechatgroupSchema
+      - CreateChatGroupEditSchema
+      - CreateChatGroupSchema
       - CreateKaraokeFavoriteSchema
       - CreateKaraokePlayedSongSchema
       - CreateKaraokeSongSchema
@@ -278,7 +278,7 @@ custom_categories:
       - SiteEventsController
       - SiteFileController
       - SiteForumController
-      - SitechatgroupController
+      - SiteChatGroupController
       - SiteKaraokeController
       - SiteLoginController
       - SiteModController

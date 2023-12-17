@@ -1,6 +1,6 @@
 #  Changes to API functions or structures
 
-## Oct 21, 2023
+## Dec 17, 2023
 * We renamed Fez to ChatGroup.
 
 ## Dec 2, 2021

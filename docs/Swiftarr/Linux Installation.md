@@ -19,7 +19,7 @@ Prerequisites
 Configure
 ---------
 
-01. Create your own `development.env` in `Sources/App/seeds/Private Swiftarr Config`. 
+01. Create your own `development.env` in `Sources/swiftarr/seeds/Private Swiftarr Config`. 
     See [Configuration](configuration.html) for details.
 
 Build

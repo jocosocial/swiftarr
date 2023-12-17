@@ -2,48 +2,42 @@ version: '3'
 services:
 
   postgres:
-    image: docker.io/ubuntu/postgres:14-22.04_beta
-    command: ["postgres", "-c", "log_statement=all"]
-    user: postgres
+    image: docker.io/bitnami/postgresql:14
     environment:
-      POSTGRES_DB: swiftarr
-      POSTGRES_USER: swiftarr
-      POSTGRES_PASSWORD: password
+      POSTGRESQL_DATABASE: swiftarr
+      POSTGRESQL_USERNAME: swiftarr
+      POSTGRESQL_PASSWORD: password
     ports:
       - 5432:5432
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/bitnami/postgresql
 
   redis:
-    image: docker.io/ubuntu/redis:6.0-22.04_beta
-    user: redis
+    image: docker.io/bitnami/redis:6.2
     ports:
       - 6379:6379
     environment:
       REDIS_PASSWORD: password
     volumes:
-      - redis_data:/data
+      - redis_data:/bitnami/redis/data
 
   prometheus:
-    image: docker.io/ubuntu/prometheus:2.20-20.04_beta
-    # 2.20-20.04_beta does not support custom user yet :(
-    # user: prometheus
+    image: docker.io/bitnami/prometheus:2.48.0
     ports:
       - 9090:9090
     volumes:
-      - ./Prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./Prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - ./Prometheus/prometheus.yml:/opt/bitnami/prometheus/conf/prometheus.yml:ro
+      - ./Prometheus/alerts.yml:/opt/bitnami/prometheus/conf/alerts.yml:ro
     command:
       - '--web.enable-admin-api'
-      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--config.file=/opt/bitnami/prometheus/conf/prometheus.yml'
 
   alertmanager:
-    image: docker.io/ubuntu/prometheus-alertmanager:0.23-22.04_beta
-    user: nobody
+    image: docker.io/bitnami/alertmanager:0.26.0
     ports:
       - 9093:9093
     volumes:
-      - ./Prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - ./Prometheus/alertmanager.yml:/opt/bitnami/alertmanager/conf/config.yml:ro
 
 volumes:
   postgres_data:

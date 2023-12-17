@@ -1,0 +1,174 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 my-1">
+			<div class="row">
+    			<div class="col">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+							<li class="breadcrumb-item"><a href="/admin/schedule">Schedule</a></li>
+							<li class="breadcrumb-item active" aria-current="page">Update Log</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+
+			<div class="accordion mb-2" id="deletedEvents">
+				<div class="accordion-item">
+					<h2 class="accordion-header" id="deletedEventsHeader">
+						<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="\#deletedEventsCollapse" aria-expanded="false" aria-controls="deletedEventsCollapse">
+							#count(diff.deletedEvents) Deleted Events
+						</button>
+					</h2>
+					<div id="deletedEventsCollapse" class="accordion-collapse collapse" aria-labelledby="deletedEventsHeader" data-bs-parent="\#deletedEvents">
+						<ul class="container-md mx-0 px-0 list-group">
+							#for(event in diff.deletedEvents):
+								<li class="list-group-item bg-transparent">				
+									<div class="container-fluid">
+										<div class="row">	
+											<div class="col">
+												<b>#(event.title)</b>
+											</div>
+										</div>
+										<div class="row">	
+											<div class="col-sm">
+												<span class="text-secondary"><i>#eventTime(event.startTime, event.endTime)</i></span>
+											</div>
+											<div class="col-sm text-sm-end">
+												#(event.location)
+											</div>
+										</div>
+									</div>
+								</li>
+							#endfor
+						</ul>
+					</div>
+				</div>
+				
+				<div class="accordion-item">
+					<h2 class="accordion-header" id="createdEventsHeader">
+						<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="\#createdEventsCollapse" aria-expanded="false" aria-controls="createdEventsCollapse">
+							#count(diff.createdEvents) Added Events
+						</button>
+					</h2>
+					<div id="createdEventsCollapse" class="accordion-collapse collapse" aria-labelledby="createdEventsHeader" data-bs-parent="\#createdEvents">
+						<ul class="container-md mx-0 px-0 list-group">
+							#for(event in diff.createdEvents):
+								<li class="list-group-item bg-transparent">				
+									<div class="container-fluid">
+										<div class="row">	
+											<div class="col">
+												<b>#(event.title)</b>
+											</div>
+										</div>
+										<div class="row">	
+											<div class="col-sm">
+												<span class="text-secondary"><i>#eventTime(event.startTime, event.endTime)</i></span>
+											</div>
+											<div class="col-sm text-sm-end">
+												#(event.location)
+											</div>
+										</div>
+									</div>
+								</li>
+							#endfor
+						</ul>
+					</div>
+				</div>
+			
+				<div class="accordion-item">
+					<h2 class="accordion-header" id="timeChangeEventsHeader">
+						<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="\#timeChangeEventsCollapse" aria-expanded="false" aria-controls="timeChangeEventsCollapse">
+							#count(diff.timeChangeEvents) Events with Time Changes (new times shown)
+						</button>
+					</h2>
+					<div id="timeChangeEventsCollapse" class="accordion-collapse collapse" aria-labelledby="timeChangeEventsHeader" data-bs-parent="\#timeChangeEvents">
+						<ul class="container-md mx-0 px-0 list-group">
+							#for(event in diff.timeChangeEvents):
+								<li class="list-group-item bg-transparent">				
+									<div class="container-fluid">
+										<div class="row">	
+											<div class="col">
+												<b>#(event.title)</b>
+											</div>
+										</div>
+										<div class="row">	
+											<div class="col-sm">
+												<span class="text-secondary"><i>#eventTime(event.startTime, event.endTime)</i></span>
+											</div>
+											<div class="col-sm text-sm-end">
+												#(event.location)
+											</div>
+										</div>
+									</div>
+								</li>
+							#endfor
+						</ul>
+					</div>
+				</div>
+			
+				<div class="accordion-item">
+					<h2 class="accordion-header" id="locationChangeEventsHeader">
+						<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="\#locationChangeEventsCollapse" aria-expanded="false" aria-controls="locationChangeEventsCollapse">
+							#count(diff.locationChangeEvents) Events with Location Changes (new location shown)
+						</button>
+					</h2>
+					<div id="locationChangeEventsCollapse" class="accordion-collapse collapse" aria-labelledby="locationChangeEventsHeader" data-bs-parent="\#locationChangeEvents">
+						<ul class="container-md mx-0 px-0 list-group">
+							#for(event in diff.locationChangeEvents):
+								<li class="list-group-item bg-transparent">				
+									<div class="container-fluid">
+										<div class="row">	
+											<div class="col">
+												<b>#(event.title)</b>
+											</div>
+										</div>
+										<div class="row">	
+											<div class="col-sm">
+												<span class="text-secondary"><i>#eventTime(event.startTime, event.endTime)</i></span>
+											</div>
+											<div class="col-sm text-sm-end">
+												#(event.location)
+											</div>
+										</div>
+									</div>
+								</li>
+							#endfor
+						</ul>
+					</div>
+				</div>
+			
+				<div class="accordion-item">
+					<h2 class="accordion-header" id="minorChangeEventsHeader">
+						<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="\#minorChangeEventsCollapse" aria-expanded="false" aria-controls="minorChangeEventsCollapse">
+							#count(diff.minorChangeEvents) Events with Minor Text Changes
+						</button>
+					</h2>
+					<div id="minorChangeEventsCollapse" class="accordion-collapse collapse" aria-labelledby="minorChangeEventsHeader" data-bs-parent="\#minorChangeEvents">
+						<ul class="container-md mx-0 px-0 list-group">
+							#for(event in diff.minorChangeEvents):
+								<li class="list-group-item bg-transparent">				
+									<div class="container-fluid">
+										<div class="row">	
+											<div class="col">
+												<b>#(event.title)</b>
+											</div>
+										</div>
+										<div class="row">	
+											<div class="col-sm">
+												<span class="text-secondary"><i>#eventTime(event.startTime, event.endTime)</i></span>
+											</div>
+											<div class="col-sm text-sm-end">
+												#(event.location)
+											</div>
+										</div>
+									</div>
+								</li>
+							#endfor
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+	#endexport
+#endextend
