@@ -53,7 +53,7 @@ final class EventParser {
 				default:
 					break
 			}
-			if inEvent { 
+			if inEvent {
 				// Gather components of this event
 				eventComponents.append(String(element))
 			}
@@ -144,8 +144,8 @@ final class EventParser {
 		return Event(startTime: start, endTime: end, title: title, description: description, location: location,
 				eventType: eventType, uid: uid)
 	}
-	
-	// Used to remove .ics character escape sequeneces from TEXT value types. The spec specifies different escape sequences for 
+
+	// Used to remove .ics character escape sequeneces from TEXT value types. The spec specifies different escape sequences for
 	// text-valued property values than for other value types, or for strings that aren't property values.
 	func unescapedTextValue(_ value: any StringProtocol) -> String {
 		return value.replacingOccurrences(of: "&amp;", with: "&")
@@ -155,7 +155,7 @@ final class EventParser {
 				.replacingOccurrences(of: "\\n", with: "\n")
 				.replacingOccurrences(of: "\\N", with: "\n")
 	}
-	
+
 	// A DateFormatter for converting ISO8601 strings of the form "19980119T070000Z". RFC 5545 calls these 'form 2' date strings.
 	let gmtDateFormatter: DateFormatter = {
 		let dateFormatter = DateFormatter()
@@ -163,18 +163,18 @@ final class EventParser {
 		dateFormatter.timeZone = TimeZone(identifier: "GMT")
 		return dateFormatter
 	}()
-	
-	// From testing: If the dateFormat doesn't have a 'Z' GMT specifier, conversion will fail if the string to convert contains a 'Z'. 
+
+	// From testing: If the dateFormat doesn't have a 'Z' GMT specifier, conversion will fail if the string to convert contains a 'Z'.
 	let tzDateFormatter: DateFormatter = {
 		let dateFormatter = DateFormatter()
 		dateFormatter.dateFormat = "yyyyMMdd'T'HHmmss"
 		dateFormatter.timeZone = TimeZone(identifier: "GMT")
 		return dateFormatter
 	}()
-	
+
 	// Even if the Sched.com file were to start using floating datetimes (which would solve several timezone problems) we're not
 	// currently set up to work with them directly. Instead we convert all ics datetimes to Date() objects, and try to get the tz right.
-	// This also means that 'Form 3' dates (ones with a time zone reference) lose their associated timezone but still indicate the 
+	// This also means that 'Form 3' dates (ones with a time zone reference) lose their associated timezone but still indicate the
 	// correct time.
 	func parseDateFromProperty(property keyAndParams: [Substring], value: String) throws -> Date {
 		for index in 1..<keyAndParams.count {
@@ -214,16 +214,16 @@ final class EventParser {
 			throw Abort(.internalServerError, reason: "Event Parser: couldn't parse a date value.")
 		}
 	}
-	
+
 // MARK: Validation
-	
+
 	/// Takes an .ics Schedule file and compares it against  the db. Returns a summary of what would change if the schedule is applied. Shows deleted events, added events,
-	/// events with modified times, events with changes to their title or description text). 
+	/// events with modified times, events with changes to their title or description text).
 	///
 	/// - Parameters:
 	///   - scheduleFileStr: The contents of an ICS file; usually a sched.com `.ics` export. Conforms to RFC 5545.
 	///   - db: The connection to a database.
-	///   
+	///
 	/// - Returns: `EventUpdateDifferenceData` with info on the events that were modified/added/removed .
 	func validateEventsInICS(_ scheduleFileStr: String, on db: Database) async throws -> EventUpdateDifferenceData {
 		let updateEvents = try parse(scheduleFileStr)
@@ -256,6 +256,7 @@ final class EventParser {
 					startTime: updated.startTime,
 					endTime: updated.endTime,
 					timeZone: "",
+					timeZoneID: "",
 					location: updated.location,
 					eventType: updated.eventType.rawValue,
 					lastUpdateTime: updated.updatedAt ?? Date(),
@@ -278,6 +279,7 @@ final class EventParser {
 					startTime: updated.startTime,
 					endTime: updated.endTime,
 					timeZone: "",
+					timeZoneID: "",
 					location: updated.location,
 					eventType: updated.eventType.rawValue,
 					lastUpdateTime: updated.updatedAt ?? Date(),
@@ -300,19 +302,19 @@ final class EventParser {
 
 		return responseData
 	}
-	
+
 	/// Takes an .ics Schedule file, updates the db with new info from the schedule. Returns a summary of what changed and how (deleted events, added events,
-	/// events with modified times, events with changes to their title or description text). 
+	/// events with modified times, events with changes to their title or description text).
 	///
 	/// - Parameters:
 	///   - scheduleFileStr: The contents of an ICS file; usually a sched.com `.ics` export. Conforms to RFC 5545.
 	///   - db: The connection to a database.
 	///   - forumAuthor: If there are changes and `makeForumPosts` is TRUE, the user to use as the author of the relevant forum posts.
-	///   - processDeletes: If TRUE (the default) events in the db but not in `scheduleFileStr` will be deleted from the db. Set to FALSE if you are applying a schedule 
+	///   - processDeletes: If TRUE (the default) events in the db but not in `scheduleFileStr` will be deleted from the db. Set to FALSE if you are applying a schedule
 	///   	patch (e.g. a schedule file with a single new event).
 	///   - makeForumPosts: Adds forum posts to each Event forum's thread announcing the changes that were made to the event.
-	///   
-	func updateDatabaseFromICS(_ scheduleFileStr: String, on db: Database, forumAuthor: UserHeader, 
+	///
+	func updateDatabaseFromICS(_ scheduleFileStr: String, on db: Database, forumAuthor: UserHeader,
 			processDeletes: Bool = true, makeForumPosts: Bool = true) async throws {
 		let updateEvents = try parse(scheduleFileStr)
 		let officialCategory = try await Category.query(on: db).filter(\.$title, .custom("ILIKE"), "event%").first()
@@ -338,7 +340,7 @@ final class EventParser {
 										text: """
 										Automatic Notification of Schedule Change: This event has been deleted from the \
 										schedule. Apologies to those planning on attending.
-										
+
 										However, since this is an automatic announcement, it's possible the event got moved or \
 										rescheduled and it only looks like a delete to me, your automatic server software. \
 										Check the schedule.
@@ -436,7 +438,7 @@ final class EventParser {
 								let newPost = try ForumPost(forum: forum, authorID: forumAuthor.userID,
 										text: """
 										Automatic Notification of Schedule Change: This event has changed.
-										
+
 										\(changes.contains(.undelete) ? "This event was canceled, but now is un-canceled.\r" : "")\
 										\(changes.contains(.startTime) ? "Start Time changed\r" : "")\
 										\(changes.contains(.endTime) ? "End Time changed\r" : "")\
