@@ -44,7 +44,7 @@ struct SwiftarrConfigurator {
 
 	var configLog = Logger(label: "app.swiftarr.configuration")
 	var app: Application
-	
+
 	init(_ app: Application) {
 		self.app = app
 	}
@@ -248,7 +248,7 @@ struct SwiftarrConfigurator {
 				configLog.warning("Unable to parse database timeout value from environment.")
 			}
 		}
-		
+
 		// We might want '.require' instead of '.prefer' for deployment, may want to enforce cert validation, and may
 		// want a minimumTLSVersion requirement, but I don't know enough about the deployment setup to be sure.
 		var tlsConfiguration = TLSConfiguration.makeClientConfiguration()
@@ -259,7 +259,7 @@ struct SwiftarrConfigurator {
 		if let databaseURL = Environment.get("DATABASE_URL") {
 			postgresConfig = try SQLPostgresConfiguration(url: databaseURL)
 			postgresConfig.coreConfiguration.tls = connectionConfig
-			app.databases.use(.postgres(configuration: postgresConfig, maxConnectionsPerEventLoop: 1, 
+			app.databases.use(.postgres(configuration: postgresConfig, maxConnectionsPerEventLoop: 1,
 					connectionPoolTimeout: databaseTimeout), as: .psql)
 		}
 		else {
@@ -277,10 +277,10 @@ struct SwiftarrConfigurator {
 				postgresDB = Environment.get("DATABASE_DB") ?? "swiftarr"
 				postgresPort = 5432
 			}
-			postgresConfig = SQLPostgresConfiguration(hostname: postgresHostname, port: postgresPort, username: postgresUser, 
+			postgresConfig = SQLPostgresConfiguration(hostname: postgresHostname, port: postgresPort, username: postgresUser,
 					password: postgresPassword, database: postgresDB, tls: connectionConfig)
 		}
-		app.databases.use(.postgres(configuration: postgresConfig, maxConnectionsPerEventLoop: 1, 
+		app.databases.use(.postgres(configuration: postgresConfig, maxConnectionsPerEventLoop: 1,
 				connectionPoolTimeout: databaseTimeout), as: .psql)
 
 		// Configure Redis connection
@@ -467,7 +467,7 @@ struct SwiftarrConfigurator {
 		app.leaf.tags["gameRating"] = GameRatingTag()
 		app.leaf.tags["localTime"] = LocalTimeTag()
 	}
-	
+
 	func configureQueues(_ app: Application) throws {
 		guard app.environment.commandInput.arguments.isEmpty || app.environment.commandInput.arguments.first == "serve" else {
 			return
@@ -612,6 +612,7 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreatePerformanceIndexes(), to: .psql)
 		app.migrations.add(CreateSeamailSearchIndexes(), to: .psql)
 		app.migrations.add(RenameWhereAndWhen(), to: .psql)
+		app.migrations.add(AddFoodDrinkCategory(), to: .psql)
 	}
 
 	// Perform several sanity checks to verify that we can access the dbs and resource files that we need.

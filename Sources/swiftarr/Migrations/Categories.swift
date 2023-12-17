@@ -147,3 +147,25 @@ struct RenameWhereAndWhen: AsyncMigration {
 			.update()
 	}
 }
+
+struct AddFoodDrinkCategory: AsyncMigration {
+	/// Required by `Migration` protocol. Inserts the Food & Drink category.
+	///
+	/// - Parameter database: A connection to the database, provided automatically.
+	/// - Returns: Void.
+	///
+	func prepare(on database: Database) async throws {
+		let categories: [Category] = [
+			.init(title: "Food & Drink", purpose: "Dinner reviews, drink photos, all things consumable.")
+		]
+		try await categories.create(on: database)
+	}
+
+	/// Undoes this migration, removing the Food & Drink category if it got created.
+	///
+	/// - Parameter database: The database connection.
+	/// - Returns: Void.
+	func revert(on database: Database) async throws {
+		try await Category.query(on: database).filter(\.$title == "Food & Drink").delete()
+	}
+}
