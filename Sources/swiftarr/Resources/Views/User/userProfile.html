@@ -28,7 +28,7 @@
 						Email: <b>#(profile.email)</b><br>
 					#endif
 					#if(profile.homeLocation != ""):
-						Home Town: <b>#(profile.homeLocation)</b><br>
+						Home Location: <b>#(profile.homeLocation)</b><br>
 					#endif
 					#if(profile.roomNumber != ""):
 						Room #: <b>#(profile.roomNumber)</b><br>
@@ -40,7 +40,7 @@
 					<div class="col col-auto p-1">
 						<h6><b>About @#(profile.header.username)&#58;</b></h6>
 						#(profile.about)
-					</div>				
+					</div>
 				</div>
 			#endif
 			#if(profile.header.userID != trunk.userID):
@@ -49,11 +49,11 @@
 						<div class="col col-12 p-1">
 							<b>Your private note about @#(profile.header.username) (only visible to you):</b><br>
 							<textarea class="form-control" maxlength="2000" rows="5" name="noteText" id="noteText" placeholder="">#(profile.note)</textarea>
-						</div>				
+						</div>
 						<div class="col col-12">
 							<div class="alert alert-danger mt-3 d-none" role="alert">
-							</div>				
-						</div>				
+							</div>
+						</div>
 						<div class="col col-auto me-auto">
 						</div>
 						<div class="col col-auto">
@@ -98,8 +98,8 @@
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-						<button type="button" class="btn btn-primary px-4" data-action="block" 
-								data-actionpath="/user/#(profile.header.userID)/block" 
+						<button type="button" class="btn btn-primary px-4" data-action="block"
+								data-actionpath="/user/#(profile.header.userID)/block"
 								data-errordiv="blockDialog_errorDisplay">
 							Block
 							<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
@@ -127,8 +127,8 @@
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-						<button type="button" class="btn btn-primary px-4" autocomplete="off" data-action="mute" 
-								data-actionpath="/user/#(profile.header.userID)/mute" 
+						<button type="button" class="btn btn-primary px-4" autocomplete="off" data-action="mute"
+								data-actionpath="/user/#(profile.header.userID)/mute"
 								data-errordiv="muteDialog_errorDisplay">
 							Mute
 							<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
