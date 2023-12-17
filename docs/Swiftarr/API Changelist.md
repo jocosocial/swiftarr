@@ -1,5 +1,8 @@
 #  Changes to API functions or structures
 
+## Dec 17, 2023
+* We renamed Fez to ChatGroup.
+
 ## Dec 2, 2021
 
 * THO account can now access most Admin endpoints (creating daily themes, uploading schedules, promoting moderators), but not server settings.

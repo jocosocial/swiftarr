@@ -1,16 +1,16 @@
 #extend("trunk"):
     #export("body"):
-    	<div class="container-md ms-0 mt-2" data-fezid="#(fez.fezID)">
+    	<div class="container-md ms-0 mt-2" data-chatgroupid="#(chatgroup.chatGroupID)">
     		<div class="row">
 				<nav aria-label="breadcrumb">
 				  <ol class="breadcrumb">
-					<li class="breadcrumb-item"><a href="/fez">LFG</a></li>
-					<li class="breadcrumb-item active" aria-current="page">#(fez.title)</li>
+					<li class="breadcrumb-item"><a href="/chatgroup">LFG</a></li>
+					<li class="breadcrumb-item active" aria-current="page">#(chatgroup.title)</li>
 				  </ol>
 				</nav>
 			</div>
 			
-			#if(fez.cancelled):
+			#if(chatgroup.cancelled):
 				<div class="row mb-3">
 					<div class="col text-danger text-center">
 						<b>This LFG has been cancelled</b>
@@ -20,31 +20,31 @@
 
 			<div class="row">
 				<div class="col">
-					@#(fez.owner.username)
+					@#(chatgroup.owner.username)
 				</div>
 				<div class="col col-auto mb-auto text-muted">
-					#fezTime(fez.startTime, fez.endTime)
+					#chatGroupTime(chatgroup.startTime, chatgroup.endTime)
 				</div>
 			</div>
 
 			<div class="row">
 				<div class="col">
-					#if(fez.maxParticipants == 0):
-						#(fez.participantCount) attendee#if(fez.participantCount != 1):s#endif
-					#elseif(fez.participantCount > fez.maxParticipants):
-						Full; #(fez.participantCount - fez.maxParticipants) waitlisted
+					#if(chatgroup.maxParticipants == 0):
+						#(chatgroup.participantCount) attendee#if(chatgroup.participantCount != 1):s#endif
+					#elseif(chatgroup.participantCount > chatgroup.maxParticipants):
+						Full; #(chatgroup.participantCount - chatgroup.maxParticipants) waitlisted
 					#else:
-						#(fez.participantCount)/#(fez.maxParticipants) attendees
+						#(chatgroup.participantCount)/#(chatgroup.maxParticipants) attendees
 					#endif
 				</div>
 				<div class="col col-auto mb-auto text-muted">
-					#(fez.location)
+					#(chatgroup.location)
 				</div>
 			</div>
 
 			<div class="row">
 				<div class="col">
-					<b>Event Info:</b> #(fez.info)
+					<b>Event Info:</b> #(chatgroup.info)
 				</div>
 			</div>
 			
@@ -52,15 +52,15 @@
 				<div class="row mt-1 justify-content-end row-cols-auto ">
 					<div class="col btn-group btn-group-sm" role="group" aria-label="member actions">
 						#if(trunk.userIsMod):
-							<a class="btn btn-outline-primary" href="/moderate/fez/#(fez.fezID)">Mod</a>
+							<a class="btn btn-outline-primary" href="/moderate/chatgroup/#(chatgroup.chatGroupID)">Mod</a>
 						#endif
-						#if(fez.owner.userID == trunk.userID):
-							<a class="btn btn-outline-primary" href="/fez/#(fez.fezID)/members">Manage Members</a>
-							<a class="btn btn-outline-primary" href="/fez/#(fez.fezID)/update">Update</a>
-							<button type="button" class="btn btn-outline-primary px-3" data-bs-toggle="modal" data-bs-target="\#cancelFezModal">Cancel</button>
+						#if(chatgroup.owner.userID == trunk.userID):
+							<a class="btn btn-outline-primary" href="/chatgroup/#(chatgroup.chatGroupID)/members">Manage Members</a>
+							<a class="btn btn-outline-primary" href="/chatgroup/#(chatgroup.chatGroupID)/update">Update</a>
+							<button type="button" class="btn btn-outline-primary px-3" data-bs-toggle="modal" data-bs-target="\#cancelChatGroupModal">Cancel</button>
 						#else:
-							<a class="btn btn-outline-primary px-3" href="/fez/report/#(fez.fezID)">Report</a>
-							<button type="button" class="btn btn-outline-primary px-3" data-bs-toggle="modal" data-bs-target="\#leaveFezModal">Leave</button>
+							<a class="btn btn-outline-primary px-3" href="/chatgroup/report/#(chatgroup.chatGroupID)">Report</a>
+							<button type="button" class="btn btn-outline-primary px-3" data-bs-toggle="modal" data-bs-target="\#leaveChatGroupModal">Leave</button>
 						#endif
 					</div>								
 				</div>
@@ -68,14 +68,14 @@
 				<div class="row mt-1 justify-content-end row-cols-auto ">
 					<div class="col btn-group btn-group-sm" role="group" aria-label="non-member actions">
 						#if(trunk.userIsMod):
-							<a class="btn btn-outline-primary" href="/moderate/fez/#(fez.fezID)">Mod</a>
+							<a class="btn btn-outline-primary" href="/moderate/chatgroup/#(chatgroup.chatGroupID)">Mod</a>
 						#endif
-						<a class="btn btn-outline-primary" href="/fez/report/#(fez.fezID)">Report</a>
+						<a class="btn btn-outline-primary" href="/chatgroup/report/#(chatgroup.chatGroupID)">Report</a>
 						<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload" 
-								data-actionpath="/fez/#(fez.fezID)/join"
-								data-errordiv="fezActions_errorDisplay"
-								id="#(fez.fezID)_join">
-						<label class="btn btn-primary px-4" for="#(fez.fezID)_join">
+								data-actionpath="/chatgroup/#(chatgroup.chatGroupID)/join"
+								data-errordiv="chatGroupActions_errorDisplay"
+								id="#(chatgroup.chatGroupID)_join">
+						<label class="btn btn-primary px-4" for="#(chatgroup.chatGroupID)_join">
 							Join
 							<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
 							<span class="visually-hidden">Loading...</span>
@@ -85,28 +85,28 @@
 			#endif
 
 			<div class="row">
-				<div class="col text-end text-danger d-none" id="fezActions_errorDisplay">
+				<div class="col text-end text-danger d-none" id="chatGroupActions_errorDisplay">
 					Could not join LFG: <span class="errortext"></span>
 				</div>
 			</div>	
 			
-			#if(fez.members):
+			#if(chatgroup.members):
 				<div class="row mt-2">
 					<b>Participants</b>
 				</div>
 				<div class="row mb-2 mx-0">
-					#for(participant in fez.members.participants):
+					#for(participant in chatgroup.members.participants):
 						<div class="col col-auto border text-nowrap">
 							#avatar(participant) #userByline(participant)
 						</div>				
 					#endfor
 				</div>
-				#if(count(fez.members.waitingList) > 0):
+				#if(count(chatgroup.members.waitingList) > 0):
 					<div class="row mt-2">
 						<b>Wait List</b>
 					</div>
 					<div class="row mb-2 mx-0">
-						#for(participant in fez.members.waitingList):
+						#for(participant in chatgroup.members.waitingList):
 							<div class="col col-auto border text-nowrap">
 								#avatar(participant) #userByline(participant)
 							</div>				
@@ -119,28 +119,28 @@
 					</div>
 					<div class="col col-auto mb-auto">
 						<span class="badge rounded-pill bg-light text-dark">
-							<span id="post-count-span">#(fez.members.postCount)</span> posts
+							<span id="post-count-span">#(chatgroup.members.postCount)</span> posts
 						</span>
-						#if(fez.members.readCount < fez.members.postCount):
-							<span class="badge rounded-pill bg-danger">#(fez.members.postCount - fez.members.readCount) new</span>
+						#if(chatgroup.members.readCount < chatgroup.members.postCount):
+							<span class="badge rounded-pill bg-danger">#(chatgroup.members.postCount - chatgroup.members.readCount) new</span>
 						#endif
 					</div>
 				</div>
 				#extend("paginator")
 				<ul class="list-group container-md mx-0 px-0">
-					#for(fezPost in oldPosts):
-						#extend("Fez/fezPost")
+					#for(chatGroupPost in oldPosts):
+						#extend("ChatGroup/chatGroupPost")
 					#endfor
 					#if(showDivider):
 						<hr class="newline">
 					#endif
 					<span id="newposts"></span>
-					#for(fezPost in newPosts):
-						#extend("Fez/fezPost")
+					#for(chatGroupPost in newPosts):
+						#extend("ChatGroup/chatGroupPost")
 					#endfor
 					
 					#if(paginator.nextPageURL == nil):
-						<div class="fez-list-end" data-url="/fez/#(fez.fezID)/socket" id="fez-list-end"></div>
+						<div class="chatgroup-list-end" data-url="/chatgroup/#(chatgroup.chatGroupID)/socket" id="chatgroup-list-end"></div>
 						<script src="/js/swiftarrMessages.js"></script>
 					#endif
 				</ul>
@@ -221,11 +221,11 @@
 			#endif
 		</div>
 
-		<div class="modal fade" id="leaveFezModal" tabindex="-1" aria-labelledby="leave LFG modal" aria-hidden="true">
+		<div class="modal fade" id="leaveChatGroupModal" tabindex="-1" aria-labelledby="leave LFG modal" aria-hidden="true">
 			<div class="modal-dialog">
 				<div class="modal-content">
 					<div class="modal-header">
-						<h5 class="modal-title" id="leave fez modal">Leave LFG</h5>
+						<h5 class="modal-title" id="leave chatgroup modal">Leave LFG</h5>
 						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 					</div>
 					<div class="modal-body">
@@ -234,34 +234,34 @@
 					<div class="modal-footer">
 						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
 						<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload" 
-								data-actionpath="/fez/#(fez.fezID)/leave"
-								data-errordiv="fezDialog_errorDisplay"
-								id="#(fez.fezID)_leave">
-						<label class="btn btn-primary px-4" for="#(fez.fezID)_leave">
+								data-actionpath="/chatgroup/#(chatgroup.chatGroupID)/leave"
+								data-errordiv="chatGroupDialog_errorDisplay"
+								id="#(chatgroup.chatGroupID)_leave">
+						<label class="btn btn-primary px-4" for="#(chatgroup.chatGroupID)_leave">
 							Leave
 							<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
 							<span class="visually-hidden">Loading...</span>
 						</label>
 					</div>
-					<div class="mx-3 pb-1 text-end text-danger d-none error-display" id="fezDialog_errorDisplay">
+					<div class="mx-3 pb-1 text-end text-danger d-none error-display" id="chatGroupDialog_errorDisplay">
 						Error attempting to leave LFG: <span class="errortext"></span>
 					</div>
 				</div>
 			</div>
 		</div>
 		
-		<div class="modal fade" id="cancelFezModal" tabindex="-1" aria-labelledby="cancel fez modal" aria-hidden="true">
+		<div class="modal fade" id="cancelChatGroupModal" tabindex="-1" aria-labelledby="cancel chatgroup modal" aria-hidden="true">
 			<div class="modal-dialog">
 				<div class="modal-content">
 					<div class="modal-header">
-						<h5 class="modal-title" id="cancel fez modal">Cancel LFG</h5>
+						<h5 class="modal-title" id="cancel chatgroup modal">Cancel LFG</h5>
 						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 					</div>
 					<div class="modal-body">
 						<p>Cancelling the LFG will mark the LFG as not happening and notify all participants.
 						The LFG won't be deleted; participants can still create and read posts.</p>
-						#if(fez.members):
-							#if(count(fez.members.participants) > 1):
+						#if(chatgroup.members):
+							#if(count(chatgroup.members.participants) > 1):
 								<p>If you haven't, you may want to make a post letting particpants know why the event was cancelled.</p>
 							#endif
 						#endif
@@ -269,10 +269,10 @@
 					<div class="modal-footer">
 						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">DON'T Cancel LFG</button>
 						<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload" 
-								data-actionpath="/fez/#(fez.fezID)/cancel"
+								data-actionpath="/chatgroup/#(chatgroup.chatGroupID)/cancel"
 								data-errordiv="cancelDialog_errorDisplay"
-								id="#(fez.fezID)_cancel">
-						<label class="btn btn-primary px-4" for="#(fez.fezID)_cancel">
+								id="#(chatgroup.chatGroupID)_cancel">
+						<label class="btn btn-primary px-4" for="#(chatgroup.chatGroupID)_cancel">
 							Cancel
 							<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
 							<span class="visually-hidden">Loading...</span>
@@ -297,7 +297,7 @@
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-						<button type="button" class="btn btn-primary" data-action="delete" data-delete-type="fez/post" data-delete-postid="">Delete</button>
+						<button type="button" class="btn btn-primary" data-action="delete" data-delete-type="chatgroup/post" data-delete-postid="">Delete</button>
 					</div>
 					<div class="mx-3 pb-1 text-end text-danger error-display d-none">
 						Could not delete post: <span class="errortext"></span>

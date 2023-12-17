@@ -1,0 +1,50 @@
+<a class="list-group-item list-group-item-action" href="/chatgroup/#(chatgroup.chatGroupID)">		
+	<div class="row">
+		<div class="col">
+			#if(chatgroup.cancelled):<span class="text-danger"><b>Cancelled</b></span>#endif <b>#(chatgroup.title)</b>
+		</div>
+		<div class="col col-auto">
+			<span class="text-muted">#chatGroupTime(chatgroup.startTime, chatgroup.endTime)</span>
+		</div>
+	</div>
+
+	<div class="row">
+		<div class="col">
+			by: #userByline(chatgroup.owner, "nolink")
+		</div>
+		<div class="col col-auto">
+			#if(chatgroup.maxParticipants == 0):
+				#(chatgroup.participantCount) attendee#if(chatgroup.participantCount != 1):s#endif
+			#elseif(chatgroup.participantCount > chatgroup.maxParticipants):
+				Full; #(chatgroup.participantCount - chatgroup.maxParticipants) waitlisted
+			#else:
+				#(chatgroup.participantCount)/#(chatgroup.maxParticipants) attendees
+			#endif
+		</div>
+	</div>
+
+	<div class="row">
+		<div class="col">
+			#(chatgroup.chatGroupType)
+		</div>
+		#if(chatgroup.members):
+			<div class="col col-auto">
+				<span class="badge rounded-pill bg-light text-dark">#(chatgroup.members.postCount) posts</span>
+				#if(chatgroup.members.readCount < chatgroup.members.postCount):
+					<span class="badge rounded-pill bg-danger">#(chatgroup.members.postCount - chatgroup.members.readCount) new</span>
+				#endif
+			</div>
+		#endif
+	</div>
+	
+	<div class="row d-none">
+		<div class="col">
+			#(chatgroup.location)
+		</div>
+	</div>
+	<div class="row d-none">
+		<div class="col">
+			#formatPostText(chatgroup.info)
+		</div>
+	</div>
+</a>

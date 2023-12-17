@@ -3,13 +3,13 @@
     	<div class="container-md ms-0 mt-2">
     		<div class="row align-items-end">
     			<div class="col col-auto">
-			    	<h6><b>Moderate Fez Post \##(modData.fezPost.postID)</b></h6>
+			    	<h6><b>Moderate ChatGroup Post \##(modData.chatGroupPost.postID)</b></h6>
 				</div>
 			</div>
 			<div class="row justify-content-between mb-3">
-				<div class="col" data-reportabletype="fezpost" data-reportableid="#(modData.fezPost.postID)" data-postid="#(modData.fezPost.postID)">
+				<div class="col" data-reportabletype="chatgrouppost" data-reportableid="#(modData.chatGroupPost.postID)" data-postid="#(modData.chatGroupPost.postID)">
 					#if(!modData.isDeleted):
-						<button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="\#deleteFezPostModal">Delete</button>
+						<button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="\#deleteChatGroupPostModal">Delete</button>
 						<span class="dropdown">
 							<button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="modStatusButton" data-bs-toggle="dropdown" aria-expanded="false">
 								Set State
@@ -30,7 +30,7 @@
 			</div>				
     		<div class="row">
     			<div class="col col-auto">
-					Author: #userByline(modData.fezPost.author)<a class="btn btn-outline-primary btn-sm ms-2" href="/moderate/user/#(modData.fezPost.author.userID)">Mod User</a>
+					Author: #userByline(modData.chatGroupPost.author)<a class="btn btn-outline-primary btn-sm ms-2" href="/moderate/user/#(modData.chatGroupPost.author.userID)">Mod User</a>
 				</div>
 			</div>
     		<div class="row mt-2">
@@ -43,33 +43,33 @@
     		<div class="row">
     			<div class="col">
 					<ul class="container-md mx-0 px-0 list-group">
-						<li class="list-group-item bg-transparent" data-modpostid="#(modData.fezPost.postID)">				
+						<li class="list-group-item bg-transparent" data-modpostid="#(modData.chatGroupPost.postID)">				
 							<div class="container-fluid mx-0 px-1">
 								<div class="row align-items-start justify-content-start">	
 									<div class="col g-0" style="flex: 0 0 40px;">
-										<a href="/user/#(modData.fezPost.author.userID)">		
-											#avatar(modData.fezPost.author)
+										<a href="/user/#(modData.chatGroupPost.author.userID)">		
+											#avatar(modData.chatGroupPost.author)
 										</a>
 									</div>
 									<div class="col">
 										<div class="row">	
 											<div class="col">
-												#userByline(modData.fezPost.author)
+												#userByline(modData.chatGroupPost.author)
 											</div>
 											<div class="col-auto">
-												<span title="#localTime(modData.fezPost.timestamp)" class="text-muted">#relativeTime(modData.fezPost.timestamp)</span>
+												<span title="#localTime(modData.chatGroupPost.timestamp)" class="text-muted">#relativeTime(modData.chatGroupPost.timestamp)</span>
 											</div>
 										</div>
 										<div class="row">	
 											<div class="col">
-												#formatPostText(modData.fezPost.text)
+												#formatPostText(modData.chatGroupPost.text)
 											</div>
 										</div>
-										#if(modData.fezPost.image):
+										#if(modData.chatGroupPost.image):
 											<div class="row align-items-center justify-content-start flex-nowrap gx-1">	
 												<div class="col col-auto flex-grow-0 flex-shrink-1">
 													<button type="button" class="btn p-0 border-0" data-bs-toggle="modal" data-bs-target="\#imageCarouselModal">
-														<img src="/api/v3/image/full/#(modData.fezPost.image)" class="swiftarr-post-image" alt="Post Image">
+														<img src="/api/v3/image/full/#(modData.chatGroupPost.image)" class="swiftarr-post-image" alt="Post Image">
 													</button>
 												</div>
 											</div>
@@ -83,10 +83,10 @@
 			</div>
 			<div class="row my-3">
 				<div class="col">
-					<a class="btn btn-primary btn-sm" href="/fez/#(modData.fezID)">View in Fez Context</a>
+					<a class="btn btn-primary btn-sm" href="/chatgroup/#(modData.chatGroupID)">View in ChatGroup Context</a>
 				</div>
 				<div class="col">
-					<a class="btn btn-primary btn-sm" href="/seamail/#(modData.fezID)">View in Seamail Context</a>
+					<a class="btn btn-primary btn-sm" href="/seamail/#(modData.chatGroupID)">View in Seamail Context</a>
 				</div>
 			</div>
 			
@@ -110,7 +110,7 @@
 			#endif
 		</div>
 
-		<div class="modal fade" id="deleteFezPostModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+		<div class="modal fade" id="deleteChatGroupPostModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
 			<div class="modal-dialog">
 				<div class="modal-content">
 					<div class="modal-header">
@@ -123,16 +123,16 @@
 					<div class="modal-footer">
 						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
 						<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload" 
-								data-actionpath="/fez/post/#(modData.fezPost.postID)/delete" 
-								data-errordiv="fezPostDialog_errorDisplay"
-								id="fezPostDialog_deleteBtn">
-						<label class="btn btn-primary px-4" for="fezPostDialog_deleteBtn">
+								data-actionpath="/chatgroup/post/#(modData.chatGroupPost.postID)/delete" 
+								data-errordiv="chatGroupPostDialog_errorDisplay"
+								id="chatGroupPostDialog_deleteBtn">
+						<label class="btn btn-primary px-4" for="chatGroupPostDialog_deleteBtn">
 							Delete
 							<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
 							<span class="visually-hidden">Loading...</span>
 						</label>
 					</div>
-					<div class="mx-3 pb-1 text-end text-danger error-display d-none" id="fezPostDialog_errorDisplay">
+					<div class="mx-3 pb-1 text-end text-danger error-display d-none" id="chatGroupPostDialog_errorDisplay">
 						<b>Error attempting to delete post:</b> <span class="errortext"></span>
 					</div>
 				</div>

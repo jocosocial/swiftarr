@@ -26,12 +26,12 @@ struct SiteSeamailController: SiteControllerUtils {
 		privateRoutes.get("seamail", "create", use: seamailCreatePageHandler)
 		privateRoutes.get("seamail", "usernames", "search", ":searchString", use: seamailUsernameAutocompleteHandler)
 		privateRoutes.post("seamail", "create", use: seamailCreatePostHandler)
-		privateRoutes.get("seamail", fezIDParam, use: seamailViewPageHandler)
-		privateRoutes.post("seamail", fezIDParam, use: seamailViewPageHandler)
-		privateRoutes.post("seamail", fezIDParam, "post", use: seamailThreadPostHandler)
+		privateRoutes.get("seamail", chatGroupIDParam, use: seamailViewPageHandler)
+		privateRoutes.post("seamail", chatGroupIDParam, use: seamailViewPageHandler)
+		privateRoutes.post("seamail", chatGroupIDParam, "post", use: seamailThreadPostHandler)
 		privateRoutes.webSocket(
 			"seamail",
-			fezIDParam,
+			chatGroupIDParam,
 			"socket",
 			shouldUpgrade: shouldCreateMsgSocket,
 			onUpgrade: createMsgSocket
@@ -43,38 +43,38 @@ struct SiteSeamailController: SiteControllerUtils {
 	//
 	// Shows the root Seamail page, with a list of all conversations.
 	func seamailRootPageHandler(_ req: Request) async throws -> View {
-		let response = try await apiQuery(req, endpoint: "/fez/joined?type=closed&type=open")
-		let fezList = try response.content.decode(FezListData.self)
-		// Re-sort fezzes so ones with new msgs are first. Keep most-recent-change sort within each group.
-		var newMsgFezzes: [FezData] = []
-		var noNewMsgFezzes: [FezData] = []
-		fezList.fezzes.forEach {
+		let response = try await apiQuery(req, endpoint: "/chatgroup/joined?type=closed&type=open")
+		let chatGroupList = try response.content.decode(ChatGroupListData.self)
+		// Re-sort chatgroups so ones with new msgs are first. Keep most-recent-change sort within each group.
+		var newMsgChatGroups: [ChatGroupData] = []
+		var noNewMsgChatGroups: [ChatGroupData] = []
+		chatGroupList.chatgroups.forEach {
 			if let members = $0.members, members.postCount > members.readCount {
-				newMsgFezzes.append($0)
+				newMsgChatGroups.append($0)
 			}
 			else {
-				noNewMsgFezzes.append($0)
+				noNewMsgChatGroups.append($0)
 			}
 		}
-		let allFezzes = newMsgFezzes + noNewMsgFezzes
+		let allChatGroups = newMsgChatGroups + noNewMsgChatGroups
 		struct SeamailRootPageContext: Encodable {
 			var trunk: TrunkContext
-			var fezList: FezListData
-			var fezzes: [FezData]
+			var chatGroupList: ChatGroupListData
+			var chatgroups: [ChatGroupData]
 			var effectiveUser: String?
 			var paginator: PaginatorContext
 			var filterURL: String
 			var filterActive: Bool
 			var noSeamails: String
 
-			init(_ req: Request, fezList: FezListData, fezzes: [FezData]) throws {
+			init(_ req: Request, chatGroupList: ChatGroupListData, chatgroups: [ChatGroupData]) throws {
 				effectiveUser = req.query[String.self, at: "foruser"]
 				let (title, tab) = titleAndTab(for: req)
 				trunk = .init(req, title: title, tab: tab, search: "Search Seamail")
-				self.fezList = fezList
-				self.fezzes = fezzes
-				let limit = fezList.paginator.limit
-				paginator = .init(fezList.paginator) { pageIndex in
+				self.chatGroupList = chatGroupList
+				self.chatgroups = chatgroups
+				let limit = chatGroupList.paginator.limit
+				paginator = .init(chatGroupList.paginator) { pageIndex in
 					"/seamail?start=\(pageIndex * limit)&limit=\(limit)"
 				}
 				filterActive = req.query[String.self, at: "onlynew"]?.lowercased() == "true"
@@ -83,8 +83,8 @@ struct SiteSeamailController: SiteControllerUtils {
 					"You haven't received any Seamail messages yet, but you can create one by tapping \"New Seamail\""
 			}
 		}
-		let ctx = try SeamailRootPageContext(req, fezList: fezList, fezzes: allFezzes)
-		return try await req.view.render("Fez/seamails", ctx)
+		let ctx = try SeamailRootPageContext(req, chatGroupList: chatGroupList, chatgroups: allChatGroups)
+		return try await req.view.render("ChatGroup/seamails", ctx)
 	}
 
 	struct SeamailQueryOptions: Content {
@@ -117,12 +117,12 @@ struct SiteSeamailController: SiteControllerUtils {
 	func seamailSearchHandler(_ req: Request) async throws -> View {
 		let searchParams = try req.query.decode(SeamailQueryOptions.self)
 
-		let response = try await apiQuery(req, endpoint: "/fez/joined?type=closed&type=open")
-		let fezList = try response.content.decode(FezListData.self)
+		let response = try await apiQuery(req, endpoint: "/chatgroup/joined?type=closed&type=open")
+		let chatGroupList = try response.content.decode(ChatGroupListData.self)
 		struct SeamailRootPageContext: Encodable {
 			var trunk: TrunkContext
-			var fezList: FezListData
-			var fezzes: [FezData]
+			var chatGroupList: ChatGroupListData
+			var chatgroups: [ChatGroupData]
 			var effectiveUser: String?
 			var paginator: PaginatorContext
 			var filterURL: String
@@ -130,14 +130,14 @@ struct SiteSeamailController: SiteControllerUtils {
 			var filterEnable: Bool
 			var noSeamails: String
 
-			init(_ req: Request, searchParams: SeamailQueryOptions, fezList: FezListData, fezzes: [FezData]) throws {
+			init(_ req: Request, searchParams: SeamailQueryOptions, chatGroupList: ChatGroupListData, chatgroups: [ChatGroupData]) throws {
 				effectiveUser = req.query[String.self, at: "foruser"]
 				let (title, tab) = titleAndTab(for: req)
 				trunk = .init(req, title: title, tab: tab, search: "Search Seamail")
-				self.fezList = fezList
-				self.fezzes = fezzes
-				let limit = fezList.paginator.limit
-				paginator = .init(fezList.paginator) { pageIndex in
+				self.chatGroupList = chatGroupList
+				self.chatgroups = chatgroups
+				let limit = chatGroupList.paginator.limit
+				paginator = .init(chatGroupList.paginator) { pageIndex in
 					// "/seamail/search?start=\(pageIndex * limit)&limit=\(limit)"
 					return searchParams.buildQuery(baseURL: "/seamail/search", startOffset: pageIndex * limit)
 						?? "/seamail/search"
@@ -151,8 +151,8 @@ struct SiteSeamailController: SiteControllerUtils {
 					"No search results found. Try another search, or start a new Seamail by tapping \"New Seamail\"."
 			}
 		}
-		let ctx = try SeamailRootPageContext(req, searchParams: searchParams, fezList: fezList, fezzes: fezList.fezzes)
-		return try await req.view.render("Fez/seamails", ctx)
+		let ctx = try SeamailRootPageContext(req, searchParams: searchParams, chatGroupList: chatGroupList, chatgroups: chatGroupList.chatgroups)
+		return try await req.view.render("ChatGroup/seamails", ctx)
 	}
 
 	// GET /seamail/create
@@ -180,7 +180,7 @@ struct SiteSeamailController: SiteControllerUtils {
 			}
 		}
 		let ctx = try SeamaiCreatePageContext(req, withUser: withUser)
-		return try await req.view.render("Fez/seamailCreate", ctx)
+		return try await req.view.render("ChatGroup/seamailCreate", ctx)
 	}
 
 	// GET /seamail/usernames/search/STRING
@@ -200,7 +200,7 @@ struct SiteSeamailController: SiteControllerUtils {
 	func seamailCreatePostHandler(_ req: Request) async throws -> Response {
 		let user = try req.auth.require(UserCacheData.self)
 		let formContent = try req.content.decode(SeamailCreateFormContent.self)
-		// Normally we let the API do validations, but in this case we make one call to create the Fez and another
+		// Normally we let the API do validations, but in this case we make one call to create the ChatGroup and another
 		// to post the message. Catching likely errors here reduces the chance we have to deal with partial failure.
 		guard formContent.subject.count > 0 else {
 			throw Abort(.badRequest, reason: "Subject cannot be empty.")
@@ -220,9 +220,9 @@ struct SiteSeamailController: SiteControllerUtils {
 			throw Abort(.badRequest, reason: "Seamail conversations require at least 2 users.")
 		}
 
-		let fezType = formContent.openchat == nil ? FezType.closed : FezType.open
-		let fezContent = FezContentData(
-			fezType: fezType,
+		let chatGroupType = formContent.openchat == nil ? ChatGroupType.closed : ChatGroupType.open
+		let chatGroupContent = ChatGroupContentData(
+			chatGroupType: chatGroupType,
 			title: formContent.subject,
 			info: "",
 			startTime: nil,
@@ -234,8 +234,8 @@ struct SiteSeamailController: SiteControllerUtils {
 			createdByModerator: formContent.postAsModerator != nil,
 			createdByTwitarrTeam: formContent.postAsTwitarrTeam != nil
 		)
-		let createResponse = try await apiQuery(req, endpoint: "/fez/create", method: .POST, encodeContent: fezContent)
-		let fezData = try createResponse.content.decode(FezData.self)
+		let createResponse = try await apiQuery(req, endpoint: "/chatgroup/create", method: .POST, encodeContent: chatGroupContent)
+		let chatGroupData = try createResponse.content.decode(ChatGroupData.self)
 		do {
 			let postContentData = PostContentData(
 				text: formContent.postText,
@@ -245,7 +245,7 @@ struct SiteSeamailController: SiteControllerUtils {
 			)
 			let response = try await apiQuery(
 				req,
-				endpoint: "/fez/\(fezData.fezID)/post",
+				endpoint: "/chatgroup/\(chatGroupData.chatGroupID)/post",
 				method: .POST,
 				encodeContent: postContentData
 			)
@@ -253,7 +253,7 @@ struct SiteSeamailController: SiteControllerUtils {
 		}
 		catch {
 			// If we successfully create the chat but can't add the initial message to it, redirect to the new chat.
-			let headers = HTTPHeaders(dictionaryLiteral: ("Location", "/seamail/\(fezData.fezID)"))
+			let headers = HTTPHeaders(dictionaryLiteral: ("Location", "/seamail/\(chatGroupData.chatGroupID)"))
 			let response = Response(status: .badRequest, headers: headers)
 			return response
 		}
@@ -266,38 +266,38 @@ struct SiteSeamailController: SiteControllerUtils {
 	//
 	// Shows a seamail thread. Participants up top, then a list of messages, then a form for composing.
 	func seamailViewPageHandler(_ req: Request) async throws -> View {
-		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
-			throw Abort(.badRequest, reason: "Missing fez_id")
+		guard let chatGroupID = req.parameters.get(chatGroupIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing chatgroup_id")
 		}
-		let response = try await apiQuery(req, endpoint: "/fez/\(fezID)")
-		let fez = try response.content.decode(FezData.self)
-		guard fez.members != nil else {
+		let response = try await apiQuery(req, endpoint: "/chatgroup/\(chatGroupID)")
+		let chatgroup = try response.content.decode(ChatGroupData.self)
+		guard chatgroup.members != nil else {
 			throw Abort(.forbidden, reason: "You are not a member of this seamail.")
 		}
 		struct SeamailThreadPageContext: Encodable {
 			var trunk: TrunkContext
-			var fez: FezData
-			var oldPosts: [SocketFezPostData]
+			var chatgroup: ChatGroupData
+			var oldPosts: [SocketChatGroupPostData]
 			var showDivider: Bool
-			var newPosts: [SocketFezPostData]
+			var newPosts: [SocketChatGroupPostData]
 			var post: MessagePostContext
 			var socketURL: String
 			var breadcrumbURL: String
 			var paginator: PaginatorContext
 
-			init(_ req: Request, fez: FezData) throws {
+			init(_ req: Request, chatgroup: ChatGroupData) throws {
 				let (title, tab) = titleAndTab(for: req)
 				trunk = .init(req, title: title, tab: tab, search: "Search Seamail")
-				self.fez = fez
+				self.chatgroup = chatgroup
 				oldPosts = []
 				newPosts = []
 				showDivider = false
-				post = .init(forType: .seamailPost(fez))
+				post = .init(forType: .seamailPost(chatgroup))
 				if req.method == .POST, let formContent = try? req.content.decode(SeamailCreateFormContent.self) {
 					post.messageText = formContent.postText
 					post.postErrorString = "Created the chat, but was not able to post the initial message."
 				}
-				socketURL = "/fez/\(fez.fezID)/socket"
+				socketURL = "/chatgroup/\(chatgroup.chatGroupID)/socket"
 				breadcrumbURL = "/seamail"
 				if let foruser = req.query[String.self, at: "foruser"],
 					var comp = URLComponents(string: post.postSuccessURL)
@@ -314,39 +314,39 @@ struct SiteSeamailController: SiteControllerUtils {
 					total: 40,
 					limit: 50,
 					urlForPage: { pageIndex in
-						"/seamail/\(fez.fezID)?start=\(pageIndex * 50)&limit=50"
+						"/seamail/\(chatgroup.chatGroupID)?start=\(pageIndex * 50)&limit=50"
 					}
 				)
-				if let members = fez.members, let posts = members.posts, let paginator = members.paginator {
+				if let members = chatgroup.members, let posts = members.posts, let paginator = members.paginator {
 					for index in 0..<posts.count {
 						let post = posts[index]
 						if index + paginator.start < members.readCount {
-							oldPosts.append(SocketFezPostData(post: post))
+							oldPosts.append(SocketChatGroupPostData(post: post))
 						}
 						else {
-							newPosts.append(SocketFezPostData(post: post))
+							newPosts.append(SocketChatGroupPostData(post: post))
 						}
 					}
 					self.showDivider = oldPosts.count > 0 && newPosts.count > 0
 					let limit = paginator.limit
 					self.paginator = PaginatorContext(paginator) { pageIndex in
-						"/seamail/\(fez.fezID)?start=\(pageIndex * limit)&limit=\(limit)"
+						"/seamail/\(chatgroup.chatGroupID)?start=\(pageIndex * limit)&limit=\(limit)"
 					}
 				}
 			}
 		}
-		let ctx = try SeamailThreadPageContext(req, fez: fez)
-		return try await req.view.render("Fez/seamailThread", ctx)
+		let ctx = try SeamailThreadPageContext(req, chatgroup: chatgroup)
+		return try await req.view.render("ChatGroup/seamailThread", ctx)
 	}
 
 	// GET /seamail/:seamail_ID/socket
 	func shouldCreateMsgSocket(_ req: Request) async throws -> HTTPHeaders? {
-		guard let paramVal = req.parameters.get(fezIDParam.paramString), let seamailID = UUID(uuidString: paramVal)
+		guard let paramVal = req.parameters.get(chatGroupIDParam.paramString), let seamailID = UUID(uuidString: paramVal)
 		else {
 			throw Abort(.badRequest, reason: "Request parameter lfg_ID is missing.")
 		}
-		let response = try await apiQuery(req, endpoint: "/fez/\(seamailID)")
-		let seamail = try response.content.decode(FezData.self)
+		let response = try await apiQuery(req, endpoint: "/chatgroup/\(seamailID)")
+		let seamail = try response.content.decode(ChatGroupData.self)
 		// Although moderators can see into any LFG chat, they can't get make a websocket for chats they aren't in.
 		guard let _ = seamail.members else {
 			return nil
@@ -356,7 +356,7 @@ struct SiteSeamailController: SiteControllerUtils {
 
 	// WS /seamail/:seamail_ID/socket
 	//
-	// Takes the `foruser` parameter which is forwarded to `/api/v3/fez/:fez_ID`
+	// Takes the `foruser` parameter which is forwarded to `/api/v3/chatgroup/:chatgroup_ID`
 	// - `?foruser=NAME` - Access the "moderator" or "twitarrteam" seamail accounts.
 	//
 	// Opens a WebSocket that receives updates on the given Seamail. This websocket is intended for use by the
@@ -365,16 +365,16 @@ struct SiteSeamailController: SiteControllerUtils {
 	// new posts to the client, new posts *created* by the client should use the regular POST method.
 	func createMsgSocket(_ req: Request, _ ws: WebSocket) async {
 		guard let user = try? req.auth.require(UserCacheData.self),
-			let lfgID = req.parameters.get(fezIDParam.paramString, as: UUID.self)
+			let lfgID = req.parameters.get(chatGroupIDParam.paramString, as: UUID.self)
 		else {
 			try? await ws.close()
 			return
 		}
-		let userSocket = UserSocket(userID: user.userID, socket: ws, fezID: lfgID, htmlOutput: true)
-		try? req.webSocketStore.storeFezSocket(userSocket)
+		let userSocket = UserSocket(userID: user.userID, socket: ws, chatGroupID: lfgID, htmlOutput: true)
+		try? req.webSocketStore.storeChatGroupSocket(userSocket)
 
 		ws.onClose.whenComplete { result in
-			try? req.webSocketStore.removeFezSocket(userSocket)
+			try? req.webSocketStore.removeChatGroupSocket(userSocket)
 		}
 	}
 
@@ -382,12 +382,12 @@ struct SiteSeamailController: SiteControllerUtils {
 	//
 	// Creates a new message in a seamail thread.
 	func seamailThreadPostHandler(_ req: Request) async throws -> HTTPStatus {
-		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
-			throw Abort(.badRequest, reason: "Missing fez_id")
+		guard let chatGroupID = req.parameters.get(chatGroupIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing chatgroup_id")
 		}
 		let postStruct = try req.content.decode(MessagePostFormContent.self)
 		let postContent = postStruct.buildPostContentData()
-		try await apiQuery(req, endpoint: "/fez/\(fezID)/post", method: .POST, encodeContent: postContent)
+		try await apiQuery(req, endpoint: "/chatgroup/\(chatGroupID)/post", method: .POST, encodeContent: postContent)
 		return .created
 	}
 }

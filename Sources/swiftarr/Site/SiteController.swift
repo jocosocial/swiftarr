@@ -186,8 +186,8 @@ struct MessagePostContext: Encodable {
 		case forumPost(String)  // Forum ID
 		case forumPostEdit(PostDetailData)
 		case seamail
-		case seamailPost(FezData)
-		case fezPost(FezData)
+		case seamailPost(ChatGroupData)
+		case chatGroupPost(ChatGroupData)
 		case announcement
 		case announcementEdit(AnnouncementData)
 		case theme
@@ -253,13 +253,13 @@ struct MessagePostContext: Encodable {
 			photoFilenames = []
 		// For posting in an existing Seamail thread
 		case .seamailPost(let forSeamail):
-			formAction = "/seamail/\(forSeamail.fezID)/post"
-			postSuccessURL = "/seamail/\(forSeamail.fezID)#afterposts"
+			formAction = "/seamail/\(forSeamail.chatGroupID)/post"
+			postSuccessURL = "/seamail/\(forSeamail.chatGroupID)#afterposts"
 			photoFilenames = []
-		// For posting in an existing Fez thread
-		case .fezPost(let forFez):
-			formAction = "/fez/\(forFez.fezID)/post"
-			postSuccessURL = "/fez/\(forFez.fezID)"
+		// For posting in an existing ChatGroup thread
+		case .chatGroupPost(let forChatGroup):
+			formAction = "/chatgroup/\(forChatGroup.chatGroupID)/post"
+			postSuccessURL = "/chatgroup/\(forChatGroup.chatGroupID)"
 			messageTextPlaceholder = "Send a message"
 			photoFilenames = [""]
 		// For creating an announcement
@@ -302,7 +302,7 @@ struct MessagePostContext: Encodable {
 }
 
 // POST data structure returned by the form in messagePostForm.leaf
-// This form and data structure are used for creating and editing twarrts, forum posts, and fez messages.
+// This form and data structure are used for creating and editing twarrts, forum posts, and chatgroup messages.
 struct MessagePostFormContent: Codable {
 	let forumTitle: String?  // Only used when creating new forums
 	let postText: String?
@@ -373,20 +373,20 @@ struct ReportPageContext: Encodable {
 		reportSuccessURL = req.headers.first(name: "Referer") ?? "/forums"
 	}
 
-	// For reporting a fez (The fez itself: title, info, location)
-	init(_ req: Request, fezID: String) throws {
+	// For reporting a chatgroup (The chatgroup itself: title, info, location)
+	init(_ req: Request, chatGroupID: String) throws {
 		trunk = .init(req, title: "Report LFG Content", tab: .lfg)
 		reportTitle = "Report LFG Content"
-		reportFormAction = "/fez/report/\(fezID)"
-		reportSuccessURL = req.headers.first(name: "Referer") ?? "/fez"
+		reportFormAction = "/chatgroup/report/\(chatGroupID)"
+		reportSuccessURL = req.headers.first(name: "Referer") ?? "/chatgroup"
 	}
 
-	// For reporting a fez post
-	init(_ req: Request, fezPostID: String) throws {
+	// For reporting a chatgroup post
+	init(_ req: Request, chatGroupPostID: String) throws {
 		trunk = .init(req, title: "Report LFG Post", tab: .lfg)
 		reportTitle = "Report LFG Post"
-		reportFormAction = "/fez/post/report/\(fezPostID)"
-		reportSuccessURL = req.headers.first(name: "Referer") ?? "/fez"
+		reportFormAction = "/chatgroup/post/report/\(chatGroupPostID)"
+		reportSuccessURL = req.headers.first(name: "Referer") ?? "/chatgroup"
 	}
 
 	// For reporting a user profile
@@ -565,7 +565,7 @@ extension SiteControllerUtils {
 	var twarrtIDParam: PathComponent { PathComponent(":twarrt_id") }
 	var forumIDParam: PathComponent { PathComponent(":forum_id") }
 	var postIDParam: PathComponent { PathComponent(":post_id") }
-	var fezIDParam: PathComponent { PathComponent(":fez_id") }
+	var chatGroupIDParam: PathComponent { PathComponent(":chatgroup_id") }
 	var userIDParam: PathComponent { PathComponent(":user_id") }
 	var eventIDParam: PathComponent { PathComponent(":event_id") }
 	var reportIDParam: PathComponent { PathComponent(":report_id") }

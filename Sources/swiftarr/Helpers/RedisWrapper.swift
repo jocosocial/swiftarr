@@ -204,7 +204,7 @@ extension Request.Redis {
 		case .seamail: return RedisKey("UnreadSeamails-\(userID)")
 		case .moderatorSeamail: return RedisKey("UnreadModSeamails-\(userID)")
 		case .twitarrTeamSeamail: return RedisKey("UnreadTTSeamails-\(userID)")
-		case .lfgMessages: return RedisKey("UnreadFezzes-\(userID)")
+		case .lfgMessages: return RedisKey("UnreadChatGroups-\(userID)")
 		}
 	}
 

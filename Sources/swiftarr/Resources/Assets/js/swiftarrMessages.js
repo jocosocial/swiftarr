@@ -1,5 +1,5 @@
 function startLiveMessageStream() {
-	let endDiv = document.getElementById("fez-list-end")
+	let endDiv = document.getElementById("chatgroup-list-end")
 	let socketURL = endDiv.dataset.url
 	let wsProtocol = "ws://"
 	if (window.location.href.startsWith("https")) {
@@ -14,7 +14,7 @@ function startLiveMessageStream() {
 
 	ws.onmessage = (event) => {
 		let message = JSON.parse(event.data);
-		let endDiv = document.getElementById("fez-list-end");
+		let endDiv = document.getElementById("chatgroup-list-end");
 		endDiv?.insertAdjacentHTML('beforebegin', message.html);
 		if (message.text) {
 			let postCountSpan = document.getElementById("post-count-span")

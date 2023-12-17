@@ -34,7 +34,7 @@ The available custom emoji are:
 - :buffet:
 - :die-ship:
 - :die:
-- :fez:
+- :chatgroup:
 - :hottub:
 - :joco:
 - :pirate:
