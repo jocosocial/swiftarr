@@ -8,18 +8,18 @@
     			</div>
 	    		<div class="row mb-1 align-items-center">
 					<ul class="container-md mx-0 px-0 list-group">
-						<li class="list-group-item border border-danger collapse show has-action-bar bg-light" 
-								data-eventid="#(upcomingEvent.eventID)" 
+						<li class="list-group-item border border-danger collapse show has-action-bar bg-light"
+								data-eventid="#(upcomingEvent.eventID)"
 								data-eventfavorite=#if(upcomingEvent.isFavorite == true):"true"#else:"false"#endif
 								data-eventcategory="#(upcomingEvent.eventType)">
 							<div class="container-fluid px-2">
 								<div class="text-center text-danger">An event you follow is starting soon™</div>
-								<div class="row">	
+								<div class="row">
 									<div class="col">
 										<b>#(upcomingEvent.title)</b>
 									</div>
 								</div>
-								<div class="row">	
+								<div class="row">
 									<div class="col-sm">
 										<span class="text-secondary"><i>#eventTime(upcomingEvent.startTime, upcomingEvent.endTime)</i></span>
 									</div>
@@ -27,7 +27,7 @@
 										#(upcomingEvent.location)
 									</div>
 								</div>
-								<div class="row collapse justify-content-end" data-label="actionbar">	
+								<div class="row collapse justify-content-end" data-label="actionbar">
 									<div class="col-12">
 										#(upcomingEvent.description)
 									</div>
@@ -35,7 +35,7 @@
 										#if(upcomingEvent.forum):
 											<a class="btn btn-outline-primary" href="/forum/#(upcomingEvent.forum)">Forum</a>
 										#endif
-									</div>								
+									</div>
 								</div>
 							</div>
 						</li>
@@ -74,7 +74,7 @@
 				</div>
 				<div class="col btn-group btn-group-sm col-auto" role="group" aria-label="Event Filters">
 					<button class="btn btn-outline-primary #if(!trunk.userIsLoggedIn):d-none#endif" type="button" data-bs-toggle="button" data-action="eventFiltersChanged" id="eventFollowingFilter">Following</button>
-				</div>								
+				</div>
 			</div>
     		<div class="row">
 				<div class="col btn-group btn-group-sm" role="group" aria-label="Event Filters" id="cruiseDayButtonGroup">
@@ -88,7 +88,7 @@
 							<a class="btn btn-outline-primary #if(cruiseDay.activeDay):active#endif" href="/events?cruiseday=#(cruiseDay.index + 1)">#(cruiseDay.name)</a>
 						#endfor
 					#endif
-				</div>								
+				</div>
 			</div>
 		</div>
 		#if(isBeforeCruise):
@@ -96,7 +96,7 @@
     		<div class="row mb-1">
     			<div class="col text-center">
     				<i>The cruise hasn't started yet. Here are the events planned on the cruise day shown above.</i>
-				</div>								
+				</div>
 			</div>
 		</div>
 		#endif
@@ -105,7 +105,7 @@
     		<div class="row">
     			<div class="col text-center">
     				<i>The cruise has ended. Here are the events that happened on the cruise day shown above.</i>
-				</div>								
+				</div>
 			</div>
 		</div>
 		#endif
@@ -118,19 +118,20 @@
 			#for(event in events):
 				<li class="list-group-item bg-transparent collapse show has-action-bar"
 						data-bs-toggle="true"
-						data-eventid="#(event.eventID)" 
+						data-eventid="#(event.eventID)"
 						data-eventfavorite=#if(event.isFavorite == true):"true"#else:"false"#endif
 						data-eventcategory="#(event.eventType)"
 						data-cruiseday="#cruiseDayIndex(event.startTime)"
 						data-starttime="#(event.startTime)"
-						data-endtime="#(event.endTime)">				
+						data-endtime="#(event.endTime)">
 					<div class="container-fluid">
-						<div class="row">	
+						<div class="row">
 							<div class="col">
+								<span class="event-favorite-icon #if(!event.isFavorite):d-none#endif">⭐</span>
 								<b>#(event.title)</b>
 							</div>
 						</div>
-						<div class="row">	
+						<div class="row">
 							<div class="col-sm">
 								<span class="text-secondary"><i>#eventTime(event.startTime, event.endTime)</i></span>
 							</div>
@@ -138,7 +139,7 @@
 								#(event.location)
 							</div>
 						</div>
-						<div class="row collapse justify-content-end #if(count(events) == 1):show#endif" data-label="actionbar">	
+						<div class="row collapse justify-content-end #if(count(events) == 1):show#endif" data-label="actionbar">
 							<div class="col-12">
 								#(event.description)
 							</div>
@@ -148,7 +149,7 @@
 								#endif
 								<a class="btn btn-outline-primary" href="/events/#(event.eventID)/calendarevent.ics">Add to Calendar</a>
 								#if(trunk.userIsLoggedIn):
-									<input type="checkbox" class="btn-check" autocomplete="off" data-action="follow" 
+									<input type="checkbox" class="btn-check" autocomplete="off" data-action="follow"
 											data-actionpath="/events/#(event.eventID)/favorite"
 											data-istoggle="true"
 											data-errordiv="#(event.eventID)_errorDisplay"
@@ -160,13 +161,13 @@
 										<span class="visually-hidden">Loading...</span>
 									</label>
 								#endif
-							</div>								
+							</div>
 						</div>
 						<div class="row">
 							<div class="col text-end text-danger d-none" id="#(event.eventID)_errorDisplay">
 								Could not follow/unfollow event: <span class="errortext"></span>
 							</div>
-						</div>	
+						</div>
 					</div>
 				</li>
 			#endfor
@@ -177,11 +178,11 @@
 				<div class="row">
 					<div class="col">
 						<a class="btn btn-primary btn-sm" href="#(webcalURL)">Subscribe To Followed Events</a>
-					</div>								
+					</div>
 				</div>
 			</div>
-		#endif		
-		
+		#endif
+
 		<button class="btn btn-primary btn-sm position-fixed soon-button" type="button" data-action="eventScrollToNow">Soon™</button>
 		<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalTitle" aria-hidden="true">
 			<div class="modal-dialog">

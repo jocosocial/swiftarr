@@ -1082,13 +1082,13 @@ extension FezController {
 			return user
 		}
 		var effectiveUser = user
-		if effectiveUserParam == "moderator", let modUser = req.userCache.getUser(username: "moderator") {
+		if effectiveUserParam.lowercased() == "moderator", let modUser = req.userCache.getUser(username: "moderator") {
 			guard user.accessLevel.hasAccess(.moderator) else {
 				throw Abort(.forbidden, reason: "Only moderators can access moderator seamail.")
 			}
 			effectiveUser = modUser
 		}
-		if effectiveUserParam == "twitarrteam", let ttUser = req.userCache.getUser(username: "TwitarrTeam") {
+		if effectiveUserParam.lowercased() == "twitarrteam", let ttUser = req.userCache.getUser(username: "TwitarrTeam") {
 			guard user.accessLevel.hasAccess(.twitarrteam) else {
 				throw Abort(.forbidden, reason: "Only TwitarrTeam members can access TwitarrTeam seamail.")
 			}

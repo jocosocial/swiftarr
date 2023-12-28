@@ -58,11 +58,11 @@ function setActionButtonsState(tappedButton, state) {
 }
 
 // Button handler for buttons that POST on click, spinner while processing, reload/redirect on completion, and display errors inline.
-// on Button: data-actionpath="/path/to/POST/to" 
+// on Button: data-actionpath="/path/to/POST/to"
 //		data-istoggle="true if it toggles via POST/DELETE of its actionPath"
 // 		data-errordiv="id"
 // on error div: class="d-none"
-// in error div: <span class="errorText"></span> 
+// in error div: <span class="errorText"></span>
 async function spinnerButtonAction() {
 	let tappedButton = event.target;
 	let path = tappedButton.dataset.actionpath;
@@ -92,6 +92,11 @@ async function spinnerButtonAction() {
 					break;
 				case "follow":
 					tappedButton.closest('[data-eventfavorite]').dataset.eventfavorite = tappedButton.checked ? "true" : "false";
+					if (tappedButton.checked) {
+						tappedButton.closest('[data-eventfavorite]').querySelector('.event-favorite-icon').classList.remove('d-none');
+					} else {
+						tappedButton.closest('[data-eventfavorite]').querySelector('.event-favorite-icon').classList.add('d-none');
+					}
 					break;
 				case "reload":
 					location.reload();
@@ -147,7 +152,7 @@ for (let modal of document.querySelectorAll('.modal')) {
 	});
 }
 
-// When a Delete Modal is shown, stash the ID of the thing being deleted in the Delete btn. 
+// When a Delete Modal is shown, stash the ID of the thing being deleted in the Delete btn.
 document.getElementById('deleteModal')?.addEventListener('show.bs.modal', function (event) {
 	let postElem = event.relatedTarget.closest('[data-postid]');
 	let deleteBtn = event.target.querySelector('[data-delete-postid]');
@@ -571,7 +576,7 @@ function applyFezSearchFilters() {
 	window.location.href = window.location.href.split("?")[0] + queryString;
 }
 
-// Populates username completions for a partial username. 
+// Populates username completions for a partial username.
 let userSearchAPICallTimeout = null;
 let userSearch = document.querySelector('input.user-autocomplete');
 userSearch?.addEventListener('input', function (event) {

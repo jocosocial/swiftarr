@@ -334,6 +334,8 @@ public struct EventData: Content {
 	var endTime: Date
 	/// The timezone that the ship is going to be in when the event occurs. Delivered as an abbreviation e.g. "EST".
 	var timeZone: String
+	/// The timezone ID that the ship is going to be in when the event occurs. Example: "America/New_York".
+	var timeZoneID: String
 	/// The location of the event.
 	var location: String
 	/// The event category.
@@ -359,6 +361,7 @@ extension EventData {
 		self.startTime = timeZoneChanges.portTimeToDisplayTime(event.startTime)
 		self.endTime = timeZoneChanges.portTimeToDisplayTime(event.endTime)
 		self.timeZone = timeZoneChanges.abbrevAtTime(self.startTime)
+		self.timeZoneID = timeZoneChanges.tzAtTime(self.startTime).identifier
 		location = event.location
 		eventType = event.eventType.label
 		lastUpdateTime = event.updatedAt ?? Date()

@@ -8,7 +8,7 @@
 	<link href="/css/swiftarr.css" rel="stylesheet">
 	<link rel="icon" type="image/vnd.microsoft.icon" href="/img/favicon.ico">
 	#if(trunk.metaRedirectURL):
-		<meta http-equiv="refresh" content="2;URL='#(trunk.metaRedirectURL)'" /> 
+		<meta http-equiv="refresh" content="2;URL='#(trunk.metaRedirectURL)'" />
 	#endif
 
 	<title>#(trunk.title)</title>
@@ -18,7 +18,7 @@
 	<nav class="navbar navbar-dark bg-light pt-3 mb-2 sticky-top" style="background-image: url('/img/header-waves.png'); background-repeat: repeat-x;">
 		<div class="container-fluid px-0">
 			<div class="row justify-content-between w-100 ms-3 me-2">
-				<div class="col-auto px-0 mt-1 me-1">	  
+				<div class="col-auto px-0 mt-1 me-1">
 					<span class="link-light navbar-brand me-0 #if(trunk.alertCounts.newAnnouncementCount > 0):border-bottom border-danger#endif" data-bs-toggle="collapse" data-bs-target="\#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
 						#if(trunk.inTwitarrSubmenu):
 							<img src="/img/menuIconBold.png" width=24 height=24 alt="Twit-arr">
@@ -27,28 +27,28 @@
 						#endif
 					</span>
 				</div>
-				<div class="col-auto px-0">	  
+				<div class="col-auto px-0">
 					<a class="nav-item nav-link link-light px-1#if(trunk.tab == "forums"): active#endif" #if(trunk.tab == "forums"):aria-current="page"#endif href="/forums">
 						<span class="#if(trunk.alertCounts.newForumMentionCount > 0 || trunk.newForumAlertwords):border-bottom border-danger#endif">
 							Forums
 						</span>
 					</a>
 				</div>
-				<div class="col-auto px-0">	  
+				<div class="col-auto px-0">
 					<a class="nav-item nav-link link-light px-1#if(trunk.tab == "seamail"): active#endif" #if(trunk.tab == "seamail"):aria-current="page"#endif href="/seamail">
 						<span #if(trunk.alertCounts.newSeamailMessageCount > 0):class="border-bottom border-danger"#endif>
-							Chat
+							Seamail
 						</span>
 					</a>
 				</div>
-				<div class="col-auto px-0">	  
+				<div class="col-auto px-0">
 					<a class="nav-item nav-link link-light px-1 #if(trunk.tab == "events"): active#endif" #if(trunk.tab == "events"):aria-current="page"#endif href="/events">
 						<span #if(trunk.eventStartingSoon == true):class="border-bottom border-danger"#endif>
 							Schedule
 						</span>
 					</a>
 				</div>
-				<div class="col-auto px-0">	  
+				<div class="col-auto px-0">
 					<a class="nav-item nav-link link-light px-1 #if(trunk.tab == "lfg"): active#endif" #if(trunk.tab == "lfg"):aria-current="page"#endif href="/fez">
 						<span class="#if(trunk.alertCounts.newFezMessageCount > 0):border-bottom border-danger#endif">
 							LFG
@@ -57,7 +57,7 @@
 				</div>
 				<div class="col px-0"></div>
 				#if(trunk.searchPrompt):
-					<div class="col-auto px-0 mt-1">	  
+					<div class="col-auto px-0 mt-1">
 						<span class="link-light navbar-brand me-0" data-bs-toggle="collapse" data-bs-target="\#searchBar" aria-controls="searchBar" aria-expanded="false" aria-label="Toggle Search Bar">
 							<img src="/img/searchIcon.png" width=24 height=24 alt="Search Bar">
 						</span>
@@ -69,7 +69,7 @@
 					<li class="nav-item d-flex align-items-center">
 						<a class="nav-link #if(trunk.tab == "home"): active#endif" href="/">
 							<span class="#if(trunk.alertCounts.newAnnouncementCount > 0):border-bottom border-danger#endif">Home</span>
-						</a> 
+						</a>
 						#if(trunk.alertCounts.newAnnouncementCount > 1):
 							<span class="text-muted"><i>#(trunk.alertCounts.newAnnouncementCount) New Announcements</i></span>
 						#elseif(trunk.alertCounts.newAnnouncementCount == 1):

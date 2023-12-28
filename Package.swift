@@ -17,8 +17,8 @@ let package = Package(
 		.package(url: "https://github.com/johnsundell/ink.git", from: "0.1.0"),
 	],
 	targets: [
-		.systemLibrary(name: "gd", pkgConfig: "gdlib", providers: [.apt(["libgd-dev"]), .brew(["gd"])]),
-		.systemLibrary(name: "jpeg", pkgConfig: "libjpeg", providers: [.apt(["libjpeg-dev"]), .brew(["jpeg-turbo"])]),
+		.systemLibrary(name: "gd", pkgConfig: "gdlib", providers: [.apt(["libgd-dev"]), .brew(["gd"]), .yum(["gd-devel"])]),
+		.systemLibrary(name: "jpeg", pkgConfig: "libjpeg", providers: [.apt(["libjpeg-dev"]), .brew(["jpeg-turbo"]), .yum(["libjpeg-turbo-devel"])]),
 		.target(name: "gdOverrides", dependencies: ["gd", "jpeg"], publicHeadersPath: "."),
         .executableTarget(
             name: "swiftarr",
