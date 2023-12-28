@@ -590,6 +590,7 @@ struct UserController: APIRouteCollection {
 			try await AlertWord.query(on: req.db).filter(\.$word == cleanParam).first() ?? AlertWord(cleanParam)
 		try await alertword.save(on: req.db)
 		try await AlertWordPivot(alertword: alertword, userID: cacheUser.userID).save(on: req.db)
+		try await req.redis.addAlertword(parameter, userID: cacheUser.userID)
 		let keywordPivots = try await AlertWordPivot.query(on: req.db).filter(\.$user.$id == cacheUser.userID)
 			.with(\.$alertword).all()
 		let keywords = keywordPivots.map { $0.alertword.word }
@@ -630,7 +631,7 @@ struct UserController: APIRouteCollection {
 			pivots.removeAll { $0.id == removePivot.id }
 			if try await alertWord.$users.$pivots.query(on: req.db).count() == 0 {
 				try await alertWord.delete(on: req.db)
-				try await req.redis.removeAlertword(parameter)
+				try await req.redis.removeAlertword(parameter, userID: user.userID)
 			}
 		}
 		let keywords = pivots.map { $0.alertword.word }

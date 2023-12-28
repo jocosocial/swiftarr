@@ -137,6 +137,10 @@ extension Request.Redis {
 
 	static let alertwordsRedisKey = RedisKey("alertwords")
 
+	func getAlertwordUsersRedisKey(_ word: String) -> RedisKey {
+		return RedisKey("alertwordUsers-\(word)")
+	}
+
 	// Gets all alertwords set by all users. Used to perform a set intersection against the words in a new post or twarrt.
 	func getAllAlertwords() async throws -> Set<String> {
 		let alertWordArray = try await smembers(of: Request.Redis.alertwordsRedisKey).get()
@@ -144,17 +148,19 @@ extension Request.Redis {
 		return alertSet
 	}
 
-	func addAlertword(_ word: String) async throws {
+	func addAlertword(_ word: String, userID: UUID) async throws {
 		let _ = try await sadd(word, to: Request.Redis.alertwordsRedisKey).get()
+		let _ = try await sadd(userID, to: getAlertwordUsersRedisKey(word)).get()
 	}
 
-	func removeAlertword(_ word: String) async throws {
+	func removeAlertword(_ word: String, userID: UUID) async throws {
 		let _ = try await srem(word, from: Request.Redis.alertwordsRedisKey).get()
+		let _ = try await srem(userID, from: getAlertwordUsersRedisKey(word)).get()
 	}
 
 	// Gets a list of users that are alerting on a particular alertword
 	func getUsersForAlertword(_ word: String) async throws -> [UUID] {
-		let userIDs = try await smembers(of: "alertwordUsers-\(word)", as: UUID.self).get().compactMap { $0 }
+		let userIDs = try await smembers(of: getAlertwordUsersRedisKey(word), as: UUID.self).get().compactMap { $0 }
 		return userIDs
 	}
 
