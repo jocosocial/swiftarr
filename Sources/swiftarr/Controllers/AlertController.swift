@@ -167,7 +167,12 @@ struct AlertController: APIRouteCollection {
 			}
 			else {
 				entry.forumMentionCount = value.int ?? 0
-				entry.newForumMentionCount = max(0, entry.forumMentionCount - viewedCount)
+				// @TODO disabling newForumMentionCount until we can integrate smarts along the lines of
+				// "If we're marking this post as read and it contains an alertword, then increment the
+				// _viewed key for that word."
+				// Otherwise we can never clear the "new" alertword notifications.
+				// entry.newForumMentionCount = max(0, entry.forumMentionCount - viewedCount)
+				entry.newForumMentionCount = 0
 			}
 			resultDict[word] = entry
 		}
