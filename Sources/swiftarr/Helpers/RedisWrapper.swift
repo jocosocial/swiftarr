@@ -153,9 +153,16 @@ extension Request.Redis {
 		let _ = try await sadd(userID, to: getAlertwordUsersRedisKey(word)).get()
 	}
 
-	func removeAlertword(_ word: String, userID: UUID) async throws {
+	// Delete an alertword. This should only be called when there are no more users who have
+	// this word in their list.
+	func removeAlertword(_ word: String) async throws {
 		let _ = try await srem(word, from: Request.Redis.alertwordsRedisKey).get()
+	}
+
+	// Delete an alertword for a particular user.
+	func removeUserAlertword(_ word: String, userID: UUID) async throws {
 		let _ = try await srem(userID, from: getAlertwordUsersRedisKey(word)).get()
+		let _ = try await hdel("alertwordPost-\(word)", from: userHashRedisKey(userID: userID)).get()
 	}
 
 	// Gets a list of users that are alerting on a particular alertword

@@ -631,8 +631,9 @@ struct UserController: APIRouteCollection {
 			pivots.removeAll { $0.id == removePivot.id }
 			if try await alertWord.$users.$pivots.query(on: req.db).count() == 0 {
 				try await alertWord.delete(on: req.db)
-				try await req.redis.removeAlertword(parameter, userID: user.userID)
+				try await req.redis.removeAlertword(parameter)
 			}
+			try await req.redis.removeUserAlertword(parameter, userID: user.userID);
 		}
 		let keywords = pivots.map { $0.alertword.word }
 		return KeywordData(keywords: keywords.sorted())
