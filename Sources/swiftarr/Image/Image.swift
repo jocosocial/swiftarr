@@ -356,9 +356,8 @@ public class GDImage {
 extension GDImage {
 	public convenience init?(url: URL) {
 		let inputFile = fopen(url.path, "rb")
-		defer { fclose(inputFile) }
-
 		guard inputFile != nil else { return nil }
+		defer { fclose(inputFile!) }
 
 		let loadedImage: gdImagePtr?
 
@@ -390,7 +389,7 @@ extension GDImage {
 
 		// open our output file, then defer it to close
 		let outputFile = fopen(url.path, "wb")
-		defer { fclose(outputFile) }
+		defer { fclose(outputFile!) }
 
 		// write the correct output format based on the path extension
 		switch fileType {
