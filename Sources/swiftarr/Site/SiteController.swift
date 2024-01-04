@@ -423,7 +423,7 @@ struct SiteController: SiteControllerUtils {
 		let components = cal.dateComponents(
 			[.day],
 			from: cal.startOfDay(for: Settings.shared.cruiseStartDate()),
-			to: Date()
+			to: cal.startOfDay(for: Date())
 		)
 		let cruiseDay = Int32(components.day ?? 0)
 		var backupTheme: DailyThemeData

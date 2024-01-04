@@ -254,7 +254,7 @@ struct SiteAdminController: SiteControllerUtils {
 				let components = cal.dateComponents(
 					[.day],
 					from: cal.startOfDay(for: Settings.shared.cruiseStartDate()),
-					to: Date()
+					to: cal.startOfDay(for: Date())
 				)
 				currentCruiseDay = Int(components.day ?? 0)
 			}
