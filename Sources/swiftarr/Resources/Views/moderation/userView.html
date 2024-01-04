@@ -37,7 +37,7 @@
 				</div>
 				<div class="row mb-3">
 					<div class="col">
-						<button type="submit" class="btn btn-primary btn-sm">Start Quarantine</button>
+						<button type="submit" class="btn btn-primary btn-sm">Start Quarantine<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
 						#if(modData.tempQuarantineEndTime):
 							<button type="button" class="btn btn-primary btn-sm" data-action="clearTempBan" data-path="/moderate/user/#(modData.header.userID)/tempquarantine/delete">Cancel Quarantine</button>
 						#endif
