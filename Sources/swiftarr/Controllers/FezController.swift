@@ -489,6 +489,9 @@ struct FezController: APIRouteCollection {
 				}
 			}
 			else if participantUserID != cacheUser.userID {
+				if let pivot = try await getUserPivot(fez: fez, userID: participantUserID, on: req.db), pivot.isMuted == true {
+					continue
+				}
 				participantNotifyList.append(participantUserID)
 			}
 		}
