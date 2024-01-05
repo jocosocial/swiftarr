@@ -369,7 +369,47 @@ struct SiteLoginController: SiteControllerUtils {
 	/// `GET /codeOfConduct`
 	///
 	func codeOfConductViewHandler(_ req: Request) async throws -> View {
-		return try await req.view.render("codeOfConduct", LoginPageContext(req))
+		var urlComponents = Settings.shared.apiUrlComponents
+		urlComponents.path = "/public/codeofconduct.json"
+		guard let apiURLString = urlComponents.string else {
+			throw Abort(.internalServerError, reason: "Unable to build URL to API endpoint.")
+		}
+		let response = try await req.client.send(.GET, to: URI(string: apiURLString))
+		let document = try response.content.decode(ConductDoc.self)
+
+		struct ConductDocParagraph: Codable {
+			var text: String?
+			var list: [String]?
+		}
+
+		struct ConductDocSection: Codable {
+			var header: String?
+			var paragraphs: [ConductDocParagraph]?
+		}
+
+		struct ConductDocDocument: Codable {
+			var header: String?
+			var sections: [ConductDocSection]?
+		}
+
+		struct ConductDoc: Codable {
+			var codeofconduct: ConductDocDocument
+			var guidelines: ConductDocDocument
+			var twitarrconduct: ConductDocDocument
+		}
+
+		struct ConductContext: Encodable {
+			var trunk: TrunkContext
+			var conductDocuments: [ConductDocDocument]
+
+			init(_ req: Request, conductDocument: ConductDoc) throws {
+				trunk = .init(req, title: "Code of Conduct", tab: .none)
+				self.conductDocuments = [conductDocument.guidelines, conductDocument.codeofconduct, conductDocument.twitarrconduct]
+			}
+		}
+
+		let ctx = try ConductContext(req, conductDocument: document)
+		return try await req.view.render("codeOfConduct", ctx)
 	}
 
 	/// `GET /createAltAccount`
