@@ -51,7 +51,7 @@ struct SiteSeamailController: SiteControllerUtils {
 		var newMsgFezzes: [FezData] = []
 		var noNewMsgFezzes: [FezData] = []
 		fezList.fezzes.forEach {
-			if let members = $0.members, members.postCount > members.readCount {
+			if let members = $0.members, members.postCount > members.readCount, !members.isMuted {
 				newMsgFezzes.append($0)
 			}
 			else {

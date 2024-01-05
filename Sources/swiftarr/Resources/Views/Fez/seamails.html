@@ -31,8 +31,8 @@
 					#for(fez in fezzes):
 						<a href="/seamail/#(fez.fezID)#if(effectiveUser != nil):?foruser=#(effectiveUser)#endif" class="list-group-item list-group-item-action">		
 							<div class="row">
-								<div class="col">
-									#(fez.title)
+								<div class="col #if(fez.members.isMuted):text-muted#endif">
+									#if(fez.members.isMuted):🔇#endif #(fez.title)
 								</div>
 								<div class="col col-auto">
 									<span title="#localTime(fez.lastModificationTime)" class="text-muted">#relativeTime(fez.lastModificationTime)</span>
@@ -55,7 +55,7 @@
 								<div class="col col-auto">
 									<span class="badge rounded-pill bg-light text-dark">#(fez.members.postCount) posts</span>
 									#if(fez.members.readCount < fez.members.postCount):
-										<span class="badge rounded-pill bg-danger">#(fez.members.postCount - fez.members.readCount) new</span>
+										<span class="badge rounded-pill #if(fez.members.isMuted):bg-light text-dark#else:bg-danger#endif">#(fez.members.postCount - fez.members.readCount) new</span>
 									#endif
 								</div>
 							</div>
