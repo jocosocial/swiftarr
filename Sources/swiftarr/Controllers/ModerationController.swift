@@ -183,11 +183,9 @@ struct ModerationController: APIRouteCollection {
 	func moderatorActionLogHandler(_ req: Request) async throws -> ModeratorActionLogResponseData {
 		let start = (req.query[Int.self, at: "start"] ?? 0)
 		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...200)
-		// https://github.com/jocosocial/swiftarr/issues/239
 		let query = ModeratorAction.query(on: req.db)
-		let query2 = ModeratorAction.query(on: req.db)
-		async let totalActionCount = try query2.count()
-		async let result = try query.range(start..<(start + limit)).sort(\.$createdAt, .descending).all().map { try ModeratorActionLogData(action: $0, on: req) }
+		async let totalActionCount = try query.count()
+		async let result = try query.copy().range(start..<(start + limit)).sort(\.$createdAt, .descending).all().map { try ModeratorActionLogData(action: $0, on: req) }
 		let response = try await ModeratorActionLogResponseData(
 			actions: result,
 			paginator: Paginator(total: totalActionCount, start: start, limit: limit)

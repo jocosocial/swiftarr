@@ -7,6 +7,8 @@ services:
       POSTGRESQL_DATABASE: swiftarr
       POSTGRESQL_USERNAME: swiftarr
       POSTGRESQL_PASSWORD: password
+      # Log postgres queries
+      POSTGRESQL_PGAUDIT_LOG: ALL
     ports:
       - 5432:5432
     volumes:

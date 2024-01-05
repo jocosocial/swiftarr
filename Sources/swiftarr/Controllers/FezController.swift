@@ -227,7 +227,7 @@ struct FezController: APIRouteCollection {
 			query.fields(for: FezParticipant.self).fields(for: FriendlyFez.self).unique()
 		}
 		async let fezCount = try query.count()
-		async let pivots = query.sort(FriendlyFez.self, \.$updatedAt, .descending).range(urlQuery.calcRange()).all()
+		async let pivots = query.copy().sort(FriendlyFez.self, \.$updatedAt, .descending).range(urlQuery.calcRange()).all()
 		let fezDataArray = try await pivots.map { pivot -> FezData in
 			let fez = try pivot.joined(FriendlyFez.self)
 			return try buildFezData(from: fez, with: pivot, for: effectiveUser, on: req)
