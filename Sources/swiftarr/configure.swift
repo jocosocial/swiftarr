@@ -466,6 +466,7 @@ struct SwiftarrConfigurator {
 		app.leaf.tags["cruiseDayIndex"] = CruiseDayIndexTag()
 		app.leaf.tags["gameRating"] = GameRatingTag()
 		app.leaf.tags["localTime"] = LocalTimeTag()
+		app.leaf.tags["markdownTextTag"] = MarkdownTextTag()
 	}
 
 	func configureQueues(_ app: Application) throws {

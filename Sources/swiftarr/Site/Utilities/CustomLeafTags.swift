@@ -81,6 +81,22 @@ struct AddJocomojiTag: UnsafeUnescapedLeafTag {
 	}
 }
 
+/// Renders arbitrary Markdown text
+/// 
+/// Usage: #markdownTextTag(String) -> String
+struct MarkdownTextTag: UnsafeUnescapedLeafTag {
+	func render(_ ctx: LeafContext) throws -> LeafData {
+		try ctx.requireParameterCount(1)
+		guard let string = ctx.parameters[0].string else {
+			return LeafData.string("")
+		}
+
+		let parser = MarkdownParser()
+		let html = parser.html(from: string)
+		return LeafData.string(html)
+	}
+}
+
 /// Runs the element sanitizer on the given string, converts Jocomoji (specific string tags with the form :tag:)
 /// into inline images, and then converts substrings of the forum "@username"  and "#hashtag" into links.
 ///

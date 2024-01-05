@@ -477,14 +477,24 @@ struct SiteController: SiteControllerUtils {
 	///
 	///
 	func aboutTwitarrViewHandler(_ req: Request) async throws -> View {
+		var urlComponents = Settings.shared.apiUrlComponents
+		urlComponents.path = "/public/twitarrhelptext.md"
+		guard let apiURLString = urlComponents.string else {
+			throw Abort(.internalServerError, reason: "Unable to build URL to API endpoint.")
+		}
+		let response = try await req.client.send(.GET, to: URI(string: apiURLString))
+		let decoder = PlaintextDecoder()
+		let document = try response.content.decode(String.self, using: decoder)
 		struct AboutPageContext: Encodable {
 			var trunk: TrunkContext
+			var aboutContent: String
 
-			init(_ req: Request) throws {
+			init(_ req: Request, content: String) throws {
 				trunk = .init(req, title: "About Twitarr", tab: .home)
+				self.aboutContent = content
 			}
 		}
-		let ctx = try AboutPageContext(req)
+		let ctx = try AboutPageContext(req, content: document)
 		return try await req.view.render("aboutTwitarr", ctx)
 	}
 
