@@ -502,6 +502,8 @@ public struct FezData: Content, ResponseEncodable {
 		var paginator: Paginator?
 		/// The FezPosts in the fez discussion. Methods that return arrays of Fezzes, or that add or remove users, do not populate this field (it will be nil).
 		var posts: [FezPostData]?
+		/// Whether user has muted the fez.
+		var isMuted: Bool
 	}
 
 	/// Will be nil if user is not a member of the fez (in the participant or waiting lists).

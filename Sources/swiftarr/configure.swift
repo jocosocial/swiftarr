@@ -583,6 +583,7 @@ struct SwiftarrConfigurator {
 		app.migrations.add(UpdateForumReadersMuteSchema(), to: .psql)
 		app.migrations.add(CreateUserFavoriteSchema(), to: .psql)
 		app.migrations.add(UpdateForumReadersLastPostReadSchema(), to: .psql)
+		app.migrations.add(UpdateFezParticipantSchema(), to: .psql)
 
 		// At this point the db *schema* should be set, and the rest of these migrations operate on the db's *data*.
 

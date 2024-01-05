@@ -29,6 +29,8 @@ struct SiteSeamailController: SiteControllerUtils {
 		privateRoutes.get("seamail", fezIDParam, use: seamailViewPageHandler)
 		privateRoutes.post("seamail", fezIDParam, use: seamailViewPageHandler)
 		privateRoutes.post("seamail", fezIDParam, "post", use: seamailThreadPostHandler)
+		privateRoutes.post("seamail", fezIDParam, "mute", use: seamailAddMutePostHandler)
+		privateRoutes.delete("seamail", fezIDParam, "mute", use: seamailRemoveMutePostHandler)
 		privateRoutes.webSocket(
 			"seamail",
 			fezIDParam,
@@ -389,6 +391,28 @@ struct SiteSeamailController: SiteControllerUtils {
 		let postContent = postStruct.buildPostContentData()
 		try await apiQuery(req, endpoint: "/fez/\(fezID)/post", method: .POST, encodeContent: postContent)
 		return .created
+	}
+
+	// POST /seamail/mute/:seamail_ID
+	//
+	// Adds a seamail to the user's mute list.
+	func seamailAddMutePostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing fez_id parameter.")
+		}
+		try await apiQuery(req, endpoint: "/fez/\(fezID)/mute", method: .POST)
+		return .created
+	}
+
+	// DELETE /seamail/mute/:seamail_ID
+	//
+	// Removes a seamail from the user's mute list.
+	func seamailRemoveMutePostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing fez_id parameter.")
+		}
+		try await apiQuery(req, endpoint: "/fez/\(fezID)/mute/remove", method: .POST)
+		return .noContent
 	}
 }
 
