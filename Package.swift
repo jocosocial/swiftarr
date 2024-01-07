@@ -7,12 +7,12 @@ let package = Package(
 		.macOS(.v12)
 	],
 	dependencies: [
-		.package(url: "https://github.com/vapor/vapor.git", from: "4.76.0"),
+		.package(url: "https://github.com/vapor/vapor.git", from: "4.86.0"),
 		.package(url: "https://github.com/vapor/fluent.git", from: "4.0.0"),
 		.package(url: "https://github.com/vapor/fluent-postgres-driver.git", from: "2.0.0"),
 		.package(url: "https://github.com/vapor/redis.git", from: "4.0.0"),
 		.package(url: "https://github.com/vapor/leaf.git", from: "4.0.0"),
-        .package(url: "https://github.com/vapor/queues-redis-driver.git", from: "1.0.0"),
+		.package(url: "https://github.com/vapor/queues-redis-driver.git", from: "1.0.0"),
 		.package(url: "https://github.com/MrLotU/SwiftPrometheus.git", from: "1.0.0-alpha"),
 		.package(url: "https://github.com/johnsundell/ink.git", from: "0.1.0"),
 	],
@@ -20,10 +20,10 @@ let package = Package(
 		.systemLibrary(name: "gd", pkgConfig: "gdlib", providers: [.apt(["libgd-dev"]), .brew(["gd"]), .yum(["gd-devel"])]),
 		.systemLibrary(name: "jpeg", pkgConfig: "libjpeg", providers: [.apt(["libjpeg-dev"]), .brew(["jpeg-turbo"]), .yum(["libjpeg-turbo-devel"])]),
 		.target(name: "gdOverrides", dependencies: ["gd", "jpeg"], publicHeadersPath: "."),
-        .executableTarget(
-            name: "swiftarr",
-            dependencies: [
-                .product(name: "Vapor", package: "vapor"),
+		.executableTarget(
+			name: "swiftarr",
+			dependencies: [
+				.product(name: "Vapor", package: "vapor"),
 				.product(name: "Fluent", package: "fluent"),
 				.product(name: "FluentPostgresDriver", package: "fluent-postgres-driver"),
 				.product(name: "Redis", package: "redis"),
@@ -34,12 +34,18 @@ let package = Package(
 				"gd",
 				"jpeg",
 				"gdOverrides",
-            ],
+			],
 			resources: [
 				.copy("Resources"),
 				.copy("seeds"),
 			]
-        ),
+			// https://forums.swift.org/t/concurrency-checking-in-swift-packages-unsafeflags/61135/3
+			// swiftSettings: [
+			//  // This one is more strict.
+			// 	.unsafeFlags(["-Xfrontend", "-strict-concurrency=complete"])
+			// 	.unsafeFlags(["-Xfrontend", "-warn-concurrency"])
+			// ]
+		),
 		.testTarget(name: "AppTests", dependencies: ["swiftarr"]),
 	],
 	cLanguageStandard: .c11
