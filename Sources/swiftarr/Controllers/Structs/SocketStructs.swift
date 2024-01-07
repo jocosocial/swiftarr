@@ -98,6 +98,10 @@ struct SocketNotificationData: Content {
 		case phoneCallAnswered
 		/// Caller hung up while phone was rining, or other party ended the call in progress, or callee declined
 		case phoneCallEnded
+		/// A new or edited forum post that now @mentions @moderator.
+		case moderatorForumMention
+		/// A new or edited forum post that now @mentions @twitarrteam.
+		case twitarrTeamForumMention
 	}
 	/// The type of event that happened. See `SocketNotificationData.NotificationTypeData` for values.
 	var type: NotificationTypeData
@@ -122,6 +126,8 @@ extension SocketNotificationData {
 		case .twarrtMention: self.type = .twarrtMention
 		case .forumMention: self.type = .forumMention
 		case .nextFollowedEventTime: self.type = .followedEventStarting
+		case .moderatorForumMention: self.type = .moderatorForumMention
+		case .twitarrTeamForumMention: self.type = .twitarrTeamForumMention
 		}
 		self.info = info
 		self.contentID = id

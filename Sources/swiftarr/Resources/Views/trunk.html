@@ -116,7 +116,7 @@
 						</li>
 						<li class="nav-item d-flex align-items-center">
 							<a class="nav-link #if(trunk.tab == "moderator"): active#endif" href="/moderator">
-								<span class="#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 0 || trunk.alertCounts.moderatorData.openReportCount):border-bottom border-danger#endif">Moderator Pages</span>
+								<span class="#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 0 || trunk.alertCounts.moderatorData.openReportCount || trunk.alertCounts.moderatorData.newModeratorForumMentionCount):border-bottom border-danger#endif">Moderator Pages</span>
 							</a>
 							#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 1):
 								<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount) Msgs</i></span>
@@ -131,15 +131,23 @@
 							#elseif(trunk.alertCounts.moderatorData.openReportCount == 1):
 								<span class="text-muted"><i>1 Report</i></span>
 							#endif
+							#if(trunk.alertCounts.moderatorData.newModeratorForumMentionCount > 1):
+								<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newModeratorForumMentionCount) Mentions</i></span>
+							#elseif(trunk.alertCounts.moderatorData.newModeratorForumMentionCount == 1):
+								<span class="text-muted"><i>1 Mention</i></span>
+							#endif
 						</li>
 					#endif
 					#if(trunk.userIsTwitarrTeam):
 						<li class="nav-item d-flex align-items-center">
 							<a class="nav-link#if(trunk.tab == "admin"): active#endif" href="/admin">
-								<span class="#if(trunk.alertCounts.moderatorData.newTTSeamailMessageCount > 0):border-bottom border-danger#endif">Admin Pages</span>
+								<span class="#if(trunk.alertCounts.moderatorData.newTTSeamailMessageCount > 0 || trunk.alertCounts.moderatorData.newTTForumMentionCount > 0):border-bottom border-danger#endif">Admin Pages</span>
 							</a>
 							#if(trunk.alertCounts.moderatorData.newTTSeamailMessageCount > 0):
 								<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newTTSeamailMessageCount) Msg#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 1):s#endif</i></span>
+							#endif
+							#if(trunk.alertCounts.moderatorData.newTTForumMentionCount > 0):
+								<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newTTForumMentionCount) Mention#if(trunk.alertCounts.moderatorData.newTTForumMentionCount > 1):s#endif</i></span>
 							#endif
 						</li>
 					#endif

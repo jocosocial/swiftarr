@@ -1546,8 +1546,15 @@ public struct UserNotificationData: Content {
 		var newModeratorSeamailMessageCount: Int
 
 		/// The number of Seamails to @TwitarrTeam. Nil if user isn't a member of TwitarrTeam. This is in the Moderator struct because I didn't
-		/// want to make *another* sub-struct for TwitarrTeam, just to hold one value.
+		/// want to make *another* sub-struct for TwitarrTeam, just to hold two values.
 		var newTTSeamailMessageCount: Int?
+
+		/// Number of forum post @mentions the user has not read for @moderator.
+		var newModeratorForumMentionCount: Int
+
+		/// Number of forum post @mentions the user has not read for @twitarrteam. Nil if the user isn't a member of TwitarrTeam.
+		/// This is in the Moderator struct because I didn't want to make *another* sub-struct for TwitarrTeam, just to hold two values.
+		var newTTForumMentionCount: Int
 	}
 
 	/// Will be nil for non-moderator accounts.

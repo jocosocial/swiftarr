@@ -660,6 +660,12 @@ struct ForumController: APIRouteCollection {
 			}
 			postFilterMentions = mentionName
 			query.filter(\.$text, .custom("ILIKE"), "%\(mentionName)%")
+			if mentionName.lowercased() == "@moderator" && cacheUser.accessLevel.hasAccess(.moderator) {
+				try await markNotificationViewed(user: cacheUser, type: .moderatorForumMention(0), on: req)
+			}
+			if mentionName.lowercased() == "@twitarrteam" && cacheUser.accessLevel.hasAccess(.twitarrteam) {
+				try await markNotificationViewed(user: cacheUser, type: .twitarrTeamForumMention(0), on: req)
+			}
 		}
 		if let byself = req.query[Bool.self, at: "byself"], byself == true {
 			query.filter(\.$author.$id == cacheUser.userID)
@@ -1549,11 +1555,24 @@ extension ForumController {
 				post.authorUUID != userID 
 			}
 			// Mentions
+			let cacheUser = try req.auth.require(UserCacheData.self)
 			let (subtracts, adds) = post.getMentionsDiffs(editedString: editedText, isCreate: isCreate)
 			if !subtracts.isEmpty {
 				let subtractUUIDs = req.userCache.getUsers(usernames: subtracts).compactMap(canUserAccessCategory).filter(userDidntMentionSelf)
 				group.addTask {
 					try await subtractNotifications(users: subtractUUIDs, type: .forumMention(postID), on: req)
+				}
+				if subtracts.map({ $0.lowercased() }).contains("twitarrteam") {
+					let ttMembers = req.userCache.allUsersWithAccessLevel(.twitarrteam)
+					group.addTask {
+						try await subtractNotifications(users: ttMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .twitarrTeamForumMention(postID), on: req)
+					}
+				}
+				if subtracts.map({ $0.lowercased()}).contains("moderator") {
+					let modMembers = req.userCache.allUsersWithAccessLevel(.moderator)
+					group.addTask {
+						try await subtractNotifications(users: modMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .moderatorForumMention(postID), on: req)
+					}
 				}
 			}
 			if !adds.isEmpty {
@@ -1565,6 +1584,20 @@ extension ForumController {
 				let infoStr = "\(authorText) wrote a forum post that @mentioned you."
 				group.addTask {
 					try await addNotifications(users: addUUIDs, type: .forumMention(postID), info: infoStr, on: req)
+				}
+				if adds.map({ $0.lowercased() }).contains("twitarrteam") {
+					let ttMembers = req.userCache.allUsersWithAccessLevel(.twitarrteam)
+					let infoStr = "\(authorText) wrote a forum post that @mentioned twitarrteam."
+					group.addTask {
+						try await addNotifications(users: ttMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .twitarrTeamForumMention(postID), info: infoStr, on: req)
+					}
+				}
+				if adds.map({ $0.lowercased()}).contains("moderator") {
+					let modMembers = req.userCache.allUsersWithAccessLevel(.moderator)
+					let infoStr = "\(authorText) wrote a forum post that @mentioned moderator."
+					group.addTask {
+						try await addNotifications(users: modMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .moderatorForumMention(postID), info: infoStr, on: req)
+					}
 				}
 			}
 			// Alertwords
