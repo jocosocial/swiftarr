@@ -1162,9 +1162,6 @@ extension FezController {
 	// user 'moderator' or user 'TwitarrTeam' is a member of the fez and the user has the appropriate access level.
 	//
 	func getEffectiveUser(user: UserCacheData, req: Request, fez: FriendlyFez) -> UserCacheData {
-		if fez.participantArray.contains(user.userID) {
-			return user
-		}
 		// If either of these 'special' users are fez members and the user has high enough access, we can see the
 		// members-only values of the fez as the 'special' user.
 		if user.accessLevel >= .twitarrteam, let ttUser = req.userCache.getUser(username: "TwitarrTeam"),
@@ -1177,7 +1174,7 @@ extension FezController {
 		{
 			return modUser
 		}
-		// User isn't a member of the fez, but they're still the effective user in this case.
+		// User is or is not a member of the fez. But they are themself and not anyone special.
 		return user
 	}
 }
