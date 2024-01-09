@@ -1082,11 +1082,18 @@ extension FezController {
 				participants = valids
 				waitingList = []
 			}
+			
+			// https://github.com/jocosocial/swiftarr/issues/240
+			// Moderators can see postCount and readCount regardless of whether they've joined
+			// or not. If they have joined, they should get their personal pivot data. If they
+			// haven't joined, they shouldn't default to readCount=0 because then every LFG
+			// appears with unread messages that cannot be cleared.
+			let postCount = fez.postCount - (pivot?.hiddenCount ?? 0)
 			fezData.members = FezData.MembersOnlyData(
 				participants: participants,
 				waitingList: waitingList,
-				postCount: fez.postCount - (pivot?.hiddenCount ?? 0),
-				readCount: pivot?.readCount ?? 0,
+				postCount: postCount,
+				readCount: pivot?.readCount ?? postCount,
 				posts: posts,
 				isMuted: pivot?.isMuted ?? false
 			)
