@@ -1,6 +1,7 @@
 import Foundation
 import Vapor
 
+// Generates a dummy schedule for use in testing. Mostly written by ChatGPT.
 func generateSchedule(startDate: Date, length: Int) {
     let dateFormatter = DateFormatter()
     dateFormatter.dateFormat = "yyyy-MM-dd"
