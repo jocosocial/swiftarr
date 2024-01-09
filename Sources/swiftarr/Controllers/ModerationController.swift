@@ -505,7 +505,7 @@ struct ModerationController: APIRouteCollection {
 		guard let postIDString = req.parameters.get(fezPostIDParam.paramString), let postID = Int(postIDString) else {
 			throw Abort(.badRequest, reason: "Request parameter \(fezPostIDParam.paramString) is missing.")
 		}
-		guard let lfgPost = try await FezPost.query(on: req.db).filter(\.$id == postID).withDeleted().first() else {
+		guard let lfgPost = try await FezPost.query(on: req.db).with(\.$fez).filter(\.$id == postID).withDeleted().first() else {
 			throw Abort(.notFound, reason: "no LFG Post found for identifier '\(postID)'")
 		}
 		let reports = try await Report.query(on: req.db)
@@ -518,6 +518,7 @@ struct ModerationController: APIRouteCollection {
 		let modData = FezPostModerationData(
 			fezPost: fezPostData,
 			fezID: lfgPost.$fez.id,
+			fezType: lfgPost.fez.fezType,
 			isDeleted: lfgPost.deletedAt != nil,
 			moderationStatus: lfgPost.moderationStatus,
 			reports: reportData

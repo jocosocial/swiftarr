@@ -62,6 +62,7 @@ public struct FezModerationData: Content {
 public struct FezPostModerationData: Content {
 	var fezPost: FezPostData
 	var fezID: UUID
+	var fezType: FezType
 	var isDeleted: Bool
 	var moderationStatus: ContentModerationStatus
 	var reports: [ReportModerationData]
