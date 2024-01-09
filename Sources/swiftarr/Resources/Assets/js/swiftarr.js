@@ -253,6 +253,12 @@ function updateDropdownButton(menuItemBtn) {
 		menuItem.classList.remove("active");
 	}
 	menuItemBtn.classList.add("active");
+	// Show the dropdown menu button highlighted with active colors if a filter is applied that is not "all".
+	if (menuItemBtn.dataset.selection !== "all") {
+		dropdownBtn.classList.add("active");
+	} else {
+		dropdownBtn.classList.remove("active");
+	}
 }
 
 // MARK: - messagePostForm Handlers
