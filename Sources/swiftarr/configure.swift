@@ -189,6 +189,11 @@ struct SwiftarrConfigurator {
 			Settings.shared.cruiseStartDayOfWeek = cruiseStartDayOfWeek
 		}
 
+		// Late Day Flip in Site UI
+		if let enableLateDayFlip = Environment.get("SWIFTARR_ENABLE_LATE_DAY_FLIP"), enableLateDayFlip != "" {
+			Settings.shared.enableLateDayFlip = Bool(enableLateDayFlip) ?? false
+		}
+
 		// Ask the GD Image library what filetypes are available on the local machine.
 		// gd, gd2, xbm, xpm, wbmp, some other useless formats culled.
 		let fileTypes = [".gif", ".bmp", ".tga", ".png", ".jpg", ".heif", ".heix", ".avif", ".tif", ".webp"]

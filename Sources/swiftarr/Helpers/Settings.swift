@@ -151,6 +151,11 @@ final class Settings: Encodable {
 
 	/// Canonical hostnames for the Twitarr server.
 	@SettingsValue var canonicalHostnames: [String] = ["twitarr.com", "joco.hollandamerica.com"]
+
+	/// Enable Late Day Flip where the site UI shows the next days schedule after 3:00AM rather than after Midnight.
+	/// For example, with this setting enabled opening the schedule at 2:00AM on Thursday will show you Wednesday's
+	/// schedule by default. If this setting is disabled, at 2:00AM on Thursday you would see Thursdays schedule by default.
+	@SettingsValue var enableLateDayFlip: Bool = false
 }
 
 /// Derivative directory paths. These are computed property getters that return a path based on a root path.

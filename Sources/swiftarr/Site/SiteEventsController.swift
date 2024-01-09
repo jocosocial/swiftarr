@@ -143,7 +143,14 @@ struct SiteEventsController: SiteControllerUtils {
 		}
 		else if components.queryItems?.isEmpty == true {
 			let cal = Settings.shared.calendarForDate(Date())
-			let thisWeekday = cal.component(.weekday, from: Date())
+			// For the purpose of events, 'days' start and end at 3 AM. To enable "Late Day Flip" where
+			// the schedule continues showing "Wednesday" until "3AM Thursday" we can adjust the current time
+			// backwards 3 hours. Some day this should be a per-user setting.
+			var currentEffectiveDate = Date()
+			if Settings.shared.enableLateDayFlip {
+				currentEffectiveDate = cal.date(byAdding: .hour, value: -3, to: Date()) ?? Date()
+			}
+			let thisWeekday = cal.component(.weekday, from: currentEffectiveDate)
 			dayOfCruise = (7 + thisWeekday - Settings.shared.cruiseStartDayOfWeek) % 7 + 1
 			components.queryItems?.append(URLQueryItem(name: "cruiseday", value: String(dayOfCruise)))
 			filterString = "Today's " + filterString
