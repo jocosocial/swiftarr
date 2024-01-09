@@ -38,7 +38,7 @@
 				#for(participant in fez.members.participants):
 					<div class="col col-auto border">
 						#avatar(participant)
-						<span>#(participant.username)</span>
+						<span><a href="/user/#(participant.userID)">#(participant.username)</a></span>
 					</div>				
 				#endfor
 			</div>
