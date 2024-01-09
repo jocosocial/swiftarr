@@ -477,6 +477,7 @@ struct SiteLoginController: SiteControllerUtils {
 		req.auth.login(user)
 		req.session.data["token"] = tokenResponse.token
 		req.session.data["accessLevel"] = tokenResponse.accessLevel.rawValue
+		req.session.data["userID"] = String(tokenResponse.userID)
 
 		var deviceType = defaultDeviceType
 		if let userAgent = req.headers.first(name: "User-Agent") {

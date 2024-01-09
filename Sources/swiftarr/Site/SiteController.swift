@@ -635,7 +635,9 @@ extension SiteControllerUtils {
 		var headers = defaultHeaders ?? HTTPHeaders()
 		if let token = req.session.data["token"], !headers.contains(name: "Authorization") {
 			headers.add(name: "Authorization", value: "Bearer \(token)")
+			headers.add(name: "X-Swiftarr-User", value: req.session.data["userID"] ?? "UNKNOWN")
 		}
+		headers.add(name: "X-Swiftarr-Client", value: "swiftarr")
 
 		// Step 2: Generate URLComponents, extract a 'clean' path, append the 'clean' path for the endpoint.
 		var urlComponents = Settings.shared.apiUrlComponents
