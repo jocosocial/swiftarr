@@ -32,6 +32,7 @@ custom_categories:
       - Development
       - Roadmap
       - Special Files
+      - Release Calendar
 
   - name: Operations
     children:
