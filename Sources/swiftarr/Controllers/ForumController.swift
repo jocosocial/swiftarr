@@ -186,6 +186,15 @@ struct ForumController: APIRouteCollection {
 			.sort(ForumReaders.self, \.$isMuted, .descending)
 		if category.isEventCategory {
 			_ = query.join(child: \.$scheduleEvent, method: .left)
+			// https://github.com/jocosocial/swiftarr/issues/199
+			// .withDeleted() applies to the entire query, not just the joined table.
+			// So simply slapping that on there would continue to display deleted Forums
+			// in the list which is not good. The group filter afterwards mimicks the
+			// behavior that Fluent defaults to when filtering soft-deleted data.
+			.withDeleted()
+			.group(.or) { group in 
+				group.filter(\.$deletedAt == nil).filter(\.$deletedAt > Date())
+			}
 		}
 		var dateFilterUsesUpdate = false
 		switch req.query[String.self, at: "sort"] {
