@@ -416,12 +416,24 @@ struct SiteForumController: SiteControllerUtils {
 		}
 		let postContent = postStruct.buildPostContentData()
 		let forumContent = ForumCreateData(title: forumTitle, firstPost: postContent)
-		try await apiQuery(
+		// https://github.com/jocosocial/swiftarr/issues/168
+		// This marks the brand new forum as read for the user that created it.
+		// It was considered by some to be "undesirable" for the forum that you just made to already
+		// show up with a "1 post, 1 new" badge in the UI. I thought about doing this in the API
+		// but I think it should stick to just creating the forum. By calling the /forum/:forumID
+		// endpoint immediately afterward (with start and limits clamped down hard)
+		// that will automatically generate a ForumReader pivot under the hood and mark the forum as read
+		// before the users browser sends them back to the category forum list.
+		// If we elect to do this in the API it would be trivial to generate and save the pivot there
+		// instead.
+		let newForumResponse = try await apiQuery(
 			req,
 			endpoint: "/forum/categories/\(catID)/create",
 			method: .POST,
 			encodeContent: forumContent
 		)
+		let newForum = try newForumResponse.content.decode(ForumData.self)
+		try await apiQuery(req, endpoint: "/forum/\(newForum.forumID)?start=0&limit=1", passThroughQuery: false)
 		return .created
 	}
 

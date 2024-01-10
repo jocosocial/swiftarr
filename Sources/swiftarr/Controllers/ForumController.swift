@@ -908,6 +908,10 @@ struct ForumController: APIRouteCollection {
 	///
 	/// - Note: Users may be able to add posts to existing forum threads in categories where they don't have access to create new threads.
 	///
+	/// This function intentionally does not generate a ForumReader pivot for the user that created it.
+	/// https://github.com/jocosocial/swiftarr/issues/168
+	/// See SiteForumController.swift for more.
+	/// 
 	/// - Parameter categoryID: in URL path
 	/// - Parameter requestBody: `ForumCreateData` payload in the HTTP body.
 	/// - Throws: 403 error if the user is not authorized to create a forum.
