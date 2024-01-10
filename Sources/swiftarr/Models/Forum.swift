@@ -22,6 +22,9 @@ final class Forum: Model, Searchable {
 	/// The creation time of the last post added to this forum. Used to sort forums. Edits to posts don't count.
 	@Field(key: "last_post_time") var lastPostTime: Date
 
+	/// The ID of the last post added to this forum. Could be empty.
+	@Field(key: "last_post_id") var lastPostID: Int?
+
 	/// Moderators can set several statuses on forums that modify editability and visibility.
 	@Enum(key: "mod_status") var moderationStatus: ContentModerationStatus
 
@@ -72,6 +75,7 @@ final class Forum: Model, Searchable {
 		self.$category.value = category
 		self.$creator.id = creatorID
 		self.lastPostTime = Date()
+		self.lastPostID = 0
 		self.moderationStatus = .normal
 	}
 }
@@ -94,5 +98,29 @@ struct CreateForumSchema: AsyncMigration {
 
 	func revert(on database: Database) async throws {
 		try await database.schema("forum").delete()
+	}
+}
+
+struct UpdateForumLastPostIDMigration: AsyncMigration {
+	func prepare(on database: Database) async throws {
+		try await database.schema("forum")
+			.field("last_post_id", .int)
+			.update()
+
+		// Update all existing forums with the last post.
+		let forums = try await Forum.query(on: database).all()
+        for forum in forums {
+            let forumPostQuery = forum.$posts.query(on: database).sort(\.$createdAt, .descending)
+            if let lastPost = try await forumPostQuery.first() {
+                forum.lastPostID = lastPost.id
+                try await forum.save(on: database)
+            }
+        }
+	}
+
+	func revert(on database: Database) async throws {
+		try await database.schema("forum")
+			.deleteField("last_post_id")
+			.update()
 	}
 }

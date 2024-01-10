@@ -589,6 +589,7 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreateUserFavoriteSchema(), to: .psql)
 		app.migrations.add(UpdateForumReadersLastPostReadSchema(), to: .psql)
 		app.migrations.add(UpdateFezParticipantSchema(), to: .psql)
+		app.migrations.add(UpdateForumLastPostIDMigration(), to: .psql)
 
 		// At this point the db *schema* should be set, and the rest of these migrations operate on the db's *data*.
 
@@ -745,6 +746,5 @@ struct SwiftarrConfigurator {
 	// These should be stored in Sources/swiftarr/Commands.
 	func configureCommands(_ app: Application) {
 		app.asyncCommands.use(GenerateScheduleCommand(), as: "generate-schedule")
-
 	}
 }

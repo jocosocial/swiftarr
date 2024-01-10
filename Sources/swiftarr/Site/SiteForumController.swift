@@ -72,6 +72,7 @@ struct ForumsSearchPageContext: Encodable {
 		case recent  // Recently viewed by this user
 		case textSearch  // Searches title for string
 		case mute  // Muted forums by this user
+		case unread // Unread forums by this user
 	}
 
 	init(_ req: Request, forums: ForumSearchData, searchType: SearchType, filterDesc: String) throws {
@@ -82,6 +83,7 @@ struct ForumsSearchPageContext: Encodable {
 		case .recent: title = "Recently Viewed"
 		case .textSearch: title = "Forum Search"
 		case .mute: title = "Muted Forums"
+		case .unread: title = "Unread Forums"
 		}
 		trunk = .init(req, title: title, tab: .forums, search: "Search")
 		self.forums = forums
@@ -276,6 +278,7 @@ struct SiteForumController: SiteControllerUtils {
 		privateRoutes.delete("forum", "mute", forumIDParam, use: forumRemoveMutePostHandler)
 		privateRoutes.get("forum", "owned", use: forumsByUserPageHandler)
 		privateRoutes.get("forum", "recent", use: forumRecentsPageHandler)
+		privateRoutes.get("forum", "unread", use: forumUnreadPageHandler)
 
 		privateRoutes.get("forumpost", "edit", postIDParam, use: forumPostEditPageHandler)
 		privateRoutes.post("forumpost", "edit", postIDParam, use: forumPostEditPostHandler)
@@ -858,6 +861,22 @@ struct SiteForumController: SiteControllerUtils {
 			forums: forums,
 			searchType: .favorite,
 			filterDesc: "\(forums.paginator.total) Favorites"
+		)
+		return try await req.view.render("Forums/forumsList", ctx)
+	}
+
+	// GET /forum/unread
+	//
+	// Displays a list of the user's favorited forums.
+	// URL QueryParameters start, limit are passed through.
+	func forumUnreadPageHandler(_ req: Request) async throws -> View {
+		let response = try await apiQuery(req, endpoint: "/forum/unread")
+		let forums = try response.content.decode(ForumSearchData.self)
+		let ctx = try ForumsSearchPageContext(
+			req,
+			forums: forums,
+			searchType: .unread,
+			filterDesc: "\(forums.paginator.total) Unread Forums"
 		)
 		return try await req.view.render("Forums/forumsList", ctx)
 	}
