@@ -120,66 +120,42 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		// Sanitize, then add jocomoji.
 		string = AddJocomojiTag.process(string.htmlEscaped())
 
-		var words = string.split(separator: " ", omittingEmptySubsequences: false)
-		words = words.map {
-			if $0.hasPrefix("@") && $0.count <= 50 && $0.count >= 3 {
-				let scalars = $0.unicodeScalars
-				let firstValidUsernameIndex = scalars.index(scalars.startIndex, offsetBy: 1)
-				var firstNonUsernameIndex = firstValidUsernameIndex
-				// Move forward to the last char that's valid in a username
-				while firstNonUsernameIndex < scalars.endIndex,
-					CharacterSet.validUsernameChars.contains(scalars[firstNonUsernameIndex])
-				{
-					scalars.formIndex(after: &firstNonUsernameIndex)
-				}
-				// Separator chars can't be at the end. Move backward until we get a non-separator. This check fixes posts with
-				// constructions like "Hello, @admin." where the period ends a sentence.
-				while firstNonUsernameIndex > firstValidUsernameIndex,
-					CharacterSet.usernameSeparators.contains(scalars[scalars.index(before: firstNonUsernameIndex)])
-				{
-					scalars.formIndex(before: &firstNonUsernameIndex)
-				}
-				// After trimming, username must be >=2 chars, plus the @ sign makes 3.
-				if scalars.distance(from: scalars.startIndex, to: firstNonUsernameIndex) >= 3,
-					let name = String(scalars[firstValidUsernameIndex..<firstNonUsernameIndex])
-						.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)
-				{
-					// We could in theory ask UserCache if the username actually exists. But that breaks separation
-					// between site and API, and every other method of checking the username is async. Even then, we may not
-					// have access to the Request from here.
-					let restOfString = String(scalars[firstNonUsernameIndex...])
-					return "<a class=\"link-primary\" href=\"/username/\(name)\">@\(name)</a>\(restOfString)"
-				}
-			}
-			else if $0.hasPrefix("#") && $0.count <= 50 && $0.count >= 3 {
-				let scalars = $0.unicodeScalars
-				let firstValidHashtagIndex = scalars.index(scalars.startIndex, offsetBy: 1)
-				var firstNonHashtagIndex = firstValidHashtagIndex
-				// Move forward to the last char that's valid in a hashtag
-				while firstNonHashtagIndex < scalars.endIndex,
-					CharacterSet.alphanumerics.contains(scalars[firstNonHashtagIndex])
-				{
-					scalars.formIndex(after: &firstNonHashtagIndex)
-				}
-				// After trimming, hashtag must be >=2 chars, plus the # sign makes 3.
-				if scalars.distance(from: scalars.startIndex, to: firstNonHashtagIndex) >= 3,
-					let hashtag = String(scalars[firstValidHashtagIndex..<firstNonHashtagIndex])
-						.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
-				{
-					let restOfString = String(scalars[firstNonHashtagIndex...])
-					var searchHref: String
-					switch usage {
-					case .twarrt: searchHref = "/tweets?hashtag=\(hashtag)"
-					case .forumpost: searchHref = "/forumpost/search?hashtag=\(hashtag)"
-					case .fez: searchHref = "/forumpost/search?hashtag=\(hashtag)"
-					case .seamail: searchHref = "/forumpost/search?hashtag=\(hashtag)"
-					}
-					return "<a class=\"link-primary\" href=\"\(searchHref)\">#\(hashtag)</a>\(restOfString)"
-				}
-			}
-			return $0
+		// Mentions
+		// This uses most the same code as the getMentionsSet in ContentFilterable. Though the regex is subtly
+		// different to include the @ so we can replace it later on.
+		// https://regexr.com/ is based god.
+		// Which also means it came from YouKnowWhere.
+		let mentionPattern = "(?<!\\S)(@[A-Za-z0-9]+(?:[-.+_][A-Za-z0-9]+)*)"
+		let mentionRegex = try NSRegularExpression(pattern: mentionPattern, options: [])
+		let mentionMatches = mentionRegex.matches(in: string, options: [], range: NSRange(location: 0, length: string.utf16.count))
+
+		var modifiedText = string
+		for mentionMatch in mentionMatches.reversed() {
+			let range = Range(mentionMatch.range(at: 1), in: modifiedText)!
+			let mention = String(modifiedText[range])
+			let username = String(mention.dropFirst()) // Drop the initial "@"
+            let link = "<a class=\"link-primary\" href=\"/username/\(username)\">\(mention)</a>"
+            modifiedText.replaceSubrange(range, with: link)
 		}
-		string = words.joined(separator: " ")
+		string = modifiedText
+
+		// Hashtags
+		// Tags should:
+		// * Not start in the middle of a word (surrounded by newline, string boundaries, whitespace)
+		// * Begin with a #
+		// * Contain alphanumberic characters with no separators
+		let hashtagPattern = "(?<!\\S)(#[A-Za-z0-9]+)(?!\\S)"
+		let hashtagRegex = try NSRegularExpression(pattern: hashtagPattern, options: [])
+		let hashtagMatches = hashtagRegex.matches(in: string, options: [], range: NSRange(location: 0, length: string.utf16.count))
+
+		for hashtagMatch in hashtagMatches.reversed() {
+			let range = Range(hashtagMatch.range(at: 1), in: modifiedText)!
+			let mention = String(modifiedText[range])
+			let hashtag = String(mention.dropFirst()) // Drop the initial "#"
+            let link = "<a class=\"link-primary\" href=\"/forumpost/search?hashtag=\(hashtag)\">\(mention)</a>"
+            modifiedText.replaceSubrange(range, with: link)
+		}
+		string = modifiedText
 
 		string = string.replacingOccurrences(of: "\r\n", with: "\n")
 		string = string.replacingOccurrences(of: "\r", with: "\n")
@@ -199,8 +175,12 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 
 		// Also convert newlines to HTML breaks. Do this before link conversion due to a dumb bug with the regex parser
 		// where \r\n sequences that appear before the regex match have their reported match length reduced.
-		string = string.replacingOccurrences(of: "\r\n", with: "<br>")
-		string = string.replacingOccurrences(of: "\r", with: "<br>")
+		//
+		// Note the replacement of "\r\n" and "\r" above. Dunno if that matters with the Markdown parser.
+		//
+		// I can't begin to comprehend the number of hours I wasted figuring out that Swift's print()
+		// basically does a buffer overflow with newlines and prints the same content to the same line in-place
+		// on the terminal.
 		string = string.replacingOccurrences(of: "\n", with: "<br>")
 
 		// Links in posts should be automatically clickable. Similarly, we desire to shorten Twitarr

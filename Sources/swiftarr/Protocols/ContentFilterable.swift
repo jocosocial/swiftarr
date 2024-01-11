@@ -126,43 +126,33 @@ extension ContentFilterable {
 		return words
 	}
 
-	/// Returns a set of possible usernames found as @mentions in the given string. Does not check whether the @mentions are valid users.
-	/// The algorithm could probably reduced to a somewhat complicated regex, but here's what it looks for:
+	/// Returns a set of possible usernames found as @mentions in the given string.
+	/// Does not check whether the @mentions are valid users.
+	/// The regex looks for:
 	///	- Start-of-string or whitespace,
 	/// - '@'
 	/// - 2...50 characters that are in the set of valid Username chars
-	/// 	- The last char in the above string cannot be in the set of username separator chars
+	///	- Trailing separator characters are excluded from the mention (such as ending with punctuation)
 	/// - A non-Username char or end-of-string.
+	/// ChatGPT turned this from a mega string processing nightmare into an unreadable regex!
+	/// "Software"
+	///
+	/// Example: "@heidi likes @sam" -> ["heidi", "sam"]
+	///
 	static func getMentionsSet(for string: String) -> Set<String> {
-		let words = string.split(separator: " ", omittingEmptySubsequences: true)
-		let userMentions: [String] = words.compactMap {
-			if $0.hasPrefix("@") && $0.count <= 50 && $0.count >= 3 {
-				let scalars = $0.unicodeScalars
-				let firstValidUsernameIndex = scalars.index(scalars.startIndex, offsetBy: 1)
-				var firstNonUsernameIndex = firstValidUsernameIndex
-				// Move forward to the last char that's valid in a username
-				while firstNonUsernameIndex < scalars.endIndex,
-					CharacterSet.validUsernameChars.contains(scalars[firstNonUsernameIndex])
-				{
-					scalars.formIndex(after: &firstNonUsernameIndex)
-				}
-				// Separator chars can't be at the end. Move backward until we get a non-separator. This check fixes posts with
-				// constructions like "Hello, @admin." where the period ends a sentence.
-				while firstNonUsernameIndex > firstValidUsernameIndex,
-					CharacterSet.usernameSeparators.contains(scalars[scalars.index(before: firstNonUsernameIndex)])
-				{
-					scalars.formIndex(before: &firstNonUsernameIndex)
-				}
-				// After trimming, username must be >=2 chars, plus the @ sign makes 3.
-				if scalars.distance(from: scalars.startIndex, to: firstNonUsernameIndex) >= 3 {
-					let name = String(scalars[firstValidUsernameIndex..<firstNonUsernameIndex])
-					return name
-				}
-			}
-			return nil
+		let pattern = "(?<!\\S)@([A-Za-z0-9]+(?:[-.+_][A-Za-z0-9]+)*)"
+		do {
+			let regex = try NSRegularExpression(pattern: pattern, options: [])
+			let matches = regex.matches(in: string, options: [], range: NSRange(location: 0, length: string.utf16.count))
+
+			let usernames = matches.compactMap { match -> String? in
+				let range = Range(match.range(at: 1), in: string)
+				return range.map { String(string[$0]) }
+			}.filter { $0.count >= 2 && $0.count <= 50 }
+			return Set(usernames)
+		} catch {
+			return []
 		}
-		let mentionSet = Set(userMentions)
-		return mentionSet
 	}
 
 	/// Fluent queries can filter for strings in text fields, but @mentions require more specific filtering.
