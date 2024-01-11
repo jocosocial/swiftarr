@@ -8,7 +8,7 @@ struct PublicProfileContext: Encodable {
 	var noteFormAction: String
 
 	init(_ req: Request, profile: ProfilePublicData) throws {
-		trunk = .init(req, title: "User Profile", tab: .none)
+		trunk = .init(req, title: "\(profile.header.username) | User Profile", tab: .none)
 		self.profile = profile
 		noteFormAction = "/profile/note/\(profile.header.userID)"
 	}
@@ -165,7 +165,7 @@ struct SiteUserController: SiteControllerUtils {
 			var profile: ProfilePublicData
 
 			init(_ req: Request, profile: ProfilePublicData) throws {
-				trunk = .init(req, title: "User Profile", tab: .none)
+				trunk = .init(req, title: "\(profile.header.username) | User Profile", tab: .none)
 				self.profile = profile
 			}
 		}
