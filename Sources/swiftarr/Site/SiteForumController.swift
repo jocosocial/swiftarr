@@ -34,7 +34,7 @@ struct ForumPageContext: Encodable {
 	var paginator: PaginatorContext
 
 	init(_ req: Request, forum: ForumData, cat: [CategoryData]) throws {
-		trunk = .init(req, title: "Forum Thread", tab: .forums, search: "Search")
+		trunk = .init(req, title: "\(forum.title) | Forum Thread", tab: .forums, search: "Search")
 		self.forum = forum
 		self.post = .init(forType: .forumPost(forum.forumID.uuidString))
 		if cat.count > 0 {
@@ -336,7 +336,7 @@ struct SiteForumController: SiteControllerUtils {
 			var sortOrders: [ForumsSortOrder]
 
 			init(_ req: Request, forums: CategoryData, start: Int, limit: Int) throws {
-				trunk = .init(req, title: "Forum Threads", tab: .forums, search: "Search")
+				trunk = .init(req, title: "\(forums.title) | Forum Threads", tab: .forums, search: "Search")
 				self.forums = forums
 				paginator = .init(start: start, total: Int(forums.numThreads), limit: limit) { pageIndex in
 					"/forums/\(forums.categoryID)?start=\(pageIndex * limit)&limit=\(limit)"

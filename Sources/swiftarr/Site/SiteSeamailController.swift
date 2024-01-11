@@ -286,9 +286,10 @@ struct SiteSeamailController: SiteControllerUtils {
 			var socketURL: String
 			var breadcrumbURL: String
 			var paginator: PaginatorContext
+			var breadcrumbTitle: String;
 
 			init(_ req: Request, fez: FezData) throws {
-				let (title, tab) = titleAndTab(for: req)
+				let (title, tab) = titleAndTab(for: req, seamail: fez)
 				trunk = .init(req, title: title, tab: tab, search: "Search Seamail")
 				self.fez = fez
 				oldPosts = []
@@ -300,6 +301,7 @@ struct SiteSeamailController: SiteControllerUtils {
 					post.postErrorString = "Created the chat, but was not able to post the initial message."
 				}
 				socketURL = "/fez/\(fez.fezID)/socket"
+				(breadcrumbTitle, _) = titleAndTab(for: req)
 				breadcrumbURL = "/seamail"
 				if let foruser = req.query[String.self, at: "foruser"],
 					var comp = URLComponents(string: post.postSuccessURL)
@@ -433,5 +435,12 @@ private func titleAndTab(for req: Request) -> (String, TrunkContext.Tab) {
 		title = "Seamail"
 		tab = .seamail
 	}
+	return (title, tab)
+}
+
+// This version of titleAndTab is for a single Seamail rather than the lists.
+private func titleAndTab(for req: Request, seamail: FezData) -> (String, TrunkContext.Tab) {
+	let title: String = "\(seamail.title) | Seamail"
+	let tab: TrunkContext.Tab = .seamail
 	return (title, tab)
 }

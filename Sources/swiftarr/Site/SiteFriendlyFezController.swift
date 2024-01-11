@@ -145,7 +145,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 			var hidePastSelection: Bool?
 
 			init(_ req: Request, fezList: FezListData) throws {
-				trunk = .init(req, title: "Looking For Group", tab: .lfg)
+				trunk = .init(req, title: "LFG Find Groups", tab: .lfg)
 				self.fezList = fezList
 				tab = .find
 				typeSelection = req.query[String.self, at: "type"] ?? "all"
@@ -171,7 +171,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 			var tab: FezTab
 
 			init(_ req: Request) throws {
-				trunk = .init(req, title: "Looking For Group", tab: .lfg)
+				trunk = .init(req, title: "LFG Help", tab: .lfg)
 				tab = .faq
 			}
 		}
@@ -228,7 +228,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 			var hidePastSelection: Bool?
 
 			init(_ req: Request, fezList: FezListData) throws {
-				trunk = .init(req, title: "LFGs Created By You", tab: .lfg)
+				trunk = .init(req, title: "LFG Owned Groups", tab: .lfg)
 				self.fezList = fezList
 				tab = .owned
 				typeSelection = req.query[String.self, at: "type"] ?? "all"
@@ -330,7 +330,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 
 			init(_ req: Request, fez: FezData) throws {
 				let cacheUser = try req.auth.require(UserCacheData.self)
-				trunk = .init(req, title: "LFG", tab: .lfg)
+				trunk = .init(req, title: "\(fez.title) | LFG", tab: .lfg)
 				self.fez = fez
 				self.userID = cacheUser.userID
 				userIsMember = false
