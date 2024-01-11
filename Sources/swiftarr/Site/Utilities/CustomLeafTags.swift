@@ -614,3 +614,19 @@ struct GameRatingTag: LeafTag {
 		return LeafData.string(str)
 	}
 }
+
+/// https://github.com/jocosocial/swiftarr/issues/188
+/// Renders a pretty label for a dinner team enum. I have to believe there's a better way to
+/// access fancy properties like dinnerTeam.label from within the template, but I didn't see
+/// an obvious pattern that worked.
+struct DinnerTeamTag: LeafTag {
+	func render(_ ctx: LeafContext) throws -> LeafData {
+		guard ctx.parameters.count == 1, let value = ctx.parameters[0].string else {
+			throw "Leaf: DinnerTeamTag tag unable to get string value."
+		}
+		guard let dinnerTeam = DinnerTeam(rawValue: value) else {
+			return ""
+		}
+		return LeafData.string(dinnerTeam.label)
+	}
+}

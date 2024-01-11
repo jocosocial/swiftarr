@@ -239,7 +239,8 @@ struct SiteLoginController: SiteControllerUtils {
 						roomNumber: nil,
 						email: nil,
 						message: nil,
-						about: nil
+						about: nil,
+						dinnerTeam: nil
 					)
 					try await apiQuery(req, endpoint: "/user/profile", method: .POST, encodeContent: profileData)
 				}

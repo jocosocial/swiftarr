@@ -33,6 +33,9 @@
 					#if(profile.roomNumber != ""):
 						Room #: <b>#(profile.roomNumber)</b><br>
 					#endif
+					#if(profile.dinnerTeam):
+						Dinner Team: <b>#dinnerTeamTag(profile.dinnerTeam)</b><br>
+					#endif
 				</div>
 			</div>
 			#if(profile.about != ""):

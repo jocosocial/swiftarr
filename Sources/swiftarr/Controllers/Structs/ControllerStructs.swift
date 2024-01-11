@@ -1155,6 +1155,8 @@ public struct ProfilePublicData: Content {
 	var message: String
 	/// A UserNote owned by the visiting user, about the profile's user (see `UserNote`).
 	var note: String?
+	/// An optional dinner team assignemnt.
+	var dinnerTeam: DinnerTeam?
 }
 
 extension ProfilePublicData {
@@ -1171,6 +1173,7 @@ extension ProfilePublicData {
 			self.realName = ""
 			self.roomNumber = ""
 			self.note = note
+			self.dinnerTeam = nil
 		}
 		else if requesterAccessLevel == .banned {
 			self.about = ""
@@ -1180,6 +1183,7 @@ extension ProfilePublicData {
 			self.preferredPronoun = ""
 			self.realName = ""
 			self.roomNumber = ""
+			self.dinnerTeam = nil
 		}
 		else {
 			self.about = user.about ?? ""
@@ -1190,6 +1194,7 @@ extension ProfilePublicData {
 			self.realName = user.realName ?? ""
 			self.roomNumber = user.roomNumber ?? ""
 			self.note = note
+			self.dinnerTeam = user.dinnerTeam
 		}
 	}
 }
@@ -1657,6 +1662,8 @@ public struct UserProfileUploadData: Content {
 	var message: String?
 	/// An optional blurb about the user.
 	var about: String?
+	/// An optional dinner team assignment.
+	var dinnerTeam: DinnerTeam?
 }
 
 extension UserProfileUploadData {
@@ -1670,6 +1677,7 @@ extension UserProfileUploadData {
 		self.preferredPronoun = user.preferredPronoun
 		self.realName = user.realName
 		self.roomNumber = user.roomNumber
+		self.dinnerTeam = user.dinnerTeam
 	}
 }
 

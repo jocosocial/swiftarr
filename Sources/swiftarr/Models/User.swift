@@ -89,6 +89,9 @@ final class User: Model {
 	/// An optional cabin number.
 	@OptionalField(key: "roomNumber") var roomNumber: String?
 
+	/// An optional dinner team.
+	@OptionalField(key: "dinnerTeam") var dinnerTeam: DinnerTeam?
+
 	/// Users that this user has muted. Muting removes twarrts, forums, forumPosts, and LFGs authored by muted users from API results.
 	/// Here as an array instead of a to-many child relation because the primary operation is to use the list of all muted user IDs as a query filter, and
 	/// we should never use the inverse relation ("muted by <user>") for any purpose.
@@ -297,3 +300,16 @@ extension User: ModelAuthenticatable {
 
 extension User: ModelSessionAuthenticatable {}
 
+struct UpdateUserDinnerTeamMigration: AsyncMigration {
+	func prepare(on database: Database) async throws {
+		try await database.schema("user")
+			.field("dinnerTeam", .string)
+			.update()
+	}
+
+	func revert(on database: Database) async throws {
+		try await database.schema("user")
+			.deleteField("dinnerTeam")
+			.update()
+	}
+}

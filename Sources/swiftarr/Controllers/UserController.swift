@@ -556,6 +556,7 @@ struct UserController: APIRouteCollection {
 		targetUser.preferredPronoun = data.preferredPronoun?.isEmpty == true ? nil : data.preferredPronoun
 		targetUser.realName = data.realName?.isEmpty == true ? nil : data.realName
 		targetUser.roomNumber = data.roomNumber?.isEmpty == true ? nil : data.roomNumber
+		targetUser.dinnerTeam = data.dinnerTeam
 
 		// build .userSearch value
 		targetUser.buildUserSearchString()

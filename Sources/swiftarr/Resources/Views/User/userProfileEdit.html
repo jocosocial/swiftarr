@@ -96,6 +96,20 @@
 
 				<div class="row mx-1 mb-3 align-items-center">
 					<div class="col col-12 col-sm-4">
+						<label for="dinnerTeam" class="text-start text-sm-end d-block">Dinner Team:</label>
+					</div>
+					<div class="col col-12 col-sm-8">
+						<select id="dinnerTeam" name="dinnerTeam" class="form-control">
+							<option value="red" #if(profile.dinnerTeam == "red"):selected#endif>Red Team</option>
+							<option value="gold" #if(profile.dinnerTeam == "gold"):selected#endif>Gold Team</option>
+							<option value="sro" #if(profile.dinnerTeam == "sro"):selected#endif>Club SRO</option>
+							<option value="" #if(!profile.dinnerTeam):selected#endif>None</option>
+						</select>
+					</div>
+				</div>
+
+				<div class="row mx-1 mb-3 align-items-center">
+					<div class="col col-12 col-sm-4">
 						<label for="email" class="text-start text-sm-end d-block">Email:</label>
 					</div>
 					<div class="col col-12 col-sm-8">
