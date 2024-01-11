@@ -568,10 +568,20 @@ struct UserBylineTag: UnsafeUnescapedLeafTag {
 			styling = newStyle
 		}
 		if styling == "nolink" {
-			let displayName = userHeader["displayName"]?.string?.htmlEscaped() ?? ""
-			return LeafData.string("<b>\(displayName)</b> @\(username)")
+			if let displayName = userHeader["displayName"]?.string?.htmlEscaped() {
+				if let preferredPronoun = userHeader["preferredPronoun"]?.string?.htmlEscaped() {
+					return LeafData.string("<b>\(displayName)</b> @\(username) (\(preferredPronoun))")
+				}
+				return LeafData.string("<b>\(displayName)</b> @\(username)")
+			}
+			return LeafData.string("@\(username)")
 		}
 		else if styling != "short", let displayName = userHeader["displayName"]?.string?.htmlEscaped() {
+			if let preferredPronoun = userHeader["preferredPronoun"]?.string?.htmlEscaped() {
+				return LeafData.string(
+					"<a class=\"\(styling)\" href=\"/user/\(userID)\"><b>\(displayName)</b> @\(username) (\(preferredPronoun))</a>"
+				)
+			}
 			return LeafData.string(
 				"<a class=\"\(styling)\" href=\"/user/\(userID)\"><b>\(displayName)</b> @\(username)</a>"
 			)

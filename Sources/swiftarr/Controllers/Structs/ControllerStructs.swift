@@ -1141,8 +1141,6 @@ public struct ProfilePublicData: Content {
 	var header: UserHeader
 	/// An optional real world name of the user.
 	var realName: String
-	/// An optional preferred pronoun or form of address.
-	var preferredPronoun: String
 	/// An optional home location for the user.
 	var homeLocation: String
 	/// An optional cabin number for the user.
@@ -1169,7 +1167,6 @@ extension ProfilePublicData {
 			self.email = ""
 			self.homeLocation = ""
 			self.message = "This profile is under moderator review"
-			self.preferredPronoun = ""
 			self.realName = ""
 			self.roomNumber = ""
 			self.note = note
@@ -1180,7 +1177,6 @@ extension ProfilePublicData {
 			self.email = ""
 			self.homeLocation = ""
 			self.message = "You must be logged in to view this user's Profile details."
-			self.preferredPronoun = ""
 			self.realName = ""
 			self.roomNumber = ""
 			self.dinnerTeam = nil
@@ -1190,7 +1186,6 @@ extension ProfilePublicData {
 			self.email = user.email ?? ""
 			self.homeLocation = user.homeLocation ?? ""
 			self.message = user.message ?? ""
-			self.preferredPronoun = user.preferredPronoun ?? ""
 			self.realName = user.realName ?? ""
 			self.roomNumber = user.roomNumber ?? ""
 			self.note = note
@@ -1442,6 +1437,8 @@ public struct UserHeader: Content {
 	var displayName: String?
 	/// The user's avatar image.
 	var userImage: String?
+	/// An optional preferred pronoun or form of address.
+	var preferredPronoun: String?
 }
 
 extension UserHeader {
@@ -1450,6 +1447,7 @@ extension UserHeader {
 		self.username = user.username
 		self.displayName = user.displayName
 		self.userImage = user.userImage
+		self.preferredPronoun = user.preferredPronoun
 	}
 
 	static var Blocked: UserHeader {
@@ -1457,7 +1455,8 @@ extension UserHeader {
 			userID: Settings.shared.blockedUserID,
 			username: "BlockedUser",
 			displayName: "BlockedUser",
-			userImage: ""
+			userImage: "",
+			preferredPronoun: ""
 		)
 	}
 }

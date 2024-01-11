@@ -234,7 +234,7 @@ final class User: Model {
 	}
 
 	func makeUserHeader() throws -> UserHeader {
-		return try UserHeader(userID: requireID(), username: username, displayName: displayName, userImage: userImage)
+		return try UserHeader(userID: requireID(), username: username, displayName: displayName, userImage: userImage, preferredPronoun: preferredPronoun)
 	}
 }
 

@@ -21,8 +21,8 @@
 					#if(profile.realName != ""):
 						Real Name: <b>#(profile.realName)</b><br>
 					#endif
-					#if(profile.preferredPronoun != ""):
-						Pronouns: <b>#(profile.preferredPronoun)</b><br>
+					#if(profile.header.preferredPronoun && profile.header.preferredPronoun != ""):
+						Pronouns: <b>#(profile.header.preferredPronoun)</b><br>
 					#endif
 					#if(profile.email != ""):
 						Email: <b>#(profile.email)</b><br>
