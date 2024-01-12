@@ -555,6 +555,7 @@ struct AvatarTag: UnsafeUnescapedLeafTag {
 /// Or: #userByline(userHeader, "css-class") to style the link
 /// Or: #userByline(userHeader, "short") to display a shorter link (only the username, no displayname).
 /// Or: #userByline(userHeader, "nolink") to display the username and displayname, without a link
+/// Or: #userByline(userHeader, "pronoun") to display the username and displayname with pronouns.
 struct UserBylineTag: UnsafeUnescapedLeafTag {
 	func render(_ ctx: LeafContext) throws -> LeafData {
 		guard ctx.parameters.count >= 1, let userHeader = ctx.parameters[0].dictionary,
@@ -569,15 +570,12 @@ struct UserBylineTag: UnsafeUnescapedLeafTag {
 		}
 		if styling == "nolink" {
 			if let displayName = userHeader["displayName"]?.string?.htmlEscaped() {
-				if let preferredPronoun = userHeader["preferredPronoun"]?.string?.htmlEscaped() {
-					return LeafData.string("<b>\(displayName)</b> @\(username) (\(preferredPronoun))")
-				}
 				return LeafData.string("<b>\(displayName)</b> @\(username)")
 			}
 			return LeafData.string("@\(username)")
 		}
 		else if styling != "short", let displayName = userHeader["displayName"]?.string?.htmlEscaped() {
-			if let preferredPronoun = userHeader["preferredPronoun"]?.string?.htmlEscaped() {
+			if styling == "pronoun", let preferredPronoun = userHeader["preferredPronoun"]?.string?.htmlEscaped() {
 				return LeafData.string(
 					"<a class=\"\(styling)\" href=\"/user/\(userID)\"><b>\(displayName)</b> @\(username) (\(preferredPronoun))</a>"
 				)
