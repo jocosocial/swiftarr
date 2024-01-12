@@ -473,6 +473,8 @@ public struct FezData: Content, ResponseEncodable {
 	var endTime: Date?
 	/// The 3 letter abbreviation for the active time zone at the time and place where the fez is happening.
 	var timeZone: String?
+	/// The timezone ID that the ship is going to be in when the fez occurs. Example: "America/New_York".
+	var timeZoneID: String?
 	/// The location for the fez.
 	var location: String?
 	/// How many users are currently members of the fez. Can be larger than maxParticipants; which indicates a waitlist.
@@ -521,6 +523,7 @@ extension FezData {
 			fez.startTime == nil ? nil : Settings.shared.timeZoneChanges.portTimeToDisplayTime(fez.startTime)
 		self.endTime = fez.endTime == nil ? nil : Settings.shared.timeZoneChanges.portTimeToDisplayTime(fez.endTime)
 		self.timeZone = self.startTime == nil ? nil : Settings.shared.timeZoneChanges.abbrevAtTime(self.startTime)
+		self.timeZoneID = self.startTime == nil ? nil : Settings.shared.timeZoneChanges.tzAtTime(self.startTime).identifier
 		self.location =
 			fez.moderationStatus.showsContent() ? fez.location : "Fez Location field is under moderator review"
 		self.lastModificationTime = fez.updatedAt ?? Date()
@@ -686,6 +689,8 @@ public struct ForumListData: Content {
 	var eventTime: Date?
 	/// If this forum is for an Event on the schedule, the timezone that the ship is going to be in when the event occurs. Delivered as an abbreviation e.g. "EST".
 	var timeZone: String?
+	/// If this forum is for an Event on the schedule, the timezone ID that the ship is going to be in when the event occurs. Example: "America/New_York".
+	var timeZoneID: String?
 	/// If this forum is for an Event on the schedule, the ID of the event.
 	var eventID: UUID?
 }
@@ -720,6 +725,7 @@ extension ForumListData {
 			let timeZoneChanges = Settings.shared.timeZoneChanges
 			self.eventTime = timeZoneChanges.portTimeToDisplayTime(event.startTime)
 			self.timeZone = timeZoneChanges.abbrevAtTime(self.eventTime)
+			self.timeZoneID = timeZoneChanges.tzAtTime(self.eventTime).identifier
 			self.eventID = event.id
 		}
 	}
