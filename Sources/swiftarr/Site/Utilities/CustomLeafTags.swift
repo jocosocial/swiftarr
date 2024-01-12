@@ -585,6 +585,11 @@ struct UserBylineTag: UnsafeUnescapedLeafTag {
 			)
 		}
 		else {
+			if styling == "pronoun", let preferredPronoun = userHeader["preferredPronoun"]?.string?.htmlEscaped() {
+				return LeafData.string(
+					"<a class=\"\(styling)\" href=\"/user/\(userID)\">@\(username) (\(preferredPronoun))</a>"
+				)
+			}
 			return LeafData.string("<a class=\"\(styling)\" href=\"/user/\(userID)\">@\(username)</a>")
 		}
 	}
