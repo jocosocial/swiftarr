@@ -132,6 +132,7 @@ struct ForumPostSearchQueryOptions: Content {
 	var category: UUID?
 	var start: Int?
 	var limit: Int?
+	var creatorid: UUID?
 
 	func buildQuery(baseURL: String, startOffset: Int?) -> String? {
 		guard var components = URLComponents(string: baseURL) else {
@@ -142,6 +143,7 @@ struct ForumPostSearchQueryOptions: Content {
 		if let hashtag = hashtag { elements.append(URLQueryItem(name: "hashtag", value: hashtag)) }
 		if let mentionname = mentionname { elements.append(URLQueryItem(name: "mentionname", value: mentionname)) }
 		if let mentionid = mentionid { elements.append(URLQueryItem(name: "mentionid", value: mentionid.uuidString)) }
+		if let creatorid = creatorid { elements.append(URLQueryItem(name: "creatorid", value: creatorid.uuidString)) }
 		if let _ = mentionself { elements.append(URLQueryItem(name: "mentionself", value: "true")) }
 		if let _ = ownreacts { elements.append(URLQueryItem(name: "ownreacts", value: "true")) }
 		if let _ = byself { elements.append(URLQueryItem(name: "byself", value: "true")) }
@@ -217,6 +219,9 @@ struct PostSearchPageContext: Encodable {
 			}
 			if let searchStr = searchParams.search {
 				filterDescription.append(" containing \"\(searchStr)\"")
+			}
+			if let creatorid = searchParams.creatorid, let creatingUser = req.userCache.getUser(creatorid) {	
+				filterDescription.append(" created by \"@\(creatingUser.username)\"")
 			}
 			title = "Forum Post Search"
 			paginatorClosure = { pageIndex in

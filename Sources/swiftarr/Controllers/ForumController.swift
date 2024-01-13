@@ -640,6 +640,7 @@ struct ForumController: APIRouteCollection {
 	/// * `?ownreacts=true` - Matches posts the current user has reacted to.
 	/// * `?byself=true` - Matches posts the current user authored.
 	/// * `?bookmarked=true` - Matches posts the user has bookmarked.
+	/// * `?creatorid=STRING` - Matches posts created by the given userID.
 	///
 	/// Additionally, you can constrain results to either posts in a specific category, or a specific forum. If both are specified, forum is ignored.
 	/// * `?forum=UUID` - Confines the search to posts in the given forum thread.
@@ -685,6 +686,22 @@ struct ForumController: APIRouteCollection {
 		}
 		else if let forumID = req.query[UUID.self, at: "forum"] {
 			query = query.filter(\.$forum.$id == forumID)
+		}
+		// https://github.com/jocosocial/swiftarr/issues/167
+		// Limiting this to mods for the moment because the amount of dishonorable uses I can
+		// think of is very high. This feature is useful in the mod context because it allows
+		// mods to get a sense of the content that the user has been posting.
+		// For example: If a user has been reported multiple times and a ban decision is being
+		// considered, seeing if the user has been perpetually un-excellent in the forums
+		// is much easier. In the Twarrt Stream we had a feature where you could see all posts
+		// by user for a similar reason (and because that's what a lot of social media tools do).
+		// This limitation is very much open to consideration.
+		// There's a corresponding userIsMod in the Site HTML template.
+		if let creatorID = req.query[UUID.self, at: "creatorid"], let creatingUser = req.userCache.getUser(creatorID) {
+			guard cacheUser.accessLevel.hasAccess(.moderator) else {
+				throw Abort(.forbidden, reason: "Only moderators can use creatorid on this endpoint")
+			}
+			query = query.filter(\.$author.$id == creatingUser.userID)
 		}
 
 		if var searchStr = req.query[String.self, at: "search"] {
