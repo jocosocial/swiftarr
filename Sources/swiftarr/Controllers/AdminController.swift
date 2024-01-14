@@ -22,6 +22,7 @@ struct AdminController: APIRouteCollection {
 		ttAuthGroup.post("schedule", "update", "apply", use: scheduleChangeApplyHandler)
 		ttAuthGroup.get("schedule", "viewlog", use: scheduleChangeLogHandler)
 		ttAuthGroup.get("schedule", "viewlog", scheduleLogIDParam, use: scheduleGetLogEntryHandler)
+		ttAuthGroup.post("schedule", "reload", use: reloadScheduleHandler)
 
 		ttAuthGroup.get("regcodes", "stats", use: regCodeStatsHandler)
 		ttAuthGroup.get("regcodes", "find", searchStringParam, use: userForRegCodeHandler)
@@ -600,6 +601,17 @@ struct AdminController: APIRouteCollection {
 		}
 		try await UserRole.query(on: req.db).filter(\.$role == role).filter(\.$user.$id == targetUserID).delete()
 		try await req.userCache.updateUser(targetUserID)
+		return .ok
+	}
+
+
+	/// `GET /api/v3/admin/schedule/reload`
+	///
+	/// Trigger a reload of the Sched event schedule. Normally this happens automatically every hour.
+	///
+	/// - Returns: HTTP 200 OK.
+	func reloadScheduleHandler(_ req: Request) async throws -> HTTPStatus {
+		try await req.queue.dispatch(UpdateJob.self, .init())
 		return .ok
 	}
 

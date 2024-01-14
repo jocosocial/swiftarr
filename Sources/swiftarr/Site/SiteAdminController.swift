@@ -40,6 +40,7 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTTRoutes.post("scheduleverify", use: scheduleVerifyPostHandler)
 		privateTTRoutes.get("scheduleupload", "complete", use: scheduleUpdateCompleteViewtHandler)
 		privateTTRoutes.get("schedulelogview", scheduleLogIDParam, use: scheduleLogEntryViewer)
+		privateTTRoutes.post("schedulereload", use: scheduleReloadHandler)
 
 		privateTTRoutes.get("regcodes", use: getRegCodeHandler)
 		privateTTRoutes.get("regcodes", "showuser", userIDParam, use: getRegCodeForUserHandler)
@@ -590,6 +591,11 @@ struct SiteAdminController: SiteControllerUtils {
 		}
 		let ctx = try ScheduleUpdateVerifyViewContext(req, differenceData: differenceData)
 		return try await req.view.render("admin/scheduleVerify", ctx)
+	}
+
+	func scheduleReloadHandler(_ req: Request) async throws -> HTTPStatus {
+		let _ = try await apiQuery(req, endpoint: "/admin/schedule/reload", method: .POST)
+		return .ok
 	}
 
 	// POST /admin/scheduleverify
