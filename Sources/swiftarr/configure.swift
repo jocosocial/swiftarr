@@ -291,7 +291,14 @@ struct SwiftarrConfigurator {
 		// Configure Redis connection
 		// Vapor's Redis package may not yet support TLS database connections so we support going both ways.
 		let redisPoolOptions: RedisConfiguration.PoolOptions = RedisConfiguration.PoolOptions(
-			maximumConnectionCount: .maximumActiveConnections(2)
+			maximumConnectionCount: .maximumActiveConnections(2),
+			// https://github.com/vapor/queues-redis-driver/issues/30
+			// Apparently the RediStack default is .milliseconds(10), which feels pretty aggressive.
+			// Occasionally caused beneign errors in the log such as:
+			// RedisConnectionPoolError(baseError: RediStack.RedisConnectionPoolError.BaseError.timedOutWaitingForConnection)
+			// Commentary in the Vapor Discord seems to agree. Someone there was setting the value to
+			// .seconds(60), which IMO feels "high". So lets bump up but not too much up eh?
+			connectionRetryTimeout: .seconds(1)
 		)
 
 		if let redisString = Environment.get("REDIS_URL"), let redisURL = URL(string: redisString) {
