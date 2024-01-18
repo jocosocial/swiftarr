@@ -426,11 +426,9 @@ struct ForumController: APIRouteCollection {
 		//   binary operator '&&' cannot be applied to operands of type 'ComplexJoinFilter' and 'ModelValueFilter<ForumReaders>'
 		// which is very sad. The resultant SQL should read something like:
 		//   ... LEFT JOIN "forum+readers" ON "forum"."id"="forum+readers"."forum" AND "forum+readers"."user"='$' WHERE ...
-		// If there's a sneaky way to access the FieldKey's of models, I haven't been able to find it.
-		// So if we ever schema change the "forum" or "user" columns here this won't dynamically adjust.
 		let joinFilters: [DatabaseQuery.Filter] = [
-			.field(.path([.id], schema: Forum.schema), .equal, .path([.string("forum")], schema: ForumReaders.schema)),
-			.value(.path(["user"], schema: ForumReaders.schema), .equal, .bind(cacheUser.userID))
+			.field(.path(Forum.path(for: \.$id), schema: Forum.schema), .equal, .path(ForumReaders.path(for: \.$forum.$id), schema: ForumReaders.schema)),
+			.value(.path(ForumReaders.path(for: \.$user.$id), schema: ForumReaders.schema), .equal, .bind(cacheUser.userID))
 		]
 		let countQuery = Forum.query(on: req.db).filter(\.$creator.$id !~ cacheUser.getBlocks())
 			.categoryAccessFilter(for: cacheUser)	
