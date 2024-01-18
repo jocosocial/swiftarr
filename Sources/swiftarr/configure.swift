@@ -557,6 +557,8 @@ struct SwiftarrConfigurator {
 		app.migrations.add(UpdateFezParticipantSchema(), to: .psql)
 		app.migrations.add(UpdateForumLastPostIDMigration(), to: .psql)
 		app.migrations.add(UpdateUserDinnerTeamMigration(), to: .psql)
+		app.migrations.add(UpdateForumPinnedMigration(), to: .psql)
+		app.migrations.add(UpdateForumPostPinnedMigration(), to: .psql)
 
 		// At this point the db *schema* should be set, and the rest of these migrations operate on the db's *data*.
 

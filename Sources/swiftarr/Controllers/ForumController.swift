@@ -23,6 +23,7 @@ struct ForumController: APIRouteCollection {
 
 		// Categories
 		tokenCacheAuthGroup.get("categories", categoryIDParam, use: categoryForumsHandler)
+		tokenCacheAuthGroup.get("categories", categoryIDParam, "pinnedforums", use: categoryPinnedForumsHandler)
 
 		// Forums - CRUD first, then actions on forums
 		tokenCacheAuthGroup.on(
@@ -54,6 +55,12 @@ struct ForumController: APIRouteCollection {
 		tokenCacheAuthGroup.post(forumIDParam, "mute", "remove", use: muteRemoveHandler)
 		tokenCacheAuthGroup.delete(forumIDParam, "mute", use: muteRemoveHandler)
 
+		// Pins
+		tokenCacheAuthGroup.post(forumIDParam, "pin", use: forumPinAddHandler)
+		tokenCacheAuthGroup.post(forumIDParam, "pin", "remove", use: forumPinRemoveHandler)
+		tokenCacheAuthGroup.delete(forumIDParam, "pin", use: forumPinRemoveHandler)
+		tokenCacheAuthGroup.get(forumIDParam, "pinnedposts", use: forumPinnedPostsHandler)
+
 		tokenCacheAuthGroup.get("search", use: forumSearchHandler)
 		tokenCacheAuthGroup.get("owner", use: ownerHandler)
 		tokenCacheAuthGroup.get("recent", use: recentsHandler)
@@ -81,6 +88,11 @@ struct ForumController: APIRouteCollection {
 		tokenCacheAuthGroup.delete("post", postIDParam, "like", use: postUnreactHandler)
 		tokenCacheAuthGroup.delete("post", postIDParam, "love", use: postUnreactHandler)
 		tokenCacheAuthGroup.post("post", postIDParam, "report", use: postReportHandler)
+
+		// Pins
+		tokenCacheAuthGroup.post("post", postIDParam, "pin", use: forumPostPinAddHandler)
+		tokenCacheAuthGroup.post("post", postIDParam, "pin", "remove", use: forumPostPinRemoveHandler)
+		tokenCacheAuthGroup.delete("post", postIDParam, "pin", use: forumPostPinRemoveHandler)
 
 		// 'Favorite' applies to forums, while 'Bookmark' is for posts
 		tokenCacheAuthGroup.post("post", postIDParam, "bookmark", use: bookmarkAddHandler)
@@ -236,6 +248,28 @@ struct ForumController: APIRouteCollection {
 			restricted: category.accessLevelToCreate > cacheUser.accessLevel,
 			forumThreads: forumList
 		)
+	}
+
+	/// `GET /api/v3/forum/categories/:ID/pinnedforums`
+	///
+	/// Get a list of all of the pinned forums within this category.
+	/// This currently does not implement paginator because if pagination is needed for pinned
+	/// forums what the frak have you done?
+	///
+	/// - Parameter forumID: In the URL path.
+	/// - Returns array of `ForumData`.
+	func categoryPinnedForumsHandler(_ req: Request) async throws -> [ForumListData] {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let category = try await Category.findFromParameter(categoryIDParam, on: req)
+		try guardUserCanAccessCategory(cacheUser, category: category)
+		// remove blocks from results, unless it's an admin category
+		let blocked = category.accessLevelToCreate.hasAccess(.moderator) ? [] : cacheUser.getBlocks()
+		let forums = try await Forum.query(on: req.db)
+			.filter(\.$category.$id == category.requireID())
+			.filter(\.$creator.$id !~ blocked)
+			.filter(\.$pinned == true)
+			.all()
+		return try await buildForumListData(forums, on: req, user: cacheUser)
 	}
 
 	/// `GET /api/v3/forum/search`
@@ -925,6 +959,50 @@ struct ForumController: APIRouteCollection {
 		return .noContent
 	}
 
+	/// `POST /api/v3/forum/ID/pin`
+	///
+	/// Pin the forum to the category.
+	///
+	/// - Parameter forumID: In the URL path.
+	/// - Returns: 201 Created on success; 200 OK if already pinned.
+	func forumPinAddHandler(_ req: Request) async throws -> HTTPStatus {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		guard cacheUser.accessLevel.hasAccess(.moderator) else {
+			throw Abort(.forbidden, reason: "Only moderators can pin a forum thread.")
+		}
+		let forum = try await Forum.findFromParameter(forumIDParam, on: req) { query in
+			query.categoryAccessFilter(for: cacheUser)
+		}
+		if forum.pinned == true {
+			return .ok
+		}
+		forum.pinned = true;
+		try await forum.save(on: req.db)
+		return .created
+	}
+
+	/// `DELETE /api/v3/forum/ID/pin`
+	///
+	/// Unpin the forum from the category.
+	///
+	/// - Parameter forumID: In the URL path.
+	/// - Returns: 204 No Content on success; 200 OK if already not pinned.
+	func forumPinRemoveHandler(_ req: Request) async throws -> HTTPStatus {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		guard cacheUser.accessLevel.hasAccess(.moderator) else {
+			throw Abort(.forbidden, reason: "Only moderators can pin a forum thread.")
+		}
+		let forum = try await Forum.findFromParameter(forumIDParam, on: req) { query in
+			query.categoryAccessFilter(for: cacheUser)
+		}
+		if forum.pinned != true {
+			return .ok
+		}
+		forum.pinned = false;
+		try await forum.save(on: req.db)
+		return .noContent
+	}
+
 	/// `POST /api/v3/forum/categories/ID/create`
 	///
 	/// Creates a new `Forum` in the specified `Category`, and the first `ForumPost` within
@@ -1305,6 +1383,75 @@ struct ForumController: APIRouteCollection {
 		// return updated post as PostData
 		let postDataArray = try await buildPostData([post], userID: cacheUser.userID, on: req)
 		return postDataArray[0]
+	}
+
+	/// `GET /api/v3/forum/:forumID/pinnedposts`
+	///
+	/// Get a list of all of the pinned posts within this forum.
+	/// This currently does not implement paginator because if pagination is needed for pinned
+	/// posts what the frak have you done?
+	///
+	/// - Parameter forumID: In the URL path.
+	/// - Returns array of `PostData`.
+	func forumPinnedPostsHandler(_ req: Request) async throws -> [PostData] {
+		let user = try req.auth.require(UserCacheData.self)
+		let forum = try await Forum.findFromParameter(forumIDParam, on: req) { query in
+			query.with(\.$category)
+		}
+		try guardUserCanAccessCategory(user, category: forum.category)
+		let query = try await ForumPost.query(on: req.db)
+			.filter(\.$forum.$id == forum.requireID())
+			.filter(\.$pinned == true)
+			.all()
+		return try await buildPostData(query, userID: user.userID, on: req)
+	}
+
+	/// `POST /api/v3/forum/post/:postID/pin`
+	///
+	/// Pin the post to the forum.
+	///
+	/// - Parameter postID: In the URL path.
+	/// - Returns: 201 Created on success; 200 OK if already pinned.
+	func forumPostPinAddHandler(_ req: Request) async throws -> HTTPStatus {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let post = try await ForumPost.findFromParameter(postIDParam, on: req) { query in
+			query.with(\.$forum) { forum in
+				forum.with(\.$category)
+			}
+		}
+		// Only forum creator and moderators can pin posts within a forum.
+		try cacheUser.guardCanModifyContent(post, customErrorString: "User cannot pin posts in this forum.")
+
+		if post.pinned == true {
+			return .ok
+		}
+		post.pinned = true;
+		try await post.save(on: req.db)
+		return .created
+	}
+
+	/// `DELETE /api/v3/forum/:postID/ID/pin`
+	///
+	/// Unpin the post from the forum.
+	///
+	/// - Parameter postID: In the URL path.
+	/// - Returns: 204 No Content on success; 200 OK if already not pinned.
+	func forumPostPinRemoveHandler(_ req: Request) async throws -> HTTPStatus {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let post = try await ForumPost.findFromParameter(postIDParam, on: req) { query in
+			query.with(\.$forum) { forum in
+				forum.with(\.$category)
+			}
+		}
+		// Only forum creator and moderators can pin posts within a forum.
+		try cacheUser.guardCanModifyContent(post, customErrorString: "User cannot pin posts in this forum.")
+
+		if post.pinned != true {
+			return .ok
+		}
+		post.pinned = false;
+		try await post.save(on: req.db)
+		return .noContent
 	}
 }
 
