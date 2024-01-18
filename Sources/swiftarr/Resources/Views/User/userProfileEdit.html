@@ -72,7 +72,7 @@
 						<label for="preferredPronoun" class="text-start text-sm-end d-block">Pronouns:</label>
 					</div>
 					<div class="col col-12 col-sm-8">
-						<input type="text" class="form-control" id="preferredPronoun" name="preferredPronoun" placeholder="Pronouns" value="#(profile.preferredPronoun)" spellcheck="false" autocapitalize="none">
+						<input type="text" class="form-control" id="preferredPronoun" name="preferredPronoun" placeholder="Pronouns" value="#(profile.header.preferredPronoun)" spellcheck="false" autocapitalize="none">
 					</div>
 				</div>
 
@@ -91,6 +91,20 @@
 					</div>
 					<div class="col col-12 col-sm-8">
 						<input type="text" class="form-control" id="roomNumber" name="roomNumber" placeholder="Cabin Number" value="#(profile.roomNumber)">
+					</div>
+				</div>
+
+				<div class="row mx-1 mb-3 align-items-center">
+					<div class="col col-12 col-sm-4">
+						<label for="dinnerTeam" class="text-start text-sm-end d-block">Dinner Team:</label>
+					</div>
+					<div class="col col-12 col-sm-8">
+						<select id="dinnerTeam" name="dinnerTeam" class="form-control">
+							<option value="red" #if(profile.dinnerTeam == "red"):selected#endif>Red Team</option>
+							<option value="gold" #if(profile.dinnerTeam == "gold"):selected#endif>Gold Team</option>
+							<option value="sro" #if(profile.dinnerTeam == "sro"):selected#endif>Club SRO</option>
+							<option value="" #if(!profile.dinnerTeam):selected#endif>None</option>
+						</select>
 					</div>
 				</div>
 
@@ -130,7 +144,7 @@
 
 				<div class="row justify-content-end mb-5">
 					<div class="col col-auto me-3">
-						<button type="submit" class="btn btn-primary btn-sm">Save</button>
+						<button type="submit" class="btn btn-primary btn-sm">Save<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
 					</div>
 				</div>
 			</div>

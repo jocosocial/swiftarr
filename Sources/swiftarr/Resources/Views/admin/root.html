@@ -57,7 +57,12 @@
 						<div><span class="text-muted border-bottom border-danger"><i>#(trunk.alertCounts.moderatorData.newTTSeamailMessageCount) New Message#if(trunk.alertCounts.moderatorData.newTTSeamailMessageCount > 1):s#endif</i></span></div>
 					#endif
 				</a>
-				
+				<a class="list-group-item list-group-item-action" href="/forumpost/mentions?mentionname=twitarrteam">
+					<b>TwitarrTeam Forum Mentions</b>: Mentions of @twitarrteam in forum posts
+					#if(trunk.alertCounts.moderatorData.newTTForumMentionCount > 0):
+						<div><span class="text-muted border-bottom border-danger"><i>#(trunk.alertCounts.moderatorData.newTTForumMentionCount) New Mention#if(trunk.alertCounts.moderatorData.newTTForumMentionCount > 1):s#endif</i></span></div>
+					#endif
+				</a>
 			</div>
 		</div>
     #endexport

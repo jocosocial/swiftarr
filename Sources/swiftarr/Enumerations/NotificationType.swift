@@ -50,6 +50,10 @@ enum NotificationType {
 	case twarrtMention(Int)
 	/// A new or edited forum post that now @mentions a user. Associated value is the post ID.
 	case forumMention(Int)
+	/// A new or edited forum post that now @mentions @moderator. Associated value is the post ID.
+	case moderatorForumMention(Int)
+	/// A new or edited forum post that now @mentions @twitarrteam. Associated value is the post ID.
+	case twitarrTeamForumMention(Int)
 	/// An upcoming event that the user has followed.
 	case nextFollowedEventTime(Date?, UUID?)
 
@@ -63,6 +67,8 @@ enum NotificationType {
 		case .alertwordPost(let str, _): return "alertwordPost-\(str)"
 		case .twarrtMention: return "twarrtMention"
 		case .forumMention: return "forumMention"
+		case .moderatorForumMention: return "moderatorForumMention"
+		case .twitarrTeamForumMention: return "twitarrTeamForumMention"
 		case .nextFollowedEventTime: return "nextFollowedEventTime"
 		}
 	}
@@ -82,6 +88,8 @@ enum NotificationType {
 		case .alertwordPost: return "NotificationHash-\(userID)"
 		case .twarrtMention: return "NotificationHash-\(userID)"
 		case .forumMention: return "NotificationHash-\(userID)"
+		case .moderatorForumMention: return "NotificationHash-\(userID)"
+		case .twitarrTeamForumMention: return "NotificationHash-\(userID)"
 		case .nextFollowedEventTime: return "NotificationHash-\(userID)"
 		}
 	}
@@ -107,6 +115,8 @@ enum NotificationType {
 		case .alertwordPost(_, let id): return String(id)
 		case .twarrtMention(let id): return String(id)
 		case .forumMention(let id): return String(id)
+		case .moderatorForumMention(let id): return String(id)
+		case .twitarrTeamForumMention(let id): return String(id)
 		case .nextFollowedEventTime(_, let uuid): return uuid != nil ? String(uuid!) : ""
 		}
 	}

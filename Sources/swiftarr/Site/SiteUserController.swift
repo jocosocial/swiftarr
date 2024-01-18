@@ -8,7 +8,7 @@ struct PublicProfileContext: Encodable {
 	var noteFormAction: String
 
 	init(_ req: Request, profile: ProfilePublicData) throws {
-		trunk = .init(req, title: "User Profile", tab: .none)
+		trunk = .init(req, title: "\(profile.header.username) | User Profile", tab: .none)
 		self.profile = profile
 		noteFormAction = "/profile/note/\(profile.header.userID)"
 	}
@@ -25,6 +25,7 @@ struct ProfileFormContent: Content {
 	var email: String
 	var message: String
 	var about: String
+	var dinnerTeam: String
 }
 
 struct AddWordFormStruct: Decodable {
@@ -164,7 +165,7 @@ struct SiteUserController: SiteControllerUtils {
 			var profile: ProfilePublicData
 
 			init(_ req: Request, profile: ProfilePublicData) throws {
-				trunk = .init(req, title: "User Profile", tab: .none)
+				trunk = .init(req, title: "\(profile.header.username) | User Profile", tab: .none)
 				self.profile = profile
 			}
 		}
@@ -396,7 +397,8 @@ struct SiteUserController: SiteControllerUtils {
 			roomNumber: profileStruct.roomNumber,
 			email: profileStruct.email,
 			message: profileStruct.message,
-			about: profileStruct.about
+			about: profileStruct.about,
+			dinnerTeam: DinnerTeam(rawValue: profileStruct.dinnerTeam) ?? nil
 		)
 		try await apiQuery(req, endpoint: path, method: .POST, encodeContent: postContent)
 		if let targetUserIDVal = targetUserID {

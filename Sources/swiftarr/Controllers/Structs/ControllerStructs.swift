@@ -473,6 +473,8 @@ public struct FezData: Content, ResponseEncodable {
 	var endTime: Date?
 	/// The 3 letter abbreviation for the active time zone at the time and place where the fez is happening.
 	var timeZone: String?
+	/// The timezone ID that the ship is going to be in when the fez occurs. Example: "America/New_York".
+	var timeZoneID: String?
 	/// The location for the fez.
 	var location: String?
 	/// How many users are currently members of the fez. Can be larger than maxParticipants; which indicates a waitlist.
@@ -502,6 +504,8 @@ public struct FezData: Content, ResponseEncodable {
 		var paginator: Paginator?
 		/// The FezPosts in the fez discussion. Methods that return arrays of Fezzes, or that add or remove users, do not populate this field (it will be nil).
 		var posts: [FezPostData]?
+		/// Whether user has muted the fez.
+		var isMuted: Bool
 	}
 
 	/// Will be nil if user is not a member of the fez (in the participant or waiting lists).
@@ -519,6 +523,7 @@ extension FezData {
 			fez.startTime == nil ? nil : Settings.shared.timeZoneChanges.portTimeToDisplayTime(fez.startTime)
 		self.endTime = fez.endTime == nil ? nil : Settings.shared.timeZoneChanges.portTimeToDisplayTime(fez.endTime)
 		self.timeZone = self.startTime == nil ? nil : Settings.shared.timeZoneChanges.abbrevAtTime(self.startTime)
+		self.timeZoneID = self.startTime == nil ? nil : Settings.shared.timeZoneChanges.tzAtTime(self.startTime).identifier
 		self.location =
 			fez.moderationStatus.showsContent() ? fez.location : "Fez Location field is under moderator review"
 		self.lastModificationTime = fez.updatedAt ?? Date()
@@ -684,6 +689,8 @@ public struct ForumListData: Content {
 	var eventTime: Date?
 	/// If this forum is for an Event on the schedule, the timezone that the ship is going to be in when the event occurs. Delivered as an abbreviation e.g. "EST".
 	var timeZone: String?
+	/// If this forum is for an Event on the schedule, the timezone ID that the ship is going to be in when the event occurs. Example: "America/New_York".
+	var timeZoneID: String?
 	/// If this forum is for an Event on the schedule, the ID of the event.
 	var eventID: UUID?
 }
@@ -718,6 +725,7 @@ extension ForumListData {
 			let timeZoneChanges = Settings.shared.timeZoneChanges
 			self.eventTime = timeZoneChanges.portTimeToDisplayTime(event.startTime)
 			self.timeZone = timeZoneChanges.abbrevAtTime(self.eventTime)
+			self.timeZoneID = timeZoneChanges.tzAtTime(self.eventTime).identifier
 			self.eventID = event.id
 		}
 	}
@@ -1139,8 +1147,6 @@ public struct ProfilePublicData: Content {
 	var header: UserHeader
 	/// An optional real world name of the user.
 	var realName: String
-	/// An optional preferred pronoun or form of address.
-	var preferredPronoun: String
 	/// An optional home location for the user.
 	var homeLocation: String
 	/// An optional cabin number for the user.
@@ -1153,6 +1159,8 @@ public struct ProfilePublicData: Content {
 	var message: String
 	/// A UserNote owned by the visiting user, about the profile's user (see `UserNote`).
 	var note: String?
+	/// An optional dinner team assignemnt.
+	var dinnerTeam: DinnerTeam?
 }
 
 extension ProfilePublicData {
@@ -1165,29 +1173,29 @@ extension ProfilePublicData {
 			self.email = ""
 			self.homeLocation = ""
 			self.message = "This profile is under moderator review"
-			self.preferredPronoun = ""
 			self.realName = ""
 			self.roomNumber = ""
 			self.note = note
+			self.dinnerTeam = nil
 		}
 		else if requesterAccessLevel == .banned {
 			self.about = ""
 			self.email = ""
 			self.homeLocation = ""
 			self.message = "You must be logged in to view this user's Profile details."
-			self.preferredPronoun = ""
 			self.realName = ""
 			self.roomNumber = ""
+			self.dinnerTeam = nil
 		}
 		else {
 			self.about = user.about ?? ""
 			self.email = user.email ?? ""
 			self.homeLocation = user.homeLocation ?? ""
 			self.message = user.message ?? ""
-			self.preferredPronoun = user.preferredPronoun ?? ""
 			self.realName = user.realName ?? ""
 			self.roomNumber = user.roomNumber ?? ""
 			self.note = note
+			self.dinnerTeam = user.dinnerTeam
 		}
 	}
 }
@@ -1435,6 +1443,8 @@ public struct UserHeader: Content {
 	var displayName: String?
 	/// The user's avatar image.
 	var userImage: String?
+	/// An optional preferred pronoun or form of address.
+	var preferredPronoun: String?
 }
 
 extension UserHeader {
@@ -1443,6 +1453,7 @@ extension UserHeader {
 		self.username = user.username
 		self.displayName = user.displayName
 		self.userImage = user.userImage
+		self.preferredPronoun = user.preferredPronoun
 	}
 
 	static var Blocked: UserHeader {
@@ -1450,7 +1461,8 @@ extension UserHeader {
 			userID: Settings.shared.blockedUserID,
 			username: "BlockedUser",
 			displayName: "BlockedUser",
-			userImage: ""
+			userImage: "",
+			preferredPronoun: ""
 		)
 	}
 }
@@ -1544,8 +1556,15 @@ public struct UserNotificationData: Content {
 		var newModeratorSeamailMessageCount: Int
 
 		/// The number of Seamails to @TwitarrTeam. Nil if user isn't a member of TwitarrTeam. This is in the Moderator struct because I didn't
-		/// want to make *another* sub-struct for TwitarrTeam, just to hold one value.
+		/// want to make *another* sub-struct for TwitarrTeam, just to hold two values.
 		var newTTSeamailMessageCount: Int?
+
+		/// Number of forum post @mentions the user has not read for @moderator.
+		var newModeratorForumMentionCount: Int
+
+		/// Number of forum post @mentions the user has not read for @twitarrteam. Nil if the user isn't a member of TwitarrTeam.
+		/// This is in the Moderator struct because I didn't want to make *another* sub-struct for TwitarrTeam, just to hold two values.
+		var newTTForumMentionCount: Int
 	}
 
 	/// Will be nil for non-moderator accounts.
@@ -1648,6 +1667,8 @@ public struct UserProfileUploadData: Content {
 	var message: String?
 	/// An optional blurb about the user.
 	var about: String?
+	/// An optional dinner team assignment.
+	var dinnerTeam: DinnerTeam?
 }
 
 extension UserProfileUploadData {
@@ -1661,6 +1682,7 @@ extension UserProfileUploadData {
 		self.preferredPronoun = user.preferredPronoun
 		self.realName = user.realName
 		self.roomNumber = user.roomNumber
+		self.dinnerTeam = user.dinnerTeam
 	}
 }
 

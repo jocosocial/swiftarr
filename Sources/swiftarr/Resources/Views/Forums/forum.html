@@ -12,7 +12,7 @@
 			</div>
     		<div class="row mb-2">
     			<div class="col col-12">
-    				<i>created by</i> #userByline(forum.creator)
+    				<i>created by</i> #userByline(forum.creator, "pronoun")
 				</div>
 			</div>
     		<div class="row align-items-center justify-content-between mb-2">
@@ -79,7 +79,7 @@
 								<div class="col">
 									<div class="row">	
 										<div class="col">
-											#userByline(forumPost.author)
+											#userByline(forumPost.author, "pronoun")
 										</div>
 										<div class="col-auto">
 											<span title="#localTime(forumPost.createdAt)" class="text-muted">#relativeTime(forumPost.createdAt)</span>

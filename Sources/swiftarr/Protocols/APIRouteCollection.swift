@@ -177,7 +177,7 @@ extension APIRouteCollection {
 				for userID in users {
 					group.addTask { try await req.redis.incrementIntInUserHash(field: type, userID: userID) }
 				}
-			case .forumMention(_):
+			case .forumMention(_), .twitarrTeamForumMention(_), .moderatorForumMention(_):
 				for userID in users {
 					group.addTask { try await req.redis.incrementIntInUserHash(field: type, userID: userID) }
 				}
@@ -262,7 +262,7 @@ extension APIRouteCollection {
 						)
 					}
 				}
-			case .forumMention(_):
+			case .forumMention(_), .twitarrTeamForumMention(_), .moderatorForumMention(_):
 				for userID in users {
 					group.addTask {
 						try await req.redis.incrementIntInUserHash(
@@ -354,6 +354,14 @@ extension APIRouteCollection {
 			try await req.redis.setIntInUserHash(to: id, field: type, userID: user.userID)
 		case .twarrtMention, .forumMention, .alertwordTwarrt, .alertwordPost:
 			try await req.redis.markAllViewedInUserHash(field: type, userID: user.userID)
+		case .moderatorForumMention:
+			if user.accessLevel.hasAccess(.moderator) {
+				try await req.redis.markAllViewedInUserHash(field: type, userID: user.userID)
+			}
+		case .twitarrTeamForumMention:
+			if user.accessLevel.hasAccess(.twitarrteam) {
+				try await req.redis.markAllViewedInUserHash(field: type, userID: user.userID)
+			}
 		case .seamailUnreadMsg:
 			try await req.redis.markSeamailRead(type: type, in: .seamail, userID: user.userID)
 			// It's possible this is a mod viewing mail to @moderator, not their own. We can't tell from here.

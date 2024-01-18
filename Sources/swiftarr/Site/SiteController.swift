@@ -477,14 +477,24 @@ struct SiteController: SiteControllerUtils {
 	///
 	///
 	func aboutTwitarrViewHandler(_ req: Request) async throws -> View {
+		var urlComponents = Settings.shared.apiUrlComponents
+		urlComponents.path = "/public/twitarrhelptext.md"
+		guard let apiURLString = urlComponents.string else {
+			throw Abort(.internalServerError, reason: "Unable to build URL to API endpoint.")
+		}
+		let response = try await req.client.send(.GET, to: URI(string: apiURLString))
+		let decoder = PlaintextDecoder()
+		let document = try response.content.decode(String.self, using: decoder)
 		struct AboutPageContext: Encodable {
 			var trunk: TrunkContext
+			var aboutContent: String
 
-			init(_ req: Request) throws {
+			init(_ req: Request, content: String) throws {
 				trunk = .init(req, title: "About Twitarr", tab: .home)
+				self.aboutContent = content
 			}
 		}
-		let ctx = try AboutPageContext(req)
+		let ctx = try AboutPageContext(req, content: document)
 		return try await req.view.render("aboutTwitarr", ctx)
 	}
 
@@ -625,7 +635,9 @@ extension SiteControllerUtils {
 		var headers = defaultHeaders ?? HTTPHeaders()
 		if let token = req.session.data["token"], !headers.contains(name: "Authorization") {
 			headers.add(name: "Authorization", value: "Bearer \(token)")
+			headers.add(name: "X-Swiftarr-User", value: req.session.data["userID"] ?? "UNKNOWN")
 		}
+		headers.add(name: "X-Swiftarr-Client", value: "swiftarr")
 
 		// Step 2: Generate URLComponents, extract a 'clean' path, append the 'clean' path for the endpoint.
 		var urlComponents = Settings.shared.apiUrlComponents

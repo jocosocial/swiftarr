@@ -34,7 +34,7 @@ struct ForumPageContext: Encodable {
 	var paginator: PaginatorContext
 
 	init(_ req: Request, forum: ForumData, cat: [CategoryData]) throws {
-		trunk = .init(req, title: "Forum Thread", tab: .forums, search: "Search")
+		trunk = .init(req, title: "\(forum.title) | Forum Thread", tab: .forums, search: "Search")
 		self.forum = forum
 		self.post = .init(forType: .forumPost(forum.forumID.uuidString))
 		if cat.count > 0 {
@@ -72,6 +72,7 @@ struct ForumsSearchPageContext: Encodable {
 		case recent  // Recently viewed by this user
 		case textSearch  // Searches title for string
 		case mute  // Muted forums by this user
+		case unread // Unread forums by this user
 	}
 
 	init(_ req: Request, forums: ForumSearchData, searchType: SearchType, filterDesc: String) throws {
@@ -82,6 +83,7 @@ struct ForumsSearchPageContext: Encodable {
 		case .recent: title = "Recently Viewed"
 		case .textSearch: title = "Forum Search"
 		case .mute: title = "Muted Forums"
+		case .unread: title = "Unread Forums"
 		}
 		trunk = .init(req, title: title, tab: .forums, search: "Search")
 		self.forums = forums
@@ -130,6 +132,7 @@ struct ForumPostSearchQueryOptions: Content {
 	var category: UUID?
 	var start: Int?
 	var limit: Int?
+	var creatorid: UUID?
 
 	func buildQuery(baseURL: String, startOffset: Int?) -> String? {
 		guard var components = URLComponents(string: baseURL) else {
@@ -140,6 +143,7 @@ struct ForumPostSearchQueryOptions: Content {
 		if let hashtag = hashtag { elements.append(URLQueryItem(name: "hashtag", value: hashtag)) }
 		if let mentionname = mentionname { elements.append(URLQueryItem(name: "mentionname", value: mentionname)) }
 		if let mentionid = mentionid { elements.append(URLQueryItem(name: "mentionid", value: mentionid.uuidString)) }
+		if let creatorid = creatorid { elements.append(URLQueryItem(name: "creatorid", value: creatorid.uuidString)) }
 		if let _ = mentionself { elements.append(URLQueryItem(name: "mentionself", value: "true")) }
 		if let _ = ownreacts { elements.append(URLQueryItem(name: "ownreacts", value: "true")) }
 		if let _ = byself { elements.append(URLQueryItem(name: "byself", value: "true")) }
@@ -216,6 +220,9 @@ struct PostSearchPageContext: Encodable {
 			if let searchStr = searchParams.search {
 				filterDescription.append(" containing \"\(searchStr)\"")
 			}
+			if let creatorid = searchParams.creatorid, let creatingUser = req.userCache.getUser(creatorid) {	
+				filterDescription.append(" created by \"@\(creatingUser.username)\"")
+			}
 			title = "Forum Post Search"
 			paginatorClosure = { pageIndex in
 				let limit = searchParams.limit ?? 50
@@ -276,6 +283,7 @@ struct SiteForumController: SiteControllerUtils {
 		privateRoutes.delete("forum", "mute", forumIDParam, use: forumRemoveMutePostHandler)
 		privateRoutes.get("forum", "owned", use: forumsByUserPageHandler)
 		privateRoutes.get("forum", "recent", use: forumRecentsPageHandler)
+		privateRoutes.get("forum", "unread", use: forumUnreadPageHandler)
 
 		privateRoutes.get("forumpost", "edit", postIDParam, use: forumPostEditPageHandler)
 		privateRoutes.post("forumpost", "edit", postIDParam, use: forumPostEditPostHandler)
@@ -333,7 +341,7 @@ struct SiteForumController: SiteControllerUtils {
 			var sortOrders: [ForumsSortOrder]
 
 			init(_ req: Request, forums: CategoryData, start: Int, limit: Int) throws {
-				trunk = .init(req, title: "Forum Threads", tab: .forums, search: "Search")
+				trunk = .init(req, title: "\(forums.title) | Forum Threads", tab: .forums, search: "Search")
 				self.forums = forums
 				paginator = .init(start: start, total: Int(forums.numThreads), limit: limit) { pageIndex in
 					"/forums/\(forums.categoryID)?start=\(pageIndex * limit)&limit=\(limit)"
@@ -413,12 +421,24 @@ struct SiteForumController: SiteControllerUtils {
 		}
 		let postContent = postStruct.buildPostContentData()
 		let forumContent = ForumCreateData(title: forumTitle, firstPost: postContent)
-		try await apiQuery(
+		// https://github.com/jocosocial/swiftarr/issues/168
+		// This marks the brand new forum as read for the user that created it.
+		// It was considered by some to be "undesirable" for the forum that you just made to already
+		// show up with a "1 post, 1 new" badge in the UI. I thought about doing this in the API
+		// but I think it should stick to just creating the forum. By calling the /forum/:forumID
+		// endpoint immediately afterward (with start and limits clamped down hard)
+		// that will automatically generate a ForumReader pivot under the hood and mark the forum as read
+		// before the users browser sends them back to the category forum list.
+		// If we elect to do this in the API it would be trivial to generate and save the pivot there
+		// instead.
+		let newForumResponse = try await apiQuery(
 			req,
 			endpoint: "/forum/categories/\(catID)/create",
 			method: .POST,
 			encodeContent: forumContent
 		)
+		let newForum = try newForumResponse.content.decode(ForumData.self)
+		try await apiQuery(req, endpoint: "/forum/\(newForum.forumID)?start=0&limit=1", passThroughQuery: false)
 		return .created
 	}
 
@@ -858,6 +878,22 @@ struct SiteForumController: SiteControllerUtils {
 			forums: forums,
 			searchType: .favorite,
 			filterDesc: "\(forums.paginator.total) Favorites"
+		)
+		return try await req.view.render("Forums/forumsList", ctx)
+	}
+
+	// GET /forum/unread
+	//
+	// Displays a list of the user's favorited forums.
+	// URL QueryParameters start, limit are passed through.
+	func forumUnreadPageHandler(_ req: Request) async throws -> View {
+		let response = try await apiQuery(req, endpoint: "/forum/unread")
+		let forums = try response.content.decode(ForumSearchData.self)
+		let ctx = try ForumsSearchPageContext(
+			req,
+			forums: forums,
+			searchType: .unread,
+			filterDesc: "\(forums.paginator.total) Unread Forums"
 		)
 		return try await req.view.render("Forums/forumsList", ctx)
 	}

@@ -29,6 +29,8 @@ struct SiteSeamailController: SiteControllerUtils {
 		privateRoutes.get("seamail", fezIDParam, use: seamailViewPageHandler)
 		privateRoutes.post("seamail", fezIDParam, use: seamailViewPageHandler)
 		privateRoutes.post("seamail", fezIDParam, "post", use: seamailThreadPostHandler)
+		privateRoutes.post("seamail", fezIDParam, "mute", use: seamailAddMutePostHandler)
+		privateRoutes.delete("seamail", fezIDParam, "mute", use: seamailRemoveMutePostHandler)
 		privateRoutes.webSocket(
 			"seamail",
 			fezIDParam,
@@ -49,7 +51,7 @@ struct SiteSeamailController: SiteControllerUtils {
 		var newMsgFezzes: [FezData] = []
 		var noNewMsgFezzes: [FezData] = []
 		fezList.fezzes.forEach {
-			if let members = $0.members, members.postCount > members.readCount {
+			if let members = $0.members, members.postCount > members.readCount, !members.isMuted {
 				newMsgFezzes.append($0)
 			}
 			else {
@@ -284,9 +286,10 @@ struct SiteSeamailController: SiteControllerUtils {
 			var socketURL: String
 			var breadcrumbURL: String
 			var paginator: PaginatorContext
+			var breadcrumbTitle: String;
 
 			init(_ req: Request, fez: FezData) throws {
-				let (title, tab) = titleAndTab(for: req)
+				let (title, tab) = titleAndTab(for: req, seamail: fez)
 				trunk = .init(req, title: title, tab: tab, search: "Search Seamail")
 				self.fez = fez
 				oldPosts = []
@@ -298,6 +301,7 @@ struct SiteSeamailController: SiteControllerUtils {
 					post.postErrorString = "Created the chat, but was not able to post the initial message."
 				}
 				socketURL = "/fez/\(fez.fezID)/socket"
+				(breadcrumbTitle, _) = titleAndTab(for: req)
 				breadcrumbURL = "/seamail"
 				if let foruser = req.query[String.self, at: "foruser"],
 					var comp = URLComponents(string: post.postSuccessURL)
@@ -390,6 +394,28 @@ struct SiteSeamailController: SiteControllerUtils {
 		try await apiQuery(req, endpoint: "/fez/\(fezID)/post", method: .POST, encodeContent: postContent)
 		return .created
 	}
+
+	// POST /seamail/mute/:seamail_ID
+	//
+	// Adds a seamail to the user's mute list.
+	func seamailAddMutePostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing fez_id parameter.")
+		}
+		try await apiQuery(req, endpoint: "/fez/\(fezID)/mute", method: .POST)
+		return .created
+	}
+
+	// DELETE /seamail/mute/:seamail_ID
+	//
+	// Removes a seamail from the user's mute list.
+	func seamailRemoveMutePostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing fez_id parameter.")
+		}
+		try await apiQuery(req, endpoint: "/fez/\(fezID)/mute/remove", method: .POST)
+		return .noContent
+	}
 }
 
 // Returns the correct page title and tab name for the effective user.
@@ -409,5 +435,12 @@ private func titleAndTab(for req: Request) -> (String, TrunkContext.Tab) {
 		title = "Seamail"
 		tab = .seamail
 	}
+	return (title, tab)
+}
+
+// This version of titleAndTab is for a single Seamail rather than the lists.
+private func titleAndTab(for req: Request, seamail: FezData) -> (String, TrunkContext.Tab) {
+	let title: String = "\(seamail.title) | Seamail"
+	let tab: TrunkContext.Tab = .seamail
 	return (title, tab)
 }

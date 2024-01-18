@@ -21,8 +21,8 @@
 					#if(profile.realName != ""):
 						Real Name: <b>#(profile.realName)</b><br>
 					#endif
-					#if(profile.preferredPronoun != ""):
-						Pronouns: <b>#(profile.preferredPronoun)</b><br>
+					#if(profile.header.preferredPronoun && profile.header.preferredPronoun != ""):
+						Pronouns: <b>#(profile.header.preferredPronoun)</b><br>
 					#endif
 					#if(profile.email != ""):
 						Email: <b>#(profile.email)</b><br>
@@ -32,6 +32,9 @@
 					#endif
 					#if(profile.roomNumber != ""):
 						Room #: <b>#(profile.roomNumber)</b><br>
+					#endif
+					#if(profile.dinnerTeam):
+						Dinner Team: <b>#dinnerTeamTag(profile.dinnerTeam)</b><br>
 					#endif
 				</div>
 			</div>
@@ -57,13 +60,16 @@
 						<div class="col col-auto me-auto">
 						</div>
 						<div class="col col-auto">
-							<button type="submit" class="btn btn-primary btn-sm">Save</button>
+							<button type="submit" class="btn btn-primary">Save<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
 						</div>
 					</div>
 				</form>
 			#endif
 			<div class="row mx-1 mt-2 list-group">
 				<a href="/forum/search?creatorid=#(profile.header.userID)&searchType=forums" class="list-group-item list-group-item-action">View Forums by @#(profile.header.username)</a>
+				#if(trunk.userIsMod):
+				<a href="/forumpost/search?creatorid=#(profile.header.userID)" class="list-group-item list-group-item-action">View Forum Posts by @#(profile.header.username)</a>
+				#endif
 				<a href="/seamail/create?withuser=#(profile.header.userID)" class="list-group-item list-group-item-action">Start chat with @#(profile.header.username)</a>
 			</div>
 			<div class="row mt-2">

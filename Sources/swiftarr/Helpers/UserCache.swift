@@ -36,6 +36,7 @@ public struct UserCacheData: Authenticatable, SessionAuthenticatable {
 	let accessLevel: UserAccessLevel
 	let userRoles: Set<UserRoleType>
 	let tempQuarantineUntil: Date?
+	let preferredPronoun: String?
 
 	init(userID: UUID, user: User, blocks: [UUID]?, mutewords: [String]?) {
 		self.userID = userID
@@ -51,6 +52,7 @@ public struct UserCacheData: Authenticatable, SessionAuthenticatable {
 		self.accessLevel = user.accessLevel
 		self.tempQuarantineUntil = user.tempQuarantineUntil
 		self.userRoles = Set(user.roles.map { $0.role })
+		self.preferredPronoun = user.preferredPronoun
 	}
 
 	// Used by sessionAuthenticatable, but this doesn't go into the cookie.
@@ -67,7 +69,7 @@ public struct UserCacheData: Authenticatable, SessionAuthenticatable {
 	}
 
 	func makeHeader() -> UserHeader {
-		return UserHeader(userID: userID, username: username, displayName: displayName, userImage: userImage)
+		return UserHeader(userID: userID, username: username, displayName: displayName, userImage: userImage, preferredPronoun: preferredPronoun)
 	}
 
 	func getUser(on db: Database) async throws -> User {
@@ -255,7 +257,7 @@ extension Application {
 	func getUserHeader(_ username: String) -> UserHeader? {
 		let cacheLock = self.locks.lock(for: Application.UserCacheLockKey.self)
 		if let user = cacheLock.withLock({ Application.userCacheStorage.usersByName[username.lowercased()] }) {
-			return UserHeader(userID: user.userID, username: user.username, displayName: user.displayName, userImage: user.userImage)
+			return UserHeader(userID: user.userID, username: user.username, displayName: user.displayName, userImage: user.userImage, preferredPronoun: user.preferredPronoun)
 		}
 		return nil
 	}
@@ -279,7 +281,8 @@ extension Request {
 				userID: userID,
 				username: user.username,
 				displayName: user.displayName,
-				userImage: user.userImage
+				userImage: user.userImage,
+				preferredPronoun: user.preferredPronoun
 			)
 		}
 
@@ -292,7 +295,8 @@ extension Request {
 					userID: user.userID,
 					username: user.username,
 					displayName: user.displayName,
-					userImage: user.userImage
+					userImage: user.userImage,
+					preferredPronoun: user.preferredPronoun
 				)
 			}
 			return nil
@@ -313,7 +317,8 @@ extension Request {
 					userID: $0.userID,
 					username: $0.username,
 					displayName: $0.displayName,
-					userImage: $0.userImage
+					userImage: $0.userImage,
+					preferredPronoun: $0.preferredPronoun
 				)
 			}
 		}

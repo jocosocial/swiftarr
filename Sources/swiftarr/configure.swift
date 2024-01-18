@@ -189,6 +189,11 @@ struct SwiftarrConfigurator {
 			Settings.shared.cruiseStartDayOfWeek = cruiseStartDayOfWeek
 		}
 
+		// Late Day Flip in Site UI
+		if let enableLateDayFlip = Environment.get("SWIFTARR_ENABLE_LATE_DAY_FLIP"), enableLateDayFlip != "" {
+			Settings.shared.enableLateDayFlip = Bool(enableLateDayFlip) ?? false
+		}
+
 		// Ask the GD Image library what filetypes are available on the local machine.
 		// gd, gd2, xbm, xpm, wbmp, some other useless formats culled.
 		let fileTypes = [".gif", ".bmp", ".tga", ".png", ".jpg", ".heif", ".heix", ".avif", ".tif", ".webp"]
@@ -286,7 +291,14 @@ struct SwiftarrConfigurator {
 		// Configure Redis connection
 		// Vapor's Redis package may not yet support TLS database connections so we support going both ways.
 		let redisPoolOptions: RedisConfiguration.PoolOptions = RedisConfiguration.PoolOptions(
-			maximumConnectionCount: .maximumActiveConnections(2)
+			maximumConnectionCount: .maximumActiveConnections(2),
+			// https://github.com/vapor/queues-redis-driver/issues/30
+			// Apparently the RediStack default is .milliseconds(10), which feels pretty aggressive.
+			// Occasionally caused beneign errors in the log such as:
+			// RedisConnectionPoolError(baseError: RediStack.RedisConnectionPoolError.BaseError.timedOutWaitingForConnection)
+			// Commentary in the Vapor Discord seems to agree. Someone there was setting the value to
+			// .seconds(60), which IMO feels "high". So lets bump up but not too much up eh?
+			connectionRetryTimeout: .seconds(1)
 		)
 
 		if let redisString = Environment.get("REDIS_URL"), let redisURL = URL(string: redisString) {
@@ -466,6 +478,8 @@ struct SwiftarrConfigurator {
 		app.leaf.tags["cruiseDayIndex"] = CruiseDayIndexTag()
 		app.leaf.tags["gameRating"] = GameRatingTag()
 		app.leaf.tags["localTime"] = LocalTimeTag()
+		app.leaf.tags["markdownTextTag"] = MarkdownTextTag()
+		app.leaf.tags["dinnerTeamTag"] = DinnerTeamTag()
 	}
 
 	func configureQueues(_ app: Application) throws {
@@ -477,52 +491,10 @@ struct SwiftarrConfigurator {
 		}
 		app.queues.use(.redis(config))
 
-		struct UpdateScheduleJob: AsyncScheduledJob {
-			func run(context: QueueContext) async throws {
-				do {
-					context.logger.notice("Starting UpdateScheduleJob")
-					let scheduleURLString = Settings.shared.scheduleUpdateURL
-					guard !scheduleURLString.isEmpty else {
-						throw Abort(.internalServerError, reason: "Schedule Updater ran, but the URL is empty, so we're bailing.")
-					}
-					let scheduleURL = URI(string: Settings.shared.scheduleUpdateURL)
-					let response = try await context.application.client.get(scheduleURL, headers: [ "User-Agent" : "curl/8.1.2"])
-					guard response.status == .ok else {
-						throw Abort(.internalServerError, reason: "Failed to GET schedule data from \(String(reflecting: scheduleURL))")
-					}
-					guard let fileLen = response.body?.readableBytes, let scheduleFileStr = response.body?.getString(at: 0, length: fileLen) else {
-						throw Abort(.badRequest, reason: "Could not read schedule data.")
-					}
-					// Parse and validate, throw if >50 events deleted (require manual in this case)
-					let differences = try await EventParser().validateEventsInICS(scheduleFileStr, on: context.application.db)
-					if differences.deletedEvents.count > 50 {
-						throw Abort(.badRequest, reason: "This update deletes more than 50 events and should be done manually, not via automatic updating.")
-					}
-					if differences.deletedEvents.isEmpty && differences.createdEvents.isEmpty && differences.timeChangeEvents.isEmpty &&
-							differences.locationChangeEvents.isEmpty && differences.minorChangeEvents.isEmpty {
-						// Log that no change was needed
-						try await ScheduleLog(diff: nil, isAutomatic: true).save(on: context.application.db)
-						context.logger.notice("UpdateScheduleJob completed successfully. Source schedule hasn't changed, no updates to apply.")
-					}
-					else {
-						// Apply changes to db, log what happened
-						guard let forumAuthor = context.application.getUserHeader("admin") else {
-							throw Abort(.internalServerError, reason: "Could not find admin user when running schedule updater.")
-						}
-						try await EventParser().updateDatabaseFromICS(scheduleFileStr, on: context.application.db, forumAuthor: forumAuthor)
-						try await ScheduleLog(diff: differences, isAutomatic: true).save(on: context.application.db)
-						context.logger.notice("UpdateScheduleJob completed successfully--there were updates to apply.")
-					}
-				}
-				catch {
-					context.logger.notice("UpdateScheduleJob failed. \(String(reflecting: error))")
-					try await ScheduleLog(error: "Update threw an error: \(String(reflecting: error))").save(on: context.application.db)
-				}
-			}
-		}
-
+		// Setup the schedule update job to run at an interval and on-demand.
 		app.queues.schedule(UpdateScheduleJob()).hourly().at(5)
-//		app.queues.schedule(UpdateScheduleJob()).minutely().at(5)
+		app.queues.add(UpdateJob())
+		try app.queues.startInProcessJobs(on: .default)
 		try app.queues.startScheduledJobs()
 	}
 
@@ -582,6 +554,9 @@ struct SwiftarrConfigurator {
 		app.migrations.add(UpdateForumReadersMuteSchema(), to: .psql)
 		app.migrations.add(CreateUserFavoriteSchema(), to: .psql)
 		app.migrations.add(UpdateForumReadersLastPostReadSchema(), to: .psql)
+		app.migrations.add(UpdateFezParticipantSchema(), to: .psql)
+		app.migrations.add(UpdateForumLastPostIDMigration(), to: .psql)
+		app.migrations.add(UpdateUserDinnerTeamMigration(), to: .psql)
 
 		// At this point the db *schema* should be set, and the rest of these migrations operate on the db's *data*.
 
@@ -737,5 +712,6 @@ struct SwiftarrConfigurator {
 	// Wrapper function to add any custom CLI commands. Might be overkill but at least it's scalable.
 	// These should be stored in Sources/swiftarr/Commands.
 	func configureCommands(_ app: Application) {
+		app.asyncCommands.use(GenerateScheduleCommand(), as: "generate-schedule")
 	}
 }

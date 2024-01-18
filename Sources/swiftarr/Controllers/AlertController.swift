@@ -167,12 +167,7 @@ struct AlertController: APIRouteCollection {
 			}
 			else {
 				entry.forumMentionCount = value.int ?? 0
-				// @TODO disabling newForumMentionCount until we can integrate smarts along the lines of
-				// "If we're marking this post as read and it contains an alertword, then increment the
-				// _viewed key for that word."
-				// Otherwise we can never clear the "new" alertword notifications.
-				// entry.newForumMentionCount = max(0, entry.forumMentionCount - viewedCount)
-				entry.newForumMentionCount = 0
+				entry.newForumMentionCount = max(0, entry.forumMentionCount - viewedCount)
 			}
 			resultDict[word] = entry
 		}
@@ -187,19 +182,25 @@ struct AlertController: APIRouteCollection {
 		guard user.accessLevel.hasAccess(.moderator) else {
 			return nil
 		}
+		let userHash = try await req.redis.getUserHash(userID: user.userID)
 		let reportCount = try await Report.query(on: req.db).filter(\.$isClosed == false).filter(\.$actionGroup == nil)
 			.count()
 		let seamailHash = try await req.redis.hvals(in: "UnreadModSeamails-\(user.userID)", as: Int.self).get()
 		let moderatorUnreadCount = seamailHash.reduce(0) { $1 ?? 0 > 0 ? $0 + 1 : $0 }
+		let moderatorForumMentionCount = req.redis.getIntFromUserHash(userHash, field: .moderatorForumMention(0)) - req.redis.getIntFromUserHash(userHash, field: .moderatorForumMention(0), viewed: true)
 		var ttUnreadCount = 0
+		var ttForumMentionCount = 0
 		if user.accessLevel.hasAccess(.twitarrteam) {
 			let ttSeamailHash = try await req.redis.hvals(in: "UnreadTTSeamails-\(user.userID)", as: Int.self).get()
 			ttUnreadCount = ttSeamailHash.reduce(0) { $1 ?? 0 > 0 ? $0 + 1 : $0 }
+			ttForumMentionCount = req.redis.getIntFromUserHash(userHash, field: .twitarrTeamForumMention(0)) - req.redis.getIntFromUserHash(userHash, field: .twitarrTeamForumMention(0), viewed: true)
 		}
 		return UserNotificationData.ModeratorNotificationData(
 			openReportCount: reportCount,
 			newModeratorSeamailMessageCount: moderatorUnreadCount,
-			newTTSeamailMessageCount: ttUnreadCount
+			newTTSeamailMessageCount: ttUnreadCount,
+			newModeratorForumMentionCount: moderatorForumMentionCount,
+			newTTForumMentionCount: ttForumMentionCount
 		)
 	}
 

@@ -71,7 +71,7 @@
 								<div class="row mb-2">
 									<div class="col">
 										<div class="form-check">
-											<input class="form-check-input" type="checkbox" value="" name="openchat" id="openChatCheckbox">
+											<input class="form-check-input" type="checkbox" value="" name="openchat" id="openChatCheckbox" checked>
 											<label class="form-check-label" for="openChatCheckbox">
 												Make this an open chat so you can add or remove users later
 											</label>
@@ -83,7 +83,7 @@
 										<small>Please remember to abide by the <a href="/codeOfConduct">Code of Conduct</a></small>
 									</div>
 									<div class="col col-auto">
-										<button type="submit" class="btn btn-primary">Post</button>
+										<button type="submit" class="btn btn-primary">Post<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
 									</div>
 								</div>
 								#if(trunk.userIsMod):

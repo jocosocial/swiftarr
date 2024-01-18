@@ -180,13 +180,17 @@ struct ModerationController: APIRouteCollection {
 	///
 	/// - Throws: 403 error if the user is not an admin.
 	/// - Returns: An array of `ModeratorActionLogData` records.
-	func moderatorActionLogHandler(_ req: Request) async throws -> [ModeratorActionLogData] {
+	func moderatorActionLogHandler(_ req: Request) async throws -> ModeratorActionLogResponseData {
 		let start = (req.query[Int.self, at: "start"] ?? 0)
 		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...200)
-		let result = try await ModeratorAction.query(on: req.db).range(start..<(start + limit))
-			.sort(\.$createdAt, .descending)
-			.all().map { try ModeratorActionLogData(action: $0, on: req) }
-		return result
+		let query = ModeratorAction.query(on: req.db)
+		async let totalActionCount = try query.count()
+		async let result = try query.copy().range(start..<(start + limit)).sort(\.$createdAt, .descending).all().map { try ModeratorActionLogData(action: $0, on: req) }
+		let response = try await ModeratorActionLogResponseData(
+			actions: result,
+			paginator: Paginator(total: totalActionCount, start: start, limit: limit)
+		)
+		return response
 	}
 
 	/// `GET /api/v3/mod/twarrt/ID`
@@ -501,7 +505,7 @@ struct ModerationController: APIRouteCollection {
 		guard let postIDString = req.parameters.get(fezPostIDParam.paramString), let postID = Int(postIDString) else {
 			throw Abort(.badRequest, reason: "Request parameter \(fezPostIDParam.paramString) is missing.")
 		}
-		guard let lfgPost = try await FezPost.query(on: req.db).filter(\.$id == postID).withDeleted().first() else {
+		guard let lfgPost = try await FezPost.query(on: req.db).with(\.$fez).filter(\.$id == postID).withDeleted().first() else {
 			throw Abort(.notFound, reason: "no LFG Post found for identifier '\(postID)'")
 		}
 		let reports = try await Report.query(on: req.db)
@@ -514,6 +518,7 @@ struct ModerationController: APIRouteCollection {
 		let modData = FezPostModerationData(
 			fezPost: fezPostData,
 			fezID: lfgPost.$fez.id,
+			fezType: lfgPost.fez.fezType,
 			isDeleted: lfgPost.deletedAt != nil,
 			moderationStatus: lfgPost.moderationStatus,
 			reports: reportData

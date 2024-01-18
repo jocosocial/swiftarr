@@ -4,7 +4,7 @@
     		<div class="row">
 				<nav aria-label="breadcrumb">
 				  <ol class="breadcrumb">
-					<li class="breadcrumb-item"><a href="#(breadcrumbURL)">#(trunk.title)</a></li>
+					<li class="breadcrumb-item"><a href="#(breadcrumbURL)">#(breadcrumbTitle)</a></li>
 					<li class="breadcrumb-item active" aria-current="page">#(fez.title)</li>
 				  </ol>
 				</nav>
@@ -12,22 +12,33 @@
 			<div class="row mb-1">
 				<div class="col">
 					<h6>Participants</h6>
-				</div>
-				#if(fez.fezType == "open"):
-					<div class="col col-auto btn-group btn-group-sm" role="group" aria-label="member actions">
+				</div>				
+				<div class="col col-auto btn-group btn-group-sm" role="group" aria-label="member actions">
+					#if(fez.fezType == "open"):
 						#if(fez.owner.userID == trunk.userID):
 							<a class="btn btn-outline-primary" href="/fez/#(fez.fezID)/members">Manage Members</a>
 						#else:
 							<button type="button" class="btn btn-outline-primary px-3" data-bs-toggle="modal" data-bs-target="\#leaveFezModal">Leave</button>
 						#endif
-					</div>
-				#endif
+					#endif
+					<input type="checkbox" class="btn-check" autocomplete="off" data-action="muteSeamail" 
+								data-actionpath="/seamail/#(fez.fezID)/mute"
+								data-istoggle="true"
+								data-errordiv="mute_errorDisplay"
+								id="#(fez.fezID)_mute"
+							#if(fez.members.isMuted):checked#endif>
+					<label class="btn btn-outline-primary" for="#(fez.fezID)_mute">
+						Mute<span class="laughtext"></span>
+						<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+						<span class="visually-hidden">Loading...</span>
+					</label>
+				</div>
 			</div>
 			<div class="row mb-2 mx-0">
 				#for(participant in fez.members.participants):
 					<div class="col col-auto border">
 						#avatar(participant)
-						<span>#(participant.username)</span>
+						<span><a href="/user/#(participant.userID)">#(participant.username)</a></span>
 					</div>				
 				#endfor
 			</div>
@@ -77,7 +88,7 @@
 									<small>Please remember to abide by the<br><a href="/codeOfConduct">Code of Conduct</a></small>
 								</div>
 								<div class="col col-auto">
-									<button type="submit" class="btn btn-primary">Post</button>
+									<button type="submit" class="btn btn-primary">Post<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
 								</div>
 							</div>
 							#if(trunk.userIsMod && !post.isEdit):

@@ -62,6 +62,7 @@ public struct FezModerationData: Content {
 public struct FezPostModerationData: Content {
 	var fezPost: FezPostData
 	var fezID: UUID
+	var fezType: FezType
 	var isDeleted: Bool
 	var moderationStatus: ContentModerationStatus
 	var reports: [ReportModerationData]
@@ -193,6 +194,14 @@ extension ModeratorActionLogData {
 		moderator = try req.userCache.getHeader(action.$actor.id)
 		targetUser = try req.userCache.getHeader(action.$target.id)
 	}
+}
+
+/// Used to return data on a collection of moderator action events.
+public struct ModeratorActionLogResponseData: Content {
+	/// Instances of moderators using their super-cow powers. 
+	var actions: [ModeratorActionLogData]
+	/// Pagination data
+	var paginator: Paginator
 }
 
 /// Used to return a `TwarrtEdit` or `ForumPost`'s data for moderators. The two models use the same data structure, as all the fields happen to be the same.

@@ -29,8 +29,9 @@
 									#endfor
 									<li><hr class="dropdown-divider"></li>
 									<li><h6 class="dropdown-header">Only show:</h6></li>
+									<li><a class="dropdown-item" href="/forum/unread?cat=#(forums.categoryID)">Unread</a></li>
 									<li><a class="dropdown-item" href="/forum/favorites?cat=#(forums.categoryID)">Favorites</a></li>
-									<li><a class="dropdown-item" href="/forum/owned">Forums You Created</a></li>
+									<li><a class="dropdown-item" href="/forum/owned?cat=#(forums.categoryID)">Forums You Created</a></li>
 									<li><a class="dropdown-item" href="/forum/mutes?cat=#(forums.categoryID)">Muted</a></li>
 								</ul>
 							</div>

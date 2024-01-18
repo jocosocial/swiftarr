@@ -196,17 +196,26 @@ struct SiteModController: SiteControllerUtils {
 	/// Shows a page with a table of all moderator actions.
 	func moderatorLogPageHandler(_ req: Request) async throws -> View {
 		let response = try await apiQuery(req, endpoint: "/mod/moderationlog")
-		let logData = try response.content.decode([ModeratorActionLogData].self)
+		let logData = try response.content.decode(ModeratorActionLogResponseData.self)
 		struct LogContext: Encodable {
 			var trunk: TrunkContext
 			var log: [ModeratorActionLogData]
+			var paginator: PaginatorContext
 
-			init(_ req: Request, log: [ModeratorActionLogData]) throws {
+			init(_ req: Request, responseData: ModeratorActionLogResponseData) throws {
 				trunk = .init(req, title: "Moderator Action Log", tab: .moderator)
-				self.log = log
+				self.log = responseData.actions
+				self.paginator = PaginatorContext(
+					start: responseData.paginator.start,
+					total: responseData.paginator.total,
+					limit: responseData.paginator.limit,
+					urlForPage: { pageIndex in
+						"/moderator/log?start=\(pageIndex * responseData.paginator.limit)&limit=\(responseData.paginator.limit)"
+					}
+				)
 			}
 		}
-		let ctx = try LogContext(req, log: logData)
+		let ctx = try LogContext(req, responseData: logData)
 		return try await req.view.render("moderation/moderatorActionLog", ctx)
 	}
 
@@ -542,11 +551,18 @@ struct SiteModController: SiteControllerUtils {
 			var modData: FezPostModerationData
 			var firstReport: ReportModerationData?
 			var finalEditAuthor: UserHeader?
+			var postModUrl: String
 
 			init(_ req: Request, modData: FezPostModerationData) throws {
 				trunk = .init(req, title: "Fez Post Moderation", tab: .moderator)
 				self.modData = modData
 				firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
+				switch modData.fezType {
+					case .open, .closed:
+						self.postModUrl = "/seamail/\(modData.fezID)"
+					default:
+						self.postModUrl = "/fez/\(modData.fezID)"
+				}
 			}
 		}
 		let ctx = try ReportContext(req, modData: modData)

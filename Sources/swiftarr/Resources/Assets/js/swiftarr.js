@@ -13,6 +13,7 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 		case "block":
 		case "mute":
 		case "muteForum": // Different than mute[User] due to code in spinnerButtonAction.
+		case "muteSeamail":
 		case "unblock":
 		case "unmute":
 		case "alertWordDelete":
@@ -252,6 +253,12 @@ function updateDropdownButton(menuItemBtn) {
 		menuItem.classList.remove("active");
 	}
 	menuItemBtn.classList.add("active");
+	// Show the dropdown menu button highlighted with active colors if a filter is applied that is not "all".
+	if (menuItemBtn.dataset.selection !== "all") {
+		dropdownBtn.classList.add("active");
+	} else {
+		dropdownBtn.classList.remove("active");
+	}
 }
 
 // MARK: - messagePostForm Handlers
@@ -369,8 +376,10 @@ async function submitAJAXForm(formElement, event) {
 	if (!formElement.classList.contains('ajax')) {
 		return;
 	}
+	let spinnerElem = formElement.querySelector(".spinner-border");
 	event.preventDefault();
 	try {
+		spinnerElem?.classList.remove("d-none");
 		let response = await fetch(formElement.action, { method: 'POST', body: new FormData(formElement) });
 		if (response.status < 300) {
 			let successURL = formElement.dataset.successurl;
@@ -382,9 +391,11 @@ async function submitAJAXForm(formElement, event) {
 			if (successURL == "reset") {
 				formElement.querySelector('.twitarr-image-remove')?.click();
 				formElement.querySelector('.alert-success')?.classList.remove("d-none")
+				spinnerElem?.classList.add("d-none");
 			}
 			else if (successURL) {
 				location.assign(successURL);
+				spinnerElem?.classList.add("d-none");
 			}
 			else {
 				location.reload();
@@ -403,6 +414,7 @@ async function submitAJAXForm(formElement, event) {
 			if (alertElement) {
 				alertElement.innerHTML = "<b>Error:</b> " + data.reason;
 				alertElement.classList.remove("d-none");
+				spinnerElem?.classList.add("d-none");
 			}
 		}
 	}
@@ -410,6 +422,7 @@ async function submitAJAXForm(formElement, event) {
 		let alertElement = formElement.querySelector('.alert-danger');
 		alertElement.innerHTML = "<b>Error:</b> " + this.statusText;
 		alertElement.classList.remove("d-none");
+		spinnerElem?.classList.add("d-none");
 	}
 }
 

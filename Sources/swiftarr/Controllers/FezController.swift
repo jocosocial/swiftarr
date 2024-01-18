@@ -77,6 +77,9 @@ struct FezController: APIRouteCollection {
 		tokenCacheAuthGroup.delete(fezIDParam, use: fezDeleteHandler)
 		tokenCacheAuthGroup.post(fezIDParam, "report", use: reportFezHandler)
 		tokenCacheAuthGroup.post("post", fezPostIDParam, "report", use: reportFezPostHandler)
+		tokenCacheAuthGroup.post(fezIDParam, "mute", use: muteAddHandler)
+		tokenCacheAuthGroup.delete(fezIDParam, "mute", use: muteRemoveHandler)
+		tokenCacheAuthGroup.post(fezIDParam, "mute", "remove", use: muteRemoveHandler)
 
 	}
 
@@ -227,7 +230,7 @@ struct FezController: APIRouteCollection {
 			query.fields(for: FezParticipant.self).fields(for: FriendlyFez.self).unique()
 		}
 		async let fezCount = try query.count()
-		async let pivots = query.sort(FriendlyFez.self, \.$updatedAt, .descending).range(urlQuery.calcRange()).all()
+		async let pivots = query.copy().sort(FezParticipant.self, \.$isMuted, .descending).sort(FriendlyFez.self, \.$updatedAt, .descending).range(urlQuery.calcRange()).all()
 		let fezDataArray = try await pivots.map { pivot -> FezData in
 			let fez = try pivot.joined(FriendlyFez.self)
 			return try buildFezData(from: fez, with: pivot, for: effectiveUser, on: req)
@@ -486,6 +489,9 @@ struct FezController: APIRouteCollection {
 				}
 			}
 			else if participantUserID != cacheUser.userID {
+				if let pivot = try await getUserPivot(fez: fez, userID: participantUserID, on: req.db), pivot.isMuted == true {
+					continue
+				}
 				participantNotifyList.append(participantUserID)
 			}
 		}
@@ -977,6 +983,60 @@ struct FezController: APIRouteCollection {
 				}
 			}
 	}
+
+	/// `POST /api/v3/fez/:fez_ID/mute`
+	///
+	/// Mute the specified `Fez` for the current user.
+	///
+	/// - Parameter fez_ID: In the URL path.
+	/// - Returns: 201 Created on success; 200 OK if already muted.
+	func muteAddHandler(_ req: Request) async throws -> HTTPStatus {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		let effectiveUser = getEffectiveUser(user: cacheUser, req: req, fez: fez)
+		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
+			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
+		}
+		
+		guard let fezParticipant = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == effectiveUser.userID).first() else {
+			throw Abort(.forbidden, reason: "user is not a member of this fez")
+		}
+
+		if fezParticipant.isMuted == true {
+			return .ok
+		}
+		fezParticipant.isMuted = true
+		try await fezParticipant.save(on: req.db)
+		return .created
+	}
+
+	/// `POST /api/v3/fez/:fez_ID/mute/remove`
+	/// `DELETE /api/v3/fez/:fez_ID/mute`
+	///
+	/// Unmute the specified `Fez` for the current user.
+	///
+	/// - Parameter fez_ID: In the URL path.
+	/// - Throws: 400 error if the forum was not muted.
+	/// - Returns: 204 No Content on success; 200 OK if already not muted.
+	func muteRemoveHandler(_ req: Request) async throws -> HTTPStatus {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		let effectiveUser = getEffectiveUser(user: cacheUser, req: req, fez: fez)
+		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
+			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
+		}
+		
+		guard let fezParticipant = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == effectiveUser.userID).first() else {
+			throw Abort(.forbidden, reason: "user is not a member of this fez")
+		}
+
+		if fezParticipant.isMuted != true {
+			return .ok
+		}
+		fezParticipant.isMuted = nil
+		try await fezParticipant.save(on: req.db)
+		return .noContent
+	}
 }
 
 // MARK: - Helper Functions
@@ -1022,12 +1082,20 @@ extension FezController {
 				participants = valids
 				waitingList = []
 			}
+			
+			// https://github.com/jocosocial/swiftarr/issues/240
+			// Moderators can see postCount and readCount regardless of whether they've joined
+			// or not. If they have joined, they should get their personal pivot data. If they
+			// haven't joined, they shouldn't default to readCount=0 because then every LFG
+			// appears with unread messages that cannot be cleared.
+			let postCount = fez.postCount - (pivot?.hiddenCount ?? 0)
 			fezData.members = FezData.MembersOnlyData(
 				participants: participants,
 				waitingList: waitingList,
-				postCount: fez.postCount - (pivot?.hiddenCount ?? 0),
-				readCount: pivot?.readCount ?? 0,
-				posts: posts
+				postCount: postCount,
+				readCount: pivot?.readCount ?? postCount,
+				posts: posts,
+				isMuted: pivot?.isMuted ?? false
 			)
 		}
 		return fezData
@@ -1101,9 +1169,6 @@ extension FezController {
 	// user 'moderator' or user 'TwitarrTeam' is a member of the fez and the user has the appropriate access level.
 	//
 	func getEffectiveUser(user: UserCacheData, req: Request, fez: FriendlyFez) -> UserCacheData {
-		if fez.participantArray.contains(user.userID) {
-			return user
-		}
 		// If either of these 'special' users are fez members and the user has high enough access, we can see the
 		// members-only values of the fez as the 'special' user.
 		if user.accessLevel >= .twitarrteam, let ttUser = req.userCache.getUser(username: "TwitarrTeam"),
@@ -1116,7 +1181,7 @@ extension FezController {
 		{
 			return modUser
 		}
-		// User isn't a member of the fez, but they're still the effective user in this case.
+		// User is or is not a member of the fez. But they are themself and not anyone special.
 		return user
 	}
 }

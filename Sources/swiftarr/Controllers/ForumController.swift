@@ -57,6 +57,7 @@ struct ForumController: APIRouteCollection {
 		tokenCacheAuthGroup.get("search", use: forumSearchHandler)
 		tokenCacheAuthGroup.get("owner", use: ownerHandler)
 		tokenCacheAuthGroup.get("recent", use: recentsHandler)
+		tokenCacheAuthGroup.get("unread", use: unreadHandler)
 
 		// Posts - CRUD first, then actions on posts
 		tokenCacheAuthGroup.on(.POST, forumIDParam, "create", body: .collect(maxSize: "30mb"), use: postCreateHandler)
@@ -185,6 +186,15 @@ struct ForumController: APIRouteCollection {
 			.sort(ForumReaders.self, \.$isMuted, .descending)
 		if category.isEventCategory {
 			_ = query.join(child: \.$scheduleEvent, method: .left)
+			// https://github.com/jocosocial/swiftarr/issues/199
+			// .withDeleted() applies to the entire query, not just the joined table.
+			// So simply slapping that on there would continue to display deleted Forums
+			// in the list which is not good. The group filter afterwards mimicks the
+			// behavior that Fluent defaults to when filtering soft-deleted data.
+			.withDeleted()
+			.group(.or) { group in 
+				group.filter(\.$deletedAt == nil).filter(\.$deletedAt > Date())
+			}
 		}
 		var dateFilterUsesUpdate = false
 		switch req.query[String.self, at: "sort"] {
@@ -393,6 +403,60 @@ struct ForumController: APIRouteCollection {
 		)
 	}
 
+	/// `GET /api/v3/forum/unread`
+	///
+	/// Retrieve the `Forum`s the user has not read.
+	///
+	/// **URL Query Parameters**:
+	/// * `?cat=CATEGORY_ID` - Only show favorites in the given category
+	/// * `?sort=STRING` - Sort forums by `create`, `update`, or `title`. Create and update return newest forums first. `update` is the default.
+	/// * `?start=INT` - The index into the sorted list of forums to start returning results. 0 for first item, which is the default.
+	/// * `?limit=INT` - The max # of entries to return. Defaults to 50
+	///
+	/// - Returns: A `ForumSearchData` containing the user's muted forums.
+	func unreadHandler(_ req: Request) async throws -> ForumSearchData {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let start = (req.query[Int.self, at: "start"] ?? 0)
+		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
+		// https://github.com/jocosocial/swiftarr/issues/217
+		// Lots of swearing, source code reading, and AI hallucinations went into the crafting of this
+		// join. Unfortunately we can't do:
+		//   .join(ForumReaders.self, on: \Forum.$id == \ForumReaders.$forum.$id && \ForumReaders.$user.$id == cacheUser.userID, method: .left)
+		// because we get an error that:
+		//   binary operator '&&' cannot be applied to operands of type 'ComplexJoinFilter' and 'ModelValueFilter<ForumReaders>'
+		// which is very sad. The resultant SQL should read something like:
+		//   ... LEFT JOIN "forum+readers" ON "forum"."id"="forum+readers"."forum" AND "forum+readers"."user"='$' WHERE ...
+		// If there's a sneaky way to access the FieldKey's of models, I haven't been able to find it.
+		// So if we ever schema change the "forum" or "user" columns here this won't dynamically adjust.
+		let joinFilters: [DatabaseQuery.Filter] = [
+			.field(.path([.id], schema: Forum.schema), .equal, .path([.string("forum")], schema: ForumReaders.schema)),
+			.value(.path(["user"], schema: ForumReaders.schema), .equal, .bind(cacheUser.userID))
+		]
+		let countQuery = Forum.query(on: req.db).filter(\.$creator.$id !~ cacheUser.getBlocks())
+			.categoryAccessFilter(for: cacheUser)	
+			.join(ForumReaders.self, joinFilters, method: .left)
+			.group(.or) { (or) in
+				or.filter(ForumReaders.self, \.$lastPostReadID == nil)
+				or.filter(\Forum.$lastPostID != \ForumReaders.$lastPostReadID)
+			}
+		if let cat = req.query[UUID.self, at: "cat"] {
+			countQuery.filter(\.$category.$id == cat)
+		}
+		async let forumCount = try countQuery.count()
+		let forumQuery = countQuery.copy().range(start..<(start + limit)).join(child: \.$scheduleEvent, method: .left)
+		switch req.query[String.self, at: "sort"] {
+		case "create": _ = forumQuery.sort(\.$createdAt, .descending)
+		case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), .ascending)
+		default: _ = forumQuery.sort(\.$lastPostTime, .descending)
+		}
+		async let forums = try forumQuery.all()
+		let forumList = try await buildForumListData(forums, on: req, user: cacheUser)
+		return try await ForumSearchData(
+			paginator: Paginator(total: forumCount, start: start, limit: limit),
+			forumThreads: forumList
+		)
+	}
+
 	/// `GET /api/v3/forum/recent`
 	///
 	/// Retrieve the `Forum`s the user has recently visited. Results are sorted by most recent time each forum was visited.
@@ -576,6 +640,7 @@ struct ForumController: APIRouteCollection {
 	/// * `?ownreacts=true` - Matches posts the current user has reacted to.
 	/// * `?byself=true` - Matches posts the current user authored.
 	/// * `?bookmarked=true` - Matches posts the user has bookmarked.
+	/// * `?creatorid=STRING` - Matches posts created by the given userID.
 	///
 	/// Additionally, you can constrain results to either posts in a specific category, or a specific forum. If both are specified, forum is ignored.
 	/// * `?forum=UUID` - Confines the search to posts in the given forum thread.
@@ -622,6 +687,22 @@ struct ForumController: APIRouteCollection {
 		else if let forumID = req.query[UUID.self, at: "forum"] {
 			query = query.filter(\.$forum.$id == forumID)
 		}
+		// https://github.com/jocosocial/swiftarr/issues/167
+		// Limiting this to mods for the moment because the amount of dishonorable uses I can
+		// think of is very high. This feature is useful in the mod context because it allows
+		// mods to get a sense of the content that the user has been posting.
+		// For example: If a user has been reported multiple times and a ban decision is being
+		// considered, seeing if the user has been perpetually un-excellent in the forums
+		// is much easier. In the Twarrt Stream we had a feature where you could see all posts
+		// by user for a similar reason (and because that's what a lot of social media tools do).
+		// This limitation is very much open to consideration.
+		// There's a corresponding userIsMod in the Site HTML template.
+		if let creatorID = req.query[UUID.self, at: "creatorid"], let creatingUser = req.userCache.getUser(creatorID) {
+			guard cacheUser.accessLevel.hasAccess(.moderator) else {
+				throw Abort(.forbidden, reason: "Only moderators can use creatorid on this endpoint")
+			}
+			query = query.filter(\.$author.$id == creatingUser.userID)
+		}
 
 		if var searchStr = req.query[String.self, at: "search"] {
 			searchStr = searchStr.replacingOccurrences(of: "_", with: "\\_")
@@ -660,6 +741,12 @@ struct ForumController: APIRouteCollection {
 			}
 			postFilterMentions = mentionName
 			query.filter(\.$text, .custom("ILIKE"), "%\(mentionName)%")
+			if mentionName.lowercased() == "@moderator" && cacheUser.accessLevel.hasAccess(.moderator) {
+				try await markNotificationViewed(user: cacheUser, type: .moderatorForumMention(0), on: req)
+			}
+			if mentionName.lowercased() == "@twitarrteam" && cacheUser.accessLevel.hasAccess(.twitarrteam) {
+				try await markNotificationViewed(user: cacheUser, type: .twitarrTeamForumMention(0), on: req)
+			}
 		}
 		if let byself = req.query[Bool.self, at: "byself"], byself == true {
 			query.filter(\.$author.$id == cacheUser.userID)
@@ -847,6 +934,10 @@ struct ForumController: APIRouteCollection {
 	///
 	/// - Note: Users may be able to add posts to existing forum threads in categories where they don't have access to create new threads.
 	///
+	/// This function intentionally does not generate a ForumReader pivot for the user that created it.
+	/// https://github.com/jocosocial/swiftarr/issues/168
+	/// See SiteForumController.swift for more.
+	/// 
 	/// - Parameter categoryID: in URL path
 	/// - Parameter requestBody: `ForumCreateData` payload in the HTTP body.
 	/// - Throws: 403 error if the user is not authorized to create a forum.
@@ -878,6 +969,10 @@ struct ForumController: APIRouteCollection {
 		)
 		try await forumPost.save(on: req.db)
 		try await forumPost.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
+		// Update the forum last post at
+		forum.lastPostTime = Date()
+		forum.lastPostID = forumPost.id
+		try await forum.save(on: req.db)
 		// Update the Category's cached count of forums
 		category.forumCount = try await Int32(category.$forums.query(on: req.db).count())
 		try await category.save(on: req.db)
@@ -1024,6 +1119,7 @@ struct ForumController: APIRouteCollection {
 		)
 		try await forumPost.save(on: req.db)
 		forum.lastPostTime = Date()
+		forum.lastPostID = forumPost.id
 		try await forum.save(on: req.db)
 		try await forumPost.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
 		// If the post @mentions anyone, update their mention counts
@@ -1549,11 +1645,24 @@ extension ForumController {
 				post.authorUUID != userID 
 			}
 			// Mentions
+			let cacheUser = try req.auth.require(UserCacheData.self)
 			let (subtracts, adds) = post.getMentionsDiffs(editedString: editedText, isCreate: isCreate)
 			if !subtracts.isEmpty {
 				let subtractUUIDs = req.userCache.getUsers(usernames: subtracts).compactMap(canUserAccessCategory).filter(userDidntMentionSelf)
 				group.addTask {
 					try await subtractNotifications(users: subtractUUIDs, type: .forumMention(postID), on: req)
+				}
+				if subtracts.map({ $0.lowercased() }).contains("twitarrteam") {
+					let ttMembers = req.userCache.allUsersWithAccessLevel(.twitarrteam)
+					group.addTask {
+						try await subtractNotifications(users: ttMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .twitarrTeamForumMention(postID), on: req)
+					}
+				}
+				if subtracts.map({ $0.lowercased()}).contains("moderator") {
+					let modMembers = req.userCache.allUsersWithAccessLevel(.moderator)
+					group.addTask {
+						try await subtractNotifications(users: modMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .moderatorForumMention(postID), on: req)
+					}
 				}
 			}
 			if !adds.isEmpty {
@@ -1565,6 +1674,20 @@ extension ForumController {
 				let infoStr = "\(authorText) wrote a forum post that @mentioned you."
 				group.addTask {
 					try await addNotifications(users: addUUIDs, type: .forumMention(postID), info: infoStr, on: req)
+				}
+				if adds.map({ $0.lowercased() }).contains("twitarrteam") {
+					let ttMembers = req.userCache.allUsersWithAccessLevel(.twitarrteam)
+					let infoStr = "\(authorText) wrote a forum post that @mentioned twitarrteam."
+					group.addTask {
+						try await addNotifications(users: ttMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .twitarrTeamForumMention(postID), info: infoStr, on: req)
+					}
+				}
+				if adds.map({ $0.lowercased()}).contains("moderator") {
+					let modMembers = req.userCache.allUsersWithAccessLevel(.moderator)
+					let infoStr = "\(authorText) wrote a forum post that @mentioned moderator."
+					group.addTask {
+						try await addNotifications(users: modMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .moderatorForumMention(postID), info: infoStr, on: req)
+					}
 				}
 			}
 			// Alertwords

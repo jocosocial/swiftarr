@@ -25,6 +25,12 @@
 						<div><span class="text-muted border-bottom border-danger"><i>#(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount) New Message#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 1):s#endif</i></span></div>
 					#endif
 				</a>
+				<a class="list-group-item list-group-item-action" href="/forumpost/mentions?mentionname=moderator">
+					<b>Moderator Forum Mentions</b>: Mentions of @moderator in forum posts
+					#if(trunk.alertCounts.moderatorData.newModeratorForumMentionCount > 0):
+						<div><span class="text-muted border-bottom border-danger"><i>#(trunk.alertCounts.moderatorData.newModeratorForumMentionCount) New Mention#if(trunk.alertCounts.moderatorData.newModeratorForumMentionCount > 1):s#endif</i></span></div>
+					#endif
+				</a>
 				<a class="list-group-item list-group-item-action" href="/moderator/guide">
 					<b>Moderator Guide</b>: Moderator Guidelines, Capabilities, and Responsibilities
 				</a>	
