@@ -237,6 +237,15 @@ struct SwiftarrConfigurator {
 			Settings.shared.userImagesRootPath = URL(fileURLWithPath: likelyExecutablePath).appendingPathComponent("images")
 		}
 		configLog.notice("Set userImages path to \(Settings.shared.userImagesRootPath.path).")
+
+		// The App HTTP Client is the built-in async-http-client that Swiftarr can use to make HTTP calls.
+		// This usually manifests itself with the Site UI making calls to the API. The default pool
+		// .concurrentHTTP1ConnectionsPerHostSoftLimit is 8. These settings can generate errors akin to
+		// HTTPClientError.getConnectionFromPoolTimeout.
+		app.http.client.configuration.connectionPool.concurrentHTTP1ConnectionsPerHostSoftLimit = 8
+		app.http.client.configuration.timeout.connect = .seconds(10)
+		// Default read timeout is nil
+		// app.http.client.configuration.timeout.read = nil
 	}
 
 	func databaseConnectionConfiguration(_ app: Application) throws {
@@ -291,6 +300,10 @@ struct SwiftarrConfigurator {
 		// Configure Redis connection
 		// Vapor's Redis package may not yet support TLS database connections so we support going both ways.
 		let redisPoolOptions: RedisConfiguration.PoolOptions = RedisConfiguration.PoolOptions(
+			// maximumConnectionCount is the number of Redis connections to keep open and available
+			// per thread worker plus the main thread. For example: A system that reports 8 CPU cores,
+			// with a .maximumActiveConnections(2), at elevated app load, should show 18 ((8+1) * 2)) connections.
+			// On Linux this can be viewed with `netstat -ano | grep 6379`.
 			maximumConnectionCount: .maximumActiveConnections(2),
 			// https://github.com/vapor/queues-redis-driver/issues/30
 			// Apparently the RediStack default is .milliseconds(10), which feels pretty aggressive.
