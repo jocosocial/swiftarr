@@ -584,6 +584,7 @@ struct SwiftarrConfigurator {
 			app.migrations.add(CreateTestUsers(), to: .psql)
 			app.migrations.add(CreateTestData(), to: .psql)
 		}
+		app.migrations.add(PopulateForumLastPostIDMigration(), to: .psql)
 
 		// Fifth, migrations that import data from /seeds
 		app.migrations.add(ImportRegistrationCodes(), to: .psql)

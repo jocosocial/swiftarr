@@ -104,21 +104,16 @@ struct CreateForumSchema: AsyncMigration {
 	}
 }
 
+/// This migration used to include populating the last_post_id for all existing rows.
+/// Except that acting on Forum before all future migrations have executed (as listed
+/// in configure.swift) fails because all of the other fields don't exist yet.
+/// So that functionality has been moved to PopulateForumLastPostIDMigration below
+/// and that migration runs later on after all schema modifications have been populated.
 struct UpdateForumLastPostIDMigration: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		try await database.schema("forum")
 			.field("last_post_id", .int)
 			.update()
-
-		// Update all existing forums with the last post.
-		let forums = try await Forum.query(on: database).all()
-        for forum in forums {
-            let forumPostQuery = forum.$posts.query(on: database).sort(\.$createdAt, .descending)
-            if let lastPost = try await forumPostQuery.first() {
-                forum.lastPostID = lastPost.id
-                try await forum.save(on: database)
-            }
-        }
 	}
 
 	func revert(on database: Database) async throws {
@@ -139,5 +134,25 @@ struct UpdateForumPinnedMigration: AsyncMigration {
 		try await database.schema("forum")
 			.deleteField("pinned")
 			.update()
+	}
+}
+
+struct PopulateForumLastPostIDMigration: AsyncMigration {
+	func prepare(on database: Database) async throws {
+		// Update all existing forums with the last post.
+		let forums = try await Forum.query(on: database).all()
+		try await database.transaction { transaction in
+			for forum in forums {
+				let forumPostQuery = forum.$posts.query(on: transaction).sort(\.$createdAt, .descending)
+				if let lastPost = try await forumPostQuery.first() {
+					forum.lastPostID = lastPost.id
+					try await forum.save(on: transaction)
+				}
+			}
+		}
+	}
+
+	func revert(on database: Database) async throws {
+		app.logger.log(level: .info, "No revert for this migration.")
 	}
 }
