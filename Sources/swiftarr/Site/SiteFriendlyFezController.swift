@@ -44,13 +44,13 @@ struct FezCreateUpdatePageContext: Encodable {
 			minPeople = fez.minParticipants
 			maxPeople = fez.maxParticipants
 			info = fez.info
-			formAction = "/fez/\(fez.fezID)/update"
+			formAction = "/lfg/\(fez.fezID)/update"
 			submitButtonTitle = "Update"
 		}
 		else {
 			trunk = .init(req, title: "New Looking For Group", tab: .lfg)
 			pageTitle = "Create a New LFG"
-			formAction = "/fez/create"
+			formAction = "/lfg/create"
 			minPeople = 2
 			maxPeople = 2
 		}
@@ -76,7 +76,7 @@ struct FezCreateUpdatePageContext: Encodable {
 				"\n\n\(game.gameName) is an expansion pack for \(baseGame.gameName). You'll need to check this out of the library too. The game library has \(baseGameCopyText) of the base game."
 			)
 		}
-		formAction = "/fez/create"
+		formAction = "/lfg/create"
 		submitButtonTitle = "Create"
 	}
 }
@@ -85,7 +85,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 
 	func registerRoutes(_ app: Application) throws {
 		// Routes that require login but are generally 'global' -- Two logged-in users could share this URL and both see the content
-		let globalRoutes = getGlobalRoutes(app).grouped("fez")
+		let globalRoutes = getGlobalRoutes(app).grouped("lfg")
 			.grouped(DisabledSiteSectionMiddleware(feature: .friendlyfez))
 		globalRoutes.get("", use: fezRootPageHandler)
 		globalRoutes.get("joined", use: joinedFezPageHandler)
@@ -94,7 +94,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		globalRoutes.get("faq", use: fezFAQHandler)
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
-		let privateRoutes = getPrivateRoutes(app).grouped("fez")
+		let privateRoutes = getPrivateRoutes(app).grouped("lfg")
 			.grouped(DisabledSiteSectionMiddleware(feature: .friendlyfez))
 		privateRoutes.get("create", use: fezCreatePageHandler)
 		privateRoutes.get(fezIDParam, "update", use: fezUpdatePageHandler)
@@ -130,7 +130,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		case faq, find, joined, owned
 	}
 
-	// GET /fez
+	// GET /lfg
 	// Shows the root Fez page, with a list of all fezzes.
 	func fezRootPageHandler(_ req: Request) async throws -> View {
 		let response = try await apiQuery(req, endpoint: "/fez/open")
@@ -154,7 +154,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 				hidePastSelection = hidePastQuery == nil ? nil : hidePastQuery?.lowercased() == "true"
 				let limit = fezList.paginator.limit
 				paginator = .init(fezList.paginator) { pageIndex in
-					"/fez?start=\(pageIndex * limit)&limit=\(limit)"
+					"/lfg?start=\(pageIndex * limit)&limit=\(limit)"
 				}
 			}
 		}
@@ -162,7 +162,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		return try await req.view.render("Fez/fezRoot", ctx)
 	}
 
-	// GET /fez/faq
+	// GET /lfg/faq
 	//
 	// Shows a FAQ page for Fezzes.
 	func fezFAQHandler(_ req: Request) async throws -> View {
@@ -179,7 +179,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		return try await req.view.render("Fez/fezFAQ", ctx)
 	}
 
-	// GET /fez/joined
+	// GET /lfg/joined
 	//
 	// Shows the Joined Fezzes page.
 	func joinedFezPageHandler(_ req: Request) async throws -> View {
@@ -204,7 +204,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 				hidePastSelection = hidePastQuery == nil ? nil : hidePastQuery?.lowercased() == "true"
 				let limit = fezList.paginator.limit
 				paginator = .init(fezList.paginator) { pageIndex in
-					"/fez/joined?start=\(pageIndex * limit)&limit=\(limit)"
+					"/lfg/joined?start=\(pageIndex * limit)&limit=\(limit)"
 				}
 			}
 		}
@@ -212,7 +212,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		return try await req.view.render("Fez/fezJoined", ctx)
 	}
 
-	// GET /fez/owned
+	// GET /lfg/owned
 	//
 	// Shows the Owned Fezzes page. These are the Fezzes a user has created.
 	func ownedFezPageHandler(_ req: Request) async throws -> View {
@@ -237,7 +237,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 				hidePastSelection = hidePastQuery == nil ? nil : hidePastQuery?.lowercased() == "true"
 				let limit = fezList.paginator.limit
 				paginator = .init(fezList.paginator) { pageIndex in
-					"/fez/joined?start=\(pageIndex * limit)&limit=\(limit)"
+					"/lfg/joined?start=\(pageIndex * limit)&limit=\(limit)"
 				}
 			}
 		}
@@ -245,7 +245,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		return try await req.view.render("Fez/fezOwned", ctx)
 	}
 
-	// GET /fez/create
+	// GET /lfg/create
 	//
 	// Shows the Create New Friendly Fez page
 	func fezCreatePageHandler(_ req: Request) async throws -> View {
@@ -253,8 +253,8 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		return try await req.view.render("Fez/fezCreate", ctx)
 	}
 
-	// GET `/fez/ID/update`
-	// GET `/fez/ID/edit`
+	// GET `/lfg/ID/update`
+	// GET `/lfg/ID/edit`
 	//
 	// Shows the Update Friendly Fez page.
 	func fezUpdatePageHandler(_ req: Request) async throws -> View {
@@ -267,8 +267,8 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		return try await req.view.render("Fez/fezCreate", ctx)
 	}
 
-	// POST /fez/create
-	// POST /fez/ID/update
+	// POST /lfg/create
+	// POST /lfg/ID/update
 	// Handles the POST from either the Create Or Update Fez page
 	func fezCreateOrUpdatePostHandler(_ req: Request) async throws -> HTTPStatus {
 		let postStruct = try req.content.decode(CreateFezPostFormContent.self)
@@ -305,7 +305,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		return .created
 	}
 
-	// GET /fez/ID
+	// GET /lfg/ID
 	//
 	// Paginated.
 	//
@@ -344,7 +344,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 					total: 40,
 					limit: 50,
 					urlForPage: { pageIndex in
-						"/fez/\(fez.fezID)?start=\(pageIndex * 50)&limit=50"
+						"/lfg/\(fez.fezID)?start=\(pageIndex * 50)&limit=50"
 					}
 				)
 				if let members = fez.members, let posts = members.posts, let paginator = members.paginator {
@@ -372,7 +372,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		return try await req.view.render("Fez/singleFez", ctx)
 	}
 
-	// WS /fez/:fez_id/socket
+	// WS /lfg/:fez_id/socket
 	//
 	// This fn is called before socket creation; its purpose is to check that the requested socket should be delivered.
 	// We do this by inferring from the result from /api/v3/fez/:fez_id -- if the result includes members-only data,
@@ -389,7 +389,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		return HTTPHeaders()
 	}
 
-	// WS /fez/:fez_ID/socket
+	// WS /lfg/:fez_ID/socket
 	//
 	// Opens a WebSocket that receives updates on the given Fez. This websocket is intended for use by the
 	// web client and updates include HTML fragments ready for document insertion.
@@ -412,7 +412,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		}
 	}
 
-	// POST /fez/ID/post
+	// POST /lfg/ID/post
 	//
 	// Post a message in a fez.
 	func fezThreadPostHandler(_ req: Request) async throws -> HTTPStatus {
@@ -425,8 +425,8 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		return .created
 	}
 
-	// POST /fez/post/:fezPost_ID/delete
-	// DELETE /fez/post/:fezPost_ID
+	// POST /lfg/post/:fezPost_ID/delete
+	// DELETE /lfg/post/:fezPost_ID
 	//
 	// Deletes a message posted in a fez. Must be author or mod.
 	func fezPostDeleteHandler(_ req: Request) async throws -> HTTPStatus {
@@ -437,7 +437,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		return response.status
 	}
 
-	// POST /fez/ID/join
+	// POST /lfg/ID/join
 	//
 	// Joins a fez.
 	func fezJoinPostHandler(_ req: Request) async throws -> HTTPStatus {
@@ -448,7 +448,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		return .created
 	}
 
-	// POST /fez/ID/leave
+	// POST /lfg/ID/leave
 	//
 	// Leaves a fez.
 	func fezLeavePostHandler(_ req: Request) async throws -> HTTPStatus {
@@ -459,7 +459,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		return .created
 	}
 
-	// POST /fez/ID/cancel
+	// POST /lfg/ID/cancel
 	//
 	// Cancels a fez. Owner only.
 	func fezCancelPostHandler(_ req: Request) async throws -> HTTPStatus {
@@ -470,7 +470,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		return .created
 	}
 
-	// GET /fez/ID/members
+	// GET /lfg/ID/members
 	//
 	// Allows the owner of a fez to add/remove members.
 	func fezMembersPageHandler(_ req: Request) async throws -> View {
@@ -483,7 +483,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		return try await req.view.render("Fez/fezManageMembers", ctx)
 	}
 
-	// POST /fez/fez_ID/members/add/user_ID
+	// POST /lfg/fez_ID/members/add/user_ID
 	//
 	// Allows a fez owner to add a user to their fez.
 	func fezAddUserPostHandler(_ req: Request) async throws -> HTTPStatus {
@@ -497,7 +497,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		return .created
 	}
 
-	// POST /fez/fez_ID/members/remove/user_ID
+	// POST /lfg/fez_ID/members/remove/user_ID
 	//
 	// Allows a fez owner to remove a user from their fez.
 	func fezRemoveUserPostHandler(_ req: Request) async throws -> HTTPStatus {
@@ -511,7 +511,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		return .created
 	}
 
-	// GET /fez/report/:fez_ID
+	// GET /lfg/report/:fez_ID
 	//
 	// Shows the page for reporting on a fezzes' content. This reports on the Fez itself, not individual posts.
 	func fezReportPageHandler(_ req: Request) async throws -> View {
@@ -522,7 +522,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		return try await req.view.render("reportCreate", ctx)
 	}
 
-	// POST /fez/report/ID
+	// POST /lfg/report/ID
 	//
 	// Submits a report on a fez.
 	func fezReportPostHandler(_ req: Request) async throws -> HTTPStatus {
@@ -534,7 +534,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		return .created
 	}
 
-	// GET /fez/post/report/:post_id
+	// GET /lfg/post/report/:post_id
 	//
 	// Shows the report page for reporting on an individual post in a fez.
 	func fezPostReportPageHandler(_ req: Request) async throws -> View {
@@ -545,7 +545,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		return try await req.view.render("reportCreate", ctx)
 	}
 
-	// POST /fez/post/report/:post_id
+	// POST /lfg/post/report/:post_id
 	//
 	// Submits a completed report.
 	func fezPostReportPostHandler(_ req: Request) async throws -> HTTPStatus {
@@ -557,8 +557,8 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		return .created
 	}
 
-	// POST /fez/:fez_ID/delete
-	// DELETE /fez/:fez_ID
+	// POST /lfg/:fez_ID/delete
+	// DELETE /lfg/:fez_ID
 	//
 	// Deletes a fez. Moderators only at the moment--owners may be able to delete, eventually.
 	func fezDeleteHandler(_ req: Request) async throws -> HTTPStatus {
