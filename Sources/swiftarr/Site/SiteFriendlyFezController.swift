@@ -153,8 +153,12 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 				let hidePastQuery = req.query[String.self, at: "hidePast"]
 				hidePastSelection = hidePastQuery == nil ? nil : hidePastQuery?.lowercased() == "true"
 				let limit = fezList.paginator.limit
+				var hidePastPaginationParam = ""
+				if let hidePast = hidePastSelection {
+					hidePastPaginationParam = "&hidePast=\(hidePast)"
+				}
 				paginator = .init(fezList.paginator) { pageIndex in
-					"/lfg?start=\(pageIndex * limit)&limit=\(limit)"
+					"/lfg?start=\(pageIndex * limit)&limit=\(limit)\(hidePastPaginationParam)"
 				}
 			}
 		}
@@ -203,8 +207,12 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 				let hidePastQuery = req.query[String.self, at: "hidePast"]
 				hidePastSelection = hidePastQuery == nil ? nil : hidePastQuery?.lowercased() == "true"
 				let limit = fezList.paginator.limit
+				var hidePastPaginationParam = ""
+				if let hidePast = hidePastSelection {
+					hidePastPaginationParam = "&hidePast=\(hidePast)"
+				}
 				paginator = .init(fezList.paginator) { pageIndex in
-					"/lfg/joined?start=\(pageIndex * limit)&limit=\(limit)"
+					"/lfg/joined?start=\(pageIndex * limit)&limit=\(limit)\(hidePastPaginationParam)"
 				}
 			}
 		}
@@ -236,8 +244,12 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 				let hidePastQuery = req.query[String.self, at: "hidePast"]
 				hidePastSelection = hidePastQuery == nil ? nil : hidePastQuery?.lowercased() == "true"
 				let limit = fezList.paginator.limit
+				var hidePastPaginationParam = ""
+				if let hidePast = hidePastSelection {
+					hidePastPaginationParam = "&hidePast=\(hidePast)"
+				}
 				paginator = .init(fezList.paginator) { pageIndex in
-					"/lfg/joined?start=\(pageIndex * limit)&limit=\(limit)"
+					"/lfg/owned?start=\(pageIndex * limit)&limit=\(limit)\(hidePastPaginationParam)"
 				}
 			}
 		}
