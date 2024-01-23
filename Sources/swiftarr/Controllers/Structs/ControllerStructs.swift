@@ -661,6 +661,7 @@ extension ForumData {
 /// * `GET /api/v3/forum/owner`
 /// * `GET /api/v3/user/forums`
 /// * `GET /api/v3/forum/favorites`
+/// * `GET /api/v3/forum/categories/ID/pinnedforums`
 ///
 /// See `ForumController.categoryForumsHandler(_:)`, `ForumController.ownerHandler(_:)`,
 /// `ForumController.forumMatchHandler(_:)`, `ForumController.favoritesHandler(_:).
@@ -696,6 +697,8 @@ public struct ForumListData: Content {
 	var timeZoneID: String?
 	/// If this forum is for an Event on the schedule, the ID of the event.
 	var eventID: UUID?
+	/// If this forum is pinned or not.
+	var isPinned: Bool?
 }
 
 extension ForumListData {
@@ -724,6 +727,8 @@ extension ForumListData {
 		self.isLocked = forum.moderationStatus == .locked
 		self.isFavorite = isFavorite
 		self.isMuted = isMuted
+		self.isPinned = forum.pinned
+
 		if let event = event, event.id != nil {
 			let timeZoneChanges = Settings.shared.timeZoneChanges
 			self.eventTime = timeZoneChanges.portTimeToDisplayTime(event.startTime)
