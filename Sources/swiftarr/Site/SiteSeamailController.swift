@@ -300,7 +300,7 @@ struct SiteSeamailController: SiteControllerUtils {
 					post.messageText = formContent.postText
 					post.postErrorString = "Created the chat, but was not able to post the initial message."
 				}
-				socketURL = "/fez/\(fez.fezID)/socket"
+				socketURL = "/seamail/\(fez.fezID)/socket"
 				(breadcrumbTitle, _) = titleAndTab(for: req)
 				breadcrumbURL = "/seamail"
 				if let foruser = req.query[String.self, at: "foruser"],
