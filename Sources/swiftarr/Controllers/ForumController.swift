@@ -194,7 +194,10 @@ struct ForumController: APIRouteCollection {
 					#"AND "\#(ForumReaders.schema)"."\#(ForumReaders().$user.$id.key)" = '\#(cacheUser.userID)'"#
 				)
 			)
+			// User muting of a forum should take sort precedence over pinning.
+			// They explicitly don't want to see it, so don't shove it in their face.
 			.sort(ForumReaders.self, \.$isMuted, .descending)
+			.sort(Forum.self, \.$pinned, .ascending)
 		if category.isEventCategory {
 			_ = query.join(child: \.$scheduleEvent, method: .left)
 			// https://github.com/jocosocial/swiftarr/issues/199
