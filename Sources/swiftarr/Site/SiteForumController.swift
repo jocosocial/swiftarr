@@ -341,17 +341,13 @@ struct SiteForumController: SiteControllerUtils {
 		let response = try await apiQuery(req, endpoint: "/forum/categories/\(catID)")
 		let forums = try response.content.decode(CategoryData.self)
 
-		let pinnedResponse = try await apiQuery(req, endpoint: "/forum/categories/\(catID)/pinnedforums")
-		let pinnedForums = try pinnedResponse.content.decode([ForumListData].self)
-
 		struct ForumsPageContext: Encodable {
 			var trunk: TrunkContext
 			var forums: CategoryData
 			var paginator: PaginatorContext
 			var sortOrders: [ForumsSortOrder]
-			var pinnedForums: [ForumListData]
 
-			init(_ req: Request, forums: CategoryData, start: Int, limit: Int, pinnedForums: [ForumListData] = []) throws {
+			init(_ req: Request, forums: CategoryData, start: Int, limit: Int) throws {
 				trunk = .init(req, title: "\(forums.title) | Forum Threads", tab: .forums, search: "Search")
 				self.forums = forums
 				paginator = .init(start: start, total: Int(forums.numThreads), limit: limit) { pageIndex in
@@ -374,10 +370,9 @@ struct SiteForumController: SiteControllerUtils {
 						at: 0
 					)
 				}
-				self.pinnedForums = pinnedForums
 			}
 		}
-		let ctx = try ForumsPageContext(req, forums: forums, start: start, limit: limit, pinnedForums: pinnedForums)
+		let ctx = try ForumsPageContext(req, forums: forums, start: start, limit: limit)
 		return try await req.view.render("Forums/forums", ctx)
 	}
 

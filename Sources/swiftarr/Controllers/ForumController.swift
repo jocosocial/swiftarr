@@ -23,7 +23,6 @@ struct ForumController: APIRouteCollection {
 
 		// Categories
 		tokenCacheAuthGroup.get("categories", categoryIDParam, use: categoryForumsHandler)
-		tokenCacheAuthGroup.get("categories", categoryIDParam, "pinnedforums", use: categoryPinnedForumsHandler)
 
 		// Forums - CRUD first, then actions on forums
 		tokenCacheAuthGroup.on(
@@ -248,28 +247,6 @@ struct ForumController: APIRouteCollection {
 			restricted: category.accessLevelToCreate > cacheUser.accessLevel,
 			forumThreads: forumList
 		)
-	}
-
-	/// `GET /api/v3/forum/categories/:ID/pinnedforums`
-	///
-	/// Get a list of all of the pinned forums within this category.
-	/// This currently does not implement paginator because if pagination is needed for pinned
-	/// forums what the frak have you done?
-	///
-	/// - Parameter forumID: In the URL path.
-	/// - Returns array of `ForumData`.
-	func categoryPinnedForumsHandler(_ req: Request) async throws -> [ForumListData] {
-		let cacheUser = try req.auth.require(UserCacheData.self)
-		let category = try await Category.findFromParameter(categoryIDParam, on: req)
-		try guardUserCanAccessCategory(cacheUser, category: category)
-		// remove blocks from results, unless it's an admin category
-		let blocked = category.accessLevelToCreate.hasAccess(.moderator) ? [] : cacheUser.getBlocks()
-		let forums = try await Forum.query(on: req.db)
-			.filter(\.$category.$id == category.requireID())
-			.filter(\.$creator.$id !~ blocked)
-			.filter(\.$pinned == true)
-			.all()
-		return try await buildForumListData(forums, on: req, user: cacheUser)
 	}
 
 	/// `GET /api/v3/forum/search`

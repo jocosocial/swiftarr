@@ -661,7 +661,6 @@ extension ForumData {
 /// * `GET /api/v3/forum/owner`
 /// * `GET /api/v3/user/forums`
 /// * `GET /api/v3/forum/favorites`
-/// * `GET /api/v3/forum/categories/ID/pinnedforums`
 ///
 /// See `ForumController.categoryForumsHandler(_:)`, `ForumController.ownerHandler(_:)`,
 /// `ForumController.forumMatchHandler(_:)`, `ForumController.favoritesHandler(_:).

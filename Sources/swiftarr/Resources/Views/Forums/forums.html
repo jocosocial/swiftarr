@@ -11,59 +11,7 @@
 					</nav>
 				</div>
 			</div>
-			#if(count(pinnedForums) > 0):
-			<div class="ms-0 my-2">
-				<div class="row align-items-center">
-					<div class="col">
-						<b>Pinned Forums</b>
-					</div>							
-				</div>
-			</div>
-			<div class="ms-0 my-2 mb-4">
-				<div class="list-group">
-					#for(forum in pinnedForums):
-						<a href="/forum/#(forum.forumID)" class="list-group-item list-group-item-action">		
-							<div class="row">
-								<div class="col #if(forum.isMuted):text-muted#endif">
-									#if(forum.isMuted):🔇#elseif(forum.isFavorite):⭐#endif #(forum.title)
-								</div>
-								<div class="col col-auto">
-									#if(forum.lastPostAt != nil):
-										<span title="#localTime(forum.lastPostAt)" class="text-muted d-none #if(!forum.isMuted):d-sm-flex#endif">by&nbsp;#userByline(forum.creator, "nolink"), #relativeTime(forum.lastPostAt)</span>
-										<span title="#localTime(forum.lastPostAt)" class="text-muted #if(forum.isMuted):d-none#else:d-sm-none#endif">#relativeTime(forum.lastPostAt)</span>
-									#endif
-								</div>
-							</div>
-							#if(forum.eventTime != nil):
-								<div class="row">
-									<div class="col">
-										<span class="text-primary">#staticTime(forum.eventTime)</span>
-									</div>
-								</div>
-							#endif
-							<div class="row">
-								<div class="col #if(forum.isMuted):text-muted#endif">
-									#(forum.postCount) post#if(forum.postCount != 1):s#endif#if(forum.readCount < forum.postCount && !forum.isMuted):, <span class="text-danger #if(forum.isMuted):d-none#endif">#(forum.postCount - forum.readCount) new</span>#endif
-								</div>
-								<div class="col col-auto">
-									#if(forum.lastPoster != nil):
-										<span class="text-muted #if(forum.isMuted):d-none#endif">Last post: @#(forum.lastPoster.username)</span>
-									#else:
-										<span class="text-muted #if(forum.isMuted):d-none#endif">No Posts</span>
-									#endif
-								</div>
-							</div>
-						</a>
-					#endfor
-				</div>
-			</div>
-			#endif
 			<div class="row align-items-center justify-content-between mb-2">
-				#if(count(pinnedForums) > 0):
-				<div class="col col-auto">
-					<b>Category Forums</b>
-				</div>
-				#endif
 				<div class="col text-end">
 					<div class="btn-group btn-group-sm">
 						<div class="col col-auto ps-2">
@@ -103,6 +51,7 @@
 						<a href="/forum/#(forum.forumID)" class="list-group-item list-group-item-action">		
 							<div class="row">
 								<div class="col #if(forum.isMuted):text-muted#endif">
+									#if(forum.isPinned):📌#endif
 									#if(forum.isMuted):🔇#elseif(forum.isFavorite):⭐#endif #(forum.title)
 								</div>
 								<div class="col col-auto">
