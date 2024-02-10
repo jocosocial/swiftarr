@@ -16,6 +16,7 @@ struct ImportKaraokeSongs: AsyncMigration {
 		database.logger.info("Starting karaoke song import")
 		// get the songs file. Tab-delimited, each line contains: "ARTIST \t SONG_TITLE \t TAGS \n"
 		// Tags can be: "VR" for voice-reduced, M for midi (I think?)
+		// File should be UTF-8 encoded with Windows-style endings (\r\n) and no funky charactes.
 		let songsFilename: String
 		do {
 			if try Environment.detect().isRelease {
