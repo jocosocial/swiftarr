@@ -1388,7 +1388,7 @@ struct ForumController: APIRouteCollection {
 			.filter(\.$forum.$id == forum.requireID())
 			.filter(\.$pinned == true)
 			.all()
-		return try await buildPostData(query, userID: user.userID, on: req)
+		return try await buildPostData(query, userID: user.userID, on: req, mutewords: user.mutewords)
 	}
 
 	/// `POST /api/v3/forum/post/:postID/pin`
