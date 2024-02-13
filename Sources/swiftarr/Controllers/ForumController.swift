@@ -1382,6 +1382,9 @@ struct ForumController: APIRouteCollection {
 		}
 		try guardUserCanAccessCategory(user, category: forum.category)
 		let query = try await ForumPost.query(on: req.db)
+			.filter(\.$author.$id !~ user.getBlocks())
+			.filter(\.$author.$id !~ user.getMutes())
+			.categoryAccessFilter(for: user)
 			.filter(\.$forum.$id == forum.requireID())
 			.filter(\.$pinned == true)
 			.all()
