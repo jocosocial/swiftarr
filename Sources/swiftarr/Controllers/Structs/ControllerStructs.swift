@@ -201,7 +201,7 @@ public struct CategoryData: Content {
 	var isEventCategory: Bool
 	/// The number of threads in this category
 	var numThreads: Int32
-	///The threads in the category. Only populated for /categories/ID.
+	/// The threads in the category. Only populated for /categories/ID.
 	var forumThreads: [ForumListData]?
 }
 
@@ -621,6 +621,8 @@ public struct ForumData: Content {
 	var posts: [PostData]
 	/// If this forum is for an Event on the schedule, the ID of the event.
 	var eventID: UUID?
+	/// If this forum is pinned or not.
+	var isPinned: Bool?
 }
 
 extension ForumData {
@@ -648,6 +650,7 @@ extension ForumData {
 		if let event = event, event.id != nil {
 			self.eventID = event.id
 		}
+		self.isPinned = forum.pinned
 	}
 }
 
@@ -693,6 +696,8 @@ public struct ForumListData: Content {
 	var timeZoneID: String?
 	/// If this forum is for an Event on the schedule, the ID of the event.
 	var eventID: UUID?
+	/// If this forum is pinned or not.
+	var isPinned: Bool?
 }
 
 extension ForumListData {
@@ -721,6 +726,8 @@ extension ForumListData {
 		self.isLocked = forum.moderationStatus == .locked
 		self.isFavorite = isFavorite
 		self.isMuted = isMuted
+		self.isPinned = forum.pinned
+
 		if let event = event, event.id != nil {
 			let timeZoneChanges = Settings.shared.timeZoneChanges
 			self.eventTime = timeZoneChanges.portTimeToDisplayTime(event.startTime)
@@ -1036,6 +1043,8 @@ public struct PostData: Content {
 	var userLike: LikeType?
 	/// The total number of `LikeType` reactions on the post.
 	var likeCount: Int
+	/// Whether the post has been pinned to the forum.
+	var isPinned: Bool?
 }
 
 extension PostData {
@@ -1055,6 +1064,7 @@ extension PostData {
 		isBookmarked = bookmarked
 		self.userLike = userLike
 		self.likeCount = likeCount
+		self.isPinned = post.pinned
 	}
 
 	// For newly created posts

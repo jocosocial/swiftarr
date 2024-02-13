@@ -38,6 +38,9 @@ final class ForumPost: Model, Searchable {
 	/// Timestamp of the model's soft-deletion, set automatically.
 	@Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
 
+	/// Is the post pinned within the forum.
+	@OptionalField(key: "pinned") var pinned: Bool?
+
 	// MARK: Relations
 
 	/// The parent `Forum` of the post.
@@ -98,5 +101,19 @@ struct CreateForumPostSchema: AsyncMigration {
 
 	func revert(on database: Database) async throws {
 		try await database.schema("forumpost").delete()
+	}
+}
+
+struct UpdateForumPostPinnedMigration: AsyncMigration {
+	func prepare(on database: Database) async throws {
+		try await database.schema("forumpost")
+			.field("pinned", .bool)
+			.update()
+	}
+
+	func revert(on database: Database) async throws {
+		try await database.schema("forumpost")
+			.deleteField("pinned")
+			.update()
 	}
 }

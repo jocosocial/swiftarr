@@ -4,7 +4,7 @@
     		<div class="row">
 				<nav aria-label="breadcrumb">
 				  <ol class="breadcrumb">
-					<li class="breadcrumb-item"><a href="/fez">LFG</a></li>
+					<li class="breadcrumb-item"><a href="/lfg">LFG</a></li>
 					<li class="breadcrumb-item active" aria-current="page">#(fez.title)</li>
 				  </ol>
 				</nav>
@@ -52,14 +52,14 @@
 				<div class="row mt-1 justify-content-end row-cols-auto ">
 					<div class="col btn-group btn-group-sm" role="group" aria-label="member actions">
 						#if(trunk.userIsMod):
-							<a class="btn btn-outline-primary" href="/moderate/fez/#(fez.fezID)">Mod</a>
+							<a class="btn btn-outline-primary" href="/moderate/lfg/#(fez.fezID)">Mod</a>
 						#endif
 						#if(fez.owner.userID == trunk.userID):
-							<a class="btn btn-outline-primary" href="/fez/#(fez.fezID)/members">Manage Members</a>
-							<a class="btn btn-outline-primary" href="/fez/#(fez.fezID)/update">Update</a>
+							<a class="btn btn-outline-primary" href="/lfg/#(fez.fezID)/members">Manage Members</a>
+							<a class="btn btn-outline-primary" href="/lfg/#(fez.fezID)/update">Update</a>
 							<button type="button" class="btn btn-outline-primary px-3" data-bs-toggle="modal" data-bs-target="\#cancelFezModal">Cancel</button>
 						#else:
-							<a class="btn btn-outline-primary px-3" href="/fez/report/#(fez.fezID)">Report</a>
+							<a class="btn btn-outline-primary px-3" href="/lfg/report/#(fez.fezID)">Report</a>
 							<button type="button" class="btn btn-outline-primary px-3" data-bs-toggle="modal" data-bs-target="\#leaveFezModal">Leave</button>
 						#endif
 					</div>								
@@ -68,11 +68,11 @@
 				<div class="row mt-1 justify-content-end row-cols-auto ">
 					<div class="col btn-group btn-group-sm" role="group" aria-label="non-member actions">
 						#if(trunk.userIsMod):
-							<a class="btn btn-outline-primary" href="/moderate/fez/#(fez.fezID)">Mod</a>
+							<a class="btn btn-outline-primary" href="/moderate/lfg/#(fez.fezID)">Mod</a>
 						#endif
-						<a class="btn btn-outline-primary" href="/fez/report/#(fez.fezID)">Report</a>
+						<a class="btn btn-outline-primary" href="/lfg/report/#(fez.fezID)">Report</a>
 						<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload" 
-								data-actionpath="/fez/#(fez.fezID)/join"
+								data-actionpath="/lfg/#(fez.fezID)/join"
 								data-errordiv="fezActions_errorDisplay"
 								id="#(fez.fezID)_join">
 						<label class="btn btn-primary px-4" for="#(fez.fezID)_join">
@@ -140,7 +140,7 @@
 					#endfor
 					
 					#if(paginator.nextPageURL == nil):
-						<div class="fez-list-end" data-url="/fez/#(fez.fezID)/socket" id="fez-list-end"></div>
+						<div class="fez-list-end" data-url="/lfg/#(fez.fezID)/socket" id="fez-list-end"></div>
 						<script src="/js/swiftarrMessages.js"></script>
 					#endif
 				</ul>
@@ -234,7 +234,7 @@
 					<div class="modal-footer">
 						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
 						<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload" 
-								data-actionpath="/fez/#(fez.fezID)/leave"
+								data-actionpath="/lfg/#(fez.fezID)/leave"
 								data-errordiv="fezDialog_errorDisplay"
 								id="#(fez.fezID)_leave">
 						<label class="btn btn-primary px-4" for="#(fez.fezID)_leave">
@@ -269,7 +269,7 @@
 					<div class="modal-footer">
 						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">DON'T Cancel LFG</button>
 						<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload" 
-								data-actionpath="/fez/#(fez.fezID)/cancel"
+								data-actionpath="/lfg/#(fez.fezID)/cancel"
 								data-errordiv="cancelDialog_errorDisplay"
 								id="#(fez.fezID)_cancel">
 						<label class="btn btn-primary px-4" for="#(fez.fezID)_cancel">

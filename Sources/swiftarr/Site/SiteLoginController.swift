@@ -16,6 +16,7 @@ struct SiteLoginController: SiteControllerUtils {
 		openRoutes.post("resetPassword", use: resetPasswordPostHandler)  // Change pw while logged in
 		openRoutes.post("recoverPassword", use: recoverPasswordPostHandler)  // Change pw while not logged in
 		openRoutes.get("codeOfConduct", use: codeOfConductViewHandler)
+		openRoutes.get("conductAgree", use: codeOfConductViewHandler)
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let privateRoutes = getPrivateRoutes(app)
@@ -37,8 +38,8 @@ struct SiteLoginController: SiteControllerUtils {
 		var prevUsername: String?
 		var prevDisplayName: String?
 
-		init(_ req: Request, error: Error? = nil) async throws {
-			trunk = .init(req, title: "Login", tab: .none)
+		init(_ req: Request, title: String = "Login", error: Error? = nil) async throws {
+			trunk = .init(req, title: title, tab: .none)
 			operationSuccess = false
 			operationName = "Login"
 			var sessionInfo = [String]()
@@ -87,7 +88,11 @@ struct SiteLoginController: SiteControllerUtils {
 	///
 	/// When the caller is a logged-in user with a session token, this shows a logout page. When the caller is not logged-in, this shows a login page.
 	func loginPageViewHandler(_ req: Request) async throws -> View {
-		return try await req.view.render("Login/login", LoginPageContext(req))
+		var title = "Login"
+		if let _ = req.auth.get(UserCacheData.self) {
+			title = "Logout"
+		}
+		return try await req.view.render("Login/login", LoginPageContext(req, title: title))
 	}
 
 	/// `POST /login`
@@ -104,13 +109,13 @@ struct SiteLoginController: SiteControllerUtils {
 			let response = try await apiQuery(req, endpoint: "/auth/login", method: .POST, defaultHeaders: headers)
 			let tokenResponse = try response.content.decode(TokenStringData.self)
 			try await loginUser(with: tokenResponse, on: req)
-			var loginContext = try await LoginPageContext(req)
+			var loginContext = try await LoginPageContext(req, title: "Login")
 			loginContext.trunk.metaRedirectURL = req.session.data["returnAfterLogin"] ?? "/"
 			loginContext.operationSuccess = true
 			return try await req.view.render("Login/login", loginContext)
 		}
 		catch {
-			var ctx = try await LoginPageContext(req, error: error)
+			var ctx = try await LoginPageContext(req, title: "Error", error: error)
 			if let postStruct = try? req.content.decode(PostStruct.self) {
 				ctx.prevUsername = postStruct.username
 			}
@@ -142,7 +147,7 @@ struct SiteLoginController: SiteControllerUtils {
 		req.session.destroy()
 		req.auth.logout(UserCacheData.self)
 		req.auth.logout(Token.self)
-		var loginContext = try await LoginPageContext(req)
+		var loginContext = try await LoginPageContext(req, title: "Logout")
 		loginContext.trunk.metaRedirectURL = "/login"
 		loginContext.operationSuccess = true
 		loginContext.operationName = "Logout"
@@ -153,7 +158,7 @@ struct SiteLoginController: SiteControllerUtils {
 	///
 	/// Shows the Account Creation form if not logged in. For logged-in users this shows the Logout form.
 	func createAccountPageHandler(_ req: Request) async throws -> View {
-		return try await req.view.render("Login/createAccount", LoginPageContext(req))
+		return try await req.view.render("Login/createAccount", LoginPageContext(req, title: "Create Account"))
 	}
 
 	/// `POST /createAccount`
@@ -265,7 +270,7 @@ struct SiteLoginController: SiteControllerUtils {
 		}
 		catch {
 			// If we get here we couldn't verify that the user created an account. Show the Create Acct page again, with the error.
-			var ctx = try await LoginPageContext(req, error: error)
+			var ctx = try await LoginPageContext(req, title: "Error", error: error)
 			if let postStruct = try? req.content.decode(PostStruct.self) {
 				ctx.prevUsername = postStruct.username
 				ctx.prevRegcode = postStruct.regcode
@@ -280,7 +285,7 @@ struct SiteLoginController: SiteControllerUtils {
 	/// Shows the Reset Password page.
 	/// Uses password update if you're logged in, else uses the recover password flow.
 	func resetPasswordViewHandler(_ req: Request) async throws -> View {
-		return try await req.view.render("Login/resetPassword", LoginPageContext(req))
+		return try await req.view.render("Login/resetPassword", LoginPageContext(req, title: "Reset Password"))
 	}
 
 	/// `POST /resetPassword`
@@ -307,14 +312,14 @@ struct SiteLoginController: SiteControllerUtils {
 				newPassword: postStruct.password
 			)
 			try await apiQuery(req, endpoint: "/user/password", method: .POST, encodeContent: userPwData)
-			var context = try await LoginPageContext(req)
+			var context = try await LoginPageContext(req, title: "Reset Password")
 			context.operationName = "Change Password"
 			context.operationSuccess = true
 			context.trunk.metaRedirectURL = "/"
 			return try await req.view.render("Login/resetPassword", context)
 		}
 		catch {
-			return try await req.view.render("Login/resetPassword", LoginPageContext(req, error: error))
+			return try await req.view.render("Login/resetPassword", LoginPageContext(req, title: "Error", error: error))
 		}
 	}
 
@@ -351,14 +356,14 @@ struct SiteLoginController: SiteControllerUtils {
 			)
 			let tokenResponse = try apiResponse.content.decode(TokenStringData.self)
 			try await loginUser(with: tokenResponse, on: req)
-			var loginContext = try await LoginPageContext(req)
+			var loginContext = try await LoginPageContext(req, title: "Recover Password")
 			loginContext.trunk.metaRedirectURL = req.session.data["returnAfterLogin"] ?? "/"
 			loginContext.operationSuccess = true
 			loginContext.operationName = "Password Change"
 			return try await req.view.render("Login/login", loginContext)
 		}
 		catch {
-			var ctx = try await LoginPageContext(req, error: error)
+			var ctx = try await LoginPageContext(req, title: "Error", error: error)
 			if let postStruct = try? req.content.decode(PostStruct.self) {
 				ctx.prevUsername = postStruct.username
 				ctx.prevRegcode = postStruct.regCode
@@ -368,6 +373,7 @@ struct SiteLoginController: SiteControllerUtils {
 	}
 
 	/// `GET /codeOfConduct`
+	/// `GET /conductAgree`
 	///
 	func codeOfConductViewHandler(_ req: Request) async throws -> View {
 		var urlComponents = Settings.shared.apiUrlComponents
@@ -402,14 +408,16 @@ struct SiteLoginController: SiteControllerUtils {
 		struct ConductContext: Encodable {
 			var trunk: TrunkContext
 			var conductDocuments: [ConductDocDocument]
+			var enableCreate: Bool
 
-			init(_ req: Request, conductDocument: ConductDoc) throws {
+			init(_ req: Request, conductDocument: ConductDoc, enableCreate: Bool = false) throws {
 				trunk = .init(req, title: "Code of Conduct", tab: .none)
 				self.conductDocuments = [conductDocument.guidelines, conductDocument.codeofconduct, conductDocument.twitarrconduct]
+				self.enableCreate = enableCreate
 			}
 		}
 
-		let ctx = try ConductContext(req, conductDocument: document)
+		let ctx = try ConductContext(req, conductDocument: document, enableCreate: req.url.path == "/conductAgree")
 		return try await req.view.render("codeOfConduct", ctx)
 	}
 
@@ -418,7 +426,7 @@ struct SiteLoginController: SiteControllerUtils {
 	/// Must be logged in, although you can be logged in as an alt account, in which case this method creates another alt as a child
 	/// of the parent account. All accounts are parents or children, never both.
 	func createAltAccountViewHandler(_ req: Request) async throws -> View {
-		return try await req.view.render("Login/createAltAccount", LoginPageContext(req))
+		return try await req.view.render("Login/createAltAccount", LoginPageContext(req, title: "Create Alt Account"))
 	}
 
 	/// `POST /createAltAccount`
@@ -446,14 +454,14 @@ struct SiteLoginController: SiteControllerUtils {
 			)
 			try await apiQuery(req, endpoint: "/user/add", method: .POST, encodeContent: createData)
 			//		let createUserResponse = try apiResponse.content.decode(AddedUserData.self)
-			var loginContext = try await LoginPageContext(req)
+			var loginContext = try await LoginPageContext(req, title: "Create Alt Account")
 			loginContext.trunk.metaRedirectURL = "/"
 			loginContext.operationSuccess = true
 			loginContext.operationName = "Alt account creation"
 			return try await req.view.render("Login/createAltAccount", loginContext)
 		}
 		catch {
-			var ctx = try await LoginPageContext(req, error: error)
+			var ctx = try await LoginPageContext(req, title: "Create Alt Account", error: error)
 			if let postStruct = try? req.content.decode(PostStruct.self) {
 				ctx.prevUsername = postStruct.username
 			}

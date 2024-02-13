@@ -1,20 +1,12 @@
 # Timezone changes that will occur while we're on the cruise. Most of these are due to crossing timezone
 # boundaries, although DST can be added here as well.
-# Each line has 3 tab-delimited elements: The UTC time the TZ goes into effect, the abbreviation of the newly active timezone, 
+# Each line has 3 tab-delimited elements: The UTC time the TZ goes into effect, the abbreviation of the newly active timezone,
 # and the TimeZone ID. TimeZone IDs come can be found using Swift "print(TimeZone.knownTimeZoneIdentifiers)", and have more
 # information than timezone abbreviations, such as whether an area observers DST.
 #
-# 2022 sailing, off the top of my head.
-20220305T070000Z	EST	America/New_York
-20220308T070000Z	AST	America/Puerto_Rico
-20220309T060000Z	EST	America/New_York
-20220313T070000Z	EDT	America/New_York
-20221106T060000Z	EST	America/New_York
-#
-# 2023 sailing, best guess
-20230305T070000Z	EST	America/New_York
-20230308T070000Z	AST	America/Puerto_Rico
-20230309T060000Z	AST	America/Tortola
-20230311T060000Z	EST	America/New_York
-20230312T070000Z	EDT	America/New_York
-20231105T060000Z	EST	America/New_York
+# 2024 sailing, assumed
+20240120T070000Z	EST	America/New_York
+20240121T070000Z	EDT	America/New_York
+20240123T060000Z	EDT	America/Grand_Turk
+20240124T060000Z	AST	America/Santo_Domingo
+20240125T070000Z	EDT	America/New_York

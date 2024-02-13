@@ -9,7 +9,7 @@
 			<div class="row justify-content-between mb-3">
 				<div class="col" data-reportabletype="fez" data-reportableid="#(modData.fez.fezID)" data-postid="#(modData.fez.fezID)">
 					#if(!modData.isDeleted):
-						<a class="btn btn-outline-primary btn-sm" href="/fez/#(modData.fez.fezID)/edit">Edit</a>
+						<a class="btn btn-outline-primary btn-sm" href="/lfg/#(modData.fez.fezID)/edit">Edit</a>
 						<button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="\#deleteFezModal">Delete</button>
 						<span class="dropdown">
 							<button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
@@ -71,7 +71,7 @@
 			#endif
 			<div class="row my-3">
 				<div class="col">
-					<a class="btn btn-primary btn-sm" href="/fez/#(modData.fez.fezID)">View in Context</a>
+					<a class="btn btn-primary btn-sm" href="/lfg/#(modData.fez.fezID)">View in Context</a>
 				</div>
 			</div>
 
@@ -151,7 +151,7 @@
 					<div class="modal-footer">
 						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
 						<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload" 
-								data-actionpath="/fez/#(modData.fez.fezID)/delete" 
+								data-actionpath="/lfg/#(modData.fez.fezID)/delete" 
 								data-errordiv="fezDialog_errorDisplay"
 								id="fezDialog_deleteBtn">
 						<label class="btn btn-primary px-4" for="fezDialog_deleteBtn">

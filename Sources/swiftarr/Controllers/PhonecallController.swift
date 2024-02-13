@@ -268,18 +268,25 @@ struct PhonecallController: APIRouteCollection {
 			callerSocket: ws,
 			notifySockets: calleeNotificationSockets.map { $0.socket }
 		)
-		ws.onClose.whenComplete { result in
-			endPhoneCall(callID: callID)
-		}
-		ws.onBinary { ws, binary in
-			Task {
-				if let call = await ActivePhoneCalls.shared.getCall(withID: callID),
-					let calleeSocket = call.calleeSocket
-				{
-					try? await calleeSocket.send([UInt8](buffer: binary))
+
+		// https://github.com/jocosocial/swiftarr/issues/253
+		// https://github.com/vapor/websocket-kit/issues/139
+		// https://github.com/vapor/websocket-kit/issues/140
+		ws.eventLoop.execute {
+			ws.onClose.whenComplete { result in
+				endPhoneCall(callID: callID)
+			}
+			ws.onBinary { ws, binary in
+				Task {
+					if let call = await ActivePhoneCalls.shared.getCall(withID: callID),
+						let calleeSocket = call.calleeSocket
+					{
+						try? await calleeSocket.send([UInt8](buffer: binary))
+					}
 				}
 			}
 		}
+		
 	}
 
 	/// `GET /api/v3/phone/socket/answer/:call_id`
@@ -338,14 +345,19 @@ struct PhonecallController: APIRouteCollection {
 			try? await call.calleeSocket?.send(raw: jsonData, opcode: .binary)
 		}
 
-		ws.onClose.whenComplete { result in
-			endPhoneCall(callID: callID)
-		}
+		// https://github.com/jocosocial/swiftarr/issues/253
+		// https://github.com/vapor/websocket-kit/issues/139
+		// https://github.com/vapor/websocket-kit/issues/140
+		ws.eventLoop.execute {
+			ws.onClose.whenComplete { result in
+				endPhoneCall(callID: callID)
+			}
 
-		ws.onBinary { ws, binary in
-			Task {
-				if let call = await ActivePhoneCalls.shared.getCall(withID: callID) {
-					try? await call.callerSocket?.send([UInt8](buffer: binary))
+			ws.onBinary { ws, binary in
+				Task {
+					if let call = await ActivePhoneCalls.shared.getCall(withID: callID) {
+						try? await call.callerSocket?.send([UInt8](buffer: binary))
+					}
 				}
 			}
 		}
